@@ -3,28 +3,52 @@
   <ItemGroup>
     <ClCompile Include="Source\Dll.cpp" />
     <ClCompile Include="Source\MeatAIModule.cpp" />
-    <ClCompile Include="Movement.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="Assembly.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="HistoryRead.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="Utilities.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Mining.cpp">
+    <ClCompile Include="MiningManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneticHistoryManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="TechManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="VisionManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Fight_MovementManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="CobbDouglas.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="InventoryManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="AssemblyManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Unit_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\MeatAIModule.h" />
+    <ClInclude Include="Source\CobbDouglas.h" />
+    <ClInclude Include="Source\InventoryManager.h" />
+    <ClInclude Include="Source\GeneticHistoryManager.h" />
+    <ClInclude Include="Source\Unit_Inventory.h" />
+    <ClInclude Include="Source\AssemblyManager.h" />
+    <ClInclude Include="Source\Fight_MovementManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
       <UniqueIdentifier>{ae3b5eee-3528-4e8c-8c7b-f31c4f42621e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utilities\Unused">
+      <UniqueIdentifier>{389d313b-a030-43be-a3b4-6475a7d622bd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

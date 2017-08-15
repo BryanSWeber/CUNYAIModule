@@ -1,33 +1,38 @@
+#pragma once
+
 #include "MeatAIModule.h"
+#include "CobbDouglas.h"
+#include "InventoryManager.h"
+#include "Unit_Inventory.h"
+#include "GeneticHistoryManager.h"
+#include "Fight_MovementManager.h"
+#include "AssemblyManager.h"
 #include <iostream> 
 #include <fstream> // for file read/writing
 #include <chrono> // for in-game frame clock.
 
-
 // MeatAI V1.00. Current V goal-> Clean up issues.
 // Unresolved issue: Text coloration in on screen messages. Screen messages doesn't take color commands, but does take printf format commands. Gets messy very fast.
-// use trycatch for /0 errors and return to the true values, no +X's.
-// check_n_train command.
 // Scourge have tendancy to overpopulate.
 // workers are pulled back to closest in the middle of a transfer.
 // geyser logic is a little wonky. Check fastest map for demonstration.
-// Count larvae in purchasing choices.
-// Rework expos and mining decisions.
-
+// rearange units perpendicular to opponents for instant concaves.
+// Mineral Locking.
+// Update 
+// reserve locations for buildings.
+// complete removal of vision from CD and put as part of knee-jerk responses.
+// units may die from burning down, extractors, or mutations. Would cause confusion in inventory system.
+// lurkers, guardians and remaining tech units.
 
 
 
 // Bugs and goals.
-// generate an inventory system for researches and buildings. Probably as an array. Perhaps expand upon the self class?  Consider your tech inventory.
-// Caution: algorithm gets bamboozled if any of the derivatives are invinity. Logic for starvation fails (I think it returns nulls), so do the derivative comparisons.
-// remove all dependance on UnitUtil
-// interest in actual map exploration vs raw vision? Interested in mineral vision?
-// consider hp in unit stock.
 // extractor trick.
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+
 
 void MeatAIModule::onStart()
 {
@@ -73,8 +78,6 @@ void MeatAIModule::onStart()
             Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
     }
 
-    diagnostic_mode = true;
-
     //Initialize state variables
     gas_starved = false;
     army_starved = false;
@@ -83,22 +86,25 @@ void MeatAIModule::onStart()
     econ_starved = true;
     tech_starved = false;
 
-    *short_delay_ptr = 0;
-    *med_delay_ptr = 0;
-    *long_delay_ptr = 0;
+    //Initialize model variables. 
+    GeneticHistory gene_history = GeneticHistory( "output.csv" );
+    delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
+    gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
 
-    srand( Broodwar->getRandomSeed() );
-    //Initialize model variables. From genetic history, random parent for each gene. Proturb 1 of the 6.
-    int mutation_1 = rand() % 6;
+    //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
+    alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
+    alpha_vis =  gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
+    alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
+    alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+    win_rate = (1 - gene_history.loss_rate_) == 1 ? 0 : (1 - gene_history.loss_rate_);
 
-    delta = (mutation_1 == 0 ) ? Win_History( "output.csv", 0 ) * (rand() % 20 + 91) / (double)100 : Win_History( "output.csv", 0 ) ; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas. Current best: 0.45.  0.35 is basically all lings+tech for lings.
-    gamma = (mutation_1 == 1 ) ? Win_History( "output.csv", 1 ) * (rand() % 20 + 91) / (double)100 : Win_History( "output.csv", 1 ); //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
+    //update Map Knowledge
+    inventory.updateMineralPos();
+    inventory.updateBuildablePos();
+    inventory.updateBaseLoc();
+    inventory.updateSmoothPos();
+    inventory.updateBaseLoc();
 
-    //Cobb-Douglas Production exponents.  can be normalized to sum to 1.
-    alpha_army = (mutation_1 == 2 ) ? Win_History( "output.csv", 2 ) * (rand() % 50 + 76) / (double)100 : Win_History( "output.csv", 2 ); // army starved parameter. This comes in a medium scale
-    alpha_vis = (mutation_1 == 3 ) ? Win_History( "output.csv", 3 ) * (rand() % 50 + 76) / (double)100 : Win_History( "output.csv", 3 ); // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant.  
-    alpha_econ = (mutation_1 == 4 ) ? Win_History( "output.csv", 4 ) * (rand() % 50 + 76) / (double)100 : Win_History( "output.csv", 4 ); // econ starved parameter. This comes in a small scale.
-    alpha_tech = (mutation_1 == 5 ) ? Win_History( "output.csv", 5 ) * (rand() % 50 + 76) / (double)100 : Win_History( "output.csv", 5 ); // tech starved parameter. This comes in a small
 }
 
 void MeatAIModule::onEnd( bool isWinner )
@@ -116,265 +122,268 @@ void MeatAIModule::onFrame()
   // Return if the game is a replay or is paused
     if ( Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self() )
         return;
-    // Start Game clock.
-    try {
 
+        // Start Game clock.
         // Performance Qeuery Timer
         // http://www.decompile.com/cpp/faq/windows_timer_api.htm
-        auto start = std::chrono::high_resolution_clock::now();
 
-        //Define important variables.
+    std::chrono::duration<double, std::milli> preamble_time;
+    std::chrono::duration<double, std::milli> larva_time;
+    std::chrono::duration<double, std::milli> worker_time;
+    std::chrono::duration<double, std::milli> scout_time;
+    std::chrono::duration<double, std::milli> combat_time;
+    std::chrono::duration<double, std::milli> detector_time;
+    std::chrono::duration<double, std::milli> upgrade_time;
+    std::chrono::duration<double, std::milli> creepcolony_time;
+    std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
+
+        auto start_preamble = std::chrono::high_resolution_clock::now();
+        // Assess enemy stock and general positions.
+
+        // Let us see what is stored in each unit_inventory and update it. Invalidate unwanted units. Most notably, geysers become extractors on death.
+
+        for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++ ) {
+            if ( (*e).second.bwapi_unit_ && (*e).second.bwapi_unit_->exists() ) { // If the unit is visible now, update its position.
+                (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+                (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+                (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints();
+                (*e).second.valid_pos_ = true;
+                //Broodwar->sendText( "Relocated a %s.", (*e).second.type_.c_str() );
+            }
+            else if ( Broodwar->isVisible( { e->second.pos_.x / 32 , e->second.pos_.y / 32 } ) && e->second.type_.canMove() ) {  // if you can see the tile it SHOULD be at and it might move... Burned down buildings will pose a problem in future.
+
+                bool present = false;
+
+                Unitset enemies_tile = Broodwar->getUnitsOnTile( { e->second.pos_.x / 32, e->second.pos_.y / 32 }, IsEnemy || IsNeutral );  // Confirm it is present.  Some addons convert to neutral if their main base disappears.
+                for ( auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et ) {
+                    present = (*et)->getID() != e->second.unit_ID_ || (*et)->isCloaked() || (*et)->isBurrowed();
+                    if ( present ) {
+                        break;
+                    }
+                }
+                if ( !present || enemies_tile.empty() ) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. 
+                    e->second.valid_pos_ = false;
+                    //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
+                }
+            }
+
+            if ( e->second.type_ == UnitTypes::Resource_Vespene_Geyser ) { // Destroyed refineries revert to geyers, requiring the manual catch 
+                e->second.valid_pos_ = false;
+            }
+
+            if ( _ANALYSIS_MODE && e->second.valid_pos_ == true ) {
+                if ( isOnScreen( e->second.pos_ ) ) {
+                    Broodwar->drawCircleMap( e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red ); // Plot their last known position.
+                }
+            }
+        }
+
+        for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); ) {
+            if ( e->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
+                e->second.type_ == UnitTypes::None ) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
+                e = enemy_inventory.unit_inventory_.erase( e ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+            }
+            else {
+                ++e;
+            }
+        }
+
+        Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
+
+        // easy to update friendly unit inventory.
+        friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() );
+        for ( auto f = friendly_inventory.unit_inventory_.begin(); f != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); ) {
+            if ( f->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
+                f->second.type_ == UnitTypes::None ) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
+                f = friendly_inventory.unit_inventory_.erase( f ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+            }
+            else {
+                ++f;
+            }
+        }
+
+        //Update posessed minerals. Erase those that are mined out.
+        for ( auto r = inventory.resource_positions_.begin(); r != inventory.resource_positions_.end() && !inventory.resource_positions_.empty(); ) {
+
+            TilePosition tile_pos = { r->x / 32, r->y / 32 };
+            bool erasure_sentinel = false;
+            if ( Broodwar->isVisible( tile_pos ) ) {
+                Unitset resource_tile = Broodwar->getUnitsOnTile( tile_pos, IsMineralField || IsResourceContainer || IsRefinery );  // Confirm it is present.
+                if ( resource_tile.empty() ) {
+                    r = inventory.resource_positions_.erase( r ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+                    erasure_sentinel = true;
+                }
+            }
+
+            if ( !erasure_sentinel ) {
+                r++;
+            }
+        }
+
+        //Update important variables.  Enemy stock has a lot of dependencies, updated above.
+        inventory.updateLn_Army_Stock(friendly_inventory);
+        inventory.updateLn_Tech_Stock(friendly_inventory);
+        inventory.updateLn_Worker_Stock();
+        inventory.updateVision_Count();
+
+        inventory.updateLn_Supply_Remain(friendly_inventory);
+        inventory.updateLn_Supply_Total();
+
+        inventory.updateLn_Gas_Total();
+        inventory.updateLn_Min_Total();
+
+        inventory.updateGas_Workers();
+        inventory.updateMin_Workers();
+
+        inventory.updateMin_Possessed();
+        inventory.updateHatcheries(friendly_inventory);  // macro variables, not every unit I have.
+
+        inventory.updateReserveSystem();
+        inventory.updateNextExpo(enemy_inventory, friendly_inventory);
 
         // Game time;
-        int t_game = Broodwar->getFrameCount();
-
-        //Unit inventory.
-        int hatches = Count_Units( UnitTypes::Zerg_Hatchery ) +
-            Count_Units( UnitTypes::Zerg_Lair ) +
-            Count_Units( UnitTypes::Zerg_Hive );
-        int ovis = Count_Units( UnitTypes::Zerg_Overlord );
-        int larve = Count_Units( UnitTypes::Zerg_Larva );
-        int pool = Count_Units( UnitTypes::Zerg_Spawning_Pool );
-        int extractor = Count_Units( UnitTypes::Zerg_Extractor );
-        int evos = Count_Units( UnitTypes::Zerg_Evolution_Chamber );
-        int drones = Count_Units( UnitTypes::Zerg_Drone );
-
-        //Idea: Count_Units(UnitCommandTypes::Build)  What command reads Unitcommandtype chars?
-
-        //Econ inventory 
-        int worker_count = 1; // adds 1 to avoid divide by 0 error.
-        int* worker_count_ptr = &worker_count;
-        int gas_workers = 0;
-        int* gas_workers_ptr = &gas_workers;
-        int min_workers = 0;
-        int* min_workers_ptr = &min_workers;
-        int min_fields = 1;
-        int* min_fields_ptr = &min_fields;
-
-        // Using myUnits to take inventory on all my units.
-
-        //Army inventory.
-        int army_count = Stock_Units( UnitTypes::Zerg_Zergling ) +
-            Stock_Units( UnitTypes::Zerg_Hydralisk ) +
-            Stock_Units( UnitTypes::Zerg_Scourge ) +
-            Stock_Units( UnitTypes::Zerg_Mutalisk ) +
-            Stock_Units( UnitTypes::Zerg_Ultralisk ) +
-            //Stock_Buildings( UnitTypes::Zerg_Sunken_Colony ) +
-            //Stock_Buildings( UnitTypes::Zerg_Spore_Colony ) +
-            5; //ad-hoc, assumes a lot about the translation between these units, +5 is to avoid risk of /0 errors.
-
-        //Tech Inventory.
-        double tech_stock = log(
-            Stock_Buildings( UnitTypes::Zerg_Spawning_Pool ) +
-            Stock_Buildings( UnitTypes::Zerg_Evolution_Chamber ) +
-            Stock_Buildings( UnitTypes::Zerg_Hydralisk_Den ) +
-            Stock_Buildings( UnitTypes::Zerg_Queens_Nest ) +
-            Stock_Ups( UpgradeTypes::Metabolic_Boost ) +
-            Stock_Ups( UpgradeTypes::Zerg_Carapace ) +
-            Stock_Ups( UpgradeTypes::Zerg_Melee_Attacks ) +
-            Stock_Ups( UpgradeTypes::Pneumatized_Carapace ) +
-            Stock_Ups( UpgradeTypes::Adrenal_Glands ) +
-            Stock_Ups( UpgradeTypes::Grooved_Spines ) +
-            Stock_Ups( UpgradeTypes::Muscular_Augments ) +
-            Stock_Ups( UpgradeTypes::Zerg_Missile_Attacks ) +
-            Stock_Ups( UpgradeTypes::Antennae ) +
-            Stock_Ups( UpgradeTypes::Anabolic_Synthesis ) +
-            Stock_Ups( UpgradeTypes::Chitinous_Plating ) + 5 ); // adds 5 to avoid risk of divides by 0 issues, note log(1)=0. 
-
-        //Inventories for knee-jerk states: Gas, Supply, mineral counter
-          //Supply inventory:
-        double ln_supply_remain = log( Stock_Supply( UnitTypes::Zerg_Overlord ) +
-            Stock_Supply( UnitTypes::Zerg_Hatchery ) +
-            Stock_Supply( UnitTypes::Zerg_Lair ) +
-            Stock_Supply( UnitTypes::Zerg_Hive ) -
-            Broodwar->self()->supplyUsed() + 1 ); // + 1 is a minor adjustment to avoid ln(0) errors or divides by 0 errors.
-        double ln_supply_total = log( Broodwar->self()->supplyTotal() + 2 ); // + 5 is a minor adjustment to avoid ln(0) errors or divides by 0 errors.
-
-        //Gas inventory.
-        double ln_min = log( Broodwar->self()->minerals() + 2 ); // +2 is a minor adjustment to avoid ln(0) errors or divides by 0 errors.
-        double ln_gas = log( Broodwar->self()->gas() + 2 ); // +2 is a minor adjustment to avoid ln(0) errors or divides by 0 errors.
-
+        int t_game = Broodwar->getFrameCount(); // still need this for mining script.
+        buildorder.updateBuildingTimer(friendly_inventory);
 
       //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
         int map_x = Broodwar->mapWidth();
         int map_y = Broodwar->mapHeight();
         int map_area = map_x * map_y; // map area in tiles.
-        int vision_tile_count = 1; // starting at 1 to avoid /0 issues. Should be profoundly rare and vision is usually in the thousands anyway.
-        int* vision_tile_count_ptr = &vision_tile_count;
-
-        for ( int tile_x = 1; tile_x <= map_x; tile_x++ ) { // there is no tile (0,0)
-            for ( int tile_y = 1; tile_y <= map_y; tile_y++ ) {
-                if ( Broodwar->isVisible( tile_x, tile_y ) ) {
-                    *vision_tile_count_ptr += 1;
-                }
-            }
-        } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
-
-          //maintains an active inventory of minerals near our bases.
-        Unitset resource = Broodwar->getMinerals(); // get any mineral field that exists on the map.
-        if ( !resource.empty() ) { // check if the minerals exist
-            for ( auto r = resource.begin(); r != resource.end() && !resource.empty() ; ++r ) { //for each mineral
-                //Broodwar->drawCircleMap( (*r)->getPosition(), 300, Colors::Green ); // Circle each mineral.
-                if ( (*r) && (*r)->exists() ) {
-                    Unitset mybases = Broodwar->getUnitsInRadius( (*r)->getPosition(), 250, Filter::IsResourceDepot && Filter::IsOwned ); // is there a mining base near there
-                    if ( !mybases.empty() ) { // check if there is a base nearby
-                        for ( auto base = mybases.begin(); base != mybases.end() && !mybases.empty(); ++base ) {
-                            if ( (*base)->exists() ) {
-                                Broodwar->drawCircleMap( (*base)->getPosition(), 250, Colors::Green ); // if nearby base, circle all relevant bases.
-                            }
-                        }
-                        (*min_fields_ptr)++; // count this mineral if there is a base near it.
-                    } // closure if base is nearby
-                }
-            }// closure: Checking things nearby minerals.
-        } // closure, mineral tally.
-
-          // Get worker tallies.
-        Unitset myUnits = Broodwar->self()->getUnits(); // out of my units  Probably easier than searching the map for them.
-        if ( !myUnits.empty() ) { // make sure this object is valid!
-            for ( auto u = myUnits.begin(); u != myUnits.end() && !myUnits.empty(); ++u )
-            {
-                if ( (*u) && (*u)->exists() ){
-                    if ( (*u)->getType().isWorker() ) {
-                        if ( (*u)->isGatheringGas() || (*u)->isCarryingGas() ) // implies exists and isCompleted
-                        {
-                            ++(*gas_workers_ptr);
-                        }
-                        if ( (*u)->isGatheringMinerals() || (*u)->isCarryingMinerals() ) // implies exists and isCompleted
-                        {
-                            ++(*min_workers_ptr);
-                        }
-                        *worker_count_ptr = gas_workers + min_workers + 1;  //adds 1 to avoid a divide by 0 error
-                    } // closure: Only investigate closely if they are drones.
-               } // Closure: only investigate on existance of unit..
-            } // closure: count all workers
-        }
 
         //Knee-jerk states: gas, supply.
-        gas_starved = (ln_gas / (ln_min + ln_gas)) < delta;
-        supply_starved = Broodwar->self()->supplyTotal() <= Broodwar->self()->supplyUsed() || // If you're supply blocked then you are supply starved.
-            ((ln_supply_remain / ln_supply_total) < gamma &&   //If your supply is disproportionately low, then you are gas starved, unless
-            (Broodwar->self()->supplyTotal() <= 400)); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
+        gas_starved = (inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) || 
+            (!buildorder.building_gene_.empty() && ( buildorder.building_gene_.begin()->getUnit().gasPrice() > Broodwar->self()->gas() || buildorder.building_gene_.begin()->getUpgrade().gasPrice() > Broodwar->self()->gas() ) );
+        supply_starved = ( inventory.getLn_Supply_Ratio()  < gamma &&   //If your supply is disproportionately low, then you are gas starved, unless
+                         Broodwar->self()->supplyTotal() <= 400 ); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
-        // Cobb-Douglas 
-        ln_y = alpha_vis * log( vision_tile_count / worker_count ) + alpha_army * log( army_count / worker_count ) + alpha_tech * log( tech_stock / worker_count ); //Analog to per capita GDP. Worker count has been incremented by 1 to avoid crashing from /0.
-        ln_Y = alpha_vis * log( vision_tile_count ) + alpha_army * log( army_count ) + alpha_tech * log( tech_stock ) + alpha_econ * log( worker_count ); //Analog to GDP
-            // so prioritization should be whichever is greatest: alpha_vis/vision_tile_count, alpha_army/army_count, alpha_tech/tech_stock, alpha_econ/worker_count.
-            // double priority_list[] = { alpha_vis/vision_tile_count, alpha_army/army_count, alpha_econ/worker_count...}; // would be more elegant to use an array here...
+        //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
+        bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 1.75 || inventory.min_fields_ < 36) && ( Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+        bool vision_possible = true; // no vision cutoff ATM.
+        bool army_possible = ( Broodwar->self()->supplyUsed() < 375 && exp(inventory.ln_army_stock_) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ); // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio.
+        bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
 
-        double econ_derivative = alpha_econ / worker_count * ( ( min_workers <= min_fields * 1.75 || min_fields < 36 ) && (worker_count < 90) ); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
-        double vision_derivative = alpha_vis / vision_tile_count;
-        double army_derivative = alpha_army / army_count * (Broodwar->self()->supplyUsed() < 350);  // can't be army starved if you are maxed out (or close to it).
-        double tech_derivative = alpha_tech / tech_stock * 
-            !(Broodwar->self()->getUpgradeLevel( UpgradeTypes::Adrenal_Glands ) &&
-                Broodwar->self()->getUpgradeLevel( UpgradeTypes::Chitinous_Plating ) &&
-                Broodwar->self()->getUpgradeLevel( UpgradeTypes::Anabolic_Synthesis ) &&
-                Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 &&
-                Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 && 
-                Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Missile_Attacks ) == 3); // you can't be tech starved if you have these researches. You're done.
+        //Feed alpha values and cuttoff calculations into Cobb Douglas.
+        CobbDouglas CD = CobbDouglas( alpha_army, exp(inventory.ln_army_stock_), army_possible, alpha_tech , exp(inventory.ln_tech_stock_), tech_possible, alpha_econ, exp(inventory.ln_worker_stock_), econ_possible );
 
-        // Set Priorities
-        if ( econ_derivative >= vision_derivative &&
-            econ_derivative >= army_derivative &&
-            econ_derivative >= tech_derivative )
-        {
-            tech_starved = false;
-            vision_starved = false;
-            army_starved = false;
-            econ_starved = true;
-        }
-        else if ( vision_derivative >= econ_derivative &&
-            vision_derivative >= army_derivative &&
-            vision_derivative >= tech_derivative )
-        {
-            tech_starved = false;
-            vision_starved = true;
-            army_starved = false;
-            econ_starved = false;
-        }
-        else if ( army_derivative >= vision_derivative &&
-            army_derivative >= econ_derivative &&
-            army_derivative >= tech_derivative )
-        {
-            tech_starved = false;
-            vision_starved = false;
-            army_starved = true;
-            econ_starved = false;
-        }
-        else if ( tech_derivative >= vision_derivative &&
-            tech_derivative >= econ_derivative &&
-            tech_derivative >= army_derivative )
-        {
-            tech_starved = true;
-            vision_starved = false;
-            army_starved = false;
-            econ_starved = false;
-        }
-        else {
-            Broodwar->drawTextScreen( 10, 200, " Status: Error No - Status ", Text::Size::Huge ); //
-        }
+        tech_starved = CD.tech_starved();
+        army_starved = CD.army_starved();
+        econ_starved = CD.econ_starved();
+ 
+        double econ_derivative = CD.econ_derivative;
+        double army_derivative = CD.army_derivative;
+        double tech_derivative = CD.tech_derivative;
+
+        //Unitset enemy_set = getEnemy_Set(enemy_inventory);
+        enemy_inventory.updateUnitInventorySummary();
+        friendly_inventory.updateUnitInventorySummary();
+        inventory.est_enemy_stock_ = enemy_inventory.stock_total_ * (1 + 1 - inventory.vision_tile_count_ / (double)map_area); //assumes enemy stuff is uniformly distributed. Bad assumption.
 
         // Display the game status indicators at the top of the screen	
-        if ( diagnostic_mode ) {
-            Broodwar->drawTextScreen( 10, 0, "Total Drones: %d", drones );  //
-            Broodwar->drawTextScreen( 10, 10, "Reached Min Fields: %d", min_fields );
-            Broodwar->drawTextScreen( 10, 20, "Active Workers: %d", worker_count );
-            Broodwar->drawTextScreen( 10, 30, "Active Miners: %d", min_workers );
-            Broodwar->drawTextScreen( 10, 40, "Active Gas Miners: %d", gas_workers );
+        if ( _ANALYSIS_MODE ) {
 
-            Broodwar->drawTextScreen( 10, 60, "Idle Larve: %d", larve );  //
-            Broodwar->drawTextScreen( 10, 70, "Ovis: %d", Count_Units( UnitTypes::Zerg_Overlord ) );  //
-            Broodwar->drawTextScreen( 10, 80, "Hatches: %d", hatches );  // all hatch types included
+            Print_Unit_Inventory(0,50, friendly_inventory ); 
+            Print_Upgrade_Inventory(375,70); 
+            //Print_Unit_Inventory( 500, 170, enemy_inventory );
+            Print_Build_Order_Remaining( 500, 170, buildorder );
 
-            Broodwar->drawTextScreen( 10, 90, "Lings: %d", Count_Units( UnitTypes::Zerg_Zergling ) );  //
-            Broodwar->drawTextScreen( 10, 100, "Hydras: %d", Count_Units( UnitTypes::Zerg_Hydralisk ) );  //
-            Broodwar->drawTextScreen( 10, 110, "Scourge: %d", Count_Units( UnitTypes::Zerg_Scourge ) );  //
-            Broodwar->drawTextScreen( 10, 120, "Ultras: %d", Count_Units( UnitTypes::Zerg_Ultralisk) );  //
 
-            Broodwar->drawTextScreen( 10, 140, "Pool: %d", Count_Units( UnitTypes::Zerg_Spawning_Pool ) );  // 
-            Broodwar->drawTextScreen( 10, 150, "Hydra Den: %d", Count_Units( UnitTypes::Zerg_Hydralisk_Den ) );  // 
-            Broodwar->drawTextScreen( 10, 160, "Extractor: %d", Count_Units( UnitTypes::Zerg_Extractor ) );  //
-            Broodwar->drawTextScreen( 10, 170, "Evos: %d", Count_Units( UnitTypes::Zerg_Evolution_Chamber ) );  //
-            Broodwar->drawTextScreen( 10, 180, "Spire: %d", Count_Units( UnitTypes::Zerg_Spire ) );  //
-            Broodwar->drawTextScreen( 10, 190, "Ultra Cavern: %d", Count_Units( UnitTypes::Zerg_Ultralisk_Cavern ) );  //
+            Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", inventory.min_fields_ );
+            Broodwar->drawTextScreen(0, 10, "Active Workers: %d", inventory.gas_workers_ + inventory.min_workers_ );
+            Broodwar->drawTextScreen( 0, 20, "Active Miners: %d", inventory.min_workers_ );
+            Broodwar->drawTextScreen( 0, 30, "Active Gas Miners: %d", inventory.gas_workers_ );
 
-            Broodwar->drawTextScreen( 10, 255, "Game Status (Ln Y/L) : %f", ln_y, Text::Size::Huge ); //
-            Broodwar->drawTextScreen( 10, 265, "Game Status (Ln Y) : %f", ln_Y, Text::Size::Huge ); //
-            Broodwar->drawTextScreen( 10, 275, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60, Text::Size::Huge ); //
+            Broodwar->drawTextScreen( 125, 0, "Econ Starved: %s", CD.econ_starved() ? "TRUE" : "FALSE" );  //
+            Broodwar->drawTextScreen( 125, 10, "Army Starved: %s", CD.army_starved() ? "TRUE" : "FALSE" );  //
+            Broodwar->drawTextScreen( 125, 20, "Tech Starved: %s", CD.tech_starved() ? "TRUE" : "FALSE" );  //
 
-            Broodwar->drawTextScreen( 125, 0, "Econ Starved: %s", econ_starved ? "TRUE" : "FALSE" );  //
-            Broodwar->drawTextScreen( 125, 10, "Army Starved: %s", army_starved ? "TRUE" : "FALSE" );  //
-            Broodwar->drawTextScreen( 125, 20, "Vision Starved: %s", vision_starved ? "TRUE" : "FALSE" );  //
-            Broodwar->drawTextScreen( 125, 30, "Tech Starved: %s", tech_starved ? "TRUE" : "FALSE" );  //
+            Broodwar->drawTextScreen( 125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE" );
+            Broodwar->drawTextScreen( 125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE" );
+            Broodwar->drawTextScreen( 125, 60, "Gas Outlet: %s", Gas_Outlet() ? "TRUE" : "FALSE" );  //
 
-            Broodwar->drawTextScreen( 125, 50, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE" );
-            Broodwar->drawTextScreen( 125, 60, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE" );
+            Broodwar->drawTextScreen( 125, 80, "Ln Y/L: %4.2f", CD.getlny() ); //
+            Broodwar->drawTextScreen( 125, 90, "Ln Y: %4.2f", CD.getlnY() ); //
+            Broodwar->drawTextScreen( 125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60 ); //
+            Broodwar->drawTextScreen( 125, 110, "Win Rate: %.2f", win_rate); //
+            Broodwar->drawTextScreen( 125, 120, "Opponent: %s", Broodwar->enemy()->getRace().c_str() ); //
 
-            Broodwar->drawTextScreen( 250, 0, "Econ Derivative: %g", econ_derivative );  //
-            Broodwar->drawTextScreen( 250, 10, "Army Derivative: %g", army_derivative ); //
-            Broodwar->drawTextScreen( 250, 20, "Vision Derivative: %g", vision_derivative ); //
-            Broodwar->drawTextScreen( 250, 30, "Tech Derivative: %g", tech_derivative ); //
-            Broodwar->drawTextScreen( 250, 50, "Alpha_Econ: %f", alpha_econ );  //
-            Broodwar->drawTextScreen( 250, 60, "Alpha_Army: %f", alpha_army ); //
-            Broodwar->drawTextScreen( 250, 70, "Alpha_Vis: %f", alpha_vis ); //
-            Broodwar->drawTextScreen( 250, 80, "Alpha_Tech: %f", alpha_tech ); //
-            Broodwar->drawTextScreen( 250, 90, "Delta_gas: %f", delta ); //
-            Broodwar->drawTextScreen( 250, 100, "Gamma_supply: %f", gamma ); //
+            Broodwar->drawTextScreen( 250, 0, "Econ Gradient: %.2g", CD.econ_derivative  );  //
+            Broodwar->drawTextScreen( 250, 10, "Army Gradient: %.2g", CD.army_derivative ); //
+            Broodwar->drawTextScreen( 250, 20, "Tech Gradient: %.2g", CD.tech_derivative ); //
+            
+            Broodwar->drawTextScreen( 250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100);  // As %s
+            Broodwar->drawTextScreen( 250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100); //
+            Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f %%", CD.alpha_tech * 100); //
 
-            Broodwar->drawTextScreen( 500, 100, "Gas (Pct. Ln.) : %f", ln_gas / (ln_min + ln_gas) );
-            Broodwar->drawTextScreen( 500, 110, "Army Stock (Pct.): %f", army_count / ((double)worker_count + (double)army_count) ); //
-            Broodwar->drawTextScreen( 500, 120, "Vision (Pct.): %f", vision_tile_count / (double)map_area );  //
-            Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %f", ln_supply_remain / ln_supply_total );  //
-            Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d", vision_tile_count );  //
-            Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
+            Broodwar->drawTextScreen( 250, 80, "Delta_gas: %4.2f", delta ); //
+            Broodwar->drawTextScreen( 250, 90, "Gamma_supply: %4.2f", gamma ); //
+            Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", buildorder.building_timer_ ); //
+            Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ? "TRUE" : "FALSE" ); //
+            Broodwar->drawTextScreen( 250, 120, "Last Building: %s", buildorder.last_build_order.c_str() ); //
+
+            //vision belongs here.
+
+            Broodwar->drawTextScreen( 375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_ );
+            Broodwar->drawTextScreen( 375, 30, "Army Stock: %d", (int)exp(inventory.ln_army_stock_) ); //
+            Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
+            Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f",  inventory.vision_tile_count_ / (double)map_area );  //
+            //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
+            //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
+            //Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
 
             Broodwar->drawTextScreen( 500, 20, "Performance:" );  // 
             Broodwar->drawTextScreen( 500, 30, "APM: %d", Broodwar->getAPM() );  // 
-            Broodwar->drawTextScreen( 500, 40, "APF: %f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS() );  // 
-            Broodwar->drawTextScreen( 500, 50, "FPS: %f", Broodwar->getAverageFPS() );  // 
+            Broodwar->drawTextScreen( 500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS() );  // 
+            Broodwar->drawTextScreen( 500, 50, "FPS: %4.2f", Broodwar->getAverageFPS() );  // 
             Broodwar->drawTextScreen( 500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames() );  //
 
-        }
+            for ( vector<int>::size_type p = 0; p != inventory.resource_positions_.size() ; ++p){
+                if ( inventory.resource_positions_[p] ) {
+                    if ( isOnScreen( inventory.resource_positions_[p] ) ) {
+                        Broodwar->drawCircleMap( inventory.resource_positions_[p], (UnitTypes::Resource_Mineral_Field.dimensionUp() + UnitTypes::Resource_Mineral_Field.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
+                    }
+                }
+            }
+
+            for ( vector<int>::size_type i = 0; i != inventory.buildable_positions_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j != inventory.buildable_positions_[i].size(); ++j ) {
+                    if ( inventory.buildable_positions_[i][j] == false ) {
+                        if ( isOnScreen( { (int)i * 32 + 16, (int)j * 32 + 16 } ) ) {
+                            Broodwar->drawCircleMap( i * 32 + 16, j * 32 + 16, 1, Colors::Yellow );
+                        }
+                    }
+                }
+            } // both of these structures are on the same tile system.
+
+            //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+            //        if ( inventory.base_values_[i][j] > 1 ) {
+            //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+            //        }
+            //    };
+            //} // not that pretty to look at.
+
+            for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
+                    if ( inventory.smoothed_barriers_[i][j] == 0 ) {
+                        if ( isOnScreen( { (int)i * 8 + 8, (int)j * 8 + 4 } ) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                        }
+                    }
+                    else if ( inventory.smoothed_barriers_[i][j] > 0 ){
+                        if ( isOnScreen( { (int)i * 8 + 8, (int)j * 8 + 4 } ) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                        }
+                    }
+
+                };
+            } // Pretty to look at!
+
+        }// close analysis mode
+
+        auto end_preamble = std::chrono::high_resolution_clock::now();
+        preamble_time = end_preamble - start_preamble;
 
      // Prevent spamming by only running our onFrame once every number of latency frames.
      // Latency frames are the number of frames before commands are processed.
@@ -384,6 +393,9 @@ void MeatAIModule::onFrame()
         // Iterate through all the units that we own
         for ( auto &u : Broodwar->self()->getUnits() )
         {
+            if ( _ANALYSIS_MODE ) {
+                Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
+            }
             // Ignore the unit if it no longer exists
             // Make sure to include this block when handling any Unit pointer!
             if ( !u || !u->exists() )
@@ -393,128 +405,58 @@ void MeatAIModule::onFrame()
                 u->isMaelstrommed() ||
                 u->isStasised() )
                 continue;
-
             // Ignore the unit if it is in one of the following states
             if ( u->isLoaded() ||
                 !u->isPowered() ||
                 u->isStuck() )
                 continue;
-
             // Ignore the unit if it is incomplete or busy constructing
             if ( !u->isCompleted() ||
                 u->isConstructing() )
                 continue;
 
             // Finally make the unit do some stuff!
-
-            //Unit needs some awareness.
-
-            UnitType u_type = u->getType();
-
-            // Unit creation & Hatchery management loop
-            if ( u_type == UnitTypes::Zerg_Larva ) // A resource depot is a Command Center, Nexus, or Hatchery.
+// Unit creation & Hatchery management loop
+            auto start_larva = std::chrono::high_resolution_clock::now();
+            if ( u->getType() == UnitTypes::Zerg_Larva ) // A resource depot is a Command Center, Nexus, or Hatchery.
             {
-                //Supply blocked protection 
-                Check_N_Grow( UnitTypes::Zerg_Overlord, u, supply_starved );
-
-                //Army build/replenish.  Note lings also serve the purpose of scouting.
-
-                Unit e_flying = u->getClosestUnit( IsFlying && IsEnemy && CanAttack );
-                if ( e_flying && e_flying->exists() ) { // if they have a flyer (that can attack), get AA
-                    Check_N_Grow( UnitTypes::Zerg_Mutalisk, u, army_starved && Count_Units( UnitTypes::Zerg_Spire ) > 0 );  //nice to know but there's no point in this unit since I don't use it effectively. 
-                    Check_N_Grow( UnitTypes::Zerg_Scourge, u, army_starved && Count_Units( UnitTypes::Zerg_Spire ) > 0 && Count_Units( UnitTypes::Zerg_Scourge ) < 10 ); // hard cap on scourges since they end up flooding my map against skytoss.
-                    Check_N_Grow( UnitTypes::Zerg_Hydralisk, u, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den ) > 0 );
-                }
-                else {
-                    Check_N_Grow( UnitTypes::Zerg_Ultralisk, u, army_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern ) > 0 );
-                    Check_N_Grow( UnitTypes::Zerg_Mutalisk, u, army_starved && Count_Units( UnitTypes::Zerg_Spire ) > 0 );
-                    Check_N_Grow( UnitTypes::Zerg_Hydralisk, u, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den ) > 0 );
-                    Check_N_Grow( UnitTypes::Zerg_Zergling, u, army_starved && Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 );
-                }
-
-                //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
-                bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && drones <= 10;
-
-                Check_N_Grow( u_type.getRace().getWorker(), u, (econ_starved || early_game ) && // or it is early game and you have nothing to build. // if you're eco starved 
-                    drones <= min_fields * 1.75 + Count_Units( UnitTypes::Zerg_Extractor ) * 3 && drones < 85 ); // build more workers to fill in our missing slots, to a maximum of 85.
+                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
+                Reactive_Build( u, inventory, friendly_inventory, enemy_inventory );
             }
+            auto end_larva = std::chrono::high_resolution_clock::now();
 
-            //Upgrade loop:
-            if ( tech_starved &&
-                isIdleEmpty( u ) &&
-                (u->canUpgrade() || u->canResearch() || u->canMorph()) &&
-                (u_type == UnitTypes::Zerg_Hive ||
-                    u_type == UnitTypes::Zerg_Lair ||
-                    u_type == UnitTypes::Zerg_Hatchery ||
-                    u_type == UnitTypes::Zerg_Spawning_Pool ||
-                    u_type == UnitTypes::Zerg_Evolution_Chamber ||
-                    u_type == UnitTypes::Zerg_Hydralisk_Den ||
-                    u_type == UnitTypes::Zerg_Ultralisk_Cavern) ) { // this will need to be revaluated once I buy units that cost gas.
-
-                Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, u, true );
-
-                if ( Count_Units( UnitTypes::Zerg_Zergling ) > Count_Units( UnitTypes::Zerg_Hydralisk ) ) {
-                    Check_N_Upgrade( UpgradeTypes::Zerg_Carapace, u, true );
-                    Check_N_Upgrade( UpgradeTypes::Zerg_Melee_Attacks, u, true );
-                }
-
-                Check_N_Upgrade( UpgradeTypes::Muscular_Augments, u, true );
-                Check_N_Upgrade( UpgradeTypes::Grooved_Spines, u, true );
-                Check_N_Upgrade( UpgradeTypes::Zerg_Carapace, u, true );
-                Check_N_Upgrade( UpgradeTypes::Zerg_Missile_Attacks, u, true );
-
-                Check_N_Build( UnitTypes::Zerg_Lair, u, (tech_starved) &&
-                    Count_Units( UnitTypes::Zerg_Lair ) == 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > 0 &&
-                    Count_Units( UnitTypes::Zerg_Hive ) == 0 &&//don't need lair if we have a hive.
-                    u_type == UnitTypes::Zerg_Hatchery );
-
-                Check_N_Upgrade( UpgradeTypes::Pneumatized_Carapace, u, Count_Units( UnitTypes::Zerg_Lair ) > 0 || Count_Units( UnitTypes::Zerg_Hive ) > 0 );
-                Check_N_Upgrade( UpgradeTypes::Antennae, u, Count_Units( UnitTypes::Zerg_Lair ) > 0 || Count_Units( UnitTypes::Zerg_Hive ) > 0 ); //don't need lair if we have a hive.
-
-                Check_N_Build( UnitTypes::Zerg_Hive, u, (tech_starved) &&
-                    Count_Units( UnitTypes::Zerg_Queens_Nest ) >= 0 &&
-                    u_type == UnitTypes::Zerg_Lair &&
-                    Count_Units( UnitTypes::Zerg_Hive ) == 0 ); //If you're tech-starved at this point, don't make random hives.
-
-                Check_N_Upgrade( UpgradeTypes::Adrenal_Glands, u, Count_Units( UnitTypes::Zerg_Hive ) > 0 );
-                Check_N_Upgrade( UpgradeTypes::Anabolic_Synthesis, u, Count_Units( UnitTypes::Zerg_Ultralisk_Cavern ) > 0 );
-                Check_N_Upgrade( UpgradeTypes::Chitinous_Plating, u, Count_Units( UnitTypes::Zerg_Ultralisk_Cavern ) > 0 );
-
-                PrintError_Unit( u );
-            } //closure: tech/upgrades loop
-
-            // If the unit is a worker unit
-            if ( u_type.isWorker() )
+            // Worker Loop
+            auto start_worker = std::chrono::high_resolution_clock::now();
+            if ( u->getType().isWorker() )
             {
                 // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
-                if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals()) && t_game % 75 == 0 )
+                if ( (isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals()) && t_game % 75 == 0 )
                 {
                     // Order workers carrying a resource to return them to the center, every few seconds. This will refresh their logics as well.
                     // otherwise find a mineral patch to harvest.
                     if ( !u->isCarryingGas() && !u->isCarryingMinerals() )
                     {
                         // Idle worker then Harvest from the nearest mineral patch or gas refinery, depending on need.
-
                         bool enough_gas = !gas_starved ||
-                            (Count_Units( UnitTypes::Zerg_Extractor ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
-                            gas_workers >= 3 * Count_Units( UnitTypes::Zerg_Extractor );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+                            (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
+                            inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 
-                        bool excess_minerals = min_workers >= 1.75 * min_fields; //Some extra leeway over the optimal 1.5/patch, since they will be useless overgathering gas but not useless overgathering minerals.
+                        bool excess_minerals = inventory.min_workers_ >= 1 * inventory.min_fields_; //Some extra leeway over the optimal 1.5/patch, since they will be useless overgathering gas but not useless overgathering minerals.
 
-                        if ( !enough_gas && !excess_minerals) // both cases are critical
+                        if ( !enough_gas /*&& excess_minerals*/ ) // Careful tinkering here.
                         {
-                            Unit ref = u->getClosestUnit( IsRefinery && IsOwned, 250 );
+                            Unit ref = u->getClosestUnit( IsRefinery && IsOwned );
                             if ( ref && ref->exists() ) {
-                                u->gather( ref );
-                                ++(*gas_workers_ptr);
+                                Worker_Gas( u );
+                                ++inventory.gas_workers_;
                             }
                         } // closure gas
                         else if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
                         {
                             Worker_Mine( u );
-                            ++(*min_workers_ptr);
+                            ++inventory.min_fields_;
                         }
+
                     } // closure: collection assignment.
                     else if ( u->isCarryingMinerals() || u->isCarryingGas() ) // Return $$$
                     {
@@ -525,158 +467,284 @@ void MeatAIModule::onFrame()
                         u->returnCargo( true );
                     }//Closure: returning $$ loop
                 }// Closure: mining loop
-            // Building subloop. Resets every few frames.
-                if ( (isIdleEmpty( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) &&
-                    t_build + 50 < Broodwar->getFrameCount() )
+
+// Building subloop. Resets every few frames.
+                if ( (isIdleEmpty( u ) /*|| IsGatheringMinerals( u ) || IsGatheringGas( u )*/) )
                 { //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
 
-                    t_build = Broodwar->getFrameCount();
-
-                    //Expo loop, whenever you can.
-                    Expo( u );
-                    //Gas Buildings
-                    Check_N_Build( UnitTypes::Zerg_Extractor, u, gas_workers >= 2 * Count_Units( UnitTypes::Zerg_Extractor ) &&
-                        gas_starved && Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
-
-                    //Basic Buildings
-                    Check_N_Build( UnitTypes::Zerg_Spawning_Pool, u, !econ_starved &&
-                        Count_Units( UnitTypes::Zerg_Spawning_Pool ) == 0 );
-
-                    //Tech Buildings
-
-                    Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, u, tech_starved &&
-                        Count_Units( UnitTypes::Zerg_Evolution_Chamber ) < 2 && // This has resolved our issues with 4x evo chambers
-                        Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 );
-
-                    Check_N_Build( UnitTypes::Zerg_Hydralisk_Den, u, tech_starved &&
-                        Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 &&
-                        Count_Units( UnitTypes::Zerg_Hydralisk_Den ) == 0 );
-
-                    Check_N_Build( UnitTypes::Zerg_Spire, u, tech_starved &&
-                        Count_Units( UnitTypes::Zerg_Spire ) == 0 &&
-                        Count_Units( UnitTypes::Zerg_Lair ) >= 0 );
-
-                    Check_N_Build( UnitTypes::Zerg_Queens_Nest, u, tech_starved &&
-                        Count_Units( UnitTypes::Zerg_Queens_Nest ) == 0 &&
-                        Count_Units( UnitTypes::Zerg_Lair ) >= 0 &&
-                        Count_Units( UnitTypes::Zerg_Spire ) >= 0 );  // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
-
-                    Check_N_Build( UnitTypes::Zerg_Ultralisk_Cavern, u, tech_starved &&
-                        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern ) == 0 &&
-                        Count_Units( UnitTypes::Zerg_Hive ) >= 0 );
-
-                    //Combat Buildings
-                    Check_N_Build( UnitTypes::Zerg_Creep_Colony, u, army_starved &&  // army starved.
-                        Count_Units( UnitTypes::Zerg_Creep_Colony ) == 0 && // no creep colonies waiting to upgrade
-                        ((Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 && Count_Units( UnitTypes::Zerg_Spawning_Pool ) > Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool )) ||
-                        (Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > 0 && Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Evolution_Chamber ))) && // And there is a building complete that will allow either creep colony upgrade.
-                        hatches * 3 > Count_Units( UnitTypes::Zerg_Sunken_Colony ) &&  // and you're not flooded with sunkens. Spores could be ok if you need AA.
-                        min_fields > 10 ); // and don't build them if you're on one base.
-
-                    //knee-jerk emergency.
-                    //Check_N_Build( UnitTypes::Zerg_Hatchery, u, !econ_starved && larve < hatches); // Macro Hatches, as needed. Don't macro hatch if you are trying to expand/need $$, or are floating larvae.
+                    //t_build = Broodwar->getFrameCount();
+                    Building_Begin( u, inventory, enemy_inventory );
 
                 } // Close Build loop
             } // Close Worker management loop
-
-            //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
-            if (u_type != UnitTypes::Zerg_Larva &&
-                u->canMove() ) 
-            {
-                Unit e = u->getClosestUnit( IsEnemy ); //Consider combat when there is at least a single enemy.
-                Unit n = u->getClosestUnit( IsNeutral, 25); // check for disruption web or dark swarm. They are neutral units.
-                if ( e && e->exists() && 
-                        u->canMove() &&
-                        ( Futile_Fight(u,e) || (army_starved && !Futile_Fight(e,u)) || u->getType()==UnitTypes::Zerg_Mutalisk && !Futile_Fight( e, u ) ) // if we cannot win OR they can resist at all, then run. Mutas run if they face ANY resistance.
-                    )
-                { // Needs there to be an enemy we can't deal with. If so, run.
-                    Retreat_Logic( u, e, Colors::White );
-                }  else if ( n && n->exists() && n->getType().isSpell() &&
-                    u->canMove() )
-                { // We should run from disruption web or dark swarm (DS from either side, might I add.)
-                    Retreat_Logic( u, n, Colors::Black );
-                }  else if ( e && e->exists() && e->isDetected() &&
-                     ( (!army_starved && u_type != UnitTypes::Zerg_Drone) || (u_type == UnitTypes::Zerg_Drone && army_count < 100 && u->getDistance( e ) < 50 ) ) &&  // consider "pulling the boys" if situation is dire.
-                    Can_Fight(u,e) && u_type != UnitTypes::Zerg_Overlord ) 
-                {
-                    Combat_Logic( u, Colors::Orange );
-                }
-            }
-
-            // Detectors are called for cloaked units. 
-            if ( u->getType().isDetector() ) {
-                Unit c = u->getClosestUnit( Filter::IsEnemy && (Filter::IsCloakable || Filter::IsBurrowed || Filter::IsCloaked) ); //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
-                if ( c  && c->exists() && !army_starved ) {
-                    Position pos_c = c->getPosition();
-                    Unit d = c->getClosestUnit( IsDetector && CanMove && IsOwned );
-                    if ( d && d->exists() ) {
-                        d->move( pos_c );
-                        Broodwar->drawCircleMap( pos_c, 25, Colors::Cyan );
-                        Diagnostic_Line( d->getPosition(), pos_c, Colors::Cyan );
-                    }
-                }
-            }
+            auto end_worker = std::chrono::high_resolution_clock::now();
 
             //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
-            if ( isIdleEmpty( u ) && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && u->canMove() )
+            auto start_scout = std::chrono::high_resolution_clock::now();
+            if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
             { //Scout if you're not a drone or larva and can move.
-                if ( (vision_starved || u_type == UnitTypes::Zerg_Overlord) && isIdleEmpty( u ) ) {
-                    Brownian_Stutter( u, 2 );
+                Boids boids;
+                if ( u->getType() == UnitTypes::Zerg_Overlord ) {
+                    boids.Boids_Movement( u, 2, friendly_inventory, enemy_inventory, inventory ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
                 }
-                else if ( u_type != UnitTypes::Zerg_Overlord ) {
-                    Brownian_Stutter( u, 0 );
+                else {
+                    boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory );
                 }
             } // If it is a combat unit, then use it to attack the enemy.
-            //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
-            if ( u_type == UnitTypes::Zerg_Creep_Colony && army_starved &&
-                ( Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 || Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > 0) ) {
+            auto end_scout = std::chrono::high_resolution_clock::now();
 
-                if ( Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > 0 ) {
-                    Unit e_flying = u->getClosestUnit( IsFlying && IsEnemy && CanAttack );
-                    if ( e_flying && e_flying->exists() ) { // if they have a flyer (that can attack), get spores.
-                        Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, true );
+            //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
+            auto start_combat = std::chrono::high_resolution_clock::now();
+            if ( u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack() )
+            {
+                Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), 1024 ); //automatically populates with stock values from cache calculated Onframe, don't need to recalculate them.
+                if ( !enemy_loc.unit_inventory_.empty() ) { // if there are bad guys nearby, continue search for friends nearby.
+                    Boids boids;
+                    if ( army_derivative != 0 || u->getType() == UnitTypes::Zerg_Drone) { //In normal, non-massive army scenarioes...
+
+                        Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, u->getPosition(), enemy_loc.max_range_ );
+
+                        if ( !friend_loc.unit_inventory_.empty() ) { // if there is enemy and you exist (implied by friends).
+
+                            friend_loc.updateUnitInventorySummary();
+                            enemy_loc.updateUnitInventorySummary();
+
+                            int enemy_stock_loc = enemy_loc.stock_fliers_ + enemy_loc.stock_ground_units_; //Consider combat when there is at least a single enemy within a hefty range.
+
+                            //Tally up crucial details about enemy. 
+                            int e_count = enemy_loc.unit_inventory_.size();
+
+                            int helpless_e = u->isFlying() ? enemy_loc.stock_cannot_shoot_up_ : enemy_loc.stock_cannot_shoot_down_ ;
+                            int helpful_e = u->isFlying() ? enemy_loc.stock_cannot_shoot_down_ : enemy_loc.stock_cannot_shoot_up_;
+                            //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
+                            int helpful_u = 0; // filled below.
+
+                            if ( enemy_inventory.stock_fliers_ > 0 ) {
+                                helpful_u += Stock_Units_ShootUp( friend_loc ); // double-counts hydras.
+                            } 
+                            if ( enemy_inventory.stock_ground_units_ > 0 ) {
+                                helpful_u += Stock_Units_ShootDown( friend_loc );
+                            }
+
+                            //if ( u->getType().airWeapon() != WeaponTypes::None ) {
+                            //    helpless_u += Stock_Units_ShootDown( friend_loc );
+                            //}
+                            //if ( u->getType().groundWeapon() != WeaponTypes::None ) {
+                            //    helpless_u += enemy_loc.stock_ground_units_;
+                            //}
+
+                            int friend_stock_loc = helpful_u ; // Assess your comparative value.
+
+                            int f_drone = 0;
+
+                            int dist = enemy_loc.max_range_;
+
+                            Unit e_closest = u->getClosestUnit( IsEnemy, dist ); // Defining this unit to be closest enemy below.
+
+                            for ( auto e = enemy_loc.unit_inventory_.begin(); e != enemy_loc.unit_inventory_.end(); e++ ) { // trims the set for each attackable enemy. We move towards the center of these units
+                                if ( u->getDistance( (*e).second.pos_ ) <= dist ) {
+                                    e_closest = (*e).second.bwapi_unit_;
+                                    dist = u->getDistance( (*e).second.pos_ );
+                                }
+                            }
+
+                            for ( auto f = friend_loc.unit_inventory_.begin(); f != friend_loc.unit_inventory_.end(); f++ ) { // trims the set for each attackable enemy. We move towards the center of these units
+                                if ( (*f).second.type_ == UnitTypes::Zerg_Drone ) {
+                                    f_drone++;
+                                }
+                            }
+
+                            if ( e_closest && e_closest->exists() ) {
+
+                                bool retreat = u->canMove() && ( // one of the following conditions are true:
+                                    army_starved || // Run if you are missing troops.
+                                    //helpful_u == 0 || // Run if you contribute nothing.
+                                    !e_closest->isDetected() || // Run if they are cloaked.
+                                    helpful_e > 1.25 * helpful_u || // Run if they have local advantage on you
+                                    u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated() || // Run if spelled.
+                                    ( u->getType().isFlyer() && helpful_e > 0.25 * friend_loc.stock_fliers_ ) || //  Run if fliers face more than token resistance.
+                                    ( u->getHitPoints() < 0.25 * u->getType().maxHitPoints() && u->isFlying() ) || // Run if you are crippled and fly
+                                    //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting.
+                                    ( u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints() ) ) // Run if drone and (we have forces elsewhere or the drone is injured).
+                                    );
+
+                                bool force_attack = (f_drone > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
+                                    u->isInWeaponRange( e_closest ) && u->getType().airWeapon().maxRange() == 0 && u->getType().groundWeapon().maxRange() == 0; // don't run if they're in range and you're melee.
+
+                                bool sufficient_attack = helpful_e < 0.75 * helpful_u || // Don't run if you outclass them and your boys are ready to fight.
+                                    inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ); // you have a global advantage.
+
+                                if ( sufficient_attack || !(retreat && !force_attack) ) {
+
+                                    boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+
+                                    if ( _ANALYSIS_MODE ) {
+                                        if ( isOnScreen( u->getPosition() ) ) {
+                                            Broodwar->drawTextMap( u->getPosition().x, u->getPosition().y, "%d", friend_stock_loc, Colors::Green );
+                                        }
+                                        if ( isOnScreen( enemy_loc.getMeanLocation() ) ) {
+                                            Broodwar->drawTextMap( enemy_loc.getMeanLocation().x, enemy_loc.getMeanLocation().y, "%d", enemy_loc.stock_ground_units_ + enemy_loc.stock_fliers_, Colors::Red );
+                                        }
+                                    }
+                                }
+                                else  {
+                                    boids.Retreat_Logic( u, e_closest, friendly_inventory, inventory, Colors::White );
+                                }
+                            }
+                        } // close local examination.
+                    }
+                    else { // who cares what they have if the override is triggered?
+                        boids.Tactical_Logic( u, enemy_set_all, Colors::Orange ); // enemy inventory?
+                        //if ( _ANALYSIS_MODE ) {
+                        //    Broodwar->drawTextMap( enemies_loc.getPosition().x, enemies_loc.getPosition().y, "%d", enemy_loc.stock_ground_units_ + enemy_loc.stock_fliers_, Colors::Red ); // this is improperly placed, but still useful.
+                        //}
+                    }
+                }
+            }
+            auto end_combat = std::chrono::high_resolution_clock::now();
+
+//Upgrade loop:
+            auto start_upgrade = std::chrono::high_resolution_clock::now();
+            if ( isIdleEmpty( u ) && !u->canAttack() && u->getType() != UnitTypes::Zerg_Larva && // no trying to morph hydras anymore.
+                (u->canUpgrade() || u->canResearch() || u->canMorph())  ) { // this will need to be revaluated once I buy units that cost gas.
+
+                Tech_Begin( u , friendly_inventory);
+
+                //PrintError_Unit( u );
+            }
+            auto end_upgrade = std::chrono::high_resolution_clock::now();
+
+//Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
+            auto start_creepcolony = std::chrono::high_resolution_clock::now();
+            if (  u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved &&
+                ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0) ) {
+
+                //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+                int fliers = 0;
+                int cannot_shoot_up = 0;
+                int high_ground = 0;
+                int e_count = 0;
+
+                for ( auto e_iter = enemy_inventory.unit_inventory_.begin(); e_iter != enemy_inventory.unit_inventory_.end(); e_iter++ ) {
+                    if ( e_iter->second.type_.isFlyer() ) {
+                        fliers++;
+                    }
+                    if ( e_iter->second.type_.airWeapon() == WeaponTypes::None ) {
+                        cannot_shoot_up++;
+                    }
+                    Region r = Broodwar->getRegionAt( e_iter->second.pos_ );
+                    if ( e_iter->second.valid_pos_ ) {
+                        if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
+                            high_ground++;
+                        }
+                    }
+                    e_count++;
+                } // get closest enemy unit in inventory.
+
+                if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 &&
+                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 ) {
+                    if ( fliers > 0.15 * e_count ) { // if they have a flyer (that can attack), get spores.
+                        Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
                     }
                     else {
-                        Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, true );
+                        Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                     }
-                } // build one of the two colonies at random if you have both prequisites
-
-                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool ) > 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber ) == 0 ) {
-                    Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, true );
+                } // build one of the two colonies based on the presence of closest units.
+                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 &&
+                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 0 ) {
+                    Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                 } // build sunkens if you only have that
-                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool ) == 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber ) > 0 ) {
-                    Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, true );
+                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 &&
+                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 ) {
+                    Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
                 } // build spores if you only have that.
             } // closure: Creep colony loop
+            auto end_creepcolony = std::chrono::high_resolution_clock::now();
 
+            larva_time += end_larva - start_larva;
+            worker_time += end_worker - start_worker;
+            scout_time += end_scout - start_scout;
+            combat_time += end_combat - start_combat;
+            upgrade_time += end_upgrade - start_upgrade;
+            creepcolony_time += end_creepcolony - start_creepcolony;
         } // closure: unit iterator
 
+        // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.
+        auto start_detector = std::chrono::high_resolution_clock::now();
+            Position c; // holder for cloaked unit position.
+            bool sentinel_value = false;
+            if ( !army_starved && !supply_starved ) {
+                for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++ ) {
+                    if ( (*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable() ) {
+                        c = (*e).second.pos_; // then we have to send in some vision.
+                        sentinel_value = true;
+                    } //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
+                }
+                if ( sentinel_value ) {
+                    int dist = 999999;
+                    int dist_temp = 0;
+                    bool detector_found = false;
+                    Unit detector_of_choice;
+                    for ( auto d = Broodwar->self()->getUnits().begin(); d != Broodwar->self()->getUnits().end(); d++ ) {
+                        if ( (*d)->getType() == UnitTypes::Zerg_Overlord && !(*d)->isUnderAttack() && (*d)->getHitPoints() > 0.25 * (*d)->getInitialHitPoints() ) {
+                            dist_temp = (*d)->getDistance( c );
+                            if ( dist_temp < dist ) {
+                                dist = dist_temp;
+                                detector_of_choice = (*d);
+                                detector_found = true;
+                            }
+                        }
+                    }
+                    if ( detector_found ) {
+                        detector_of_choice->move( c );
+                        if ( _ANALYSIS_MODE ) {
+                            Broodwar->drawCircleMap( c, 25, Colors::Cyan );
+                            Diagnostic_Line( detector_of_choice->getPosition(), c, Colors::Cyan );
+                        }
+                    }
+                }
+            }
+        auto end_detector = std::chrono::high_resolution_clock::now();
+
+        detector_time += end_detector - start_detector;
+
         auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> diff = end - start;
+        total_frame_time = end - start_preamble;
+        preamble_time;
+        larva_time;
+        worker_time;
+        scout_time;
+        combat_time;
+        detector_time;
+        upgrade_time;
+        creepcolony_time;
+        total_frame_time; //will use preamble start time.
 
         //Clock App
-            if ( diff.count() > 55 ) {
-                (*short_delay_ptr)+=1;
+            if ( total_frame_time.count() > 55 ) {
+                short_delay+=1;
             }
-            if ( diff.count() > 1000 ) {
-                (*med_delay_ptr)+=1;
+            if ( total_frame_time.count() > 1000 ) {
+                med_delay+=1;
             }
-            if ( diff.count() > 10000 ) {
-                (*long_delay_ptr)+=1;
+            if ( total_frame_time.count() > 10000 ) {
+                long_delay+=1;
             }
-        if ( diagnostic_mode ) {
-            Broodwar->drawTextScreen( 375 , 70 ,"Delays:{ S:%d<=320, M:%d<=10, L:%d<1 } Timer: %3.fms", short_delay, med_delay, long_delay, diff.count() );
-        }
-        if ( (short_delay > 320 || Broodwar->elapsedTime() > 90 * 60) && diagnostic_mode == true) //if game times out or lags out, end game with resignation.
-        {
-            Broodwar->leaveGame();
-        }
-    } catch ( const std::exception &e ) {
-        Broodwar << "EXCEPTION: " << e.what() << std::endl;
-    }
+            if ( _ANALYSIS_MODE ) {
+                Broodwar->drawTextScreen( 500, 70, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count() ); // Flickers. Annoying.
+                Broodwar->drawTextScreen( 500, 80, "Preamble:%3.f %%", preamble_time.count()/ total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 90, "Larva:%3.f %%", larva_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 100, "Workers:%3.f %%", worker_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 110, "Scouting:%3.f %%", scout_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 120, "Combat:%3.f %%", combat_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 130, "Detection:%3.f %%", detector_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 140, "Upgrades:%3.f %%", upgrade_time / total_frame_time.count() * 100 );
+                Broodwar->drawTextScreen( 500, 150, "CreepColonies:%3.f %%", creepcolony_time / total_frame_time.count() * 100 );
+                if ( (short_delay > 320 || Broodwar->elapsedTime() > 90 * 60) && _ANALYSIS_MODE == true ) //if game times out or lags out, end game with resignation.
+                {
+                    Broodwar->leaveGame();
+                }
+            }
 
 } // closure: Onframe
 
@@ -724,19 +792,53 @@ void MeatAIModule::onNukeDetect( BWAPI::Position target )
 
 void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 {
+    if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
+        //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+        Stored_Unit eu = Stored_Unit( unit );
 
+        if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+            //Broodwar->sendText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+        }
+        else { // the insertion must have failed
+            //Broodwar->sendText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
+        }
+    }
 }
 
 void MeatAIModule::onUnitEvade( BWAPI::Unit unit )
 {
+    //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
+    //                                                                //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+    //    Stored_Unit eu = Stored_Unit( unit );
+
+    //    if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+    //        Broodwar->sendText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //    }
+    //    else { // the insertion must have failed
+    //        Broodwar->sendText( "Insertion of %s failed.", eu.type_.c_str() );
+    //    }
+    //}
 }
 
 void MeatAIModule::onUnitShow( BWAPI::Unit unit )
 {
+    //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
+    //    Stored_Unit eu = Stored_Unit( unit );
+    //    auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
+    //    if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
+    //        enemy_inventory.unit_inventory_.erase( unit );
+    //        Broodwar->sendText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //    }
+    //    else {
+    //        Broodwar->sendText( "Discovered a %s.", unit->getType().c_str() );
+    //    }
+    //}
 }
 
 void MeatAIModule::onUnitHide( BWAPI::Unit unit )
 {
+
+
 }
 
 void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
@@ -756,6 +858,17 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
 
 void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
 {
+    if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
+        Stored_Unit eu = Stored_Unit( unit );
+        auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
+        if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
+            enemy_inventory.unit_inventory_.erase( unit );
+            //Broodwar->sendText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+        }
+        else {
+            //Broodwar->sendText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
+        }
+    }
 }
 
 void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
@@ -772,6 +885,9 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
             Broodwar->sendText( "%.2d:%.2d: %s morphs a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
         }
     }
+
+    buildorder.updateRemainingBuildOrder( unit );
+
 }
 
 void MeatAIModule::onUnitRenegade( BWAPI::Unit unit )

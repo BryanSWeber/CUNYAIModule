@@ -91,15 +91,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Assembly.cpp" />
-    <ClCompile Include="HistoryRead.cpp" />
-    <ClCompile Include="Mining.cpp" />
+    <ClCompile Include="AssemblyManager.cpp" />
+    <ClCompile Include="CobbDouglas.cpp" />
+    <ClCompile Include="Unit_Inventory.cpp" />
+    <ClCompile Include="GeneticHistoryManager.cpp" />
+    <ClCompile Include="InventoryManager.cpp" />
+    <ClCompile Include="TechManager.cpp" />
+    <ClCompile Include="VisionManager.cpp" />
+    <ClCompile Include="MiningManager.cpp" />
     <ClCompile Include="Utilities.cpp" />
-    <ClCompile Include="Movement.cpp" />
+    <ClCompile Include="Fight_MovementManager.cpp" />
     <ClCompile Include="Source\Dll.cpp" />
     <ClCompile Include="Source\MeatAIModule.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\AssemblyManager.h" />
+    <ClInclude Include="Source\CobbDouglas.h" />
+    <ClInclude Include="Source\Fight_MovementManager.h" />
+    <ClInclude Include="Source\Unit_Inventory.h" />
+    <ClInclude Include="Source\GeneticHistoryManager.h" />
+    <ClInclude Include="Source\InventoryManager.h" />
     <ClInclude Include="Source\MeatAIModule.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
