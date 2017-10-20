@@ -331,6 +331,25 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
     return return_unit;
 }
 
+//Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
+Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
+	int min_dist = dist;
+	double temp_dist = 999999;
+	Stored_Resource *return_unit = nullptr;
+
+	if (!ri.resource_inventory_.empty()) {
+		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+			temp_dist = (*r).second.pos_.getDistance(origin);
+			if (temp_dist <= min_dist) {
+				min_dist = temp_dist;
+				return_unit = &(r->second);
+			}
+		}
+	}
+
+	return return_unit;
+}
+
 //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
 Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
@@ -397,6 +416,17 @@ Unit_Inventory MeatAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 		}
 	}
 	return ui_out;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
+	Resource_Inventory ri_out;
+	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+		if ((*r).second.pos_.getDistance(origin) <= dist) {
+			ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
+		}
+	}
+	return ri_out;
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.

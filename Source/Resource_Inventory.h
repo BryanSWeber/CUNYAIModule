@@ -15,9 +15,14 @@ struct Stored_Resource{
 
 	int current_stock_value_;
 	int number_of_miners_;
+
 	bool occupied_natural_;
 	bool full_resource_;
 	bool valid_pos_;
+
+	std::map <Unit, Stored_Unit> miner_inventory_;
+	void addMiner(Unit miner);
+	void addMiner(Stored_Unit miner);
 
 	Position local_natural_;
 	Unit bwapi_unit_;
@@ -29,7 +34,7 @@ struct Stored_Resource{
 struct Resource_Inventory {
 
 	//Creates an instance of the Resource inventory class.
-	Resource_Inventory();
+	Resource_Inventory(); // for blank construction.
 	Resource_Inventory(const Unitset &unit_set);
 
 	//what about their upgrades?

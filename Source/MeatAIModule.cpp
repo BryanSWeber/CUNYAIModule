@@ -125,7 +125,7 @@ void MeatAIModule::onStart()
 	win_rate = (1 - gene_history.loss_rate_);
 
 	//update local resources
-	Resource_Inventory neutral_resources;
+	Resource_Inventory neutral_resources; // for first initialization.
 
     //update Map Grids
     inventory.updateBuildablePos();
@@ -250,6 +250,19 @@ void MeatAIModule::onFrame()
 				r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
 				r->second.valid_pos_ = true;
 				r->second.type_ = r->second.bwapi_unit_->getType();
+				if (r->second.type_.isMineralField()){
+
+					r->second.number_of_miners_ = 0;
+					for (auto m = r->second.miner_inventory_.begin(); m != r->second.miner_inventory_.end() && !r->second.miner_inventory_.empty(); m++){
+						if (friendly_inventory.unit_inventory_[m->first].bwapi_unit_ && friendly_inventory.unit_inventory_[m->first].bwapi_unit_->exists() && friendly_inventory.unit_inventory_[m->first].type_.isWorker() ){
+							r->second.number_of_miners_++;
+						} //iterate through miners and confirm that they are still active.
+					}
+
+					r->second.full_resource_ = r->second.number_of_miners_ >= 2;
+				}
+
+
 				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, Filter::IsResourceDepot).empty()); // is there a resource depot in 250 of it?
 			}
 
@@ -401,6 +414,7 @@ void MeatAIModule::onFrame()
 				if (isOnScreen(p->second.pos_)) {
 					Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
 					Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_ ) ; // Plot their current value.
+					Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
                 }
             }
 
@@ -555,7 +569,7 @@ void MeatAIModule::onFrame()
                         } // closure gas
                         else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
                         {
-                            Worker_Mine( u );
+                            Worker_Mine( u , neutral_inventory);
                             ++inventory.min_fields_;
                         }
 

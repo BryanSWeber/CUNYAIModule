@@ -90,7 +90,7 @@ public:
       //Forces selected unit (drone, hopefully!) to expo:
       void Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit );
+      void Worker_Mine( const Unit &unit , Resource_Inventory &ri);
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gas( const Unit &unit );
       // Checks if there is a way to spend gas.
@@ -132,8 +132,10 @@ public:
       const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
-      //Gets pointer to closest unit to origin in Unit_inventory. Checks range. Careful about visiblity.
+      //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
+	  Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist );
+
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
       //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -141,6 +143,7 @@ public:
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
+	  static Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
 	  //Overload. Searches for units of a specific type. 
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.

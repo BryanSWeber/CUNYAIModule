@@ -6,22 +6,22 @@
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
-
 Resource_Inventory::Resource_Inventory(){
 	// Updates the static locations of minerals and gas on the map. Should only be called on game start.
-	Unitset min = Broodwar->getStaticMinerals();
-	Unitset geysers = Broodwar->getStaticGeysers();
+	if (Broodwar->getFrameCount() == 0){
+		Unitset min = Broodwar->getStaticMinerals();
+		Unitset geysers = Broodwar->getStaticGeysers();
 
-	for (auto m = min.begin(); m != min.end(); ++m) {
-		if ((*m)->getInitialResources() > 8){
-			this->addStored_Resource(*m);
+		for (auto m = min.begin(); m != min.end(); ++m) {
+			if ((*m)->getInitialResources() > 8){
+				this->addStored_Resource(*m);
+			}
+		}
+		for (auto g = geysers.begin(); g != geysers.end(); ++g) {
+			this->addStored_Resource(*g);
 		}
 	}
-	for (auto g = geysers.begin(); g != geysers.end(); ++g) {
-		this->addStored_Resource(*g);
-	}
 }
-
 
 Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
 
@@ -30,6 +30,7 @@ Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
 	}
 
 }
+
 
 // Updates the count of enemy units.
 void Resource_Inventory::addStored_Resource(Unit resource) {
@@ -83,5 +84,17 @@ Stored_Resource::Stored_Resource(Unit resource) {
     bwapi_unit_ = resource;
 	type_ = resource->getType();
 	pos_ = resource->getPosition();
+}
+void Stored_Resource::addMiner(Unit miner) {
+
+	if (miner && miner->exists()){
+		miner_inventory_.insert({ miner, Stored_Unit(miner) });
+	}
+}
+void Stored_Resource::addMiner(Stored_Unit miner) {
+
+	if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
+		miner_inventory_.insert({ miner.bwapi_unit_, miner });
+	}
 }
 

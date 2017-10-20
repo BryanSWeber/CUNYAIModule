@@ -52,24 +52,39 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 }
 
 //Sends a worker to mine minerals.
-void MeatAIModule::Worker_Mine( const Unit &unit ) {
+void MeatAIModule::Worker_Mine( const Unit &unit, Resource_Inventory &ri ) {
 
     if ( isIdleEmpty( unit ) ) {
-        Unit anchor_min = unit->getClosestUnit( IsMineralField );
-        if ( anchor_min && anchor_min->exists() ) {
-            unit->gather( anchor_min ); // if you are idle, get to work.
-        }
+		Resource_Inventory local_sat = getResourceInventoryInRadius(ri, unit->getPosition(), 250);
+		for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
+			if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+				unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
+				ri.resource_inventory_[r->first].number_of_miners_++;
+				ri.resource_inventory_[r->first].addMiner(unit);
+				break;
+			}
+		}
     } // stopgap command.
 
     Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
 
     if ( local_base && local_base->exists() ) {
 
-            Unitset local_sat = local_base->getUnitsInRadius( 250, IsWorker && (IsGatheringMinerals || IsCarryingMinerals) );
-            Unitset local_min = local_base->getUnitsInRadius( 250, IsMineralField );
+            Resource_Inventory local_sat = getResourceInventoryInRadius(ri, local_base->getPosition(), 250);
+			if (isOnScreen(local_base->getPosition())){
+				Broodwar->drawCircleMap(local_base->getPosition(), 250, Colors::Green);
+			}
+			bool fully_saturated = true;
+			for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
+				if (!r->second.full_resource_){
+					fully_saturated = false;
+					break;
+				}
+			}
+
             int local_dist = unit->getDistance( local_base );
 
-            bool acceptable_local = local_dist < 500 && (int)local_sat.size() < (int)local_min.size() * 1.75; // if local conditions are fine (and you are working), continue, no commands.
+            bool acceptable_local = local_dist < 500 && !fully_saturated; // if local conditions are fine (and you are working), continue, no commands.
 
             if ( !acceptable_local && rand() % 100 + 1 < 25 ) { // if local conditions are bad, we will consider tranfering 25% of these workers elsewhere.
                 Unitset bases = unit->getUnitsInRadius( 999999, IsResourceDepot && IsOwned );
@@ -85,10 +100,15 @@ void MeatAIModule::Worker_Mine( const Unit &unit ) {
 
                         if ( dist > 750 && dist < nearest_dist && acceptable_foreign) {
                             nearest_dist = dist; // transfer to the nearest undersaturated base.
-                                Unit anchor_min = (*base)->getClosestUnit( IsMineralField );
-                                if ( anchor_min && anchor_min->exists() ) {
-                                    unit->gather( anchor_min );
-                                }// closure act of transferring drones themselves.
+							Resource_Inventory local_sat = getResourceInventoryInRadius(ri, (*base)->getPosition(), 250);
+							for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
+								if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+									unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
+									ri.resource_inventory_[r->first].number_of_miners_++; // this seems dangerous
+									ri.resource_inventory_[r->first].addMiner(unit);
+									break;
+								}
+							}
                         } // closure for base being a canidate for transfer.
                     } // closure for base existance.
                 } // iterate through all possible bases
