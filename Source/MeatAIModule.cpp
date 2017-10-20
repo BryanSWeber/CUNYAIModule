@@ -124,13 +124,15 @@ void MeatAIModule::onStart()
     alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
 	win_rate = (1 - gene_history.loss_rate_);
 
-    //update Map Knowledge
-    inventory.updateMineralPos();
+	//update local resources
+	Resource_Inventory neutral_resources;
+
+    //update Map Grids
     inventory.updateBuildablePos();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
     //inventory.updateMapChokes();
-    inventory.updateBaseLoc();
+    inventory.updateBaseLoc(neutral_resources);
 
 	//update timers.
 	short_delay = 0;
@@ -240,16 +242,23 @@ void MeatAIModule::onFrame()
         }
 
         //Update posessed minerals. Erase those that are mined out.
-        for ( auto r = inventory.resource_positions_.begin(); r != inventory.resource_positions_.end() && !inventory.resource_positions_.empty(); ) {
-
-            TilePosition resource_pos = TilePosition(*r);
+		for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty();) {
+			TilePosition resource_pos = TilePosition(r->second.pos_);
             bool erasure_sentinel = false;
+
+			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists()){
+				r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
+				r->second.valid_pos_ = true;
+				r->second.type_ = r->second.bwapi_unit_->getType();
+				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, Filter::IsResourceDepot).empty()); // is there a resource depot in 250 of it?
+			}
+
 			if ( Broodwar->isVisible(resource_pos) ) {
                 Unitset resource_tile = Broodwar->getUnitsOnTile( resource_pos, IsMineralField || IsResourceContainer || IsRefinery );  // Confirm it is present.
                 if ( resource_tile.empty() ) {
-                    r = inventory.resource_positions_.erase( r ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+					r = neutral_inventory.resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
                     erasure_sentinel = true;
-                }
+				}
             }
 
             if ( !erasure_sentinel ) {
@@ -388,31 +397,30 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 500, 50, "FPS: %4.2f", Broodwar->getAverageFPS() );  // 
             Broodwar->drawTextScreen( 500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames() );  //
 
-            for ( vector<int>::size_type p = 0; p != inventory.resource_positions_.size() ; ++p){
-                if ( inventory.resource_positions_[p] ) {
-                    if ( isOnScreen( inventory.resource_positions_[p] ) ) {
-                        Broodwar->drawCircleMap( inventory.resource_positions_[p], (UnitTypes::Resource_Mineral_Field.dimensionUp() + UnitTypes::Resource_Mineral_Field.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
-                    }
+			for (auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p){
+				if (isOnScreen(p->second.pos_)) {
+					Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+					Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_ ) ; // Plot their current value.
                 }
             }
 
-            for ( vector<int>::size_type i = 0; i != inventory.buildable_positions_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j != inventory.buildable_positions_[i].size(); ++j ) {
-                    if ( inventory.buildable_positions_[i][j] == false ) {
-                        if ( isOnScreen( { (int)i * 32 + 16, (int)j * 32 + 16 } ) ) {
-                            Broodwar->drawCircleMap( i * 32 + 16, j * 32 + 16, 1, Colors::Yellow );
-                        }
-                    }
-                }
-            } // both of these structures are on the same tile system.
+            //for ( vector<int>::size_type i = 0; i != inventory.buildable_positions_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j != inventory.buildable_positions_[i].size(); ++j ) {
+            //        if ( inventory.buildable_positions_[i][j] == false ) {
+            //            if ( isOnScreen( { (int)i * 32 + 16, (int)j * 32 + 16 } ) ) {
+            //                Broodwar->drawCircleMap( i * 32 + 16, j * 32 + 16, 1, Colors::Yellow );
+            //            }
+            //        }
+            //    }
+            //} // both of these structures are on the same tile system.
 
-            for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-                    if ( inventory.base_values_[i][j] > 1 ) {
-                        Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-                    }
-                };
-            } // not that pretty to look at.
+            //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+            //        if ( inventory.base_values_[i][j] > 1 ) {
+            //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+            //        }
+            //    };
+            //} // not that pretty to look at.
 
             //for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
             //    for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {

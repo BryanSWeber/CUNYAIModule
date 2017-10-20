@@ -6,7 +6,7 @@
 
 
 //Unit_Inventory functions.
-//Creates an instance of the enemy inventory class.
+//Creates an instance of the unit inventory class.
 
 Unit_Inventory::Unit_Inventory(){}
 
@@ -18,7 +18,7 @@ Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-// Updates the count of enemy units.
+// Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
 };
@@ -28,22 +28,11 @@ void Unit_Inventory::addStored_Unit( Stored_Unit stored_unit ) {
 };
 
 
-//Removes enemy units that have died
+//Removes units that have died
 void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     unit_inventory_.erase( e_unit );
 };
 
-// Checks if we already have enemy unit. If so, we remove it and replace it with the updated version.
-void Unit_Inventory::updateStored_Unit( Unit e_unit ) {
-    auto key = unit_inventory_.find(e_unit);
-    //Did we find it? If so, let's update it.
-    if ( key == unit_inventory_.end() ) {
-        unit_inventory_.insert( { e_unit, Stored_Unit( e_unit ) } );
-    }
-    else {
-        unit_inventory_.erase( e_unit );
-    }
-}
 
  Position Unit_Inventory::getMeanLocation() const {
     int x_sum = 0;
@@ -97,7 +86,7 @@ void Unit_Inventory::updateStored_Unit( Unit e_unit ) {
          return out;
      }
      else {
-         return Position( 0, 0 );  // you're dead at this point, fyi.
+         return Position( 0, 0 );  // you might be dead at this point, fyi.
      }
 
  }

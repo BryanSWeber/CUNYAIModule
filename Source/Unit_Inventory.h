@@ -49,19 +49,16 @@ struct Unit_Inventory {
 	int worker_count_;
 	int volume_;
 
-    std::map <Unit, Stored_Unit> unit_inventory_;
+	std::map <Unit, Stored_Unit> unit_inventory_;
 
-    // Updates the count of enemy units.
+    // Updates the count of  units.
     void addStored_Unit( Unit unit );
     void addStored_Unit( Stored_Unit stored_unit );
 
-    //Removes enemy units
+    //Removes units
     void removeStored_Unit( Unit unit );
 
-    // Updates enemy units
-    void updateStored_Unit( Unit unit );
-
-    //Updates summary of enemy inventory, stored here.
+    //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
 
     Position getMeanLocation() const;

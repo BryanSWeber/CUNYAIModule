@@ -60,6 +60,7 @@ public:
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
+	Resource_Inventory neutral_inventory; // neutral resources.
 
     Inventory inventory;  // macro variables, not every unit I have.
     Building_Gene buildorder; //
