@@ -1,13 +1,20 @@
 #pragma once
 
-#include <BWAPI.h>
+#include <BWAPI.h> //4.2.0 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
 
 //#define _ANALYSIS_MODE true
-#define _ANALYSIS_MODE false
+//#define _COBB_DOUGLASS_REVEALED false
+//#define _RESIGN_MODE false
+//#define _AT_HOME_MODE false
+
+#define _RESIGN_MODE true
+#define _AT_HOME_MODE true
+#define _ANALYSIS_MODE true
+#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -91,6 +98,8 @@ public:
   // Utility Functions
       // Prints unit's last error directly onto it.
       void PrintError_Unit(Unit unit );
+	  // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
+	  bool isActiveWorker(Unit unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
       bool isIdleEmpty(Unit unit );
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
@@ -101,8 +110,15 @@ public:
       static bool Futile_Fight( Unit unit, Unit enemy );
       // Outlines the case where you can attack their type (air/ground/cloaked)
       static bool Can_Fight( Unit unit, Unit enemy );
+      static bool Can_Fight( Unit unit, Stored_Unit enemy );
+      static bool Can_Fight( Stored_Unit unit, Unit enemy );
+
       //checks if there is a smooth path to target. in minitiles
       static bool isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv );
+      //counts the number of tiles in a smooth path to target. in minitiles
+      static int getClearRayTraceSquares( const Position & initial, const Position & final, const Inventory & inv );
+      //gets the nearest choke by simple counting along in the direction of the final unit.
+      static Position getNearestChoke( const Position & initial, const Position &final, const Inventory & inv );
 
       // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
@@ -115,17 +131,31 @@ public:
       const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
+      //Gets pointer to closest unit to origin in Unit_inventory. Checks range. Careful about visiblity.
+      Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
+      //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
+      Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
+      //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
+      Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
-
+	  //Overload. Searches for units of a specific type. 
+	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
+      //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
+      static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      //Searches an inventory for buildings. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+      static bool checkBuildingOccupiedArea( const Unit_Inventory & ui, const Position & origin);
+      //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+      static bool checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist );
 
   // Utility functions that need to be accessed by any number of classes, ie. static declarations.
       // Counts the tally of a particular int a specific unit set. Includes those in production.
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
-
+	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
+	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.
@@ -146,7 +176,8 @@ public:
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos );
-
+	  // Returns the actual center of a unit.
+	  static Position MeatAIModule::getUnit_Center(Unit unit);
   // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);

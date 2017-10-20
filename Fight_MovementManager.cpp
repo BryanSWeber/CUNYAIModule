@@ -2,6 +2,7 @@
 
 # include "Source\MeatAIModule.h"
 # include "Source\Fight_MovementManager.h"
+# include <random> // C++ base random is low quality.
 
 
 using namespace BWAPI;
@@ -9,22 +10,27 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a boids manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, const Inventory &inventory ) {
+void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, const Inventory &inventory, const bool &army_starved ) {
 
     Position pos = unit->getPosition();
-    Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 1024 );
+    Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
+
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis( -1, 1 );
+
+    double rng_direction_ = dis( gen );
 
     setAlignment( unit, flock );
-    setCentralize( pos, inventory );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
-    setAttraction( unit, pos, ei );
+    setAttraction( unit, pos, ei, inventory, army_starved ); // does not apply to overlords.
 
-    // The following do NOT apply to flying units: Seperation, unwalkability.
-    if ( !unit->getType().isFlyer() ) {
+    // The following do NOT apply to flying units: Seperation, centralization.
+    if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
         Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 32 );
         setSeperation( unit, pos, neighbors );
-        setUnwalkability( unit, pos, inventory );
+        setCentralize( pos, inventory );
     } // closure: flyers
 
       //Make sure the end destination is one suitable for you.
@@ -32,7 +38,8 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 
     bool walkable_plus = brownian_pos.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-        (inventory.smoothed_barriers_[brownian_pos.x / 8][brownian_pos.y / 8] == 0)); //or is a relatively walkable position? 
+        (MeatAIModule::isClearRayTrace( pos, brownian_pos, inventory ) && //or does it cross an unwalkable position? 
+         MeatAIModule::checkOccupiedArea ( ui, brownian_pos, 32 ) ) ); // or does it end on a unit?
 
     if ( !walkable_plus ) { // if we can't move there for some reason, Push from unwalkability, tilted 1/4 pi, 45 degrees, we'll have to go around the obstruction.
         setObjectAvoid( unit, pos, inventory );
@@ -45,13 +52,13 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     else {
         unit->move( brownian_pos );
     }
-
-    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attune_dx_)       , (int)(pos.y + attune_dy_) }, Colors::Green );//Alignment
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black );//Stutter
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green );//Alignment
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, Colors::Blue ); // Centraliziation.
-    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + cohesion_dx_)     , (int)(pos.y + cohesion_dy_) }, Colors::Purple ); // Cohesion
-    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attract_dx_)      , (int)(pos.y + attract_dy_) }, Colors::Red ); //Attraction towards attackable enemies.
-    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x - seperation_dx_)   , (int)(pos.y - seperation_dy_) }, Colors::Orange ); // Seperation, does not apply to fliers.
-    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x - walkability_dx_)  , (int)(pos.y - walkability_dy_) }, Colors::Grey ); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, Colors::Purple ); // Cohesion
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, Colors::Red ); //Attraction towards attackable enemies.
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, Colors::Orange ); // Seperation, does not apply to fliers.
+    MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, Colors::Cyan ); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
 
 };
 
@@ -59,35 +66,43 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Color &color = Colors::White )
 {
     UnitType u_type = unit->getType();
-    Unit target;
+    Stored_Unit target;
     int priority = 0;
 
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis( -1, 1 );
+
+    rng_direction_ = dis( gen );
+
     int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
-    int dist = 32 + range_radius;
-    int max_dist = ei.max_range_/(int)ei.unit_inventory_.size();
+    int dist = range_radius + unit->getType().topSpeed() * 24;
+    double limit_units_diving = (log( ei.stock_total_ ) == 0 ? 1 : log( ei.stock_total_ ));
+    int max_dist = ei.max_range_/limit_units_diving + dist;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
-    bool target_sentinel_wimpy_atk = false;
-
+    bool target_sentinel_poor_target_atk = false;
+    bool visible_target_atk = false;
 
     for ( auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e ) {
         if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() ) {
             UnitType e_type = e->second.type_;
             int e_priority = 0;
 
-            if ( MeatAIModule::Can_Fight( unit, e->second.bwapi_unit_ ) ) { // if we can fight this enemy and there is a clear path to them:
-                int dist_to_enemy = unit->getDistance( e->second.bwapi_unit_ );
+            if ( MeatAIModule::Can_Fight( unit, e->second ) ) { // if we can fight this enemy and there is a clear path to them:
+                int dist_to_enemy = unit->getDistance( e->second.pos_ );
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
-                    e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second.bwapi_unit_, unit ) ||
+                    e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second, unit ) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
                 if ( critical_target ) {
                     e_priority = 3;
                 }
-                else if ( MeatAIModule::Can_Fight( e->second.bwapi_unit_, unit ) || e_type.spaceProvided() > 0 || e->second.bwapi_unit_->isAttacking() || (e_type.isSpellcaster() && !e_type.isBuilding()) || e->second.bwapi_unit_->isRepairing() || e_type == UnitTypes::Protoss_Carrier ) { // if they can fight us, carry troops, or cast spells.
+                else if ( MeatAIModule::Can_Fight( e->second, unit ) || e_type.spaceProvided() > 0 || (e_type.isSpellcaster() && !e_type.isBuilding()) || e_type == UnitTypes::Protoss_Carrier || 
+                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing()) ) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }
-                else if ( e->second.type_.mineralPrice() > 0 ) {
+				else if (e->second.type_.mineralPrice() > 1 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
                     e_priority = 1; // or if they cant fight back we'll get those last.
                 }
                 else {
@@ -96,71 +111,84 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
 
                 if ( (e_priority == priority && dist_to_enemy <= dist) || e_priority > priority && dist_to_enemy < max_dist ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
+                    visible_target_atk = true;
                     priority = e_priority;
                     dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
-                    target = e->second.bwapi_unit_;
+                    target = e->second;
                 }
                 else if ( !target_sentinel && dist_to_enemy >= max_dist && dist_to_enemy < max_dist_no_priority ) {
-                    target_sentinel_wimpy_atk = true;
+                    target_sentinel_poor_target_atk = true;
+                    visible_target_atk = true;
                     dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
-                    target = e->second.bwapi_unit_;
+                    target = e->second;
                 }
             }
         }
     }
 
-    if ( (target_sentinel || target_sentinel_wimpy_atk) && target && target->exists() ) {
-        unit->attack( target );
-        MeatAIModule::Diagnostic_Line( unit->getPosition(), target->getPosition(), color );
+    if ( (target_sentinel || target_sentinel_poor_target_atk) ) {
+        if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
+            unit->attack( target.bwapi_unit_ );
+        }
+        else {
+            unit->attack( target.pos_ );
+        }
+        MeatAIModule::Diagnostic_Line( unit->getPosition(), target.pos_, color );
     }
+
 }
 
 // Basic retreat logic, range = enemy range
-void Boids::Retreat_Logic( const Unit &unit, const Unit &enemy, const Unit_Inventory &ui, const Inventory &inventory, const Color &color = Colors::White ) {
+void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &ui, const Inventory &inventory, const Color &color = Colors::White ) {
 
-    int dist = unit->getDistance( enemy );
-    int air_range = enemy->getType().airWeapon().maxRange();
-    int ground_range = enemy->getType().groundWeapon().maxRange();
-    int range = air_range > ground_range ? air_range : ground_range;
-    if ( dist < range + 100 ) { //  Run if you're a noncombat unit or army starved. +100 for safety. Retreat function now accounts for walkability.
-
-        Position e_pos = enemy->getPosition();
+    int dist = unit->getDistance( e_unit.pos_ );
+    int air_range = e_unit.type_.airWeapon().maxRange();
+    int ground_range = e_unit.type_.groundWeapon().maxRange();
+	int chargable_distance_net = (unit->getType().topSpeed() + e_unit.type_.topSpeed()) * e_unit.type_.groundWeapon().damageCooldown();
+	int range = max(air_range, ground_range) + chargable_distance_net ;
+	if ( dist < range + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Position pos = unit->getPosition();
-        Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 1024 );
+        Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
 
-        Broodwar->drawCircleMap( e_pos, range, Colors::Red );
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
+        std::uniform_real_distribution<double> dis( -1, 1 );
+
+        rng_direction_ = dis( gen );
+
+        Broodwar->drawCircleMap( e_unit.pos_, range, Colors::Red );
 
         //initial retreat spot from enemy.
-        int dist_x = e_pos.x - pos.x;
-        int dist_y = e_pos.y - pos.y;
+        int dist_x = e_unit.pos_.x - pos.x;
+        int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
         double retreat_dx = -cos( theta ) * (2 * range - dist);
         double retreat_dy = -sin( theta ) * (2 * range - dist); // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
-        setCentralize( pos, inventory );
         setCohesion( unit, pos, ui );
 
-        // The following do NOT apply to flying units: Seperation, unwalkability.
-        if ( !unit->getType().isFlyer() ) {
+        // The following do NOT apply to flying units: Seperation.
+		if (!unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
             Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 32 );
             setSeperation( unit, pos, neighbors );
-            setUnwalkability( unit, pos, inventory );
+            setCentralize( pos, inventory );
         } // closure: flyers
 
 
           //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_) };
+        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_ + retreat_dy) }; //attract is zero when it's not set.
 
         bool walkable_plus = retreat_spot.isValid() &&
             (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-            (inventory.smoothed_barriers_[retreat_spot.x / 8][retreat_spot.y / 8] == 0)); //or is a relatively walkable position? 
+            (MeatAIModule::isClearRayTrace( pos, retreat_spot, inventory ) && //or does it cross an unwalkable position? 
+             MeatAIModule::checkOccupiedArea( ui, retreat_spot, 32 ) ) ); // or does it end on a unit?
 
         if ( !walkable_plus ) { // if we can't move there for some reason, Push from unwalkability, tilted 1/4 pi, 45 degrees, we'll have to go around the obstruction.
             setObjectAvoid( unit, pos, inventory );
-            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_) };
+            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_ + retreat_dy) };
             // redefine this to be a walkable one.
         }
 
@@ -168,18 +196,26 @@ void Boids::Retreat_Logic( const Unit &unit, const Unit &enemy, const Unit_Inven
             unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
             MeatAIModule::Diagnostic_Line( pos, retreat_spot, color );
         }
-    }
+	}
+	else if (unit->isAttacking() && !unit->isAttackFrame() ){
+		unit->stop();
+	}
 }
 
 
 //Brownian Stuttering, causes unit to move about randomly.
-void Boids::setStutter( const Unit &unit, int n ) {
-    x_stutter_ = n * (rand() % 101 - 50) / 50 * unit->getType().sightRange();
-    y_stutter_ = n * (rand() % 101 - 50) / 50 * unit->getType().sightRange();// The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
+void Boids::setStutter( const Unit &unit, const double &n ) {
+
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis( -1, 1 );
+
+    x_stutter_ = n * dis( gen ) * unit->getType().sightRange();
+    y_stutter_ = n * dis( gen ) * unit->getType().sightRange(); // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
-void Boids::setAlignment( Unit unit, Unit_Inventory ui ) {
+void Boids::setAlignment( const Unit &unit, const Unit_Inventory &ui ) {
     int temp_tot_x = 0;
     int temp_tot_y = 0;
 
@@ -187,30 +223,43 @@ void Boids::setAlignment( Unit unit, Unit_Inventory ui ) {
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i ) {
             if ( i->second.type_ != UnitTypes::Zerg_Drone && i->second.type_ != UnitTypes::Zerg_Overlord && i->second.type_ != UnitTypes::Buildings ) {
-                temp_tot_x += i->second.bwapi_unit_->getVelocityX() ; //get the horiz element.
-                temp_tot_y += i->second.bwapi_unit_->getVelocityY() ; // get the vertical element. Averaging angles was trickier than I thought. 
+                temp_tot_x += (int)i->second.bwapi_unit_->getVelocityX() ; //get the horiz element.
+                temp_tot_y += (int)i->second.bwapi_unit_->getVelocityY() ; // get the vertical element. Averaging angles was trickier than I thought. 
                 flock_count++;
             }
         }
-        double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
-        attune_dx_ = cos( theta ) * 0.95 * temp_tot_x/flock_count * 48;
-        attune_dy_ = sin( theta ) * 0.95 * temp_tot_y/flock_count * 48; // think the velocity is per frame, I'd prefer it per second.
+        //double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
+
+        if ( flock_count > 1 ) {
+            attune_dx_ = ( ( temp_tot_x - unit->getVelocityX() ) / (flock_count - 1) + unit->getVelocityX() ) * 24 ;
+            attune_dy_ = ( ( temp_tot_y - unit->getVelocityY() ) / (flock_count - 1) + unit->getVelocityY() ) * 24 ; // think the velocity is per frame, I'd prefer it per second so its scale is sensical.
+        }
+        else {
+            attune_dx_ = (unit->getVelocityX() ) * 24 ;
+            attune_dy_ = (unit->getVelocityY() ) * 24 ;
+        }
     }
 }
 
-//Centralization, all units prefer locations with mobility to edges.
-void Boids::setCentralize( Position pos, Inventory inventory ) {
-    int temp_centralization_dx_ = 0;
-    int temp_centralization_dy_ = 0;
+//Centralization, all units prefer sitting along map veins to edges.
+void Boids::setCentralize( const Position &pos, const Inventory &inventory ) {
+    double temp_centralization_dx_ = 0;
+    double temp_centralization_dy_ = 0;
+    WalkPosition map_dim = WalkPosition(TilePosition( {Broodwar->mapWidth(), Broodwar->mapHeight()} ) );
     for ( int x = -5; x <= 5; ++x ) {
         for ( int y = -5; y <= 5; ++y ) {
-            double centralize_x = pos.x / 8 + x;
-            double centralize_y = pos.y / 8 + y;
+            int mini_x = WalkPosition( pos ).x;
+            int mini_y = WalkPosition( pos ).y;
+            double centralize_x = mini_x + x;
+            double centralize_y = mini_y + y;
             if ( !(x == 0 && y == 0) &&
-                centralize_x < Broodwar->mapWidth() && centralize_y < Broodwar->mapHeight() &&
-                centralize_x > 0 && centralize_y > 0 &&
-                inventory.smoothed_barriers_[centralize_x][centralize_y] == 0 ) {
-                double theta = atan2( centralize_y - pos.y / 8, centralize_x - pos.x / 8 );
+                centralize_x < map_dim.x && 
+                centralize_y < map_dim.y &&
+                centralize_x > 0 && 
+                centralize_y > 0 &&
+                ( inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] || inventory.map_veins_[centralize_x][centralize_y] > 175 )  )
+            {
+                double theta = atan2( y, x );
                 temp_centralization_dx_ += cos( theta );
                 temp_centralization_dy_ += sin( theta );
             }
@@ -218,28 +267,30 @@ void Boids::setCentralize( Position pos, Inventory inventory ) {
     }
     if ( temp_centralization_dx_ != 0 && temp_centralization_dy_ != 0 ) {
         double theta = atan2( temp_centralization_dy_, temp_centralization_dx_ );
-        int temp_dist = abs( temp_centralization_dx_ * 8 ) + abs( temp_centralization_dy_ * 8 ); // we should move closer based on the number of choke tiles.
-        centralization_dx_ = cos( theta ) * temp_dist;
-        centralization_dy_ = sin( theta ) * temp_dist;
+        int distance_metric = abs( temp_centralization_dy_ * 8 ) + abs( temp_centralization_dx_ * 8 );
+        centralization_dx_ = cos( theta ) * distance_metric * 0.25;
+        centralization_dy_ = sin( theta ) * distance_metric * 0.25; 
     }
 }
 
 //Cohesion, all units tend to prefer to be together.
 void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui ) {
 
-    const Position loc_center = ui.getMeanLocation();
-    double cohesion_x = loc_center.x - pos.x;
-    double cohesion_y = loc_center.y - pos.y;
-    double theta = atan2( cohesion_y, cohesion_x );
-    cohesion_dx_ = cos( theta ) * 0.10 * unit->getDistance( loc_center );
-    cohesion_dy_ = sin( theta ) * 0.10 * unit->getDistance( loc_center );
-
+    const Position loc_center = ui.getMeanCombatLocation();
+    if ( loc_center != Position( 0, 0 ) ) {
+        double cohesion_x = loc_center.x - pos.x;
+        double cohesion_y = loc_center.y - pos.y;
+        double theta = atan2( cohesion_y, cohesion_x );
+        cohesion_dx_ = cos( theta ) * 0.25 * unit->getDistance( loc_center );
+        cohesion_dy_ = sin( theta ) * 0.25 * unit->getDistance( loc_center );
+    }
 }
 
-//Attraction, pull towards enemy units that we can attack.
-void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei ) {
-    if ( (unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None) ) {
-        // (!army_starved || inventory.est_enemy_stock_ <= 0.75 * exp( inventory.ln_army_stock_ )) && unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints() 
+//Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place.
+void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv, const bool &army_starved ) {
+    if ( ( unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None ) && 
+        unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints() && // if you are a combat-ready unit,
+       ( !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ ) ) ) { // and your army is relatively large.
 
         int dist = 999999;
         bool visible_unit_found = false;
@@ -248,7 +299,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
 
             for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
                 int dist_current = unit->getDistance( e_iter->second.pos_ );
-                bool visible = Broodwar->isVisible( e.pos_.x / 32, e.pos_.y / 32 );
+                bool visible = Broodwar->isVisible( TilePosition( e.pos_ ) );
                 if ( visible && dist_current < dist ) {
                     dist = dist_current;
                     Stored_Unit e = e_iter->second;
@@ -269,7 +320,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
             if ( unit->getType().airWeapon() == WeaponTypes::None && unit->getType().groundWeapon() != WeaponTypes::None ) {
                 for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
                     int dist_current = unit->getDistance( e_iter->second.pos_ );
-                    bool visible = Broodwar->isVisible( e.pos_.x / 32, e.pos_.y / 32 );
+                    bool visible = Broodwar->isVisible( TilePosition( e.pos_ ) );
                     if ( visible && dist_current < dist ) {
                         dist = dist_current;
                         Stored_Unit e = e_iter->second;
@@ -291,7 +342,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
             if ( unit->getType().airWeapon() != WeaponTypes::None && unit->getType().groundWeapon() == WeaponTypes::None ) {
                 for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
                     int dist_current = unit->getDistance( e_iter->second.pos_ );
-                    bool visible = Broodwar->isVisible( e.pos_.x / 32, e.pos_.y / 32 );
+                    bool visible = Broodwar->isVisible( TilePosition(e.pos_) );
                     if ( visible && dist_current < dist ) {
                         dist = dist_current;
                         Stored_Unit e = e_iter->second;
@@ -307,13 +358,26 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
                 } // get closest flying enemy unit in inventory.
             }
 
-            if ( e.pos_ ) {
-                int dist_x = e.pos_.x - pos.x;
-                int dist_y = e.pos_.y - pos.y;
-                double theta = atan2( dist_y, dist_x );
-                attract_dx_ = cos( theta ) * unit->getDistance( e.pos_ ) * 0.30; // run X% towards them.  Must be enough to override the wander.
-                attract_dy_ = sin( theta ) * unit->getDistance( e.pos_ ) * 0.30;
-            }
+            if ( e.pos_ ) { 
+                if ( MeatAIModule::isClearRayTrace( pos, e.pos_, inv ) ) { // go to it if the path is clear,
+                    int dist = unit->getDistance( e.pos_ );
+                    int dist_x = e.pos_.x - pos.x;
+                    int dist_y = e.pos_.y - pos.y;
+                    double theta = atan2( dist_y, dist_x );
+                    attract_dx_ = cos( theta ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
+                    attract_dy_ = sin( theta ) * (dist * 0.02 + 64);
+                }                 
+                else { // tilt around it
+                    int dist = unit->getDistance( e.pos_ );
+                    int dist_x = e.pos_.x - pos.x;
+                    int dist_y = e.pos_.y - pos.y;
+                    double theta = atan2( dist_y, dist_x );
+
+                    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+                    attract_dx_ = cos( theta + tilt) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
+                    attract_dy_ = sin( theta + tilt) * (dist * 0.02 + 64);
+                }
+            } 
         }
     }
 }
@@ -325,55 +389,26 @@ void Boids::setSeperation( const Unit &unit, const Position &pos, const Unit_Inv
         double seperation_x = seperation.x - pos.x;
         double seperation_y = seperation.y - pos.y;
         double theta = atan2( seperation_y, seperation_x );
-        seperation_dx_ = cos( theta ) * 96; // run 3 tiles away from everyone minimum. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ = sin( theta ) * 96;
+        seperation_dx_ = cos( theta ) * 64; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_dy_ = sin( theta ) * 64;
     }
 }
 
-void Boids::setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory ) {
-    //Push from unwalkability, push from different levels.
-    int temp_walkability_dx_ = 0;
-    int temp_walkability_dy_ = 0;
-    for ( int x = -5; x <= 5; ++x ) {
-        for ( int y = -5; y <= 5; ++y ) {
-            double walkability_x = pos.x + 32 * x; // in pixels
-            double walkability_y = pos.y + 32 * y; // in pixels
-            if ( !(x == 0 && y == 0) ) {
-                if ( walkability_x > Broodwar->mapWidth() * 32 || walkability_y > Broodwar->mapHeight() * 32 || // out of bounds by above map value.
-                    walkability_x < 0 || walkability_y < 0 ||  // out of bounds below map,  0.
-                    !Broodwar->isWalkable( (int)walkability_x / 8, (int)walkability_y / 8 ) || //Mapheight/width get map dimensions in TILES 1tile=32 pixels. Iswalkable gets it in minitiles, 1 minitile=8 pixels.
-                    Broodwar->getGroundHeight( walkability_x / 32, walkability_y / 32 ) != Broodwar->getGroundHeight( unit->getTilePosition() ) ||  //If a position is on a different level, it's essentially unwalkable.
-                    inventory.smoothed_barriers_[walkability_x / 8][walkability_y / 8] > 0 ) { // or if the position offers less mobility in general.
-                    double theta = atan2( y, x );
-                    temp_walkability_dx_ += cos( theta );
-                    temp_walkability_dy_ += sin( theta );
-                }
-            }
-        }
-    }
-    if ( temp_walkability_dx_ != 0 && temp_walkability_dy_ != 0 ) {
-        double theta = atan2( temp_walkability_dy_, temp_walkability_dx_ );
-        int temp_dist = abs( temp_walkability_dx_ * 8 ) + abs( temp_walkability_dy_ * 8 ); // we should move away based on the number of tiles rejecting us.
-        walkability_dx_ = cos( theta ) * temp_dist;
-        walkability_dy_ = sin( theta ) * temp_dist;
-    }
-}
 void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory ) {
 
-    int temp_walkability_dx_ = 0;
-    int temp_walkability_dy_ = 0;
+    double temp_walkability_dx_ = 0;
+    double temp_walkability_dy_ = 0;
     if ( !unit->isFlying() ) {
         for ( int x = -5; x <= 5; ++x ) {
             for ( int y = -5; y <= 5; ++y ) {
-                double walkability_x = pos.x + 32 * x;
-                double walkability_y = pos.y + 32 * y;
+                double walkability_x = TilePosition( pos ).x + x;
+                double walkability_y = TilePosition( pos ).y + y;
                 if ( !(x == 0 && y == 0) ) {
-                    if ( walkability_x > Broodwar->mapWidth() * 32 || walkability_y > Broodwar->mapHeight() * 32 || // out of bounds by above map value.
+                    if ( walkability_x >= Broodwar->mapWidth() * 32 || walkability_y >= Broodwar->mapHeight() * 32 || // out of bounds by above map value.
                         walkability_x < 0 || walkability_y < 0 ||  // out of bounds below map,  0.
-                        !Broodwar->isWalkable( (int)walkability_x / 8, (int)walkability_y / 8 ) || //Mapheight/width get map dimensions in TILES 1tile=32 pixels. Iswalkable gets it in minitiles, 1 minitile=8 pixels.
-                        Broodwar->getGroundHeight( walkability_x / 32, walkability_y / 32 ) != Broodwar->getGroundHeight( unit->getTilePosition() ) ||  //If a position is on a different level, it's essentially unwalkable.
-                        inventory.smoothed_barriers_[walkability_x / 8][walkability_y / 8] > 0 ) { // or if the position is relatively unwalkable.
-                        // !Broodwar->getUnitsOnTile( walkability_x / 32, walkability_y / 32, !IsFlying ).empty() ) { // or if the position is occupied.
+                        Broodwar->getGroundHeight( TilePosition(walkability_x , walkability_y) ) != Broodwar->getGroundHeight( unit->getTilePosition() ) ||  //If a position is on a different level, it's essentially unwalkable.
+                        !MeatAIModule::isClearRayTrace(pos, Position(walkability_x,walkability_y), inventory ) ) { // or if the path to the target is relatively unwalkable.
+                        //!Broodwar->getUnitsOnTile( walkability_x / 32, walkability_y / 32, !IsFlying ).empty() ) { // or if the position is occupied.
                         double theta = atan2( y, x );
                         temp_walkability_dx_ += cos( theta );
                         temp_walkability_dy_ += sin( theta );
@@ -384,12 +419,15 @@ void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Invento
     }
     if ( temp_walkability_dx_ != 0 && temp_walkability_dy_ != 0 ) {
         double theta = atan2( temp_walkability_dy_, temp_walkability_dx_ );
-        int temp_dist = abs( temp_walkability_dx_ * 8 ) + abs( temp_walkability_dy_ * 8 ); // we should move away based on the number of tiles rejecting us.
-        int rng = ((rand() % 150 + 1) / 50 - 1) * 0.25 * 3.1415; // random number -1,0,1 times 0.25 * pi
-        walkability_dx_ = cos( theta + rng ) * temp_dist;
-        walkability_dy_ = sin( theta + rng ) * temp_dist;
+        double temp_dist = abs( temp_walkability_dx_ * 8 ) + abs( temp_walkability_dy_ * 8 ); // we should move away based on the number of tiles rejecting us.
+
+
+        double tilt =  rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+        walkability_dx_ = cos( theta + tilt ) * temp_dist * 0.25;
+        walkability_dy_ = sin( theta + tilt ) * temp_dist * 0.25;
     }
 }
+
 
 //// Drags overlords to the nearest mineral.
 //void MeatAIModule::Vision_Locking( const Unit &unit ) {

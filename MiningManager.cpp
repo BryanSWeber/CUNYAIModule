@@ -8,25 +8,45 @@ using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
 void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inventory &inv) {
-    if ( Broodwar->self()->minerals() >= 300 && (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ )) ) {
+    if ( Broodwar->self()->minerals() >= 300 && 
+		( buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ) )  ) {
         
         if ( inv.acceptable_expo_ )
         {
             //clear all obstructions, if any.
-            Unitset obstructions = Broodwar->getUnitsInRadius( { inv.next_expo_.x * 32, inv.next_expo_.y * 32 }, 4 * 32 );
-            obstructions.move( { inv.next_expo_.x * 32 + (rand() % 200 - 100) * 5 * 32, inv.next_expo_.y * 32 + (rand() % 200 - 100) * 5 * 32 } );
-            obstructions.build( UnitTypes::Zerg_Hatchery, inv.next_expo_ );// I think some thing quirky is happening here. Sometimes gets caught in rebuilding loop.
+            //Unitset obstructions = Broodwar->getUnitsInRadius( Position(inv.next_expo_), 3 * 32 );
+            //obstructions.move( { Position( inv.next_expo_ ).x + (rand() % 200 - 100) * 4 * 32, Position( inv.next_expo_ ).y + (rand() % 200 - 100) * 4 * 32 } );
+            //obstructions.build( UnitTypes::Zerg_Hatchery, inv.next_expo_ );// I think some thing quirky is happening here. Sometimes gets caught in rebuilding loop.
+			Broodwar->sendText("TRYING TO EXPO HERE");
 
-            if ( unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
-                buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
-                Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
-            }
-            else if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
-                unit->move( { inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp() , inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() } );
-                buildorder.active_builders_ = true;
-                Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x , inv.next_expo_.y );
-                Broodwar->drawLineMap( { inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp() , inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() } , unit->getPosition(), Colors::White);
-            }
+			Unit_Inventory hatch_builders = getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Drone, Position(inv.next_expo_), 99999);
+			Stored_Unit *best_drone = getClosestStored(hatch_builders, Position(inv.next_expo_), 99999);
+
+			if (best_drone && best_drone->bwapi_unit_){
+				if (best_drone->bwapi_unit_->build(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
+					buildorder.setBuilding_Complete(UnitTypes::Zerg_Hatchery);
+					Broodwar->sendText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
+				}
+				else if ( !Broodwar->isExplored(inv.next_expo_)) {
+					best_drone->bwapi_unit_->move({ inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp(), inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() });
+					buildorder.active_builders_ = true;
+					Broodwar->sendText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
+					Broodwar->drawLineMap({ inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp(), inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() }, unit->getPosition(), Colors::White);
+				}
+			}
+			else {
+				if (unit->build(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
+					buildorder.setBuilding_Complete(UnitTypes::Zerg_Hatchery);
+					Broodwar->sendText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
+
+				}
+				else if (!Broodwar->isExplored(inv.next_expo_)) {
+					unit->move({ inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp(), inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() });
+					buildorder.active_builders_ = true;
+					Broodwar->sendText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
+					Broodwar->drawLineMap({ inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp(), inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() }, unit->getPosition(), Colors::White);
+				}
+			}
         }
     } // closure affordablity.
 }
@@ -128,24 +148,21 @@ bool MeatAIModule::Gas_Outlet() {
     if ( MeatAIModule::Tech_Avail()/* && tech_starved*/ && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 ) {
         outlet_avail = true;
     }
+	
 
-    //for ( auto & u : BWAPI::Broodwar->self()->getUnits() ) {
-    //    if ( u->getType()== UnitTypes::Zerg_Larva ) {
-    //        bool long_condition = u->canMorph( UnitTypes::Zerg_Hydralisk ) ||
-    //                       u->canMorph( UnitTypes::Zerg_Mutalisk ) ||
-    //                       u->canMorph( UnitTypes::Zerg_Ultralisk );
-    //        if ( long_condition ) {
-    //            outlet_avail = true;
-    //        }
-    //    }
-    //} // turns off gas interest when larve are 0.
+	bool long_condition = Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Hydralisk) ||
+		Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Mutalisk) ||
+		Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Ultralisk);
+        if ( long_condition ) {
+             outlet_avail = true;
+          } // turns off gas interest when larve are 0.
 
-    bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) > 0 ||
-        Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 ||
-        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0;
-    if ( long_condition ) {
-        outlet_avail = true;
-    } 
+    //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) > 0 ||
+				//		Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 ||
+				//		Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0;
+    //if ( long_condition ) {
+    //    outlet_avail = true;
+    //} 
 
     return outlet_avail;
 }

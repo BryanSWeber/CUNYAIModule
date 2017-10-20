@@ -33,7 +33,11 @@ struct Inventory {
     vector<BWAPI::Position> resource_positions_;
     vector< vector<bool> > buildable_positions_ ;
     vector< vector<int> > smoothed_barriers_;
+    vector< vector<int> > map_veins_;
+    vector< vector<int> > map_veins_out_;
     vector< vector<int> > base_values_;
+    vector< vector<int> > map_chokes_;
+
 
     int vision_tile_count_;
     int est_enemy_stock_;
@@ -81,6 +85,16 @@ struct Inventory {
     void Inventory::updateBuildablePos();
     // Marks and smooths the edges of the map.
     void Inventory::updateSmoothPos();
+    // Marks the main arteries of the map.
+    void Inventory::updateMapVeins();
+
+    // Updates the visible map arteries. Only checks buildings.
+    void updateLiveMapVeins( const Unit & building, const Unit_Inventory & ui, const Unit_Inventory & ei );    
+    // Updates the chokes on the map.
+    void Inventory::updateMapChokes(); //in progress
+    // Updates veins going out of the main base for attacking ease.
+    void Inventory::updateMapVeinsOut();
+
     // Marks and scores base locations.
     void Inventory::updateBaseLoc();
     // Updates mineral, gas, and time reserves.

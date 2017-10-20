@@ -12,6 +12,7 @@ struct Stored_Unit {
 
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( Unit unit );
+    Stored_Unit();
 
     // Critical information not otherwise stored.
     UnitType type_;
@@ -40,11 +41,13 @@ struct Unit_Inventory {
 
     int stock_fliers_;
     int stock_ground_units_;
-    int stock_cannot_shoot_up_;
-    int stock_cannot_shoot_down_;
+    int stock_shoots_up_;
+    int stock_shoots_down_;
     int stock_high_ground_;
     int stock_total_;
     int max_range_;
+	int worker_count_;
+	int volume_;
 
     std::map <Unit, Stored_Unit> unit_inventory_;
 
@@ -62,6 +65,8 @@ struct Unit_Inventory {
     void updateUnitInventorySummary();
 
     Position getMeanLocation() const;
+    Position getMeanBuildingLocation() const;
+    Position getMeanCombatLocation() const;
 };
 
 

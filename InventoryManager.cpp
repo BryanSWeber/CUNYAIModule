@@ -31,19 +31,6 @@ Inventory::Inventory( const Unit_Inventory &ui ) {
 
     updateReserveSystem();
 
-    if ( resource_positions_.size() == 0 ) {
-        updateMineralPos();
-        updateBuildablePos();
-        updateBaseLoc();
-        int buildable_ct = 0;
-        for ( vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j ) {
-                buildable_ct += buildable_positions_[i][j];
-            }
-        }
-        Broodwar->sendText( "There are %d resources on the map, %d buildable positions.", resource_positions_.size(), buildable_ct );
-    }
-
     if ( smoothed_barriers_.size() == 0 ) {
         updateSmoothPos();
         int unwalkable_ct = 0;
@@ -52,7 +39,33 @@ Inventory::Inventory( const Unit_Inventory &ui ) {
                 unwalkable_ct += smoothed_barriers_[i][j];
             }
         }
-        Broodwar->sendText( "There are %d roughly tiles, %d unwalkable ones.", smoothed_barriers_.size(), unwalkable_ct );
+        Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
+    }
+
+	if (resource_positions_.size() == 0) {
+		updateMineralPos();
+		updateBuildablePos();
+		updateBaseLoc();
+		int buildable_ct = 0;
+		for (vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i) {
+			for (vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j) {
+				buildable_ct += buildable_positions_[i][j];
+			}
+		}
+		Broodwar->sendText("There are %d resources on the map, %d canidate expo positions.", resource_positions_.size(), buildable_ct);
+	}
+
+    if ( map_veins_.size() == 0 ) {
+        updateMapVeins();
+        int vein_ct = 0;
+        for ( vector<int>::size_type i = 0; i != map_veins_.size(); ++i ) {
+            for ( vector<int>::size_type j = 0; j != map_veins_[i].size(); ++j ) {
+                if ( map_veins_[i][j] > 10 ) {
+                    ++vein_ct;
+                }
+            }
+        }
+        Broodwar->sendText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
     }
 };
 
@@ -292,7 +305,9 @@ void Inventory::updateMineralPos() {
     Unitset geysers = Broodwar->getStaticGeysers();
 
     for ( auto m = min.begin(); m != min.end(); ++m ) {
-        resource_positions_.push_back( (*m)->getPosition() );
+		if ((*m)->getInitialResources() > 8){
+			resource_positions_.push_back((*m)->getPosition());
+		}
     }
     for ( auto g = geysers.begin(); g != geysers.end(); ++g ) {
         resource_positions_.push_back( (*g)->getPosition() );
@@ -330,28 +345,90 @@ void Inventory::updateSmoothPos() {
     }
 
     for ( auto iter = 2; iter < 100; iter++ ) { // iteration 1 is already done by labling unwalkables.
-        for ( auto tile_x = 1; tile_x <= map_x ; ++tile_x ) {
-            for ( auto tile_y = 1; tile_y <= map_y ; ++tile_y ) { // Check all possible walkable locations.
+        for ( auto minitile_x = 1; minitile_x <= map_x ; ++minitile_x ) {
+            for ( auto minitile_y = 1; minitile_y <= map_y ; ++minitile_y ) { // Check all possible walkable locations.
 
-                // Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-                // If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc. Mark it as unwalkable.  Do not consider it unwalkable this cycle.
-                // if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable. Do not consider it unwalkable this cycle.
+                // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
                 // Repeat untill finished.
 
-                if ( smoothed_barriers_[tile_x][tile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
+                if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
 
                     // Predefine grid we will search over.
-                    bool local_tile_0_0 = (smoothed_barriers_[(tile_x - 1)][(tile_y - 1)] < iter && smoothed_barriers_[(tile_x - 1)][(tile_y - 1)] > 0) ;
-                    bool local_tile_1_0 = (smoothed_barriers_[tile_x][(tile_y - 1)]       < iter && smoothed_barriers_[tile_x][(tile_y - 1)] > 0 )      ;
-                    bool local_tile_2_0 = (smoothed_barriers_[(tile_x + 1)][(tile_y - 1)] < iter && smoothed_barriers_[(tile_x + 1)][(tile_y - 1)] > 0) ;
+                    bool local_tile_0_0 = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0) ;
+                    bool local_tile_1_0 = (smoothed_barriers_[minitile_x][(minitile_y - 1)]       < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0 )      ;
+                    bool local_tile_2_0 = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0) ;
 
-                    bool local_tile_0_1 = (smoothed_barriers_[(tile_x - 1)][tile_y] < iter  && smoothed_barriers_[(tile_x - 1)][tile_y] > 0) ;
-                    bool local_tile_1_1 = (smoothed_barriers_[tile_x][tile_y]       < iter  && smoothed_barriers_[tile_x][tile_y] > 0)       ;
-                    bool local_tile_2_1 = (smoothed_barriers_[(tile_x + 1)][tile_y] < iter  && smoothed_barriers_[(tile_x + 1)][tile_y]> 0)  ;
+                    bool local_tile_0_1 = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter  && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0) ;
+                    bool local_tile_1_1 = (smoothed_barriers_[minitile_x][minitile_y]       < iter  && smoothed_barriers_[minitile_x][minitile_y] > 0)       ;
+                    bool local_tile_2_1 = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter  && smoothed_barriers_[(minitile_x + 1)][minitile_y]> 0)  ;
 
-                    bool local_tile_0_2 = (smoothed_barriers_[(tile_x - 1)][(tile_y + 1)]  < iter  && smoothed_barriers_[(tile_x - 1)][(tile_y + 1)] > 0)  ;
-                    bool local_tile_1_2 = (smoothed_barriers_[tile_x][(tile_y + 1)]        < iter  && smoothed_barriers_[tile_x][(tile_y + 1)] > 0)        ;
-                    bool local_tile_2_2 = (smoothed_barriers_[(tile_x + 1)][(tile_y + 1)]  < iter  && smoothed_barriers_[(tile_x + 1)][(tile_y + 1)] > 0)  ;
+                    bool local_tile_0_2 = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)]  < iter  && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0)  ;
+                    bool local_tile_1_2 = (smoothed_barriers_[minitile_x][(minitile_y + 1)]        < iter  && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0)        ;
+                    bool local_tile_2_2 = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)]  < iter  && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0)  ;
+
+                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+                    bool opposing_tiles =
+                        (local_tile_0_0 && (local_tile_2_2 || local_tile_2_1 || local_tile_1_2)) ||
+                        (local_tile_1_0 && (local_tile_1_2 || local_tile_0_2 || local_tile_2_2)) ||
+                        (local_tile_2_0 && (local_tile_0_2 || local_tile_0_1 || local_tile_1_2)) ||
+                        (local_tile_0_1 && (local_tile_2_1 || local_tile_2_0 || local_tile_2_2));
+
+                    bool open_path =
+                        (!local_tile_0_0 && (!local_tile_2_2 || !local_tile_2_1 || !local_tile_1_2)) ||
+                        (!local_tile_1_0 && (!local_tile_1_2 || !local_tile_0_2 || !local_tile_2_2)) ||
+                        (!local_tile_2_0 && (!local_tile_0_2 || !local_tile_0_1 || !local_tile_1_2)) ||
+                        (!local_tile_0_1 && (!local_tile_2_1 || !local_tile_2_0 || !local_tile_2_2));
+
+                    if ( open_path && ( opposing_tiles ) ) { // if it is closing off, but still has open space, mark as special and continue.  Will prevent algorithm from sealing map.
+                        smoothed_barriers_[minitile_x][minitile_y] = 99 - iter;
+                    }
+
+                    if ( !open_path && (opposing_tiles ) ) { // if it is closed off or blocked, then seal it up and continue. 
+                        smoothed_barriers_[minitile_x][minitile_y] = iter;
+                    }
+                    
+                }
+            }
+        }
+    }
+}
+
+void Inventory::updateMapVeins() {
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+
+    // first, define matrixes to recieve the smoothed locations for every minitile.
+    for ( int x = 0; x <= map_x; ++x ) {
+        vector<int> temp;
+        for ( int y = 0; y <= map_y; ++y ) {
+            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
+        }
+        map_veins_.push_back( temp );
+    }
+
+    for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling unwalkables.
+        for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
+            for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
+
+                                                                 // Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+                                                                 // If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc. Mark it as unwalkable.  Do not consider it unwalkable this cycle.
+                                                                 // if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable. Do not consider it unwalkable this cycle.
+                                                                 // Repeat untill finished.
+
+                if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
+
+                    // Predefine grid we will search over.
+                    bool local_tile_0_0 = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+                    bool local_tile_1_0 = (map_veins_[minitile_x][(minitile_y - 1)]       < iter && map_veins_[minitile_x][(minitile_y - 1)] > 0);
+                    bool local_tile_2_0 = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+
+                    bool local_tile_0_1 = (map_veins_[(minitile_x - 1)][minitile_y] < iter  && map_veins_[(minitile_x - 1)][minitile_y] > 0);
+                    bool local_tile_1_1 = (map_veins_[minitile_x][minitile_y]       < iter  && map_veins_[minitile_x][minitile_y] > 0);
+                    bool local_tile_2_1 = (map_veins_[(minitile_x + 1)][minitile_y] < iter  && map_veins_[(minitile_x + 1)][minitile_y]> 0);
+
+                    bool local_tile_0_2 = (map_veins_[(minitile_x - 1)][(minitile_y + 1)]  < iter  && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0);
+                    bool local_tile_1_2 = (map_veins_[minitile_x][(minitile_y + 1)]        < iter  && map_veins_[minitile_x][(minitile_y + 1)] > 0);
+                    bool local_tile_2_2 = (map_veins_[(minitile_x + 1)][(minitile_y + 1)]  < iter  && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0);
 
                     // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
                     bool opposing_tiles =
@@ -376,14 +453,11 @@ void Inventory::updateSmoothPos() {
                         local_tile_1_2 && local_tile_2_1 && local_tile_2_2 || // upper right slice.
                         local_tile_1_0 && local_tile_2_1 && local_tile_2_0; // lower right slice.
 
-                    if ( opposing_tiles && (open_path || adjacent_tiles) ) { // if it is adjacently blocked, it is not a choke, it's just a bad place to walk. Mark as unwalkable and continue.
-                        smoothed_barriers_[tile_x][tile_y] = 99 - iter;
-                    } 
-
-//                  if ( !(opposing_tiles && open_path) && adjacent_tiles ) {
-
-                    if ( !open_path && (opposing_tiles || adjacent_tiles) ) {
-                        smoothed_barriers_[tile_x][tile_y] = iter;
+                    if ( open_path && opposing_tiles ) {  //mark chokes when found.
+                        map_veins_[minitile_x][minitile_y] = 299 - iter;
+                    }
+                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
+                        map_veins_[minitile_x][minitile_y] = iter;
                     }
                 }
             }
@@ -391,11 +465,224 @@ void Inventory::updateSmoothPos() {
     }
 }
 
+void Inventory::updateMapVeinsOut() { //in progress.
+
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    WalkPosition startloc = WalkPosition( Broodwar->self()->getStartLocation() );
+
+    // first, define matrixes to recieve the smoothed locations for every minitile.
+    for ( int x = 0; x <= map_x; ++x ) {
+        vector<int> temp;
+        for ( int y = 0; y <= map_y; ++y ) {
+            if ( WalkPosition(x,y) == startloc )  {
+                temp.push_back( 999999999 );
+            }
+            else {
+                temp.push_back( map_veins_[x][y] );  // copy map veins
+            }
+        }
+        map_veins_out_.push_back( temp );
+    }
+
+        int minitile_x, minitile_y, dx, dy, dist_to_x_edge, dist_to_y_edge, normalized_x, normalized_y;
+        minitile_x = startloc.x;
+        minitile_y = startloc.y;
+        dist_to_x_edge  = std::max( map_x - minitile_x, minitile_x );
+        dist_to_y_edge = std::max( map_y - minitile_y, minitile_y );
+
+        int t = std::max( map_x + dist_to_x_edge, map_y + dist_to_y_edge );
+
+        dx = dist_to_x_edge < dist_to_y_edge ? -1 : 0;
+        dy = dist_to_x_edge <= dist_to_y_edge ? 0 : -1; // start going towards the emptier direction.
+
+        int maxI = t*t; // total number of spiral steps we have to make.
+
+        for ( int i = 0; i < maxI; i++ ) {
+            if ( ( 0 < minitile_x) && (minitile_x < map_x ) && ( 0 < minitile_y) && (minitile_y < map_y ) ) { // if you are on the map, continue.
+
+                if ( map_veins_out_[minitile_x][minitile_y] > 175 ) { // if it is walkable, consider it a canidate for a choke.
+                    //int min_observed = 100000;
+                    //for ( int local_x = -1; local_x <= 1; ++local_x ) {
+                    //    for ( int local_y = -1; local_y <= 1; ++local_y ) {
+                    //        int testing_x = minitile_x + local_x;
+                    //        int testing_y = minitile_y + local_y;
+                    //        if ( !(local_x == 0 && local_y == 0) &&
+                    //            testing_x < map_x &&
+                    //            testing_y < map_y &&
+                    //            testing_x > 0 &&
+                    //            testing_y > 0 ) { // check for being within reference space.
+
+                    //            int temp = map_chokes_[testing_x][testing_y];
+                    //            if ( temp > 0 && temp < min_observed ) {
+                    //                map_chokes_[minitile_x][minitile_y] = temp - 1;
+                    //                min_observed = temp;
+                    //            }
+                    //        }
+                    //    }
+                    //}
+                    map_veins_out_[minitile_x][minitile_y] = 99999 - i;
+                }
+            }
+
+            normalized_x = minitile_x - startloc.x;
+            normalized_y = minitile_y - startloc.y;
+
+            if ( normalized_x == normalized_y || ((normalized_x < 0) && ( normalized_x == - normalized_y )) || ((normalized_x > 0) && (normalized_x == 1-normalized_y) ) ) {
+                t = dx; // using t as a temp.
+                dx = -dy;
+                dy = t;
+            }
+
+            minitile_x += dx;
+            minitile_y += dy;
+        }
+
+}
+
+void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei ) { // in progress.
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
+    int area_modified = 100 * 8;
+
+
+    //modified areas stopping at bounds. bounds are 1 inside edge of map.
+    WalkPosition max_lower_right = WalkPosition( Position( building->getPosition().x + area_modified, building->getPosition().y + area_modified ));
+    WalkPosition max_upper_left = WalkPosition( Position( building->getPosition().x - area_modified, building->getPosition().y - area_modified ));
+
+    WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1  );
+    WalkPosition upper_left_modified =  WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1  );
+
+// clear tiles that may have been altered.
+    for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
+        for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
+                if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
+                    Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
+                        if ( MeatAIModule::checkBuildingOccupiedArea(ui,pos) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) ) {
+                            map_veins_[minitile_x][minitile_y] = 1;
+                        }
+                        else /*if ( MeatAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {
+                            map_veins_[minitile_x][minitile_y] = 0; // if it is nearby nuke it to 0 for recasting.
+                        }
+                }
+            }
+        }
+
+    for ( auto iter = 2; iter < 175; iter++ ) { // iteration 1 is already done by labling unwalkables. Less loops are needed because most of the map is already plotted.
+        for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
+            for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
+
+            //Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+            //    If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc.Mark it as unwalkable.Do not consider it unwalkable this cycle.
+            //    if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable.Do not consider it unwalkable this cycle.
+            //        Repeat untill finished.
+
+                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
+
+                if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
+
+                    // Predefine grid we will search over.
+                    bool local_tile_0_0 = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+                    bool local_tile_1_0 = (map_veins_[minitile_x][(minitile_y - 1)] < iter && map_veins_[minitile_x][(minitile_y - 1)] > 0);
+                    bool local_tile_2_0 = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+
+                    bool local_tile_0_1 = (map_veins_[(minitile_x - 1)][minitile_y] < iter  && map_veins_[(minitile_x - 1)][minitile_y] > 0);
+                    bool local_tile_1_1 = (map_veins_[minitile_x][minitile_y] < iter  && map_veins_[minitile_x][minitile_y] > 0);
+                    bool local_tile_2_1 = (map_veins_[(minitile_x + 1)][minitile_y] < iter  && map_veins_[(minitile_x + 1)][minitile_y]> 0);
+
+                    bool local_tile_0_2 = (map_veins_[(minitile_x - 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0);
+                    bool local_tile_1_2 = (map_veins_[minitile_x][(minitile_y + 1)] < iter  && map_veins_[minitile_x][(minitile_y + 1)] > 0);
+                    bool local_tile_2_2 = (map_veins_[(minitile_x + 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0);
+
+                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+                    bool opposing_tiles =
+                        (local_tile_0_0 && (local_tile_2_2 || local_tile_2_1 || local_tile_1_2)) ||
+                        (local_tile_1_0 && (local_tile_1_2 || local_tile_0_2 || local_tile_2_2)) ||
+                        (local_tile_2_0 && (local_tile_0_2 || local_tile_0_1 || local_tile_1_2)) ||
+                        (local_tile_0_1 && (local_tile_2_1 || local_tile_2_0 || local_tile_2_2));
+
+                    bool open_path =
+                        (!local_tile_0_0 && !local_tile_2_2) ||
+                        (!local_tile_1_0 && !local_tile_1_2) ||
+                        (!local_tile_2_0 && !local_tile_0_2) ||
+                        (!local_tile_0_1 && !local_tile_2_1);
+
+                    bool adjacent_tiles =
+                        local_tile_0_0 && local_tile_0_1 && local_tile_0_2 || // left edge
+                        local_tile_2_0 && local_tile_2_1 && local_tile_2_2 || // right edge
+                        local_tile_0_0 && local_tile_1_0 && local_tile_2_0 || // bottom edge
+                        local_tile_0_2 && local_tile_1_2 && local_tile_2_2 || // top edge
+                        local_tile_0_1 && local_tile_1_0 && local_tile_0_0 || // lower left slice.
+                        local_tile_0_1 && local_tile_1_2 && local_tile_0_2 || // upper left slice.
+                        local_tile_1_2 && local_tile_2_1 && local_tile_2_2 || // upper right slice.
+                        local_tile_1_0 && local_tile_2_1 && local_tile_2_0; // lower right slice.
+
+                    if ( open_path && opposing_tiles ) {  //mark chokes when found.
+                        map_veins_[minitile_x][minitile_y] = 299 - iter;
+                    }
+                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
+                        map_veins_[minitile_x][minitile_y] = iter;
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+void Inventory::updateMapChokes() { 
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+
+    // first, define matrixes to recieve the smoothed locations for every minitile.
+    for ( int x = 0; x <= map_x; ++x ) {
+        vector<int> temp;
+        for ( int y = 0; y <= map_y; ++y ) {
+            temp.push_back( 0 );
+        }
+        map_chokes_.push_back( temp );
+    }
+
+    for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
+        for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
+
+            int max_observed = map_veins_[minitile_x][minitile_y];
+            int counter = 0;
+
+            if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
+                for ( int x = -1; x <= 1; ++x ) {
+                    for ( int y = -1; y <= 1; ++y ) {
+                        int testing_x = minitile_x + x;
+                        int testing_y = minitile_y + y;
+                        if ( !(x == 0 && y == 0) &&
+                            testing_x < map_dim.x &&
+                            testing_y < map_dim.y &&
+                            testing_x > 0 &&
+                            testing_y > 0 ) { // check for being within reference space.
+
+                            if ( map_veins_[testing_x][testing_y] <= max_observed ) {
+                                counter++;
+                                if ( counter == 8 ) {
+                                    map_chokes_[minitile_x][minitile_y] = 300-map_veins_[minitile_x][minitile_y];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 void Inventory::updateBaseLoc() {
 
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
     int location_quality = 0;
+	int residual_sq = 0;
+	int search_field = 15;
 
     // first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
     for ( int x = 0; x <= map_x; ++x ) {
@@ -409,45 +696,62 @@ void Inventory::updateBaseLoc() {
 
     for ( vector<int>::size_type p = 0; p != resource_positions_.size(); ++p ) { // search for closest resource group. They are our potential expos.
 
-        TilePosition min_pos_t = { resource_positions_[p].x / 32, resource_positions_[p].y / 32 }; // remember that this gives the upper left corner of the mineral.
+		//int centralized_resource_x = TilePosition(resource_positions_[p]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
+		//int centralized_resource_y = TilePosition(resource_positions_[p]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
+		TilePosition min_pos_t = TilePosition(Position(resource_positions_[p]));
 
-        for ( auto tile_x = min_pos_t.x - 10; tile_x != min_pos_t.x + 10; ++tile_x ) {
-            for ( auto tile_y = min_pos_t.y - 10; tile_y != min_pos_t.y + 10; ++tile_y ) { // Check wide area of possible build locations.
+        for ( auto possible_base_tile_x = min_pos_t.x - 7; possible_base_tile_x != min_pos_t.x + 5; ++possible_base_tile_x ) {
+            for ( auto possible_base_tile_y = min_pos_t.y - 7; possible_base_tile_y != min_pos_t.y + 5; ++possible_base_tile_y ) { // Check wide area of possible build locations around each mineral.
+				
+                if ( possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
+                    possible_base_tile_y >= 0 && possible_base_tile_y <= map_y ) { // must be in the map bounds 
 
-                if ( tile_x >= 0 && tile_x <= map_x &&
-                    tile_y >= 0 && tile_y <= map_y ) { // must be in bounds 
+					TilePosition prosepective_location = { possible_base_tile_x - 2, possible_base_tile_y - 1 }; // The build location is upper left tile of the building. The origin tile is 0,0. This is the center tile.
 
-                    if ( (tile_x >= min_pos_t.x + 3 ||
-                        tile_x <= min_pos_t.x - 3 ||
-                        tile_y >= min_pos_t.y + 3 ||
-                        tile_y <= min_pos_t.y - 3) &&
-                        Broodwar->canBuildHere( { tile_x, tile_y }, UnitTypes::Zerg_Hatchery ) ) { // if it is 3 away from the resource
+					if ((prosepective_location.x >= min_pos_t.x + 2 ||
+						prosepective_location.x <= min_pos_t.x - 2 ||
+						prosepective_location.y >= min_pos_t.y + 2 ||
+						prosepective_location.y <= min_pos_t.y - 2) && // it cannot be within 3 of the origin resource. This discards many distant expos.
+						Broodwar->canBuildHere( TilePosition( possible_base_tile_x , possible_base_tile_y ) , UnitTypes::Zerg_Hatchery) &&
+						MeatAIModule::isClearRayTrace(Position(prosepective_location), Position(min_pos_t), *this)) { // if it is 3 away from the resource, and has clear vision to the resource.
 
-                        Position prosepective_location = { tile_x , tile_y }; // The build location is upper left tile of the building The origin tile is 0,0. 
+						int local_min = 0;
 
-                        int local_min = 0;
+						for (vector<int>::size_type j = 0; j != resource_positions_.size(); ++j) {
 
-                        for ( vector<int>::size_type j = 0; j != resource_positions_.size(); ++j ) {
+							//centralized_resource_x = TilePosition(resource_positions_[j]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
+							//centralized_resource_y = TilePosition(resource_positions_[j]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
+							TilePosition tile_resource_position = TilePosition(Position(resource_positions_[j]));
+	
+							bool long_condition = tile_resource_position.x >= prosepective_location.x - search_field &&
+												tile_resource_position.x <= prosepective_location.x + search_field &&
+												tile_resource_position.y >= prosepective_location.y - search_field &&
+												tile_resource_position.y <= prosepective_location.y + search_field;
 
-                            bool long_condition = resource_positions_[j].x / 32 >= prosepective_location.x - UnitTypes::Resource_Mineral_Field.tileWidth() - 3 &&
-                                                  resource_positions_[j].y / 32 >= prosepective_location.y - UnitTypes::Resource_Mineral_Field.tileHeight() - 3 && 
-                                                  resource_positions_[j].x / 32 <= prosepective_location.x + UnitTypes::Zerg_Hatchery.tileWidth() + 3 + 2 &&
-                                                  resource_positions_[j].y / 32 <= prosepective_location.y + UnitTypes::Zerg_Hatchery.tileHeight() + 3 + 1;  // the +/-1 or 2 is a manual adjustment to get this to work. I don't quite get why they have to be this way, but it works best.
-                            if ( long_condition ) {
-                                ++local_min;
-                            }
-                        }
+							if (long_condition) {
+								residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
+								++local_min;
+							}
 
-                        int walk = sqrt( pow( Broodwar->self()->getStartLocation().x - prosepective_location.x, 2 ) + pow( Broodwar->self()->getStartLocation().y - prosepective_location.y, 2 ) ); // team_center and center are both in pixels
+						}
 
-                        location_quality = local_min * 50 /*- walk + map_x + map_y*/; // a BS metric.
+						//double walk = sqrt( pow( Broodwar->self()->getStartLocation().x - prosepective_location.x, 2 ) + pow( Broodwar->self()->getStartLocation().y - prosepective_location.y, 2 ) ); // team_center and center are both in pixels
+						//if (MeatAIModule::isClearRayTrace(Position(min_pos_t), prosepective_location, *this)){
+
+						//location_quality = local_min * 5;
+						if (local_min >= 5){
+							double average_res2_in_location_assuming_9_minerals = 9 * (residual_sq / local_min);
+							location_quality = 10000 * (1 - average_res2_in_location_assuming_9_minerals / (double)pow(9 * (search_field - 3) * 0.5 , 2)); // must decline in average_squared distance.
+						}
 
                     }
                     else {
                         location_quality = 0; // redundant, defaults to 0 - but clear.
                     } // if it's invalid for some reason return 0.
 
-                    base_values_[tile_x][tile_y] = location_quality;
+                    base_values_[possible_base_tile_x][possible_base_tile_y] = location_quality;
+
+					residual_sq = 0; // clear so i don't over-aggregate
 
                 } // closure in bounds
 
@@ -470,32 +774,35 @@ void Inventory::updateReserveSystem() {
 
 void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv ) {
 
-    Position center_self = Broodwar->self()->getUnits().getPosition();
-    int location_qual_threshold = 0;
+    TilePosition center_self = TilePosition(u_inv.getMeanBuildingLocation());
+    int location_qual_threshold = -999999;
     acceptable_expo_ = false;
 
     for ( vector<int>::size_type x = 0; x != base_values_.size(); ++x ) {
         for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {
             if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
 
-                int net_quality = base_values_[x][y] - 5 * sqrt( pow( static_cast<int>(x) - center_self.x / 32, 2 ) + pow( static_cast<int>(y) - center_self.y / 32, 2 ) ) + Broodwar->mapHeight() + Broodwar->mapWidth(); //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+                TilePosition canidate_spot = TilePosition( x + 2, y + 1 ); // from the true center of the object.
+				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
+				int net_quality = base_values_[x][y] - max( pow( walk,2) , 250.0 ) ; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
                 bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
                 bool found_rdepot = false;
 
-                Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius( e_inv, { static_cast<int>(x) * 32, static_cast<int>(y) * 32 }, 500 );
-                if ( !e_loc.unit_inventory_.empty() ) {
+                Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius( e_inv, Position( canidate_spot ), 500 );
+				e_loc.updateUnitInventorySummary();
+				if ( e_loc.stock_shoots_down_ + e_loc.stock_shoots_up_ > 0 ) { //if they have any combat units nearby.
                     enemy_in_inventory_near_expo = true;
                 }
 
-                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, { static_cast<int>(x) * 32, static_cast<int>(y) * 32 }, 500 );
+                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, Position( canidate_spot ), 500 );
                 for ( const auto &r : rdepot.unit_inventory_ ) {
                     if ( r.second.type_.isResourceDepot() ) {
                         found_rdepot = true;
                     }
                 }
 
-                bool condition = net_quality > location_qual_threshold && !enemy_in_inventory_near_expo && !found_rdepot;
+                bool condition = net_quality >= location_qual_threshold && !enemy_in_inventory_near_expo && !found_rdepot;
 
                 if ( condition ) {
                     next_expo_ = { static_cast<int>(x), static_cast<int>(y) };
@@ -503,6 +810,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
                     location_qual_threshold = net_quality;
                 }
             }
+
         } // closure y
     } // closure x
 }

@@ -14,6 +14,20 @@ void MeatAIModule::PrintError_Unit( Unit unit ) {
         Broodwar->getLatencyFrames() );  // frames to run.
 }
 
+// Identifies those moments where a worker is gathering and its unusual subcases.
+bool MeatAIModule::isActiveWorker(Unit unit){
+	bool passive = unit->getOrder() == unit->getOrder() != //BWAPI::Orders::MoveToMinerals &&
+		unit->getOrder() == BWAPI::Orders::MoveToGas &&
+		unit->getOrder() == BWAPI::Orders::WaitForMinerals &&
+		//unit->getOrder() == BWAPI::Orders::WaitForGas && // should never be overstacked on gas.
+		unit->getOrder() == BWAPI::Orders::MiningMinerals &&
+		unit->getOrder() == BWAPI::Orders::HarvestGas &&
+		unit->getOrder() == BWAPI::Orders::ReturnMinerals &&
+		unit->getOrder() == BWAPI::Orders::ReturnGas &&
+		unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
+	return passive;
+}
+
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
 bool MeatAIModule::isIdleEmpty( Unit unit ) {
 
@@ -21,16 +35,19 @@ bool MeatAIModule::isIdleEmpty( Unit unit ) {
 
     UnitCommandType u_type = unit->getLastCommand().getType();
 
-    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
+	bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
                          (u_type == UnitCommandTypes::Morph && !unit->isMorphing()) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals()) ||
-                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 10 * 24) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
-                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 10 * 24) || // unit is done upgrading.
+                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
+                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
                           u_type == UnitCommandTypes::None;
-    return task_complete || unit->isStuck();
+
+	bool spam_guard = unit->getLastCommandFrame() > Broodwar->getFrameCount() - Broodwar->getLatencyFrames();
+
+    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && !spam_guard ;
 }
 
 // Checks for if a unit is a combat unit.
@@ -83,6 +100,23 @@ bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
     return !e_invunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
 }
 
+// Outlines the case where UNIT can attack ENEMY; 
+bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
+    bool e_invunerable = (enemy.type_.isFlyer() && unit->getType().airWeapon() == WeaponTypes::None) || (!enemy.type_.isFlyer() && unit->getType().groundWeapon() == WeaponTypes::None); // if we cannot attack them.
+    if ( enemy.bwapi_unit_  && enemy.bwapi_unit_->exists() ) {
+        return !e_invunerable && enemy.bwapi_unit_->isDetected();
+    }
+    else {
+        return !e_invunerable; // also if they are cloaked and can attack us.
+    }
+}
+
+// Outlines the case where UNIT can attack ENEMY; 
+bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
+    bool e_invunerable = (enemy->isFlying() && unit.type_.airWeapon() == WeaponTypes::None) || (!enemy->isFlying() && unit.type_.groundWeapon() == WeaponTypes::None); // if we cannot attack them.
+    return !e_invunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
+}
+
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
 int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 {
@@ -118,11 +152,26 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
     return count;
 }
 
+// Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
+int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
+{
+	int count = 0;
+	for (const auto & unit : unit_set)
+	{
+		if (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) { // Count units under construction
+			count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+		}
+		else if (unit->getType() == type && unit->getLastCommand().getType() == u_command_type) {
+			count++;
+		}
+	}
 
+	return count;
+}
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
-    int cost = sqrt( pow( building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice(), 2 ) + pow( 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice(), 2 ) + pow( 25 * UnitTypes::Zerg_Drone.supplyRequired(), 2 ) );
+    int cost = (int)sqrt( pow( building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice(), 2 ) + pow( 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice(), 2 ) + pow( 25 * UnitTypes::Zerg_Drone.supplyRequired(), 2 ) );
     int instances = Count_Units( building , ui );
     int total_stock = cost * instances;
     return total_stock;
@@ -133,7 +182,7 @@ int MeatAIModule::Stock_Ups( const UpgradeType &ups ) {
     int lvl = Broodwar->self()->getUpgradeLevel( ups ) + (int)Broodwar->self()->isUpgrading( ups );
     int total_stock = 0;
     for ( int i = 1; i <= lvl; i++ ) {
-        int cost = sqrt( pow( ups.mineralPrice(), 2 ) + pow( 1.25 * ups.gasPrice(), 2 ) );
+        int cost = (int)sqrt( pow( ups.mineralPrice(), 2 ) + pow( 1.25 * ups.gasPrice(), 2 ) );
         total_stock += cost;
     }
     return total_stock;
@@ -263,7 +312,72 @@ Unitset MeatAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
     return e_set;
 }
 
-//Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
+//Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
+Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
+    int min_dist = dist;
+    double temp_dist = 999999;
+    Stored_Unit *return_unit = nullptr;
+
+    if ( !ui.unit_inventory_.empty() ) {
+        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+            temp_dist = (*e).second.pos_.getDistance( origin );
+            if ( temp_dist <= min_dist ) {
+                min_dist = temp_dist;
+                return_unit = &(e->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
+Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+    int min_dist = dist;
+    bool can_attack;
+    double temp_dist = 999999;
+    Stored_Unit *return_unit = nullptr; 
+
+    if ( !ui.unit_inventory_.empty() ) {
+        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
+            if ( can_attack ) {
+                temp_dist = e->second.pos_.getDistance( origin );
+                if ( temp_dist <= min_dist ) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second); 
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters.
+Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit *return_unit = nullptr;
+
+    if ( !ui.unit_inventory_.empty() ) {
+        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
+            can_be_attacked_by = (e->second.type_.airWeapon() != WeaponTypes::None && u_type.isFlyer()) || (e->second.type_.groundWeapon() != WeaponTypes::None && !u_type.isFlyer());
+            if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() ) {
+                temp_dist = e->second.pos_.getDistance( origin );
+                if ( temp_dist <= min_dist ) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
 Unit_Inventory MeatAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unit_Inventory ui_out;
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
@@ -274,6 +388,61 @@ Unit_Inventory MeatAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui,
     return ui_out;
 }
 
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
+Unit_Inventory MeatAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
+	Unit_Inventory ui_out;
+	for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+		if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type) {
+			ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+		}
+	}
+	return ui_out;
+}
+
+//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+bool MeatAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+
+    for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+        if( (*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
+            (*e).second.pos_.y < origin.y + dist && (*e).second.pos_.y > origin.y - dist ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//Searches an inventory for buildings of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
+
+    for ( auto & e : ui.unit_inventory_) {
+        if ( e.second.type_.isBuilding() ) {
+            if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
+                e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown() ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied or nearly so. Checks retangles for performance reasons rather than radius.
+bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist ) {
+
+        if ( unit->getType().isBuilding() ) {
+            Position pos = unit->getPosition();
+            UnitType type = unit->getType();
+            if ( pos.x < origin.x + type.dimensionLeft() + dist && pos.x > origin.x - type.dimensionRight() - dist &&
+                pos.y < origin.y + type.dimensionUp() + dist && pos.y > origin.y - type.dimensionDown() - dist ) {
+                return true;
+            }
+        }
+
+
+    return false;
+}
+
 bool MeatAIModule::isOnScreen( const Position &pos ) {
     bool inrange_x = Broodwar->getScreenPosition().x < pos.x && Broodwar->getScreenPosition().x + 640 > pos.x;
     bool inrange_y = Broodwar->getScreenPosition().y < pos.y && Broodwar->getScreenPosition().y + 480 > pos.y;
@@ -282,39 +451,389 @@ bool MeatAIModule::isOnScreen( const Position &pos ) {
 }
 
 //checks if there is a smooth path to target. in minitiles
-bool MeatAIModule::isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv ) // see Brehsam's Algorithm
+//bool MeatAIModule::isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv ) // see Brehsam's Algorithm
+//{
+//    int dx = abs( final.x - initial.x ) / 8;
+//    int dy = abs( final.y - initial.y ) / 8;
+//    int x = initial.x / 8;
+//    int y = initial.y / 8;
+//    int n = 1 + dx + dy;
+//    int x_inc = (final.x > initial.x) ? 1 : -1;
+//    int y_inc = (final.y > initial.y) ? 1 : -1;
+//    int error = dx - dy;
+//    dx *= 2;
+//    dy *= 2;
+//
+//    for ( ; n > 0; --n )
+//    {
+//        if ( inv.smoothed_barriers_[x][y] == 1 ) {
+//            return false;
+//        }
+//
+//        if ( error > 0 )
+//        {
+//            x += x_inc;
+//            error -= dy;
+//        }
+//        else
+//        {
+//            y += y_inc;
+//            error += dx;
+//        }
+//    }
+//
+//    return true;
+//} 
+
+//checks if there is a smooth path to target. in minitiles
+bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const Inventory &inv){ // see Brehsam's Algorithm for all 8 octants.
+	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
+	WalkPosition final = WalkPosition(finalp);
+	WalkPosition initial = WalkPosition(initialp);
+
+	dx = (final.x - initial.x);
+	dy = (final.y - initial.y);
+	dx1 = abs(dx);
+	dy1 = abs(dy);
+	px = 2 * dy1 - dx1;
+	py = 2 * dx1 - dy1;
+	map_x = Broodwar->mapWidth() * 4;
+	map_y = Broodwar->mapHeight() * 4;
+
+	if (dy1 <= dx1)
+	{
+		if (dx >= 0)
+		{
+			x = initial.x;
+			y = initial.y;
+			xe = final.x;
+		}
+		else
+		{
+			x = final.x;
+			y = final.y;
+			xe = initial.x;
+		}
+
+		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
+		if ( safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			return false;
+		}
+
+		for (int i = 0; x<xe; i++)
+		{
+			x = x + 1;
+			if (px<0)
+			{
+				px = px + 2 * dy1;
+			}
+			else
+			{
+				if ((dx<0 && dy<0) || (dx>0 && dy>0))
+				{
+					y++;
+				}
+				else
+				{
+					y--;
+				}
+				px = px + 2 * (dy1 - dx1);
+			}
+
+			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+				return false;
+			}
+		}
+	}
+	else
+	{
+		if (dy >= 0)
+		{
+			x = initial.x;
+			y = initial.y;
+			ye = final.y;
+		}
+		else
+		{
+			x = final.x;
+			y = final.y;
+			ye = initial.y;
+		}
+		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			return false;
+		}
+
+		for (int i = 0; y<ye; i++)
+		{
+			y = y + 1;
+			if (py <= 0)
+			{
+				py = py + 2 * dx1;
+			}
+			else
+			{
+				if ((dx<0 && dy<0) || (dx>0 && dy>0))
+				{
+					x++;
+				}
+				else
+				{
+					x--;
+				}
+				py = py + 2 * (dx1 - dy1);
+			}
+			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+				return false;
+			}
+
+		}
+	}
+
+	return true;
+
+}
+
+//Counts the number of minitiles in a smooth path to target. in minitiles
+int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Position &finalp, const Inventory &inv ) // see Brehsam's Algorithm. Is likely bugged in current state.
 {
-    int dx = abs( final.x - initial.x ) / 8;
-    int dy = abs( final.y - initial.y ) / 8;
-    int x = initial.x / 8;
-    int y = initial.y / 8;
-    int n = 1 + dx + dy;
-    int x_inc = (final.x > initial.x) ? 1 : -1;
-    int y_inc = (final.y > initial.y) ? 1 : -1;
-    int error = dx - dy;
-    dx *= 2;
-    dy *= 2;
+	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
+	WalkPosition final = WalkPosition(finalp);
+	WalkPosition initial = WalkPosition(initialp);
 
-    for ( ; n > 0; --n )
-    {
-        if ( inv.smoothed_barriers_[x][y] == 1 ) {
-            return false;
-        }
+	squares_counted = 0;
+	dx = (final.x - initial.x);
+	dy = (final.y - initial.y);
+	dx1 = abs(dx);
+	dy1 = abs(dy);
+	px = 2 * dy1 - dx1;
+	py = 2 * dx1 - dy1;
+	map_x = Broodwar->mapWidth() * 4;
+	map_y = Broodwar->mapHeight() * 4;
 
-        if ( error > 0 )
-        {
-            x += x_inc;
-            error -= dy;
-        }
-        else
-        {
-            y += y_inc;
-            error += dx;
+	if (dy1 <= dx1)
+	{
+		if (dx >= 0)
+		{
+			x = initial.x;
+			y = initial.y;
+			xe = final.x;
+		}
+		else
+		{
+			x = final.x;
+			y = final.y;
+			xe = initial.x;
+		}
+
+		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			squares_counted++;
+		}
+
+		for (int i = 0; x<xe; i++)
+		{
+			x = x + 1;
+			if (px<0)
+			{
+				px = px + 2 * dy1;
+			}
+			else
+			{
+				if ((dx<0 && dy<0) || (dx>0 && dy>0))
+				{
+					y++;
+				}
+				else
+				{
+					y--;
+				}
+				px = px + 2 * (dy1 - dx1);
+			}
+
+			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+				squares_counted++;
+			}
+		}
+	}
+	else
+	{
+		if (dy >= 0)
+		{
+			x = initial.x;
+			y = initial.y;
+			ye = final.y;
+		}
+		else
+		{
+			x = final.x;
+			y = final.y;
+			ye = initial.y;
+		}
+		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			squares_counted++;
+		}
+
+		for (int i = 0; y<ye; i++)
+		{
+			y = y + 1;
+			if (py <= 0)
+			{
+				py = py + 2 * dx1;
+			}
+			else
+			{
+				if ((dx<0 && dy<0) || (dx>0 && dy>0))
+				{
+					x++;
+				}
+				else
+				{
+					x--;
+				}
+				py = py + 2 * (dx1 - dy1);
+			}
+			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+			if ( safety_check && inv.smoothed_barriers_[x][y] == 1) {
+				squares_counted++;
+			}
+
+		}
+	}
+
+	return squares_counted;
+}
+
+//finds nearest choke or best location within 100 minitiles.
+Position MeatAIModule::getNearestChoke( const Position &initial, const Position &final, const Inventory &inv ) {
+    WalkPosition e_position = WalkPosition( final );
+    WalkPosition wk_postion = WalkPosition( initial );
+    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+
+    int max_observed = inv.map_veins_[wk_postion.x][wk_postion.y];
+    Position nearest_choke; 
+
+    for ( auto i = 0; i < 100; ++i ) {
+        for ( int x = -1; x <= 1; ++x ) {
+            for ( int y = -1; y <= 1; ++y ) {
+
+                int testing_x = wk_postion.x + x;
+                int testing_y = wk_postion.y + y;
+
+                if ( !(x == 0, y == 0) &&
+                    testing_x < map_dim.x &&
+                    testing_y < map_dim.y &&
+                    testing_x > 0 &&
+                    testing_y > 0 ) { // check for being within reference space.
+
+                    int temp = inv.map_veins_[testing_x][testing_y];
+
+                    if ( temp >= max_observed ) {
+                        max_observed = temp;
+                        nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+                        wk_postion = WalkPosition( nearest_choke ); //search from there.
+                        if ( max_observed > 175 ) {
+                            return nearest_choke;
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
-    return true;
-} 
+    //another attempt
+    //int x_dist_to_e = e_position.x - wk_postion.x;
+    //int y_dist_to_e = e_position.y - wk_postion.y;
+
+    //int dx = x_dist_to_e > 0 ? 1 : -1;
+    //int dy = y_dist_to_e > 0 ? 1 : -1;
+
+    //for ( auto i = 0; i < 50; ++i ) {
+    //    for ( int x = 0; x <= 1; ++x ) {
+    //        for ( int y = 0; y <= 1; ++y ) {
+
+    //            int testing_x = wk_postion.x + x * dx;
+    //            int testing_y = wk_postion.y + y * dy;
+
+    //            if ( !(x == 0, y == 0) &&
+    //                testing_x < map_dim.x &&
+    //                testing_y < map_dim.y &&
+    //                testing_x > 0 &&
+    //                testing_y > 0 ) { // check for being within reference space.
+
+    //                int temp = inv.map_veins_[testing_x][testing_y];
+
+    //                if ( temp > max_observed ) {
+    //                    max_observed = temp;
+    //                    nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+    //                    wk_postion = WalkPosition( nearest_choke ); //search from there.
+    //                    if ( max_observed > 275 ) {
+    //                        return nearest_choke;
+    //                        break;
+    //                    }
+    //                }
+    //                else if ( y_dist_to_e == 0 || abs( x_dist_to_e / y_dist_to_e ) > 1 ) {
+    //                    dx = x_dist_to_e > 0 ? 1 : -1;
+    //                }
+    //                else {
+    //                    dy = y_dist_to_e > 0 ? 1 : -1;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+     //another attempt
+    //int x_dist_to_e, y_dist_to_e, dx, dy, x_inc, y_inc;
+
+    //dx = x_dist_to_e > 0 ? 1 : -1;
+    //dy = y_dist_to_e > 0 ? 1 : -1;
+
+    //for ( auto i = 0; i < 50; ++i ) {
+
+    //    x_dist_to_e = e_position.x - wk_postion.x;
+    //    y_dist_to_e = e_position.y - wk_postion.y;
+
+    //    int testing_x = wk_postion.x + dx;
+    //    int testing_y = wk_postion.y + dy;
+
+    //    if ( testing_x < map_dim.x &&
+
+    //        testing_y < map_dim.y &&
+    //        testing_x > 0 &&
+    //        testing_y > 0 ) { // check for being within reference space.
+
+    //        int temp = inv.map_veins_[testing_x][testing_y];
+
+    //        if ( temp > max_observed ) {
+    //            max_observed = temp;
+    //            nearest_choke = Position( testing_x, testing_y ); //this is our best guess of a choke.
+    //            wk_postion = WalkPosition( nearest_choke ); //search from there.
+    //            if ( max_observed > 275 ) {
+    //                return nearest_choke;
+    //                break;
+    //            }
+    //        }
+    //        else if ( abs(y_dist_to_e / x_dist_to_e) < 1 ) {
+    //            dx += x_dist_to_e > 0 ? 1 : -1;
+    //        }
+    //        else {
+    //            dy += y_dist_to_e > 0 ? 1 : -1;
+    //        }
+    //    }
+    //}
+
+    return nearest_choke;
+}
+
+Position MeatAIModule::getUnit_Center(Unit unit){
+	return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
+}
+
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,
 //Zerg_Missile_Attacks = 11,

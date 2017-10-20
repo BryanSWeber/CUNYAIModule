@@ -72,11 +72,12 @@ struct Building_Gene {
     int building_timer_ = 0;
     UnitType last_build_order;
 
-    void updateBuildingTimer( const Unit_Inventory &ui );
-    void updateRemainingBuildOrder( const Unit &u );
-    void updateRemainingBuildOrder( const UpgradeType &ups );
-    void setBuilding_Complete( UnitType ut );
-    bool checkBuilding_Desired( UnitType ut );
+    void updateBuildingTimer( const Unit_Inventory &ui ); //adds time to timer.
+    void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
+    void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
+	void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
+    void setBuilding_Complete( UnitType ut );  // do we have a guy going to build it?
+    bool checkBuilding_Desired( UnitType ut ); 
     bool checkUpgrade_Desired( UpgradeType upgrade );
     bool checkEmptyBuildOrder();
 
