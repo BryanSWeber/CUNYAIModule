@@ -21,11 +21,11 @@ struct Stored_Unit {
     UnitType build_type_;
     Position pos_; // in pixels
 
-	Stored_Resource* locked_mine_;
+	Unit locked_mine_;
 
-	void startMine();
-	void stopMine();
-	void changeMine(Stored_Resource new_resource);
+	void startMine(Resource_Inventory &ri);
+	void stopMine(Resource_Inventory &ri);
+	void changeMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 
 	//void addMine(Stored_Resource mine);
 

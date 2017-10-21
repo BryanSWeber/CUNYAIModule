@@ -104,6 +104,8 @@ public:
 	  bool isActiveWorker(Unit unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
       bool isIdleEmpty(Unit unit );
+	  // When should we reset the lock?
+	  bool isInLine(Unit unit);
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
       bool IsFightingUnit( Unit unit );
       // Draws a line if diagnostic mode is TRUE.

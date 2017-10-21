@@ -16,15 +16,21 @@ void MeatAIModule::PrintError_Unit( Unit unit ) {
 
 // Identifies those moments where a worker is gathering and its unusual subcases.
 bool MeatAIModule::isActiveWorker(Unit unit){
-	bool passive = unit->getOrder() == unit->getOrder() != //BWAPI::Orders::MoveToMinerals &&
-		unit->getOrder() == BWAPI::Orders::MoveToGas &&
-		unit->getOrder() == BWAPI::Orders::WaitForMinerals &&
+	bool passive = //BWAPI::Orders::MoveToMinerals &&
+		unit->getOrder() == BWAPI::Orders::MoveToGas ||
+		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
 		//unit->getOrder() == BWAPI::Orders::WaitForGas && // should never be overstacked on gas.
-		unit->getOrder() == BWAPI::Orders::MiningMinerals &&
-		unit->getOrder() == BWAPI::Orders::HarvestGas &&
-		unit->getOrder() == BWAPI::Orders::ReturnMinerals &&
-		unit->getOrder() == BWAPI::Orders::ReturnGas &&
+		unit->getOrder() == BWAPI::Orders::MiningMinerals ||
+		unit->getOrder() == BWAPI::Orders::HarvestGas ||
+		unit->getOrder() == BWAPI::Orders::ReturnMinerals ||
+		unit->getOrder() == BWAPI::Orders::ReturnGas ||
 		unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
+	return passive;
+}
+bool MeatAIModule::isInLine(Unit unit){
+	bool passive = 
+		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
+		unit->getOrder() == BWAPI::Orders::WaitForGas; 
 	return passive;
 }
 

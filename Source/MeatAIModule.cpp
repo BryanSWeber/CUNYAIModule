@@ -231,7 +231,7 @@ void MeatAIModule::onFrame()
         Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
 
         // easy to update friendly unit inventory.
-        friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() );
+        friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() ); //REFRESHING EVERY FRAME!
         for ( auto f = friendly_inventory.unit_inventory_.begin(); f != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); ) {
             if ( f->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
                 f->second.type_ == UnitTypes::None ) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
@@ -252,6 +252,7 @@ void MeatAIModule::onFrame()
 				r->second.valid_pos_ = true;
 				r->second.type_ = r->second.bwapi_unit_->getType();
 				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, Filter::IsResourceDepot).empty()); // is there a resource depot in 250 of it?
+				r->second.full_resource_ = r->second.number_of_miners_ >= 2;
 			}
 
 			if ( Broodwar->isVisible(resource_pos) ) {
@@ -523,7 +524,7 @@ void MeatAIModule::onFrame()
             auto start_worker = std::chrono::high_resolution_clock::now();
             if ( u->getType().isWorker() )
             {
-				if (isIdleEmpty(u)){
+				if ((isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
 					Worker_Mine(u);
 				}
      //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.

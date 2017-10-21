@@ -178,15 +178,17 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
-void Stored_Unit::startMine(){
-	if (locked_mine_){
-		locked_mine_->number_of_miners_++;
+void Stored_Unit::startMine(Resource_Inventory &ri){
+	if (locked_mine_ && locked_mine_->exists() ){
+		Broodwar->sendText("starting mining");
+		ri.resource_inventory_.at(locked_mine_).number_of_miners_++;
 	}
 }
 
-void Stored_Unit::stopMine(){
-	if (locked_mine_ && locked_mine_->number_of_miners_ > 0){
-		locked_mine_->number_of_miners_--;
+void Stored_Unit::stopMine(Resource_Inventory &ri){
+	if (locked_mine_ && locked_mine_->exists() ){
+		Broodwar->sendText("stopping mining");
+		ri.resource_inventory_.at(locked_mine_).number_of_miners_--;
 	}
 }
 //void Stored_Unit::addMine(Stored_Resource mine){
@@ -195,8 +197,8 @@ void Stored_Unit::stopMine(){
 //	}
 //}
 
-void Stored_Unit::changeMine(Stored_Resource new_resource){
-	stopMine();
-	locked_mine_ = &new_resource;
-	startMine();
+void Stored_Unit::changeMine(Stored_Resource &new_resource, Resource_Inventory &ri){
+	stopMine(ri);  // always says it's null.
+	locked_mine_ = new_resource.bwapi_unit_;
+	startMine(ri);
 }

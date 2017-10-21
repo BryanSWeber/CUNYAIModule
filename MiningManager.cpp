@@ -58,11 +58,13 @@ void MeatAIModule::Worker_Mine(const Unit &unit) {
 	for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
 		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
 			available_fields.addStored_Resource(r->second);
-			Stored_Resource* closest = getClosestStored(available_fields, miner->pos_, 999999); // this reference is not true.
-			closest = &neutral_inventory.resource_inventory_.at(closest->bwapi_unit_);
-			miner->bwapi_unit_->gather(closest->bwapi_unit_);
-			miner->changeMine(*closest);
 		}
+	}
+
+	if (!available_fields.resource_inventory_.empty()){
+		Stored_Resource closest = *getClosestStored(available_fields, miner->pos_, 999999);
+		miner->bwapi_unit_->gather(closest.bwapi_unit_);
+		miner->changeMine(closest, neutral_inventory);
 	}
 
 	//if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
