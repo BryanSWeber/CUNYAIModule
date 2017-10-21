@@ -167,6 +167,7 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     type_ = unit->getType();
     build_type_ = unit->getBuildType();
     current_hp_ = unit->getHitPoints();
+	locked_mine_ = nullptr;
 
     //Get unit's status. Precalculated, precached.
 	int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
@@ -177,8 +178,8 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
-void Stored_Unit::addMine(const Unit &mine){
-	if (mine && mine->exists()){
+void Stored_Unit::addMine(const Unit mine){
+	if (mine && mine->exists() && mine->getType().isMineralField() ){
 		locked_mine_= mine;
 	}
 }
@@ -189,7 +190,7 @@ void Stored_Unit::addMine(const Unit &mine){
 //	}
 //}
 
-bool Stored_Unit::isMining(const Unit &unit){
+bool Stored_Unit::isMining(const Unit unit){
 	bool safety_check = unit && unit->exists() && locked_mine_ && locked_mine_->exists();
 	return  safety_check && (locked_mine_->getID() == unit->getID());
 }

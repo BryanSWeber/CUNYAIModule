@@ -1,10 +1,9 @@
 #pragma once
-# include "Source\MeatAIModule.h"
+#include "Source\MeatAIModule.h"
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
 void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inventory &inv) {
@@ -52,25 +51,38 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 }
 
 //Sends a worker to mine minerals.
-void MeatAIModule::Worker_Mine( const Unit &unit ) {
+void MeatAIModule::Worker_Mine(const Unit &unit) {
 
-    if ( isIdleEmpty( unit ) ) {
-		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, unit->getPosition(), 300);
-		for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
-			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
-				unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
+	Stored_Unit* miner = &friendly_inventory.unit_inventory_.at(unit);
+
+	if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
+		if (!neutral_inventory.resource_inventory_.at(miner->locked_mine_).full_resource_ && unit->gather(miner->locked_mine_)){
+			neutral_inventory.resource_inventory_.at(miner->locked_mine_).addMiner(unit);// that mine is now busy.
+			Broodwar->sendText("Continue Mining");
+		}
+		else {
+			neutral_inventory.resource_inventory_.at(miner->locked_mine_).removeMiner(unit);// that mine is no longer being mined.
+		}
+	}
+	else { // Give the miner his first lock.
+		for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_ && unit->gather(r->second.bwapi_unit_) ){ // if you are idle, get to work.
 				neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
 				friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
 				break;
 			}
+			else {
+				Broodwar->sendText("Found nothing");
+			}
 		}
-    } // stopgap command.
+	} // stopgap command.
+
 
     Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
 
     if ( local_base && local_base->exists() ) {
 
-		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, local_base->getPosition(), 300);
+		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, local_base->getPosition(), 400);
 			if (isOnScreen(local_base->getPosition())){
 				Broodwar->drawCircleMap(local_base->getPosition(), 300, Colors::Green);
 			}
@@ -100,15 +112,17 @@ void MeatAIModule::Worker_Mine( const Unit &unit ) {
 
                         if ( dist > 750 && dist < nearest_dist && acceptable_foreign) {
                             nearest_dist = dist; // transfer to the nearest undersaturated base.
-							Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, (*base)->getPosition(), 300);
-							for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
-								if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
-									unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
-									neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
-									friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
-									break;
-								}
-							}
+							//Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, (*base)->getPosition(), 400);
+							//for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
+							//	if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+							//		unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
+							//		Broodwar->sendText("Trying To Mine long distance");
+							//		Unit old_mine = friendly_inventory.unit_inventory_.at(unit).locked_mine_;
+							//		neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
+							//		friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
+							//		break;
+							//	}
+							//}
                         } // closure for base being a canidate for transfer.
                     } // closure for base existance.
                 } // iterate through all possible bases

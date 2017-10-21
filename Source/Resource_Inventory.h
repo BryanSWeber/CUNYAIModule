@@ -14,7 +14,7 @@ struct Stored_Resource{
 	//Creator methods
 	Stored_Resource();
 	Stored_Resource(Unit unit);
-	bool isBeingMinedBy(const Unit &unit);
+	bool isBeingMinedBy(const Unit unit);
 
 	int current_stock_value_;
 	int number_of_miners_;
@@ -25,6 +25,7 @@ struct Stored_Resource{
 
 	vector<Unit> miner_inventory_; //what miners are attached to this resource?
 	void addMiner(Unit miner);
+	void removeMiner(Unit miner);
 	//void addMiner(Unit_Inventory::Stored_Unit miner);
 
 	Position local_natural_;

@@ -423,7 +423,7 @@ Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inv
 	Resource_Inventory ri_out;
 	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
 		if ((*r).second.pos_.getDistance(origin) <= dist) {
-			ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
+			ri_out.addStored_Resource( (*r).second ); // if we take any distance and they are in inventory.
 		}
 	}
 	return ri_out;

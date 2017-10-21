@@ -22,8 +22,8 @@ struct Stored_Unit {
     Position pos_; // in pixels
 
 	Unit locked_mine_;
-	void addMine(const Unit &mine);
-	bool isMining(const Unit &unit);
+	void addMine(const Unit mine);
+	bool isMining(const Unit unit);
 	//void addMine(Stored_Resource mine);
 
     int current_hp_;

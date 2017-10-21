@@ -88,9 +88,16 @@ Stored_Resource::Stored_Resource(Unit resource) {
 }
 
 void Stored_Resource::addMiner(Unit miner) {
-	if (miner && miner->exists()){
+	if (miner && miner->exists() && miner->getType().isWorker() ){
 		miner_inventory_.push_back(miner);
 		number_of_miners_++; 
+	}
+}
+
+void Stored_Resource::removeMiner(Unit miner){
+	if (miner && miner->exists()){
+		miner_inventory_.erase(remove(miner_inventory_.begin(), miner_inventory_.end(), miner));
+		number_of_miners_--;
 	}
 }
 
@@ -102,6 +109,6 @@ void Stored_Resource::addMiner(Unit miner) {
 //}
 
 //checks if this resource matches the mining target of the enclosed unit.
-bool Stored_Resource::isBeingMinedBy(const Unit &unit){
+bool Stored_Resource::isBeingMinedBy(const Unit unit){
 	return find(miner_inventory_.begin(), miner_inventory_.end(), unit) != miner_inventory_.end();
 }
