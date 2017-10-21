@@ -3,6 +3,7 @@
 #include <BWAPI.h>
 #include "Source\MeatAIModule.h"
 #include "Source\Resource_Inventory.h"
+#include "Source\Unit_Inventory.h"
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
@@ -85,16 +86,22 @@ Stored_Resource::Stored_Resource(Unit resource) {
 	type_ = resource->getType();
 	pos_ = resource->getPosition();
 }
+
 void Stored_Resource::addMiner(Unit miner) {
-
 	if (miner && miner->exists()){
-		miner_inventory_.insert({ miner, Stored_Unit(miner) });
-	}
-}
-void Stored_Resource::addMiner(Stored_Unit miner) {
-
-	if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
-		miner_inventory_.insert({ miner.bwapi_unit_, miner });
+		miner_inventory_.push_back(miner);
+		number_of_miners_++; 
 	}
 }
 
+//void Stored_Resource::addMiner(Stored_Unit miner) {
+//	if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
+//		miner_inventory_.push_back(miner.bwapi_unit_);
+//		number_of_miners_++;
+//	}
+//}
+
+//checks if this resource matches the mining target of the enclosed unit.
+bool Stored_Resource::isBeingMinedBy(const Unit &unit){
+	return find(miner_inventory_.begin(), miner_inventory_.end(), unit) != miner_inventory_.end();
+}

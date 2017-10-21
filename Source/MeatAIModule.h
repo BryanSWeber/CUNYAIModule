@@ -3,6 +3,7 @@
 #include <BWAPI.h> //4.2.0 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
+#include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
 
@@ -90,7 +91,7 @@ public:
       //Forces selected unit (drone, hopefully!) to expo:
       void Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit , Resource_Inventory &ri);
+      void Worker_Mine( const Unit &unit );
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gas( const Unit &unit );
       // Checks if there is a way to spend gas.

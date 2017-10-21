@@ -177,3 +177,19 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
+void Stored_Unit::addMine(const Unit &mine){
+	if (mine && mine->exists()){
+		locked_mine_= mine;
+	}
+}
+
+//void Stored_Unit::addMine(Stored_Resource mine){
+//	if (mine.bwapi_unit_ && mine.bwapi_unit_->exists()){
+//		locked_mine_ = mine.bwapi_unit_;
+//	}
+//}
+
+bool Stored_Unit::isMining(const Unit &unit){
+	bool safety_check = unit && unit->exists() && locked_mine_ && locked_mine_->exists();
+	return  safety_check && (locked_mine_->getID() == unit->getID());
+}

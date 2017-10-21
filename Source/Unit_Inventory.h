@@ -2,11 +2,13 @@
 
 #include <BWAPI.h>
 #include "MeatAIModule.h"
+#include "Resource_Inventory.h"
 
 using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
+//struct Stored_Resource;
 
 struct Stored_Unit {
 
@@ -18,6 +20,12 @@ struct Stored_Unit {
     UnitType type_;
     UnitType build_type_;
     Position pos_; // in pixels
+
+	Unit locked_mine_;
+	void addMine(const Unit &mine);
+	bool isMining(const Unit &unit);
+	//void addMine(Stored_Resource mine);
+
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
     int unit_ID_;

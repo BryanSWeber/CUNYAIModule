@@ -4,6 +4,7 @@
 #include "CobbDouglas.h"
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
+#include "Resource_Inventory.h"
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
@@ -253,10 +254,15 @@ void MeatAIModule::onFrame()
 				if (r->second.type_.isMineralField()){
 
 					r->second.number_of_miners_ = 0;
-					for (auto m = r->second.miner_inventory_.begin(); m != r->second.miner_inventory_.end() && !r->second.miner_inventory_.empty(); m++){
-						if (friendly_inventory.unit_inventory_[m->first].bwapi_unit_ && friendly_inventory.unit_inventory_[m->first].bwapi_unit_->exists() && friendly_inventory.unit_inventory_[m->first].type_.isWorker() ){
+					for (auto locked_miner = r->second.miner_inventory_.begin(); locked_miner != r->second.miner_inventory_.end() && !r->second.miner_inventory_.empty(); locked_miner++){
+
+						if (friendly_inventory.unit_inventory_.at(*locked_miner).bwapi_unit_ && friendly_inventory.unit_inventory_.at(*locked_miner).bwapi_unit_->exists() &&  // safety checks.
+							friendly_inventory.unit_inventory_.at(*locked_miner).type_.isWorker() &&
+							friendly_inventory.unit_inventory_.at(*locked_miner).isMining(r->second.bwapi_unit_) && r->second.isBeingMinedBy(*locked_miner)) { // if the mine lock is present in both directions. 
+
 							r->second.number_of_miners_++;
-						} //iterate through miners and confirm that they are still active.
+							Broodwar->sendText("MATCH FOUND");
+						} //iterate through miners and confirm that they are still active. && r->second.isBeingMinedBy(friendly_inventory.unit_inventory_.at(locked_miner->first))
 					}
 
 					r->second.full_resource_ = r->second.number_of_miners_ >= 2;
@@ -569,7 +575,7 @@ void MeatAIModule::onFrame()
                         } // closure gas
                         else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
                         {
-                            Worker_Mine( u , neutral_inventory);
+                            Worker_Mine( u );
                             ++inventory.min_fields_;
                         }
 

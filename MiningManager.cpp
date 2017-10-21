@@ -52,15 +52,15 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 }
 
 //Sends a worker to mine minerals.
-void MeatAIModule::Worker_Mine( const Unit &unit, Resource_Inventory &ri ) {
+void MeatAIModule::Worker_Mine( const Unit &unit ) {
 
     if ( isIdleEmpty( unit ) ) {
-		Resource_Inventory local_sat = getResourceInventoryInRadius(ri, unit->getPosition(), 250);
-		for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
-			if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, unit->getPosition(), 300);
+		for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
+			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
 				unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
-				ri.resource_inventory_[r->first].number_of_miners_++;
-				ri.resource_inventory_[r->first].addMiner(unit);
+				neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
+				friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
 				break;
 			}
 		}
@@ -70,9 +70,9 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Resource_Inventory &ri ) {
 
     if ( local_base && local_base->exists() ) {
 
-            Resource_Inventory local_sat = getResourceInventoryInRadius(ri, local_base->getPosition(), 250);
+		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, local_base->getPosition(), 300);
 			if (isOnScreen(local_base->getPosition())){
-				Broodwar->drawCircleMap(local_base->getPosition(), 250, Colors::Green);
+				Broodwar->drawCircleMap(local_base->getPosition(), 300, Colors::Green);
 			}
 			bool fully_saturated = true;
 			for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
@@ -100,12 +100,12 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Resource_Inventory &ri ) {
 
                         if ( dist > 750 && dist < nearest_dist && acceptable_foreign) {
                             nearest_dist = dist; // transfer to the nearest undersaturated base.
-							Resource_Inventory local_sat = getResourceInventoryInRadius(ri, (*base)->getPosition(), 250);
-							for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
+							Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, (*base)->getPosition(), 300);
+							for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
 								if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
 									unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
-									ri.resource_inventory_[r->first].number_of_miners_++; // this seems dangerous
-									ri.resource_inventory_[r->first].addMiner(unit);
+									neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
+									friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
 									break;
 								}
 							}
