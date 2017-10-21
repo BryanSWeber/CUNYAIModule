@@ -7,14 +7,11 @@
 using namespace std;
 using namespace BWAPI;
 
-//struct Stored_Unit;
-
 struct Stored_Resource{
 
 	//Creator methods
 	Stored_Resource();
 	Stored_Resource(Unit unit);
-	bool isBeingMinedBy(const Unit unit);
 
 	int current_stock_value_;
 	int number_of_miners_;
@@ -23,16 +20,10 @@ struct Stored_Resource{
 	bool full_resource_;
 	bool valid_pos_;
 
-	vector<Unit> miner_inventory_; //what miners are attached to this resource?
-	void addMiner(Unit miner);
-	void removeMiner(Unit miner);
-	//void addMiner(Unit_Inventory::Stored_Unit miner);
-
 	Position local_natural_;
 	Unit bwapi_unit_;
 	UnitType type_;
 	Position pos_;
-
 
 };
 

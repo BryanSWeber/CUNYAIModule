@@ -54,28 +54,38 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 void MeatAIModule::Worker_Mine(const Unit &unit) {
 
 	Stored_Unit* miner = &friendly_inventory.unit_inventory_.at(unit);
-
-	if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
-		if (!neutral_inventory.resource_inventory_.at(miner->locked_mine_).full_resource_ && unit->gather(miner->locked_mine_)){
-			neutral_inventory.resource_inventory_.at(miner->locked_mine_).addMiner(unit);// that mine is now busy.
-			Broodwar->sendText("Continue Mining");
-		}
-		else {
-			neutral_inventory.resource_inventory_.at(miner->locked_mine_).removeMiner(unit);// that mine is no longer being mined.
+	Resource_Inventory available_fields;
+	for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+			available_fields.addStored_Resource(r->second);
+			Stored_Resource* closest = getClosestStored(available_fields, miner->pos_, 999999); // this reference is not true.
+			closest = &neutral_inventory.resource_inventory_.at(closest->bwapi_unit_);
+			miner->bwapi_unit_->gather(closest->bwapi_unit_);
+			miner->changeMine(*closest);
 		}
 	}
-	else { // Give the miner his first lock.
-		for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_ && unit->gather(r->second.bwapi_unit_) ){ // if you are idle, get to work.
-				neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
-				friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
-				break;
-			}
-			else {
-				Broodwar->sendText("Found nothing");
-			}
-		}
-	} // stopgap command.
+
+	//if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
+	//	if (!neutral_inventory.resource_inventory_.at(miner->locked_mine_).full_resource_ && unit->gather(miner->locked_mine_)){
+	//		neutral_inventory.resource_inventory_.at(miner->locked_mine_).addMiner(unit);// that mine is now busy.
+	//		Broodwar->sendText("Continue Mining");
+	//	}
+	//	else {
+	//		neutral_inventory.resource_inventory_.at(miner->locked_mine_).removeMiner(unit);// that mine is no longer being mined.
+	//	}
+	//}
+	//else { // Give the miner his first lock.
+	//	for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+	//		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_ && unit->gather(r->second.bwapi_unit_) ){ // if you are idle, get to work.
+	//			neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
+	//			friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
+	//			break;
+	//		}
+	//		else {
+	//			Broodwar->sendText("Found nothing");
+	//		}
+	//	}
+	//} // stopgap command.
 
 
     Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );

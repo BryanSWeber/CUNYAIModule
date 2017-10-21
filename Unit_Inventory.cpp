@@ -178,19 +178,25 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
-void Stored_Unit::addMine(const Unit mine){
-	if (mine && mine->exists() && mine->getType().isMineralField() ){
-		locked_mine_= mine;
+void Stored_Unit::startMine(){
+	if (locked_mine_){
+		locked_mine_->number_of_miners_++;
 	}
 }
 
+void Stored_Unit::stopMine(){
+	if (locked_mine_ && locked_mine_->number_of_miners_ > 0){
+		locked_mine_->number_of_miners_--;
+	}
+}
 //void Stored_Unit::addMine(Stored_Resource mine){
 //	if (mine.bwapi_unit_ && mine.bwapi_unit_->exists()){
 //		locked_mine_ = mine.bwapi_unit_;
 //	}
 //}
 
-bool Stored_Unit::isMining(const Unit unit){
-	bool safety_check = unit && unit->exists() && locked_mine_ && locked_mine_->exists();
-	return  safety_check && (locked_mine_->getID() == unit->getID());
+void Stored_Unit::changeMine(Stored_Resource new_resource){
+	stopMine();
+	locked_mine_ = &new_resource;
+	startMine();
 }

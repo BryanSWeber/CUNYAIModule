@@ -126,14 +126,14 @@ void MeatAIModule::onStart()
 	win_rate = (1 - gene_history.loss_rate_);
 
 	//update local resources
-	Resource_Inventory neutral_resources; // for first initialization.
+	Resource_Inventory neutral_inventory; // for first initialization.
 
     //update Map Grids
     inventory.updateBuildablePos();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
     //inventory.updateMapChokes();
-    inventory.updateBaseLoc(neutral_resources);
+	inventory.updateBaseLoc(neutral_inventory);
 
 	//update timers.
 	short_delay = 0;
@@ -251,23 +251,6 @@ void MeatAIModule::onFrame()
 				r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
 				r->second.valid_pos_ = true;
 				r->second.type_ = r->second.bwapi_unit_->getType();
-
-				if (r->second.type_.isMineralField()){
-
-					//r->second.number_of_miners_ = 0;
-
-					//for (auto locked_miner = r->second.miner_inventory_.begin(); locked_miner != r->second.miner_inventory_.end() && !r->second.miner_inventory_.empty(); locked_miner++){
-					//	if (friendly_inventory.unit_inventory_.at(*locked_miner).bwapi_unit_ && friendly_inventory.unit_inventory_.at(*locked_miner).bwapi_unit_->exists() &&  // safety checks.
-					//		friendly_inventory.unit_inventory_.at(*locked_miner).type_.isWorker() &&
-					//		/*friendly_inventory.unit_inventory_.at(*locked_miner).isMining(r->second.bwapi_unit_) &&*/ r->second.isBeingMinedBy(*locked_miner)) { // if the mine lock is present in both directions. 
-					//		r->second.number_of_miners_++;
-					//	} //iterate through miners and confirm that they are still active. && r->second.isBeingMinedBy(friendly_inventory.unit_inventory_.at(locked_miner->first))
-					//}
-
-					r->second.full_resource_ = r->second.number_of_miners_ >= 2;
-				}
-
-
 				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, Filter::IsResourceDepot).empty()); // is there a resource depot in 250 of it?
 			}
 
@@ -540,7 +523,9 @@ void MeatAIModule::onFrame()
             auto start_worker = std::chrono::high_resolution_clock::now();
             if ( u->getType().isWorker() )
             {
-				Worker_Mine(u);
+				if (isIdleEmpty(u)){
+					Worker_Mine(u);
+				}
      //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
      //           if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
      //           {
