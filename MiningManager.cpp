@@ -57,7 +57,6 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 //	Stored_Resource& target_mine = neutral_inventory.resource_inventory_.find( miner.bwapi_unit_->getTarget() )->second;
 
 	if (miner.locked_mine_ && miner.locked_mine_->exists() ){
-		Broodwar->sendText("VICTORY! It's %p", &miner.bwapi_unit_);
 		miner.bwapi_unit_->gather(miner.locked_mine_);
 	}
 	else {
@@ -74,7 +73,6 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 			Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 999999);
 			miner.bwapi_unit_->gather(closest->bwapi_unit_);
 			miner.startMine(*closest, neutral_inventory);
-			Broodwar->sendText("You have set my mine to %p", &miner.bwapi_unit_);
 		}
 		Broodwar->sendText("There are supposedly %d miners.", miner_count);
 	}

@@ -536,9 +536,19 @@ void MeatAIModule::onFrame()
             auto start_worker = std::chrono::high_resolution_clock::now();
             if ( u->getType().isWorker() )
             {
-				if ((isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
+				if ( (isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
 					Worker_Mine(u, friendly_inventory);
 				}
+
+				// Building subloop. 
+				if ( isIdleEmpty(u) /*|| IsGatheringMinerals( u ) || IsGatheringGas( u )*/)
+				{ //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
+
+					//t_build = Broodwar->getFrameCount();
+					Building_Begin(u, inventory, enemy_inventory);
+
+				} // Close Build loop
+
      //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
      //           if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
      //           {
