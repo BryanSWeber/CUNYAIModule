@@ -536,66 +536,57 @@ void MeatAIModule::onFrame()
             auto start_worker = std::chrono::high_resolution_clock::now();
             if ( u->getType().isWorker() )
             {
-				if ( (isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
-					Worker_Mine(u, friendly_inventory);
-				}
+				//if ( (isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
+				//	Worker_Mine(u, friendly_inventory);
+				//}
 
-				// Building subloop. 
-				if ( isIdleEmpty(u) /*|| IsGatheringMinerals( u ) || IsGatheringGas( u )*/)
-				{ //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
+                // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
+                if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
+                {
+                    // Order workers carrying a resource to return them to the center, every few seconds. This will refresh their logics as well.
+                    // otherwise find a mineral patch to harvest.
 
-					//t_build = Broodwar->getFrameCount();
-					Building_Begin(u, inventory, enemy_inventory);
+					if ( isIdleEmpty(u) && !u->isCarryingGas() && !u->isCarryingMinerals())
+                    {
+                        // Idle worker then Harvest from the nearest mineral patch or gas refinery, depending on need.
+                        bool enough_gas = !gas_starved ||
+                            (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
+                            inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 
-				} // Close Build loop
+                        bool excess_minerals = inventory.min_workers_ >= 1 * inventory.min_fields_; //Some extra leeway over the optimal 1.5/patch, since they will be useless overgathering gas but not useless overgathering minerals.
 
-     //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
-     //           if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
-     //           {
-     //               // Order workers carrying a resource to return them to the center, every few seconds. This will refresh their logics as well.
-     //               // otherwise find a mineral patch to harvest.
+                        if ( !enough_gas /*&& excess_minerals*/ ) // Careful tinkering here.
+                        {
+                            Unit ref = u->getClosestUnit( IsRefinery && IsOwned );
+                            if ( ref && ref->exists() ) {
+                                Worker_Gas( u );
+                                ++inventory.gas_workers_;
+                            }
+                        } // closure gas
+                        else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
+                        {
+                            Worker_Mine( u , friendly_inventory);
+                            ++inventory.min_fields_;
+                        }
 
-					//// Building subloop. 
-					//if ( isIdleEmpty(u) /*|| IsGatheringMinerals( u ) || IsGatheringGas( u )*/)
-					//{ //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
+                    } // closure: collection assignment.
+					else if ( !isActiveWorker(u) && (u->isCarryingMinerals() || u->isCarryingGas()) ) // Return $$$
+                    {
+                        //Unit base = u->getClosestUnit( IsResourceDepot && IsOwned );
+                        //if ( base && base->exists() ) {
+                        //    u->move( base->getPosition() );
+                        u->returnCargo( true );
+                    }//Closure: returning $$ loop
 
-					//	//t_build = Broodwar->getFrameCount();
-					//	Building_Begin(u, inventory, enemy_inventory);
+					// Building subloop. 
+					if (/*isIdleEmpty(u)*/ isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) // rarely passes spam guard.
+					{ //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
 
-					//} // Close Build loop
+						//t_build = Broodwar->getFrameCount();
+						Building_Begin(u, inventory, enemy_inventory);
 
-					//if ( !u->isCarryingGas() && !u->isCarryingMinerals() )
-     //               {
-     //                   // Idle worker then Harvest from the nearest mineral patch or gas refinery, depending on need.
-     //                   bool enough_gas = !gas_starved ||
-     //                       (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
-     //                       inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
-
-     //                   bool excess_minerals = inventory.min_workers_ >= 1 * inventory.min_fields_; //Some extra leeway over the optimal 1.5/patch, since they will be useless overgathering gas but not useless overgathering minerals.
-
-     //                   if ( !enough_gas /*&& excess_minerals*/ ) // Careful tinkering here.
-     //                   {
-     //                       Unit ref = u->getClosestUnit( IsRefinery && IsOwned );
-     //                       if ( ref && ref->exists() ) {
-     //                           Worker_Gas( u );
-     //                           ++inventory.gas_workers_;
-     //                       }
-     //                   } // closure gas
-     //                   else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
-     //                   {
-     //                       Worker_Mine( u );
-     //                       ++inventory.min_fields_;
-     //                   }
-
-     //               } // closure: collection assignment.
-					//else if ( !isActiveWorker(u) && (u->isCarryingMinerals() || u->isCarryingGas()) ) // Return $$$
-     //               {
-     //                   //Unit base = u->getClosestUnit( IsResourceDepot && IsOwned );
-     //                   //if ( base && base->exists() ) {
-     //                   //    u->move( base->getPosition() );
-     //                   u->returnCargo( true );
-     //               }//Closure: returning $$ loop
-     //           }// Closure: mining loop
+					} // Close Build loop
+                }// Closure: mining loop
 
             } // Close Worker management loop
             auto end_worker = std::chrono::high_resolution_clock::now();

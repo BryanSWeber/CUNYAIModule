@@ -27,6 +27,7 @@ bool MeatAIModule::isActiveWorker(Unit unit){
 		unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
 	return passive;
 }
+
 bool MeatAIModule::isInLine(Unit unit){
 	bool passive = 
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
@@ -51,9 +52,9 @@ bool MeatAIModule::isIdleEmpty( Unit unit ) {
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
                           u_type == UnitCommandTypes::None;
 
-	bool spam_guard = unit->getLastCommandFrame() > Broodwar->getFrameCount() - Broodwar->getLatencyFrames();
+	bool spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();
 
-    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && !spam_guard ;
+    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spam_guard ;
 }
 
 // Checks for if a unit is a combat unit.

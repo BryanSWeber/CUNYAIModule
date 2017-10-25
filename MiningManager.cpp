@@ -53,21 +53,26 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 //Sends a worker to mine minerals.
 void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 
+	bool already_assigned = false;
 	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
-//	Stored_Resource& target_mine = neutral_inventory.resource_inventory_.find( miner.bwapi_unit_->getTarget() )->second;
+	Resource_Inventory available_fields;
+	int miner_count = 0;
+	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+			available_fields.addStored_Resource(r->second);
+		}
+		miner_count += r->second.number_of_miners_;
+	}
 
 	if (miner.locked_mine_ && miner.locked_mine_->exists() ){
-		miner.bwapi_unit_->gather(miner.locked_mine_);
-	}
-	else {
-		Resource_Inventory available_fields;
-		int miner_count = 0;
-		for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
-				available_fields.addStored_Resource(r->second);
-			}
-			miner_count += r->second.number_of_miners_;
+		Stored_Resource& target_mine = neutral_inventory.resource_inventory_.find(miner.bwapi_unit_->getTarget())->second;
+		if ( target_mine.number_of_miners_ <= 2 ){
+			miner.bwapi_unit_->gather(miner.locked_mine_);
+			already_assigned = true;
 		}
+	}
+	if ( !already_assigned ) {
+
 
 		if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
 			Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 999999);
@@ -76,79 +81,58 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 		}
 		Broodwar->sendText("There are supposedly %d miners.", miner_count);
 	}
-	//if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
-	//	if (!neutral_inventory.resource_inventory_.at(miner->locked_mine_).full_resource_ && unit->gather(miner->locked_mine_)){
-	//		neutral_inventory.resource_inventory_.at(miner->locked_mine_).addMiner(unit);// that mine is now busy.
-	//		Broodwar->sendText("Continue Mining");
-	//	}
-	//	else {
-	//		neutral_inventory.resource_inventory_.at(miner->locked_mine_).removeMiner(unit);// that mine is no longer being mined.
-	//	}
-	//}
-	//else { // Give the miner his first lock.
-	//	for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-	//		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_ && unit->gather(r->second.bwapi_unit_) ){ // if you are idle, get to work.
-	//			neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
-	//			friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
-	//			break;
-	//		}
-	//		else {
-	//			Broodwar->sendText("Found nothing");
-	//		}
-	//	}
-	//} // stopgap command.
 
 
-    Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
+  //  Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
 
-    if ( local_base && local_base->exists() ) {
+  //  if ( local_base && local_base->exists() ) {
 
-		Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, local_base->getPosition(), 400);
-			if (isOnScreen(local_base->getPosition())){
-				Broodwar->drawCircleMap(local_base->getPosition(), 300, Colors::Green);
-			}
-			bool fully_saturated = true;
-			for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
-				if (!r->second.full_resource_){
-					fully_saturated = false;
-					break;
-				}
-			}
+		//Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, local_base->getPosition(), 400);
+		//	if (isOnScreen(local_base->getPosition())){
+		//		Broodwar->drawCircleMap(local_base->getPosition(), 300, Colors::Green);
+		//	}
+		//	bool fully_saturated = true;
+		//	for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end(); r++){
+		//		if (!r->second.full_resource_){
+		//			fully_saturated = false;
+		//			break;
+		//		}
+		//	}
 
-            int local_dist = unit->getDistance( local_base );
+  //          int local_dist = unit->getDistance( local_base );
 
-            bool acceptable_local = local_dist < 500 && !fully_saturated; // if local conditions are fine (and you are working), continue, no commands.
+  //          bool acceptable_local = local_dist < 500 && !fully_saturated; // if local conditions are fine (and you are working), continue, no commands.
 
-            if ( !acceptable_local && rand() % 100 + 1 < 25 ) { // if local conditions are bad, we will consider tranfering 25% of these workers elsewhere.
-                Unitset bases = unit->getUnitsInRadius( 999999, IsResourceDepot && IsOwned );
+  //          if ( !acceptable_local && rand() % 100 + 1 < 25 ) { // if local conditions are bad, we will consider tranfering 25% of these workers elsewhere.
+  //              Unitset bases = unit->getUnitsInRadius( 999999, IsResourceDepot && IsOwned );
 
-                int nearest_dist = 9999999;
-                for ( auto base = bases.begin(); base != bases.end() && !bases.empty(); ++base ) {
-                    if ( (*base)->exists() ) {
-                        int dist = unit->getDistance( *base );
+  //              int nearest_dist = 9999999;
+  //              for ( auto base = bases.begin(); base != bases.end() && !bases.empty(); ++base ) {
+  //                  if ( (*base)->exists() ) {
+  //                      int dist = unit->getDistance( *base );
 
-                        Unitset base_sat = (*base)->getUnitsInRadius( 500, IsWorker && (IsGatheringMinerals || IsCarryingMinerals) );
-                        Unitset base_min = (*base)->getUnitsInRadius( 500, IsMineralField );
-                        bool acceptable_foreign = !base_min.empty() && (int)base_sat.size() < (int)base_min.size(); // there must be a severe desparity to switch, and please only switch to ones clearly different than your local mine, 250 p.
+  //                      Unitset base_sat = (*base)->getUnitsInRadius( 500, IsWorker && (IsGatheringMinerals || IsCarryingMinerals) );
+  //                      Unitset base_min = (*base)->getUnitsInRadius( 500, IsMineralField );
+  //                      bool acceptable_foreign = !base_min.empty() && (int)base_sat.size() < (int)base_min.size(); // there must be a severe desparity to switch, and please only switch to ones clearly different than your local mine, 250 p.
 
-                        if ( dist > 750 && dist < nearest_dist && acceptable_foreign) {
-                            nearest_dist = dist; // transfer to the nearest undersaturated base.
-							//Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, (*base)->getPosition(), 400);
-							//for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
-							//	if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
-							//		unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
-							//		Broodwar->sendText("Trying To Mine long distance");
-							//		Unit old_mine = friendly_inventory.unit_inventory_.at(unit).locked_mine_;
-							//		neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
-							//		friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
-							//		break;
-							//	}
-							//}
-                        } // closure for base being a canidate for transfer.
-                    } // closure for base existance.
-                } // iterate through all possible bases
-            } // closure for worker transfer
-        } // closure safety check for existance of local base.
+  //                      if ( dist > 750 && dist < nearest_dist && acceptable_foreign) {
+  //                          nearest_dist = dist; // transfer to the nearest undersaturated base.
+		//					//Resource_Inventory local_sat = getResourceInventoryInRadius(neutral_inventory, (*base)->getPosition(), 400);
+		//					//for (auto r = local_sat.resource_inventory_.begin(); r != local_sat.resource_inventory_.end() && !local_sat.resource_inventory_.empty(); r++){
+		//					//	if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+		//					//		unit->gather(r->second.bwapi_unit_); // if you are idle, get to work.
+		//					//		Broodwar->sendText("Trying To Mine long distance");
+		//					//		Unit old_mine = friendly_inventory.unit_inventory_.at(unit).locked_mine_;
+		//					//		neutral_inventory.resource_inventory_.at(r->second.bwapi_unit_).addMiner(unit);// that mine is now busy.
+		//					//		friendly_inventory.unit_inventory_.at(unit).addMine(r->second.bwapi_unit_); // that miner is now locked to r
+		//					//		break;
+		//					//	}
+		//					//}
+  //                      } // closure for base being a canidate for transfer.
+  //                  } // closure for base existance.
+  //              } // iterate through all possible bases
+  //          } // closure for worker transfer
+  //      } // closure safety check for existance of local base.
 } // closure worker mine
 
 //Sends a Worker to gather Gas.
