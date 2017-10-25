@@ -15,6 +15,7 @@ struct Stored_Unit {
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( Unit unit );
     Stored_Unit();
+	void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
     UnitType type_;
@@ -23,9 +24,8 @@ struct Stored_Unit {
 
 	Unit locked_mine_;
 
-	void startMine(Resource_Inventory &ri);
+	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
-	void changeMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 
 	//void addMine(Stored_Resource mine);
 
@@ -45,7 +45,7 @@ struct Unit_Inventory {
 
     //Creates an instance of the Unit inventory class.
     Unit_Inventory();
-    Unit_Inventory(const Unitset &unit_set );
+    Unit_Inventory( const Unitset &unit_set );
 
     //what about their upgrades?
     //Other details?
@@ -71,6 +71,7 @@ struct Unit_Inventory {
 
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
+	void updateUnitInventory(const Unitset &unit_set);
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

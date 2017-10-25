@@ -51,22 +51,33 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 }
 
 //Sends a worker to mine minerals.
-void MeatAIModule::Worker_Mine(const Unit &unit) {
+void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 
-	Stored_Unit* miner = &friendly_inventory.unit_inventory_.at(unit);
-	Resource_Inventory available_fields;
-	for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
-			available_fields.addStored_Resource(r->second);
+	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+//	Stored_Resource& target_mine = neutral_inventory.resource_inventory_.find( miner.bwapi_unit_->getTarget() )->second;
+
+	if (miner.locked_mine_ && miner.locked_mine_->exists() ){
+		Broodwar->sendText("VICTORY! It's %p", &miner.bwapi_unit_);
+		miner.bwapi_unit_->gather(miner.locked_mine_);
+	}
+	else {
+		Resource_Inventory available_fields;
+		int miner_count = 0;
+		for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+			if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+				available_fields.addStored_Resource(r->second);
+			}
+			miner_count += r->second.number_of_miners_;
 		}
-	}
 
-	if (!available_fields.resource_inventory_.empty()){
-		Stored_Resource closest = *getClosestStored(available_fields, miner->pos_, 999999);
-		miner->bwapi_unit_->gather(closest.bwapi_unit_);
-		miner->changeMine(closest, neutral_inventory);
+		if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
+			Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 999999);
+			miner.bwapi_unit_->gather(closest->bwapi_unit_);
+			miner.startMine(*closest, neutral_inventory);
+			Broodwar->sendText("You have set my mine to %p", &miner.bwapi_unit_);
+		}
+		Broodwar->sendText("There are supposedly %d miners.", miner_count);
 	}
-
 	//if (miner->bwapi_unit_ && miner->bwapi_unit_->exists() && miner->locked_mine_ && miner->locked_mine_->exists() ){
 	//	if (!neutral_inventory.resource_inventory_.at(miner->locked_mine_).full_resource_ && unit->gather(miner->locked_mine_)){
 	//		neutral_inventory.resource_inventory_.at(miner->locked_mine_).addMiner(unit);// that mine is now busy.

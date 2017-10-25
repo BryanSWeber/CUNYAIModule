@@ -10,12 +10,34 @@
 
 Unit_Inventory::Unit_Inventory(){}
 
-Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
+Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
     
-    for ( const auto & u : unit_set) {
-        unit_inventory_.insert( { u, Stored_Unit( u ) } );
-    }
+	for (const auto & u : unit_set) {
+		unit_inventory_.insert({ u, Stored_Unit(u) });
+	}
+
     updateUnitInventorySummary(); //this call is a CPU sink.
+}
+
+void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
+		if (unit_inventory_.empty()){ // it thinks it's ALWAYS empty.
+			for (const auto & u : unit_set) {
+				unit_inventory_.insert({ u, Stored_Unit(u) });
+			}
+
+		}
+		else {
+			for (const auto & u : unit_set) {
+
+				if (unit_inventory_.count(u) > 0){
+					unit_inventory_.find(u)->second.updateStoredUnit(u);
+				}
+				else {
+					unit_inventory_.insert({ u, Stored_Unit(u) });
+				}
+			}
+		}
+		updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
 // Updates the count of units.
@@ -27,6 +49,23 @@ void Unit_Inventory::addStored_Unit( Stored_Unit stored_unit ) {
     unit_inventory_.insert( { stored_unit.bwapi_unit_ , stored_unit } );
 };
 
+void Stored_Unit::updateStoredUnit(const Unit &unit){
+
+		valid_pos_ = true;
+		pos_ = unit->getPosition();
+		type_ = unit->getType();
+		build_type_ = unit->getBuildType();
+		current_hp_ = unit->getHitPoints();
+
+		//Get unit's status. Precalculated, precached.
+		int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
+		stock_value_ = (int)sqrt(pow(unit->getType().mineralPrice(), 2) + pow(1.25 * unit->getType().gasPrice(), 2) + pow(25 * modified_supply, 2));
+		if (unit->getType().isTwoUnitsInOneEgg()) {
+			stock_value_ = stock_value_ / 2;
+		}
+		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())); // Precalculated, precached.
+
+}
 
 //Removes units that have died
 void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
@@ -178,17 +217,15 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
-void Stored_Unit::startMine(Resource_Inventory &ri){
-	if (locked_mine_ && locked_mine_->exists() ){
-		Broodwar->sendText("starting mining");
-		ri.resource_inventory_.at(locked_mine_).number_of_miners_++;
-	}
+void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
+	locked_mine_ = new_resource.bwapi_unit_;
+	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_ && locked_mine_->exists() ){
+	if (locked_mine_ && locked_mine_->exists() && ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end() ){
 		Broodwar->sendText("stopping mining");
-		ri.resource_inventory_.at(locked_mine_).number_of_miners_--;
+		ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_--;
 	}
 }
 //void Stored_Unit::addMine(Stored_Resource mine){
@@ -197,8 +234,4 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
 //	}
 //}
 
-void Stored_Unit::changeMine(Stored_Resource &new_resource, Resource_Inventory &ri){
-	stopMine(ri);  // always says it's null.
-	locked_mine_ = new_resource.bwapi_unit_;
-	startMine(ri);
-}
+
