@@ -8,7 +8,7 @@ using namespace Filter;
 using namespace std;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations.
-void MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera )
+bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera )
 {
     if ( Broodwar->self()->minerals() >= building.mineralPrice() &&
         Broodwar->self()->gas() >= building.gasPrice() &&
@@ -85,9 +85,11 @@ void MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
         {
             if ( unit->morph( building ) ) {
                 buildorder.setBuilding_Complete( building );
-            }
-        }
+				return true;
+			}
+		}
     }
+	return false;
 }
 
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -169,46 +171,46 @@ void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 }
 
 //Creates a new building with DRONE. Incomplete.
-void MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
+bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
     // will send it to do the LAST thing on this list that it can build.
-
+	int buildings_started = 0;
     //Gas Buildings
-	Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, (inv.gas_workers_ > 3 * Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) || gas_starved) && 
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, (inv.gas_workers_ > 3 * Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) || gas_starved) && 
 		Count_Units_Doing(UnitTypes::Zerg_Extractor, UnitCommandTypes::Build, Broodwar->self()->getUnits()) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 
     //Expo loop, whenever not army starved. 
-	Expo(drone, !army_starved || Broodwar->self()->minerals() > 600, inv);
-    Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0  && Broodwar->self()->minerals() > 600 ); // only macrohatch if you are short on larvae and being a moron.
+	buildings_started += Expo(drone, !army_starved || Broodwar->self()->minerals() > 600, inv);
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) == 0 && Broodwar->self()->minerals() > 600); // only macrohatch if you are short on larvae and being a moron.
 
     //Basic Buildings
-    Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved &&
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 );
 
     //Tech Buildings
-    Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 0 && 
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 );
 
-	Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, tech_starved &&
 		Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) == 1 && 
 		Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits() ) == 0 && 
 		Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Build, Broodwar->self()->getUnits()) == 0 && //costly, slow.
 		Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0);
 
-    Check_N_Build( UnitTypes::Zerg_Hydralisk_Den, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 &&
         Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) == 0 );
 
-    Check_N_Build( UnitTypes::Zerg_Spire, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Spire, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) == 0 &&
         Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) >= 0 );
 
-    Check_N_Build( UnitTypes::Zerg_Queens_Nest, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Queens_Nest, friendly_inventory ) == 0 &&
         Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 &&
         Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 );  // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
-    Check_N_Build( UnitTypes::Zerg_Ultralisk_Cavern, drone, friendly_inventory, tech_starved &&
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) == 0 &&
         Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) >= 0 );
 
@@ -216,11 +218,14 @@ void MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 		(Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0 && Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber)); // And there is a building complete that will allow either creep colony upgrade.
 
     //Combat Buildings
-    Check_N_Build( UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, army_starved &&  // army starved.
+	buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, army_starved &&  // army starved.
         Count_Units( UnitTypes::Zerg_Creep_Colony, friendly_inventory ) == 0 && // no creep colonies waiting to upgrade
 		upgradable_creep_colonies &&
         (inv.hatches_ * (inv.hatches_ + 1 )) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
         //hatches >= 2 ); // and don't build them if you're on one base.
+
+	return buildings_started > 0;
+
 };
 
 void Building_Gene::updateBuildingTimer( const Unit_Inventory &ui ) {

@@ -31,7 +31,8 @@ bool MeatAIModule::isActiveWorker(Unit unit){
 bool MeatAIModule::isInLine(Unit unit){
 	bool passive = 
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
-		unit->getOrder() == BWAPI::Orders::WaitForGas; 
+		unit->getOrder() == BWAPI::Orders::WaitForGas ||
+		unit->getOrder() == BWAPI::Orders::ResetCollision;
 	return passive;
 }
 

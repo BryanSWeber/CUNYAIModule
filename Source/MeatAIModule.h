@@ -89,7 +89,7 @@ public:
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and delays the building timer 25 frames, or ~1 sec.
-      void Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
+      bool Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
       // Check and grow a unit using larva.
       void Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -97,11 +97,11 @@ public:
       // Morphs units "Reactively". Incomplete.
       void Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
-      void Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &u_inv );
+      bool Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &u_inv );
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
-      void Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
+      bool Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Mine( const Unit &unit , Unit_Inventory &ui);
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.

@@ -28,9 +28,8 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
 		}
 		else {
 			for (const auto & u : unit_set) {
-
 				if (unit_inventory_.count(u) > 0){
-					unit_inventory_.find(u)->second.updateStoredUnit(u);
+					unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
 				}
 				else {
 					unit_inventory_.insert({ u, Stored_Unit(u) });
@@ -225,12 +224,9 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 
 void Stored_Unit::stopMine(Resource_Inventory &ri){
 	if (locked_mine_ && locked_mine_->exists()){
-		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(this->bwapi_unit_->getTarget());
+		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
 		if (iter != ri.resource_inventory_.end()){
-			Stored_Resource& target_mine = iter->second;
-			if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()){
-				ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_--;
-			}
+			iter->second.number_of_miners_--;
 		}
 		locked_mine_ = nullptr;
 	}

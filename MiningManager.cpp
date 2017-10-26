@@ -6,7 +6,7 @@ using namespace Filter;
 using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
-void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inventory &inv) {
+bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inventory &inv) {
     if ( Broodwar->self()->minerals() >= 300 && 
 		( buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ) )  ) {
         
@@ -45,8 +45,12 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
 					Broodwar->drawLineMap({ inv.next_expo_.x * 32 + UnitTypes::Zerg_Hatchery.dimensionUp(), inv.next_expo_.y * 32 + UnitTypes::Zerg_Hatchery.dimensionLeft() }, unit->getPosition(), Colors::White);
 				}
 			}
+
+			return true;
         }
     } // closure affordablity.
+
+	return false;
 }
 
 //Sends a worker to mine minerals.
@@ -60,13 +64,13 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
 		miner_count += r->second.number_of_miners_;
-		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<low_drone ){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ){
 			low_drone = r->second.number_of_miners_;
 		}
 	} // find drone minima.
 
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_== low_drone){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_){
 			available_fields.addStored_Resource(r->second);
 		}
 	} //find closest mine meeting this criteria.
@@ -144,46 +148,41 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 //Sends a Worker to gather Gas.
 void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 
-    if ( isIdleEmpty( unit ) ) {
-        Unit anchor_gas = unit->getClosestUnit( IsRefinery );
-        if ( anchor_gas && anchor_gas->exists() ) {
-            unit->gather( anchor_gas ); // if you are idle, get to work.
-        }
-    } // stopgap command.
+	bool already_assigned = false;
+	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+	Resource_Inventory available_fields;
+	int miner_count = 0;
+	int low_drone = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
-    Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
+	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+		miner_count += r->second.number_of_miners_;
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_){
+			low_drone = r->second.number_of_miners_;
+		}
+	} // find drone minima.
 
-    if ( local_base && local_base->exists() ) {
+	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_){
+			available_fields.addStored_Resource(r->second);
+		}
+	} //find closest mine meeting this criteria.
 
-        Unitset local_gas = local_base->getUnitsInRadius( 250, IsWorker && (IsGatheringGas || IsCarryingGas) );
-        Unitset local_refinery = local_base->getUnitsInRadius( 250, IsRefinery );
-        int local_dist = unit->getDistance( local_base );
+	if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
+		Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999);
+		if (!nearest_building){
+			Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999);
+		}
+		if (!nearest_building){
+			Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999);
+		}
 
-        bool acceptable_local = local_dist < 500 && (int)local_gas.size() <= (int)local_refinery.size() * 3; // if local conditions are fine (and you are working), continue, no commands.
-
-        if ( !acceptable_local && rand() % 100 + 1 < 25 ) { // if local conditions are bad, we will consider tranfering 25% of these workers elsewhere.
-            Unitset bases = unit->getUnitsInRadius( 999999, IsResourceDepot && IsOwned );
-            int nearest_dist = 9999999;
-
-            for ( auto base = bases.begin(); base != bases.end() && !bases.empty(); ++base ) {
-                if ( (*base)->exists() ) {
-                    int dist = unit->getDistance( *base );
-
-                        Unitset base_gas = (*base)->getUnitsInRadius( 500, IsWorker && (IsGatheringGas || IsCarryingGas) );
-                        Unitset base_refinery = (*base)->getUnitsInRadius( 500, IsRefinery );
-                        bool acceptable_foreign = !base_refinery.empty() && (int)base_gas.size() <= (int)base_refinery.size(); // there must be a severe desparity to switch, and please only switch to ones clearly different than your local mine, 250 p.
-
-                        if ( dist > 750 && dist < nearest_dist && acceptable_foreign ) {
-                            nearest_dist = dist; // transfer to the nearest undersaturated base.
-                            Unit anchor_gas = (*base)->getClosestUnit( IsRefinery );
-                            if ( anchor_gas && anchor_gas->exists() ) {
-                                unit->gather( anchor_gas );
-                            }
-                        } // closure act of transferring drones themselves.
-                } // closure for base existance.
-            } // iterate through all possible bases
-        } // closure for worker transfer
-    } // closure safety check for existance of local base.
+		if (nearest_building){
+			Stored_Resource* closest = getClosestStored(available_fields, nearest_building->pos_, 9999999);
+			miner.bwapi_unit_->gather(closest->bwapi_unit_);
+			miner.startMine(*closest, neutral_inventory);
+		}
+	} // send drone to closest base's closest mineral field meeting that critera.
+	miner_count_ = miner_count;
 } // closure worker mine
 
 //Returns True if there is an out for gas. Does not consider all possible gas outlets.

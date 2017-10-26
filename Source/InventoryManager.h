@@ -26,11 +26,11 @@ struct Inventory {
     int min_workers_;
     int min_fields_;
     int hatches_;
+	int last_builder_sent;
 
     int min_reserve_;
     int gas_reserve_;
     int building_timer_;
- 
     vector< vector<bool> > buildable_positions_ ;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
