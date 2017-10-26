@@ -222,16 +222,16 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
+
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_ && locked_mine_->exists() && ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end() ){
-		Broodwar->sendText("stopping mining");
-		ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_--;
+	if (locked_mine_ && locked_mine_->exists()){
+		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(this->bwapi_unit_->getTarget());
+		if (iter != ri.resource_inventory_.end()){
+			Stored_Resource& target_mine = iter->second;
+			if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()){
+				ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_--;
+			}
+		}
+		locked_mine_ = nullptr;
 	}
 }
-//void Stored_Unit::addMine(Stored_Resource mine){
-//	if (mine.bwapi_unit_ && mine.bwapi_unit_->exists()){
-//		locked_mine_ = mine.bwapi_unit_;
-//	}
-//}
-
-

@@ -167,16 +167,6 @@ void MeatAIModule::onFrame()
         // Performance Qeuery Timer
         // http://www.decompile.com/cpp/faq/windows_timer_api.htm
 
-    std::chrono::duration<double, std::milli> preamble_time;
-    std::chrono::duration<double, std::milli> larva_time;
-    std::chrono::duration<double, std::milli> worker_time;
-    std::chrono::duration<double, std::milli> scout_time;
-    std::chrono::duration<double, std::milli> combat_time;
-    std::chrono::duration<double, std::milli> detector_time;
-    std::chrono::duration<double, std::milli> upgrade_time;
-    std::chrono::duration<double, std::milli> creepcolony_time;
-    std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
-
         auto start_preamble = std::chrono::high_resolution_clock::now();
         // Assess enemy stock and general positions.
 
@@ -231,28 +221,24 @@ void MeatAIModule::onFrame()
         Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
 
         // easy to update friendly unit inventory.
-		int pre = friendly_inventory.unit_inventory_.size();
 		if (friendly_inventory.unit_inventory_.size() == 0){
-			friendly_inventory = Unit_Inventory(Broodwar->self()->getUnits()); //REFRESHING EVERY FRAME!
+			friendly_inventory = Unit_Inventory(Broodwar->self()->getUnits());
 		}
 		else {
 			friendly_inventory.updateUnitInventory(Broodwar->self()->getUnits());
 		}
-		int post = friendly_inventory.unit_inventory_.size();
-		if (post - pre > 0){
-			Broodwar->sendText("We added: %d units.", post - pre);
+
+
+		for (auto f = friendly_inventory.unit_inventory_.begin(); f != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty();) {
+			if (f->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
+				f->second.type_ == UnitTypes::None || // sometimes they have a "none" in inventory. This isn't very reasonable, either.
+				!f->second.bwapi_unit_ || !f->second.bwapi_unit_->exists() ) { 
+				f = friendly_inventory.unit_inventory_.erase( f ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+			}
+			else {
+				++f;
+			}
 		}
-
-
-        for ( auto f = friendly_inventory.unit_inventory_.begin(); f != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); ) {
-            if ( f->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
-                f->second.type_ == UnitTypes::None ) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
-                f = friendly_inventory.unit_inventory_.erase( f ); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
-            }
-            else {
-                ++f;
-            }
-        }
 
         //Update posessed minerals. Erase those that are mined out.
 		for (auto r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty();) {
@@ -399,7 +385,7 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 375, 30, "Army Stock: %d", (int)exp(inventory.ln_army_stock_) ); //
             Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
             Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f",  inventory.vision_tile_count_ / (double)map_area );  //
-			Broodwar->drawTextScreen( 375, 60, "Current Idea: %d", enemy_inventory.volume_);  //
+			Broodwar->drawTextScreen( 375, 60, "Current Idea: %d", miner_count_);  //
 
             //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
             //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -410,6 +396,27 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS() );  // 
             Broodwar->drawTextScreen( 500, 50, "FPS: %4.2f", Broodwar->getAverageFPS() );  // 
             Broodwar->drawTextScreen( 500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames() );  //
+
+			if (_ANALYSIS_MODE){
+				Broodwar->drawTextScreen(500, 70, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count()); // Is wrong.
+				Broodwar->drawTextScreen(500, 80, "Preamble:%3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+				Broodwar->drawTextScreen(500, 90, "Larva:%3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+				Broodwar->drawTextScreen(500, 100, "Workers:%3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+				Broodwar->drawTextScreen(500, 110, "Scouting:%3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+				Broodwar->drawTextScreen(500, 120, "Combat:%3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+				Broodwar->drawTextScreen(500, 130, "Detection:%3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+				Broodwar->drawTextScreen(500, 140, "Upgrades:%3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+				Broodwar->drawTextScreen(500, 150, "CreepColonies:%3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
+
+				preamble_time; // set every frame.
+				larva_time; // set every latency frame.
+				worker_time;
+				scout_time;
+				combat_time;
+				upgrade_time;
+				creepcolony_time; //reset all clocks.
+
+			}
 
 			for (auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p){
 				if (isOnScreen(p->second.pos_)) {
@@ -536,17 +543,16 @@ void MeatAIModule::onFrame()
             auto start_worker = std::chrono::high_resolution_clock::now();
             if ( u->getType().isWorker() )
             {
-				//if ( (isIdleEmpty(u) || isInLine(u)) && t_game % 20 == 0 ){
-				//	Worker_Mine(u, friendly_inventory);
-				//}
 
                 // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
-                if ( ( isIdleEmpty( u ) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
+                if ( ( isIdleEmpty( u ) || isInLine(u) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
                 {
-                    // Order workers carrying a resource to return them to the center, every few seconds. This will refresh their logics as well.
-                    // otherwise find a mineral patch to harvest.
+					if (isIdleEmpty(u)){
+						Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
+						miner.stopMine(neutral_inventory);
+					}
 
-					if ( isIdleEmpty(u) && !u->isCarryingGas() && !u->isCarryingMinerals())
+					if ( (isIdleEmpty(u) || isInLine(u)) && !u->isCarryingGas() && !u->isCarryingMinerals() && !isInLine(u))
                     {
                         // Idle worker then Harvest from the nearest mineral patch or gas refinery, depending on need.
                         bool enough_gas = !gas_starved ||
@@ -559,8 +565,10 @@ void MeatAIModule::onFrame()
                         {
                             Unit ref = u->getClosestUnit( IsRefinery && IsOwned );
                             if ( ref && ref->exists() ) {
-                                Worker_Gas( u );
-                                ++inventory.gas_workers_;
+                                Worker_Gas( u , friendly_inventory);
+								Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
+								miner.stopMine(neutral_inventory);
+								++inventory.gas_workers_;
                             }
                         } // closure gas
                         else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
@@ -572,20 +580,17 @@ void MeatAIModule::onFrame()
                     } // closure: collection assignment.
 					else if ( !isActiveWorker(u) && (u->isCarryingMinerals() || u->isCarryingGas()) ) // Return $$$
                     {
-                        //Unit base = u->getClosestUnit( IsResourceDepot && IsOwned );
-                        //if ( base && base->exists() ) {
-                        //    u->move( base->getPosition() );
-                        u->returnCargo( true );
+						u->returnCargo(true);	
                     }//Closure: returning $$ loop
 
-					// Building subloop. 
-					if (/*isIdleEmpty(u)*/ isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) // rarely passes spam guard.
-					{ //only get those that are idle or gathering minerals, but not carrying them. This always irked me. 
-
-						//t_build = Broodwar->getFrameCount();
+					// Building subloop.
+					if (isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u))
+					{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
 						Building_Begin(u, inventory, enemy_inventory);
-
+						//Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
+						//miner.stopMine(neutral_inventory);
 					} // Close Build loop
+
                 }// Closure: mining loop
 
             } // Close Worker management loop
@@ -839,20 +844,9 @@ void MeatAIModule::onFrame()
                 }
             }
         auto end_detector = std::chrono::high_resolution_clock::now();
-
         detector_time += end_detector - start_detector;
-
         auto end = std::chrono::high_resolution_clock::now();
         total_frame_time = end - start_preamble;
-        preamble_time;
-        larva_time;
-        worker_time;
-        scout_time;
-        combat_time;
-        detector_time;
-        upgrade_time;
-        creepcolony_time;
-        total_frame_time; //will use preamble start time.
 
         //Clock App
             if ( total_frame_time.count() > 55 ) {
@@ -864,19 +858,10 @@ void MeatAIModule::onFrame()
             if ( total_frame_time.count() > 10000 ) {
                 long_delay+=1;
             }
-                Broodwar->drawTextScreen( 500, 70, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count() ); // Flickers. Annoying.
-                Broodwar->drawTextScreen( 500, 80, "Preamble:%3.f%%,%3.fms ", preamble_time.count()/(double)total_frame_time.count() * 100, preamble_time.count() );
-                Broodwar->drawTextScreen( 500, 90, "Larva:%3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count() );
-                Broodwar->drawTextScreen( 500, 100, "Workers:%3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count() );
-                Broodwar->drawTextScreen( 500, 110, "Scouting:%3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count() );
-                Broodwar->drawTextScreen( 500, 120, "Combat:%3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count() );
-                Broodwar->drawTextScreen( 500, 130, "Detection:%3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count() );
-                Broodwar->drawTextScreen( 500, 140, "Upgrades:%3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count() );
-                Broodwar->drawTextScreen( 500, 150, "CreepColonies:%3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count() );
-                if ( (short_delay > 320 || Broodwar->elapsedTime() > 90 * 60) && _RESIGN_MODE ) //if game times out or lags out, end game with resignation.
-                {
-                    Broodwar->leaveGame();
-                }
+			if ((short_delay > 320 || Broodwar->elapsedTime() > 90 * 60) && _RESIGN_MODE) //if game times out or lags out, end game with resignation.
+			{
+				Broodwar->leaveGame();
+			}
 
 
 } // closure: Onframe
@@ -1012,6 +997,14 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
     }
+	
+	if (unit && unit->getType().isWorker()){
+		map<Unit, Stored_Unit>::iterator iter = friendly_inventory.unit_inventory_.find(unit);
+		if (iter != friendly_inventory.unit_inventory_.end()){
+			Stored_Unit& miner = iter->second;
+			miner.stopMine(neutral_inventory);
+		}
+	}
 }
 
 void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
@@ -1034,6 +1027,14 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
     }
+
+	if (unit && unit->getType().isBuilding() && unit->getPlayer() == BWAPI::Broodwar->self() ){
+		map<Unit, Stored_Unit>::iterator iter = friendly_inventory.unit_inventory_.find(unit);
+		if (iter != friendly_inventory.unit_inventory_.end()){
+			Stored_Unit& miner = iter->second;
+			miner.stopMine(neutral_inventory);
+		}
+	}
 }
 
 void MeatAIModule::onUnitRenegade( BWAPI::Unit unit )

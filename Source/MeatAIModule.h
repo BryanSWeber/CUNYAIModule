@@ -6,6 +6,7 @@
 #include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
+#include <chrono> // for in-game frame clock.
 
 //#define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
@@ -58,6 +59,7 @@ public:
     bool gas_starved;
   double win_rate; //fairly straighforward.
 
+  int miner_count_; // a temp variable
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
@@ -70,6 +72,16 @@ public:
     int short_delay;
     int med_delay;
     int long_delay;
+
+	std::chrono::duration<double, std::milli> preamble_time;
+	std::chrono::duration<double, std::milli> larva_time;
+	std::chrono::duration<double, std::milli> worker_time;
+	std::chrono::duration<double, std::milli> scout_time;
+	std::chrono::duration<double, std::milli> combat_time;
+	std::chrono::duration<double, std::milli> detector_time;
+	std::chrono::duration<double, std::milli> upgrade_time;
+	std::chrono::duration<double, std::milli> creepcolony_time;
+	std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
 
   int t_build;
 
@@ -93,7 +105,7 @@ public:
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Mine( const Unit &unit , Unit_Inventory &ui);
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Gas( const Unit &unit );
+	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui);
       // Checks if there is a way to spend gas.
       bool Gas_Outlet();
 
@@ -137,7 +149,8 @@ public:
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
-	  Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist );
+	  Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+	  Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );

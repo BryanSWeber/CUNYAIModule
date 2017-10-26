@@ -47,7 +47,7 @@ bool MeatAIModule::isIdleEmpty( Unit unit ) {
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker) ||
-                         (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals()) ||
+                         (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
                           u_type == UnitCommandTypes::None;
@@ -336,6 +336,27 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
     }
 
     return return_unit;
+}
+
+//Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
+Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+	int min_dist = dist;
+	double temp_dist = 999999;
+	Stored_Unit *return_unit = nullptr;
+
+	if (!ui.unit_inventory_.empty()) {
+		for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+			if (e->second.type_ == u_type){
+				temp_dist = (*e).second.pos_.getDistance(origin);
+				if (temp_dist <= min_dist) {
+					min_dist = temp_dist;
+					return_unit = &(e->second);
+				}
+			}
+		}
+	}
+
+	return return_unit;
 }
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.

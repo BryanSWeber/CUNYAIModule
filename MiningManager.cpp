@@ -16,7 +16,6 @@ void MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inve
             //Unitset obstructions = Broodwar->getUnitsInRadius( Position(inv.next_expo_), 3 * 32 );
             //obstructions.move( { Position( inv.next_expo_ ).x + (rand() % 200 - 100) * 4 * 32, Position( inv.next_expo_ ).y + (rand() % 200 - 100) * 4 * 32 } );
             //obstructions.build( UnitTypes::Zerg_Hatchery, inv.next_expo_ );// I think some thing quirky is happening here. Sometimes gets caught in rebuilding loop.
-			Broodwar->sendText("TRYING TO EXPO HERE");
 
 			Unit_Inventory hatch_builders = getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Drone, Position(inv.next_expo_), 99999);
 			Stored_Unit *best_drone = getClosestStored(hatch_builders, Position(inv.next_expo_), 99999);
@@ -57,30 +56,37 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
 	Resource_Inventory available_fields;
 	int miner_count = 0;
+	int low_drone = 10; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
-		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && !r->second.full_resource_){
+		miner_count += r->second.number_of_miners_;
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<low_drone ){
+			low_drone = r->second.number_of_miners_;
+		}
+	} // find drone minima.
+
+	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
+		if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_== low_drone){
 			available_fields.addStored_Resource(r->second);
 		}
-		miner_count += r->second.number_of_miners_;
-	}
+	} //find closest mine meeting this criteria.
 
-	if (miner.locked_mine_ && miner.locked_mine_->exists() ){
-		Stored_Resource& target_mine = neutral_inventory.resource_inventory_.find(miner.bwapi_unit_->getTarget())->second;
-		if ( target_mine.number_of_miners_ <= 2 ){
-			miner.bwapi_unit_->gather(miner.locked_mine_);
-			already_assigned = true;
+	if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
+		Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999);
+		if (!nearest_building){
+			Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999);
 		}
-	}
-	if ( !already_assigned ) {
+		if (!nearest_building){
+			Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999);
+		}
 
-
-		if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
-			Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 999999);
+		if (nearest_building){
+			Stored_Resource* closest = getClosestStored(available_fields, nearest_building->pos_, 9999999);
 			miner.bwapi_unit_->gather(closest->bwapi_unit_);
 			miner.startMine(*closest, neutral_inventory);
 		}
-		Broodwar->sendText("There are supposedly %d miners.", miner_count);
-	}
+	} // send drone to closest base's closest mineral field meeting that critera.
+  miner_count_ = miner_count;
 
 
   //  Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
@@ -136,7 +142,7 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 } // closure worker mine
 
 //Sends a Worker to gather Gas.
-void MeatAIModule::Worker_Gas( const Unit &unit ) {
+void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 
     if ( isIdleEmpty( unit ) ) {
         Unit anchor_gas = unit->getClosestUnit( IsRefinery );
