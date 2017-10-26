@@ -167,8 +167,19 @@ void MeatAIModule::onFrame()
         // Performance Qeuery Timer
         // http://www.decompile.com/cpp/faq/windows_timer_api.htm
 
-        auto start_preamble = std::chrono::high_resolution_clock::now();
         // Assess enemy stock and general positions.
+		std::chrono::duration<double, std::milli> preamble_time;
+		std::chrono::duration<double, std::milli> larva_time;
+		std::chrono::duration<double, std::milli> worker_time;
+		std::chrono::duration<double, std::milli> scout_time;
+		std::chrono::duration<double, std::milli> combat_time;
+		std::chrono::duration<double, std::milli> detector_time;
+		std::chrono::duration<double, std::milli> upgrade_time;
+		std::chrono::duration<double, std::milli> creepcolony_time;
+		std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
+
+		auto start_preamble = std::chrono::high_resolution_clock::now();
+
 
         // Let us see what is stored in each unit_inventory and update it. Invalidate unwanted units. Most notably, geysers become extractors on death.
 
@@ -397,26 +408,15 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 500, 50, "FPS: %4.2f", Broodwar->getAverageFPS() );  // 
             Broodwar->drawTextScreen( 500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames() );  //
 
-			if (_ANALYSIS_MODE){
-				Broodwar->drawTextScreen(500, 70, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count()); // Is wrong.
-				Broodwar->drawTextScreen(500, 80, "Preamble:%3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-				Broodwar->drawTextScreen(500, 90, "Larva:%3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-				Broodwar->drawTextScreen(500, 100, "Workers:%3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-				Broodwar->drawTextScreen(500, 110, "Scouting:%3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-				Broodwar->drawTextScreen(500, 120, "Combat:%3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-				Broodwar->drawTextScreen(500, 130, "Detection:%3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-				Broodwar->drawTextScreen(500, 140, "Upgrades:%3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-				Broodwar->drawTextScreen(500, 150, "CreepColonies:%3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-
-				preamble_time; // set every frame.
-				larva_time; // set every latency frame.
-				worker_time;
-				scout_time;
-				combat_time;
-				upgrade_time;
-				creepcolony_time; //reset all clocks.
-
-			}
+			Broodwar->drawTextScreen(500, 70, delay_string); // Flickers. Annoying.
+			Broodwar->drawTextScreen(500, 80, preamble_string);
+			Broodwar->drawTextScreen(500, 90, larva_string);
+			Broodwar->drawTextScreen(500, 100, worker_string);
+			Broodwar->drawTextScreen(500, 110, scouting_string);
+			Broodwar->drawTextScreen(500, 120, combat_string);
+			Broodwar->drawTextScreen(500, 130, detection_string);
+			Broodwar->drawTextScreen(500, 140, upgrade_string);
+			Broodwar->drawTextScreen(500, 150, creep_colony_string);
 
 			for (auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p){
 				if (isOnScreen(p->second.pos_)) {
@@ -880,6 +880,16 @@ void MeatAIModule::onFrame()
         auto end = std::chrono::high_resolution_clock::now();
         total_frame_time = end - start_preamble;
 
+		preamble_time;
+		larva_time;
+		worker_time;
+		scout_time;
+		combat_time;
+		detector_time;
+		upgrade_time;
+		creepcolony_time;
+		total_frame_time; //will use preamble start time.
+
         //Clock App
             if ( total_frame_time.count() > 55 ) {
                 short_delay+=1;
@@ -894,7 +904,20 @@ void MeatAIModule::onFrame()
 			{
 				Broodwar->leaveGame();
 			}
+			if (_ANALYSIS_MODE){
+				int n;
+				
+				n = sprintf(delay_string,"Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count()); // Is wrong.
+				n = sprintf(preamble_string,"Preamble:%3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+				n = sprintf(larva_string,"Larva:%3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+				n = sprintf(worker_string,"Workers:%3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+				n = sprintf(scouting_string,"Scouting:%3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+				n = sprintf(combat_string,"Combat:%3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+				n = sprintf(detection_string,"Detection:%3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+				n = sprintf(upgrade_string,"Upgrades:%3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+				n = sprintf(creep_colony_string,"CreepColonies:%3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
 
+			}
 
 } // closure: Onframe
 

@@ -73,15 +73,15 @@ public:
     int med_delay;
     int long_delay;
 
-	std::chrono::duration<double, std::milli> preamble_time;
-	std::chrono::duration<double, std::milli> larva_time;
-	std::chrono::duration<double, std::milli> worker_time;
-	std::chrono::duration<double, std::milli> scout_time;
-	std::chrono::duration<double, std::milli> combat_time;
-	std::chrono::duration<double, std::milli> detector_time;
-	std::chrono::duration<double, std::milli> upgrade_time;
-	std::chrono::duration<double, std::milli> creepcolony_time;
-	std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
+	char delay_string [50];
+	char preamble_string [50];
+	char larva_string [50];
+	char worker_string [50];
+	char scouting_string [50];
+	char combat_string [50];
+	char detection_string [50];
+	char upgrade_string [50];
+	char creep_colony_string [50];
 
   int t_build;
 
