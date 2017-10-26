@@ -16,15 +16,23 @@ void MeatAIModule::PrintError_Unit( Unit unit ) {
 
 // Identifies those moments where a worker is gathering and its unusual subcases.
 bool MeatAIModule::isActiveWorker(Unit unit){
-	bool passive = unit->getOrder() == unit->getOrder() != //BWAPI::Orders::MoveToMinerals &&
-		unit->getOrder() == BWAPI::Orders::MoveToGas &&
-		unit->getOrder() == BWAPI::Orders::WaitForMinerals &&
+	bool passive = //BWAPI::Orders::MoveToMinerals &&
+		unit->getOrder() == BWAPI::Orders::MoveToGas ||
+		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
 		//unit->getOrder() == BWAPI::Orders::WaitForGas && // should never be overstacked on gas.
-		unit->getOrder() == BWAPI::Orders::MiningMinerals &&
-		unit->getOrder() == BWAPI::Orders::HarvestGas &&
-		unit->getOrder() == BWAPI::Orders::ReturnMinerals &&
-		unit->getOrder() == BWAPI::Orders::ReturnGas &&
+		unit->getOrder() == BWAPI::Orders::MiningMinerals ||
+		unit->getOrder() == BWAPI::Orders::HarvestGas ||
+		unit->getOrder() == BWAPI::Orders::ReturnMinerals ||
+		unit->getOrder() == BWAPI::Orders::ReturnGas ||
 		unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
+	return passive;
+}
+
+bool MeatAIModule::isInLine(Unit unit){
+	bool passive = 
+		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
+		unit->getOrder() == BWAPI::Orders::WaitForGas ||
+		unit->getOrder() == BWAPI::Orders::ResetCollision;
 	return passive;
 }
 
@@ -40,14 +48,14 @@ bool MeatAIModule::isIdleEmpty( Unit unit ) {
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker) ||
-                         (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals()) ||
+                         (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
                           u_type == UnitCommandTypes::None;
 
-	bool spam_guard = unit->getLastCommandFrame() > Broodwar->getFrameCount() - Broodwar->getLatencyFrames();
+	bool spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();
 
-    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && !spam_guard ;
+    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spam_guard ;
 }
 
 // Checks for if a unit is a combat unit.
@@ -331,6 +339,46 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
     return return_unit;
 }
 
+//Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
+Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+	int min_dist = dist;
+	double temp_dist = 999999;
+	Stored_Unit *return_unit = nullptr;
+
+	if (!ui.unit_inventory_.empty()) {
+		for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+			if (e->second.type_ == u_type){
+				temp_dist = (*e).second.pos_.getDistance(origin);
+				if (temp_dist <= min_dist) {
+					min_dist = temp_dist;
+					return_unit = &(e->second);
+				}
+			}
+		}
+	}
+
+	return return_unit;
+}
+
+//Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
+Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
+	int min_dist = dist;
+	double temp_dist = 999999;
+	Stored_Resource *return_unit = nullptr;
+
+	if (!ri.resource_inventory_.empty()) {
+		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+			temp_dist = (*r).second.pos_.getDistance(origin);
+			if (temp_dist <= min_dist) {
+				min_dist = temp_dist;
+				return_unit = &(r->second);
+			}
+		}
+	}
+
+	return return_unit;
+}
+
 //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
 Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
@@ -397,6 +445,17 @@ Unit_Inventory MeatAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 		}
 	}
 	return ui_out;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
+	Resource_Inventory ri_out;
+	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+		if ((*r).second.pos_.getDistance(origin) <= dist) {
+			ri_out.addStored_Resource( (*r).second ); // if we take any distance and they are in inventory.
+		}
+	}
+	return ri_out;
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.

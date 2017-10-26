@@ -6,19 +6,40 @@
 
 
 //Unit_Inventory functions.
-//Creates an instance of the enemy inventory class.
+//Creates an instance of the unit inventory class.
 
 Unit_Inventory::Unit_Inventory(){}
 
-Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
+Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
     
-    for ( const auto & u : unit_set) {
-        unit_inventory_.insert( { u, Stored_Unit( u ) } );
-    }
+	for (const auto & u : unit_set) {
+		unit_inventory_.insert({ u, Stored_Unit(u) });
+	}
+
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-// Updates the count of enemy units.
+void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
+		if (unit_inventory_.empty()){ // it thinks it's ALWAYS empty.
+			for (const auto & u : unit_set) {
+				unit_inventory_.insert({ u, Stored_Unit(u) });
+			}
+
+		}
+		else {
+			for (const auto & u : unit_set) {
+				if (unit_inventory_.count(u) > 0){
+					unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
+				}
+				else {
+					unit_inventory_.insert({ u, Stored_Unit(u) });
+				}
+			}
+		}
+		updateUnitInventorySummary(); //this call is a CPU sink.
+}
+
+// Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
 };
@@ -27,23 +48,29 @@ void Unit_Inventory::addStored_Unit( Stored_Unit stored_unit ) {
     unit_inventory_.insert( { stored_unit.bwapi_unit_ , stored_unit } );
 };
 
+void Stored_Unit::updateStoredUnit(const Unit &unit){
 
-//Removes enemy units that have died
+		valid_pos_ = true;
+		pos_ = unit->getPosition();
+		type_ = unit->getType();
+		build_type_ = unit->getBuildType();
+		current_hp_ = unit->getHitPoints();
+
+		//Get unit's status. Precalculated, precached.
+		int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
+		stock_value_ = (int)sqrt(pow(unit->getType().mineralPrice(), 2) + pow(1.25 * unit->getType().gasPrice(), 2) + pow(25 * modified_supply, 2));
+		if (unit->getType().isTwoUnitsInOneEgg()) {
+			stock_value_ = stock_value_ / 2;
+		}
+		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())); // Precalculated, precached.
+
+}
+
+//Removes units that have died
 void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     unit_inventory_.erase( e_unit );
 };
 
-// Checks if we already have enemy unit. If so, we remove it and replace it with the updated version.
-void Unit_Inventory::updateStored_Unit( Unit e_unit ) {
-    auto key = unit_inventory_.find(e_unit);
-    //Did we find it? If so, let's update it.
-    if ( key == unit_inventory_.end() ) {
-        unit_inventory_.insert( { e_unit, Stored_Unit( e_unit ) } );
-    }
-    else {
-        unit_inventory_.erase( e_unit );
-    }
-}
 
  Position Unit_Inventory::getMeanLocation() const {
     int x_sum = 0;
@@ -97,7 +124,7 @@ void Unit_Inventory::updateStored_Unit( Unit e_unit ) {
          return out;
      }
      else {
-         return Position( 0, 0 );  // you're dead at this point, fyi.
+         return Position( 0, 0 );  // you might be dead at this point, fyi.
      }
 
  }
@@ -178,6 +205,7 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     type_ = unit->getType();
     build_type_ = unit->getBuildType();
     current_hp_ = unit->getHitPoints();
+	locked_mine_ = nullptr;
 
     //Get unit's status. Precalculated, precached.
 	int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
@@ -188,3 +216,18 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
 
+void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
+	locked_mine_ = new_resource.bwapi_unit_;
+	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+}
+
+
+void Stored_Unit::stopMine(Resource_Inventory &ri){
+	if (locked_mine_ && locked_mine_->exists()){
+		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
+		if (iter != ri.resource_inventory_.end()){
+			iter->second.number_of_miners_--;
+		}
+		locked_mine_ = nullptr;
+	}
+}

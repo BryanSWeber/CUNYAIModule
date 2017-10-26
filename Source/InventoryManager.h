@@ -3,13 +3,15 @@
 #include <BWAPI.h>
 #include "MeatAIModule.h"
 #include "Unit_Inventory.h"
+#include "Resource_Inventory.h"
+
 
 using namespace std;
 using namespace BWAPI;
 
 struct Inventory {
     Inventory();
-    Inventory( const Unit_Inventory &ui );
+    Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri );
 
     double ln_army_stock_;
     double ln_tech_stock_;
@@ -24,20 +26,17 @@ struct Inventory {
     int min_workers_;
     int min_fields_;
     int hatches_;
+	int last_builder_sent;
 
     int min_reserve_;
     int gas_reserve_;
     int building_timer_;
-
-
-    vector<BWAPI::Position> resource_positions_;
     vector< vector<bool> > buildable_positions_ ;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
     vector< vector<int> > map_veins_out_;
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
-
 
     int vision_tile_count_;
     int est_enemy_stock_;
@@ -76,11 +75,11 @@ struct Inventory {
     // Updates the number of mineral fields we "possess".
     void Inventory::updateMin_Possessed();
 
+	// Update Resource_Inventory
+
     // Updates the number of hatcheries (and decendents).
     void Inventory::updateHatcheries( const Unit_Inventory &ui );
 
-    // Updates the static locations of minerals and gas on the map. Should only be called on game start.
-    void Inventory::updateMineralPos();
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
     void Inventory::updateBuildablePos();
     // Marks and smooths the edges of the map.
@@ -89,14 +88,14 @@ struct Inventory {
     void Inventory::updateMapVeins();
 
     // Updates the visible map arteries. Only checks buildings.
-    void updateLiveMapVeins( const Unit & building, const Unit_Inventory & ui, const Unit_Inventory & ei );    
+    void updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei );    
     // Updates the chokes on the map.
     void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
     void Inventory::updateMapVeinsOut();
 
     // Marks and scores base locations.
-    void Inventory::updateBaseLoc();
+    void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     // Updates mineral, gas, and time reserves.
     void Inventory::updateReserveSystem();
     // updates the next target expo.

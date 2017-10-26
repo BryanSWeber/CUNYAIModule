@@ -3,8 +3,10 @@
 #include <BWAPI.h> //4.2.0 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
+#include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
+#include <chrono> // for in-game frame clock.
 
 //#define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
@@ -57,9 +59,11 @@ public:
     bool gas_starved;
   double win_rate; //fairly straighforward.
 
+  int miner_count_; // a temp variable
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
+	Resource_Inventory neutral_inventory; // neutral resources.
 
     Inventory inventory;  // macro variables, not every unit I have.
     Building_Gene buildorder; //
@@ -69,13 +73,23 @@ public:
     int med_delay;
     int long_delay;
 
+	std::chrono::duration<double, std::milli> preamble_time;
+	std::chrono::duration<double, std::milli> larva_time;
+	std::chrono::duration<double, std::milli> worker_time;
+	std::chrono::duration<double, std::milli> scout_time;
+	std::chrono::duration<double, std::milli> combat_time;
+	std::chrono::duration<double, std::milli> detector_time;
+	std::chrono::duration<double, std::milli> upgrade_time;
+	std::chrono::duration<double, std::milli> creepcolony_time;
+	std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
+
   int t_build;
 
 // Personally made functions:
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and delays the building timer 25 frames, or ~1 sec.
-      void Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
+      bool Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
       // Check and grow a unit using larva.
       void Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -83,15 +97,15 @@ public:
       // Morphs units "Reactively". Incomplete.
       void Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
-      void Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &u_inv );
+      bool Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &u_inv );
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
-      void Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
+      bool Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit );
+      void Worker_Mine( const Unit &unit , Unit_Inventory &ui);
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Gas( const Unit &unit );
+	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui);
       // Checks if there is a way to spend gas.
       bool Gas_Outlet();
 
@@ -102,6 +116,8 @@ public:
 	  bool isActiveWorker(Unit unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
       bool isIdleEmpty(Unit unit );
+	  // When should we reset the lock?
+	  bool isInLine(Unit unit);
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
       bool IsFightingUnit( Unit unit );
       // Draws a line if diagnostic mode is TRUE.
@@ -131,8 +147,11 @@ public:
       const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
-      //Gets pointer to closest unit to origin in Unit_inventory. Checks range. Careful about visiblity.
+      //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
+	  Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+	  Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
+
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
       //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -140,6 +159,7 @@ public:
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
+	  static Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
 	  //Overload. Searches for units of a specific type. 
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.

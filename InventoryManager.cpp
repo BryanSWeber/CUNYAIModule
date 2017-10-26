@@ -4,13 +4,14 @@
 #include "Source\MeatAIModule.h"
 #include "Source\InventoryManager.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\Resource_Inventory.h"
 
 
 using namespace std;
 
 // Creates a Inventory Object
 Inventory::Inventory() {};
-Inventory::Inventory( const Unit_Inventory &ui ) {
+Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
 
     updateLn_Army_Stock( ui );
     updateLn_Tech_Stock( ui );
@@ -30,7 +31,7 @@ Inventory::Inventory( const Unit_Inventory &ui ) {
     updateHatcheries( ui );
 
     updateReserveSystem();
-
+		
     if ( smoothed_barriers_.size() == 0 ) {
         updateSmoothPos();
         int unwalkable_ct = 0;
@@ -42,17 +43,16 @@ Inventory::Inventory( const Unit_Inventory &ui ) {
         Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
     }
 
-	if (resource_positions_.size() == 0) {
-		updateMineralPos();
+	if (ri.resource_inventory_.size() == 0) {
 		updateBuildablePos();
-		updateBaseLoc();
+		updateBaseLoc( ri );
 		int buildable_ct = 0;
 		for (vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i) {
 			for (vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j) {
 				buildable_ct += buildable_positions_[i][j];
 			}
 		}
-		Broodwar->sendText("There are %d resources on the map, %d canidate expo positions.", resource_positions_.size(), buildable_ct);
+		Broodwar->sendText("There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct);
 	}
 
     if ( map_veins_.size() == 0 ) {
@@ -298,21 +298,6 @@ void Inventory::updateHatcheries( const Unit_Inventory &ui ) {
                MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, ui );
 }
 
-// Updates the static locations of minerals and gas on the map. Should only be called on game start.
-void Inventory::updateMineralPos() {
-
-    Unitset min = Broodwar->getStaticMinerals();
-    Unitset geysers = Broodwar->getStaticGeysers();
-
-    for ( auto m = min.begin(); m != min.end(); ++m ) {
-		if ((*m)->getInitialResources() > 8){
-			resource_positions_.push_back((*m)->getPosition());
-		}
-    }
-    for ( auto g = geysers.begin(); g != geysers.end(); ++g ) {
-        resource_positions_.push_back( (*g)->getPosition() );
-    }
-}
 
 //In Tiles?
 void Inventory::updateBuildablePos()
@@ -676,7 +661,7 @@ void Inventory::updateMapChokes() {
 }
 
 
-void Inventory::updateBaseLoc() {
+void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
@@ -694,11 +679,11 @@ void Inventory::updateBaseLoc() {
     }
 
 
-    for ( vector<int>::size_type p = 0; p != resource_positions_.size(); ++p ) { // search for closest resource group. They are our potential expos.
+    for ( auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p ) { // search for closest resource group. They are our potential expos.
 
 		//int centralized_resource_x = TilePosition(resource_positions_[p]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
 		//int centralized_resource_y = TilePosition(resource_positions_[p]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
-		TilePosition min_pos_t = TilePosition(Position(resource_positions_[p]));
+		TilePosition min_pos_t = TilePosition(p->second.pos_) ;
 
         for ( auto possible_base_tile_x = min_pos_t.x - 7; possible_base_tile_x != min_pos_t.x + 5; ++possible_base_tile_x ) {
             for ( auto possible_base_tile_y = min_pos_t.y - 7; possible_base_tile_y != min_pos_t.y + 5; ++possible_base_tile_y ) { // Check wide area of possible build locations around each mineral.
@@ -717,11 +702,11 @@ void Inventory::updateBaseLoc() {
 
 						int local_min = 0;
 
-						for (vector<int>::size_type j = 0; j != resource_positions_.size(); ++j) {
+						for (auto j = ri.resource_inventory_.begin(); j != ri.resource_inventory_.end(); ++j) {
 
 							//centralized_resource_x = TilePosition(resource_positions_[j]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
 							//centralized_resource_y = TilePosition(resource_positions_[j]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
-							TilePosition tile_resource_position = TilePosition(Position(resource_positions_[j]));
+							TilePosition tile_resource_position = TilePosition(j->second.pos_);
 	
 							bool long_condition = tile_resource_position.x >= prosepective_location.x - search_field &&
 												tile_resource_position.x <= prosepective_location.x + search_field &&
