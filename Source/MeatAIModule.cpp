@@ -583,7 +583,7 @@ void MeatAIModule::onFrame()
 
 
 				// Building subloop.
-				if ( (isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && inventory.last_builder_sent < t_game - 3*24 ) 
+				if (( isIdleEmpty(miner.bwapi_unit_) || isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && inventory.last_builder_sent < t_game - 3 * 24)
 				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
 					if (Building_Begin(u, inventory, enemy_inventory)){
 						inventory.last_builder_sent == t_game;
