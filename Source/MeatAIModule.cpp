@@ -812,12 +812,16 @@ void MeatAIModule::onFrame()
 
 			bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0;
 			bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0;
-			bool cloak_nearby = u->getClosestUnit(IsCloaked, 252);
-			Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), 252);
-			bool local_air_problem = local_e.stock_fliers_ > 0;
-			bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_;
 
-            if (  u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved && ( can_sunken || can_spore)) {
+
+            if ( u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved && ( can_sunken || can_spore)) {
+
+				bool cloak_nearby = u->getClosestUnit(IsCloaked || IsCloakable, 252);
+				Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), 252);
+				local_e.updateUnitInventorySummary();
+				bool local_air_problem = local_e.stock_fliers_ > 0;
+				bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_;
+
                 if ( can_sunken && can_spore ) {
 					if ( local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
                         Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
@@ -826,7 +830,7 @@ void MeatAIModule::onFrame()
                         Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                     }
                 } // build one of the two colonies based on the presence of closest units.
-                else if ( !can_spore && can_sunken && !local_air_problem && !global_air_problem) {
+                else if ( !can_spore && can_sunken && !local_air_problem && !global_air_problem && !cloak_nearby) {
                     Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                 } // build sunkens if you only have that
                 else if ( can_spore && !can_sunken ) {
