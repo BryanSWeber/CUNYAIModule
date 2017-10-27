@@ -315,7 +315,7 @@ void MeatAIModule::onFrame()
                          Broodwar->self()->supplyTotal() <= 400 ); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
         //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
-        bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 1.75 || inventory.min_fields_ < 36) && ( Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+        bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 2 || inventory.min_fields_ < 36) && ( Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
         bool vision_possible = true; // no vision cutoff ATM.
         bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp(inventory.ln_army_stock_) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio.
         bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
@@ -548,7 +548,7 @@ void MeatAIModule::onFrame()
 					        (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
 					        inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 
-				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || (miner.bwapi_unit_->isIdle() && !isInLine(miner.bwapi_unit_)) ){
+				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) || !enough_gas ){
 					if (!enough_gas){
 						Worker_Gas(u, friendly_inventory);
 						++inventory.gas_workers_;
@@ -561,10 +561,18 @@ void MeatAIModule::onFrame()
 					}
 				}
 				if (miner.bwapi_unit_->isCarryingMinerals() || miner.bwapi_unit_->isCarryingGas() || miner.bwapi_unit_->getOrderTarget() == NULL){
+					if (miner.bwapi_unit_->isCarryingMinerals()){
+						++inventory.min_workers_;
+					}
+					else if (miner.bwapi_unit_->isCarryingGas()){
+						++inventory.gas_workers_;
+					}
 					continue;
 				}
-				if (miner.locked_mine_ != miner.bwapi_unit_->getOrderTarget() || ( miner.locked_mine_ && miner.locked_mine_->exists() && miner.bwapi_unit_->isIdle() ) ){
-					miner.bwapi_unit_->gather(miner.locked_mine_); //Hey! Get back to work!
+				if (miner.locked_mine_ != miner.bwapi_unit_->getOrderTarget() || (miner.locked_mine_ && miner.locked_mine_->exists() && isIdleEmpty(miner.bwapi_unit_) )){
+					if (!miner.bwapi_unit_->gather(miner.locked_mine_)){
+						miner.stopMine(neutral_inventory); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
+					}
 					if (IsMineralField(miner.locked_mine_)){
 						++inventory.min_workers_;
 					}
@@ -575,7 +583,7 @@ void MeatAIModule::onFrame()
 
 
 				// Building subloop.
-				if ( (isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && inventory.last_builder_sent < t_game - 5*24 ) 
+				if ( (isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && inventory.last_builder_sent < t_game - 3*24 ) 
 				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
 					if (Building_Begin(u, inventory, enemy_inventory)){
 						inventory.last_builder_sent == t_game;

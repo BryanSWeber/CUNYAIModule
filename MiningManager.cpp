@@ -86,8 +86,9 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 
 		if (nearest_building){
 			Stored_Resource* closest = getClosestStored(available_fields, nearest_building->pos_, 9999999);
-			miner.bwapi_unit_->gather(closest->bwapi_unit_);
-			miner.startMine(*closest, neutral_inventory);
+			if (miner.bwapi_unit_->gather(closest->bwapi_unit_)){
+				miner.startMine(*closest, neutral_inventory);
+			}
 		}
 	} // send drone to closest base's closest mineral field meeting that critera.
   miner_count_ = miner_count;
@@ -178,8 +179,9 @@ void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 
 		if (nearest_building){
 			Stored_Resource* closest = getClosestStored(available_fields, nearest_building->pos_, 9999999);
-			miner.bwapi_unit_->gather(closest->bwapi_unit_);
-			miner.startMine(*closest, neutral_inventory);
+			if (miner.bwapi_unit_->gather(closest->bwapi_unit_)){
+				miner.startMine(*closest, neutral_inventory);
+			}
 		}
 	} // send drone to closest base's closest mineral field meeting that critera.
 	miner_count_ = miner_count;
