@@ -549,6 +549,7 @@ void MeatAIModule::onFrame()
 					        inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 
 				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) || !enough_gas ){
+					miner.stopMine(neutral_inventory); 
 					if (!enough_gas){
 						Worker_Gas(u, friendly_inventory);
 						++inventory.gas_workers_;
@@ -560,6 +561,7 @@ void MeatAIModule::onFrame()
 						continue;
 					}
 				}
+
 				if (miner.bwapi_unit_->isCarryingMinerals() || miner.bwapi_unit_->isCarryingGas() || miner.bwapi_unit_->getOrderTarget() == NULL){
 					if (miner.bwapi_unit_->isCarryingMinerals()){
 						++inventory.min_workers_;
@@ -807,24 +809,27 @@ void MeatAIModule::onFrame()
 
 //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
             auto start_creepcolony = std::chrono::high_resolution_clock::now();
-            if (  u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved &&
-                ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0) ) {
 
-                if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 ) {
-					if ( enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_ ) { // if they have a flyer (that can attack), get spores.
+			bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0;
+			bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0;
+			bool cloak_nearby = u->getClosestUnit(IsCloaked, 252);
+			Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), 252);
+			bool local_air_problem = local_e.stock_fliers_ > 0;
+			bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_;
+
+            if (  u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved && ( can_sunken || can_spore)) {
+                if ( can_sunken && can_spore ) {
+					if ( local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
                         Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
                     }
                     else {
                         Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                     }
                 } // build one of the two colonies based on the presence of closest units.
-                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 0 ) {
+                else if ( !can_spore && can_sunken && !local_air_problem && !global_air_problem) {
                     Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                 } // build sunkens if you only have that
-                else if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 &&
-                    Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 ) {
+                else if ( can_spore && !can_sunken ) {
                     Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
                 } // build spores if you only have that.
             } // closure: Creep colony loop
