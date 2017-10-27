@@ -565,6 +565,12 @@ void MeatAIModule::onFrame()
 				}
 				if (miner.locked_mine_ != miner.bwapi_unit_->getOrderTarget() || ( miner.locked_mine_ && miner.locked_mine_->exists() && miner.bwapi_unit_->isIdle() ) ){
 					miner.bwapi_unit_->gather(miner.locked_mine_); //Hey! Get back to work!
+					if (IsMineralField(miner.locked_mine_)){
+						++inventory.min_workers_;
+					}
+					else if (IsRefinery(miner.locked_mine_)){
+						++inventory.gas_workers_;
+					}
 				}
 
 
@@ -615,13 +621,6 @@ void MeatAIModule::onFrame()
 					//	u->returnCargo(true);	
      //               }//Closure: returning $$ loop
 
-					// Building subloop.
-					if (isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u))
-					{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
-						Building_Begin(u, inventory, enemy_inventory);
-						//Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-						//miner.stopMine(neutral_inventory);
-					} // Close Build loop
 
                 //}// Closure: mining loop
 

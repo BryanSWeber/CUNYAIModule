@@ -126,7 +126,6 @@ void MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, co
 //Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
 void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei )
 {
-
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 
     //Supply blocked protection 
