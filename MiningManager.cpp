@@ -91,7 +91,7 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 			}
 		}
 	} // send drone to closest base's closest mineral field meeting that critera.
-  miner_count_ = miner_count;
+  miner_count_ += miner_count;
 
 
   //  Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );

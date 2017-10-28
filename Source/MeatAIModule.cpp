@@ -299,6 +299,7 @@ void MeatAIModule::onFrame()
         inventory.updateReserveSystem();
         inventory.updateNextExpo(enemy_inventory, friendly_inventory);
 		inventory.updateStartPositions();
+		miner_count_ = 0;
 
         // Game time;
         int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -317,7 +318,7 @@ void MeatAIModule::onFrame()
                          Broodwar->self()->supplyTotal() <= 400 ); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
         //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
-        bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 2 || inventory.min_fields_ < 36) && ( Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+        bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 3 || inventory.min_fields_ < 36) && ( Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
         bool vision_possible = true; // no vision cutoff ATM.
         bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp(inventory.ln_army_stock_) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio.
         bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
@@ -547,12 +548,13 @@ void MeatAIModule::onFrame()
             if ( u->getType().isWorker() )
             {
 				Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-				bool enough_gas = !gas_starved ||
-					        (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
-					        inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
-				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) || !enough_gas ){
+				//bool too_much_gas = !gas_starved ||
+					        //(Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
+					        //inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+				//bool mineral_starved = inventory.getLn_Gas_Ratio() > delta; // horrid idea.
+				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) ){ //if this is your first worker of the frame consider resetting him.
 					miner.stopMine(neutral_inventory); 
-					if (!enough_gas){
+					if (gas_starved){
 						Worker_Gas(u, friendly_inventory);
 						continue;
 					}
@@ -714,11 +716,11 @@ void MeatAIModule::onFrame()
 									(u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
 								//(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 									
-									bool only_workers = Stock_Units(UnitTypes::Zerg_Drone, enemy_inventory) == enemy_inventory.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Protoss_Probe, enemy_inventory) == enemy_inventory.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Terran_SCV, enemy_inventory) == enemy_inventory.stock_ground_units_;
+									bool only_workers = Stock_Units(UnitTypes::Zerg_Drone, enemy_inventory) == enemy_loc.stock_ground_units_ ||
+										Stock_Units(UnitTypes::Protoss_Probe, enemy_inventory) == enemy_loc.stock_ground_units_ ||
+										Stock_Units(UnitTypes::Terran_SCV, enemy_inventory) == enemy_loc.stock_ground_units_;
 
-									bool ignore = u->getType() == UnitTypes::Zerg_Drone && only_workers;
+									bool ignore = u->getType() == UnitTypes::Zerg_Drone && (only_workers || enemy_loc.stock_total_ == 0);
 
 									bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
@@ -750,7 +752,7 @@ void MeatAIModule::onFrame()
 								}
 								else {
 									// intentionally left blank. Stop drones from fighting here.
-									if (u->isAttacking() && !u->isAttackFrame() && (friend_loc.getMeanBuildingLocation() == Position(0, 0) || u->getHitPoints() == u->getInitialHitPoints())){
+									if ( friend_loc.getMeanBuildingLocation() == Position(0, 0) || u->getHitPoints() == u->getInitialHitPoints() ){
 										u->stop();
 									}
 									else if ( u->getHitPoints() < u->getInitialHitPoints() ) {
@@ -776,11 +778,12 @@ void MeatAIModule::onFrame()
             if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
             { //Scout if you're not a drone or larva and can move.
                 Boids boids;
-				if ( inventory.start_positions_.size() == 0 && ( (u->getType() == UnitTypes::Zerg_Overlord && !supply_starved && enemy_inventory.stock_shoots_up_ == 0 ) || inventory.est_enemy_stock_ == 0 || enemy_inventory.getMeanBuildingLocation() == Position(0, 0) ) ) { // scout if they have nothing you know about.
-                    boids.Boids_Movement( u, 3, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
-                }
+				bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
+				if (!enemy_found || u->getType() != UnitTypes::Zerg_Overlord ) { // scout if they have nothing you know about.
+                    boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+				}
                 else {
-                    boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory, army_starved );
+                    boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
                 }
             } // If it is a combat unit, then use it to attack the enemy.
             auto end_scout = std::chrono::high_resolution_clock::now();

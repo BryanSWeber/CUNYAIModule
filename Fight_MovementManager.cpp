@@ -24,7 +24,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     setAlignment( unit, flock );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
-    setAttraction( unit, pos, ei, inventory, army_starved ); // does not apply to overlords.
+    setAttraction( unit, pos, ei, inventory, army_starved ); // applies to overlords.
 
     // The following do NOT apply to flying units: Seperation, centralization.
     if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -52,6 +52,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     else {
         unit->move( brownian_pos );
     }
+
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black );//Stutter
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green );//Alignment
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, Colors::Blue ); // Centraliziation.
@@ -288,104 +289,110 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place.
 void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv, const bool &army_starved ) {
-    if ( ( unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None ) && unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints() && // if you are a combat-ready unit,
-       ( !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ ) ) ) { // and your army is relatively large.
 
-        int dist = 999999;
-        bool visible_unit_found = false;
-        if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
-            Stored_Unit e = ei.unit_inventory_.begin()->second; // just initialize it with any old enemy.
+	bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
+	bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
+	bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp(inv.ln_army_stock_);
+	bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) || inv.start_positions_.empty();
+	if ( armed && healthy && ready_to_fight && enemy_scouted) { // and your army is relatively large.
+		int dist = 999999;
+		bool visible_unit_found = false;
+		if (!ei.unit_inventory_.empty()) { // if there isn't a visible targetable enemy, but we have an inventory of them...
+			Stored_Unit e = ei.unit_inventory_.begin()->second; // just initialize it with any old enemy.
 
-            for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
-                int dist_current = unit->getDistance( e_iter->second.pos_ );
-                bool visible = Broodwar->isVisible( TilePosition( e.pos_ ) );
-                if ( visible && dist_current < dist ) {
-                    dist = dist_current;
-                    Stored_Unit e = e_iter->second;
-                    if ( !visible_unit_found ) {
-                        visible_unit_found = true;
-                        ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-                    }
-                }
-                else if ( !visible_unit_found && dist_current < dist ) {
-                    dist = dist_current;
-                    Stored_Unit e = e_iter->second;
-                }
-            } // get closest enemy unit in inventory.
+			for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
+				int dist_current = unit->getDistance(e_iter->second.pos_);
+				bool visible = Broodwar->isVisible(TilePosition(e.pos_));
+				if (visible && dist_current < dist) {
+					dist = dist_current;
+					Stored_Unit e = e_iter->second;
+					if (!visible_unit_found) {
+						visible_unit_found = true;
+						ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
+					}
+				}
+				else if (!visible_unit_found && dist_current < dist) {
+					dist = dist_current;
+					Stored_Unit e = e_iter->second;
+				}
+			} // get closest enemy unit in inventory.
 
-            dist = 999999;
-            visible_unit_found = false; // don't want to be stuck on a closeby enemy you can't attack.
+			dist = 999999;
+			visible_unit_found = false; // don't want to be stuck on a closeby enemy you can't attack.
 
-            if ( unit->getType().airWeapon() == WeaponTypes::None && unit->getType().groundWeapon() != WeaponTypes::None ) {
-                for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
-                    int dist_current = unit->getDistance( e_iter->second.pos_ );
-                    bool visible = Broodwar->isVisible( TilePosition( e.pos_ ) );
-                    if ( visible && dist_current < dist ) {
-                        dist = dist_current;
-                        Stored_Unit e = e_iter->second;
-                        if ( !visible_unit_found ) {
-                            visible_unit_found = true;
-                            ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-                        }
-                    }
-                    else if ( !visible_unit_found && dist_current < dist ) {
-                        dist = dist_current;
-                        Stored_Unit e = e_iter->second;
-                    }
-                } // get closest non flying enemy unit in inventory.
-            }
+			if (unit->getType().airWeapon() == WeaponTypes::None && unit->getType().groundWeapon() != WeaponTypes::None) {
+				for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
+					int dist_current = unit->getDistance(e_iter->second.pos_);
+					bool visible = Broodwar->isVisible(TilePosition(e.pos_));
+					if (visible && dist_current < dist) {
+						dist = dist_current;
+						Stored_Unit e = e_iter->second;
+						if (!visible_unit_found) {
+							visible_unit_found = true;
+							ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
+						}
+					}
+					else if (!visible_unit_found && dist_current < dist) {
+						dist = dist_current;
+						Stored_Unit e = e_iter->second;
+					}
+				} // get closest non flying enemy unit in inventory.
+			}
 
-            dist = 999999;
-            visible_unit_found = false;
+			dist = 999999;
+			visible_unit_found = false;
 
-            if ( unit->getType().airWeapon() != WeaponTypes::None && unit->getType().groundWeapon() == WeaponTypes::None ) {
-                for ( auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++ ) {
-                    int dist_current = unit->getDistance( e_iter->second.pos_ );
-                    bool visible = Broodwar->isVisible( TilePosition(e.pos_) );
-                    if ( visible && dist_current < dist ) {
-                        dist = dist_current;
-                        Stored_Unit e = e_iter->second;
-                        if ( !visible_unit_found ) {
-                            visible_unit_found = true;
-                            ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-                        }
-                    }
-                    else if ( !visible_unit_found && dist_current < dist ) {
-                        dist = dist_current;
-                        Stored_Unit e = e_iter->second;
-                    }
-                } // get closest flying enemy unit in inventory.
-            }
+			if (unit->getType().airWeapon() != WeaponTypes::None && unit->getType().groundWeapon() == WeaponTypes::None) {
+				for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
+					int dist_current = unit->getDistance(e_iter->second.pos_);
+					bool visible = Broodwar->isVisible(TilePosition(e.pos_));
+					if (visible && dist_current < dist) {
+						dist = dist_current;
+						Stored_Unit e = e_iter->second;
+						if (!visible_unit_found) {
+							visible_unit_found = true;
+							ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
+						}
+					}
+					else if (!visible_unit_found && dist_current < dist) {
+						dist = dist_current;
+						Stored_Unit e = e_iter->second;
+					}
+				} // get closest flying enemy unit in inventory.
+			}
 
-            if ( e.pos_ ) { 
-                if ( MeatAIModule::isClearRayTrace( pos, e.pos_, inv ) ) { // go to it if the path is clear,
-                    int dist = unit->getDistance( e.pos_ );
-                    int dist_x = e.pos_.x - pos.x;
-                    int dist_y = e.pos_.y - pos.y;
-                    double theta = atan2( dist_y, dist_x );
-                    attract_dx_ = cos( theta ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
-                    attract_dy_ = sin( theta ) * (dist * 0.02 + 64);
-                }                 
-                else { // tilt around it
-                    int dist = unit->getDistance( e.pos_ );
-                    int dist_x = e.pos_.x - pos.x;
-                    int dist_y = e.pos_.y - pos.y;
-                    double theta = atan2( dist_y, dist_x );
+			if (e.pos_) {
+				if (MeatAIModule::isClearRayTrace(pos, e.pos_, inv)) { // go to it if the path is clear,
+					int dist = unit->getDistance(e.pos_);
+					int dist_x = e.pos_.x - pos.x;
+					int dist_y = e.pos_.y - pos.y;
+					double theta = atan2(dist_y, dist_x);
+					attract_dx_ = cos(theta) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
+					attract_dy_ = sin(theta) * (dist * 0.02 + 64);
+				}
+				else { // tilt around it
+					int dist = unit->getDistance(e.pos_);
+					int dist_x = e.pos_.x - pos.x;
+					int dist_y = e.pos_.y - pos.y;
+					double theta = atan2(dist_y, dist_x);
 
-                    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
-                    attract_dx_ = cos( theta + tilt) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
-                    attract_dy_ = sin( theta + tilt) * (dist * 0.02 + 64);
-                }
-            } 
-        }
-    } else if ( ei.unit_inventory_.empty() && !inv.start_positions_.empty() ) {
-		if (Position possible_base = inv.start_positions_[1]) {
-				int dist = unit->getDistance(possible_base);
-				int dist_x =possible_base.x - pos.x;
-				int dist_y =possible_base.y - pos.y;
-				double theta = atan2(dist_y, dist_x);
-				attract_dx_ = cos(theta) * (dist * 0.50 + 64); // run 5% towards them, plus 2 tiles.
-				attract_dy_ = sin(theta) * (dist * 0.50 + 64);
+					double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+					attract_dx_ = cos(theta + tilt) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
+					attract_dy_ = sin(theta + tilt) * (dist * 0.02 + 64);
+				}
+			}
+		}
+	}
+	else if ( !enemy_scouted && healthy && ready_to_fight) {
+		int randomIndex = rand() % inv.start_positions_.size();
+		if (inv.start_positions_[randomIndex]) {
+			Position possible_base = inv.start_positions_[randomIndex];
+			int dist = unit->getDistance(possible_base);
+			int dist_x = possible_base.x - pos.x;
+			int dist_y = possible_base.y - pos.y;
+			double theta = atan2(dist_y, dist_x);
+			attract_dx_ = cos(theta) * dist; // run 100% towards them.
+			attract_dy_ = sin(theta) * dist;
 		}
 	}
 }
