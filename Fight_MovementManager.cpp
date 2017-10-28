@@ -288,8 +288,7 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place.
 void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv, const bool &army_starved ) {
-    if ( ( unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None ) && 
-        unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints() && // if you are a combat-ready unit,
+    if ( ( unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None ) && unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints() && // if you are a combat-ready unit,
        ( !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ ) ) ) { // and your army is relatively large.
 
         int dist = 999999;
@@ -379,7 +378,16 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
                 }
             } 
         }
-    }
+    } else if ( ei.unit_inventory_.empty() && !inv.start_positions_.empty() ) {
+		if (Position possible_base = inv.start_positions_[1]) {
+				int dist = unit->getDistance(possible_base);
+				int dist_x =possible_base.x - pos.x;
+				int dist_y =possible_base.y - pos.y;
+				double theta = atan2(dist_y, dist_x);
+				attract_dx_ = cos(theta) * (dist * 0.50 + 64); // run 5% towards them, plus 2 tiles.
+				attract_dy_ = sin(theta) * (dist * 0.50 + 64);
+		}
+	}
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.

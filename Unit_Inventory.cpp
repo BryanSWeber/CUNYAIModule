@@ -11,7 +11,7 @@
 Unit_Inventory::Unit_Inventory(){}
 
 Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
-    
+
 	for (const auto & u : unit_set) {
 		unit_inventory_.insert({ u, Stored_Unit(u) });
 	}

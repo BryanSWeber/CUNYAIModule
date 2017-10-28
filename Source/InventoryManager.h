@@ -31,6 +31,8 @@ struct Inventory {
     int min_reserve_;
     int gas_reserve_;
     int building_timer_;
+
+	vector<Position> start_positions_;
     vector< vector<bool> > buildable_positions_ ;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
@@ -43,6 +45,7 @@ struct Inventory {
 
     TilePosition next_expo_;
     bool acceptable_expo_;
+	bool list_cleared_;
 
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock( const Unit_Inventory &ui );
@@ -100,4 +103,7 @@ struct Inventory {
     void Inventory::updateReserveSystem();
     // updates the next target expo.
     void Inventory::updateNextExpo( const Unit_Inventory &e_inv, const Unit_Inventory &u_inv );
+	// Updates map positions;
+	void Inventory::getStartPositions();
+	void Inventory::updateStartPositions();
 }; 

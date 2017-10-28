@@ -67,6 +67,10 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
         }
         Broodwar->sendText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
     }
+
+	if (start_positions_.empty() && !list_cleared_) {
+		getStartPositions();
+	}
 };
 
 // Defines the (safe) log of our army stock.
@@ -799,7 +803,27 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
         } // closure y
     } // closure x
 }
+void Inventory::getStartPositions(){
+	for (auto loc : Broodwar->getStartLocations()){
+		start_positions_.push_back(Position(loc));
+	}
+	//std::vector<Position> v{ std::begin(Broodwar->getStartLocations()), std::end(Broodwar->getStartLocations()) };
+	//start_positions_ = v;
+}
 
+void Inventory::updateStartPositions(){
+	for (auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();){
+		if (Broodwar->isExplored(TilePosition(*visible_base))){
+			start_positions_.erase(visible_base);
+		}
+		else {
+			++visible_base;
+		}
+	}
+	if (start_positions_.empty()){
+		list_cleared_ = true;
+	}
+}
 //Zerg_Zergling, 37
 //Zerg_Hydralisk, 38
 //Zerg_Ultralisk, 39

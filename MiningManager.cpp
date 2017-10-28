@@ -153,7 +153,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
 	Resource_Inventory available_fields;
 	int miner_count = 0;
-	int low_drone = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+	int low_drone = 2; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
 		miner_count += r->second.number_of_miners_;
@@ -168,7 +168,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 		}
 	} //find closest mine meeting this criteria.
 
-	if (!available_fields.resource_inventory_.empty()){ // if there are fields to mine
+	if ( !available_fields.resource_inventory_.empty() ){ // if there are fields to mine
 		Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999);
 		if (!nearest_building){
 			Stored_Unit* nearest_building = getClosestStored(friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999);
@@ -184,7 +184,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit , Unit_Inventory &ui) {
 			}
 		}
 	} // send drone to closest base's closest mineral field meeting that critera.
-	miner_count_ = miner_count;
+	miner_count_ += miner_count;
 } // closure worker mine
 
 //Returns True if there is an out for gas. Does not consider all possible gas outlets.

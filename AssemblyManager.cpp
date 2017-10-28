@@ -124,48 +124,50 @@ void MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, co
 }
 
 //Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
-void MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
+void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei )
 {
-	//Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
-	bool early_game = Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) <= Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) || inv.min_workers_ + inv.gas_workers_ <= 9;
-	bool drone_conditional = (econ_starved || early_game); // or it is early game and you have nothing to build. // if you're eco starved
 
-	Check_N_Grow(larva->getType().getRace().getWorker(), larva, drone_conditional);
+    //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 
-	//Supply blocked protection 
-	Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved);
+    //Supply blocked protection 
+    Check_N_Grow( UnitTypes::Zerg_Overlord, larva, supply_starved );
 
-	//Army build/replenish.  Cycle through military units available.
-	if (army_starved) {
-		if (ei.stock_fliers_ > ui.stock_shoots_up_) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
-			Check_N_Grow(UnitTypes::Zerg_Scourge, larva, army_starved && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && Count_Units(UnitTypes::Zerg_Scourge, ui) < 5); // hard cap on scourges, they build 2 at a time. 
-			//Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
-			Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
+    //Army build/replenish.  Cycle through military units available.
+    if ( army_starved ) {
+        if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
+            Check_N_Grow( UnitTypes::Zerg_Scourge, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 && Count_Units( UnitTypes::Zerg_Scourge, ui ) < 5 ); // hard cap on scourges, they build 2 at a time. 
+            //Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
+            Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
 
-			if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
-				buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den)); // force in a hydralisk den if they have Air.
-			}
+            if ( Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) == 0 && buildorder.checkEmptyBuildOrder() ) {
+                buildorder.building_gene_.push_back( Build_Order_Object( UnitTypes::Zerg_Hydralisk_Den ) ); // force in a hydralisk den if they have Air.
+            }
 
-		}
-		else if (ei.stock_high_ground_ > ui.stock_fliers_) { // if we have to go through a choke, this is all we want. Save for them.
-			Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) > 0);
-			Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
-		}
+        }
+        else if ( ei.stock_high_ground_ > ui.stock_fliers_ ) { // if we have to go through a choke, this is all we want. Save for them.
+            Check_N_Grow( UnitTypes::Zerg_Ultralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) > 0 );
+            Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
+        }
 		else if (ei.stock_total_ - ei.stock_shoots_up_ > 0.25 * ei.stock_total_) {
-			Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
-		}
+            Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
+        }
 		else if (ei.stock_total_ - ei.stock_shoots_down_ > 0.75 * ei.stock_total_) {
-			Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
-		}
+            Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
+		} 
 
-		Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) > 0); // catchall ground units.
-		Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
-		Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
-		Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) > 0);
+            Check_N_Grow( UnitTypes::Zerg_Ultralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) > 0 ); // catchall ground units.
+            Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
+            Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
+			Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) > 0);
 
-	}
+    }
 
 
+    //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
+    bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
+    bool drone_conditional = (econ_starved || early_game); // or it is early game and you have nothing to build. // if you're eco starved
+
+    Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional ); 
 }
 
 //Creates a new building with DRONE. Incomplete.

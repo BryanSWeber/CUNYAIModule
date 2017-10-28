@@ -134,6 +134,7 @@ void MeatAIModule::onStart()
     inventory.updateMapVeins();
     //inventory.updateMapChokes();
 	inventory.updateBaseLoc(neutral_inventory);
+	inventory.getStartPositions();
 
 	//update timers.
 	short_delay = 0;
@@ -297,6 +298,7 @@ void MeatAIModule::onFrame()
 
         inventory.updateReserveSystem();
         inventory.updateNextExpo(enemy_inventory, friendly_inventory);
+		inventory.updateStartPositions();
 
         // Game time;
         int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -396,7 +398,8 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 375, 30, "Army Stock: %d", (int)exp(inventory.ln_army_stock_) ); //
             Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
             Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f",  inventory.vision_tile_count_ / (double)map_area );  //
-			Broodwar->drawTextScreen( 375, 60, "Current Idea: %d", miner_count_);  //
+			Broodwar->drawTextScreen( 375, 60, "Workers (alt): %d", miner_count_);  //
+			Broodwar->drawTextScreen(375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
 
             //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
             //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -547,45 +550,31 @@ void MeatAIModule::onFrame()
 				bool enough_gas = !gas_starved ||
 					        (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
 					        inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
-
 				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) || !enough_gas ){
 					miner.stopMine(neutral_inventory); 
 					if (!enough_gas){
 						Worker_Gas(u, friendly_inventory);
-						++inventory.gas_workers_;
 						continue;
 					}
 					else {
 						Worker_Mine(u, friendly_inventory);
-						++inventory.min_workers_;
 						continue;
 					}
-				}
-
+				} 
+				
 				if (miner.bwapi_unit_->isCarryingMinerals() || miner.bwapi_unit_->isCarryingGas() || miner.bwapi_unit_->getOrderTarget() == NULL){
-					if (miner.bwapi_unit_->isCarryingMinerals()){
-						++inventory.min_workers_;
-					}
-					else if (miner.bwapi_unit_->isCarryingGas()){
-						++inventory.gas_workers_;
-					}
 					continue;
-				}
+				} 
+				
 				if (miner.locked_mine_ != miner.bwapi_unit_->getOrderTarget() || (miner.locked_mine_ && miner.locked_mine_->exists() && isIdleEmpty(miner.bwapi_unit_) )){
 					if (!miner.bwapi_unit_->gather(miner.locked_mine_)){
 						miner.stopMine(neutral_inventory); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
-					}
-					if (IsMineralField(miner.locked_mine_)){
-						++inventory.min_workers_;
-					}
-					else if (IsRefinery(miner.locked_mine_)){
-						++inventory.gas_workers_;
 					}
 				}
 
 
 				// Building subloop.
-				if (( isIdleEmpty(miner.bwapi_unit_) || isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && inventory.last_builder_sent < t_game - 3 * 24)
+				if ((isIdleEmpty(miner.bwapi_unit_) || isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && !IsCarryingGas(u) && !IsCarryingMinerals(u) && inventory.last_builder_sent < t_game - 3 * 24)
 				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
 					if (Building_Begin(u, inventory, enemy_inventory)){
 						inventory.last_builder_sent == t_game;
@@ -787,7 +776,7 @@ void MeatAIModule::onFrame()
             if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
             { //Scout if you're not a drone or larva and can move.
                 Boids boids;
-                if ( (u->getType() == UnitTypes::Zerg_Overlord && !supply_starved) || inventory.est_enemy_stock_ == 0 || enemy_inventory.getMeanBuildingLocation()==Position(0,0) ) { // scout if they have nothing you know about.
+                if ( u->getType() == UnitTypes::Zerg_Overlord && !supply_starved && inventory.start_positions_.size() == 0 && enemy_inventory.stock_shoots_up_ == 0) { // scout if they have nothing you know about.
                     boids.Boids_Movement( u, 3, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
                 }
                 else {
@@ -830,7 +819,7 @@ void MeatAIModule::onFrame()
                         Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                     }
                 } // build one of the two colonies based on the presence of closest units.
-                else if ( !can_spore && can_sunken && !local_air_problem && !global_air_problem && !cloak_nearby) {
+				else if ( can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
                     Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
                 } // build sunkens if you only have that
                 else if ( can_spore && !can_sunken ) {

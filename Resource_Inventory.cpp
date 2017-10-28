@@ -30,6 +30,10 @@ Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
 		resource_inventory_.insert({ u, Stored_Resource(u) });
 	}
 
+	if (unit_set.empty()){
+		resource_inventory_;
+	}
+
 }
 
 // Updates the count of enemy units.
