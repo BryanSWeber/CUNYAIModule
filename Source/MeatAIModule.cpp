@@ -343,7 +343,7 @@ void MeatAIModule::onFrame()
         if ( _ANALYSIS_MODE ) {
 
             Print_Unit_Inventory(0,50, friendly_inventory ); 
-            Print_Upgrade_Inventory(375,70); 
+            Print_Upgrade_Inventory(375,80); 
             if ( buildorder.checkEmptyBuildOrder() ) {
                 Print_Unit_Inventory( 500, 170, enemy_inventory );
             }
@@ -399,7 +399,7 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
             Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f",  inventory.vision_tile_count_ / (double)map_area );  //
 			Broodwar->drawTextScreen( 375, 60, "Workers (alt): %d", miner_count_);  //
-			Broodwar->drawTextScreen(375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
+			Broodwar->drawTextScreen( 375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
 
             //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
             //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -776,7 +776,7 @@ void MeatAIModule::onFrame()
             if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
             { //Scout if you're not a drone or larva and can move.
                 Boids boids;
-                if ( u->getType() == UnitTypes::Zerg_Overlord && !supply_starved && inventory.start_positions_.size() == 0 && enemy_inventory.stock_shoots_up_ == 0) { // scout if they have nothing you know about.
+				if ( inventory.start_positions_.size() == 0 && ( (u->getType() == UnitTypes::Zerg_Overlord && !supply_starved && enemy_inventory.stock_shoots_up_ == 0 ) || inventory.est_enemy_stock_ == 0 || enemy_inventory.getMeanBuildingLocation() == Position(0, 0) ) ) { // scout if they have nothing you know about.
                     boids.Boids_Movement( u, 3, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
                 }
                 else {
