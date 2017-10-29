@@ -261,7 +261,7 @@ void MeatAIModule::onFrame()
 				r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
 				r->second.valid_pos_ = true;
 				r->second.type_ = r->second.bwapi_unit_->getType();
-				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, Filter::IsResourceDepot).empty()); // is there a resource depot in 250 of it?
+				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, IsResourceDepot && IsOwned).empty()); // is there a resource depot in 250 of it?
 				r->second.full_resource_ = r->second.number_of_miners_ >= 2;
 			}
 
