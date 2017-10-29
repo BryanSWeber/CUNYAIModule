@@ -672,7 +672,7 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 	int location_quality = 0;
 	int residual_sq = 0;
 	int resources_stored = 0;
-	int search_field = 7;
+	int search_field = 8;
 
 	// first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
 	for (int x = 0; x <= map_x; ++x) {
@@ -699,8 +699,8 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
 		}
 
-		for (auto possible_base_tile_x = min_pos_t.x - 7; possible_base_tile_x != min_pos_t.x + 7; ++possible_base_tile_x) {
-			for (auto possible_base_tile_y = min_pos_t.y - 7; possible_base_tile_y != min_pos_t.y + 7; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
+		for (auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x) {
+			for (auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 8; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
 
 				if (possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
 					possible_base_tile_y >= 0 && possible_base_tile_y <= map_y) { // must be in the map bounds 

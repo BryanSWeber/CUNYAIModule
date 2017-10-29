@@ -261,8 +261,8 @@ void MeatAIModule::onFrame()
 				r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
 				r->second.valid_pos_ = true;
 				r->second.type_ = r->second.bwapi_unit_->getType();
-				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, IsResourceDepot && IsOwned).empty()); // is there a resource depot in 250 of it?
-				r->second.full_resource_ = r->second.number_of_miners_ >= 2;
+				r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius(250, IsResourceDepot && IsOwned && IsCompleted ).empty()); // is there a resource depot in 250 of it?
+				//r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
 			}
 
 			if ( Broodwar->isVisible(resource_pos) ) {
@@ -440,13 +440,13 @@ void MeatAIModule::onFrame()
             //    }
             //} // both of these structures are on the same tile system.
 
-            //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-            //        if ( inventory.base_values_[i][j] > 1 ) {
-            //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-            //        }
-            //    };
-            //} // not that pretty to look at.
+            for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+                    if ( inventory.base_values_[i][j] > 1 ) {
+                        Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+                    }
+                };
+            } // not that pretty to look at.
 
             //for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
             //    for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
@@ -714,7 +714,6 @@ void MeatAIModule::onFrame()
 									(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
 									!e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
 									//helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-									//(u->getType() == UnitTypes::Zerg_Drone && e_closest->type_.isWorker() && friend_loc.worker_count_ > 1 ) || //avoid overreaction against drones.
 									//friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
 									(u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0) ) ) || //overlords should be cowardly not suicidal.
 									(u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
@@ -724,12 +723,11 @@ void MeatAIModule::onFrame()
 										Stock_Units(UnitTypes::Protoss_Probe, enemy_loc) == enemy_loc.stock_ground_units_ ||
 										Stock_Units(UnitTypes::Terran_SCV, enemy_loc) == enemy_loc.stock_ground_units_;
 
-									bool ignore = only_workers && u->getType() == UnitTypes::Zerg_Drone &&
-										(Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) > enemy_inventory.worker_count_ || friend_loc.getMeanBuildingLocation() == Position(0,0) );									
+									bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
 
 									bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
-                                if ( neccessary_attack && !force_retreat && !is_spelled && !ignore) {
+                                if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem) {
 
                                     boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
@@ -754,7 +752,13 @@ void MeatAIModule::onFrame()
 										boids.Retreat_Logic(u, *closest, friendly_inventory, inventory, Colors::Blue);
 									}
 								}
-								else if (ignore){
+								else if (drone_problem){
+
+									if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) < enemy_inventory.worker_count_ + 1 && 
+										friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+										u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ){
+										boids.Tactical_Logic(u, enemy_loc, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+									}
 
 								}
 								else {
@@ -807,8 +811,10 @@ void MeatAIModule::onFrame()
 			bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0;
 			bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0;
 
+			Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), 252);
+			local_e.updateUnitInventorySummary();
 
-            if ( u->getType() == UnitTypes::Zerg_Creep_Colony && army_starved && ( can_sunken || can_spore)) {
+            if ( u->getType() == UnitTypes::Zerg_Creep_Colony && ( army_starved || local_e.stock_total_ > 0 )  && ( can_sunken || can_spore)) {
 
 				bool cloak_nearby = u->getClosestUnit(IsCloaked || IsCloakable, 252);
 				Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), 252);
