@@ -667,86 +667,102 @@ void Inventory::updateMapChokes() {
 
 void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 
-    int map_x = Broodwar->mapWidth();
-    int map_y = Broodwar->mapHeight();
-    int location_quality = 0;
+	int map_x = Broodwar->mapWidth();
+	int map_y = Broodwar->mapHeight();
+	int location_quality = 0;
 	int residual_sq = 0;
-	int search_field = 15;
+	int resources_stored = 0;
+	int search_field = 7;
 
-    // first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( (int) Broodwar->isBuildable( x, y ) ); // explicit converion.
-        }
-        base_values_.push_back( temp );
-    }
+	// first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
+	for (int x = 0; x <= map_x; ++x) {
+		vector<int> temp;
+		for (int y = 0; y <= map_y; ++y) {
+			temp.push_back((int)Broodwar->isBuildable(x, y)); // explicit converion.
+		}
+		base_values_.push_back(temp);
+	}
 
 
-    for ( auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p ) { // search for closest resource group. They are our potential expos.
+	for (auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p) { // search for closest resource group. They are our potential expos.
 
-		//int centralized_resource_x = TilePosition(resource_positions_[p]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
-		//int centralized_resource_y = TilePosition(resource_positions_[p]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
-		TilePosition min_pos_t = TilePosition(p->second.pos_) ;
+		TilePosition min_pos_t;
 
-        for ( auto possible_base_tile_x = min_pos_t.x - 7; possible_base_tile_x != min_pos_t.x + 5; ++possible_base_tile_x ) {
-            for ( auto possible_base_tile_y = min_pos_t.y - 7; possible_base_tile_y != min_pos_t.y + 5; ++possible_base_tile_y ) { // Check wide area of possible build locations around each mineral.
-				
-                if ( possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
-                    possible_base_tile_y >= 0 && possible_base_tile_y <= map_y ) { // must be in the map bounds 
+		if (p->second.type_.isMineralField()){
+			int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+			int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+		}
+		else {
+			int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+			int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+		}
 
-					TilePosition prosepective_location = { possible_base_tile_x - 2, possible_base_tile_y - 1 }; // The build location is upper left tile of the building. The origin tile is 0,0. This is the center tile.
+		for (auto possible_base_tile_x = min_pos_t.x - 7; possible_base_tile_x != min_pos_t.x + 7; ++possible_base_tile_x) {
+			for (auto possible_base_tile_y = min_pos_t.y - 7; possible_base_tile_y != min_pos_t.y + 7; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
+
+				if (possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
+					possible_base_tile_y >= 0 && possible_base_tile_y <= map_y) { // must be in the map bounds 
+
+					TilePosition prosepective_location = { possible_base_tile_x + 2, possible_base_tile_y + 1 }; // The build location is upper left tile of the building. The origin tile is 0,0. This is the center tile.
 
 					if ((prosepective_location.x >= min_pos_t.x + 2 ||
 						prosepective_location.x <= min_pos_t.x - 2 ||
 						prosepective_location.y >= min_pos_t.y + 2 ||
 						prosepective_location.y <= min_pos_t.y - 2) && // it cannot be within 3 of the origin resource. This discards many distant expos.
-						Broodwar->canBuildHere( TilePosition( possible_base_tile_x , possible_base_tile_y ) , UnitTypes::Zerg_Hatchery) &&
+						Broodwar->canBuildHere(TilePosition(possible_base_tile_x, possible_base_tile_y), UnitTypes::Zerg_Hatchery) &&
 						MeatAIModule::isClearRayTrace(Position(prosepective_location), Position(min_pos_t), *this)) { // if it is 3 away from the resource, and has clear vision to the resource.
 
 						int local_min = 0;
 
 						for (auto j = ri.resource_inventory_.begin(); j != ri.resource_inventory_.end(); ++j) {
 
-							//centralized_resource_x = TilePosition(resource_positions_[j]).x + 0.5 * UnitTypes::Resource_Mineral_Field.tileWidth();
-							//centralized_resource_y = TilePosition(resource_positions_[j]).y + 0.5 * UnitTypes::Resource_Mineral_Field.tileHeight();
-							TilePosition tile_resource_position = TilePosition(j->second.pos_);
-	
-							bool long_condition = tile_resource_position.x >= prosepective_location.x - search_field &&
-												tile_resource_position.x <= prosepective_location.x + search_field &&
-												tile_resource_position.y >= prosepective_location.y - search_field &&
-												tile_resource_position.y <= prosepective_location.y + search_field;
+							TilePosition tile_resource_position;
+
+							if (j->second.type_.isMineralField()){
+								int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+								int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+								tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+							}
+							else {
+								int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+								int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+								tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+							}
+
+							bool long_condition = tile_resource_position.x >= prosepective_location.x - search_field - 2 &&
+								tile_resource_position.x <= prosepective_location.x + search_field &&
+								tile_resource_position.y >= prosepective_location.y - search_field - 1 &&
+								tile_resource_position.y <= prosepective_location.y + search_field + 1;
 
 							if (long_condition) {
-								residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
+								//residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
+								resources_stored += j->second.current_stock_value_ - Position(prosepective_location).getDistance(Position(tile_resource_position)) / 32;
 								++local_min;
 							}
 
 						}
 
-						//double walk = sqrt( pow( Broodwar->self()->getStartLocation().x - prosepective_location.x, 2 ) + pow( Broodwar->self()->getStartLocation().y - prosepective_location.y, 2 ) ); // team_center and center are both in pixels
-						//if (MeatAIModule::isClearRayTrace(Position(min_pos_t), prosepective_location, *this)){
-
-						//location_quality = local_min * 5;
-						if (local_min >= 5){
-							double average_res2_in_location_assuming_9_minerals = 9 * (residual_sq / local_min);
-							location_quality = 10000 * (1 - average_res2_in_location_assuming_9_minerals / (double)pow(9 * (search_field - 3) * 0.5 , 2)); // must decline in average_squared distance.
+						if (local_min >= 3){
+							location_quality = resources_stored;
 						}
 
-                    }
-                    else {
-                        location_quality = 0; // redundant, defaults to 0 - but clear.
-                    } // if it's invalid for some reason return 0.
+					}
+					else {
+						location_quality = 0; // redundant, defaults to 0 - but clear.
+					} // if it's invalid for some reason return 0.
 
-                    base_values_[possible_base_tile_x][possible_base_tile_y] = location_quality;
+					base_values_[possible_base_tile_x][possible_base_tile_y] = location_quality;
 
 					residual_sq = 0; // clear so i don't over-aggregate
+					resources_stored = 0;
 
-                } // closure in bounds
+				} // closure in bounds
 
-            }
-        }
-    }
+			}
+		}
+	}
 }
 
 void Inventory::updateReserveSystem() {
@@ -761,48 +777,104 @@ void Inventory::updateReserveSystem() {
 }
 
 
-void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv ) {
+void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
 
-    TilePosition center_self = TilePosition(u_inv.getMeanBuildingLocation());
-    int location_qual_threshold = -999999;
-    acceptable_expo_ = false;
+	TilePosition center_self = TilePosition(u_inv.getMeanBuildingLocation());
+	int location_qual_threshold = -999999;
+	acceptable_expo_ = false;
+	Region home = Broodwar->getRegionAt(Position(center_self));
+	Regionset neighbors;
+	bool local_maximum = true;
 
-    for ( vector<int>::size_type x = 0; x != base_values_.size(); ++x ) {
-        for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {
-            if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
+	neighbors.insert(home);
 
-                TilePosition canidate_spot = TilePosition( x + 2, y + 1 ); // from the true center of the object.
+	Unit_Inventory bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hatchery, Position(center_self), 9999999);
+	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+		home = Broodwar->getRegionAt(b->second.pos_);
+		Regionset new_neighbors = home->getNeighbors();
+		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+			if ((*r)->isAccessible()){ neighbors.insert(*r); }
+		}
+	}
+	bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Lair, Position(center_self), 9999999);
+	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+		home = Broodwar->getRegionAt(b->second.pos_);
+		Regionset new_neighbors = home->getNeighbors();
+		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+			if ((*r)->isAccessible()){ neighbors.insert(*r); }
+		}
+	}
+	bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hive, Position(center_self), 9999999);
+	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+		home = Broodwar->getRegionAt(b->second.pos_);
+		Regionset new_neighbors = home->getNeighbors();
+		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+			if ((*r)->isAccessible()){ neighbors.insert(*r); }
+		}
+	}
+
+	for (vector<int>::size_type x = 0; x != base_values_.size(); ++x) {
+		for (vector<int>::size_type y = 0; y != base_values_[x].size(); ++y) {
+			if (base_values_[x][y] > 1) { // only consider the decent locations please.
+
+				TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
 				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
-				int net_quality = base_values_[x][y] - max( pow( walk,2) , 250.0 ) ; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+				int net_quality = base_values_[x][y] - pow(Position(canidate_spot).getDistance(Position(center_self)) / 32, 2); //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
-                bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
-                bool found_rdepot = false;
+				bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
+				bool found_rdepot = false;
+				bool is_neighboring_region = false;
 
-                Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius( e_inv, Position( canidate_spot ), 500 );
+				Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius(e_inv, Position(canidate_spot), 500);
 				e_loc.updateUnitInventorySummary();
-				if ( e_loc.stock_shoots_down_ + e_loc.stock_shoots_up_ > 0 ) { //if they have any combat units nearby.
-                    enemy_in_inventory_near_expo = true;
-                }
+				if (e_loc.stock_shoots_down_ + e_loc.stock_shoots_up_ > 0) { //if they have any combat units nearby.
+					enemy_in_inventory_near_expo = true;
+				}
 
-                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, Position( canidate_spot ), 500 );
-                for ( const auto &r : rdepot.unit_inventory_ ) {
-                    if ( r.second.type_.isResourceDepot() ) {
-                        found_rdepot = true;
-                    }
-                }
+				Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius(u_inv, Position(canidate_spot), 500);
+				for (const auto &r : rdepot.unit_inventory_) {
+					if (r.second.type_.isResourceDepot()) {
+						found_rdepot = true;
+					}
+				}
 
-                bool condition = net_quality >= location_qual_threshold && !enemy_in_inventory_near_expo && !found_rdepot;
+				//Region canidate_region = Broodwar->getRegionAt(Position(canidate_spot));
+				//if (neighbors.contains(canidate_region)){
+				//	is_neighboring_region = true;
+				//}
+				//else {
+				//	int canidate_group = canidate_region->getRegionGroupID();
+				//	for (auto r = neighbors.begin(); r != neighbors.end() && !neighbors.empty(); r++) {
+				//		if ( (*r) && (*r)->getRegionGroupID() == canidate_group) {
+				//			//is_neighboring_region = true;
+				//		}
+				//	}
+				//}
+				for (int i = -7; i <= 7; i++){
+					for (int j = -7; j <= 7; j++){
+						bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
+						if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]){
+							local_maximum = false;
+							break;
+						}
+					}
+				}
 
-                if ( condition ) {
-                    next_expo_ = { static_cast<int>(x), static_cast<int>(y) };
-                    acceptable_expo_ = true;
-                    location_qual_threshold = net_quality;
-                }
-            }
 
-        } // closure y
-    } // closure x
+				bool condition = net_quality >= location_qual_threshold && !enemy_in_inventory_near_expo && !found_rdepot && local_maximum;
+
+				if (condition) {
+					next_expo_ = { static_cast<int>(x), static_cast<int>(y) };
+					acceptable_expo_ = true;
+					location_qual_threshold = net_quality;
+				}
+				local_maximum = true;
+			}
+
+		} // closure y
+	} // closure x
 }
+
 void Inventory::getStartPositions(){
 	for (auto loc : Broodwar->getStartLocations()){
 		start_positions_.push_back(Position(loc));
