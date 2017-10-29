@@ -496,6 +496,14 @@ void MeatAIModule::onFrame()
             //    }
             //} // Pretty to look at!
 
+			if (_ANALYSIS_MODE) {
+				for (auto &u : Broodwar->self()->getUnits()){
+					if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getType()!=UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit) {
+						Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
+					}
+				}
+			}
+
         }// close analysis mode
 
         auto end_preamble = std::chrono::high_resolution_clock::now();
@@ -509,11 +517,6 @@ void MeatAIModule::onFrame()
         // Iterate through all the units that we own
         for ( auto &u : Broodwar->self()->getUnits() )
         {
-            if ( _ANALYSIS_MODE ) {
-                if ( u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit ) {
-                    Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
-                }
-            }
             // Ignore the unit if it no longer exists
             // Make sure to include this block when handling any Unit pointer!
             if ( !u || !u->exists() )
