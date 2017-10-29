@@ -552,7 +552,7 @@ void MeatAIModule::onFrame()
             {
 				Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
 				bool want_gas = gas_starved && 
-					        inventory.gas_workers_ <= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+					        inventory.gas_workers_ < 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 				//bool mineral_starved = inventory.getLn_Gas_Ratio() > delta; // horrid idea.
 				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) ){ //if this is your first worker of the frame consider resetting him.
 					miner.stopMine(neutral_inventory); 
