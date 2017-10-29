@@ -548,17 +548,18 @@ void MeatAIModule::onFrame()
             if ( u->getType().isWorker() )
             {
 				Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-				//bool too_much_gas = !gas_starved ||
-					        //(Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
-					        //inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+				bool want_gas = gas_starved && 
+					        inventory.gas_workers_ <= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 				//bool mineral_starved = inventory.getLn_Gas_Ratio() > delta; // horrid idea.
 				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) ){ //if this is your first worker of the frame consider resetting him.
 					miner.stopMine(neutral_inventory); 
-					if (gas_starved){
+					if ( want_gas ){
 						Worker_Gas(u, friendly_inventory);
-						continue;
+						if (miner.locked_mine_){
+							continue;
+						}
 					}
-					else {
+					if (!miner.locked_mine_) {
 						Worker_Mine(u, friendly_inventory);
 						continue;
 					}
@@ -639,7 +640,7 @@ void MeatAIModule::onFrame()
                 }
 
                 if ( e_closest /*&& e_closest->bwapi_unit_ && (e_closest->bwapi_unit_)->exists()*/ ) { // if there are bad guys, search for friends within that area. Only attacks visible units.
-
+					buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Hatchery); // Neutralize the build order if needed.
 					int e_charge = e_closest->type_.topSpeed() * e_closest->type_.groundWeapon().damageCooldown();
 					int search_radius = max(max(max(enemy_inventory.max_range_, e_charge), friendly_inventory.max_range_), 96 );
                     Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
@@ -716,17 +717,22 @@ void MeatAIModule::onFrame()
 									(u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
 								//(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 									
-									bool only_workers = Stock_Units(UnitTypes::Zerg_Drone, enemy_inventory) == enemy_loc.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Protoss_Probe, enemy_inventory) == enemy_loc.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Terran_SCV, enemy_inventory) == enemy_loc.stock_ground_units_;
+									bool only_workers = Stock_Units(UnitTypes::Zerg_Drone, enemy_loc) == enemy_loc.stock_ground_units_ ||
+										Stock_Units(UnitTypes::Protoss_Probe, enemy_loc) == enemy_loc.stock_ground_units_ ||
+										Stock_Units(UnitTypes::Terran_SCV, enemy_loc) == enemy_loc.stock_ground_units_;
 
-									bool ignore = u->getType() == UnitTypes::Zerg_Drone && (only_workers || enemy_loc.stock_total_ == 0);
+									bool ignore = only_workers && u->getType() == UnitTypes::Zerg_Drone &&
+										(Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) > enemy_inventory.worker_count_ || friend_loc.getMeanBuildingLocation() == Position(0,0) );									
 
 									bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
-                                if ( neccessary_attack && !force_retreat && !ignore && !is_spelled ) {
+                                if ( neccessary_attack && !force_retreat && !is_spelled && !ignore) {
 
                                     boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+
+									//if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
+									//	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
+									//}
 
                                     if ( _ANALYSIS_MODE ) {
                                         if ( isOnScreen( u->getPosition() ) ) {
@@ -737,9 +743,7 @@ void MeatAIModule::onFrame()
                                             Broodwar->drawTextMap( mean_loc.x, mean_loc.y, "%d", enemy_loc.stock_ground_units_ + enemy_loc.stock_fliers_ );
                                         }
                                     }
-									if (u->getType() == UnitTypes::Zerg_Drone){
-										buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Hatchery); // Neutralize the build order if needed.
-									}
+
                                 }
 								else if (is_spelled){
 									Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u->getType(), u->getPosition(), 96 );
@@ -747,22 +751,17 @@ void MeatAIModule::onFrame()
 										boids.Retreat_Logic(u, *closest, friendly_inventory, inventory, Colors::Blue);
 									}
 								}
-								else if ( !ignore ){
-                                    boids.Retreat_Logic( u, *e_closest, friendly_inventory, inventory, Colors::White );
+								else if (ignore){
+
 								}
 								else {
-									// intentionally left blank. Stop drones from fighting here.
-									if ( friend_loc.getMeanBuildingLocation() == Position(0, 0) || u->getHitPoints() == u->getInitialHitPoints() ){
-										u->stop();
-									}
-									else if ( u->getHitPoints() < u->getInitialHitPoints() ) {
-										boids.Tactical_Logic(u, enemy_loc, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
-									}
+                                    boids.Retreat_Logic( u, *e_closest, friendly_inventory, inventory, Colors::White );
 
-									Broodwar->drawTextScreen(250, 140, "Worker Overpull?"); //
-									buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Hatchery ); // Neutralize the build order if needed.
+									//if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
+									//	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
+									//}
+
 								}
-
                             }
                         } // close local examination.
                     }
