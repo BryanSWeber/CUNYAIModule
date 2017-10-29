@@ -175,7 +175,7 @@ GeneticHistory::GeneticHistory(string file) {
 
 	if ( win_count > 0 ) { // redefine final output.
 
-			std::uniform_real_distribution<double> unif_dist_to_win_count(0, win_count);
+			std::uniform_real_distribution<double> unif_dist_to_win_count(min(0, win_count - 50), win_count);
 
 			int parent_1 = (int)(unif_dist_to_win_count(gen)); // safe even if there is only 1 win., index starts at 0.
 			int parent_2 = (int)(unif_dist_to_win_count(gen));
@@ -243,7 +243,7 @@ GeneticHistory::GeneticHistory(string file) {
             a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
             a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
 
-            if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.01 && a_tech_out_mutate_ > 0.01 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.01) {
+			if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.01) {
                 break; // if we have an interior solution, let's use it, if not, we try again.
             }
         }
