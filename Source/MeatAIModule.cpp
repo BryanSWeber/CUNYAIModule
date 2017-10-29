@@ -548,7 +548,7 @@ void MeatAIModule::onFrame()
 
             // Worker Loop
             auto start_worker = std::chrono::high_resolution_clock::now();
-            if ( u->getType().isWorker() )
+            if ( u->getType().isWorker() && !isRecentCombatant(u) )
             {
 				Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
 				bool want_gas = gas_starved && 
@@ -755,7 +755,7 @@ void MeatAIModule::onFrame()
 								else if (drone_problem){
 
 									if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) < enemy_inventory.worker_count_ + 1 && 
-										friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+										//friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
 										u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ){
 										boids.Tactical_Logic(u, enemy_loc, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
 									}

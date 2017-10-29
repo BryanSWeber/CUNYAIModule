@@ -6,7 +6,7 @@ using namespace Filter;
 using namespace std;
 
 // Gets units last error and prints it directly onscreen.  From tutorial.
-void MeatAIModule::PrintError_Unit( Unit unit ) {
+void MeatAIModule::PrintError_Unit(const Unit &unit) {
     Position pos = unit->getPosition();
     Error lastErr = Broodwar->getLastError();
     Broodwar->registerEvent( [pos, lastErr]( Game* ) { Broodwar->drawTextMap( pos, "%c%s", Text::Red, lastErr.c_str() ); },   // action
@@ -15,7 +15,7 @@ void MeatAIModule::PrintError_Unit( Unit unit ) {
 }
 
 // Identifies those moments where a worker is gathering and its unusual subcases.
-bool MeatAIModule::isActiveWorker(Unit unit){
+bool MeatAIModule::isActiveWorker(const Unit &unit){
 	bool passive = //BWAPI::Orders::MoveToMinerals &&
 		unit->getOrder() == BWAPI::Orders::MoveToGas ||
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
@@ -28,7 +28,7 @@ bool MeatAIModule::isActiveWorker(Unit unit){
 	return passive;
 }
 
-bool MeatAIModule::isInLine(Unit unit){
+bool MeatAIModule::isInLine(const Unit &unit){
 	bool passive = 
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
 		unit->getOrder() == BWAPI::Orders::WaitForGas ||
@@ -37,7 +37,7 @@ bool MeatAIModule::isInLine(Unit unit){
 }
 
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
-bool MeatAIModule::isIdleEmpty( Unit unit ) {
+bool MeatAIModule::isIdleEmpty(const Unit &unit) {
 
     bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
 
@@ -59,8 +59,15 @@ bool MeatAIModule::isIdleEmpty( Unit unit ) {
     return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spam_guard ;
 }
 
+// Did the unit fight in the last 5 seconds?
+bool MeatAIModule::isRecentCombatant(const Unit &unit) {
+	bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
+	bool recent_order = unit->getLastCommandFrame() + 5 * 24 > Broodwar->getFrameCount();
+	return fighting_now && recent_order;
+}
+
 // Checks for if a unit is a combat unit.
-bool MeatAIModule::IsFightingUnit( Unit unit )
+bool MeatAIModule::IsFightingUnit(const Unit &unit)
 {
     if ( !unit )
     {

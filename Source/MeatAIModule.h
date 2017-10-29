@@ -111,15 +111,17 @@ public:
 
   // Utility Functions
       // Prints unit's last error directly onto it.
-      void PrintError_Unit(Unit unit );
+	  void PrintError_Unit(const Unit &unit);
 	  // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
-	  bool isActiveWorker(Unit unit);
+	  bool isActiveWorker(const Unit &unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
-      bool isIdleEmpty(Unit unit );
+	  bool isIdleEmpty(const Unit &unit);
 	  // When should we reset the lock?
-	  bool isInLine(Unit unit);
+	  bool isInLine(const Unit &unit);
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
-      bool IsFightingUnit( Unit unit );
+	  bool IsFightingUnit(const Unit &unit);
+	  // evaluates if it was order to fight recently.
+	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line( Position s_pos, Position f_pos, Color col );
       // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
