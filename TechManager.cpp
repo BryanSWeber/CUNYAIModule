@@ -36,7 +36,16 @@ bool MeatAIModule::Tech_Avail() {
                 UpgradeType up_current = (UpgradeType) known_ups[i];
                 UpgradeType::set building_up_set = u->getType().upgradesWhat(); // does this idle building make that upgrade?
                 if ( building_up_set.find( up_current ) != building_up_set.end() ) {
-                    if ( BWAPI::Broodwar->self()->getUpgradeLevel( up_current ) < up_current.maxRepeats() && !BWAPI::Broodwar->self()->isUpgrading( up_current ) ) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do.
+
+					bool upgrade_incomplete = BWAPI::Broodwar->self()->getUpgradeLevel(up_current) < up_current.maxRepeats() && !BWAPI::Broodwar->self()->isUpgrading(up_current);
+
+					bool hydra_upgrade = UpgradeTypes::Zerg_Missile_Attacks || UpgradeTypes::Grooved_Spines || UpgradeTypes::Muscular_Augments;
+					bool ling_upgrade = UpgradeTypes::Zerg_Melee_Attacks || UpgradeTypes::Metabolic_Boost;
+
+					bool upgrade_conditionals = ( hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory)) ||
+						(ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory));
+
+					if (upgrade_incomplete && upgrade_conditionals) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do.
                         return true;
                     }
                 }
