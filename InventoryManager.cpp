@@ -699,8 +699,8 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
 		}
 
-		for (auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x) {
-			for (auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 8; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
+		for (auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 7; ++possible_base_tile_x) {
+			for (auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 7; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
 
 				if (possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
 					possible_base_tile_y >= 0 && possible_base_tile_y <= map_y) { // must be in the map bounds 
@@ -819,7 +819,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 
 				TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
 				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
-				int net_quality = base_values_[x][y] - 250 * Position(canidate_spot).getDistance(Position(center_self))/32; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+				int net_quality = /*base_values_[x][y] */ - pow( Position(canidate_spot).getDistance(Position(center_self))/32, 2); //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
 				bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
 				bool found_rdepot = false;
@@ -827,6 +827,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 
 				Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius(e_inv, Position(canidate_spot), 500);
 				e_loc.updateUnitInventorySummary();
+
 				if (e_loc.stock_shoots_down_ + e_loc.stock_shoots_up_ > 0) { //if they have any combat units nearby.
 					enemy_in_inventory_near_expo = true;
 				}
