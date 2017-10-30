@@ -1065,6 +1065,18 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
         }
     }
 
+	if (unit && IsMineralField(unit) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
+		Stored_Unit ru = Stored_Unit(unit);
+		auto found_ptr = neutral_inventory.resource_inventory_.find(unit);
+		if (found_ptr != neutral_inventory.resource_inventory_.end()) {
+			enemy_inventory.unit_inventory_.erase(unit);
+			inventory.updateBaseLoc(neutral_inventory);
+		}
+		else {
+			//then nothing.
+		}
+	}
+
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
     }

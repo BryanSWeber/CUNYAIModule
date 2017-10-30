@@ -60,7 +60,7 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
 	Resource_Inventory available_fields;
 	int miner_count = 0;
-	int low_drone = 10; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+	int low_drone = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
 		miner_count += r->second.number_of_miners_;
@@ -91,8 +91,11 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 			}
 		}
 	} // send drone to closest base's closest mineral field meeting that critera.
-  miner_count_ += miner_count;
+	else { // if there are no suitible bases:
+		// mine those empty patches, perhaps?
+	}
 
+  miner_count_ += miner_count;
 
   //  Unit local_base = unit->getClosestUnit( IsResourceDepot && IsOwned && IsCompleted );
 

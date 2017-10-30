@@ -14,9 +14,9 @@ Resource_Inventory::Resource_Inventory(){
 		Unitset geysers = Broodwar->getStaticGeysers();
 
 		for (auto m = min.begin(); m != min.end(); ++m) {
-			if ((*m)->getInitialResources() > 8){
+			//if ((*m)->getInitialResources() > 8){
 				this->addStored_Resource(*m);
-			}
+			//}
 		}
 		for (auto g = geysers.begin(); g != geysers.end(); ++g) {
 			this->addStored_Resource(*g);

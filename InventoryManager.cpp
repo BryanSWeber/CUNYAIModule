@@ -738,7 +738,7 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 
 							if (long_condition) {
 								//residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
-								resources_stored += j->second.current_stock_value_ - Position(prosepective_location).getDistance(Position(tile_resource_position)) / 32;
+								resources_stored += j->second.current_stock_value_ - 2 * Position(prosepective_location).getDistance(Position(tile_resource_position)) / 32;
 								++local_min;
 							}
 
@@ -819,7 +819,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 
 				TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
 				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
-				int net_quality = base_values_[x][y] - pow(Position(canidate_spot).getDistance(Position(center_self)) / 32, 2); //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+				int net_quality = base_values_[x][y] - Position(canidate_spot).getDistance(Position(center_self)) / 32; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
 				bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
 				bool found_rdepot = false;
@@ -846,10 +846,11 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 				//	int canidate_group = canidate_region->getRegionGroupID();
 				//	for (auto r = neighbors.begin(); r != neighbors.end() && !neighbors.empty(); r++) {
 				//		if ( (*r) && (*r)->getRegionGroupID() == canidate_group) {
-				//			//is_neighboring_region = true;
+				//			is_neighboring_region = true;
 				//		}
 				//	}
 				//}
+
 				for (int i = -7; i <= 7; i++){
 					for (int j = -7; j <= 7; j++){
 						bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
