@@ -10,7 +10,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a boids manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, const Inventory &inventory, const bool &army_starved ) {
+void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, Inventory &inventory, const bool &army_starved ) {
 
     Position pos = unit->getPosition();
     Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -288,7 +288,7 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
 }
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place.
-void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv, const bool &army_starved ) {
+void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, Inventory &inv, const bool &army_starved ) {
 
 	bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
 	bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
@@ -393,6 +393,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inv
 			double theta = atan2(dist_y, dist_x);
 			attract_dx_ = cos(theta) * dist; // run 100% towards them.
 			attract_dy_ = sin(theta) * dist;
+			inv.start_positions_.erase(inv.start_positions_.begin() + randomIndex);
 		}
 	}
 }

@@ -60,7 +60,7 @@ void MeatAIModule::Worker_Mine(const Unit &unit, Unit_Inventory &ui) {
 	Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
 	Resource_Inventory available_fields;
 	int miner_count = 0;
-	int low_drone = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+	int low_drone = 2; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
 	for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++){
 		miner_count += r->second.number_of_miners_;

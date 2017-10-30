@@ -57,7 +57,10 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 		current_hp_ = unit->getHitPoints();
 
 		//Get unit's status. Precalculated, precached.
-		int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
+		int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+		modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
+		//modified_supply = unit->getType() == UnitTypes::Protoss_Photon_Cannon ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Static D adjustment.
+
 		stock_value_ = (int)sqrt(pow(unit->getType().mineralPrice(), 2) + pow(1.25 * unit->getType().gasPrice(), 2) + pow(25 * modified_supply, 2));
 		if (unit->getType().isTwoUnitsInOneEgg()) {
 			stock_value_ = stock_value_ / 2;
@@ -93,7 +96,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int y_sum = 0;
      int count = 0;
      for ( const auto &u : this->unit_inventory_ ) {
-         if ( u.second.type_.isBuilding() ) {
+         if ( u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding() ) {
              x_sum += u.second.pos_.x;
              y_sum += u.second.pos_.y;
              count++;
@@ -164,6 +167,11 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 if ( u_iter.second.type_.groundWeapon().maxRange() > range || u_iter.second.type_.airWeapon().maxRange() > range ) {
                     range = u_iter.second.type_.groundWeapon().maxRange() > u_iter.second.type_.airWeapon().maxRange() ? u_iter.second.type_.groundWeapon().maxRange() : u_iter.second.type_.airWeapon().maxRange();
                 }
+
+				if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 > range){
+					range = 7 * 32; // depends on upgrades and unit contents.
+				}
+
                 already_seen_types.push_back( u_iter.second.type_ );
             }
 
@@ -208,7 +216,10 @@ Stored_Unit::Stored_Unit( Unit unit ) {
 	locked_mine_ = nullptr;
 
     //Get unit's status. Precalculated, precached.
-	int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 1 : unit->getType().supplyRequired();
+	int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+	modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
+	//modified_supply = unit->getType() == UnitTypes::Protoss_Photon_Cannon ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Static D adjustment.
+
     stock_value_ = (int)sqrt( pow( unit->getType().mineralPrice(), 2 ) + pow( 1.25 * unit->getType().gasPrice(), 2 ) + pow( 25 * modified_supply , 2 ) );
     if ( unit->getType().isTwoUnitsInOneEgg() ) {
         stock_value_ = stock_value_ / 2;
