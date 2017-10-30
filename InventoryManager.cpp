@@ -819,7 +819,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 
 				TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
 				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
-				int net_quality = base_values_[x][y] - Position(canidate_spot).getDistance(Position(center_self)) / 32; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+				int net_quality = base_values_[x][y] - 250 * Position(canidate_spot).getDistance(Position(center_self))/32; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
 				bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
 				bool found_rdepot = false;
