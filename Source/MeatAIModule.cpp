@@ -299,7 +299,7 @@ void MeatAIModule::onFrame()
         inventory.updateReserveSystem();
         inventory.updateNextExpo(enemy_inventory, friendly_inventory);
 		inventory.updateStartPositions();
-		miner_count_ = 0;
+
 
         // Game time;
         int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -400,6 +400,7 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
             Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f",  inventory.vision_tile_count_ / (double)map_area );  //
 			Broodwar->drawTextScreen( 375, 60, "Workers (alt): %d", miner_count_);  //
+			miner_count_ = 0; // just after the fact.
 			Broodwar->drawTextScreen( 375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
 
             //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
@@ -981,7 +982,7 @@ void MeatAIModule::onNukeDetect( BWAPI::Position target )
 
 void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 {
-    if ( unit && !unit->getPlayer()->isAlly( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
+    if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
         //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit eu = Stored_Unit( unit );
 
