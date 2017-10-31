@@ -6,11 +6,29 @@ using namespace Filter;
 using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
-bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, const Inventory &inv) {
+bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv) {
     if ( Broodwar->self()->minerals() >= 300 && 
 		( buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ) )  ) {
-        
-        if ( inv.acceptable_expo_ )
+
+		int dist = 99999999;
+
+		bool safe_worker = !getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250) || getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250)->type_.isWorker();
+
+		if (safe_worker){
+			for (auto &p : inv.expo_positions_){
+				int dist_temp = unit->getPosition().getDistance(Position(p));
+				bool safe_expo = !getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Hatchery, Position(p), 500) || getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Hatchery, Position(p), 500)->type_.isWorker();
+				if (dist_temp < dist){
+					dist = dist_temp;
+					inv.setNextExpo(p);
+				}
+			}
+		}
+		else {
+			unit->stop();
+		}
+
+        if ( inv.next_expo_ )
         {
             //clear all obstructions, if any.
             //Unitset obstructions = Broodwar->getUnitsInRadius( Position(inv.next_expo_), 3 * 32 );

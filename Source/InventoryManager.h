@@ -33,6 +33,8 @@ struct Inventory {
     int building_timer_;
 
 	vector<Position> start_positions_;
+	vector<TilePosition> expo_positions_;
+
     vector< vector<bool> > buildable_positions_ ;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
@@ -44,7 +46,6 @@ struct Inventory {
     int est_enemy_stock_;
 
     TilePosition next_expo_;
-    bool acceptable_expo_;
 	bool list_cleared_;
 
     // Updates the (safe) log of net investment in technology.
@@ -101,9 +102,15 @@ struct Inventory {
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     // Updates mineral, gas, and time reserves.
     void Inventory::updateReserveSystem();
-    // updates the next target expo.
-    void Inventory::updateNextExpo( const Unit_Inventory &e_inv, const Unit_Inventory &u_inv );
-	// Updates map positions;
+    
+	// updates the next target expo.
+	void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv);
+	// Changes the next expo to X:
+	void Inventory::setNextExpo(const TilePosition tp);
+
+	// Adds start positions to inventory object.
 	void Inventory::getStartPositions();
+	// Updates map positions and removes all visible ones;
 	void Inventory::updateStartPositions();
+
 }; 

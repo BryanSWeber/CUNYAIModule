@@ -101,7 +101,7 @@ public:
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
-      bool Expo( const Unit &unit , const bool &extra_critera, const Inventory &inv);
+      bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Mine( const Unit &unit , Unit_Inventory &ui);
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.

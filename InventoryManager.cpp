@@ -777,41 +777,42 @@ void Inventory::updateReserveSystem() {
 }
 
 
-void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
+void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
 
-	TilePosition center_self = TilePosition(u_inv.getMeanBuildingLocation());
+	expo_positions_.clear();
+
+	TilePosition center_self = Broodwar->self()->getStartLocation();
 	int location_qual_threshold = -999999;
-	acceptable_expo_ = false;
-	Region home = Broodwar->getRegionAt(Position(center_self));
-	Regionset neighbors;
+	//Region home = Broodwar->getRegionAt(Position(center_self));
+	//Regionset neighbors;
 	bool local_maximum = true;
 
-	neighbors.insert(home);
+	//neighbors.insert(home);
 
-	Unit_Inventory bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hatchery, Position(center_self), 9999999);
-	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-		home = Broodwar->getRegionAt(b->second.pos_);
-		Regionset new_neighbors = home->getNeighbors();
-		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-			if ((*r)->isAccessible()){ neighbors.insert(*r); }
-		}
-	}
-	bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Lair, Position(center_self), 9999999);
-	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-		home = Broodwar->getRegionAt(b->second.pos_);
-		Regionset new_neighbors = home->getNeighbors();
-		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-			if ((*r)->isAccessible()){ neighbors.insert(*r); }
-		}
-	}
-	bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hive, Position(center_self), 9999999);
-	for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-		home = Broodwar->getRegionAt(b->second.pos_);
-		Regionset new_neighbors = home->getNeighbors();
-		for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-			if ((*r)->isAccessible()){ neighbors.insert(*r); }
-		}
-	}
+	//Unit_Inventory bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hatchery, Position(center_self), 9999999);
+	//for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+	//	home = Broodwar->getRegionAt(b->second.pos_);
+	//	Regionset new_neighbors = home->getNeighbors();
+	//	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+	//		if ((*r)->isAccessible()){ neighbors.insert(*r); }
+	//	}
+	//}
+	//bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Lair, Position(center_self), 9999999);
+	//for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+	//	home = Broodwar->getRegionAt(b->second.pos_);
+	//	Regionset new_neighbors = home->getNeighbors();
+	//	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+	//		if ((*r)->isAccessible()){ neighbors.insert(*r); }
+	//	}
+	//}
+	//bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hive, Position(center_self), 9999999);
+	//for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
+	//	home = Broodwar->getRegionAt(b->second.pos_);
+	//	Regionset new_neighbors = home->getNeighbors();
+	//	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
+	//		if ((*r)->isAccessible()){ neighbors.insert(*r); }
+	//	}
+	//}
 
 	for (vector<int>::size_type x = 0; x != base_values_.size(); ++x) {
 		for (vector<int>::size_type y = 0; y != base_values_[x].size(); ++y) {
@@ -819,7 +820,7 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 
 				TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
 				int walk = Position(canidate_spot).getDistance(Position(center_self)) / 32;
-				int net_quality = /*base_values_[x][y] */ - pow( Position(canidate_spot).getDistance(Position(center_self))/32, 2); //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+				//int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
 				bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
 				bool found_rdepot = false;
@@ -863,12 +864,10 @@ void Inventory::updateNextExpo(const Unit_Inventory &e_inv, const Unit_Inventory
 				}
 
 
-				bool condition = net_quality >= location_qual_threshold && !enemy_in_inventory_near_expo && !found_rdepot && local_maximum;
+				bool condition = !enemy_in_inventory_near_expo && !found_rdepot && local_maximum;
 
 				if (condition) {
-					next_expo_ = { static_cast<int>(x), static_cast<int>(y) };
-					acceptable_expo_ = true;
-					location_qual_threshold = net_quality;
+					expo_positions_.push_back({ static_cast<int>(x), static_cast<int>(y) });
 				}
 				local_maximum = true;
 			}
@@ -881,8 +880,6 @@ void Inventory::getStartPositions(){
 	for (auto loc : Broodwar->getStartLocations()){
 		start_positions_.push_back(Position(loc));
 	}
-	//std::vector<Position> v{ std::begin(Broodwar->getStartLocations()), std::end(Broodwar->getStartLocations()) };
-	//start_positions_ = v;
 }
 
 void Inventory::updateStartPositions(){
@@ -898,6 +895,11 @@ void Inventory::updateStartPositions(){
 		list_cleared_ = true;
 	}
 }
+
+void Inventory::setNextExpo(const TilePosition tp){
+	next_expo_ = tp;
+}
+
 //Zerg_Zergling, 37
 //Zerg_Hydralisk, 38
 //Zerg_Ultralisk, 39

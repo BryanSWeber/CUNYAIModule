@@ -182,6 +182,9 @@ void MeatAIModule::onFrame()
 		auto start_preamble = std::chrono::high_resolution_clock::now();
 
 
+		// Game time;
+		int t_game = Broodwar->getFrameCount(); // still need this for mining script.
+
         // Let us see what is stored in each unit_inventory and update it. Invalidate unwanted units. Most notably, geysers become extractors on death.
 
         for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++ ) {
@@ -297,12 +300,11 @@ void MeatAIModule::onFrame()
         inventory.updateHatcheries(friendly_inventory);  // macro variables, not every unit I have.
 
         inventory.updateReserveSystem();
-        inventory.updateNextExpo(enemy_inventory, friendly_inventory);
 		inventory.updateStartPositions();
+		if (t_game == 0){
+			inventory.getExpoPositions(enemy_inventory, friendly_inventory); // prime this once on game start.
+		}
 
-
-        // Game time;
-        int t_game = Broodwar->getFrameCount(); // still need this for mining script.
         buildorder.updateBuildingTimer(friendly_inventory);
 
         //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
@@ -390,8 +392,11 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", buildorder.building_timer_ ); //
             Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ? "TRUE" : "FALSE" ); //
             Broodwar->drawTextScreen( 250, 120, "Last Building: %s", buildorder.last_build_order.c_str() ); //
-			Broodwar->drawTextScreen( 250, 130, "Next Expo: (%d , %d)", inventory.next_expo_.x , inventory.next_expo_.y); //
-			Broodwar->drawCircleMap(Position(inventory.next_expo_), 25, Colors::Green, TRUE);
+			Broodwar->drawTextScreen(250, 130, "Next Expo: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y); //
+			for (auto &p : inventory.expo_positions_){
+				Broodwar->drawCircleMap( Position(p) , 25, Colors::Green, TRUE);
+			}
+			Broodwar->drawCircleMap(Position(inventory.next_expo_), 10, Colors::Red, TRUE);
 
             //vision belongs here.
 
@@ -441,13 +446,13 @@ void MeatAIModule::onFrame()
             //    }
             //} // both of these structures are on the same tile system.
 
-            for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-                    if ( inventory.base_values_[i][j] > 1 ) {
-                        Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-                    }
-                };
-            } // not that pretty to look at.
+            //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+            //        if ( inventory.base_values_[i][j] > 1 ) {
+            //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+            //        }
+            //    };
+            //} // not that pretty to look at.
 
             //for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
             //    for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
@@ -583,10 +588,16 @@ void MeatAIModule::onFrame()
 				// Building subloop.
 				if ((isIdleEmpty(miner.bwapi_unit_) || isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && !IsCarryingGas(u) && !IsCarryingMinerals(u) && inventory.last_builder_sent < t_game - 3 * 24)
 				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
-					if (Building_Begin(u, inventory, enemy_inventory)){
+
+					if ( Expo(miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory), inventory) ||
+						Building_Begin(u, inventory, enemy_inventory)){
 						inventory.last_builder_sent == t_game;
 					}
 				} // Close Build loop
+
+				if (miner.bwapi_unit_->getLastCommand() == UnitCommand::build(miner.bwapi_unit_, TilePosition(inventory.next_expo_), UnitTypes::Zerg_Hatchery) && getClosestStored(neutral_inventory, miner.pos_, 500) && inventory.last_builder_sent < t_game - 3 * 24){
+					Expo(miner.bwapi_unit_, true, inventory); // update this guy's target if he passes near a mineral patch.
+				}
 
      //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
      //           if ( ( isIdleEmpty( u ) || isInLine(u) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
@@ -644,7 +655,7 @@ void MeatAIModule::onFrame()
                 }
 
                 if ( e_closest /*&& e_closest->bwapi_unit_ && (e_closest->bwapi_unit_)->exists()*/ ) { // if there are bad guys, search for friends within that area. Only attacks visible units.
-					buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Hatchery); // Neutralize the build order if needed.
+
 					int e_charge = e_closest->type_.topSpeed() * e_closest->type_.groundWeapon().damageCooldown();
 					int search_radius = max(max(max(enemy_inventory.max_range_, e_charge), friendly_inventory.max_range_), 96 );
                     Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
@@ -724,6 +735,10 @@ void MeatAIModule::onFrame()
 										Stock_Units(UnitTypes::Protoss_Probe, enemy_loc) == enemy_loc.stock_ground_units_ ||
 										Stock_Units(UnitTypes::Terran_SCV, enemy_loc) == enemy_loc.stock_ground_units_;
 
+									if (!e_closest->type_.isWorker() || (only_workers && enemy_loc.unit_inventory_.size() > 2) ){
+										buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Hatchery); // Neutralize the build order if something other than a worker scout is happening.
+									}
+
 									bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
 
 									bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
@@ -748,9 +763,9 @@ void MeatAIModule::onFrame()
 
                                 }
 								else if (is_spelled){
-									Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u->getType(), u->getPosition(), 96 );
+									Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u->getType(), u->getPosition(), 128 );
 									if (closest){
-										boids.Retreat_Logic(u, *closest, friendly_inventory, inventory, Colors::Blue);
+										boids.Retreat_Logic(u, *closest, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
 									}
 								}
 								else if (drone_problem){
@@ -1118,7 +1133,10 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
 			Stored_Unit& miner = iter->second;
 			miner.stopMine(neutral_inventory);
 		}
+
+		inventory.getExpoPositions(enemy_inventory, friendly_inventory);
 	}
+
 }
 
 void MeatAIModule::onUnitRenegade( BWAPI::Unit unit )

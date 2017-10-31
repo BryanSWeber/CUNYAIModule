@@ -409,7 +409,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const
 
     return return_unit;
 }
-//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters.
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters.
 Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
