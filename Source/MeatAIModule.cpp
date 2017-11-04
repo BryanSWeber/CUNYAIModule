@@ -749,7 +749,6 @@ void MeatAIModule::onFrame()
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
                                     boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
                                 }
-
                             }
                             else {
                                 boids.Retreat_Logic( u, *e_closest, friendly_inventory, inventory, Colors::White );

@@ -157,7 +157,7 @@ GeneticHistory::GeneticHistory( string file ) {
         }
     } // either by opponent name.
 
-    if ( win_count == 0 || (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) {
+    if ( win_count == 0 || (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race.
         relevant_game_count = 0;
         win_count = 0;
         for ( int j = 0; j < csv_length; ++j ) {
@@ -197,7 +197,7 @@ GeneticHistory::GeneticHistory( string file ) {
         } //or by name only (eg, random)
     }
 
-    if ( win_count > 0 ) { // redefine final output.
+    if ( win_count > 0 && !(dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // redefine final output.  Chance of playing raw as well.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 50 ), win_count );
 
