@@ -602,53 +602,14 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
+            // update miner target subloop
             if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build( miner.bwapi_unit_, TilePosition( inventory.next_expo_ ), UnitTypes::Zerg_Hatchery ) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position( inventory.next_expo_ ) )) && getClosestStored( neutral_inventory, miner.pos_, 500 ) &&
                 inventory.last_builder_sent < t_game - 3 * 24 ) {
-                //inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 Expo( miner.bwapi_unit_, true, inventory ); // update this guy's target if he passes near a mineral patch.
+                inventory.last_builder_sent == t_game;
             }
 
-            //           // Mining loop if our worker is idle (includes returning $$$) or not moving while gathering gas, we (re-) evaluate what they should be mining.  Original script uses isIdle() only. might have queues that are very long which is why they may be unresponsive.
-            //           if ( ( isIdleEmpty( u ) || isInLine(u) || u->isGatheringMinerals() || u->isGatheringGas() || u->isCarryingGas() || u->isCarryingMinerals() ) && t_game % 20 == 0 ) //
-            //           {
-            //if (isIdleEmpty(u)){
-            //	Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-            //	miner.stopMine(neutral_inventory);
-            //}
-
-            //if ( (isIdleEmpty(u) || isInLine(u)) && !u->isCarryingGas() && !u->isCarryingMinerals() && !isInLine(u))
-            //               {
-            //                   // Idle worker then Harvest from the nearest mineral patch or gas refinery, depending on need.
-            //                   bool enough_gas = !gas_starved ||
-            //                       (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) == 0 ||
-            //                       inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
-
-            //                   bool excess_minerals = inventory.min_workers_ >= 1 * inventory.min_fields_; //Some extra leeway over the optimal 1.5/patch, since they will be useless overgathering gas but not useless overgathering minerals.
-
-            //                   if ( !enough_gas /*&& excess_minerals*/ ) // Careful tinkering here.
-            //                   {
-            //                       Unit ref = u->getClosestUnit( IsRefinery && IsOwned );
-            //                       if ( ref && ref->exists() ) {
-            //                           Worker_Gas( u , friendly_inventory);
-            //			Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-            //			miner.stopMine(neutral_inventory);
-            //			++inventory.gas_workers_;
-            //                       }
-            //                   } // closure gas
-            //                   else //if ( !excess_minerals || enough_gas ) // pull from gas if we are satisfied with our gas count.
-            //                   {
-            //                       Worker_Mine( u , friendly_inventory);
-            //                       ++inventory.min_fields_;
-            //                   }
-
-            //               } // closure: collection assignment.
-            //else if ( !isActiveWorker(u) && (u->isCarryingMinerals() || u->isCarryingGas()) ) // Return $$$
-            //               {
-            //	u->returnCargo(true);	
-            //               }//Closure: returning $$ loop
-
-
-            //}// Closure: mining loop
 
         } // Close Worker management loop
         auto end_worker = std::chrono::high_resolution_clock::now();
