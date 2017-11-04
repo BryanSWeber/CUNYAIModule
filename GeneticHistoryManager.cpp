@@ -34,18 +34,23 @@ GeneticHistory::GeneticHistory( string file ) {
     double a_tech_out = dis( gen ) * 0.50;
     
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
-    // drone drone drone drone drone overlord pool extractor ling ling ling // overpool
+    // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
+    // drone drone drone drone drone overlord drone drone drone hatch pool extract ling lair drone drone drone drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta // 12 hatch into muta.
+
     string build_order_out;
     double build_order_rand = dis( gen );
-    if ( build_order_rand < 0.333 ) {
+    if ( build_order_rand <= 0.25 ) {
         build_order_out = "drone pool ling ling ling";
     }
-    else if ( build_order_rand > 0.666 ) {
-        build_order_out = "drone drone drone drone drone overlord pool extractor ling ling ling";
+    else if ( build_order_rand <= 0.50  && build_order_rand > 0.25 ) {
+        build_order_out = "drone drone drone drone drone overlord pool extractor";
+    }
+    else if ( build_order_rand <= 0.75  && build_order_rand > 0.50 ){
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool";
     }
     else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling lair drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta";
     }
 
     int win_count = 0;

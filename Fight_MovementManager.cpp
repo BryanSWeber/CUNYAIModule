@@ -70,11 +70,11 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
     Stored_Unit target;
     int priority = 0;
 
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<double> dis( -1, 1 );
+    //std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    //std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
+    //std::uniform_real_distribution<double> dis( -1, 1 );
 
-    rng_direction_ = dis( gen );
+    //rng_direction_ = dis( gen );
 
     int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
     int dist = range_radius + unit->getType().topSpeed() * 24;
@@ -146,9 +146,9 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
     int dist = unit->getDistance( e_unit.pos_ );
     int air_range = e_unit.type_.airWeapon().maxRange();
     int ground_range = e_unit.type_.groundWeapon().maxRange();
-	int chargable_distance_net = (unit->getType().topSpeed() + e_unit.type_.topSpeed()) * e_unit.type_.groundWeapon().damageCooldown();
-	int range = max(air_range, ground_range) + chargable_distance_net ;
-	if ( dist < range + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
+	int chargable_distance_net = (unit->getType().topSpeed() + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
+	int range = unit->isFlying() ? air_range : ground_range + chargable_distance_net ;
+	if ( dist < range ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Position pos = unit->getPosition();
         Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -165,8 +165,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
         int dist_x = e_unit.pos_.x - pos.x;
         int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
-        double retreat_dx = -cos( theta ) * (2 * range - dist);
-        double retreat_dy = -sin( theta ) * (2 * range - dist); // get -range- outside of their range.  Should be safe.
+        double retreat_dx = -cos( theta ) * ( range - dist );
+        double retreat_dy = -sin( theta ) * ( range - dist ); // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );

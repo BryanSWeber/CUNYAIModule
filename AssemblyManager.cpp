@@ -136,7 +136,6 @@ void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
     if ( army_starved ) {
         if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
             Check_N_Grow( UnitTypes::Zerg_Scourge, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 && Count_Units( UnitTypes::Zerg_Scourge, ui ) < 5 ); // hard cap on scourges, they build 2 at a time. 
-            //Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
             Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
 
             if ( Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) == 0 && buildorder.checkEmptyBuildOrder() ) {
@@ -375,32 +374,5 @@ Building_Gene::Building_Gene(string s) { // unspecified items are unrestricted.
 
     getInitialBuildOrder(s);
 
-    //Build_Order_Object hatch = Build_Order_Object( UnitTypes::Zerg_Hatchery );
-    //Build_Order_Object extract = Build_Order_Object( UnitTypes::Zerg_Extractor );
-    //Build_Order_Object pool = Build_Order_Object( UnitTypes::Zerg_Spawning_Pool );
-    //Build_Order_Object speed = Build_Order_Object( UpgradeTypes::Metabolic_Boost );
-    //Build_Order_Object ling = Build_Order_Object( UnitTypes::Zerg_Zergling );
-    //Build_Order_Object creep = Build_Order_Object( UnitTypes::Zerg_Creep_Colony );
-    //Build_Order_Object sunken = Build_Order_Object( UnitTypes::Zerg_Sunken_Colony );
-    //Build_Order_Object lair = Build_Order_Object( UnitTypes::Zerg_Lair );
-    //Build_Order_Object spire = Build_Order_Object( UnitTypes::Zerg_Spire );
-    //Build_Order_Object muta = Build_Order_Object( UnitTypes::Zerg_Mutalisk );
 
-    //building_gene_.push_back( hatch );
-    //building_gene_.push_back( pool );
-    //building_gene_.push_back( extract );
-    //building_gene_.push_back( lair );
-    //building_gene_.push_back( speed );
-    //building_gene_.push_back( creep );
-    //building_gene_.push_back( creep );
-    //building_gene_.push_back( sunken );
-    //building_gene_.push_back( sunken ); // doesn't work.
-    //building_gene_.push_back( ling );
-    //building_gene_.push_back( spire );
-    //building_gene_.push_back( muta );
-    //building_gene_.push_back( muta );
-    //building_gene_.push_back( muta );
-    //building_gene_.push_back( muta );
-    //building_gene_.push_back( muta );
-    //building_gene_.push_back( muta );
 } // for zerg 9 pool speed into 3 hatch muta, T: 3 hatch muta, P: 10 hatch into 3 hatch hydra bust.
