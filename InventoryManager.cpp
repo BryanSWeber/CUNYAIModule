@@ -686,65 +686,68 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 
 	for (auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p) { // search for closest resource group. They are our potential expos.
 
-		TilePosition min_pos_t;
+		TilePosition min_pos_t = TilePosition(p->second.pos_);
 
-		if (p->second.type_.isMineralField()){
-			int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-			int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
-		}
-		else {
-			int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-			int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-			min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
-		}
+		//if (p->second.type_.isMineralField()){
+		//	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+		//	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+		//	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+		//}
+		//else {
+		//	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+		//	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+		//	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+		//}
 
-		for (auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 7; ++possible_base_tile_x) {
-			for (auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 7; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
+		for (auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x) {
+			for (auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 8; ++possible_base_tile_y) { // Check wide area of possible build locations around each mineral.
 
 				if (possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
 					possible_base_tile_y >= 0 && possible_base_tile_y <= map_y) { // must be in the map bounds 
 
-					TilePosition prosepective_location = { possible_base_tile_x + 2, possible_base_tile_y + 1 }; // The build location is upper left tile of the building. The origin tile is 0,0. This is the center tile.
+					TilePosition prosepective_location_upper_left = { possible_base_tile_x , possible_base_tile_y }; // The build location is upper left tile of the building. T
+                    TilePosition prosepective_location_upper_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y }; 
+                    TilePosition prosepective_location_lower_left= { possible_base_tile_x , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
+                    TilePosition prosepective_location_lower_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() }; 
 
-					if ((prosepective_location.x >= min_pos_t.x + 2 ||
-						prosepective_location.x <= min_pos_t.x - 2 ||
-						prosepective_location.y >= min_pos_t.y + 2 ||
-						prosepective_location.y <= min_pos_t.y - 2) && // it cannot be within 3 of the origin resource. This discards many distant expos.
-						Broodwar->canBuildHere(TilePosition(possible_base_tile_x, possible_base_tile_y), UnitTypes::Zerg_Hatchery) &&
-						MeatAIModule::isClearRayTrace(Position(prosepective_location), Position(min_pos_t), *this)) { // if it is 3 away from the resource, and has clear vision to the resource.
+                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32 ) &&
+						Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery) &&
+						MeatAIModule::isClearRayTrace( Position( prosepective_location_upper_left ), Position(min_pos_t), *this)) { // if it is 3 away from the resource, and has clear vision to the resource.
 
 						int local_min = 0;
 
 						for (auto j = ri.resource_inventory_.begin(); j != ri.resource_inventory_.end(); ++j) {
 
-							TilePosition tile_resource_position;
+							//TilePosition tile_resource_position;
 
-							if (j->second.type_.isMineralField()){
-								int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-								int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-								tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
-							}
-							else {
-								int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-								int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-								tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
-							}
+							//if (j->second.type_.isMineralField()){
+							//	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+							//	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+							//	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+							//}
+							//else {
+							//	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+							//	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+							//	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+							//}
 
-							bool long_condition = tile_resource_position.x >= prosepective_location.x - search_field - 2 &&
-								tile_resource_position.x <= prosepective_location.x + search_field &&
-								tile_resource_position.y >= prosepective_location.y - search_field - 1 &&
-								tile_resource_position.y <= prosepective_location.y + search_field + 1;
+                            int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
+                                                      min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ),
+                                                        min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
+                                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) ) ) );
 
-							if (long_condition) {
+							if (long_condition <= 5 * 32 ) {
 								//residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
-								resources_stored += j->second.current_stock_value_ - 2 * Position(prosepective_location).getDistance(Position(tile_resource_position)) / 32;
+								resources_stored += j->second.current_stock_value_ - long_condition;
 								++local_min;
 							}
 
 						}
 
-						if (local_min >= 3){
+						if (local_min >= 5){
 							location_quality = resources_stored;
 						}
 
@@ -833,7 +836,7 @@ void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Invento
 					enemy_in_inventory_near_expo = true;
 				}
 
-				Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius(u_inv, Position(canidate_spot), 500);
+				Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius(u_inv, Position(canidate_spot), 250);
 				for (const auto &r : rdepot.unit_inventory_) {
 					if (r.second.type_.isResourceDepot()) {
 						found_rdepot = true;
@@ -853,8 +856,8 @@ void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Invento
 				//	}
 				//}
 
-				for (int i = -7; i <= 7; i++){
-					for (int j = -7; j <= 7; j++){
+				for (int i = -8; i <= 8; i++){
+					for (int j = -8; j <= 8; j++){
 						bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
 						if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]){
 							local_maximum = false;

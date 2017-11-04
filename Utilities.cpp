@@ -130,7 +130,8 @@ bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
 // Outlines the case where UNIT can attack ENEMY; 
 bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     bool e_invunerable = (enemy->isFlying() && unit.type_.airWeapon() == WeaponTypes::None) || (!enemy->isFlying() && unit.type_.groundWeapon() == WeaponTypes::None); // if we cannot attack them.
-    return !e_invunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
+    bool u_stores_units = unit.type_ == UnitTypes::Terran_Barracks || unit.type_ == UnitTypes::Protoss_Carrier || unit.type_ == UnitTypes::Protoss_Reaver;
+    return (!e_invunerable || u_stores_units) && enemy->isDetected(); // also if they are cloaked and can attack us.
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
@@ -409,7 +410,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const
 
     return return_unit;
 }
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters.
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
@@ -418,8 +419,8 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
-            can_be_attacked_by = (e->second.type_.airWeapon() != WeaponTypes::None && u_type.isFlyer()) || (e->second.type_.groundWeapon() != WeaponTypes::None && !u_type.isFlyer());
+            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected())  || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected());
+            can_be_attacked_by = (e->second.type_.airWeapon() != WeaponTypes::None && u_type.isFlyer()) || (e->second.type_.groundWeapon() != WeaponTypes::None && !u_type.isFlyer()) || e->second.type_.maxEnergy() > 0 ;
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() ) {
                 temp_dist = e->second.pos_.getDistance( origin );
                 if ( temp_dist <= min_dist ) {

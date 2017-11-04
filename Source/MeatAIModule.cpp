@@ -340,7 +340,7 @@ void MeatAIModule::onFrame()
         enemy_inventory.updateUnitInventorySummary();
         friendly_inventory.updateUnitInventorySummary();
         inventory.est_enemy_stock_ = (int)( enemy_inventory.stock_total_ * (1 + 1 - inventory.vision_tile_count_ / (double)map_area)); //assumes enemy stuff is uniformly distributed. Bad assumption.
-
+        bool checked_gas_workers = false;
 
         // Display the game status indicators at the top of the screen	
         if ( _ANALYSIS_MODE ) {
@@ -430,7 +430,7 @@ void MeatAIModule::onFrame()
 
 			for (auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p){
 				if (isOnScreen(p->second.pos_)) {
-					Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+                    Broodwar->drawCircleMap( p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
 					Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_ ) ; // Plot their current value.
 					Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
                 }
@@ -446,31 +446,31 @@ void MeatAIModule::onFrame()
             //    }
             //} // both of these structures are on the same tile system.
 
-            //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-            //        if ( inventory.base_values_[i][j] > 1 ) {
-            //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-            //        }
-            //    };
-            //} // not that pretty to look at.
+            for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+                    if ( inventory.base_values_[i][j] > 1 ) {
+                        Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+                    }
+                };
+            } // not that pretty to look at.
 
-            //for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
-            //        if ( inventory.smoothed_barriers_[i][j] == 0 ) {
-            //            if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-            //                //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-            //            }
-            //        }
-            //        else if ( inventory.smoothed_barriers_[i][j] > 0 ){
-            //            if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-            //                //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-            //            }
-            //        }
+            for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
+                    if ( inventory.smoothed_barriers_[i][j] == 0 ) {
+                        if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                        }
+                    }
+                    else if ( inventory.smoothed_barriers_[i][j] > 0 ){
+                        if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                        }
+                    }
 
-            //    };
-            //} // Pretty to look at!
+                };
+            } // Pretty to look at!
 
 			if (_COBB_DOUGLASS_REVEALED){
 				for (vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i) {
@@ -558,9 +558,9 @@ void MeatAIModule::onFrame()
             {
 				Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
 				bool want_gas = gas_starved && 
-					        inventory.gas_workers_ < 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+					        inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor ) );  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
 				//bool mineral_starved = inventory.getLn_Gas_Ratio() > delta; // horrid idea.
-				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) ){ //if this is your first worker of the frame consider resetting him.
+				if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty(miner.bwapi_unit_) || (want_gas && !checked_gas_workers) ){ //if this is your first worker of the frame consider resetting him.
 					miner.stopMine(neutral_inventory); 
 					if ( want_gas ){
 						Worker_Gas(u, friendly_inventory);
@@ -587,15 +587,17 @@ void MeatAIModule::onFrame()
 
 				// Building subloop.
 				if ((isIdleEmpty(miner.bwapi_unit_) || isInLine(u) || IsGatheringMinerals(u) || IsGatheringGas(u)) && !IsCarryingGas(u) && !IsCarryingMinerals(u) && inventory.last_builder_sent < t_game - 3 * 24)
-				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me. 
-
-					if ( Expo(miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory), inventory) ||
+				{ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+					if ( Expo(miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) || Broodwar->self()->minerals() > 300 , inventory) ||
 						Building_Begin(u, inventory, enemy_inventory)){
 						inventory.last_builder_sent == t_game;
 					}
 				} // Close Build loop
 
-				if (miner.bwapi_unit_->getLastCommand() == UnitCommand::build(miner.bwapi_unit_, TilePosition(inventory.next_expo_), UnitTypes::Zerg_Hatchery) && getClosestStored(neutral_inventory, miner.pos_, 500) && inventory.last_builder_sent < t_game - 3 * 24){
+				if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build(miner.bwapi_unit_, TilePosition(inventory.next_expo_), UnitTypes::Zerg_Hatchery) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position(inventory.next_expo_ ) ) ) && getClosestStored(neutral_inventory, miner.pos_, 500) && 
+                    inventory.last_builder_sent < t_game - 3 * 24){
+                    //inventory.getExpoPositions( enemy_inventory, friendly_inventory );
 					Expo(miner.bwapi_unit_, true, inventory); // update this guy's target if he passes near a mineral patch.
 				}
 
@@ -712,9 +714,9 @@ void MeatAIModule::onFrame()
 
                                 bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
                                     inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
-                                    !army_starved || // fight your army is appropriately sized.
+                                    //!army_starved || // fight your army is appropriately sized.
                                     ( friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone ) || //Don't run if drones are present.
-									friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) > 0.75 * helpful_u || // trying to do something with these surface areas.
+									friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u || // trying to do something with these surface areas.
                                     ( distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32 );// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
  //                               bool retreat = u->canMove() && ( // one of the following conditions are true:
@@ -1128,13 +1130,12 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
 	if (unit && unit->getType().isBuilding() && unit->getPlayer() == BWAPI::Broodwar->self() ){
+        inventory.getExpoPositions( enemy_inventory, friendly_inventory );
 		map<Unit, Stored_Unit>::iterator iter = friendly_inventory.unit_inventory_.find(unit);
 		if (iter != friendly_inventory.unit_inventory_.end()){
 			Stored_Unit& miner = iter->second;
 			miner.stopMine(neutral_inventory);
 		}
-
-		inventory.getExpoPositions(enemy_inventory, friendly_inventory);
 	}
 
 }
