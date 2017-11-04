@@ -136,7 +136,6 @@ void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
     if ( army_starved ) {
         if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
             Check_N_Grow( UnitTypes::Zerg_Scourge, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 && Count_Units( UnitTypes::Zerg_Scourge, ui ) < 5 ); // hard cap on scourges, they build 2 at a time. 
-            //Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
             Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
 
             if ( Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) == 0 && buildorder.checkEmptyBuildOrder() ) {
@@ -164,9 +163,9 @@ void MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 
 
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
-    bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
+    //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
 	bool enough_drones = ( Count_Units(UnitTypes::Zerg_Drone, ui) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, ui) * 3 + 1 ) && Count_Units(UnitTypes::Zerg_Drone, ui) < 85;
-    bool drone_conditional = (econ_starved || early_game) && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
+    bool drone_conditional = econ_starved && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
 
     Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional ); 
 }
@@ -302,3 +301,78 @@ bool Building_Gene::checkUpgrade_Desired( UpgradeType upgrade ) {
 bool Building_Gene::checkEmptyBuildOrder() {
     return building_gene_.empty();
 }
+
+void Building_Gene::getInitialBuildOrder(string s) {
+
+    initial_building_gene_ = s;
+
+    std::stringstream ss( s );
+    std::istream_iterator<std::string> begin( ss );
+    std::istream_iterator<std::string> end;
+    std::vector<std::string> build_string( begin, end );
+
+    Build_Order_Object hatch = Build_Order_Object( UnitTypes::Zerg_Hatchery );
+    Build_Order_Object extract = Build_Order_Object( UnitTypes::Zerg_Extractor );
+    Build_Order_Object drone = Build_Order_Object( UnitTypes::Zerg_Drone );
+    Build_Order_Object ovi = Build_Order_Object( UnitTypes::Zerg_Overlord );
+    Build_Order_Object pool = Build_Order_Object( UnitTypes::Zerg_Spawning_Pool );
+    Build_Order_Object speed = Build_Order_Object( UpgradeTypes::Metabolic_Boost );
+    Build_Order_Object ling = Build_Order_Object( UnitTypes::Zerg_Zergling );
+    Build_Order_Object creep = Build_Order_Object( UnitTypes::Zerg_Creep_Colony );
+    Build_Order_Object sunken = Build_Order_Object( UnitTypes::Zerg_Sunken_Colony );
+    Build_Order_Object lair = Build_Order_Object( UnitTypes::Zerg_Lair );
+    Build_Order_Object spire = Build_Order_Object( UnitTypes::Zerg_Spire );
+    Build_Order_Object muta = Build_Order_Object( UnitTypes::Zerg_Mutalisk );
+
+    for ( auto &build : build_string ) {
+        if ( build == "hatch" ) {
+            building_gene_.push_back( hatch );
+        } 
+        else if ( build == "extract" ) {
+            building_gene_.push_back( extract );
+        }
+        else if ( build == "drone" ) {
+            building_gene_.push_back( drone );
+        }
+        else if ( build == "ovi" ) {
+            building_gene_.push_back( ovi );
+        }
+        else if ( build == "pool" ) {
+            building_gene_.push_back( pool );
+        }
+        else if ( build == "speed" ) {
+            building_gene_.push_back( speed );
+        }
+        else if ( build == "ling" ) {
+            building_gene_.push_back( ling );
+        }
+        else if ( build == "creep" ) {
+            building_gene_.push_back( creep );
+        }
+        else if ( build == "sunken" ) {
+            building_gene_.push_back( sunken );
+        }
+        else if ( build == "lair" ) {
+            building_gene_.push_back( lair );
+        }
+        else if ( build == "spire" ) {
+            building_gene_.push_back( spire );
+        }
+        else if ( build == "muta" ) {
+            building_gene_.push_back( muta );
+        }
+    }
+}
+
+void Building_Gene::clearRemainingBuildOrder() {
+    building_gene_.clear();
+};
+
+Building_Gene::Building_Gene() {};
+
+Building_Gene::Building_Gene(string s) { // unspecified items are unrestricted.
+
+    getInitialBuildOrder(s);
+
+
+} // for zerg 9 pool speed into 3 hatch muta, T: 3 hatch muta, P: 10 hatch into 3 hatch hydra bust.
