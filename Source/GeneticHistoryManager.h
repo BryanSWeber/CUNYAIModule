@@ -15,6 +15,7 @@ struct GeneticHistory {
     double a_econ_out_mutate_; 
     double a_tech_out_mutate_; 
     double loss_rate_;
+    string build_order_;
 
     GeneticHistory( string file );
 };

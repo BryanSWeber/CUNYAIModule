@@ -125,6 +125,9 @@ void MeatAIModule::onStart()
     alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
 	win_rate = (1 - gene_history.loss_rate_);
 
+    //get initial build order.
+    buildorder.getInitialBuildOrder( gene_history.build_order_ );
+
 	//update local resources
 	Resource_Inventory neutral_inventory; // for first initialization.
 
@@ -140,6 +143,7 @@ void MeatAIModule::onStart()
 	short_delay = 0;
 	med_delay = 0;
 	long_delay = 0;
+
 }
 
 void MeatAIModule::onEnd(bool isWinner)
@@ -153,7 +157,7 @@ void MeatAIModule::onEnd(bool isWinner)
    output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
    //output << "delta (gas)" << "," << "gamma (supply)" << ',' << "alpha_army" << ',' << "alpha_vis" << ',' << "alpha_econ" << ',' << "alpha_tech" << ',' << "Race" << "," << "Won" << "Seed" << endl;
    string opponent_name = Broodwar->enemy()->getName().c_str() ;
-   output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_vis << ',' << alpha_econ << ',' << alpha_tech << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << endl;
+   output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_vis << ',' << alpha_econ << ',' << alpha_tech << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << buildorder.initial_building_gene_  << endl;
    output.close();
 }
 
@@ -706,52 +710,55 @@ void MeatAIModule::onFrame()
 
                             if ( e_closest->valid_pos_ ) {  // only attacks VISIBLE units. This should probably be fixed.
 
-								double minimum_enemy_surface = 2 * 3.1416 * sqrt((double)enemy_loc.volume_ / 3.1414);
-								double minimum_friendly_surface = 2 * 3.1416 * sqrt((double)friend_loc.volume_ / 3.1414);
-								double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
-								double unusable_surface_area_e = max((minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0);
-								//double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
+                                double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
+                                double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
+                                double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
+                                double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
+                                //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                                 bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
                                     inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
-                                    //!army_starved || // fight your army is appropriately sized.
-                                    ( friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone ) || //Don't run if drones are present.
-									friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u || // trying to do something with these surface areas.
-                                    ( distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32 );// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                                                                                           //!army_starved || // fight your army is appropriately sized.
+                                    (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
+                                    friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u || // trying to do something with these surface areas.
+                                    (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
- //                               bool retreat = u->canMove() && ( // one of the following conditions are true:
-                                    //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
-                                    //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
-  //                                  );
+                                                                                                                                                                                                                    //                               bool retreat = u->canMove() && ( // one of the following conditions are true:
+                                                                                                                                                                                                                    //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
+                                                                                                                                                                                                                    //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
+                                                                                                                                                                                                                    //                                  );
 
-								bool force_retreat =  ( u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_shoots_down_) ) || // run if you are flying and cannot be practical.
-									(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
-									!e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
-									//helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-									//friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-									(u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0) ) ) || //overlords should be cowardly not suicidal.
-									(u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
-								//(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
-									
-									bool only_workers = Stock_Units(UnitTypes::Zerg_Drone, enemy_loc) == enemy_loc.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Protoss_Probe, enemy_loc) == enemy_loc.stock_ground_units_ ||
-										Stock_Units(UnitTypes::Terran_SCV, enemy_loc) == enemy_loc.stock_ground_units_;
+                                bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_shoots_down_)) || // run if you are flying and cannot be practical.
+                                    (friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
+                                    !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
+                                                                              //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
+                                                                              //friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
+                                    (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
+                                    (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
+                                                                                                                                                          //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
-									if (!e_closest->type_.isWorker() || (only_workers && enemy_loc.unit_inventory_.size() > 2) ){
-										buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Hatchery); // Neutralize the build order if something other than a worker scout is happening.
-									}
+                                bool only_workers = Stock_Units( UnitTypes::Zerg_Drone, enemy_loc ) == enemy_loc.stock_ground_units_ ||
+                                    Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
+                                    Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
 
-									bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
+                                if ( !e_closest->type_.isWorker() || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) {
+                                    buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
+                                    if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
+                                        buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.
+                                    }
+                                }
 
-									bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
+                                bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
 
-                                if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem) {
+                                bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
+
+                                if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem ) {
 
                                     boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
-									//if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
-									//	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
-									//}
+                                                                                          //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
+                                                                                          //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
+                                                                                          //}
 
                                     if ( _ANALYSIS_MODE ) {
                                         if ( isOnScreen( u->getPosition() ) ) {
@@ -764,29 +771,29 @@ void MeatAIModule::onFrame()
                                     }
 
                                 }
-								else if (is_spelled){
-									Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u->getType(), u->getPosition(), 128 );
-									if (closest){
-										boids.Retreat_Logic(u, *closest, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
-									}
-								}
-								else if (drone_problem){
+                                else if ( is_spelled ) {
+                                    Stored_Unit* closest = getClosestThreatOrTargetStored( friendly_inventory, u->getType(), u->getPosition(), 128 );
+                                    if ( closest ) {
+                                        boids.Retreat_Logic( u, *closest, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
+                                    }
+                                }
+                                else if ( drone_problem ) {
 
-									if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) < enemy_inventory.worker_count_ + 1 && 
-										//friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
-										u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ){
-										boids.Tactical_Logic(u, enemy_loc, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
-									}
+                                    if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_inventory.worker_count_ + 1 &&
+                                        //friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+                                        u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
+                                        boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+                                    }
 
-								}
-								else {
+                                }
+                                else {
                                     boids.Retreat_Logic( u, *e_closest, friendly_inventory, inventory, Colors::White );
 
-									//if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
-									//	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
-									//}
+                                    //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
+                                    //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
+                                    //}
 
-								}
+                                }
                             }
                         } // close local examination.
                     }

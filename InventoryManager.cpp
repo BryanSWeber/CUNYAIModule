@@ -888,7 +888,7 @@ void Inventory::getStartPositions(){
 void Inventory::updateStartPositions(){
 	for (auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();){
 		if (Broodwar->isExplored(TilePosition(*visible_base))){
-			start_positions_.erase(visible_base);
+			visible_base = start_positions_.erase(visible_base);
 		}
 		else {
 			++visible_base;
