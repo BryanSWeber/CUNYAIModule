@@ -735,9 +735,9 @@ void Inventory::updateBaseLoc(const Resource_Inventory &ri) {
 							//}
 
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
-                                                      min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ),
-                                                        min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
-                                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) ) ) );
+                                                      min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
+                                                        min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
+                                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
 
 							if (long_condition <= 5 * 32 ) {
 								//residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance

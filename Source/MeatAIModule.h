@@ -8,15 +8,15 @@
 #include "AssemblyManager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED false
+#define _ANALYSIS_MODE true
+#define _COBB_DOUGLASS_REVEALED false
 #define _RESIGN_MODE false
-//#define _AT_HOME_MODE false
+#define _AT_HOME_MODE false
 
 //#define _RESIGN_MODE true
-#define _AT_HOME_MODE true
-#define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED true
+//#define _AT_HOME_MODE true
+//#define _ANALYSIS_MODE true
+//#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 

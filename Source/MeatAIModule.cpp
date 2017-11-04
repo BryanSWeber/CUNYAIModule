@@ -687,10 +687,10 @@ void MeatAIModule::onFrame()
                                                                                                            //friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
                                 (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
-                                                                                                                                                                                                                //  bool retreat = u->canMove() && ( // one of the following conditions are true:
-                                                                                                                                                                                                                //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
-                                                                                                                                                                                                                //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
-                                                                                                                                                                                                                //                                  );
+//  bool retreat = u->canMove() && ( // one of the following conditions are true:
+//(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
+//( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
+//                                  );
 
                             bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
                                                                                                                                                                      //friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && helpful_u * (1 - unusable_surface_area_f) < 0.75 * helpful_e || // trying to do something with these surface areas.
@@ -706,7 +706,7 @@ void MeatAIModule::onFrame()
                                 Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
                                 Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
 
-                            if ( !e_closest->type_.isWorker() || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) {
+                            if ( (!e_closest->type_.isWorker() && e_closest->bwapi_unit_->canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) {
                                 buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
                                 if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
                                     buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.
@@ -744,7 +744,7 @@ void MeatAIModule::onFrame()
                             }
                             else if ( drone_problem ) {
 
-                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_inventory.worker_count_ + 1 &&
+                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
                                     //friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
                                     boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
