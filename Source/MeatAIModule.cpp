@@ -411,9 +411,9 @@ void MeatAIModule::onFrame()
         miner_count_ = 0; // just after the fact.
         Broodwar->drawTextScreen( 375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size() );  //
 
-                                                                                                               //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
-                                                                                                               //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
-                                                                                                               //Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
+        //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
+        //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
+        //Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
 
         Broodwar->drawTextScreen( 500, 20, "Performance:" );  // 
         Broodwar->drawTextScreen( 500, 30, "APM: %d", Broodwar->getAPM() );  // 
@@ -563,6 +563,25 @@ void MeatAIModule::onFrame()
             bool want_gas = gas_starved &&
                 inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor ));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
+                                                                                               // Building subloop.
+            if ( (!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) && !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 3 * 24 )
+            { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+                if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
+                    Building_Begin( u, inventory, enemy_inventory ) ) {
+                    inventory.last_builder_sent_ == t_game;
+                    continue;
+                }
+            } // Close Build loop
+
+              // update miner target subloop
+            if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build( miner.bwapi_unit_, TilePosition( inventory.next_expo_ ), UnitTypes::Zerg_Hatchery ) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position( inventory.next_expo_ ) )) && getClosestStored( neutral_inventory, miner.pos_, 500 ) && inventory.last_builder_sent_ < t_game - 3 * 24 ) {
+                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+                if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+                    inventory.last_builder_sent_ == t_game;
+                    continue;
+                }
+            }
 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
@@ -590,25 +609,6 @@ void MeatAIModule::onFrame()
             }
 
 
-            // Building subloop.
-            if ( (isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) && !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 3 * 24 )
-            { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
-                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
-                    Building_Begin( u, inventory, enemy_inventory ) ) {
-                    inventory.last_builder_sent_ == t_game;
-                }
-            } // Close Build loop
-
-            // update miner target subloop
-            if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build( miner.bwapi_unit_, TilePosition( inventory.next_expo_ ), UnitTypes::Zerg_Hatchery ) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position( inventory.next_expo_ ) )) && getClosestStored( neutral_inventory, miner.pos_, 500 ) &&
-                inventory.last_builder_sent_ < t_game - 3 * 24 ) {
-                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ); // update this guy's target if he passes near a mineral patch.
-                inventory.last_builder_sent_ == t_game;
-            }
-
-
         } // Close Worker management loop
         auto end_worker = std::chrono::high_resolution_clock::now();
 
@@ -624,18 +624,17 @@ void MeatAIModule::onFrame()
 
             if ( e_closest /*&& e_closest->bwapi_unit_ && (e_closest->bwapi_unit_)->exists()*/ ) { // if there are bad guys, search for friends within that area. Only attacks visible units.
 
-                int e_charge = e_closest->type_.topSpeed() * e_closest->type_.groundWeapon().damageCooldown();
-                int search_radius = max( max( max( enemy_inventory.max_range_, e_charge ), friendly_inventory.max_range_ ), 96 );
+                int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
+                int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
+                int apppropriate_cooldown = u->isFlying() ? e_closest->type_.airWeapon().damageCooldown() : e_closest->type_.groundWeapon().damageCooldown();
+                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ; // how far can you get before he shoots?
+
+                int search_radius = chargable_distance_net + appropriate_range;
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
 
                 Boids boids;
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
-
-                    int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
-                    int chargable_distance = u->getType().topSpeed() * e_closest->type_.groundWeapon().damageCooldown(); // unit velocity is too inconsistant to use.
-                    int chargable_distance_enemy = e_closest->type_.topSpeed() * u->getType().groundWeapon().damageCooldown(); // unit velocity is too inconsistant to use.
-                    int chargable_distance_net = (u->getType().topSpeed() + e_closest->type_.topSpeed()) * e_closest->type_.groundWeapon().damageCooldown(); // how far can you get before he shoots?
 
                     Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + chargable_distance_net );
 
@@ -682,7 +681,7 @@ void MeatAIModule::onFrame()
                                 inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                                                                                           //friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
+                                friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
                                 (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
@@ -691,7 +690,7 @@ void MeatAIModule::onFrame()
 //                                  );
 
                             bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
-                                                                                                                                                                     //friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && helpful_u * (1 - unusable_surface_area_f) < 0.75 * helpful_e || // trying to do something with these surface areas.
+                                friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && helpful_u * (1 - unusable_surface_area_f) < 0.75 * helpful_e || // trying to do something with these surface areas.
                                 (friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                                                           //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you

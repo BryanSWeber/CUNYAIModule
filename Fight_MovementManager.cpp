@@ -10,7 +10,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a boids manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, Inventory &inventory, const bool &army_starved ) {
+void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved ) {
 
     Position pos = unit->getPosition();
     Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -77,7 +77,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
     //rng_direction_ = dis( gen );
 
     int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
-    int dist = range_radius + unit->getType().topSpeed() * 24;
+    int dist = range_radius + MeatAIModule::getProperSpeed(unit) * 24;
     double limit_units_diving = (log( ei.stock_total_ ) == 0 ? 1 : log( ei.stock_total_ ));
     int max_dist = ei.max_range_/limit_units_diving + dist;
     int max_dist_no_priority = 9999999;
@@ -146,9 +146,9 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
     int dist = unit->getDistance( e_unit.pos_ );
     int air_range = e_unit.type_.airWeapon().maxRange();
     int ground_range = e_unit.type_.groundWeapon().maxRange();
-	int chargable_distance_net = (unit->getType().topSpeed() + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
-	int range = unit->isFlying() ? air_range : ground_range + chargable_distance_net ;
-	if ( dist < range ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
+	int chargable_distance_net = ( MeatAIModule::getProperSpeed(unit) + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
+	int range = unit->isFlying() ? air_range : ground_range ;
+	if ( dist < range + chargable_distance_net ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Position pos = unit->getPosition();
         Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -165,8 +165,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
         int dist_x = e_unit.pos_.x - pos.x;
         int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
-        double retreat_dx = -cos( theta ) * ( range - dist );
-        double retreat_dy = -sin( theta ) * ( range - dist ); // get -range- outside of their range.  Should be safe.
+        double retreat_dx = -cos( theta ) * ( range + chargable_distance_net - dist );
+        double retreat_dy = -sin( theta ) * ( range + chargable_distance_net - dist ); // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
@@ -288,92 +288,33 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
 }
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place.
-void Boids::setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, Inventory &inv, const bool &army_starved ) {
+void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved ) {
 
 	bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
 	bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
 	bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp(inv.ln_army_stock_);
 	bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) || inv.start_positions_.empty();
+
 	if ( armed && healthy && ready_to_fight && enemy_scouted) { // and your army is relatively large.
 		int dist = 999999;
 		bool visible_unit_found = false;
 		if (!ei.unit_inventory_.empty()) { // if there isn't a visible targetable enemy, but we have an inventory of them...
-			Stored_Unit e = ei.unit_inventory_.begin()->second; // just initialize it with any old enemy.
 
-			for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
-				int dist_current = unit->getDistance(e_iter->second.pos_);
-				bool visible = Broodwar->isVisible(TilePosition(e.pos_));
-				if (visible && dist_current < dist) {
-					dist = dist_current;
-					Stored_Unit e = e_iter->second;
-					if (!visible_unit_found) {
-						visible_unit_found = true;
-						ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-					}
-				}
-				else if (!visible_unit_found && dist_current < dist) {
-					dist = dist_current;
-					Stored_Unit e = e_iter->second;
-				}
-			} // get closest enemy unit in inventory.
-
-			dist = 999999;
-			visible_unit_found = false; // don't want to be stuck on a closeby enemy you can't attack.
-
-			if (unit->getType().airWeapon() == WeaponTypes::None && unit->getType().groundWeapon() != WeaponTypes::None) {
-				for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
-					int dist_current = unit->getDistance(e_iter->second.pos_);
-					bool visible = Broodwar->isVisible(TilePosition(e.pos_));
-					if (visible && dist_current < dist) {
-						dist = dist_current;
-						Stored_Unit e = e_iter->second;
-						if (!visible_unit_found) {
-							visible_unit_found = true;
-							ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-						}
-					}
-					else if (!visible_unit_found && dist_current < dist) {
-						dist = dist_current;
-						Stored_Unit e = e_iter->second;
-					}
-				} // get closest non flying enemy unit in inventory.
-			}
-
-			dist = 999999;
-			visible_unit_found = false;
-
-			if (unit->getType().airWeapon() != WeaponTypes::None && unit->getType().groundWeapon() == WeaponTypes::None) {
-				for (auto e_iter = ei.unit_inventory_.begin(); e_iter != ei.unit_inventory_.end(); e_iter++) {
-					int dist_current = unit->getDistance(e_iter->second.pos_);
-					bool visible = Broodwar->isVisible(TilePosition(e.pos_));
-					if (visible && dist_current < dist) {
-						dist = dist_current;
-						Stored_Unit e = e_iter->second;
-						if (!visible_unit_found) {
-							visible_unit_found = true;
-							ei.unit_inventory_.begin(); // seems inefficient but is faster than two loops with break to manage the double criteria.  If we have a visible one, start again at the beginning.
-						}
-					}
-					else if (!visible_unit_found && dist_current < dist) {
-						dist = dist_current;
-						Stored_Unit e = e_iter->second;
-					}
-				} // get closest flying enemy unit in inventory.
-			}
-
-			if (e.pos_) {
-				if (MeatAIModule::isClearRayTrace(pos, e.pos_, inv)) { // go to it if the path is clear,
-					int dist = unit->getDistance(e.pos_);
-					int dist_x = e.pos_.x - pos.x;
-					int dist_y = e.pos_.y - pos.y;
+            Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei , unit->getType(), unit->getPosition(), dist );
+            
+			if (e && e->pos_) {
+				if (MeatAIModule::isClearRayTrace(pos, e->pos_, inv)) { // go to it if the path is clear,
+					int dist = unit->getDistance(e->pos_);
+					int dist_x = e->pos_.x - pos.x;
+					int dist_y = e->pos_.y - pos.y;
 					double theta = atan2(dist_y, dist_x);
 					attract_dx_ = cos(theta) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
 					attract_dy_ = sin(theta) * (dist * 0.02 + 64);
 				}
 				else { // tilt around it
-					int dist = unit->getDistance(e.pos_);
-					int dist_x = e.pos_.x - pos.x;
-					int dist_y = e.pos_.y - pos.y;
+					int dist = unit->getDistance(e->pos_);
+					int dist_x = e->pos_.x - pos.x;
+					int dist_y = e->pos_.y - pos.y;
 					double theta = atan2(dist_y, dist_x);
 
 					double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
@@ -443,55 +384,3 @@ void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Invento
         walkability_dy_ = sin( theta + tilt ) * temp_dist * 0.25;
     }
 }
-
-
-//// Drags overlords to the nearest mineral.
-//void MeatAIModule::Vision_Locking( const Unit &unit ) {
-//    if ( unit->getType() == UnitTypes::Zerg_Overlord ) {
-//
-//        Position min;
-//        int dist = 999999;
-//
-//        for ( vector<int>::size_type p = 0; p != inventory.resource_positions_.size(); ++p ) { // search for closest resource group. They are our potential expos.
-//            int min_dist = inventory.resource_positions_[p].getDistance( unit->getPosition() );
-//            if ( min_dist < dist ) {
-//                dist = min_dist;
-//                Position min = inventory.resource_positions_[p];
-//            }
-//        }
-//
-//        Unitset bases = Broodwar->getUnitsInRadius( min, UnitTypes::Zerg_Overlord.sightRange(), IsBuilding && IsOwned );
-//        Unitset enemies_loc = Broodwar->getUnitsInRadius( min, UnitTypes::Zerg_Overlord.sightRange(), IsEnemy );
-//
-//        //Tally up crucial details about enemy. 
-//
-//        int e_count = enemies_loc.size();
-//        int helpless_e = 0;
-//        int helpful_e = 0;
-//        int helpless_u = 0;
-//        int helpful_u = 0;
-//        int f_drone = 0;
-//
-//        for ( auto e = enemies_loc.begin(); e != enemies_loc.end(); e++ ) { // trims the set for each attackable enemy. We move towards the center of these units
-//            if ( Can_Fight( unit, *e ) ) {
-//                helpful_u++;
-//            }
-//            if ( Futile_Fight( unit, *e ) ) {
-//                helpless_u++;
-//            }
-//            if ( Can_Fight( *e, unit ) ) {
-//                helpful_e++;
-//            }
-//            if ( Futile_Fight( *e, unit ) ) {
-//                helpless_e++;
-//            }
-//        }
-//
-//        if ( bases.empty() && helpful_e == 0 ) { // The closest unit aught to approach. Others need not bother.
-//            Unit best_unit = Broodwar->getClosestUnit( min );
-//            if ( best_unit && best_unit->exists() && unit == best_unit ) {
-//                unit->move( min );
-//            }
-//        }
-//    }
-//}

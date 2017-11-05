@@ -776,6 +776,23 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 	return squares_counted;
 }
 
+int MeatAIModule::getProperSpeed( const Unit u ) {
+    int base_speed = u->getType().topSpeed();
+    if ( u->getType() == UnitTypes::Zerg_Zergling && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0 ) {
+        base_speed *= 1.5;
+    }
+    else if ( u->getType() == UnitTypes::Zerg_Hydralisk && Broodwar->self()->getUpgradeLevel( UpgradeTypes::Muscular_Augments ) > 0 ) {
+        base_speed *= 1.5;
+    }
+    else if ( u->getType() == UnitTypes::Zerg_Ultralisk && Broodwar->self()->getUpgradeLevel( UpgradeTypes::Anabolic_Synthesis ) > 0 ) {
+        base_speed *= 1.5;
+    }
+
+    return base_speed;
+}
+
+
+
 //finds nearest choke or best location within 100 minitiles.
 Position MeatAIModule::getNearestChoke( const Position &initial, const Position &final, const Inventory &inv ) {
     WalkPosition e_position = WalkPosition( final );

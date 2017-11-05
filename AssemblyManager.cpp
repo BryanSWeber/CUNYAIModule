@@ -137,7 +137,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
-    bool enough_drones = (Count_Units( UnitTypes::Zerg_Drone, ui ) > inv.min_fields_ * 2 + Count_Units( UnitTypes::Zerg_Extractor, ui ) * 3 + 1) && Count_Units( UnitTypes::Zerg_Drone, ui ) < 85;
+    bool enough_drones = (Count_Units( UnitTypes::Zerg_Drone, ui ) > inv.min_fields_ * 2 + Count_Units( UnitTypes::Zerg_Extractor, ui ) * 3 + 1) || Count_Units( UnitTypes::Zerg_Drone, ui ) > 85;
     bool drone_conditional = ( econ_starved || ( Count_Units( UnitTypes::Zerg_Larva, ui ) > Count_Units( UnitTypes::Zerg_Hatchery, ui ) && !army_starved) ) && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
 
     is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional );

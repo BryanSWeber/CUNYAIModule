@@ -11,7 +11,7 @@ public:
     // Tells the unit to fight. If it can attack both air and ground.
     void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Color & color );
     //Forces a unit to flock in a boids manner. Initial versions merely stuttered in a brownian manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.
-    void Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, const Unit_Inventory &ei, Inventory &inventory, const bool &army_starved );
+    void Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved );
 
     //Forces the closest Overlord or Zergling to lock itself onto a mineral patch so I can keep vision of it. Helps expos.
     //void Vision_Locking( const Unit &unit );
@@ -22,7 +22,7 @@ public:
     void setCentralize( const Position &pos, const Inventory &inventory );
     void setStutter( const Unit &unit, const double &n );
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
-    void setAttraction( const Unit &unit, const Position &pos, const Unit_Inventory &ei, Inventory &inv, const bool &army_starved );
+    void setAttraction( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved );
     void setSeperation( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );
