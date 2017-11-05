@@ -398,7 +398,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
             can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
-            if ( can_attack ) {
+            if ( can_attack && e->second.pos_.isValid() ) {
                 temp_dist = e->second.pos_.getDistance( origin );
                 if ( temp_dist <= min_dist ) {
                     min_dist = temp_dist;
@@ -410,6 +410,30 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const
 
     return return_unit;
 }
+
+//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
+Stored_Unit* MeatAIModule::getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+    int min_dist = dist;
+    bool can_attack;
+    double temp_dist = 999999;
+    Stored_Unit *return_unit = nullptr;
+
+    if ( !ui.unit_inventory_.empty() ) {
+        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
+            if ( can_attack && e->second.pos_.isValid() && e->second.bwapi_unit_ && e->second.bwapi_unit_->isVisible() ) {
+                temp_dist = e->second.pos_.getDistance( origin );
+                if ( temp_dist <= min_dist ) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;

@@ -8,15 +8,15 @@
 #include "AssemblyManager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED false
-//#define _RESIGN_MODE false
-//#define _AT_HOME_MODE false
-
-#define _RESIGN_MODE true
-#define _AT_HOME_MODE true
 #define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED true
+#define _COBB_DOUGLASS_REVEALED false
+#define _RESIGN_MODE false
+#define _AT_HOME_MODE false
+
+//#define _RESIGN_MODE true
+//#define _AT_HOME_MODE true
+//#define _ANALYSIS_MODE true
+//#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -158,6 +158,7 @@ public:
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
+      static Stored_Unit* MeatAIModule::getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
       //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
 

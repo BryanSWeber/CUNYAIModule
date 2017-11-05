@@ -300,8 +300,10 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
         bool visible_unit_found = false;
         if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
 
-            Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
-
+            Stored_Unit* e = MeatAIModule::getClosestVisibleAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+            if ( !e || !e->bwapi_unit_) {
+                e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+            }
             if ( e && e->pos_ ) {
                 if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) ) { // go to it if the path is clear,
                     int dist = unit->getDistance( e->pos_ );
@@ -311,16 +313,16 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                     attract_dx_ = cos( theta ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
                     attract_dy_ = sin( theta ) * (dist * 0.02 + 64);
                 }
-                else { // tilt around it
-                    int dist = unit->getDistance( e->pos_ );
-                    int dist_x = e->pos_.x - pos.x;
-                    int dist_y = e->pos_.y - pos.y;
-                    double theta = atan2( dist_y, dist_x );
+                //else { // tilt around it
+                //    int dist = unit->getDistance( e->pos_ );
+                //    int dist_x = e->pos_.x - pos.x;
+                //    int dist_y = e->pos_.y - pos.y;
+                //    double theta = atan2( dist_y, dist_x );
 
-                    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
-                    attract_dx_ = cos( theta + tilt ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
-                    attract_dy_ = sin( theta + tilt ) * (dist * 0.02 + 64);
-                }
+                //    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+                //    attract_dx_ = cos( theta + tilt ) * ( 64 ); // shift slightly back
+                //    attract_dy_ = sin( theta + tilt ) * ( 64 );
+                //}
             }
         }
     }

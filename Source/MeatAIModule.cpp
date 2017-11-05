@@ -61,7 +61,7 @@ void MeatAIModule::onStart()
 {
 
     // Hello World!
-    Broodwar->sendText( "Hello world! This is MeatShieldAI V1.12" );
+    Broodwar->sendText( "Good luck, have fun!" );
 
     // Print the map name.
     // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
@@ -310,6 +310,10 @@ void MeatAIModule::onFrame()
     }
 
     buildorder.updateBuildingTimer( friendly_inventory, inventory );
+
+    if ( buildorder.building_gene_.empty() ) {
+        buildorder.ever_clear_ = true;
+    }
 
     //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
@@ -582,7 +586,7 @@ void MeatAIModule::onFrame()
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
            
             // Building subloop.
-            if ( (!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) && !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 5 * 24 )
+            if ( /*(!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) &&*/ !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 5 * 24 )
             { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
@@ -593,9 +597,9 @@ void MeatAIModule::onFrame()
             } // Close Build loop
 
               // update miner target subloop
-            if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build( miner.bwapi_unit_, TilePosition( inventory.next_expo_ ), UnitTypes::Zerg_Hatchery ) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position( inventory.next_expo_ ) )) && getClosestStored( neutral_inventory, miner.pos_, 500 ) && inventory.last_builder_sent_ < t_game - 24 ) {
+            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && inventory.last_builder_sent_ < t_game - 24 ) {
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+                if ( Expo( miner.bwapi_unit_, Broodwar->self()->minerals() > 300, inventory ) ) { // update this guy's target if he passes near a mineral patch.
                     inventory.last_builder_sent_ == t_game;
                     continue;
                 }
@@ -689,17 +693,17 @@ void MeatAIModule::onFrame()
 
                         if ( e_closest->valid_pos_ ) {  // only attacks VISIBLE units. This should probably be fixed.
 
-                            double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
-                            double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
-                            double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
-                            double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
+                            //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
+                            //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
+                            //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
+                            //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                             //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                             bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
                                 inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                friend_loc.max_range_ > enemy_loc.max_range_ && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
+                                //friend_loc.max_range_ > enemy_loc.max_range_ && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
                                 (distance_to_foe < 0.5 * enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
@@ -708,11 +712,10 @@ void MeatAIModule::onFrame()
 //                                  );
 
                             bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
-                                friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && helpful_u * (1 - unusable_surface_area_f) < 0.75 * helpful_e || // trying to do something with these surface areas.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-                                friend_loc.max_range_ < enemy_loc.max_range_ && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
+                                //friend_loc.max_range_ < enemy_loc.max_range_ && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
                                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
@@ -721,7 +724,7 @@ void MeatAIModule::onFrame()
                                 Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
                                 Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
 
-                            if ( (!e_closest->type_.isWorker() && e_closest->bwapi_unit_->canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) {
+                            if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->bwapi_unit_->canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) ) {
                                 buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
                                 if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
                                     buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.
@@ -963,7 +966,7 @@ void MeatAIModule::onPlayerLeft( BWAPI::Player player )
 {
     // Interact verbally with the other players in the game by
     // announcing that the other player has left.
-    Broodwar->sendText( "Goodbye %s!", player->getName().c_str() );
+    Broodwar->sendText( "That was a good game. I'll remember this! %s!", player->getName().c_str() );
 }
 
 void MeatAIModule::onNukeDetect( BWAPI::Position target )
@@ -973,7 +976,7 @@ void MeatAIModule::onNukeDetect( BWAPI::Position target )
     if ( target )
     {
         // if so, print the location of the nuclear strike target
-        Broodwar << "Nuclear Launch Detected at " << target << std::endl;
+        Broodwar << "Have you no shame? My sources say there's nuclear launch at " << target << std::endl;
     }
     else
     {

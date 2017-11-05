@@ -40,6 +40,7 @@ struct Building_Gene {
     vector<Build_Order_Object> building_gene_;  // how many of each of these do we want? Base build is going to be rushing mutalisk.
     string initial_building_gene_;
 
+    bool ever_clear_ = false;
     bool active_builders_= false;
     int building_timer_ = 0;
     UnitType last_build_order;
