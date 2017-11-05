@@ -5,20 +5,20 @@ library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 
 out <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", col_names = FALSE))
-out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
+# out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
 
-names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name")
-names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name")
+names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name", "build_order")
+# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name")
 
-out<-rbind(out, out_2)
-out<-out[!duplicated(out),]
+# out<-rbind(out, out_2)
+# out<-out[!duplicated(out),]
 # new<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
 #                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
 #                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
 #                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
 #                                          , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
- write.table(out,"C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
-out<-new
+ # write.table(out,"C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
+# out<-new
  
 #(out$shortct>=321 | out$Winner==1) -> out$Winner
 out$race_win <- factor( paste ( out$Winner, out$Race , sep= " " ))
@@ -47,6 +47,7 @@ out$race_opp <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
  histogram( ~ out$Winner | out$`Race`, xlab="Win % of Bot vs each Race")
  histogram( ~ out$Winner | out$`opponent_name`, xlab="Win % of Bot vs each NAME")
  histogram( ~ out$Winner | out$`race_opp`, xlab="Win % of Bot vs each Race")
+ histogram( ~ out$Winner | out$`build_order`, xlab="Win % of Bot vs each Opening")
  
  table(out$opponent_name,out$Winner)
  

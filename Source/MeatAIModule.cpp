@@ -355,18 +355,18 @@ void MeatAIModule::onFrame()
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<= low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             low_drone_min = r->second.number_of_miners_;
         }
     } // find drone minima.
 
-    int low_drone_gas = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+    int low_drone_gas = 2; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             low_drone_gas = r->second.number_of_miners_;
         }
     } // find drone minima.
@@ -422,6 +422,8 @@ void MeatAIModule::onFrame()
         Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ? "TRUE" : "FALSE" ); //
         Broodwar->drawTextScreen( 250, 120, "Last Building: %s", buildorder.last_build_order.c_str() ); //
         Broodwar->drawTextScreen( 250, 130, "Next Expo: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
+        Broodwar->drawTextScreen( 250, 140, "Next Gas: %d", buildorder.building_gene_.begin()->getUnit().gasPrice() );
+
         for ( auto &p : inventory.expo_positions_ ) {
             Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, TRUE );
         }
@@ -618,7 +620,7 @@ void MeatAIModule::onFrame()
                         continue;
                     }
                 }
-                if ( !miner.locked_mine_ ) {
+                if ( !want_gas ) {
                     Worker_Mine( u, friendly_inventory, low_drone_min );
                     continue;
                 }
@@ -728,7 +730,7 @@ void MeatAIModule::onFrame()
                                 Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
                                 Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
 
-                            if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->bwapi_unit_->canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) ) {
+                            if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack() ) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) ) {
                                 buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
                                 if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
                                     buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.

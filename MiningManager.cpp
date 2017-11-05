@@ -79,27 +79,32 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int 
 //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.
+    if ( !available_fields.resource_inventory_.empty() ) {
+        Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
+        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
+            miner.startMine( *closest, neutral_inventory );
+        }
+    }
+    //if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
+    //    Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
+    //    if ( !nearest_building ) {
+    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
+    //    }
+    //    if ( !nearest_building ) {
+    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
+    //    }
 
-    if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
-        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
-        if ( !nearest_building ) {
-            Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
-        }
-        if ( !nearest_building ) {
-            Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
-        }
-
-        if ( nearest_building ) {
-            Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 9999999 );
-            if ( miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-                miner.startMine( *closest, neutral_inventory );
-            }
-        }
-    } // send drone to closest base's closest mineral field meeting that critera.
+    //    if ( nearest_building ) {
+    //        Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 500 );
+    //        if ( miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
+    //            miner.startMine( *closest, neutral_inventory );
+    //        }
+    //    }
+    //} // send drone to closest base's closest mineral field meeting that critera.
     else { // if there are no suitible bases:
            // mine those empty patches, perhaps?
     }
@@ -115,27 +120,32 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
 
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.
+    if ( !available_fields.resource_inventory_.empty() ) {
+        Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
+        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
+            miner.startMine( *closest, neutral_inventory );
+        }
+    }
+    //if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
+    //    Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
+    //    if ( !nearest_building ) {
+    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
+    //    }
+    //    if ( !nearest_building ) {
+    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
+    //    }
 
-    if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
-        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
-        if ( !nearest_building ) {
-            Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
-        }
-        if ( !nearest_building ) {
-            Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
-        }
-
-        if ( nearest_building ) {
-            Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 9999999 );
-            if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-                miner.startMine( *closest, neutral_inventory );
-            }
-        }
-    } // send drone to closest base's closest mineral field meeting that critera.
+    //    if ( nearest_building ) {
+    //        Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 9999999 );
+    //        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
+    //            miner.startMine( *closest, neutral_inventory );
+    //        }
+    //    }
+    //} // send drone to closest base's closest mineral field meeting that critera.
 
 } // closure worker mine
 
