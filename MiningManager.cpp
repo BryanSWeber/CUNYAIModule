@@ -71,20 +71,12 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 }
 
 //Sends a worker to mine minerals.
-void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
+void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int low_drone ) {
 
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
-    int miner_count = 0;
-    int low_drone = 1; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
-
-    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        miner_count += r->second.number_of_miners_;
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
-            low_drone = r->second.number_of_miners_;
-        }
-    } // find drone minima.
+//letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
@@ -112,25 +104,15 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
            // mine those empty patches, perhaps?
     }
 
-    miner_count_ += miner_count;
-
 } // closure worker mine
 
   //Sends a Worker to gather Gas.
-void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
+void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int low_drone ) {
 
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
-    int miner_count = 0;
-    int low_drone = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
-    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        miner_count += r->second.number_of_miners_;
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
-            low_drone = r->second.number_of_miners_;
-        }
-    } // find drone minima.
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
@@ -154,7 +136,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
             }
         }
     } // send drone to closest base's closest mineral field meeting that critera.
-    miner_count_ += miner_count;
+
 } // closure worker mine
 
   //Returns True if there is an out for gas. Does not consider all possible gas outlets.

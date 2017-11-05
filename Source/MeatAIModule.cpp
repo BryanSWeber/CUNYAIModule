@@ -345,6 +345,24 @@ void MeatAIModule::onFrame()
     friendly_inventory.updateUnitInventorySummary();
     inventory.est_enemy_stock_ = (int)(enemy_inventory.stock_total_ * (1 + 1 - inventory.vision_tile_count_ / (double)map_area)); //assumes enemy stuff is uniformly distributed. Bad assumption.
 
+    int low_drone_min = 1;
+
+    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
+        miner_count_ += r->second.number_of_miners_;
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
+            low_drone_min = r->second.number_of_miners_;
+        }
+    } // find drone minima.
+
+    int low_drone_gas = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
+
+    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
+        miner_count_ += r->second.number_of_miners_;
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+            low_drone_gas = r->second.number_of_miners_;
+        }
+    } // find drone minima.
+
     // Display the game status indicators at the top of the screen	
     if ( _ANALYSIS_MODE ) {
 
@@ -587,13 +605,13 @@ void MeatAIModule::onFrame()
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
-                    Worker_Gas( u, friendly_inventory );
+                    Worker_Gas( u, friendly_inventory, low_drone_gas );
                     if ( miner.locked_mine_ ) {
                         continue;
                     }
                 }
                 if ( !miner.locked_mine_ ) {
-                    Worker_Mine( u, friendly_inventory );
+                    Worker_Mine( u, friendly_inventory, low_drone_min );
                     continue;
                 }
             }
@@ -681,8 +699,8 @@ void MeatAIModule::onFrame()
                                 inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                friend_loc.max_range_ > 32 && enemy_loc.max_range_ < 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
-                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                friend_loc.max_range_ > enemy_loc.max_range_ && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
+                                (distance_to_foe < 0.5 * enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
@@ -691,10 +709,10 @@ void MeatAIModule::onFrame()
 
                             bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
                                 friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && helpful_u * (1 - unusable_surface_area_f) < 0.75 * helpful_e || // trying to do something with these surface areas.
-                                (friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
+                                //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
-                                                                          //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-                                                                          //friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
+                                //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
+                                //friend_loc.max_range_ < 32 && enemy_loc.max_range_ > 32 && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
                                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.

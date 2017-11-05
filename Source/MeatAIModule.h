@@ -103,9 +103,9 @@ public:
       //Forces selected unit (drone, hopefully!) to expo:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit , Unit_Inventory &ui);
+      void Worker_Mine( const Unit &unit , Unit_Inventory &ui, const int low_drone );
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui);
+	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui, const int low_drone );
       // Checks if there is a way to spend gas.
       bool Gas_Outlet();
 
