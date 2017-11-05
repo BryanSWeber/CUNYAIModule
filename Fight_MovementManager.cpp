@@ -300,10 +300,12 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
         bool visible_unit_found = false;
         if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
 
-            Stored_Unit* e = MeatAIModule::getClosestVisibleAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
-            if ( !e || !e->bwapi_unit_) {
-                e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
-            }
+       //     Stored_Unit* e = MeatAIModule::getClosestVisibleAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+
+      //      if ( !e ) {
+            Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+      //      } 
+
             if ( e && e->pos_ ) {
                 if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) ) { // go to it if the path is clear,
                     int dist = unit->getDistance( e->pos_ );

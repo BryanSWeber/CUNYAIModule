@@ -269,7 +269,7 @@ void MeatAIModule::onFrame()
             r->second.valid_pos_ = true;
             r->second.type_ = r->second.bwapi_unit_->getType();
             r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius( 250, IsResourceDepot && IsOwned && IsCompleted ).empty()); // is there a resource depot in 250 of it?
-                                                                                                                                                //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
+           //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
         }
 
         if ( Broodwar->isVisible( resource_pos ) ) {
@@ -352,7 +352,9 @@ void MeatAIModule::onFrame()
     int low_drone_min = 1;
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        miner_count_ += r->second.number_of_miners_;
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
+            miner_count_ += r->second.number_of_miners_;
+        }
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             low_drone_min = r->second.number_of_miners_;
         }
@@ -361,7 +363,9 @@ void MeatAIModule::onFrame()
     int low_drone_gas = 3; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        miner_count_ += r->second.number_of_miners_;
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+            miner_count_ += r->second.number_of_miners_;
+        }
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             low_drone_gas = r->second.number_of_miners_;
         }
