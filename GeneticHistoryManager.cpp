@@ -212,7 +212,7 @@ GeneticHistory::GeneticHistory( string file ) {
         a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
         a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
 
-        build_order_out = dis( gen ) > 0.5 ? build_order_win[parent_1] : build_order_win[parent_2];
+        build_order_out = linear_combo < 0.5 ? build_order_win[parent_1] : build_order_win[parent_2]; //use the build from which you used more of the history.
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
         //int chrom_0 = (rand() % 100 + 1) / 2;

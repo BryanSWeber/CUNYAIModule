@@ -45,7 +45,7 @@ struct Building_Gene {
     UnitType last_build_order;
 
     void getInitialBuildOrder(string s);
-    void updateBuildingTimer( const Unit_Inventory &ui ); //adds time to timer.
+    void updateBuildingTimer( const Unit_Inventory &ui, const Inventory inv ); //adds time to timer.
     void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
     void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
 	void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.

@@ -822,7 +822,7 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
             if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
 
                 TilePosition canidate_spot = TilePosition( x + 2, y + 1 ); // from the true center of the object.
-                int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
+                //int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
                 //int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
                 bool enemy_in_inventory_near_expo = false; // Don't build on enemies!

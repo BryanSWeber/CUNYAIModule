@@ -26,7 +26,8 @@ struct Inventory {
     int min_workers_;
     int min_fields_;
     int hatches_;
-	int last_builder_sent;
+	int last_builder_sent_;
+    int last_gas_check_;
 
     int min_reserve_;
     int gas_reserve_;

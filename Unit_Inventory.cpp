@@ -59,12 +59,17 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 		//Get unit's status. Precalculated, precached.
 		int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
 		modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-		//modified_supply = unit->getType() == UnitTypes::Protoss_Photon_Cannon ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Static D adjustment.
+        int modified_min_cost = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
+        int modified_gas_cost = unit->getType().gasPrice();
 
-		stock_value_ = (int)sqrt(pow(unit->getType().mineralPrice(), 2) + pow(1.25 * unit->getType().gasPrice(), 2) + pow(25 * modified_supply, 2));
-		if (unit->getType().isTwoUnitsInOneEgg()) {
-			stock_value_ = stock_value_ / 2;
-		}
+        if ( unit->getType().isTwoUnitsInOneEgg() ) {
+            modified_supply = modified_supply / 2;
+            modified_min_cost = modified_min_cost / 2;
+            modified_gas_cost = modified_gas_cost / 2;
+        }
+
+		stock_value_ = (int)sqrt(pow( modified_min_cost, 2) + pow(1.25 * modified_gas_cost, 2) + pow(25 * modified_supply, 2));
+
 		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())); // Precalculated, precached.
 
 }

@@ -131,7 +131,7 @@ void MeatAIModule::onStart()
     //update local resources
     Resource_Inventory neutral_inventory; // for first initialization.
 
-                                          //update Map Grids
+    //update Map Grids
     inventory.updateBuildablePos();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
@@ -309,7 +309,7 @@ void MeatAIModule::onFrame()
         inventory.getExpoPositions( enemy_inventory, friendly_inventory ); // prime this once on game start.
     }
 
-    buildorder.updateBuildingTimer( friendly_inventory );
+    buildorder.updateBuildingTimer( friendly_inventory, inventory );
 
     //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
@@ -344,7 +344,6 @@ void MeatAIModule::onFrame()
     enemy_inventory.updateUnitInventorySummary();
     friendly_inventory.updateUnitInventorySummary();
     inventory.est_enemy_stock_ = (int)(enemy_inventory.stock_total_ * (1 + 1 - inventory.vision_tile_count_ / (double)map_area)); //assumes enemy stuff is uniformly distributed. Bad assumption.
-    bool checked_gas_workers = false;
 
     // Display the game status indicators at the top of the screen	
     if ( _ANALYSIS_MODE ) {
@@ -564,11 +563,10 @@ void MeatAIModule::onFrame()
             bool want_gas = gas_starved &&
                 inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor ));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-                                                                                       //bool mineral_starved = inventory.getLn_Gas_Ratio() > delta; // horrid idea.
 
-            if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ((want_gas || gas_flooded) && !checked_gas_workers && t_game % 24*3 == 0) ) { //if this is your first worker of the frame consider resetting him.
+            if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
-                checked_gas_workers = true;
+                inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
                     Worker_Gas( u, friendly_inventory );
                     if ( miner.locked_mine_ ) {
@@ -593,21 +591,21 @@ void MeatAIModule::onFrame()
 
 
             // Building subloop.
-            if ( (isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) && !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent < t_game - 3 * 24 )
+            if ( (isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) && !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 3 * 24 )
             { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
                     Building_Begin( u, inventory, enemy_inventory ) ) {
-                    inventory.last_builder_sent == t_game;
+                    inventory.last_builder_sent_ == t_game;
                 }
             } // Close Build loop
 
             // update miner target subloop
             if ( (miner.bwapi_unit_->getLastCommand() == UnitCommand::build( miner.bwapi_unit_, TilePosition( inventory.next_expo_ ), UnitTypes::Zerg_Hatchery ) || miner.bwapi_unit_->getLastCommand() == UnitCommand::move( miner.bwapi_unit_, Position( inventory.next_expo_ ) )) && getClosestStored( neutral_inventory, miner.pos_, 500 ) &&
-                inventory.last_builder_sent < t_game - 3 * 24 ) {
+                inventory.last_builder_sent_ < t_game - 3 * 24 ) {
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                Expo( miner.bwapi_unit_, true, inventory ); // update this guy's target if he passes near a mineral patch.
-                inventory.last_builder_sent == t_game;
+                Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ); // update this guy's target if he passes near a mineral patch.
+                inventory.last_builder_sent_ == t_game;
             }
 
 
@@ -805,11 +803,12 @@ void MeatAIModule::onFrame()
 
         if ( u->getType() == UnitTypes::Zerg_Creep_Colony && (army_starved || local_e.stock_total_ > 0) && (can_sunken || can_spore) ) {
 
-            bool cloak_nearby = u->getClosestUnit( IsCloaked || IsCloakable, 252 );
+            //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
             Unit_Inventory local_e = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), 252 );
+            bool cloak_nearby = u->getClosestUnit( IsCloaked || IsCloakable, 252 );
             local_e.updateUnitInventorySummary();
             bool local_air_problem = local_e.stock_fliers_ > 0;
-            bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_;
+            bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_ * 0.75;
 
             if ( can_sunken && can_spore ) {
                 if ( local_air_problem || global_air_problem || cloak_nearby ) { // if they have a flyer (that can attack), get spores.
