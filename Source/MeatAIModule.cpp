@@ -370,7 +370,7 @@ void MeatAIModule::onFrame()
             low_drone_gas = r->second.number_of_miners_;
         }
     } // find drone minima.
-
+    
     // Display the game status indicators at the top of the screen	
     if ( _ANALYSIS_MODE ) {
 
@@ -592,13 +592,15 @@ void MeatAIModule::onFrame()
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
            
             // Building subloop.
-            if ( /*(!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || isInLine( u ) || IsGatheringMinerals( u ) || IsGatheringGas( u )) &&*/ !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 5 * 24 )
-            { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 5 * 24 ){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
                     Building_Begin( u, inventory, enemy_inventory ) ) {
                     inventory.last_builder_sent_ == t_game;
                     continue;
+                }
+                else {
+                    inventory.last_builder_sent_ == t_game;
                 }
             } // Close Build loop
 
@@ -830,7 +832,6 @@ void MeatAIModule::onFrame()
         if ( u->getType() == UnitTypes::Zerg_Creep_Colony && (army_starved || local_e.stock_total_ > 0) && (can_sunken || can_spore) ) {
 
             //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
-            Unit_Inventory local_e = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), 252 );
             bool cloak_nearby = u->getClosestUnit( IsCloaked || IsCloakable, 252 );
             local_e.updateUnitInventorySummary();
             bool local_air_problem = local_e.stock_fliers_ > 0;

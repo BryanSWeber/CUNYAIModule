@@ -19,6 +19,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
             if ( unit->build( building, buildPosition ) ) {
                 buildorder.setBuilding_Complete( building );
+                return true;
             }
         }
         else if ( unit->canBuild( building ) &&
@@ -73,13 +74,15 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
             TilePosition buildPosition = Broodwar->getBuildLocation( building, { central_base.x + adj_dx, central_base.y + adj_dy }, 5 );
             if ( unit->build( building, buildPosition ) ) {
                 buildorder.setBuilding_Complete( building );
+                return true;
             }
         }
         else if ( unit->canBuild( building ) &&
             building == UnitTypes::Zerg_Extractor ) {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
-            if ( getUnitInventoryInRadius( friendly_inventory, Position( buildPosition ), 256 ).getMeanBuildingLocation() != Position( 0, 0 ) && unit->build( building, buildPosition ) ) {
+            if ( unit->getClosestUnit( IsResourceDepot && IsCompleted, 252 ) && unit->build( building, buildPosition ) ) {
                 buildorder.setBuilding_Complete( building );
+                return true;
             } //extractors must have buildings nearby or we shouldn't build them.
         }
         if ( unit->canMorph( building ) )
@@ -191,6 +194,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
     //Gas Buildings
+
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, (inv.gas_workers_ > 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) || gas_starved) &&
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 

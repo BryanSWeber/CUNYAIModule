@@ -307,7 +307,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
       //      } 
 
             if ( e && e->pos_ ) {
-                if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) ) { // go to it if the path is clear,
+                if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
                     int dist = unit->getDistance( e->pos_ );
                     int dist_x = e->pos_.x - pos.x;
                     int dist_y = e->pos_.y - pos.y;

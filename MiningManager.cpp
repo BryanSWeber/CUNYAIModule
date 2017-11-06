@@ -105,9 +105,6 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int 
     //        }
     //    }
     //} // send drone to closest base's closest mineral field meeting that critera.
-    else { // if there are no suitible bases:
-           // mine those empty patches, perhaps?
-    }
 
 } // closure worker mine
 

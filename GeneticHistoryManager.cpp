@@ -50,7 +50,7 @@ GeneticHistory::GeneticHistory( string file ) {
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool";
     }
     else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling lair drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling lair drone drone ovi speed extract spire ovi ovi muta muta muta muta muta muta muta muta muta muta muta muta";
     }
 
     int win_count = 0;
@@ -199,7 +199,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     if ( win_count > 0 && !(dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // redefine final output.  Chance of playing raw as well.
 
-        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 50 ), win_count );
+        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
 
         int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
         int parent_2 = (int)(unif_dist_to_win_count( gen ));
