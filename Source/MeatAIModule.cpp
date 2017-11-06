@@ -666,7 +666,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius );
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius /*+ getProperSpeed(u) * apppropriate_cooldown*/ );
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
