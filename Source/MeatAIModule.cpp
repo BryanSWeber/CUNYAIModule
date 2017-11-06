@@ -596,11 +596,11 @@ void MeatAIModule::onFrame()
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
                     Building_Begin( u, inventory, enemy_inventory ) ) {
-                    inventory.last_builder_sent_ == t_game;
+                    inventory.last_builder_sent_ = t_game;
                     continue;
                 }
                 else {
-                    inventory.last_builder_sent_ == t_game;
+                    inventory.last_builder_sent_ = t_game;
                 }
             } // Close Build loop
 
@@ -608,7 +608,7 @@ void MeatAIModule::onFrame()
             if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && inventory.last_builder_sent_ < t_game - 24 ) {
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, Broodwar->self()->minerals() > 300, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-                    inventory.last_builder_sent_ == t_game;
+                    inventory.last_builder_sent_ = t_game;
                     continue;
                 }
             }
@@ -666,7 +666,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + chargable_distance_net );
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius );
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
