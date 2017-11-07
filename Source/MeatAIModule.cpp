@@ -419,10 +419,11 @@ void MeatAIModule::onFrame()
         }
 
         Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", buildorder.building_timer_ ); //
-        Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_ ? "TRUE" : "FALSE" ); //
-        Broodwar->drawTextScreen( 250, 120, "Last Building: %s", buildorder.last_build_order.c_str() ); //
-        Broodwar->drawTextScreen( 250, 130, "Next Expo: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
-        Broodwar->drawTextScreen( 250, 140, "Next Gas: %d", buildorder.building_gene_.begin()->getUnit().gasPrice() );
+        Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() ? "TRUE" : "FALSE" ); //
+        Broodwar->drawTextScreen( 250, 120, "Busy Builder: %s", buildorder.active_builders_ ? "TRUE" : "FALSE" );
+        Broodwar->drawTextScreen( 250, 130, "Last Building: %s", buildorder.last_build_order.c_str() ); //
+        Broodwar->drawTextScreen( 250, 140, "Next Expo Loc: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
+        Broodwar->drawTextScreen( 250, 150, "Next Expenditure: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
 
         for ( auto &p : inventory.expo_positions_ ) {
             Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, TRUE );
@@ -666,7 +667,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius /*+ getProperSpeed(u) * apppropriate_cooldown*/ );
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown );
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
@@ -719,7 +720,7 @@ void MeatAIModule::onFrame()
 //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
 //                                  );
 
-                            bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
+                            bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Scourge || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
@@ -800,11 +801,11 @@ void MeatAIModule::onFrame()
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            if ( !enemy_found || u->getType() != UnitTypes::Zerg_Overlord ) { // scout if they have nothing you know about.
-                boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
-            }
-            else {
+            if ( enemy_found || inventory.start_positions_.empty() ) {
                 boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
+            }
+            else{
+                boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();

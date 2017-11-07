@@ -13,8 +13,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
     if ( Broodwar->self()->minerals() >= building.mineralPrice() &&
         Broodwar->self()->gas() >= building.gasPrice() &&
         (buildorder.checkBuilding_Desired( building ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_)) ) {
-        if ( unit->canBuild( building ) &&
-            building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor )
+        if ( unit->canBuild( building ) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor )
         {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
             if ( unit->build( building, buildPosition ) ) {
@@ -22,8 +21,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 return true;
             }
         }
-        else if ( unit->canBuild( building ) &&
-            building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
+        else if ( unit->canBuild( building ) &&  building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
 
             Unitset base_core = unit->getUnitsInRadius( 1, IsBuilding && IsResourceDepot && IsCompleted ); // don't want undefined crash online 44.
 
@@ -77,14 +75,14 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 return true;
             }
         }
-        else if ( unit->canBuild( building ) &&
-            building == UnitTypes::Zerg_Extractor ) {
+        else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Extractor ) {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
-            if ( unit->getClosestUnit( IsResourceDepot && IsCompleted, 252 ) && unit->build( building, buildPosition ) ) {
+            if ( getUnitInventoryInRadius( friendly_inventory, Position( buildPosition ), 256 ).getMeanBuildingLocation() != Position( 0, 0 ) && unit->build( building, buildPosition ) ) {
                 buildorder.setBuilding_Complete( building );
                 return true;
             } //extractors must have buildings nearby or we shouldn't build them.
         }
+        
         if ( unit->canMorph( building ) )
         {
             if ( unit->morph( building ) ) {
