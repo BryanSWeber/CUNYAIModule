@@ -169,6 +169,18 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
     return count;
 }
 
+// Overload. Counts all units in a set of one type in the reservation system. Does not reserve larva units. 
+int MeatAIModule::Count_Units( const UnitType &type, const Reservation &res )
+{
+    int count = 0;
+    map<UnitType, TilePosition>::const_iterator it = res.reservation_map_.find( type );
+    if ( it != res.reservation_map_.end() ) {
+        count++;
+    }
+
+    return count;
+}
+
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
 int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
 {
@@ -310,6 +322,19 @@ void MeatAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
     }
 }
 
+// Announces to player the name and type of all buildings in the reservation system. Bland but practical.
+void MeatAIModule::Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res ) {
+    int another_sort_of_unit = 0;
+    for ( int i = 0; i != 229; i++ )
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        int u_count = Count_Units( ((UnitType)i), res );
+        if ( u_count > 0 ) {
+            Broodwar->drawTextScreen( screen_x, screen_y, "Reserved Buildings:" );  //
+            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", noRaceName( ((UnitType)i).c_str() ), u_count );  //
+            another_sort_of_unit++;
+        }
+    }
+}
 
 //Strips the RACE_ from the front of the unit type string.
 const char * MeatAIModule::noRaceName( const char *name ) { //From N00b

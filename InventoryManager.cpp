@@ -30,8 +30,6 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateMin_Possessed();
     updateHatcheries( ui );
 
-    updateReserveSystem();
-
     if ( smoothed_barriers_.size() == 0 ) {
         updateSmoothPos();
         int unwalkable_ct = 0;
@@ -768,23 +766,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
     }
 }
 
-void Inventory::updateReserveSystem() {
-    if ( Broodwar->getFrameCount() == 0 ) {
-        min_reserve_ = 0;
-        gas_reserve_ = 0;
-        building_timer_ = 0;
-    }
-    else {
-        building_timer_ > 0 ? --building_timer_ : 0;
-    }
-}
-
-
 void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Inventory &u_inv ) {
 
     expo_positions_.clear();
 
-    TilePosition center_self = Broodwar->self()->getStartLocation();
     int location_qual_threshold = -999999;
     //Region home = Broodwar->getRegionAt(Position(center_self));
     //Regionset neighbors;

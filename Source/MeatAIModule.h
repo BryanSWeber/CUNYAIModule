@@ -6,6 +6,7 @@
 #include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
+#include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
 //#define _ANALYSIS_MODE true
@@ -67,6 +68,7 @@ public:
 
     Inventory inventory;  // macro variables, not every unit I have.
     Building_Gene buildorder; //
+    Reservation my_reservation; 
 
    //These measure its clock.
     int short_delay;
@@ -146,6 +148,8 @@ public:
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
+      // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
+      void Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res );
 
       //Strips the RACE_ from the front of the unit type string. 
       const char * noRaceName( const char *name );
@@ -179,6 +183,8 @@ public:
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
+      // Counts the tally of a particular unit type in a reservation queue.
+      static int Count_Units( const UnitType &type, const Reservation &res );
 	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
 	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       // Evaluates the total stock of a type of unit in the inventory.

@@ -36,6 +36,9 @@
     <ClCompile Include="Resource_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Reserve_Manager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\MeatAIModule.h" />
@@ -45,7 +48,7 @@
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\Fight_MovementManager.h" />
-    <ClInclude Include="Source\Resource_Inventory.h" />
+    <ClInclude Include="Source\Reservation_Manager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

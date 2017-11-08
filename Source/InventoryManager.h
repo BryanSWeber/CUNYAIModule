@@ -26,12 +26,7 @@ struct Inventory {
     int min_workers_;
     int min_fields_;
     int hatches_;
-	int last_builder_sent_;
     int last_gas_check_;
-
-    int min_reserve_;
-    int gas_reserve_;
-    int building_timer_;
 
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;
@@ -80,8 +75,6 @@ struct Inventory {
     // Updates the number of mineral fields we "possess".
     void Inventory::updateMin_Possessed();
 
-	// Update Resource_Inventory
-
     // Updates the number of hatcheries (and decendents).
     void Inventory::updateHatcheries( const Unit_Inventory &ui );
 
@@ -101,8 +94,6 @@ struct Inventory {
 
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
-    // Updates mineral, gas, and time reserves.
-    void Inventory::updateReserveSystem();
     
 	// updates the next target expo.
 	void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv);

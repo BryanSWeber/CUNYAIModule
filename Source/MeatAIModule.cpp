@@ -143,7 +143,7 @@ void MeatAIModule::onStart()
     short_delay = 0;
     med_delay = 0;
     long_delay = 0;
-
+    my_reservation = Reservation();
 }
 
 void MeatAIModule::onEnd( bool isWinner )
@@ -303,19 +303,18 @@ void MeatAIModule::onFrame()
     inventory.updateMin_Possessed();
     inventory.updateHatcheries( friendly_inventory );  // macro variables, not every unit I have.
 
-    inventory.updateReserveSystem();
     inventory.updateStartPositions();
     if ( t_game == 0 ) {
         inventory.getExpoPositions( enemy_inventory, friendly_inventory ); // prime this once on game start.
     }
 
-    buildorder.updateBuildingTimer( friendly_inventory, inventory );
-
     if ( buildorder.building_gene_.empty() ) {
         buildorder.ever_clear_ = true;
     }
 
-    //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
+    my_reservation.decrementReserveTimer();
+    bool build_check_this_frame = false;
+        //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
@@ -376,6 +375,7 @@ void MeatAIModule::onFrame()
 
         Print_Unit_Inventory( 0, 50, friendly_inventory );
         Print_Upgrade_Inventory( 375, 80 );
+        Print_Reservations( 250, 170, my_reservation );
         if ( buildorder.checkEmptyBuildOrder() ) {
             Print_Unit_Inventory( 500, 170, enemy_inventory );
         }
@@ -385,8 +385,10 @@ void MeatAIModule::onFrame()
 
         Broodwar->drawTextScreen( 0, 0, "Reached Min Fields: %d", inventory.min_fields_ );
         Broodwar->drawTextScreen( 0, 10, "Active Workers: %d", inventory.gas_workers_ + inventory.min_workers_ );
-        Broodwar->drawTextScreen( 0, 20, "Active Miners: %d", inventory.min_workers_ );
-        Broodwar->drawTextScreen( 0, 30, "Active Gas Miners: %d", inventory.gas_workers_ );
+        Broodwar->drawTextScreen( 0, 20, "Workers (alt): %d", miner_count_ );  //
+        miner_count_ = 0; // just after the fact.
+        Broodwar->drawTextScreen( 0, 30, "Active Miners: %d", inventory.min_workers_ );
+        Broodwar->drawTextScreen( 0, 40, "Active Gas Miners: %d", inventory.gas_workers_ );
 
         Broodwar->drawTextScreen( 125, 0, "Econ Starved: %s", CD.econ_starved() ? "TRUE" : "FALSE" );  //
         Broodwar->drawTextScreen( 125, 10, "Army Starved: %s", CD.army_starved() ? "TRUE" : "FALSE" );  //
@@ -418,12 +420,13 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 90, "Gamma_supply: %4.2f", gamma ); //
         }
 
-        Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", buildorder.building_timer_ ); //
+        Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", my_reservation.building_timer_ ); //
         Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() ? "TRUE" : "FALSE" ); //
-        Broodwar->drawTextScreen( 250, 120, "Busy Builder: %s", buildorder.active_builders_ ? "TRUE" : "FALSE" );
+        Broodwar->drawTextScreen( 250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_ );
         Broodwar->drawTextScreen( 250, 130, "Last Building: %s", buildorder.last_build_order.c_str() ); //
         Broodwar->drawTextScreen( 250, 140, "Next Expo Loc: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
-        Broodwar->drawTextScreen( 250, 150, "Next Expenditure: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
+        Broodwar->drawTextScreen( 250, 150, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
+        Broodwar->drawTextScreen( 250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_ );
 
         for ( auto &p : inventory.expo_positions_ ) {
             Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, TRUE );
@@ -436,9 +439,7 @@ void MeatAIModule::onFrame()
         Broodwar->drawTextScreen( 375, 30, "Army Stock: %d", (int)exp( inventory.ln_army_stock_ ) ); //
         Broodwar->drawTextScreen( 375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio() );
         Broodwar->drawTextScreen( 375, 50, "Vision (Pct.): %4.2f", inventory.vision_tile_count_ / (double)map_area );  //
-        Broodwar->drawTextScreen( 375, 60, "Workers (alt): %d", miner_count_ );  //
-        miner_count_ = 0; // just after the fact.
-        Broodwar->drawTextScreen( 375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size() );  //
+        Broodwar->drawTextScreen( 375, 60, "Unexplored Starts: %d", (int)inventory.start_positions_.size() );  //
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -589,31 +590,28 @@ void MeatAIModule::onFrame()
         if ( u->getType().isWorker() && !isRecentCombatant( u ) )
         {
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
-            bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor ));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+            bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-           
+            bool resources_full = inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );
             // Building subloop.
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && inventory.last_builder_sent_ < t_game - 5 * 24 ){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved || inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) || Broodwar->self()->minerals() > 300, inventory ) ||
-                    Building_Begin( u, inventory, enemy_inventory ) ) {
-                    inventory.last_builder_sent_ = t_game;
+                if ( Expo( miner.bwapi_unit_, !army_starved || resources_full || my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ), inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
                     continue;
-                }
-                else {
-                    inventory.last_builder_sent_ = t_game;
                 }
             } // Close Build loop
 
-              // update miner target subloop
-            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && inventory.last_builder_sent_ < t_game - 24 ) {
-                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, Broodwar->self()->minerals() > 300, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-                    inventory.last_builder_sent_ = t_game;
-                    continue;
-                }
-            }
+            // Retarget Expos (disabled by reservation system)
+            //if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+            //    if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+            //        continue;
+            //    }
+            //}
 
+            // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 10 * 24) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
@@ -634,6 +632,10 @@ void MeatAIModule::onFrame()
             }
 
             if ( miner.locked_mine_ != miner.bwapi_unit_->getOrderTarget() || (miner.locked_mine_ && miner.locked_mine_->exists() && isIdleEmpty( miner.bwapi_unit_ )) ) {
+                if ( miner.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Morph || miner.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Build || miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+                    my_reservation.removeReserveSystem( miner.bwapi_unit_->getBuildType() );
+                }
+
                 if ( !miner.bwapi_unit_->gather( miner.locked_mine_ ) ) {
                     miner.stopMine( neutral_inventory ); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
                 }
@@ -1065,6 +1067,11 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
             Broodwar->sendText( "%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
         }
     }
+
+    if ( unit && unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
+        my_reservation.removeReserveSystem( unit->getType() );
+    }
+
 }
 
 void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
@@ -1103,6 +1110,9 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
             Stored_Unit& miner = iter->second;
             miner.stopMine( neutral_inventory );
         }
+        if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+            my_reservation.removeReserveSystem( unit->getBuildType() );
+        }
     }
 }
 
@@ -1123,8 +1133,9 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
 
     buildorder.updateRemainingBuildOrder( unit );
 
-    if ( unit && unit->getType().isBuilding() ) {
+    if ( unit && unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
+        my_reservation.removeReserveSystem( unit->getType() );
     }
 
     if ( unit && unit->getType().isBuilding() && unit->getPlayer() == BWAPI::Broodwar->self() ) {

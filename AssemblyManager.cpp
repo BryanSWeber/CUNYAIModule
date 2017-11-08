@@ -10,13 +10,17 @@ using namespace std;
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations.
 bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera )
 {
-    if ( Broodwar->self()->minerals() >= building.mineralPrice() &&
-        Broodwar->self()->gas() >= building.gasPrice() &&
-        (buildorder.checkBuilding_Desired( building ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_)) ) {
+    if ( my_reservation.checkAffordablePurchase( building ) && (buildorder.checkBuilding_Desired( building ) || ( extra_critera && buildorder.checkEmptyBuildOrder() )) ) {
+
+        if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+            my_reservation.removeReserveSystem( unit->getBuildType() );
+        }
+
         if ( unit->canBuild( building ) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor )
         {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
             if ( unit->build( building, buildPosition ) ) {
+                my_reservation.addReserveSystem( building , buildPosition);
                 buildorder.setBuilding_Complete( building );
                 return true;
             }
@@ -71,6 +75,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
 
             TilePosition buildPosition = Broodwar->getBuildLocation( building, { central_base.x + adj_dx, central_base.y + adj_dy }, 5 );
             if ( unit->build( building, buildPosition ) ) {
+                my_reservation.addReserveSystem( building , buildPosition);
                 buildorder.setBuilding_Complete( building );
                 return true;
             }
@@ -78,6 +83,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
         else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Extractor ) {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
             if ( getUnitInventoryInRadius( friendly_inventory, Position( buildPosition ), 256 ).getMeanBuildingLocation() != Position( 0, 0 ) && unit->build( building, buildPosition ) ) {
+                my_reservation.addReserveSystem( building, buildPosition );
                 buildorder.setBuilding_Complete( building );
                 return true;
             } //extractors must have buildings nearby or we shouldn't build them.
@@ -86,7 +92,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
         if ( unit->canMorph( building ) )
         {
             if ( unit->morph( building ) ) {
-                buildorder.setBuilding_Complete( building );
+                buildorder.setBuilding_Complete( building ); // Takes no time, no need for the reserve system.
                 return true;
             }
         }
@@ -98,8 +104,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
 void MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera )
 {
     if ( unit->canUpgrade( ups ) &&
-        Broodwar->self()->minerals() >= ups.mineralPrice() &&
-        Broodwar->self()->gas() >= ups.gasPrice() &&
+        my_reservation.checkAffordablePurchase( ups ) &&
         (buildorder.checkUpgrade_Desired( ups ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
         unit->upgrade( ups );
         buildorder.updateRemainingBuildOrder( ups );
@@ -111,13 +116,12 @@ void MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, co
 bool MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera )
 {
     if ( larva->canMorph( unittype ) &&
-        Broodwar->self()->minerals() >= unittype.mineralPrice() &&
-        Broodwar->self()->gas() >= unittype.gasPrice() &&
+         my_reservation.checkAffordablePurchase( unittype ) &&
         (buildorder.checkBuilding_Desired( unittype ) || (extra_critera && (buildorder.checkEmptyBuildOrder() || unittype == UnitTypes::Zerg_Drone || unittype == UnitTypes::Zerg_Overlord))) )
     {
         larva->morph( unittype );
-
         buildorder.setBuilding_Complete( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
+
         if ( unittype.isTwoUnitsInOneEgg() ) {
             buildorder.setBuilding_Complete( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
         }
@@ -130,7 +134,6 @@ bool MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, co
 //Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
 bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei )
 {
-
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     int is_building = 0;
     //Supply blocked protection 
@@ -196,7 +199,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, (inv.gas_workers_ > 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) || gas_starved) &&
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 
-                                                                                                                       //Expo loop, whenever not army starved. 
+    //Expo loop, whenever not army starved. 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) && Broodwar->self()->minerals() > 300 ); // only macrohatch if you are short on larvae and being a moron.
 
                                                                                                                                                                                                                                                               //Basic Buildings
@@ -245,27 +248,6 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 
 };
 
-void Building_Gene::updateBuildingTimer( const Unit_Inventory &ui, const Inventory inv ) {
-    int longest_project = 0;
-
-    active_builders_ = false;
-
-    for ( auto & u : ui.unit_inventory_ ) {
-
-        if ( u.second.bwapi_unit_->getRemainingBuildTime() > longest_project && u.second.bwapi_unit_->getType().isBuilding() ) {
-            longest_project = u.second.bwapi_unit_->getRemainingBuildTime();
-        }
-
-        if ( u.second.type_ == UnitTypes::Zerg_Drone && !u.second.bwapi_unit_->isMorphing() && 
-            (u.second.bwapi_unit_->getLastCommand().getTargetTilePosition() == inv.next_expo_ || u.second.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Build) ) {  // drones morph into buildings with the BUILD command not the MORPH command.  No drones ever get the MOVE command unless deliberately scouting, they are otherwise only sent the gather command.
-            active_builders_ = true;
-        }
-
-    }
-
-    building_timer_ = longest_project;
-}
-
 void Building_Gene::updateRemainingBuildOrder( const Unit &u ) {
     if ( !building_gene_.empty() ) {
         if ( building_gene_.front().getUnit() == u->getType() ) {
@@ -294,7 +276,6 @@ void Building_Gene::setBuilding_Complete( UnitType ut ) {
     if ( ut.isBuilding() && ut.whatBuilds().first == UnitTypes::Zerg_Drone ) {
         last_build_order = ut;
         Broodwar->sendText( "Building a %s", last_build_order.c_str() );
-        active_builders_ = true;
     }
 }
 
@@ -308,13 +289,13 @@ bool Building_Gene::checkBuilding_Desired( UnitType ut ) {
         return false;
     }
     else {
-        return building_gene_.front().getUnit() == ut && !active_builders_;
+        return building_gene_.front().getUnit() == ut;
     }
 }
 
 bool Building_Gene::checkUpgrade_Desired( UpgradeType upgrade ) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
-    return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade && !active_builders_;
+    return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
 }
 
 bool Building_Gene::checkEmptyBuildOrder() {

@@ -7,8 +7,8 @@ using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
 bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv ) {
-    if ( Broodwar->self()->minerals() >= 300 &&
-        (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder() && !buildorder.active_builders_)) ) {
+    if ( my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ) && 
+        (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.checkEmptyBuildOrder()) ) ) {
 
         int dist = 99999999;
 
@@ -51,15 +51,21 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             //        return true;
             //    }
             //}
-            //else {
+            //else {      
+
+            if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+                my_reservation.removeReserveSystem( unit->getBuildType() );
+            }
+
                 if ( unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
+                    my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery , inv.next_expo_);
                     buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
                     Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                     return true;
                 }
                 else if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
                     unit->move( Position( inv.next_expo_ ) );
-                    buildorder.active_builders_ = true;
+                    my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery , inv.next_expo_);
                     Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                     return true;
                 }
@@ -78,6 +84,10 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int 
     Resource_Inventory available_fields;
 //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
+    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+        my_reservation.removeReserveSystem( unit->getBuildType() );
+    }
+
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             available_fields.addStored_Resource( r->second );
@@ -89,22 +99,6 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int 
             miner.startMine( *closest, neutral_inventory );
         }
     }
-    //if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
-    //    Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
-    //    if ( !nearest_building ) {
-    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
-    //    }
-    //    if ( !nearest_building ) {
-    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
-    //    }
-
-    //    if ( nearest_building ) {
-    //        Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 500 );
-    //        if ( miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-    //            miner.startMine( *closest, neutral_inventory );
-    //        }
-    //    }
-    //} // send drone to closest base's closest mineral field meeting that critera.
 
 } // closure worker mine
 
@@ -115,6 +109,9 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
 
+    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+        my_reservation.removeReserveSystem( unit->getBuildType() );
+    }
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
@@ -127,22 +124,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
             miner.startMine( *closest, neutral_inventory );
         }
     }
-    //if ( !available_fields.resource_inventory_.empty() ) { // if there are fields to mine
-    //    Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, miner.pos_, 9999999 );
-    //    if ( !nearest_building ) {
-    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, miner.pos_, 9999999 );
-    //    }
-    //    if ( !nearest_building ) {
-    //        Stored_Unit* nearest_building = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, miner.pos_, 9999999 );
-    //    }
 
-    //    if ( nearest_building ) {
-    //        Stored_Resource* closest = getClosestStored( available_fields, nearest_building->pos_, 9999999 );
-    //        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-    //            miner.startMine( *closest, neutral_inventory );
-    //        }
-    //    }
-    //} // send drone to closest base's closest mineral field meeting that critera.
 
 } // closure worker mine
 
@@ -150,7 +132,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
 bool MeatAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( MeatAIModule::Tech_Avail()/* && tech_starved*/ && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 ) {
+    if ( MeatAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 ) {
         outlet_avail = true;
     }
 
