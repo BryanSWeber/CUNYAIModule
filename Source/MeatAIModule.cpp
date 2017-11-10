@@ -199,13 +199,13 @@ void MeatAIModule::onFrame()
             (*e).second.valid_pos_ = true;
             //Broodwar->sendText( "Relocated a %s.", (*e).second.type_.c_str() );
         }
-        else if ( Broodwar->isVisible( TilePosition( e->second.pos_ ) ) && e->second.type_.canMove() ) {  // if you can see the tile it SHOULD be at and it might move... Burned down buildings will pose a problem in future.
+        else if ( Broodwar->isVisible( TilePosition( e->second.pos_ ) ) /*&& e->second.type_.canMove()*/ ) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
 
             bool present = false;
 
             Unitset enemies_tile = Broodwar->getUnitsOnTile( TilePosition( e->second.pos_ ), IsEnemy || IsNeutral );  // Confirm it is present.  Addons convert to neutral if their main base disappears.
             for ( auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et ) {
-                present = (*et)->getID() == e->second.unit_ID_ || (*et)->isCloaked() || (*et)->isBurrowed();
+                present = (*et)->getID() == e->second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
                 if ( present ) {
                     break;
                 }
@@ -221,7 +221,7 @@ void MeatAIModule::onFrame()
         }
 
         if ( _ANALYSIS_MODE && e->second.valid_pos_ == true ) {
-            if ( isOnScreen( e->second.pos_ ) ) {
+            if ( isOnScreen( e->second.pos_ ) && e->second.valid_pos_) {
                 Broodwar->drawCircleMap( e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red ); // Plot their last known position.
             }
         }
@@ -237,7 +237,7 @@ void MeatAIModule::onFrame()
         }
     }
 
-    Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
+    //Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
 
                                                                              // easy to update friendly unit inventory.
     if ( friendly_inventory.unit_inventory_.size() == 0 ) {
@@ -663,7 +663,7 @@ void MeatAIModule::onFrame()
                 boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
             }
             else {
-                boids.Boids_Movement( u, 2, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 5, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -693,7 +693,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown );
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown + 64);
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
@@ -815,7 +815,7 @@ void MeatAIModule::onFrame()
                     } // close local examination.
                 }
                 else { // who cares what they have if the override is triggered?
-                    boids.Tactical_Logic( u, enemy_set_all, Colors::Black ); // enemy inventory?
+                    boids.Tactical_Logic( u, enemy_inventory, Colors::Black ); // enemy inventory?
                 }
             }
         }
@@ -1086,7 +1086,6 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
 void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
 {
     if ( unit && !unit->getPlayer()->isAlly( Broodwar->self() ) && !unit->isInvincible() ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        Stored_Unit eu = Stored_Unit( unit );
         auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
         if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
             enemy_inventory.unit_inventory_.erase( unit );

@@ -204,7 +204,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 
     //Expo loop, whenever not army starved. 
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) + Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) + Count_Units(UnitTypes::Zerg_Hive, friendly_inventory) && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
 
                                                                                                                                                                                                                                                               //Basic Buildings
     buildings_started += Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved &&
@@ -217,7 +217,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, tech_starved &&
         Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 1 &&
-        Count_Units_Doing( UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits() ) == 0 &&
+        Count_Units_Doing( UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits() ) == 1 &&
         Count_Units_Doing( UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Build, Broodwar->self()->getUnits() ) == 0 && //costly, slow.
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 );
 

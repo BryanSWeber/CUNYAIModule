@@ -86,7 +86,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
     bool visible_target_atk = false;
 
     for ( auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e ) {
-        if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() ) {
+        if ( e->second.valid_pos_ ) {
             UnitType e_type = e->second.type_;
             int e_priority = 0;
 
@@ -128,11 +128,11 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
         }
     }
 
-    if ( (target_sentinel || target_sentinel_poor_target_atk) ) {
+    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
             unit->attack( target.bwapi_unit_ );
         }
-        else {
+        else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
             unit->attack( target.pos_ );
         }
         MeatAIModule::Diagnostic_Line( unit->getPosition(), target.pos_, color );
@@ -300,11 +300,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
         bool visible_unit_found = false;
         if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
 
-       //     Stored_Unit* e = MeatAIModule::getClosestVisibleAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
-
-      //      if ( !e ) {
             Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
-      //      } 
 
             if ( e && e->pos_ ) {
                 if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,

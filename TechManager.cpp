@@ -78,8 +78,8 @@ bool MeatAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui) {
     busy += Check_N_Upgrade( UpgradeTypes::Chitinous_Plating, building, tech_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0 );
 
     busy += Check_N_Build( UnitTypes::Zerg_Lair, building, ui, tech_starved &&
-        Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Lair ) <= 0 && //don't need lair if we have a lair
-        Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hive ) <= 0 && //don't need lair if we have a hive.
+        Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) + Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Lair ) == 0 && //don't need lair if we have a lair
+        Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) + Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hive ) == 0 && //don't need lair if we have a hive.
         building->getType() == UnitTypes::Zerg_Hatchery );
 
     busy += Check_N_Build( UnitTypes::Zerg_Hive, building, ui, tech_starved &&

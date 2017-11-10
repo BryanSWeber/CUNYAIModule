@@ -821,7 +821,7 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
                     enemy_in_inventory_near_expo = true;
                 }
 
-                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, Position( canidate_spot ), 250 );
+                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, Position( canidate_spot ), 500 );
                 for ( const auto &r : rdepot.unit_inventory_ ) {
                     if ( r.second.type_.isResourceDepot() ) {
                         found_rdepot = true;
