@@ -17,7 +17,7 @@ struct Reservation {
     map<UnitType, TilePosition> reservation_map_;
 
     // Updates mineral, gas, and time reserves for a particular unit. 
-    void Reservation::addReserveSystem( UnitType type , TilePosition tile);
+    bool Reservation::addReserveSystem( UnitType type , TilePosition tile);
     void Reservation::removeReserveSystem( UnitType type );
 
     // Decrements the clock. Simple but works.
@@ -26,4 +26,5 @@ struct Reservation {
     bool Reservation::checkAffordablePurchase( const UnitType type );
     bool Reservation::checkAffordablePurchase( const UpgradeType type );
 
+    void Reservation::confirmOngoingReservations( const Unit_Inventory &ui);
 };

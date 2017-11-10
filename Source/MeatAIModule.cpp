@@ -313,8 +313,11 @@ void MeatAIModule::onFrame()
     }
 
     my_reservation.decrementReserveTimer();
+    my_reservation.confirmOngoingReservations( friendly_inventory );
     bool build_check_this_frame = false;
-        //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
+    bool upgrade_check_this_frame = false;
+
+    //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
@@ -354,7 +357,7 @@ void MeatAIModule::onFrame()
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<= low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
             low_drone_min = r->second.number_of_miners_;
         }
     } // find drone minima.
@@ -365,7 +368,7 @@ void MeatAIModule::onFrame()
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_<= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             low_drone_gas = r->second.number_of_miners_;
         }
     } // find drone minima.
@@ -425,8 +428,12 @@ void MeatAIModule::onFrame()
         Broodwar->drawTextScreen( 250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_ );
         Broodwar->drawTextScreen( 250, 130, "Last Building: %s", buildorder.last_build_order.c_str() ); //
         Broodwar->drawTextScreen( 250, 140, "Next Expo Loc: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
-        Broodwar->drawTextScreen( 250, 150, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
-        Broodwar->drawTextScreen( 250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_ );
+        if ( buildorder.checkEmptyBuildOrder() ) {
+            Broodwar->drawTextScreen( 250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_ );
+        }
+        else {
+            Broodwar->drawTextScreen( 250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
+        }
 
         for ( auto &p : inventory.expo_positions_ ) {
             Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, TRUE );
@@ -592,13 +599,13 @@ void MeatAIModule::onFrame()
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-            bool resources_full = inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory );
+            bool expansion_meaningful = Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ));
             // Building subloop.
 
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 3 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved || resources_full || my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ), inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
+                if ( Building_Begin( u, inventory, enemy_inventory ) || Expo( miner.bwapi_unit_, !army_starved || expansion_meaningful, inventory ) ) {
                     continue;
                 }
             } // Close Build loop
@@ -804,20 +811,20 @@ void MeatAIModule::onFrame()
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
             if ( enemy_found || inventory.start_positions_.empty() ) {
-                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
+                boids.Boids_Movement( u, 3, friendly_inventory, enemy_inventory, inventory, army_starved );
             }
             else{
-                boids.Boids_Movement( u, 0, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
 
         //Upgrade loop:
         auto start_upgrade = std::chrono::high_resolution_clock::now();
-        if ( isIdleEmpty( u ) && !u->canAttack() && u->getType() != UnitTypes::Zerg_Larva && // no trying to morph hydras anymore.
+        if ( isIdleEmpty( u ) && !u->canAttack() && u->getType() != UnitTypes::Zerg_Larva && !upgrade_check_this_frame && // no trying to morph hydras anymore.
             (u->canUpgrade() || u->canResearch() || u->canMorph()) ) { // this will need to be revaluated once I buy units that cost gas.
 
-            Tech_Begin( u, friendly_inventory );
+             upgrade_check_this_frame = Tech_Begin( u, friendly_inventory );
 
             //PrintError_Unit( u );
         }

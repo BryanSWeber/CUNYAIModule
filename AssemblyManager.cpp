@@ -101,15 +101,18 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
 }
 
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-void MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera )
+bool MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera )
 {
     if ( unit->canUpgrade( ups ) &&
         my_reservation.checkAffordablePurchase( ups ) &&
         (buildorder.checkUpgrade_Desired( ups ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
-        unit->upgrade( ups );
-        buildorder.updateRemainingBuildOrder( ups );
-        Broodwar->sendText( "Upgrading %s. Let's hope it finishes!", ups.c_str() );
+        if ( unit->upgrade( ups ) ) {
+            buildorder.updateRemainingBuildOrder( ups );
+            Broodwar->sendText( "Upgrading %s. Let's hope it finishes!", ups.c_str() );
+            return true;
+        }
     }
+    return false;
 }
 
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -194,13 +197,14 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
+    bool expansion_meaningful = Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ));
     //Gas Buildings
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, (inv.gas_workers_ > 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) || gas_starved) &&
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 
     //Expo loop, whenever not army starved. 
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) && Broodwar->self()->minerals() > 300 ); // only macrohatch if you are short on larvae and being a moron.
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery && !expansion_meaningful, friendly_inventory ) ); // only macrohatch if you are short on larvae and being a moron.
 
                                                                                                                                                                                                                                                               //Basic Buildings
     buildings_started += Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved &&

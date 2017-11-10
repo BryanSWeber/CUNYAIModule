@@ -26,7 +26,6 @@ struct Stored_Unit {
 
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
-
 	//void addMine(Stored_Resource mine);
 
     int current_hp_;

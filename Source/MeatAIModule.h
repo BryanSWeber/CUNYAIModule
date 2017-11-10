@@ -9,15 +9,15 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED false
-//#define _RESIGN_MODE false
-//#define _AT_HOME_MODE false
-
-#define _RESIGN_MODE true
-#define _AT_HOME_MODE true
 #define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED true
+#define _COBB_DOUGLASS_REVEALED false
+#define _RESIGN_MODE false
+#define _AT_HOME_MODE false
+
+//#define _RESIGN_MODE true
+//#define _AT_HOME_MODE true
+//#define _ANALYSIS_MODE true
+//#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -95,7 +95,7 @@ public:
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-      void Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );  
+      bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );  
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
@@ -108,6 +108,8 @@ public:
       void Worker_Mine( const Unit &unit , Unit_Inventory &ui, const int low_drone );
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
 	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui, const int low_drone );
+      // Clears nearly-empty minerals.
+      void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       // Checks if there is a way to spend gas.
       bool Gas_Outlet();
 
@@ -162,7 +164,7 @@ public:
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
-      static Stored_Unit* MeatAIModule::getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
+      static Stored_Unit* getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
       //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
 
@@ -221,5 +223,5 @@ public:
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages morph.
-      void Tech_Begin(Unit building, const Unit_Inventory &ui);
+      bool Tech_Begin(Unit building, const Unit_Inventory &ui);
 };

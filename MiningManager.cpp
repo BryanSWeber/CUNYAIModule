@@ -128,6 +128,30 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
 
 } // closure worker mine
 
+void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
+{
+    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+        my_reservation.removeReserveSystem( unit->getBuildType() );
+    }
+
+    bool already_assigned = false;
+    Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
+    Resource_Inventory available_fields;
+
+    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == 0 && r->second.current_stock_value_ <= 8 ) {
+            available_fields.addStored_Resource( r->second );
+        }
+    } //find closest mine meeting this criteria.
+
+    if ( !available_fields.resource_inventory_.empty() ) {
+        Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
+        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
+            miner.startMine( *closest, neutral_inventory );
+        }
+    }
+}
+
   //Returns True if there is an out for gas. Does not consider all possible gas outlets.
 bool MeatAIModule::Gas_Outlet() {
     bool outlet_avail = false;

@@ -211,8 +211,8 @@ void Boids::setStutter( const Unit &unit, const double &n ) {
     std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis( -1, 1 );
 
-    x_stutter_ = n * dis( gen ) * unit->getType().sightRange();
-    y_stutter_ = n * dis( gen ) * unit->getType().sightRange(); // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
+    x_stutter_ = n * dis( gen ) * 32;
+    y_stutter_ = n * dis( gen ) * 32; // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
@@ -315,16 +315,15 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                     attract_dx_ = cos( theta ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
                     attract_dy_ = sin( theta ) * (dist * 0.02 + 64);
                 }
-                //else { // tilt around it
-                //    int dist = unit->getDistance( e->pos_ );
-                //    int dist_x = e->pos_.x - pos.x;
-                //    int dist_y = e->pos_.y - pos.y;
-                //    double theta = atan2( dist_y, dist_x );
-
-                //    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
-                //    attract_dx_ = cos( theta + tilt ) * ( 64 ); // shift slightly back
-                //    attract_dy_ = sin( theta + tilt ) * ( 64 );
-                //}
+                else { // tilt around it
+                    int dist = unit->getDistance( e->pos_ );
+                    int dist_x = e->pos_.x - pos.x;
+                    int dist_y = e->pos_.y - pos.y;
+                    double theta = atan2( dist_y, dist_x );
+                    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+                    attract_dx_ = cos( theta + tilt ) * ( 64 ); // shift slightly back
+                    attract_dy_ = sin( theta + tilt ) * ( 64 );
+                }
             }
         }
     }

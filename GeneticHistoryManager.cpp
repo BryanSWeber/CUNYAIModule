@@ -157,25 +157,25 @@ GeneticHistory::GeneticHistory( string file ) {
         }
     } // either by opponent name.
 
-    if ( win_count == 0 || (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race.
-        relevant_game_count = 0;
-        win_count = 0;
-        for ( int j = 0; j < csv_length; ++j ) {
-            if ( win_in[j] == 1 && race_in[j] == e_race ) {
-                delta_win.push_back( delta_in[j] );
-                gamma_win.push_back( gamma_in[j] );
-                a_army_win.push_back( a_army_in[j] );
-                a_vis_win.push_back( a_vis_in[j] );
-                a_econ_win.push_back( a_econ_in[j] );
-                a_tech_win.push_back( a_tech_in[j] );
-                build_order_win.push_back( build_order_in[j] );
-                win_count++;
-            }
-            if ( race_in[j] == e_race ) {
-                relevant_game_count++;
-            }
-        } //or by race only
-    }
+    //if ( win_count == 0 || (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race.
+    //    relevant_game_count = 0;
+    //    win_count = 0;
+    //    for ( int j = 0; j < csv_length; ++j ) {
+    //        if ( win_in[j] == 1 && race_in[j] == e_race ) {
+    //            delta_win.push_back( delta_in[j] );
+    //            gamma_win.push_back( gamma_in[j] );
+    //            a_army_win.push_back( a_army_in[j] );
+    //            a_vis_win.push_back( a_vis_in[j] );
+    //            a_econ_win.push_back( a_econ_in[j] );
+    //            a_tech_win.push_back( a_tech_in[j] );
+    //            build_order_win.push_back( build_order_in[j] );
+    //            win_count++;
+    //        }
+    //        if ( race_in[j] == e_race ) {
+    //            relevant_game_count++;
+    //        }
+    //    } //or by race only
+    //}
 
     if ( win_count == 0 && e_race == "Unknown" ) {
         relevant_game_count = 0;

@@ -18,15 +18,18 @@ Reservation::Reservation() {
     last_builder_sent_ = 0;
 }
 
-void Reservation::addReserveSystem( UnitType type, TilePosition pos ) {
+bool Reservation::addReserveSystem( UnitType type, TilePosition pos ) {
+    bool safe = true;
     map<UnitType, TilePosition>::iterator it = reservation_map_.find( type );
     if ( it == reservation_map_.end() ) {
         min_reserve_ += type.mineralPrice();
         gas_reserve_ += type.gasPrice();
-        reservation_map_.insert( { type, pos } );
+        safe = reservation_map_.insert( { type, pos } ).second;
         building_timer_ = type.buildTime() > building_timer_ ? type.buildTime() : building_timer_;
     }
     last_builder_sent_ = Broodwar->getFrameCount();
+
+    return safe;
 }
 
 void Reservation::removeReserveSystem( UnitType type ) {
@@ -59,9 +62,35 @@ void Reservation::decrementReserveTimer() {
 
 
 bool Reservation::checkAffordablePurchase( const UnitType type ) {
-    return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+    bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+    bool open_reservation = reservation_map_.find(type)==reservation_map_.end();
+    return affordable && open_reservation;
 }
 
 bool Reservation::checkAffordablePurchase( const UpgradeType type ) {
     return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+}
+
+void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
+
+    for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); ) {
+        bool keep = false;
+
+        for ( auto unit_it = ui.unit_inventory_.begin(); unit_it != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); unit_it++ ) {
+            if ( res_it->second == TilePosition( unit_it->second.bwapi_unit_->getLastCommand().getTargetPosition() ) ) {
+                keep = true;
+            }
+        } // check if we have a unit building it.
+
+        if ( keep ) {
+            ++res_it;
+        }
+        else {
+            Broodwar->sendText( "No on is working on a %s any more.", res_it->first.c_str() );
+            UnitType remove_me = res_it->first;
+            res_it++;
+            removeReserveSystem( remove_me );  // contains an erase.
+        }
+    }
+
 }
