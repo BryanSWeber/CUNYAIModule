@@ -92,5 +92,9 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             removeReserveSystem( remove_me );  // contains an erase.
         }
     }
-
+    
+    if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
+        Broodwar->sendText( "...We're stuck, aren't we? Have a friendly nudge." );
+        reservation_map_.clear();
+    }
 }

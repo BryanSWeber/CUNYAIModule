@@ -204,7 +204,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
 
     //Expo loop, whenever not army starved. 
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery && !expansion_meaningful, friendly_inventory ) ); // only macrohatch if you are short on larvae and being a moron.
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) <= Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
 
                                                                                                                                                                                                                                                               //Basic Buildings
     buildings_started += Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved &&
