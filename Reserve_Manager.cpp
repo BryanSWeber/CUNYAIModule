@@ -96,5 +96,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
     if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
         Broodwar->sendText( "...We're stuck, aren't we? Have a friendly nudge." );
         reservation_map_.clear();
+        min_reserve_ = 0;
+        gas_reserve_ = 0;
     }
 }

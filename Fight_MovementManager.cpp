@@ -77,9 +77,9 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
     //rng_direction_ = dis( gen );
 
     int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
-    int dist = range_radius + MeatAIModule::getProperSpeed( unit ) * 24;
+    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + range_radius;
     double limit_units_diving = (log( ei.stock_total_ ) == 0 ? 1 : log( ei.stock_total_ ));
-    int max_dist = ei.max_range_ / limit_units_diving + dist;
+    int max_dist = ei.max_range_ / (double)limit_units_diving + dist;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
@@ -93,7 +93,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
             if ( MeatAIModule::Can_Fight( unit, e->second ) ) { // if we can fight this enemy and there is a clear path to them:
                 int dist_to_enemy = unit->getDistance( e->second.pos_ );
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
-                    e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second, unit ) ||
+                    (e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second, unit )) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
                 if ( critical_target ) {
@@ -110,7 +110,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
                     e_priority = 0; // should leave stuff like larvae and eggs in here. Low, low priority.
                 }
 
-                if ( (e_priority == priority && dist_to_enemy <= dist) || e_priority > priority && dist_to_enemy < max_dist ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && dist_to_enemy < max_dist) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
                     visible_target_atk = true;
                     priority = e_priority;

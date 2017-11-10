@@ -330,7 +330,7 @@ void MeatAIModule::onFrame()
         Broodwar->self()->supplyTotal() <= 400); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
                                                  //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
-    bool econ_possible = ((inventory.min_workers_ <= inventory.min_fields_ * 3 || inventory.min_fields_ < 36) && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85)); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+    bool econ_possible = inventory.min_workers_ <= inventory.min_fields_ * 2 && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
     bool vision_possible = true; // no vision cutoff ATM.
     bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio.
     bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
@@ -605,18 +605,19 @@ void MeatAIModule::onFrame()
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 3 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Building_Begin( u, inventory, enemy_inventory ) || Expo( miner.bwapi_unit_, !army_starved || expansion_meaningful, inventory ) ) {
+                if ( Expo( miner.bwapi_unit_, !army_starved || expansion_meaningful, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
                     continue;
                 }
             } // Close Build loop
 
-            // Retarget Expos (disabled by reservation system)
-            //if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
-            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-            //    if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-            //        continue;
-            //    }
-            //}
+            //Retarget Expos (disabled by reservation system)
+            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+                if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+                    continue;
+                }
+            }
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 10 * 24) ) { //if this is your first worker of the frame consider resetting him.
@@ -651,6 +652,22 @@ void MeatAIModule::onFrame()
 
         } // Close Worker management loop
         auto end_worker = std::chrono::high_resolution_clock::now();
+
+        //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
+        auto start_scout = std::chrono::high_resolution_clock::now();
+        if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
+        { //Scout if you're not a drone or larva and can move.
+            Boids boids;
+            bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
+            if ( enemy_found || inventory.start_positions_.empty() ) {
+                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
+            }
+            else {
+                boids.Boids_Movement( u, 2, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+            }
+        } // If it is a combat unit, then use it to attack the enemy.
+        auto end_scout = std::chrono::high_resolution_clock::now();
+
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -803,21 +820,6 @@ void MeatAIModule::onFrame()
             }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
-
-        //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
-        auto start_scout = std::chrono::high_resolution_clock::now();
-        if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
-        { //Scout if you're not a drone or larva and can move.
-            Boids boids;
-            bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            if ( enemy_found || inventory.start_positions_.empty() ) {
-                boids.Boids_Movement( u, 3, friendly_inventory, enemy_inventory, inventory, army_starved );
-            }
-            else{
-                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
-            }
-        } // If it is a combat unit, then use it to attack the enemy.
-        auto end_scout = std::chrono::high_resolution_clock::now();
 
         //Upgrade loop:
         auto start_upgrade = std::chrono::high_resolution_clock::now();
