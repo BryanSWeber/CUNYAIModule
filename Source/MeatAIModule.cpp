@@ -534,7 +534,8 @@ void MeatAIModule::onFrame()
 
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-                    if ( inventory.map_veins_out_[i][j] > 0 ) {
+                    //if ( inventory.map_veins_[i][j] > 175 ) {
+                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 150 ){
                         Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
                     }
                 }

@@ -475,12 +475,12 @@ void Inventory::updateMapVeinsOut() { //in progress.
     int minitile_x, minitile_y, dx, dy, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
     minitile_y = startloc.y;
-    distance_right_x = map_x - minitile_x;
-    distance_below_y = map_y - minitile_y;
-    int t = std::max( map_x + distance_right_x, map_y + distance_below_y );
+    distance_right_x = max(map_x - minitile_x, map_x);
+    distance_below_y = max(map_y - minitile_y, map_y);
+    int t = std::max( map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y );
     int maxI = t*t; // total number of spiral steps we have to make.
     int total_squares_filled = 0;
-    int steps_until_next_turn = 0;
+    int steps_until_next_turn = 1;
     int steps_since_last_turn = 0;
     bool turn_trigger = false;
     int turns_at_this_count = 0;
@@ -490,7 +490,7 @@ void Inventory::updateMapVeinsOut() { //in progress.
     for ( int i = 0; i < maxI; ) {
         if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
 
-            if ( map_veins_out_[minitile_x][minitile_y] == 0 && map_veins_[minitile_x][minitile_y] > 150 ) { // if it is walkable, consider it a canidate for a choke.
+            if ( map_veins_out_[minitile_x][minitile_y] == 0 /*&& map_veins_[minitile_x][minitile_y] > 150*/ ) { // if it is walkable, consider it a canidate for a choke.
                 total_squares_filled++;
                 map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
 
@@ -520,7 +520,6 @@ void Inventory::updateMapVeinsOut() { //in progress.
 
         if ( steps_since_last_turn == steps_until_next_turn ) {
             turn_trigger = true;
-            turns_at_this_count++;
         }
 
         if ( turn_trigger ) {
@@ -541,9 +540,12 @@ void Inventory::updateMapVeinsOut() { //in progress.
                 break;
             }
 
-            if ( turns_at_this_count = 2 ) {
+            if ( turns_at_this_count == 2 ) {
                 steps_until_next_turn++;
                 turns_at_this_count = 0;
+            }
+            else {
+                turns_at_this_count++;
             }
             steps_since_last_turn = 0;
             number_of_turns++;
