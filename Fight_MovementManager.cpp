@@ -103,7 +103,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing())) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }
-                else if ( e->second.type_.mineralPrice() > 1 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva ) {
+                else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva ) {
                     e_priority = 1; // or if they cant fight back we'll get those last.
                 }
                 else {

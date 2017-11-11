@@ -86,7 +86,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             ++res_it;
         }
         else {
-            Broodwar->sendText( "No on is working on a %s any more.", res_it->first.c_str() );
+            Broodwar->sendText( "No one is working on a %s any more.", res_it->first.c_str() );
             UnitType remove_me = res_it->first;
             res_it++;
             removeReserveSystem( remove_me );  // contains an erase.

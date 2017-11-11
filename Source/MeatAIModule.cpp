@@ -659,11 +659,11 @@ void MeatAIModule::onFrame()
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            if ( enemy_found || inventory.start_positions_.empty() ) {
+            if ( (enemy_found || inventory.start_positions_.empty()) && army_derivative > 0 ) {
                 boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
             }
             else {
-                boids.Boids_Movement( u, 5, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 7, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -746,7 +746,7 @@ void MeatAIModule::onFrame()
 //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
 //                                  );
 
-                            bool force_retreat = (u->getType().isFlyer() && (u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Scourge || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying and cannot be practical.
+                            bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
