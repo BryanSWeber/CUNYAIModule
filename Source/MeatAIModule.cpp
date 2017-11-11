@@ -135,6 +135,7 @@ void MeatAIModule::onStart()
     inventory.updateBuildablePos();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
+    inventory.updateMapVeinsOut();
     //inventory.updateMapChokes();
     inventory.updateBaseLoc( neutral_inventory );
     inventory.getStartPositions();
@@ -314,6 +315,7 @@ void MeatAIModule::onFrame()
 
     my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations( friendly_inventory );
+
     bool build_check_this_frame = false;
     bool upgrade_check_this_frame = false;
 
@@ -486,13 +488,13 @@ void MeatAIModule::onFrame()
         //    }
         //} // both of these structures are on the same tile system.
 
-        for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-                if ( inventory.base_values_[i][j] > 1 ) {
-                    Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-                }
-            };
-        } // not that pretty to look at.
+        //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
+        //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
+        //        if ( inventory.base_values_[i][j] > 1 ) {
+        //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
+        //        }
+        //    };
+        //} // not that pretty to look at.
 
         for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
             for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
@@ -526,6 +528,14 @@ void MeatAIModule::onFrame()
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
                         }
+                    }
+                }
+            } // Pretty to look at!
+
+            for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+                    if ( inventory.map_veins_out_[i][j] > 0 ) {
+                        Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
                     }
                 }
             } // Pretty to look at!
@@ -610,11 +620,25 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
-            //Retarget Expos (disabled by reservation system)
+            //Retarget Expos, check for a roadblock.
             if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+
                 my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+
+                //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
+                bool found_a_blocking_mineral = false;
+                //if ( !nearby_minerals.empty() ) {
+                //    for ( auto &r : nearby_minerals ) {
+                //        if ( r->getInitialResources() == 0 ) {
+                //            Worker_Clear( u, friendly_inventory );
+                //            found_a_blocking_mineral = true;
+                //            continue;
+                //        }
+                //    }
+                //}
+                
+                if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
                     continue;
                 }
             }
@@ -628,10 +652,24 @@ void MeatAIModule::onFrame()
                     if ( miner.locked_mine_ ) {
                         continue;
                     }
+                    else {
+                        Worker_Clear( u, friendly_inventory );
+                        if ( miner.locked_mine_ ) {
+                            continue;
+                        }
+                    }
                 }
-                if ( !want_gas ) {
+                else if ( !want_gas ) {
                     Worker_Mine( u, friendly_inventory, low_drone_min );
-                    continue;
+                    if ( miner.locked_mine_ ) {
+                        continue;
+                    }
+                    else {
+                        Worker_Clear( u, friendly_inventory );
+                        if ( miner.locked_mine_ ) {
+                            continue;
+                        }
+                    }
                 }
             }
 
@@ -684,7 +722,7 @@ void MeatAIModule::onFrame()
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
                 int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
                 int apppropriate_cooldown = u->isFlying() ? e_closest->type_.airWeapon().damageCooldown() : e_closest->type_.groundWeapon().damageCooldown();
-                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ; // how far can you get before he shoots?
+                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ? apppropriate_cooldown : 24 ; // how far can you get before he shoots?
 
                 int search_radius = chargable_distance_net + appropriate_range + e_closest->type_.canAttack() ? 96 : 232 ;
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
@@ -693,7 +731,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown + 64);
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown + 96);
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
@@ -1022,7 +1060,7 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 
     //update maps, requires up-to date enemy inventories.
     if ( unit && unit->getType().isBuilding() ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
+        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
     }
 
 }
@@ -1109,7 +1147,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
     }
 
     if ( unit && unit->getType().isBuilding() ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
+        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
     }
 
     if ( unit && unit->getType().isWorker() ) {
@@ -1142,7 +1180,7 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
     buildorder.updateRemainingBuildOrder( unit );
 
     if ( unit && unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory );
+        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
         my_reservation.removeReserveSystem( unit->getType() );
     }
 

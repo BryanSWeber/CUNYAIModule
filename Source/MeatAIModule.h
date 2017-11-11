@@ -9,15 +9,15 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED false
-//#define _RESIGN_MODE false
-//#define _AT_HOME_MODE false
-
-#define _RESIGN_MODE true
-#define _AT_HOME_MODE true
 #define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED true
+#define _COBB_DOUGLASS_REVEALED false
+#define _RESIGN_MODE false
+#define _AT_HOME_MODE false
+
+//#define _RESIGN_MODE true
+//#define _AT_HOME_MODE true
+//#define _ANALYSIS_MODE true
+//#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -177,6 +177,8 @@ public:
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
       //Searches an inventory for buildings. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkBuildingOccupiedArea( const Unit_Inventory & ui, const Position & origin);
+      //Searches an inventory for resources. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+      static bool checkResourceOccupiedArea( const Resource_Inventory & ri, const Position & origin );
       //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist );
 
@@ -210,8 +212,8 @@ public:
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos );
 	  // Returns the actual center of a unit.
-	  static Position MeatAIModule::getUnit_Center(Unit unit);
-  // Genetic History Functions
+	  static Position getUnit_Center(Unit unit);
+        // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);
 

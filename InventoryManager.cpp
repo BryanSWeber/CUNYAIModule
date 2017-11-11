@@ -463,71 +463,115 @@ void Inventory::updateMapVeinsOut() { //in progress.
         vector<int> temp;
         for ( int y = 0; y <= map_y; ++y ) {
             if ( WalkPosition( x, y ) == startloc ) {
-                temp.push_back( 999999999 );
+                temp.push_back( 1 );
             }
             else {
-                temp.push_back( map_veins_[x][y] );  // copy map veins
+                temp.push_back( 0 );  // copy map veins
             }
         }
         map_veins_out_.push_back( temp );
     }
 
-    int minitile_x, minitile_y, dx, dy, dist_to_x_edge, dist_to_y_edge, normalized_x, normalized_y;
+    int minitile_x, minitile_y, dx, dy, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
     minitile_y = startloc.y;
-    dist_to_x_edge = std::max( map_x - minitile_x, minitile_x );
-    dist_to_y_edge = std::max( map_y - minitile_y, minitile_y );
-
-    int t = std::max( map_x + dist_to_x_edge, map_y + dist_to_y_edge );
-
-    dx = dist_to_x_edge < dist_to_y_edge ? -1 : 0;
-    dy = dist_to_x_edge <= dist_to_y_edge ? 0 : -1; // start going towards the emptier direction.
-
+    distance_right_x = map_x - minitile_x;
+    distance_below_y = map_y - minitile_y;
+    int t = std::max( map_x + distance_right_x, map_y + distance_below_y );
     int maxI = t*t; // total number of spiral steps we have to make.
+    int total_squares_filled = 0;
+    int steps_until_next_turn = 0;
+    int steps_since_last_turn = 0;
+    bool turn_trigger = false;
+    int turns_at_this_count = 0;
+    int number_of_turns = 0;
+    int direction = 1;
 
-    for ( int i = 0; i < maxI; i++ ) {
+    for ( int i = 0; i < maxI; ) {
         if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
 
-            if ( map_veins_out_[minitile_x][minitile_y] > 175 ) { // if it is walkable, consider it a canidate for a choke.
-                                                                  //int min_observed = 100000;
-                                                                  //for ( int local_x = -1; local_x <= 1; ++local_x ) {
-                                                                  //    for ( int local_y = -1; local_y <= 1; ++local_y ) {
-                                                                  //        int testing_x = minitile_x + local_x;
-                                                                  //        int testing_y = minitile_y + local_y;
-                                                                  //        if ( !(local_x == 0 && local_y == 0) &&
-                                                                  //            testing_x < map_x &&
-                                                                  //            testing_y < map_y &&
-                                                                  //            testing_x > 0 &&
-                                                                  //            testing_y > 0 ) { // check for being within reference space.
+            if ( map_veins_out_[minitile_x][minitile_y] == 0 && map_veins_[minitile_x][minitile_y] > 150 ) { // if it is walkable, consider it a canidate for a choke.
+                total_squares_filled++;
+                map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
 
-                                                                  //            int temp = map_chokes_[testing_x][testing_y];
-                                                                  //            if ( temp > 0 && temp < min_observed ) {
-                                                                  //                map_chokes_[minitile_x][minitile_y] = temp - 1;
-                                                                  //                min_observed = temp;
-                                                                  //            }
-                                                                  //        }
-                                                                  //    }
-                                                                  //}
-                map_veins_out_[minitile_x][minitile_y] = 99999 - i;
+                ////west
+                //if ( 0 < minitile_x - 1 /*&& map_veins_[minitile_x - 1][minitile_y ] > 175 */ && map_veins_out_[minitile_x - 1][minitile_y] == 0 ) {
+                //    total_squares_filled++;
+                //    map_veins_out_[minitile_x - 1][minitile_y] = total_squares_filled;
+                //}
+                //// east
+                //if ( minitile_x + 1 < map_x /*&& map_veins_[minitile_x + 1][minitile_y] > 175*/ && map_veins_out_[minitile_x + 1][minitile_y] == 0 ) {
+                //    total_squares_filled++;
+                //    map_veins_out_[minitile_x + 1][minitile_y] = total_squares_filled;
+                //}
+
+                ////south
+                //if ( 0 < minitile_y - 1 && /*map_veins_[minitile_x ][minitile_y + 1] > 175 &&*/ map_veins_out_[minitile_x][minitile_y - 1] == 0 ) {
+                //    total_squares_filled++;
+                //    map_veins_out_[minitile_x][minitile_y - 1] = total_squares_filled;
+                //}
+                //// north
+                //if ( minitile_y + 1 < map_y &&/* map_veins_[minitile_x][minitile_y - 1] > 175 &&*/ map_veins_out_[minitile_x][minitile_y + 1] == 0 ) {
+                //    total_squares_filled++;
+                //    map_veins_out_[minitile_x][minitile_y + 1] = total_squares_filled;
+                //}
             }
         }
 
-        normalized_x = minitile_x - startloc.x;
-        normalized_y = minitile_y - startloc.y;
-
-        if ( normalized_x == normalized_y || ((normalized_x < 0) && (normalized_x == -normalized_y)) || ((normalized_x > 0) && (normalized_x == 1 - normalized_y)) ) {
-            t = dx; // using t as a temp.
-            dx = -dy;
-            dy = t;
+        if ( steps_since_last_turn == steps_until_next_turn ) {
+            turn_trigger = true;
+            turns_at_this_count++;
         }
 
-        minitile_x += dx;
-        minitile_y += dy;
-    }
+        if ( turn_trigger ) {
 
+            switch ( direction )
+            {
+            case 1:
+                direction = 4;
+                break;
+            case 2:
+                direction = 1;
+                break;
+            case 3:
+                direction = 2;
+                break;
+            case 4:
+                direction = 3;
+                break;
+            }
+
+            if ( turns_at_this_count = 2 ) {
+                steps_until_next_turn++;
+                turns_at_this_count = 0;
+            }
+            steps_since_last_turn = 0;
+            number_of_turns++;
+            turn_trigger = false;
+        }
+
+        switch ( direction )
+        {
+        case 1:
+            minitile_y--;
+            break;
+        case 2:
+            minitile_x++;
+            break;
+        case 3:
+            minitile_y++;
+            break;
+        case 4:
+            minitile_x--;
+            break;
+        }
+
+        steps_since_last_turn++;
+        i++;
+    }
 }
 
-void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei ) { // in progress.
+void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
     int area_modified = 100 * 8;
@@ -545,7 +589,7 @@ void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &
         for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
             if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
                 Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
-                if ( MeatAIModule::checkBuildingOccupiedArea( ui, pos ) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) ) {
+                if ( MeatAIModule::checkBuildingOccupiedArea( ui, pos ) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) || MeatAIModule::checkResourceOccupiedArea(ri,pos) ) {
                     map_veins_[minitile_x][minitile_y] = 1;
                 }
                 else /*if ( MeatAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {

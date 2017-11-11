@@ -86,7 +86,7 @@ struct Inventory {
     void Inventory::updateMapVeins();
 
     // Updates the visible map arteries. Only checks buildings.
-    void updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei );    
+    void updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );    
     // Updates the chokes on the map.
     void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.

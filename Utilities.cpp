@@ -544,6 +544,19 @@ bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Po
     return false;
 }
 
+//Searches an inventory for buildings of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+bool MeatAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, const Position &origin ) {
+
+    for ( auto & e : ri.resource_inventory_ ) {
+        if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
+            e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown() ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied or nearly so. Checks retangles for performance reasons rather than radius.
 bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist ) {
 
