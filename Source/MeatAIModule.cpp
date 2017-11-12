@@ -109,6 +109,8 @@ void MeatAIModule::onStart()
     econ_starved = true;
     tech_starved = false;
 
+    last_enemy_race = Broodwar->enemy()->getRace();
+
     //Initialize model variables. 
     GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
     if ( _AT_HOME_MODE ) {
@@ -284,6 +286,26 @@ void MeatAIModule::onFrame()
         if ( !erasure_sentinel ) {
             r++;
         }
+    }
+
+    if ( last_enemy_race != Broodwar->enemy()->getRace() ) {
+        //Initialize model variables. 
+        GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
+        if ( _AT_HOME_MODE ) {
+            gene_history = GeneticHistory( ".\\bwapi-data\\write\\output.txt" );
+        }
+
+        delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
+        gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
+
+                                                //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
+        alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
+        alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
+        alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
+        alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+        win_rate = (1 - gene_history.loss_rate_);
+        last_enemy_race = Broodwar->enemy()->getRace();
+        Broodwar->sendText( "WHOA! %s is broken. That's a good random.", last_enemy_race.c_str() );
     }
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.

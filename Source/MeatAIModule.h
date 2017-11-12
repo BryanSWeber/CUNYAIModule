@@ -9,15 +9,15 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED false
-#define _RESIGN_MODE false
-#define _AT_HOME_MODE false
-
-//#define _RESIGN_MODE true
-//#define _AT_HOME_MODE true
 //#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED true
+//#define _COBB_DOUGLASS_REVEALED false
+//#define _RESIGN_MODE false
+//#define _AT_HOME_MODE false
+
+#define _RESIGN_MODE true
+#define _AT_HOME_MODE true
+#define _ANALYSIS_MODE true
+#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -84,6 +84,8 @@ public:
 	char detection_string [50];
 	char upgrade_string [50];
 	char creep_colony_string [50];
+
+    Race last_enemy_race;
 
   int t_build;
 
