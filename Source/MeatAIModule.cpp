@@ -135,7 +135,7 @@ void MeatAIModule::onStart()
     inventory.updateBuildablePos();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
-    inventory.updateMapVeinsOut();
+    inventory.updateMapVeinsOutFromMain( Position(Broodwar->self()->getStartLocation()) );
     //inventory.updateMapChokes();
     inventory.updateBaseLoc( neutral_inventory );
     inventory.getStartPositions();
@@ -535,7 +535,7 @@ void MeatAIModule::onFrame()
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
                     //if ( inventory.map_veins_[i][j] > 175 ) {
-                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 50 ){
+                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ){
                         Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
                     }
                 }
@@ -1047,6 +1047,8 @@ Broodwar->sendText( "Where's the nuke?" );
 
 void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 {
+    bool initially_empty = enemy_inventory.getMeanBuildingLocation() == Position( 0, 0 );
+
     if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
                                                                                              //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit eu = Stored_Unit( unit );
@@ -1062,7 +1064,11 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
     //update maps, requires up-to date enemy inventories.
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
+        if ( initially_empty && enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
+            inventory.updateMapVeinsOutFromFoe( enemy_inventory.getMeanBuildingLocation() );
+        }
     }
+
 
 }
 
@@ -1153,6 +1159,14 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
 
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
+        if ( unit->getPlayer() == Broodwar->self() ) {
+            Position current_home;
+            if ( unit->getClosestUnit( IsOwned && IsResourceDepot ) && unit->getClosestUnit( IsOwned && IsResourceDepot )->exists()) {
+                Position current_home = unit->getClosestUnit( IsOwned && IsResourceDepot )->getPosition();
+                inventory.updateMapVeinsOutFromMain( current_home );
+            }
+
+        }
     }
 
     if ( unit && unit->getType().isWorker() ) {

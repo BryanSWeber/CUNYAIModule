@@ -16,7 +16,9 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
-                int dist_temp = unit->getPosition().getDistance( Position( p ) );
+                WalkPosition wp = WalkPosition( unit->getPosition() );
+                WalkPosition expo_p = WalkPosition( p );
+                int dist_temp = abs(inventory.map_veins_out_[(size_t) wp.x][(size_t)wp.y]-inventory.map_veins_out_[(size_t)expo_p.x][(size_t)expo_p.y]) ;
                 bool safe_expo = !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) || getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
                 if ( dist_temp < dist ) {
                     dist = dist_temp;

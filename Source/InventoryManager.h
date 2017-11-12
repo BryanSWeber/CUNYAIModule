@@ -35,6 +35,7 @@ struct Inventory {
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
     vector< vector<int> > map_veins_out_;
+    vector< vector<int> > map_veins_in_;
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -90,7 +91,9 @@ struct Inventory {
     // Updates the chokes on the map.
     void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
-    void Inventory::updateMapVeinsOut();
+    void Inventory::updateMapVeinsOutFromMain( const Position center );
+    // Updates veins going out of the enemy base for attacking ease.
+    void Inventory::updateMapVeinsOutFromFoe( const Position center );
 
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );

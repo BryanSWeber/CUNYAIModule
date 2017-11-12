@@ -342,6 +342,9 @@ void Building_Gene::getInitialBuildOrder( string s ) {
         else if ( build == "ovi" ) {
             building_gene_.push_back( ovi );
         }
+        else if ( build == "overlord" ) {
+            building_gene_.push_back( ovi );
+        }
         else if ( build == "pool" ) {
             building_gene_.push_back( pool );
         }
