@@ -535,7 +535,7 @@ void MeatAIModule::onFrame()
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
                     //if ( inventory.map_veins_[i][j] > 175 ) {
-                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 150 ){
+                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 50 ){
                         Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
                     }
                 }
@@ -616,7 +616,7 @@ void MeatAIModule::onFrame()
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 3 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved || expansion_meaningful, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
+                if ( Expo( miner.bwapi_unit_, !army_starved && expansion_meaningful, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
                     continue;
                 }
             } // Close Build loop
@@ -1039,7 +1039,7 @@ void MeatAIModule::onNukeDetect( BWAPI::Position target )
     else
     {
         // Otherwise, ask other players where the nuke is!
-        Broodwar->sendText( "Where's the nuke?" );
+Broodwar->sendText( "Where's the nuke?" );
     }
 
     // You can also retrieve all the nuclear missile targets using Broodwar->getNukeDots()!
@@ -1136,10 +1136,14 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
     }
 
     if ( unit && IsMineralField( unit ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        Stored_Unit ru = Stored_Unit( unit );
-        auto found_ptr = neutral_inventory.resource_inventory_.find( unit );
-        if ( found_ptr != neutral_inventory.resource_inventory_.end() ) {
-            enemy_inventory.unit_inventory_.erase( unit );
+        for ( auto potential_miner = friendly_inventory.unit_inventory_.begin(); potential_miner != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); potential_miner++ ) {
+            if ( potential_miner->second.locked_mine_ == unit ) {
+                potential_miner->second.stopMine( neutral_inventory ); // Find that particular worker stored_unit in map using the unit index. Tell him to stop mining
+            }
+        }
+        auto found_mineral_ptr = neutral_inventory.resource_inventory_.find( unit );
+        if ( found_mineral_ptr != neutral_inventory.resource_inventory_.end() ) {
+            neutral_inventory.resource_inventory_.erase( unit ); //Clear that mine from the resource inventory.
             inventory.updateBaseLoc( neutral_inventory );
         }
         else {
