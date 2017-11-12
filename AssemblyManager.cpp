@@ -123,10 +123,10 @@ bool MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, co
         (buildorder.checkBuilding_Desired( unittype ) || (extra_critera && (buildorder.checkEmptyBuildOrder() || unittype == UnitTypes::Zerg_Drone || unittype == UnitTypes::Zerg_Overlord))) )
     {
         larva->morph( unittype );
-        buildorder.setBuilding_Complete( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
+        buildorder.updateRemainingBuildOrder( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
 
         if ( unittype.isTwoUnitsInOneEgg() ) {
-            buildorder.setBuilding_Complete( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
+            buildorder.updateRemainingBuildOrder( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
         }
         return true;
     }

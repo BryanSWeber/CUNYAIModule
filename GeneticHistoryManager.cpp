@@ -41,7 +41,7 @@ GeneticHistory::GeneticHistory( string file ) {
     string build_order_out;
     double build_order_rand = dis( gen );
     if ( build_order_rand <= 0.25 ) {
-        build_order_out = "drone pool drone drone ling ling ling";
+        build_order_out = "drone pool drone drone ling ling ling ling ling ling";
     }
     else if ( build_order_rand <= 0.50  && build_order_rand > 0.25 ) {
         build_order_out = "drone drone drone drone drone overlord pool drone extractor drone drone";
@@ -50,7 +50,7 @@ GeneticHistory::GeneticHistory( string file ) {
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone";
     }
     else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling lair drone drone overlord speed extract spire overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling lair drone drone overlord speed extract spire overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
     }
 
     int win_count = 0;
@@ -237,11 +237,11 @@ GeneticHistory::GeneticHistory( string file ) {
 
             double loss_rate_temp = 1 - (double)win_count / (double)relevant_game_count;
 
-            if ( loss_rate_temp < 0.001 ) {
-                loss_rate_ = 0.001; // Don't set all your parameters to zero on game two if you win game one.
+            if ( loss_rate_temp < 0.01 ) {
+                loss_rate_ = 0.01; // Don't set all your parameters to zero on game two if you win game one.
             }
-            else if ( loss_rate_temp > 0.999 ) {
-                loss_rate_ = 0.999; // Don't set all your parameters to zero on game two if you win game one.
+            else if ( loss_rate_temp > 0.99 ) {
+                loss_rate_ = 0.99; // Don't set all your parameters to zero on game two if you win game one.
             }
             else {
                 loss_rate_ = loss_rate_temp; // Don't set all your parameters to zero on game two if you win game one.
@@ -253,7 +253,7 @@ GeneticHistory::GeneticHistory( string file ) {
         int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
         int mutation_1 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
 
-        double mutation = pow( 1 + loss_rate_ * (dis( gen ) - 0.5) * 0.25, 2 ); // will generate rand double between 0.25 and 1.25.  Times it by loss rate squared.
+        double mutation = pow( 1 + loss_rate_ * (dis( gen ) - 0.5) * 0.25, 2 ); // will generate rand double between 0.25 and 1.25.
 
         delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;
         gamma_out_mutate_ = mutation_0 == 1 ? gamma_out  * mutation : gamma_out;

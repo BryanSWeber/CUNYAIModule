@@ -622,27 +622,27 @@ void MeatAIModule::onFrame()
             } // Close Build loop
 
             //Retarget Expos, check for a roadblock.
-            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+            //if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
 
-                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
-                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+            //    my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
 
-                //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
-                bool found_a_blocking_mineral = false;
-                //if ( !nearby_minerals.empty() ) {
-                //    for ( auto &r : nearby_minerals ) {
-                //        if ( r->getInitialResources() == 0 ) {
-                //            Worker_Clear( u, friendly_inventory );
-                //            found_a_blocking_mineral = true;
-                //            continue;
-                //        }
-                //    }
-                //}
-                
-                if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-                    continue;
-                }
-            }
+            //    //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
+            //    bool found_a_blocking_mineral = false;
+            //    //if ( !nearby_minerals.empty() ) {
+            //    //    for ( auto &r : nearby_minerals ) {
+            //    //        if ( r->getInitialResources() == 0 ) {
+            //    //            Worker_Clear( u, friendly_inventory );
+            //    //            found_a_blocking_mineral = true;
+            //    //            continue;
+            //    //        }
+            //    //    }
+            //    //}
+            //    
+            //    if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+            //        continue;
+            //    }
+            //}
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 10 * 24) ) { //if this is your first worker of the frame consider resetting him.
