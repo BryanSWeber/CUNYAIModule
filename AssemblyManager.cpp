@@ -202,9 +202,6 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ > 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) || gas_starved) &&
         Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
-
-    //MacroHatch Loop
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) + Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) + Count_Units(UnitTypes::Zerg_Hive, friendly_inventory) && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
                                                                                                                                                                                                                                                               //Basic Buildings
     buildings_started += Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 );
@@ -247,6 +244,10 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         buildings_started == 0 &&
         (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
                                                                                                                       //hatches >= 2 ); // and don't build them if you're on one base.
+
+ //MacroHatch Loop
+    int hatch_count = Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Hive, friendly_inventory );
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < hatch_count && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 /*&& !expansion_meaningful*/ ); // only macrohatch if you are short on larvae and being a moron.
 
     return buildings_started > 0;
 
