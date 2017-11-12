@@ -199,7 +199,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     if ( win_count > 0 ) { // redefine final output.  Chance of playing raw as well.
 
-        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
+        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 5 ), win_count );
 
         int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
         int parent_2 = (int)(unif_dist_to_win_count( gen ));
@@ -212,7 +212,7 @@ GeneticHistory::GeneticHistory( string file ) {
         a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
         a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
 
-        build_order_out = linear_combo < 0.5 ? build_order_win[parent_1] : build_order_win[parent_2]; //use the build from which you used more of the history.
+        build_order_out = linear_combo < 0.5 ? build_order_win[parent_2] : build_order_win[parent_1]; //use the build from which you used more of the history.
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
         //int chrom_0 = (rand() % 100 + 1) / 2;
