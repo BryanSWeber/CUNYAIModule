@@ -635,7 +635,7 @@ void MeatAIModule::onFrame()
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-            bool expansion_meaningful = Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ));
+            bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || (inventory.min_fields_ < 8 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory )));
             // Building subloop.
 
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 3 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
@@ -1194,7 +1194,11 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
         if ( unit->getPlayer() == Broodwar->enemy() ) {
             //update maps, requires up-to date enemy inventories.
             if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
-                inventory.updateMapVeinsOutFromFoe( enemy_inventory.getMeanBuildingLocation() );
+                Stored_Unit* center_unit = getClosestStored( enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999 ); // If the mean location is over water, nothing will be updated.
+                if ( center_unit ) {
+                    inventory.updateMapVeinsOutFromFoe(center_unit->pos_);
+                }
+
             }
         }
     }
