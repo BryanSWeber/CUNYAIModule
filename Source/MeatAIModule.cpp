@@ -1089,8 +1089,15 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
     //update maps, requires up-to date enemy inventories.
     if ( unit && unit->getType().isBuilding() ) {
         inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
-        if ( initially_empty && enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
-            inventory.updateMapVeinsOutFromFoe( enemy_inventory.getMeanBuildingLocation() );
+        if ( unit->getPlayer() == Broodwar->enemy() ) {
+            //update maps, requires up-to date enemy inventories.
+            if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
+                Stored_Unit* center_unit = getClosestStored( enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999 ); // If the mean location is over water, nothing will be updated.
+                if ( center_unit ) {
+                    inventory.updateMapVeinsOutFromFoe( center_unit->pos_ );
+                }
+
+            }
         }
     }
 

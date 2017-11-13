@@ -197,7 +197,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
-    bool expansion_meaningful = Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ));
+
     //Gas Buildings
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ > 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) || gas_starved) &&
@@ -242,12 +242,15 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         Count_Units( UnitTypes::Zerg_Creep_Colony, friendly_inventory ) == 0 && // no creep colonies waiting to upgrade
         upgradable_creep_colonies &&
         buildings_started == 0 &&
-        (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
-                                                                                                                      //hatches >= 2 ); // and don't build them if you're on one base.
+        Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && // Only throw down a sunken if you have no larva floating around.
+        (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Spore_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+             //hatches >= 2 ); // and don't build them if you're on one base.
 
  //MacroHatch Loop
-    int hatch_count = Count_Units( UnitTypes::Zerg_Hatchery, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Hive, friendly_inventory );
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < hatch_count && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 /*&& !expansion_meaningful*/ ); // only macrohatch if you are short on larvae and being a moron.
+
+    bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || (inventory.min_fields_ < 8 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory )));
+
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
 
     return buildings_started > 0;
 
