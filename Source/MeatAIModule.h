@@ -141,6 +141,8 @@ public:
 
       //checks if there is a smooth path to target. in minitiles
       static bool isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv );
+      // Same but only checks the map itself.
+      static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const Inventory & inv );
       //counts the number of tiles in a smooth path to target. in minitiles
       static int getClearRayTraceSquares( const Position & initial, const Position & final, const Inventory & inv );
       //gets the nearest choke by simple counting along in the direction of the final unit.

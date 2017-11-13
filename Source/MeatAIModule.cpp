@@ -135,6 +135,7 @@ void MeatAIModule::onStart()
 
     //update Map Grids
     inventory.updateBuildablePos();
+    inventory.updateUnwalkable();
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
     inventory.updateMapVeinsOutFromMain( Position(Broodwar->self()->getStartLocation()) );

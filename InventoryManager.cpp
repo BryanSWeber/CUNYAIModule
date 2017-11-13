@@ -31,6 +31,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateHatcheries( ui );
 
     if ( smoothed_barriers_.size() == 0 ) {
+
         updateSmoothPos();
         int unwalkable_ct = 0;
         for ( vector<int>::size_type i = 0; i != smoothed_barriers_.size(); ++i ) {
@@ -39,6 +40,10 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
             }
         }
         Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
+    }
+
+    if ( unwalkable_barriers_.size() == 0 ) {
+        updateUnwalkable();
     }
 
     if ( ri.resource_inventory_.size() == 0 ) {
@@ -316,6 +321,22 @@ void Inventory::updateBuildablePos()
         buildable_positions_.push_back( temp );
     }
 };
+
+void Inventory::updateUnwalkable() {
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    int choke_score = 0;
+
+    // first, define matrixes to recieve the walkable locations for every minitile.
+    for ( int x = 0; x <= map_x; ++x ) {
+        vector<bool> temp;
+        for ( int y = 0; y <= map_y; ++y ) {
+            temp.push_back( !Broodwar->isWalkable( x, y ) );
+        }
+        unwalkable_barriers_.push_back( temp );
+    }
+
+}
 
 void Inventory::updateSmoothPos() {
     int map_x = Broodwar->mapWidth() * 4;
@@ -944,7 +965,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery ) &&
-                        MeatAIModule::isClearRayTrace( Position( prosepective_location_upper_left ), Position( min_pos_t ), *this ) ) { // if it is 3 away from the resource, and has clear vision to the resource.
+                        MeatAIModule::isMapClearRayTrace( Position( prosepective_location_upper_left ), Position( min_pos_t ), *this )) { // if it is 3 away from the resource, and has clear vision to the resource.
 
                         int local_min = 0;
 

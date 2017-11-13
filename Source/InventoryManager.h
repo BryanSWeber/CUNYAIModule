@@ -32,6 +32,7 @@ struct Inventory {
 	vector<TilePosition> expo_positions_;
 
     vector< vector<bool> > buildable_positions_ ;
+    vector<vector<bool>> unwalkable_barriers_;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
     vector< vector<int> > map_veins_out_;
@@ -81,6 +82,8 @@ struct Inventory {
 
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
     void Inventory::updateBuildablePos();
+    // Updates the unwalkable portions of the map.
+    void Inventory::updateUnwalkable();
     // Marks and smooths the edges of the map.
     void Inventory::updateSmoothPos();
     // Marks the main arteries of the map.
