@@ -311,14 +311,44 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                     attract_dx_ = cos( theta ) * (dist * 0.02 + 64); // run 5% towards them, plus 2 tiles.
                     attract_dy_ = sin( theta ) * (dist * 0.02 + 64);
                 }
-                else { // tilt around it
-                    int dist = unit->getDistance( e->pos_ );
-                    int dist_x = e->pos_.x - pos.x;
-                    int dist_y = e->pos_.y - pos.y;
-                    double theta = atan2( dist_y, dist_x );
-                    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
-                    attract_dx_ = cos( theta + tilt ) * ( 64 ); // shift slightly back
-                    attract_dy_ = sin( theta + tilt ) * ( 64 );
+                //else { // tilt around it
+                //    int dist = unit->getDistance( e->pos_ );
+                //    int dist_x = e->pos_.x - pos.x;
+                //    int dist_y = e->pos_.y - pos.y;
+                //    double theta = atan2( dist_y, dist_x );
+                //    double tilt = rng_direction_ * 0.75 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees away from directly backwards. 
+                //    attract_dx_ = cos( theta + tilt ) * ( 64 ); // shift slightly back
+                //    attract_dy_ = sin( theta + tilt ) * ( 64 );
+                //}
+                else if ( !inv.map_veins_in_.empty() ){
+                    double temp_attract_dx_ = 0;
+                    double temp_attract_dy_ = 0;
+                    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+                    for ( int x = -5; x <= 5; ++x ) {
+                        for ( int y = -5; y <= 5; ++y ) {
+                            int mini_x = WalkPosition( pos ).x;
+                            int mini_y = WalkPosition( pos ).y;
+                            double centralize_x = mini_x + x;
+                            double centralize_y = mini_y + y;
+                            if ( !(x == 0 && y == 0) &&
+                                centralize_x < map_dim.x &&
+                                centralize_y < map_dim.y &&
+                                centralize_x > 0 &&
+                                centralize_y > 0 &&
+                                ( inv.map_veins_in_[centralize_x][centralize_y] < inv.map_veins_in_[mini_x][mini_y] ) )
+                            {
+                                double theta = atan2( y, x );
+                                temp_attract_dx_ += cos( theta );
+                                temp_attract_dy_ += sin( theta );
+                            }
+                        }
+                    }
+                    if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
+                        double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
+                        int distance_metric = abs( temp_attract_dy_ * 8 ) + abs( temp_attract_dx_ * 8 );
+                        attract_dx_ = cos( theta ) * distance_metric * 0.50;
+                        attract_dy_ = sin( theta ) * distance_metric * 0.50;
+                    }
                 }
             }
         }

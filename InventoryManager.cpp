@@ -501,7 +501,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
             // north
             if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp ][minitile_y_temp + 1] = total_squares_filled;
+                map_veins_out_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
             }
             // north east
@@ -531,16 +531,16 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
             // east
             if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp ] = total_squares_filled;
+                map_veins_out_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
             }
             //west
             if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp ] = total_squares_filled;
+                map_veins_out_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
             }
-
+        }
         //for ( int i = 0; i < maxI; ) {
         //    if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
 
@@ -664,7 +664,6 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
         //    steps_since_last_turn++;
         //    i++;
         //}
-    }
 }
 
 void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progress.
@@ -701,58 +700,60 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     vector <WalkPosition> fire_fill_queue;
 
     //begin with a fire fill.
-    if ( map_veins_in_[minitile_x][minitile_y] == 1 /*&& map_veins_[minitile_x][minitile_y] > 175*/ ) { // if it is walkable, consider it a canidate for a choke.
-        total_squares_filled++;
-        map_veins_in_[minitile_x][minitile_y] = total_squares_filled;
-        fire_fill_queue.push_back( { minitile_x, minitile_y } );
+    total_squares_filled++;
+    map_veins_in_[minitile_x][minitile_y] = total_squares_filled;
+    fire_fill_queue.push_back( { minitile_x, minitile_y } );
 
-        int minitile_x_temp = minitile_x;
-        int minitile_y_temp = minitile_y;
+    int minitile_x_temp = minitile_x;
+    int minitile_y_temp = minitile_y;
 
-        while ( !fire_fill_queue.empty() ) { // this portion is a fire fill.
+    while ( !fire_fill_queue.empty() ) { // this portion is a fire fill.
 
+        minitile_x_temp = fire_fill_queue.begin()->x;
+        minitile_y_temp = fire_fill_queue.begin()->y;
+        fire_fill_queue.erase( fire_fill_queue.begin() );
+
+        // north
+        if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            minitile_x_temp = fire_fill_queue.begin()->x;
-            minitile_y_temp = fire_fill_queue.begin()->y;
-            //map_veins_in_[minitile_x_temp][minitile_y_temp] = total_squares_filled;
-            fire_fill_queue.erase( fire_fill_queue.begin() );
-
-            // north
-            if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
-                map_veins_in_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
-            }
-            // north east
-            if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
-                map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
-            }
-            // north west
-            if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
-                map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
-            }
-            //south east
-            if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
-                map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
-            }
-            //south west
-            if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
-                map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
-            }
-            // east
-            if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
-                map_veins_in_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
-            }
-            //west
-            if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
-                map_veins_in_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
-            }
-
+            map_veins_in_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
+        }
+        // north east
+        if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
+        }
+        // north west
+        if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
+        }
+        //south east
+        if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
+        }
+        //south west
+        if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
+        }
+        // east
+        if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
+        }
+        //west
+        if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+            total_squares_filled++;
+            map_veins_in_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+            fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
     }
 }

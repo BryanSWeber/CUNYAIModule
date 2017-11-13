@@ -554,14 +554,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-                    //if ( inventory.map_veins_[i][j] > 175 ) {
-                    if( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ){
-                        Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
+            if ( !inventory.map_veins_in_.empty() ) {
+                for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+                        //if ( inventory.map_veins_[i][j] > 175 ) {
+                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+                        }
                     }
-                }
-            } // Pretty to look at!
+                } // Pretty to look at!
+            }
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -644,27 +646,27 @@ void MeatAIModule::onFrame()
             } // Close Build loop
 
             //Retarget Expos, check for a roadblock.
-            //if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
 
-            //    my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
-            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
 
-            //    //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
-            //    bool found_a_blocking_mineral = false;
-            //    //if ( !nearby_minerals.empty() ) {
-            //    //    for ( auto &r : nearby_minerals ) {
-            //    //        if ( r->getInitialResources() == 0 ) {
-            //    //            Worker_Clear( u, friendly_inventory );
-            //    //            found_a_blocking_mineral = true;
-            //    //            continue;
-            //    //        }
-            //    //    }
-            //    //}
-            //    
-            //    if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-            //        continue;
-            //    }
-            //}
+                //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
+                bool found_a_blocking_mineral = false;
+                //if ( !nearby_minerals.empty() ) {
+                //    for ( auto &r : nearby_minerals ) {
+                //        if ( r->getInitialResources() == 0 ) {
+                //            Worker_Clear( u, friendly_inventory );
+                //            found_a_blocking_mineral = true;
+                //            continue;
+                //        }
+                //    }
+                //}
+                
+                if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+                    continue;
+                }
+            }
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 10 * 24) ) { //if this is your first worker of the frame consider resetting him.
@@ -1187,7 +1189,12 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
                 Position current_home = unit->getClosestUnit( IsOwned && IsResourceDepot )->getPosition();
                 inventory.updateMapVeinsOutFromMain( current_home );
             }
-
+        }
+        if ( unit->getPlayer() == Broodwar->enemy() ) {
+            //update maps, requires up-to date enemy inventories.
+            if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
+                inventory.updateMapVeinsOutFromFoe( enemy_inventory.getMeanBuildingLocation() );
+            }
         }
     }
 
