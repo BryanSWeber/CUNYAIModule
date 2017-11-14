@@ -90,14 +90,18 @@ struct Inventory {
     void Inventory::updateMapVeins();
 
     // Updates the visible map arteries. Only checks buildings.
-    void updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );    
+    void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );    
     // Updates the chokes on the map.
     void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
     void Inventory::updateMapVeinsOutFromMain( const Position center );
     // Updates veins going out of the enemy base for attacking ease.
     void Inventory::updateMapVeinsOutFromFoe( const Position center );
-
+    // Gets distance using
+    int Inventory::getDifferentialDistanceOutFromEnemy( Position A, Position B );
+    int Inventory::getRadialDistanceOutFromEnemy( Position A );
+    int Inventory::getDifferentialDistanceOutFromHome( Position A, Position B );
+    int Inventory::getRadialDistanceOutFromHome( Position A );
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     

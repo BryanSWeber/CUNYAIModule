@@ -478,6 +478,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
+    map_veins_out_.clear();
 
     // first, define matrixes to recieve the smoothed locations for every minitile.
     for ( int x = 0; x <= map_x; ++x ) {
@@ -693,6 +694,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
 
+    map_veins_in_.clear();
     // first, define matrixes to recieve the smoothed locations for every minitile.
     // first, define matrixes to recieve the smoothed locations for every minitile.
     for ( int x = 0; x <= map_x; ++x ) {
@@ -777,6 +779,30 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
     }
+}
+
+int Inventory::getDifferentialDistanceOutFromEnemy( Position A, Position B )
+{
+    WalkPosition wp_a = WalkPosition( A );
+    WalkPosition wp_b = WalkPosition( B );
+    return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
+}
+
+int Inventory::getRadialDistanceOutFromEnemy( Position A){
+    WalkPosition wp_a = WalkPosition( A );
+    return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
+}
+
+int Inventory::getDifferentialDistanceOutFromHome( Position A, Position B )
+{
+    WalkPosition wp_a = WalkPosition( A );
+    WalkPosition wp_b = WalkPosition( B );
+    return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
+}
+int Inventory::getRadialDistanceOutFromHome( Position A )
+{
+    WalkPosition wp_a = WalkPosition( A );
+    return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
 }
 
 void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
@@ -913,6 +939,8 @@ void Inventory::updateMapChokes() {
         }
     }
 }
+
+
 
 
 void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {

@@ -141,14 +141,14 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
 }
 
 // Basic retreat logic, range = enemy range
-void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &ui, const Inventory &inventory, const Color &color = Colors::White ) {
+void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White ) {
 
     int dist = unit->getDistance( e_unit.pos_ );
     int air_range = e_unit.type_.airWeapon().maxRange();
     int ground_range = e_unit.type_.groundWeapon().maxRange();
     int chargable_distance_net = (MeatAIModule::getProperSpeed( unit ) + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
     int range = unit->isFlying() ? air_range : ground_range;
-    if ( dist < range + chargable_distance_net + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
+    if ( dist < range + chargable_distance_net ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Position pos = unit->getPosition();
         Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -165,11 +165,12 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
         int dist_x = e_unit.pos_.x - pos.x;
         int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
-        double retreat_dx = -cos( theta ) * (range + 96 + chargable_distance_net - dist);
-        double retreat_dy = -sin( theta ) * (range + 96 + chargable_distance_net - dist); // get -range- outside of their range.  Should be safe.
+        double retreat_dx = -cos( theta ) * (range + chargable_distance_net - dist);
+        double retreat_dy = -sin( theta ) * (range + chargable_distance_net - dist); // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
+        //setAttraction( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
 
         // The following do NOT apply to flying units: Seperation.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -180,7 +181,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
 
 
           //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_ + retreat_dy) }; //attract is zero when it's not set.
+        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ - attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ - attract_dy_ + centralization_dy_ + retreat_dy) }; //attract is zero when it's not set.
 
         bool walkable_plus = retreat_spot.isValid() &&
             (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
@@ -189,7 +190,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Un
 
         if ( !walkable_plus ) { // if we can't move there for some reason, Push from unwalkability, tilted 1/4 pi, 45 degrees, we'll have to go around the obstruction.
             setObjectAvoid( unit, pos, inventory );
-            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_ + retreat_dy) };
+            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ - attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ - attract_dy_ + centralization_dy_ + retreat_dy) };
             // redefine this to be a walkable one.
         }
 
@@ -324,30 +325,57 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                     double temp_attract_dx_ = 0;
                     double temp_attract_dy_ = 0;
                     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
-                    for ( int x = -5; x <= 5; ++x ) {
-                        for ( int y = -5; y <= 5; ++y ) {
-                            int mini_x = WalkPosition( pos ).x;
-                            int mini_y = WalkPosition( pos ).y;
-                            double centralize_x = mini_x + x;
-                            double centralize_y = mini_y + y;
-                            if ( !(x == 0 && y == 0) &&
-                                centralize_x < map_dim.x &&
-                                centralize_y < map_dim.y &&
-                                centralize_x > 0 &&
-                                centralize_y > 0 &&
-                                ( inv.map_veins_in_[centralize_x][centralize_y] < inv.map_veins_in_[mini_x][mini_y] ) )
-                            {
-                                double theta = atan2( y, x );
-                                temp_attract_dx_ += cos( theta );
-                                temp_attract_dy_ += sin( theta );
+                    int enemy_spot = inv.getRadialDistanceOutFromEnemy( e->pos_ );
+                    int my_spot = inv.getRadialDistanceOutFromEnemy( pos );
+                    if ( enemy_spot < my_spot ) {
+                        for ( int x = -5; x <= 5; ++x ) {
+                            for ( int y = -5; y <= 5; ++y ) {
+                                double centralize_x = WalkPosition( pos ).x + x;
+                                double centralize_y = WalkPosition( pos ).y + y;
+                                if ( !(x == 0 && y == 0) &&
+                                    centralize_x < map_dim.x &&
+                                    centralize_y < map_dim.y &&
+                                    centralize_x > 0 &&
+                                    centralize_y > 0 &&
+                                    inv.map_veins_in_[centralize_x][centralize_y] < my_spot ) // if they are closer to their home than we are, we go to their base.
+                                {
+                                    double theta = atan2( y, x );
+                                    temp_attract_dx_ += cos( theta );
+                                    temp_attract_dy_ += sin( theta );
+                                }
                             }
                         }
-                    }
-                    if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
-                        double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
-                        int distance_metric = abs( temp_attract_dy_ * 8 ) + abs( temp_attract_dx_ * 8 );
-                        attract_dx_ = cos( theta ) * distance_metric * 0.50;
-                        attract_dy_ = sin( theta ) * distance_metric * 0.50;
+                        if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
+                            double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
+                            int distance_metric = inv.getDifferentialDistanceOutFromEnemy( e->pos_, pos );
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64 );
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64 );
+                        }
+                    } else if ( enemy_spot > my_spot ) {
+                        my_spot = inv.getRadialDistanceOutFromHome( pos );
+                        for ( int x = -5; x <= 5; ++x ) {
+                            for ( int y = -5; y <= 5; ++y ) {
+                                double centralize_x = WalkPosition( pos ).x + x;
+                                double centralize_y = WalkPosition( pos ).y + y;
+                                if ( !(x == 0 && y == 0) &&
+                                    centralize_x < map_dim.x &&
+                                    centralize_y < map_dim.y &&
+                                    centralize_x > 0 &&
+                                    centralize_y > 0 &&
+                                    inv.map_veins_out_[centralize_x][centralize_y] < my_spot ) // if they are further away fron their home than we are, we go back to OUR home.
+                                {
+                                    double theta = atan2( y, x );
+                                    temp_attract_dx_ += cos( theta );
+                                    temp_attract_dy_ += sin( theta );
+                                }
+                            }
+                        }
+                        if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
+                            double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
+                            int distance_metric = inv.getDifferentialDistanceOutFromHome( e->pos_, pos );
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64);
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64);
+                        }
                     }
                 }
             }

@@ -856,7 +856,7 @@ void MeatAIModule::onFrame()
                             else if ( is_spelled ) {
                                 Stored_Unit* closest = getClosestThreatOrTargetStored( friendly_inventory, u->getType(), u->getPosition(), 128 );
                                 if ( closest ) {
-                                    boids.Retreat_Logic( u, *closest, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
+                                    boids.Retreat_Logic( u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
                                 }
                             }
                             else if ( drone_problem ) {
@@ -868,7 +868,7 @@ void MeatAIModule::onFrame()
                                 }
                             }
                             else {
-                                boids.Retreat_Logic( u, *e_closest, friendly_inventory, inventory, Colors::White );
+                                boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
                                 //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
                                 //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);

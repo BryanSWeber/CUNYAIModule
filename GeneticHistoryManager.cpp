@@ -199,7 +199,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     if ( win_count > 0 ) { // redefine final output.  Chance of playing raw as well.
 
-        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 5 ), win_count );
+        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
 
         int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
         int parent_2 = (int)(unif_dist_to_win_count( gen ));
