@@ -77,7 +77,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
     //rng_direction_ = dis( gen );
 
     int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
-    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + range_radius;
+    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + range_radius ;
     double limit_units_diving = (log( ei.stock_total_ ) == 0 ? 1 : log( ei.stock_total_ ));
     int max_dist = ei.max_range_ / (double)limit_units_diving + dist;
     int max_dist_no_priority = 9999999;

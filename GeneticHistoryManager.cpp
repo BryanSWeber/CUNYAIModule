@@ -50,7 +50,7 @@ GeneticHistory::GeneticHistory( string file ) {
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone";
     }
     else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling lair drone drone overlord speed extract spire overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling lair drone drone overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
     }
 
     int win_count = 0;
