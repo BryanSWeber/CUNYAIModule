@@ -1121,8 +1121,8 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
                 //	}
                 //}
 
-                for ( int i = -8; i <= 8; i++ ) {
-                    for ( int j = -8; j <= 8; j++ ) {
+                for ( int i = -15; i <= 15; i++ ) {
+                    for ( int j = -15; j <= 15; j++ ) {
                         bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
                         if ( safety_check && base_values_[x][y] < base_values_[x + i][y + j] ) {
                             local_maximum = false;

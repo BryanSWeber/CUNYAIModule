@@ -82,7 +82,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
         }
         else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Extractor ) {
             TilePosition buildPosition = Broodwar->getBuildLocation( building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony );
-            if ( getUnitInventoryInRadius( friendly_inventory, Position( buildPosition ), 256 ).getMeanBuildingLocation() != Position( 0, 0 ) && unit->build( building, buildPosition ) ) {
+            if ( getUnitInventoryInRadius( friendly_inventory, Position( buildPosition ), 500 ).getMeanBuildingLocation() != Position( 0, 0 ) && unit->build( building, buildPosition ) ) {
                 my_reservation.addReserveSystem( building, buildPosition );
                 buildorder.setBuilding_Complete( building );
                 return true;

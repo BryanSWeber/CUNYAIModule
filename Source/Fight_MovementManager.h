@@ -9,7 +9,7 @@ public:
     // Basic retreat logic
     void Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color );
     // Tells the unit to fight. If it can attack both air and ground.
-    void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Color & color );
+    void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Unit_Inventory &ui, const Color & color );
     //Forces a unit to flock in a boids manner. Initial versions merely stuttered in a brownian manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.
     void Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved );
 

@@ -64,7 +64,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 };
 
 // This is basic combat logic for nonspellcasting units.
-void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Color &color = Colors::White )
+void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Unit_Inventory &ui, const Color &color = Colors::White )
 {
     UnitType u_type = unit->getType();
     Stored_Unit target;
@@ -76,9 +76,11 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Co
 
     //rng_direction_ = dis( gen );
 
-    int range_radius = u_type.airWeapon().maxRange() > u_type.groundWeapon().maxRange() ? u_type.airWeapon().maxRange() : u_type.groundWeapon().maxRange();
-    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + range_radius ;
-    double limit_units_diving = (log( ei.stock_total_ ) == 0 ? 1 : log( ei.stock_total_ ));
+    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + ui.max_range_;
+    int helpless_e = unit->isFlying() ? ei.stock_total_ - ei.stock_shoots_up_ : ei.stock_total_ - ei.stock_shoots_down_;
+    int helpful_e = unit->isFlying() ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
+
+    double limit_units_diving = ( helpful_e - ui.stock_total_  <= 1 ? 1 : log( helpful_e - ui.stock_total_ ));
     int max_dist = ei.max_range_ / (double)limit_units_diving + dist;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;

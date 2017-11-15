@@ -272,7 +272,7 @@ void MeatAIModule::onFrame()
             r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
             r->second.valid_pos_ = true;
             r->second.type_ = r->second.bwapi_unit_->getType();
-            r->second.occupied_natural_ = !(r->second.bwapi_unit_->getUnitsInRadius( 250, IsResourceDepot && IsOwned && IsCompleted ).empty()); // is there a resource depot in 250 of it?
+            r->second.occupied_natural_ = !r->second.bwapi_unit_->getUnitsInRadius( 256, IsResourceDepot && IsOwned  ).empty() || !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Lair, r->second.pos_, 256).unit_inventory_.empty() || !getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Hive, r->second.pos_, 256 ).unit_inventory_.empty(); // is there a resource depot in 250 of it?
            //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
         }
 
@@ -638,7 +638,7 @@ void MeatAIModule::onFrame()
             bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || (inventory.min_fields_ < 8 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory )));
             // Building subloop.
 
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 3 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Expo( miner.bwapi_unit_, !army_starved && expansion_meaningful, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
@@ -651,26 +651,14 @@ void MeatAIModule::onFrame()
 
                 my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-
-                //Unitset nearby_minerals = u->getUnitsInRadius( 500, IsMineralField);
-                bool found_a_blocking_mineral = false;
-                //if ( !nearby_minerals.empty() ) {
-                //    for ( auto &r : nearby_minerals ) {
-                //        if ( r->getInitialResources() == 0 ) {
-                //            Worker_Clear( u, friendly_inventory );
-                //            found_a_blocking_mineral = true;
-                //            continue;
-                //        }
-                //    }
-                //}
                 
-                if ( !found_a_blocking_mineral && Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+                if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
                     continue;
                 }
             }
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
-            if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 10 * 24) ) { //if this is your first worker of the frame consider resetting him.
+            if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
@@ -774,10 +762,10 @@ void MeatAIModule::onFrame()
                         int helpful_u = 0; // filled below.
 
                         if ( enemy_inventory.stock_fliers_ > 0 ) {
-                            helpful_u += friend_loc.stock_shoots_up_; // double-counts hydras.
+                            helpful_u += friend_loc.stock_shoots_up_; // double-counts hydras and units that attack both air and ground.
                         }
                         if ( enemy_inventory.stock_ground_units_ > 0 ) {
-                            helpful_u += friend_loc.stock_shoots_down_; // double-counts hydras.
+                            helpful_u += friend_loc.stock_shoots_down_; // double-counts hydras and units that attack both air and ground.
                         }
                         if ( enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0 ) {
                             helpful_u += friend_loc.stock_total_;
@@ -836,7 +824,7 @@ void MeatAIModule::onFrame()
 
                             if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem ) {
 
-                                boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+                                boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
                                                                                       //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
                                                                                       //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
@@ -864,7 +852,7 @@ void MeatAIModule::onFrame()
                                 if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
                                     //friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
-                                    boids.Tactical_Logic( u, enemy_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+                                    boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
                                 }
                             }
                             else {
@@ -879,7 +867,7 @@ void MeatAIModule::onFrame()
                     } // close local examination.
                 }
                 else { // who cares what they have if the override is triggered?
-                    boids.Tactical_Logic( u, enemy_inventory, Colors::Black ); // enemy inventory?
+                    boids.Tactical_Logic( u, enemy_inventory, friendly_inventory, Colors::Black ); // enemy inventory?
                 }
             }
         }
