@@ -25,7 +25,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 return true;
             }
         }
-        else if ( unit->canBuild( building ) &&  building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
+        else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
 
             Unitset base_core = unit->getUnitsInRadius( 1, IsBuilding && IsResourceDepot && IsCompleted ); // don't want undefined crash online 44.
 
@@ -41,7 +41,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
             int furth_x_dist = 0;
             int furth_y_dist = 0;
 
-            if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 && enemy_inventory.stock_fliers_ > 0 ) {
+            if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 && enemy_inventory.stock_fliers_ > 0.75 * friendly_inventory.stock_shoots_up_ ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius( ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500 );
                 Stored_Unit *close_hatch = getClosestStored( hacheries, unit->getPosition(), 500 );
                 if ( close_hatch ) {
@@ -49,50 +49,42 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 }
             }
             else if ( !base_core.empty() ) {
-                int old_dist = 999999;
+                int old_dist = 9999999;
+
                 for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
 
                     TilePosition central_base_new = TilePosition( (*base)->getPosition() );
-                    int new_dist = inventory.getRadialDistanceOutFromHome( (*base)->getPosition() );
+                    int new_dist = inventory.getRadialDistanceOutFromEnemy( (*base)->getPosition() );
                     
-                    //int x_dist = (int)pow( middle.x - central_base_new.x, 2 );
-                    //int y_dist = (int)pow( middle.y - central_base_new.y, 2 );
-
-                    //int new_dist = (int)sqrt( (double)x_dist + (double)y_dist );
-
-                    //int furth_x_dist = (int)pow( middle.x - central_base.x, 2 );
-                    //int furth_y_dist = (int)pow( middle.y - central_base.y, 2 );
-
-                    //int old_dist = (int)sqrt( (double)furth_x_dist + (double)furth_y_dist );
-                    
-                    if ( new_dist <= old_dist && new_dist > 1000 ) {
+                    if ( new_dist <= old_dist && inventory.getRadialDistanceOutFromHome((*base)->getPosition()) > 5000 ) {
                         central_base = central_base_new;
                         old_dist = new_dist;
                     }
                 }
             }
-            int chosen_base_distance = inventory.getRadialDistanceOutFromHome( Position(central_base) );
+
+            int chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position(central_base) );
+            TilePosition final_creep_colony_spot;
             int adj_dx; // move n tiles closer to the center of the map.
             int adj_dy;
-            for ( int x = -5; x <= 5; ++x ) {
-                for ( int y = -5; y <= 5; ++y ) {
-                    double centralize_x = WalkPosition( central_base ).x + x;
-                    double centralize_y = WalkPosition( central_base ).y + y;
+
+            for ( int x = -4; x <= 4; ++x ) {
+                for ( int y = -4; y <= 4; ++y ) {
+                    double centralize_x = central_base.x + x;
+                    double centralize_y = central_base.y + y;
                     if ( !(x == 0 && y == 0) &&
-                        centralize_x < Broodwar->mapWidth() * 8 &&
-                        centralize_y < Broodwar->mapHeight() * 8 &&
+                        centralize_x < Broodwar->mapWidth() &&
+                        centralize_y < Broodwar->mapHeight() &&
                         centralize_x > 0 &&
                         centralize_y > 0 &&
-                        inventory.map_veins_out_[centralize_x][centralize_y] > chosen_base_distance ) // Count all points further from home than we are.
+                        inventory.getRadialDistanceOutFromEnemy( Position(TilePosition(centralize_x, centralize_y)) ) < chosen_base_distance ) // Count all points further from home than we are.
                     {
-                        double theta = atan2( y, x );
-                        adj_dx += cos( theta );
-                        adj_dy += sin( theta );
+                        final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
                     }
                 }
             }
 
-            TilePosition buildPosition = Broodwar->getBuildLocation( building, { central_base.x + adj_dx, central_base.y + adj_dy }, 5 );
+            TilePosition buildPosition = Broodwar->getBuildLocation( building, final_creep_colony_spot, 5 );
             if ( unit->build( building, buildPosition ) ) {
                 my_reservation.addReserveSystem( building , buildPosition);
                 buildorder.setBuilding_Complete( building );
@@ -164,7 +156,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
     bool enough_drones = (Count_Units( UnitTypes::Zerg_Drone, ui ) > inv.min_fields_ * 2 + Count_Units( UnitTypes::Zerg_Extractor, ui ) * 3 + 1) || Count_Units( UnitTypes::Zerg_Drone, ui ) > 85;
-    bool drone_conditional = ( econ_starved || ( Count_Units( UnitTypes::Zerg_Larva, ui ) > Count_Units( UnitTypes::Zerg_Hatchery, ui ) && !army_starved) ) && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
+    bool drone_conditional = ( econ_starved || Count_Units( UnitTypes::Zerg_Larva, ui ) > Count_Units( UnitTypes::Zerg_Hatchery, ui ) ) && !army_starved  && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
 
     is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional );
 
@@ -220,7 +212,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
     //Gas Buildings
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) && gas_starved) &&
-        Count_Units_Doing( UnitTypes::Zerg_Extractor, UnitCommandTypes::Morph, Broodwar->self()->getUnits() ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
+        Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor ) == 0 );  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.
                                                                                                                                                                                                                                                               //Basic Buildings
     buildings_started += Check_N_Build( UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 );
@@ -262,6 +254,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         upgradable_creep_colonies &&
         buildings_started == 0 &&
         Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && // Only throw down a sunken if you have no larva floating around.
+        inv.hatches_ > 1 &&
         (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Spore_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
              //hatches >= 2 ); // and don't build them if you're on one base.
 

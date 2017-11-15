@@ -153,7 +153,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     int ground_range = e_unit.type_.groundWeapon().maxRange();
     int chargable_distance_net = (MeatAIModule::getProperSpeed( unit ) + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
     int range = unit->isFlying() ? air_range : ground_range;
-    if ( dist < range + chargable_distance_net ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
+    if ( dist < range + chargable_distance_net + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Position pos = unit->getPosition();
         Unit_Inventory flock = MeatAIModule::getUnitInventoryInRadius( ui, pos, 352 );
@@ -170,12 +170,12 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         int dist_x = e_unit.pos_.x - pos.x;
         int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
-        double retreat_dx = -cos( theta ) * (range + chargable_distance_net - dist);
-        double retreat_dy = -sin( theta ) * (range + chargable_distance_net - dist); // get -range- outside of their range.  Should be safe.
+        double retreat_dx = -cos( theta ) * (range + chargable_distance_net - dist) ;
+        double retreat_dy = -sin( theta ) * (range + chargable_distance_net - dist) ; // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
-        //setAttraction( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
+        setAttraction( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
 
         // The following do NOT apply to flying units: Seperation.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {

@@ -18,7 +18,8 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getDifferentialDistanceOutFromHome( friendly_inventory.getMeanBuildingLocation(), Position(p) );
                 bool safe_expo = !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) || getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
-                if ( dist_temp < dist ) {
+                bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) || getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) || getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
+                if ( dist_temp < dist && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );
                 }
@@ -31,12 +32,15 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         if ( inv.next_expo_ )
         {
             //clear all obstructions, if any.
-            Unitset obstructions = Broodwar->getUnitsInRadius( Position(inv.next_expo_), 3 * 32 );
-            obstructions.move( { Position( inv.next_expo_ ).x + (rand() % 200 - 100) * 4 * 32, Position( inv.next_expo_ ).y + (rand() % 200 - 100) * 4 * 32 } );
-            obstructions.build( UnitTypes::Zerg_Hatchery, inv.next_expo_ );// I think some thing quirky is happening here. Sometimes gets caught in rebuilding loop.
+            Unit_Inventory obstructions = getUnitInventoryInRadius( friendly_inventory, Position( inv.next_expo_ ), 3 * 32 );
+            for ( auto u = obstructions.unit_inventory_.begin(); u != obstructions.unit_inventory_.end() && !obstructions.unit_inventory_.empty(); u++ ) {
+                if ( u->second.type_ != UnitTypes::Zerg_Drone && u->second.bwapi_unit_ ) {
+                    u->second.bwapi_unit_->move( { Position( inv.next_expo_ ).x + (rand() % 200 - 100) * 4 * 32, Position( inv.next_expo_ ).y + (rand() % 200 - 100) * 4 * 32 } );
+                }
+            }
 
-            Unit_Inventory hatch_builders = getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Drone, Position( inv.next_expo_ ), 99999 );
-            Stored_Unit *best_drone = getClosestStored( hatch_builders, Position( inv.next_expo_ ), 99999 );
+            //Unit_Inventory hatch_builders = getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Drone, Position( inv.next_expo_ ), 99999 );
+            //Stored_Unit *best_drone = getClosestStored( hatch_builders, Position( inv.next_expo_ ), 99999 );
 
             //if ( best_drone && best_drone->bwapi_unit_ ) {
             //    if ( best_drone->bwapi_unit_->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {

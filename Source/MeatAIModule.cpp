@@ -357,7 +357,7 @@ void MeatAIModule::onFrame()
                                                  //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
     bool econ_possible = inventory.min_workers_ <= inventory.min_fields_ * 2 && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
     bool vision_possible = true; // no vision cutoff ATM.
-    bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio.
+    bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ || Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
     bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
 
                                        //Feed alpha values and cuttoff calculations into Cobb Douglas.
@@ -736,7 +736,7 @@ void MeatAIModule::onFrame()
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
                 int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
                 int apppropriate_cooldown = u->isFlying() ? e_closest->type_.airWeapon().damageCooldown() : e_closest->type_.groundWeapon().damageCooldown();
-                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * max( apppropriate_cooldown , 24) ; // how far can you get before he shoots?
+                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ; // how far can you get before he shoots?
 
                 int search_radius = chargable_distance_net + appropriate_range + e_closest->type_.canAttack() ? 128 : 256 ;
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
@@ -787,11 +787,11 @@ void MeatAIModule::onFrame()
                             //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                             bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
-                                inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
+                                //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                                 //friend_loc.max_range_ > enemy_loc.max_range_ && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
-                                (distance_to_foe < 0.5 * enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && enemy_loc.max_range_ > chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.

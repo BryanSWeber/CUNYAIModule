@@ -783,26 +783,34 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
 
 int Inventory::getDifferentialDistanceOutFromEnemy( Position A, Position B )
 {
-    WalkPosition wp_a = WalkPosition( A );
-    WalkPosition wp_b = WalkPosition( B );
-    return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    if ( map_veins_in_.size() > 0 ) {
+        WalkPosition wp_a = WalkPosition( A );
+        WalkPosition wp_b = WalkPosition( B );
+        return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    }
 }
 
 int Inventory::getRadialDistanceOutFromEnemy( Position A){
-    WalkPosition wp_a = WalkPosition( A );
-    return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
+    if ( map_veins_in_.size() > 0 ) {
+        WalkPosition wp_a = WalkPosition( A );
+        return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
+    }
 }
 
 int Inventory::getDifferentialDistanceOutFromHome( Position A, Position B )
 {
-    WalkPosition wp_a = WalkPosition( A );
-    WalkPosition wp_b = WalkPosition( B );
-    return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    if ( map_veins_out_.size() > 0 ) {
+        WalkPosition wp_a = WalkPosition( A );
+        WalkPosition wp_b = WalkPosition( B );
+        return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    }
 }
 int Inventory::getRadialDistanceOutFromHome( Position A )
 {
-    WalkPosition wp_a = WalkPosition( A );
-    return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
+    if ( map_veins_out_.size() > 0 ) {
+        WalkPosition wp_a = WalkPosition( A );
+        return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
+    }
 }
 
 void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
@@ -1086,43 +1094,14 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
         for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {
             if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
 
+                local_maximum = true;
+
                 TilePosition canidate_spot = TilePosition( x + 2, y + 1 ); // from the true center of the object.
                 //int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
                 //int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
-                bool enemy_in_inventory_near_expo = false; // Don't build on enemies!
-                bool found_rdepot = false;
-                bool is_neighboring_region = false;
-
-                Unit_Inventory e_loc = MeatAIModule::getUnitInventoryInRadius( e_inv, Position( canidate_spot ), 500 );
-                e_loc.updateUnitInventorySummary();
-
-                if ( e_loc.stock_shoots_down_ + e_loc.stock_shoots_up_ > 0 ) { //if they have any combat units nearby.
-                    enemy_in_inventory_near_expo = true;
-                }
-
-                Unit_Inventory rdepot = MeatAIModule::getUnitInventoryInRadius( u_inv, Position( canidate_spot ), 500 );
-                for ( const auto &r : rdepot.unit_inventory_ ) {
-                    if ( r.second.type_.isResourceDepot() ) {
-                        found_rdepot = true;
-                    }
-                }
-
-                //Region canidate_region = Broodwar->getRegionAt(Position(canidate_spot));
-                //if (neighbors.contains(canidate_region)){
-                //	is_neighboring_region = true;
-                //}
-                //else {
-                //	int canidate_group = canidate_region->getRegionGroupID();
-                //	for (auto r = neighbors.begin(); r != neighbors.end() && !neighbors.empty(); r++) {
-                //		if ( (*r) && (*r)->getRegionGroupID() == canidate_group) {
-                //			is_neighboring_region = true;
-                //		}
-                //	}
-                //}
-
-                for ( int i = -15; i <= 15; i++ ) {
-                    for ( int j = -15; j <= 15; j++ ) {
+                for ( int i = -12; i <= 12; i++ ) {
+                    for ( int j = -12; j <= 12; j++ ) {
                         bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
                         if ( safety_check && base_values_[x][y] < base_values_[x + i][y + j] ) {
                             local_maximum = false;
@@ -1132,12 +1111,12 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
                 }
 
 
-                bool condition = !enemy_in_inventory_near_expo && !found_rdepot && local_maximum;
+                bool condition = local_maximum;
 
                 if ( condition ) {
                     expo_positions_.push_back( { static_cast<int>(x), static_cast<int>(y) } );
                 }
-                local_maximum = true;
+
             }
 
         } // closure y
