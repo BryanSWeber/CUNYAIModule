@@ -101,7 +101,10 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 if ( critical_target ) {
                     e_priority = 3;
                 }
-                else if ( MeatAIModule::Can_Fight( e->second, unit ) || e_type.spaceProvided() > 0 || (e_type.isSpellcaster() && !e_type.isBuilding()) || e_type == UnitTypes::Protoss_Carrier ||
+                else if ( MeatAIModule::Can_Fight( e->second, unit ) || 
+                    e_type.spaceProvided() > 0 || 
+                    (e_type.isSpellcaster() && !e_type.isBuilding()) || 
+                    e_type == UnitTypes::Protoss_Carrier ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing())) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }

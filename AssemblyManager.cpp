@@ -41,7 +41,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
             int furth_x_dist = 0;
             int furth_y_dist = 0;
 
-            if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 && enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_ ) {
+            if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 && enemy_inventory.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius( ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500 );
                 Stored_Unit *close_hatch = getClosestStored( hacheries, unit->getPosition(), 500 );
                 if ( close_hatch ) {
@@ -49,29 +49,48 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 }
             }
             else if ( !base_core.empty() ) {
-
+                int old_dist = 999999;
                 for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
 
                     TilePosition central_base_new = TilePosition( (*base)->getPosition() );
+                    int new_dist = inventory.getRadialDistanceOutFromHome( (*base)->getPosition() );
+                    
+                    //int x_dist = (int)pow( middle.x - central_base_new.x, 2 );
+                    //int y_dist = (int)pow( middle.y - central_base_new.y, 2 );
 
-                    int x_dist = (int)pow( middle.x - central_base_new.x, 2 );
-                    int y_dist = (int)pow( middle.y - central_base_new.y, 2 );
+                    //int new_dist = (int)sqrt( (double)x_dist + (double)y_dist );
 
-                    int new_dist = (int)sqrt( (double)x_dist + (double)y_dist );
+                    //int furth_x_dist = (int)pow( middle.x - central_base.x, 2 );
+                    //int furth_y_dist = (int)pow( middle.y - central_base.y, 2 );
 
-                    int furth_x_dist = (int)pow( middle.x - central_base.x, 2 );
-                    int furth_y_dist = (int)pow( middle.y - central_base.y, 2 );
-
-                    int old_dist = (int)sqrt( (double)furth_x_dist + (double)furth_y_dist );
-
-                    if ( new_dist <= old_dist ) {
+                    //int old_dist = (int)sqrt( (double)furth_x_dist + (double)furth_y_dist );
+                    
+                    if ( new_dist <= old_dist && new_dist > 1000 ) {
                         central_base = central_base_new;
+                        old_dist = new_dist;
                     }
                 }
             }
-            double theta = atan2( middle.y - central_base.y, middle.x - central_base.x );
-            int adj_dx = (int)(cos( theta ) * 4); // move n tiles closer to the center of the map.
-            int adj_dy = (int)(sin( theta ) * 4);
+            int chosen_base_distance = inventory.getRadialDistanceOutFromHome( Position(central_base) );
+            int adj_dx; // move n tiles closer to the center of the map.
+            int adj_dy;
+            for ( int x = -5; x <= 5; ++x ) {
+                for ( int y = -5; y <= 5; ++y ) {
+                    double centralize_x = WalkPosition( central_base ).x + x;
+                    double centralize_y = WalkPosition( central_base ).y + y;
+                    if ( !(x == 0 && y == 0) &&
+                        centralize_x < Broodwar->mapWidth() * 8 &&
+                        centralize_y < Broodwar->mapHeight() * 8 &&
+                        centralize_x > 0 &&
+                        centralize_y > 0 &&
+                        inventory.map_veins_out_[centralize_x][centralize_y] > chosen_base_distance ) // Count all points further from home than we are.
+                    {
+                        double theta = atan2( y, x );
+                        adj_dx += cos( theta );
+                        adj_dy += sin( theta );
+                    }
+                }
+            }
 
             TilePosition buildPosition = Broodwar->getBuildLocation( building, { central_base.x + adj_dx, central_base.y + adj_dy }, 5 );
             if ( unit->build( building, buildPosition ) ) {
