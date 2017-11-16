@@ -7,8 +7,8 @@ library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 out <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", col_names = FALSE))
 # out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
 
-names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name", "build_order")
-# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_vis","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name")
+names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
+names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
 
 # out<-rbind(out, out_2)
 # out<-out[!duplicated(out),]

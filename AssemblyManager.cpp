@@ -158,8 +158,6 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
     bool enough_drones = (Count_Units( UnitTypes::Zerg_Drone, ui ) > inv.min_fields_ * 2 + Count_Units( UnitTypes::Zerg_Extractor, ui ) * 3 + 1) || Count_Units( UnitTypes::Zerg_Drone, ui ) > 85;
     bool drone_conditional = ( econ_starved || Count_Units( UnitTypes::Zerg_Larva, ui ) > Count_Units( UnitTypes::Zerg_Hatchery, ui ) ) && !army_starved  && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
 
-    is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional );
-
     //Army build/replenish.  Cycle through military units available.
     if ( army_starved && is_building == 0 ) {
         if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
@@ -199,6 +197,8 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
         is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         is_building += Check_N_Grow( UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) > 0 );
     }
+
+    is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional );
 
     return is_building > 0;
 
@@ -260,7 +260,7 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 
  //MacroHatch Loop
 
-    bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || (inventory.min_fields_ < 8 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory )));
+    bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8;
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
 

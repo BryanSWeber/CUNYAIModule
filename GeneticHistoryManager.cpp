@@ -74,14 +74,15 @@ GeneticHistory::GeneticHistory( string file ) {
     vector<int> mdelay_in;
     vector<int> ldelay_in;
     vector<string> name_in;
+    vector<string> map_name_in;
     vector<string> build_order_in;
 
     vector<double> delta_win;
     vector<double> gamma_win;
     vector<double> a_army_win;
-    vector<double> a_vis_win;
     vector<double> a_econ_win;
     vector<double> a_tech_win;
+    vector<string> map_name_win;
     vector<string> build_order_win;
 
     loss_rate_ = 1;
@@ -110,8 +111,6 @@ GeneticHistory::GeneticHistory( string file ) {
         getline( input, entry, ',' );
         a_army_in.push_back( stod( entry ) );
         getline( input, entry, ',' );
-        a_vis_in.push_back( stod( entry ) );
-        getline( input, entry, ',' );
         a_econ_in.push_back( stod( entry ) );
         getline( input, entry, ',' );
         a_tech_in.push_back( stod( entry ) );
@@ -131,6 +130,8 @@ GeneticHistory::GeneticHistory( string file ) {
 
         getline( input, entry, ',' );
         name_in.push_back( entry );
+        getline( input, entry, ',' );
+        map_name_in.push_back( entry );
         getline( input, entry ); //diff. End of line char, not ','
         build_order_in.push_back( entry );
 
@@ -139,62 +140,78 @@ GeneticHistory::GeneticHistory( string file ) {
 
     string e_name = Broodwar->enemy()->getName().c_str();
     string e_race = Broodwar->enemy()->getRace().c_str();
+    string map_name = Broodwar->mapName().c_str();
 
     for ( int j = 0; j < csv_length; ++j ) {
         //count wins.
-        if ( win_in[j] == 1 && race_in[j] == e_race && name_in[j] == e_name ) {
+        if ( win_in[j] == 1 && race_in[j] == e_race && name_in[j] == e_name && map_name_in[j] == map_name) {
             delta_win.push_back( delta_in[j] );
             gamma_win.push_back( gamma_in[j] );
             a_army_win.push_back( a_army_in[j] );
-            a_vis_win.push_back( a_vis_in[j] );
             a_econ_win.push_back( a_econ_in[j] );
             a_tech_win.push_back( a_tech_in[j] );
             build_order_win.push_back( build_order_in[j] );
             win_count++;
         }
-        if ( race_in[j] == e_race && name_in[j] == e_name ) {
+        if ( race_in[j] == e_race && name_in[j] == e_name && map_name_in[j] == map_name ) {
             relevant_game_count++;
         }
     } // either by opponent name.
-
-    //if ( win_count == 0 || (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race.
-    //    relevant_game_count = 0;
-    //    win_count = 0;
-    //    for ( int j = 0; j < csv_length; ++j ) {
-    //        if ( win_in[j] == 1 && race_in[j] == e_race ) {
-    //            delta_win.push_back( delta_in[j] );
-    //            gamma_win.push_back( gamma_in[j] );
-    //            a_army_win.push_back( a_army_in[j] );
-    //            a_vis_win.push_back( a_vis_in[j] );
-    //            a_econ_win.push_back( a_econ_in[j] );
-    //            a_tech_win.push_back( a_tech_in[j] );
-    //            build_order_win.push_back( build_order_in[j] );
-    //            win_count++;
-    //        }
-    //        if ( race_in[j] == e_race ) {
-    //            relevant_game_count++;
-    //        }
-    //    } //or by race only
-    //}
-
     if ( win_count == 0 && e_race == "Unknown" ) {
         relevant_game_count = 0;
         win_count = 0;
         for ( int j = 0; j < csv_length; ++j ) {
-            if ( win_in[j] == 1 && name_in[j] == e_name ) {
+            if ( win_in[j] == 1 && name_in[j] == e_name && map_name_in[j] == map_name ) {
                 delta_win.push_back( delta_in[j] );
                 gamma_win.push_back( gamma_in[j] );
                 a_army_win.push_back( a_army_in[j] );
-                a_vis_win.push_back( a_vis_in[j] );
                 a_econ_win.push_back( a_econ_in[j] );
                 a_tech_win.push_back( a_tech_in[j] );
                 build_order_win.push_back( build_order_in[j] );
                 win_count++;
             }
-            if ( name_in[j] == e_name ) {
+            if ( name_in[j] == e_name && map_name_in[j] == map_name ) {
                 relevant_game_count++;
             }
         } //or by name only (eg, random)
+    }
+
+    if ( win_count == 0 && e_race == "Unknown" ) {
+        relevant_game_count = 0;
+        win_count = 0;
+        for ( int j = 0; j < csv_length; ++j ) {
+            if ( win_in[j] == 1 && (name_in[j] == e_name || map_name_in[j] == map_name) ) {
+                delta_win.push_back( delta_in[j] );
+                gamma_win.push_back( gamma_in[j] );
+                a_army_win.push_back( a_army_in[j] );
+                a_econ_win.push_back( a_econ_in[j] );
+                a_tech_win.push_back( a_tech_in[j] );
+                build_order_win.push_back( build_order_in[j] );
+                win_count++;
+            }
+            if ( name_in[j] == e_name || map_name_in[j] == map_name ) {
+                relevant_game_count++;
+            }
+        } //or wide hunt by name/map only
+    }
+
+    if ( win_count == 0 && (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race, map, or opponent name.
+        relevant_game_count = 0;
+        win_count = 0;
+        for ( int j = 0; j < csv_length; ++j ) {
+            if ( win_in[j] == 1 && (race_in[j] == e_race || name_in[j] == e_name || map_name_in[j] == map_name) ) {
+                delta_win.push_back( delta_in[j] );
+                gamma_win.push_back( gamma_in[j] );
+                a_army_win.push_back( a_army_in[j] );
+                a_econ_win.push_back( a_econ_in[j] );
+                a_tech_win.push_back( a_tech_in[j] );
+                build_order_win.push_back( build_order_in[j] );
+                win_count++;
+            }
+            if ( race_in[j] == e_race || name_in[j] == e_name || map_name_in[j] == map_name ) {
+                relevant_game_count++;
+            }
+        } //or widest hunt possible.
     }
 
     if ( win_count > 0 ) { // redefine final output.  Chance of playing raw as well.
@@ -208,7 +225,6 @@ GeneticHistory::GeneticHistory( string file ) {
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
         gamma_out = linear_combo * gamma_win[parent_1] + (1 - linear_combo) * gamma_win[parent_2];
         a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
-        a_vis_out = linear_combo * a_vis_win[parent_1] + (1 - linear_combo) * a_vis_win[parent_2];
         a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
         a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
 

@@ -161,7 +161,7 @@ void MeatAIModule::onEnd( bool isWinner )
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     //output << "delta (gas)" << "," << "gamma (supply)" << ',' << "alpha_army" << ',' << "alpha_vis" << ',' << "alpha_econ" << ',' << "alpha_tech" << ',' << "Race" << "," << "Won" << "Seed" << endl;
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_vis << ',' << alpha_econ << ',' << alpha_tech << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << buildorder.initial_building_gene_ << endl;
+    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 }
 
@@ -555,16 +555,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            if ( !inventory.map_veins_in_.empty() ) {
-                for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-                        //if ( inventory.map_veins_[i][j] > 175 ) {
-                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-                        }
-                    }
-                } // Pretty to look at!
-            }
+            //if ( !inventory.map_veins_in_.empty() ) {
+            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+            //            //if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+            //            }
+            //        }
+            //    } // Pretty to look at!
+            //}
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -635,13 +635,13 @@ void MeatAIModule::onFrame()
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-            bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || (inventory.min_fields_ < 8 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory )));
+            bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_;
             // Building subloop.
 
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved && expansion_meaningful, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
+                if ( Expo( miner.bwapi_unit_, !army_starved && expansion_meaningful_or_larvae_starved, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
                     continue;
                 }
             } // Close Build loop
