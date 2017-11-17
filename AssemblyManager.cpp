@@ -214,7 +214,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
             is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         }
         else if ( ei.stock_ground_units_ * 0.75 > ui.stock_total_ /*|| ei.stock_ground_units_/ei.volume_ <= ui.stock_ground_units_/ui.volume_*/ ){
-            if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && buildorder.checkEmptyBuildOrder() ) {
+            if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && buildorder.checkEmptyBuildOrder() ) {
                 buildorder.building_gene_.push_back( Build_Order_Object( TechTypes::Lurker_Aspect ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Lurker Upgrade" );
             }
