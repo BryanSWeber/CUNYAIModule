@@ -320,6 +320,9 @@ void MeatAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
             another_sort_of_upgrade++;
         }
     }
+    if ( Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect )) {
+        Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: 1", TechTypes::Lurker_Aspect.c_str(), 1 );  //
+    }
 }
 
 // Announces to player the name and type of all buildings in the reservation system. Bland but practical.

@@ -18,13 +18,20 @@ public:
     Build_Order_Object( UnitType unit ) {
         _unit_in_queue = unit;
         _upgrade_in_queue = UpgradeTypes::None;
+        _research_in_queue = TechTypes::None;
     };
 
     Build_Order_Object( UpgradeType up ) {
         _unit_in_queue = UnitTypes::None;
         _upgrade_in_queue = up;
+        _research_in_queue = TechTypes::None;
     };
 
+    Build_Order_Object( TechType tech ) {
+        _unit_in_queue = UnitTypes::None;
+        _upgrade_in_queue = UpgradeTypes::None;
+        _research_in_queue = tech;
+    };
     UnitType Build_Order_Object::getUnit() {
             return _unit_in_queue;
     };

@@ -33,7 +33,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
         setCentralize( pos, inventory );
     } // closure: flyers
 
-    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() ) {
+    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
         unit->unburrow();
         return;
     }
@@ -140,18 +140,33 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) < unit->getType().groundWeapon().maxRange() ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
+                return;
+            }
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+                unit->unburrow();
+                return;
+            }
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+                unit->move( target.pos_ );
+                return;
             }
             unit->attack( target.bwapi_unit_ );
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+                unit->burrow();
+                return;
+            }else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+                unit->unburrow();
+                return;
+            }
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
+                return;
             }
-            else {
                 unit->attack( target.pos_ );
-            }
         }
         MeatAIModule::Diagnostic_Line( unit->getPosition(), target.pos_, color );
     }
@@ -197,7 +212,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setCentralize( pos, inventory );
         } // closure: flyers
 
-        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() ) {
+        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
             unit->unburrow();
             return;
         }

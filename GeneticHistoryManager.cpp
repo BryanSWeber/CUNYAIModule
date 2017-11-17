@@ -271,7 +271,7 @@ GeneticHistory::GeneticHistory( string file ) {
         int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
         int mutation_1 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
 
-        double mutation = pow( 1 + loss_rate_ * (dis( gen ) - 0.5) * 0.25, 2 ); // will generate rand double between 0.25 and 1.25.
+        double mutation = pow( 1 + loss_rate_ * (dis( gen ) - 0.5) * 0.05, 2 ); // will generate rand double between 0.05 and 1.05.
 
         delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;
         gamma_out_mutate_ = mutation_0 == 1 ? gamma_out  * mutation : gamma_out;
