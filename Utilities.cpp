@@ -51,6 +51,8 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
+                         (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
+                         (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                           u_type == UnitCommandTypes::None ||
 						  u_type == UnitCommandTypes::Unknown;
 

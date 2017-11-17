@@ -212,7 +212,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setCentralize( pos, inventory );
         } // closure: flyers
 
-        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
             unit->unburrow();
             return;
         }
