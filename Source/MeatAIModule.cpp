@@ -555,16 +555,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            //if ( !inventory.map_veins_in_.empty() ) {
-            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-            //            //if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-            //            }
-            //        }
-            //    } // Pretty to look at!
-            //}
+            if ( !inventory.map_veins_in_.empty() ) {
+                for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+                        //if ( inventory.map_veins_[i][j] > 175 ) {
+                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+                        }
+                    }
+                } // Pretty to look at!
+            }
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -635,13 +635,13 @@ void MeatAIModule::onFrame()
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-            bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_;
+
             // Building subloop.
 
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                if ( Expo( miner.bwapi_unit_, !army_starved && expansion_meaningful_or_larvae_starved, inventory ) || Building_Begin( u, inventory, enemy_inventory ) ) {
+                if ( Building_Begin( u, inventory, enemy_inventory ) ) {
                     continue;
                 }
             } // Close Build loop
@@ -780,17 +780,18 @@ void MeatAIModule::onFrame()
 
                         if ( e_closest->valid_pos_ ) {  // only attacks VISIBLE units. This should probably be fixed.
 
-                            //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
-                            //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
-                            //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
-                            //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
+                            double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
+                            double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
+                            double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
+                            double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                             //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                             bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                //friend_loc.max_range_ > enemy_loc.max_range_ && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u  || // trying to do something with these surface areas.
+                                (!IsFightingUnit(e_closest->bwapi_unit_) && 32 > enemy_loc.max_range_) ||
+                                ((friend_loc.max_range_ > enemy_loc.max_range_ || 32 > enemy_loc.max_range_) && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
                                 (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && enemy_loc.max_range_ > chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
@@ -802,7 +803,7 @@ void MeatAIModule::onFrame()
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-                                //friend_loc.max_range_ < enemy_loc.max_range_ && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
+                                //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
                                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.

@@ -68,8 +68,8 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
             int adj_dx; // move n tiles closer to the center of the map.
             int adj_dy;
 
-            for ( int x = -4; x <= 4; ++x ) {
-                for ( int y = -4; y <= 4; ++y ) {
+            for ( int x = -5; x <= 5; ++x ) {
+                for ( int y = -5; y <= 5; ++y ) {
                     double centralize_x = central_base.x + x;
                     double centralize_y = central_base.y + y;
                     if ( !(x == 0 && y == 0) &&
@@ -77,9 +77,10 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                         centralize_y < Broodwar->mapHeight() &&
                         centralize_x > 0 &&
                         centralize_y > 0 &&
-                        inventory.getRadialDistanceOutFromEnemy( Position(TilePosition(centralize_x, centralize_y)) ) < chosen_base_distance ) // Count all points further from home than we are.
+                        inventory.getRadialDistanceOutFromEnemy( Position(TilePosition(centralize_x, centralize_y)) ) <= chosen_base_distance ) // Count all points further from home than we are.
                     {
                         final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
+                        chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) );
                     }
                 }
             }
@@ -150,11 +151,16 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 {
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     int is_building = 0;
+
     //Supply blocked protection 
     is_building += Check_N_Grow( UnitTypes::Zerg_Overlord, larva, supply_starved );
 
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
+    bool wasting_larva_soon = false;
+    if ( larva->getHatchery() ) {
+        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 && larva->getHatchery()->getLarva().size() == 3;
+    }
     bool enough_drones = (Count_Units( UnitTypes::Zerg_Drone, ui ) > inv.min_fields_ * 2 + Count_Units( UnitTypes::Zerg_Extractor, ui ) * 3 + 1) || Count_Units( UnitTypes::Zerg_Drone, ui ) > 85;
     bool drone_conditional = ( econ_starved || Count_Units( UnitTypes::Zerg_Larva, ui ) > Count_Units( UnitTypes::Zerg_Hatchery, ui ) ) && !army_starved  && !enough_drones; // or it is early game and you have nothing to build. // if you're eco starved
 
@@ -198,7 +204,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
         is_building += Check_N_Grow( UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) > 0 );
     }
 
-    is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional );
+    is_building += Check_N_Grow( larva->getType().getRace().getWorker(), larva, drone_conditional || (wasting_larva_soon && !enough_drones) );
 
     return is_building > 0;
 
@@ -208,6 +214,7 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
+    bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_;
 
     //Gas Buildings
 
@@ -258,11 +265,10 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units( UnitTypes::Zerg_Sunken_Colony, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Spore_Colony, friendly_inventory ) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
              //hatches >= 2 ); // and don't build them if you're on one base.
 
- //MacroHatch Loop
+    buildings_started += Expo( drone, !army_starved && expansion_meaningful_or_larvae_starved, inventory );
+    //MacroHatch Loop
 
-    bool expansion_meaningful = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8;
-
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 && !expansion_meaningful ); // only macrohatch if you are short on larvae and being a moron.
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 ); // only macrohatch if you are short on larvae and being a moron.
 
     return buildings_started > 0;
 
