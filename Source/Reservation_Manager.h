@@ -24,6 +24,7 @@ struct Reservation {
     void Reservation::decrementReserveTimer();
 
     bool Reservation::checkAffordablePurchase( const UnitType type );
+    bool Reservation::checkAffordablePurchase( const TechType type );
     bool Reservation::checkAffordablePurchase( const UpgradeType type );
 
     void Reservation::confirmOngoingReservations( const Unit_Inventory &ui);

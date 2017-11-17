@@ -9,15 +9,15 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED false
-#define _RESIGN_MODE false
-#define _AT_HOME_MODE false
-
-//#define _RESIGN_MODE true
-//#define _AT_HOME_MODE true
 //#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED true
+//#define _COBB_DOUGLASS_REVEALED false
+//#define _RESIGN_MODE false
+//#define _AT_HOME_MODE false
+
+#define _RESIGN_MODE true
+#define _AT_HOME_MODE true
+#define _ANALYSIS_MODE true
+#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -97,7 +97,9 @@ public:
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-      bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );  
+      bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );
+      // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
+      bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.

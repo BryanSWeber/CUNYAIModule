@@ -127,6 +127,20 @@ bool MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, co
     return false;
 }
 
+bool MeatAIModule::Check_N_Research( const TechType &tech, const Unit &unit, const bool &extra_critera )
+{
+    if ( unit->canResearch( tech ) &&
+        my_reservation.checkAffordablePurchase( tech ) &&
+        (buildorder.checkResearch_Desired( tech ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
+        if ( unit->research( tech ) ) {
+            buildorder.updateRemainingBuildOrder( tech );
+            Broodwar->sendText( "Researching %s. Let's hope it finishes!", tech.c_str() );
+            return true;
+        }
+    }
+    return false;
+}
+
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
 bool MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera )
 {
@@ -168,8 +182,8 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
     if ( army_starved && is_building == 0 ) {
         if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
             is_building += Check_N_Grow( UnitTypes::Zerg_Scourge, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 && Count_Units( UnitTypes::Zerg_Scourge, ui ) < 5 ); // hard cap on scourges, they build 2 at a time. 
-            is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved &&is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
-
+            is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
+        
             if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, ui ) == 0 && buildorder.checkEmptyBuildOrder() ) {
                 buildorder.building_gene_.push_back( Build_Order_Object( UnitTypes::Zerg_Evolution_Chamber ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Evo Chamber" );
@@ -196,10 +210,13 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
             is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
         }
         else if ( ei.stock_total_ - ei.stock_shoots_down_ > 0.75 * ei.stock_total_ ) {
+            is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
             is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         }
+
         is_building += Check_N_Grow( UnitTypes::Zerg_Ultralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) > 0 ); // catchall ground units.
         is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
+        is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
         is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         is_building += Check_N_Grow( UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) > 0 );
     }
@@ -216,10 +233,10 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
     int buildings_started = 0;
     bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_;
     bool larva_empty = Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0;
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && army_starved && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 ); // only macrohatch if you are short on larvae and being a moron.
 
     buildings_started += Expo( drone, buildings_started == 0 && expansion_meaningful_or_larvae_starved, inventory );
 
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && army_starved && Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inv.hatches_ && Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hatchery ) == 0 ); // only macrohatch if you are short on larvae and being a moron.
     //Gas Buildings
 
     buildings_started += Check_N_Build( UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor )) && gas_starved) &&
@@ -297,6 +314,14 @@ void Building_Gene::updateRemainingBuildOrder( const UpgradeType &ups ) {
     }
 }
 
+void Building_Gene::updateRemainingBuildOrder( const TechType &research ) {
+    if ( !building_gene_.empty() ) {
+        if ( building_gene_.front().getResearch() == research ) {
+            building_gene_.erase( building_gene_.begin() );
+        }
+    }
+}
+
 void Building_Gene::setBuilding_Complete( UnitType ut ) {
     if ( ut.isBuilding() && ut.whatBuilds().first == UnitTypes::Zerg_Drone ) {
         last_build_order = ut;
@@ -321,6 +346,11 @@ bool Building_Gene::checkBuilding_Desired( UnitType ut ) {
 bool Building_Gene::checkUpgrade_Desired( UpgradeType upgrade ) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
+}
+
+bool Building_Gene::checkResearch_Desired( TechType research ) {
+    // A building is not wanted at that moment if we have active builders or the timer is nonzero.
+    return !building_gene_.empty() && building_gene_.front().getResearch() == research;
 }
 
 bool Building_Gene::checkEmptyBuildOrder() {

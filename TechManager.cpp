@@ -51,6 +51,20 @@ bool MeatAIModule::Tech_Avail() {
                 }
             }
         } // if condition
+        else if ( u->getType().isBuilding() && !u->isUpgrading() && !u->isMorphing() ) { // check idle buildings for potential upgrades.
+            for ( int i = 0; i != 1; i++ )
+            { // iterating through the main researches we have available and MeatAI "knows" about. 
+                int known_techs[1] = { 32 }; // Identifies zerg upgrades of that we have initialized at this time. See UpgradeType definition for references, listed below for conveinence.
+                TechType tech_current = (TechType)known_techs[i];
+                TechType::set building_tech_set = u->getType().researchesWhat(); // does this idle building make that upgrade?
+                if ( building_tech_set.find( tech_current ) != building_tech_set.end() ) {
+                    bool tech_incomplete = Broodwar->self()->hasResearched( tech_current );
+                    if ( tech_incomplete ) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do.
+                        return true;
+                    }
+                }
+            }
+        } // if condition
     }// for every unit
 
     return false;
@@ -69,6 +83,9 @@ bool MeatAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui) {
     busy += Check_N_Upgrade( UpgradeTypes::Muscular_Augments, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 ) );
 
     busy += Check_N_Upgrade( UpgradeTypes::Pneumatized_Carapace, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) );
+
+    //lurkers!
+    busy += Check_N_Research( TechTypes::Lurker_Aspect, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) && Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) > 0 );
 
     busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Attacks, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));
     busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Carapace, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));

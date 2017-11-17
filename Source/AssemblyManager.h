@@ -11,6 +11,7 @@ private:
 
     UnitType _unit_in_queue;
     UpgradeType _upgrade_in_queue;
+    TechType _research_in_queue;
 
 public:
 
@@ -31,6 +32,10 @@ public:
     UpgradeType Build_Order_Object::getUpgrade() {
             return _upgrade_in_queue;
     };
+
+    TechType Build_Order_Object::getResearch() {
+        return _research_in_queue;
+    };
 };
 
 struct Building_Gene {
@@ -46,11 +51,13 @@ struct Building_Gene {
     void getInitialBuildOrder(string s);
     void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
     void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
+    void updateRemainingBuildOrder( const TechType & research );// drops item from list as complete.
 	void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
     void clearRemainingBuildOrder(); // empties the build order.
     void setBuilding_Complete( UnitType ut );  // do we have a guy going to build it?
     bool checkBuilding_Desired( UnitType ut ); 
     bool checkUpgrade_Desired( UpgradeType upgrade );
+    bool checkResearch_Desired( TechType upgrade );
     bool checkEmptyBuildOrder();
 };
 

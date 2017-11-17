@@ -555,16 +555,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            if ( !inventory.map_veins_in_.empty() ) {
-                for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-                        //if ( inventory.map_veins_[i][j] > 175 ) {
-                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-                        }
-                    }
-                } // Pretty to look at!
-            }
+            //if ( !inventory.map_veins_in_.empty() ) {
+            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+            //            //if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+            //            }
+            //        }
+            //    } // Pretty to look at!
+            //}
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -621,7 +621,7 @@ void MeatAIModule::onFrame()
         // Finally make the unit do some stuff!
         // Unit creation & Hatchery management loop
         auto start_larva = std::chrono::high_resolution_clock::now();
-        if ( u->getType() == UnitTypes::Zerg_Larva ) // A resource depot is a Command Center, Nexus, or Hatchery.
+        if ( u->getType() == UnitTypes::Zerg_Larva || (u->getType() == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() ) ) // A resource depot is a Command Center, Nexus, or Hatchery.
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
             Reactive_Build( u, inventory, friendly_inventory, enemy_inventory );
@@ -707,7 +707,7 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && u->canMove() )
+        if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) )
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
@@ -715,7 +715,7 @@ void MeatAIModule::onFrame()
                 boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved );
             }
             else {
-                boids.Boids_Movement( u, 7, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 12, friendly_inventory, enemy_inventory, inventory, army_starved ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
