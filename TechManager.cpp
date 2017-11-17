@@ -59,35 +59,35 @@ bool MeatAIModule::Tech_Avail() {
 bool MeatAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui) {
     int busy = 0;
 
-    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Carapace, building, tech_starved );
+    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Carapace, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) );
 
-    busy += Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, building, tech_starved && ( Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Missile_Attacks ) == 3 ) );
-    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Melee_Attacks, building, tech_starved && ( Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Missile_Attacks ) == 3 ) );
+    busy += Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && ( Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Missile_Attacks ) == 3 ) );
+    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Melee_Attacks, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && ( Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Missile_Attacks ) == 3 ) );
 
-    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Missile_Attacks, building, tech_starved && (Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
-    busy += Check_N_Upgrade( UpgradeTypes::Grooved_Spines, building, tech_starved && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
-    busy += Check_N_Upgrade( UpgradeTypes::Muscular_Augments, building, tech_starved && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 ) );
+    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Missile_Attacks, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
+    busy += Check_N_Upgrade( UpgradeTypes::Grooved_Spines, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
+    busy += Check_N_Upgrade( UpgradeTypes::Muscular_Augments, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 ) );
 
-    busy += Check_N_Upgrade( UpgradeTypes::Pneumatized_Carapace, building, tech_starved && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) );
+    busy += Check_N_Upgrade( UpgradeTypes::Pneumatized_Carapace, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) );
 
-    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Attacks, building, tech_starved && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));
-    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Carapace, building, tech_starved && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));
+    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Attacks, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));
+    busy += Check_N_Upgrade( UpgradeTypes::Zerg_Flyer_Carapace, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Carapace ) == 3 ));
 
-    busy += Check_N_Upgrade( UpgradeTypes::Adrenal_Glands, building, tech_starved && Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0 );
-    busy += Check_N_Upgrade( UpgradeTypes::Anabolic_Synthesis, building, tech_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0 );
-    busy += Check_N_Upgrade( UpgradeTypes::Chitinous_Plating, building, tech_starved && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0 );
+    busy += Check_N_Upgrade( UpgradeTypes::Adrenal_Glands, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0 );
+    busy += Check_N_Upgrade( UpgradeTypes::Anabolic_Synthesis, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0 );
+    busy += Check_N_Upgrade( UpgradeTypes::Chitinous_Plating, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0 );
 
-    busy += Check_N_Build( UnitTypes::Zerg_Lair, building, ui, tech_starved &&
+    busy += Check_N_Build( UnitTypes::Zerg_Lair, building, ui, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) &&
         Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) + Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Lair ) == 0 && //don't need lair if we have a lair
         Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) + Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Hive ) == 0 && //don't need lair if we have a hive.
         building->getType() == UnitTypes::Zerg_Hatchery );
 
-    busy += Check_N_Build( UnitTypes::Zerg_Hive, building, ui, tech_starved &&
+    busy += Check_N_Build( UnitTypes::Zerg_Hive, building, ui, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) &&
         Count_Units( UnitTypes::Zerg_Queens_Nest, friendly_inventory ) >= 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
         Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) == 0 ); //If you're tech-starved at this point, don't make random hives.
 
-    busy += Check_N_Upgrade( UpgradeTypes::Antennae, building, tech_starved && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) ); //don't need lair if we have a hive. This upgrade is terrible, thus last.
+    busy += Check_N_Upgrade( UpgradeTypes::Antennae, building, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && (Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) > 0 || Count_Units( UnitTypes::Zerg_Hive, friendly_inventory ) > 0) ); //don't need lair if we have a hive. This upgrade is terrible, thus last.
     
     return busy > 0;
 }

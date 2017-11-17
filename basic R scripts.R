@@ -7,8 +7,8 @@ library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 out <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", col_names = FALSE))
 # out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
 
-names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
-names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
+names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
+# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
 
 # out<-rbind(out, out_2)
 # out<-out[!duplicated(out),]
@@ -23,6 +23,7 @@ names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tec
 #(out$shortct>=321 | out$Winner==1) -> out$Winner
 out$race_win <- factor( paste ( out$Winner, out$Race , sep= " " ))
 out$race_opp <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
+out$race_map <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
 
 #out<-subset(out,out$Winner==1)
 
@@ -45,9 +46,12 @@ out$race_opp <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
 # ks.test( c(out$alpha_tech[out$Winner==1]), c(out$alpha_tech[out$Winner==0]) )
 # 
  histogram( ~ out$Winner | out$`Race`, xlab="Win % of Bot vs each Race")
- histogram( ~ out$Winner | out$`opponent_name`, xlab="Win % of Bot vs each NAME")
- histogram( ~ out$Winner | out$`race_opp`, xlab="Win % of Bot vs each Race")
+ # histogram( ~ out$Winner | out$`opponent_name`, xlab="Win % of Bot vs each NAME")
+ # histogram( ~ out$Winner | out$`race_opp`, xlab="Win % of Bot vs each Race")
  histogram( ~ out$Winner | out$`build_order`, xlab="Win % of Bot vs each Opening")
+ histogram( ~ out$Winner | out$`map`, xlab="Win % of Bot vs each Map")
+ histogram( ~ out$Winner | out$`race_map`, xlab="Win % of Bot vs each Map")
+
  
  table(out$opponent_name,out$Winner)
  
