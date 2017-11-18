@@ -206,6 +206,26 @@ void Unit_Inventory::updateUnitInventorySummary() {
 //Stored_Unit functions.
 Stored_Unit::Stored_Unit() = default;
 
+//returns a steryotypical unit only.
+Stored_Unit::Stored_Unit( const UnitType &unittype ) {
+    valid_pos_ = false;
+    type_ = unittype;
+
+    //Get unit's status. Precalculated, precached.
+    int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+    modified_supply =unittype == UnitTypes::Terran_Barracks ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost =unittype == UnitTypes::Terran_Barracks ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
+    int modified_gas_cost =unittype.gasPrice();
+
+    stock_value_ = (int)sqrt( pow( modified_min_cost, 2 ) + pow( 1.25 * modified_gas_cost, 2 ) + pow( 25 * modified_supply, 2 ) );
+
+    if (unittype.isTwoUnitsInOneEgg() ) {
+        stock_value_ = stock_value_ / 2;
+    }
+
+    current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
+
+};
 // We must be able to create Stored_Unit objects as well.
 Stored_Unit::Stored_Unit( Unit unit ) {
     valid_pos_ = true;

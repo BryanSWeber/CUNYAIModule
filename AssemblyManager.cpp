@@ -210,11 +210,10 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
             is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
         }
         else if ( ei.stock_total_ - ei.stock_shoots_down_ > 0.75 * ei.stock_total_ ) {
-            is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
             is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         }
-        else if ( ei.stock_ground_units_ * 0.75 > ui.stock_total_ /*|| ei.stock_ground_units_/ei.volume_ <= ui.stock_ground_units_/ui.volume_*/ ){
-            if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && buildorder.checkEmptyBuildOrder() ) {
+        else if ( ei.stock_ground_units_ * 0.75 > ei.stock_total_ && ei.stock_ground_units_/(double)ei.volume_ <= Stored_Unit(UnitTypes::Zerg_Hydralisk).current_stock_value_/(double)(Stored_Unit( UnitTypes::Zerg_Hydralisk ).type_.height()* Stored_Unit( UnitTypes::Zerg_Hydralisk ).type_.width() )){
+            if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && buildorder.checkEmptyBuildOrder() ) {
                 buildorder.building_gene_.push_back( Build_Order_Object( TechTypes::Lurker_Aspect ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Lurker Upgrade" );
             }
@@ -385,6 +384,9 @@ void Building_Gene::getInitialBuildOrder( string s ) {
     Build_Order_Object lair = Build_Order_Object( UnitTypes::Zerg_Lair );
     Build_Order_Object spire = Build_Order_Object( UnitTypes::Zerg_Spire );
     Build_Order_Object muta = Build_Order_Object( UnitTypes::Zerg_Mutalisk );
+    Build_Order_Object hydra = Build_Order_Object( UnitTypes::Zerg_Hydralisk );
+    Build_Order_Object lurker = Build_Order_Object( UnitTypes::Zerg_Lurker );
+    Build_Order_Object hydra_den = Build_Order_Object( UnitTypes::Zerg_Hydralisk_Den );
     Build_Order_Object lurker_tech = Build_Order_Object( TechTypes::Lurker_Aspect );
 
     for ( auto &build : build_string ) {
@@ -429,6 +431,12 @@ void Building_Gene::getInitialBuildOrder( string s ) {
         }
         else if ( build == "lurker_tech" ) {
             building_gene_.push_back( lurker_tech );
+        }
+        else if ( build == "hydra" ) {
+            building_gene_.push_back( hydra );
+        }
+        else if ( build == "lurker" ) {
+            building_gene_.push_back( lurker );
         }
     }
 }

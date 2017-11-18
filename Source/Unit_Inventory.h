@@ -12,6 +12,8 @@ using namespace BWAPI;
 
 struct Stored_Unit {
 
+    //Creates a steryotyped ideal of the unit. For comparisons.
+    Stored_Unit( const UnitType &unittype );
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( Unit unit );
     Stored_Unit();

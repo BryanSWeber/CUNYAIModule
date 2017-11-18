@@ -40,14 +40,17 @@ GeneticHistory::GeneticHistory( string file ) {
 
     string build_order_out;
     double build_order_rand = dis( gen );
-    if ( build_order_rand <= 0.25 ) {
+    if ( build_order_rand <= 0.20 ) {
         build_order_out = "drone pool drone drone ling ling ling ling ling ling";
     }
-    else if ( build_order_rand <= 0.50  && build_order_rand > 0.25 ) {
+    else if ( build_order_rand <= 0.40  && build_order_rand > 0.20 ) {
         build_order_out = "drone drone drone drone drone overlord pool drone extractor drone drone";
     }
-    else if ( build_order_rand <= 0.75  && build_order_rand > 0.50 ){
+    else if ( build_order_rand <= 0.60  && build_order_rand > 0.40 ){
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone";
+    }
+    else if ( build_order_rand <= 0.80  && build_order_rand > 0.60 ) {
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone hydra_den drone drone drone drone drone extract drone lurker_tech overlord overlord drone drone drone hydra hydra hydra lurker lurker lurker";
     }
     else {
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
