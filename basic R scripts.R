@@ -22,8 +22,9 @@ names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech"
  
 #(out$shortct>=321 | out$Winner==1) -> out$Winner
 out$race_win <- factor( paste ( out$Winner, out$Race , sep= " " ))
-out$race_opp <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
-out$race_map <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
+out$race_opp <- factor( paste ( out$Race, abbreviate(out$opponent_name) , sep= " " ))
+out$race_map <- factor( paste ( out$map, out$Race , sep= " " ))
+out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= " " ))
 
 #out<-subset(out,out$Winner==1)
 
@@ -48,10 +49,12 @@ out$race_map <- factor( paste ( out$Race, out$opponent_name , sep= " " ))
  histogram( ~ out$Winner | out$`Race`, xlab="Win % of Bot vs each Race")
  # histogram( ~ out$Winner | out$`opponent_name`, xlab="Win % of Bot vs each NAME")
  # histogram( ~ out$Winner | out$`race_opp`, xlab="Win % of Bot vs each Race")
- histogram( ~ out$Winner | out$`build_order`, xlab="Win % of Bot vs each Opening")
+ histogram( ~ out$Winner | abbreviate(out$`build_order`), xlab="Win % of Bot vs each Opening")
  histogram( ~ out$Winner | out$`map`, xlab="Win % of Bot vs each Map")
- histogram( ~ out$Winner | out$`race_map`, xlab="Win % of Bot vs each Map")
+ histogram( ~ out$Winner | abbreviate(out$`race_map`), xlab="Win % of Bot vs each Map")
 
+ table(out$race_build, out$Winner)
+ table(out$race_map, out$Winner)
  
  table(out$opponent_name,out$Winner)
  
@@ -100,7 +103,7 @@ for(i in seq(0,360,30)){
             )
 } #[out$Winner==1] , [out$Winner==0], or none
 
-corrgram(out[out$Winner==1,c(1:3, 5:6)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+corrgram(out[out$Winner==1,c(1:6, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
 plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
 econ<-c(1,1000)
 army<-c(1,1000)

@@ -22,7 +22,10 @@ public:
     void setCentralize( const Position &pos, const Inventory &inventory );
     void setStutter( const Unit &unit, const double &n );
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
+    // towards enemy or enemy base.
     void setAttraction( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved );
+    // from enemy or towards home.
+    void setAttractionHome( const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv, const bool & army_starved );
     void setSeperation( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );

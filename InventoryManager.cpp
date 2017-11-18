@@ -961,14 +961,15 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
     int search_field = 8;
 
     // first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( (int)Broodwar->isBuildable( x, y ) ); // explicit converion.
+    if ( base_values_.empty() ) {
+        for ( int x = 0; x <= map_x; ++x ) {
+            vector<int> temp;
+            for ( int y = 0; y <= map_y; ++y ) {
+                temp.push_back( (int)Broodwar->isBuildable( x, y ) ); // explicit converion.
+            }
+            base_values_.push_back( temp );
         }
-        base_values_.push_back( temp );
     }
-
 
     for ( auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p ) { // search for closest resource group. They are our potential expos.
 
@@ -1000,7 +1001,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
-                        Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery ) &&
+                        Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
                         MeatAIModule::isMapClearRayTrace( Position( prosepective_location_upper_left ), Position( min_pos_t ), *this )) { // if it is 3 away from the resource, and has clear vision to the resource.
 
                         int local_min = 0;

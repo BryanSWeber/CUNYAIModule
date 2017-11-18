@@ -1171,7 +1171,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
         auto found_mineral_ptr = neutral_inventory.resource_inventory_.find( unit );
         if ( found_mineral_ptr != neutral_inventory.resource_inventory_.end() ) {
             neutral_inventory.resource_inventory_.erase( unit ); //Clear that mine from the resource inventory.
-            inventory.updateBaseLoc( neutral_inventory );
+            //inventory.updateBaseLoc( neutral_inventory );
         }
         else {
             //then nothing.

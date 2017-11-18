@@ -155,14 +155,14 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
             unit->attack( target.bwapi_unit_ );
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
-            }else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            }else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->unburrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
                 return;
             }
@@ -203,7 +203,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
-        setAttraction( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
+        setAttractionHome( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
 
         // The following do NOT apply to flying units: Seperation.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -212,13 +212,16 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setCentralize( pos, inventory );
         } // closure: flyers
 
-        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && !e_unit.type_.isFlyer() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+        if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && !MeatAIModule::Can_Fight(unit, e_unit) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
             unit->unburrow();
             return;
         }
-
+        else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isDetected() && MeatAIModule::Can_Fight( unit, e_unit ) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            unit->burrow();
+            return;
+        }
           //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ - attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ - attract_dy_ + centralization_dy_ + retreat_dy) }; //attract is zero when it's not set.
+        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy) }; //attract is zero when it's not set.
 
         bool walkable_plus = retreat_spot.isValid() &&
             (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
@@ -227,13 +230,16 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         if ( !walkable_plus ) { // if we can't move there for some reason, Push from unwalkability, tilted 1/4 pi, 45 degrees, we'll have to go around the obstruction.
             setObjectAvoid( unit, pos, inventory );
-            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ - attract_dx_ + centralization_dx_ + retreat_dx), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ - attract_dy_ + centralization_dy_ + retreat_dy) };
+            retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_), (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_) };
             // redefine this to be a walkable one.
         }
 
         if ( retreat_spot && retreat_spot.isValid() ) {
             unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
             MeatAIModule::Diagnostic_Line( pos, retreat_spot, color );
+        }
+        else {
+            unit->attack( retreat_spot );
         }
     }
     else if ( unit->isAttacking() && !unit->isAttackFrame() ) {
@@ -340,7 +346,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
 
             Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
 
-            if ( e && e->pos_ ) {
+            if ( e && e->pos_ && e->pos_.getDistance(pos) > ei.max_range_ + 96 ) {
                 if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
                     int dist = unit->getDistance( e->pos_ );
                     int dist_x = e->pos_.x - pos.x;
@@ -429,6 +435,91 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
             attract_dx_ = cos( theta ) * dist; // run 100% towards them.
             attract_dy_ = sin( theta ) * dist;
             inv.start_positions_.erase( inv.start_positions_.begin() + randomIndex );
+        }
+    }
+}
+
+//Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
+void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved ) {
+
+    bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
+    bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
+    bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ );
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Position( 0, 0 ) || inv.start_positions_.empty();
+
+    int dist = 999999;
+    bool visible_unit_found = false;
+    if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
+
+        Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+
+        if ( e && e->pos_ ) {
+            if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
+                int dist = unit->getDistance( e->pos_ );
+                int dist_x = e->pos_.x - pos.x;
+                int dist_y = e->pos_.y - pos.y;
+                double theta = atan2( dist_y, dist_x );
+                attract_dx_ = - cos( theta ) * (dist * 0.02 + 64); // pull 2% away from them, plus 2 tiles.
+                attract_dy_ = - sin( theta ) * (dist * 0.02 + 64);
+            }
+            else if ( !inv.map_veins_out_.empty() ) {
+                double temp_attract_dx_ = 0;
+                double temp_attract_dy_ = 0;
+                WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+                int enemy_spot = inv.getRadialDistanceOutFromHome( e->pos_ );
+                int my_spot = inv.getRadialDistanceOutFromHome( pos );
+                if ( enemy_spot > my_spot ) {
+                    for ( int x = -5; x <= 5; ++x ) {
+                        for ( int y = -5; y <= 5; ++y ) {
+                            double centralize_x = WalkPosition( pos ).x + x;
+                            double centralize_y = WalkPosition( pos ).y + y;
+                            if ( !(x == 0 && y == 0) &&
+                                centralize_x < map_dim.x &&
+                                centralize_y < map_dim.y &&
+                                centralize_x > 0 &&
+                                centralize_y > 0 &&
+                                inv.map_veins_out_[centralize_x][centralize_y] < my_spot ) // go directly home to our base if they are outside of us.
+                            {
+                                double theta = atan2( y, x );
+                                temp_attract_dx_ += cos( theta );
+                                temp_attract_dy_ += sin( theta );
+                            }
+                        }
+                    }
+                    if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
+                        double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
+                        int distance_metric = inv.getDifferentialDistanceOutFromHome( e->pos_, pos );
+                        attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64);
+                        attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64);
+                    }
+                }
+                else if ( enemy_spot < my_spot && !inv.map_veins_in_.empty() ) {
+                    my_spot = inv.getRadialDistanceOutFromEnemy( pos );
+                    for ( int x = -5; x <= 5; ++x ) {
+                        for ( int y = -5; y <= 5; ++y ) {
+                            double centralize_x = WalkPosition( pos ).x + x;
+                            double centralize_y = WalkPosition( pos ).y + y;
+                            if ( !(x == 0 && y == 0) &&
+                                centralize_x < map_dim.x &&
+                                centralize_y < map_dim.y &&
+                                centralize_x > 0 &&
+                                centralize_y > 0 &&
+                                inv.map_veins_in_[centralize_x][centralize_y] < my_spot ) // if they are between us and our home, we counter into their home instead.
+                            {
+                                double theta = atan2( y, x );
+                                temp_attract_dx_ += cos( theta );
+                                temp_attract_dy_ += sin( theta );
+                            }
+                        }
+                    }
+                    if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
+                        double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
+                        int distance_metric = inv.getDifferentialDistanceOutFromEnemy( e->pos_, pos );
+                        attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64);
+                        attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64);
+                    }
+                }
+            }
         }
     }
 }
