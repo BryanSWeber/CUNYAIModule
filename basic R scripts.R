@@ -25,6 +25,7 @@ out$race_win <- factor( paste ( out$Winner, out$Race , sep= " " ))
 out$race_opp <- factor( paste ( out$Race, abbreviate(out$opponent_name) , sep= " " ))
 out$race_map <- factor( paste ( out$map, out$Race , sep= " " ))
 out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= " " ))
+out$race_build <- factor( paste ( abbreviate(out$build_order), out$map , sep= " " ))
 
 #out<-subset(out,out$Winner==1)
 
@@ -55,7 +56,6 @@ out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= "
 
  table(out$race_build, out$Winner)
  table(out$race_map, out$Winner)
- 
  table(out$opponent_name,out$Winner)
  
 # summary(out)

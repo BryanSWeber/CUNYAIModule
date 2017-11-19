@@ -638,7 +638,7 @@ void MeatAIModule::onFrame()
 
             // Building subloop.
 
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && miner.bwapi_unit_->getLastCommand().getTargetTilePosition() != inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Building_Begin( u, inventory, enemy_inventory ) ) {
@@ -647,7 +647,7 @@ void MeatAIModule::onFrame()
             } // Close Build loop
 
             //Retarget Expos, check for a roadblock.
-            if ( miner.bwapi_unit_->getLastCommand().getTargetPosition() == Position(inventory.next_expo_) && my_reservation.last_builder_sent_ < t_game - 24 ) {
+            if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 ) {
 
                 my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
@@ -812,12 +812,6 @@ void MeatAIModule::onFrame()
                                 Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
                                 Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
 
-                            if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack() ) || (only_workers && enemy_loc.unit_inventory_.size() > 2) ) ) {
-                                buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
-                                if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
-                                    buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.
-                                }
-                            }
 
                             bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
 
@@ -859,9 +853,17 @@ void MeatAIModule::onFrame()
                             else {
                                 boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
-                                //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
-                                //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
-                                //}
+                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2)) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone) ) {
+                                    if ( u->getType() == UnitTypes::Zerg_Overlord ) {
+                                        //see unit destruction case. We will replace this overlord, likely a foolish scout.
+                                    }
+                                    else {
+                                        buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
+                                        if ( Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 ) {
+                                            buildorder.updateRemainingBuildOrder( UnitTypes::Zerg_Spawning_Pool ); // Neutralize the build order if something other than a worker scout is happening.
+                                        }
+                                    }
+                                }
 
                             }
                         }
@@ -1176,6 +1178,9 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
         else {
             //then nothing.
         }
+    }
+    if ( !buildorder.ever_clear_ && unit->getType() == UnitTypes::Zerg_Overlord ) {
+        buildorder.building_gene_.insert( buildorder.building_gene_.begin(), Build_Order_Object( UnitTypes::Zerg_Overlord ) );
     }
 
     if ( unit && unit->getType().isBuilding() ) {

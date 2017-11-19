@@ -80,7 +80,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
         bool keep = false;
 
         for ( auto unit_it = ui.unit_inventory_.begin(); unit_it != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); unit_it++ ) {
-            if ( res_it->second == TilePosition( unit_it->second.bwapi_unit_->getLastCommand().getTargetPosition() ) ) {
+            if ( res_it->second == unit_it->second.bwapi_unit_->getLastCommand().getTargetTilePosition() ) {
                 keep = true;
             }
         } // check if we have a unit building it.

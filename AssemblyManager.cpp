@@ -10,7 +10,7 @@ using namespace std;
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations.
 bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera )
 {
-    if ( my_reservation.checkAffordablePurchase( building ) && (buildorder.checkBuilding_Desired( building ) || ( extra_critera && buildorder.checkEmptyBuildOrder() )) ) {
+    if ( my_reservation.checkAffordablePurchase( building ) && (buildorder.checkBuilding_Desired( building ) || ( extra_critera && buildorder.checkEmptyBuildOrder() ) ) ) {
 
         if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
             my_reservation.removeReserveSystem( unit->getBuildType() );
@@ -122,9 +122,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
 bool MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera )
 {
-    if ( unit->canUpgrade( ups ) &&
-        my_reservation.checkAffordablePurchase( ups ) &&
-        (buildorder.checkUpgrade_Desired( ups ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
+    if ( unit->canUpgrade( ups ) && my_reservation.checkAffordablePurchase( ups ) && (buildorder.checkUpgrade_Desired( ups ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
         if ( unit->upgrade( ups ) ) {
             buildorder.updateRemainingBuildOrder( ups );
             Broodwar->sendText( "Upgrading %s. Let's hope it finishes!", ups.c_str() );
@@ -151,9 +149,7 @@ bool MeatAIModule::Check_N_Research( const TechType &tech, const Unit &unit, con
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
 bool MeatAIModule::Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera )
 {
-    if ( larva->canMorph( unittype ) &&
-         my_reservation.checkAffordablePurchase( unittype ) &&
-        (buildorder.checkBuilding_Desired( unittype ) || (extra_critera && (buildorder.checkEmptyBuildOrder() || unittype == UnitTypes::Zerg_Drone || unittype == UnitTypes::Zerg_Overlord))) )
+    if ( larva->canMorph( unittype ) && my_reservation.checkAffordablePurchase( unittype ) && (buildorder.checkBuilding_Desired( unittype ) || (extra_critera && buildorder.checkEmptyBuildOrder()) ) )
     {
         larva->morph( unittype );
         buildorder.updateRemainingBuildOrder( unittype ); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
@@ -213,16 +209,24 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
             is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
         }
         else if ( ei.stock_total_ - ei.stock_shoots_up_ > 0.25 * ei.stock_total_ ) {
+
+            if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) == 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching( TechTypes::Lurker_Aspect ) && buildorder.checkEmptyBuildOrder() ) {
+                buildorder.building_gene_.push_back( Build_Order_Object( UnitTypes::Zerg_Spire ) ); // force in a hydralisk den if they have Air.
+                Broodwar->sendText( "Reactionary Spire" );
+            }
+
             is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
         }
         else if ( ei.stock_total_ - ei.stock_shoots_down_ > 0.75 * ei.stock_total_ ) {
             is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         }
-        else if ( ei.stock_ground_units_ > ei.stock_total_ * 0.75 && ei.stock_ground_units_/(double)ei.volume_ <= Stored_Unit(UnitTypes::Zerg_Hydralisk).current_stock_value_/(double)(Stored_Unit( UnitTypes::Zerg_Hydralisk ).type_.height()* Stored_Unit( UnitTypes::Zerg_Hydralisk ).type_.width() )){
+        else if ( ei.stock_ground_units_ > ei.stock_total_ * 0.75 && ei.stock_ground_units_/(double)ei.volume_ >= Stored_Unit(UnitTypes::Terran_Medic).current_stock_value_/(double)(Stored_Unit( UnitTypes::Terran_Medic ).type_.height()* Stored_Unit( UnitTypes::Terran_Medic ).type_.width() )){
+
             if ( Count_Units( UnitTypes::Zerg_Lair, ui ) > 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching( TechTypes::Lurker_Aspect ) && buildorder.checkEmptyBuildOrder() ) {
                 buildorder.building_gene_.push_back( Build_Order_Object( TechTypes::Lurker_Aspect ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Lurker Upgrade" );
             }
+
             is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
         }
 
@@ -304,6 +308,26 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
 
 };
 
+//bool operator==( const Build_Order_Object &lhs, const Build_Order_Object & rhs )
+//{
+//    bool research = lhs.getResearch().getID() != TechTypes::None.getID();
+//    bool unit = lhs.getUnit() != UnitTypes::None;
+//    bool upgrade = lhs.getUpgrade() != UpgradeTypes::None;
+//
+//}
+//
+//bool operator!=( const Build_Order_Object &lhs, const Build_Order_Object & rhs )
+//{
+//    return !operator==( lhs.getResearch(), rhs.getResearch() );
+//}
+//
+//bool operator==( const Building_Gene &lhs, const Building_Gene &rhs ) {
+//    return lhs.building_gene_ == rhs.building_gene_;
+//};
+//bool operator!=( const Building_Gene &lhs, const Building_Gene &rhs ) {
+//    return !operator==( lhs.building_gene_ , rhs.building_gene_ );
+//};
+
 void Building_Gene::updateRemainingBuildOrder( const Unit &u ) {
     if ( !building_gene_.empty() ) {
         if ( building_gene_.front().getUnit() == u->getType() ) {
@@ -349,12 +373,7 @@ void Building_Gene::setBuilding_Complete( UnitType ut ) {
 
 bool Building_Gene::checkBuilding_Desired( UnitType ut ) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
-    if ( building_gene_.empty() ) {
-        return false;
-    }
-    else {
-        return building_gene_.front().getUnit() == ut;
-    }
+    return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
 }
 
 bool Building_Gene::checkUpgrade_Desired( UpgradeType upgrade ) {
@@ -370,6 +389,10 @@ bool Building_Gene::checkResearch_Desired( TechType research ) {
 bool Building_Gene::checkEmptyBuildOrder() {
     return building_gene_.empty();
 }
+
+//bool Building_Gene::checkExistsInBuild( UnitType unit ) {
+//    return find( building_gene_.begin(), building_gene_.end(), Build_Order_Object( unit ) )!= building_gene_.end() ;
+//}
 
 void Building_Gene::getInitialBuildOrder( string s ) {
 
@@ -464,3 +487,4 @@ Building_Gene::Building_Gene( string s ) { // unspecified items are unrestricted
 
 
 } // for zerg 9 pool speed into 3 hatch muta, T: 3 hatch muta, P: 10 hatch into 3 hatch hydra bust.
+

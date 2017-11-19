@@ -12,13 +12,21 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         int dist = 99999999;
 
-        bool safe_worker = !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 ) || getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 )->type_.isWorker();
+        bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
+            !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 ) || 
+            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 )->type_.isWorker();
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
+
                 int dist_temp = inv.getDifferentialDistanceOutFromHome( friendly_inventory.getMeanBuildingLocation(), Position(p) );
-                bool safe_expo = getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )==nullptr || getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
-                bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) || getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) || getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
+                bool safe_expo = enemy_inventory.unit_inventory_.empty() ||
+                    !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
+                    getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
+                bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
+                    getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
+                    getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
+
                 if ( dist_temp < dist && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );
@@ -61,13 +69,13 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 my_reservation.removeReserveSystem( unit->getBuildType() );
             }
 
-            if ( unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
+            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
                 my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery, inv.next_expo_ );
                 buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
                 //Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }
-            else /*if ( !Broodwar->isExplored( inv.next_expo_ ) )*/ {
+            if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
                 unit->move( Position( inv.next_expo_ ) );
                 my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery, inv.next_expo_ );
                 //Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );

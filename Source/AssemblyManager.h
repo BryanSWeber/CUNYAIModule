@@ -14,6 +14,8 @@ private:
     TechType _research_in_queue;
 
 public:
+    //bool operator==( const Build_Order_Object &rhs );
+    //bool operator!=( const Build_Order_Object &rhs );
 
     Build_Order_Object( UnitType unit ) {
         _unit_in_queue = unit;
@@ -66,5 +68,6 @@ struct Building_Gene {
     bool checkUpgrade_Desired( UpgradeType upgrade );
     bool checkResearch_Desired( TechType upgrade );
     bool checkEmptyBuildOrder();
+    //bool checkExistsInBuild( UnitType unit );
 };
 

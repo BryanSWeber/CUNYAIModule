@@ -140,29 +140,30 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && (unit->isUnderAttack() || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->unburrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.bwapi_unit_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
                 return;
             }
             unit->attack( target.bwapi_unit_ );
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && (unit->isUnderAttack() || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
-            }else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            }
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->unburrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
                 return;
             }

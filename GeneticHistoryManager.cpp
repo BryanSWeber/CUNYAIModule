@@ -57,10 +57,6 @@ GeneticHistory::GeneticHistory( string file ) {
     }
 
     int win_count = 0;
-    int zerg_count = 0;
-    int terran_count = 0;
-    int protoss_count = 0;
-    int random_count = 0;
     int relevant_game_count = 0;
 
     string entry; // entered string from stream
@@ -143,7 +139,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     string e_name = Broodwar->enemy()->getName().c_str();
     string e_race = Broodwar->enemy()->getRace().c_str();
-    string map_name = Broodwar->mapName().c_str();
+    string map_name = Broodwar->mapFileName().c_str();
 
     for ( int j = 0; j < csv_length; ++j ) {
         //count wins.
@@ -198,7 +194,7 @@ GeneticHistory::GeneticHistory( string file ) {
         } //or wide hunt by name/map only
     }
 
-    if ( win_count == 0 && (dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5) ) { // chance of pulling by race, map, or opponent name.
+    if ( win_count == 0 /*&& dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5*/ ) { // chance of pulling by race, map, or opponent name.
         relevant_game_count = 0;
         win_count = 0;
         for ( int j = 0; j < csv_length; ++j ) {
@@ -231,9 +227,8 @@ GeneticHistory::GeneticHistory( string file ) {
         a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
         a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
 
-        if ( dis( gen ) < 0.75 ) { // let's allow a chance of testing these new BO's please.
-            build_order_out = linear_combo < 0.5 ? build_order_win[parent_2] : build_order_win[parent_1]; // Otherwise, use the build from which you used more of the history.
-        }
+        build_order_out = linear_combo < 0.5 ? build_order_win[parent_2] : build_order_win[parent_1]; // Otherwise, use the build from which you used more of the history.
+
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
         //int chrom_0 = (rand() % 100 + 1) / 2;
@@ -253,7 +248,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     for ( int i = 0; i<1000; i++ ) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
 
-                                      //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
+        //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
         if ( win_count > 0 ) { // if we have a win to work with
 
             double loss_rate_temp = 1 - (double)win_count / (double)relevant_game_count;
