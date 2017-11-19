@@ -50,10 +50,10 @@ GeneticHistory::GeneticHistory( string file ) {
         build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone";
     }
     else if ( build_order_rand <= 0.80  && build_order_rand > 0.60 ) {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling";
     }
     else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
     }
 
     int win_count = 0;
@@ -194,7 +194,7 @@ GeneticHistory::GeneticHistory( string file ) {
         } //or wide hunt by name/map only
     }
 
-    if ( win_count == 0 /*&& dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5*/ ) { // chance of pulling by race, map, or opponent name.
+    if ( win_count == 0 ) { // chance of pulling by race, map, or opponent name.
         relevant_game_count = 0;
         win_count = 0;
         for ( int j = 0; j < csv_length; ++j ) {
@@ -213,7 +213,7 @@ GeneticHistory::GeneticHistory( string file ) {
         } //or widest hunt possible.
     }
 
-    if ( win_count > 0 ) { // redefine final output.  Chance of playing raw as well.
+    if ( win_count > 0 && dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5 ) { // redefine final output.  Chance of playing raw as well.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
 

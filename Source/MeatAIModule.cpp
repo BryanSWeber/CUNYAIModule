@@ -638,7 +638,7 @@ void MeatAIModule::onFrame()
 
             // Building subloop.
 
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && miner.bwapi_unit_->getLastCommand().getTargetTilePosition() != inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) /*&& miner.bwapi_unit_->getLastCommand().getTargetTilePosition() != inventory.next_expo_*/ && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions( enemy_inventory, friendly_inventory );
                 if ( Building_Begin( u, inventory, enemy_inventory ) ) {
@@ -646,16 +646,16 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
-            //Retarget Expos, check for a roadblock.
-            if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 ) {
+            ////Retarget Expos, check for a roadblock.
+            //if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 ) {
 
-                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
-                inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-                
-                if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-                    continue;
-                }
-            }
+            //    my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
+            //    
+            //    if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
+            //        continue;
+            //    }
+            //}
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
@@ -1149,6 +1149,9 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
         my_reservation.removeReserveSystem( unit->getType() );
     }
 
+    if ( Broodwar->getFrameCount() > 0 ) {
+        buildorder.updateRemainingBuildOrder( unit );
+    }
 }
 
 void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
@@ -1179,6 +1182,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
             //then nothing.
         }
     }
+
     if ( !buildorder.ever_clear_ && unit->getType() == UnitTypes::Zerg_Overlord ) {
         buildorder.building_gene_.insert( buildorder.building_gene_.begin(), Build_Order_Object( UnitTypes::Zerg_Overlord ) );
     }

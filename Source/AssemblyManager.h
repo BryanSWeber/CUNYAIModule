@@ -34,6 +34,7 @@ public:
         _upgrade_in_queue = UpgradeTypes::None;
         _research_in_queue = tech;
     };
+
     UnitType Build_Order_Object::getUnit() {
             return _unit_in_queue;
     };

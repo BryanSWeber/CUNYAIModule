@@ -12,8 +12,14 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
 {
     if ( my_reservation.checkAffordablePurchase( building ) && (buildorder.checkBuilding_Desired( building ) || ( extra_critera && buildorder.checkEmptyBuildOrder() ) ) ) {
 
-        if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-            my_reservation.removeReserveSystem( unit->getBuildType() );
+        //if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+        //    my_reservation.removeReserveSystem( unit->getBuildType() );
+        //}
+        if ( unit->canMorph( building ) ) {
+            if ( unit->morph( building ) ) {
+                buildorder.setBuilding_Complete( building ); // Takes no time, no need for the reserve system.
+                return true;
+            }
         }
 
         if ( unit->canBuild( building ) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor )
@@ -28,6 +34,12 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
         else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
 
             Unitset base_core = unit->getUnitsInRadius( 1, IsBuilding && IsResourceDepot && IsCompleted ); // don't want undefined crash online 44.
+            TilePosition central_base = TilePosition( 0, 0 );
+            TilePosition final_creep_colony_spot;
+            int furth_x_dist = 0;
+            int furth_y_dist = 0;
+            int adj_dx; // move n tiles closer to the center of the map.
+            int adj_dy;
 
             for ( const auto &u : ui.unit_inventory_ ) {
                 if ( u.second.type_ == UnitTypes::Zerg_Hatchery ) {
@@ -41,12 +53,6 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 }
             }
 
-            TilePosition middle = TilePosition( Broodwar->mapWidth() / 2, Broodwar->mapHeight() / 2 );
-            TilePosition central_base = TilePosition( 0, 0 );
-
-            int furth_x_dist = 0;
-            int furth_y_dist = 0;
-
             if ( Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0 && enemy_inventory.stock_fliers_ > 0.75 * friendly_inventory.stock_shoots_up_ ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius( ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500 );
                 Stored_Unit *close_hatch = getClosestStored( hacheries, unit->getPosition(), 500 );
@@ -54,42 +60,77 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                     central_base = TilePosition( close_hatch->pos_ );
                 }
             }
-            else if ( !base_core.empty() ) {
-                int old_dist = 9999999;
 
-                for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
+            if ( inventory.map_veins_in_.size() > 0 ) { // if we have identified the enemy's base, build at the spot closest to them.
+                if ( central_base == TilePosition( 0, 0 ) ) {
+                    int old_dist = 9999999;
 
-                    TilePosition central_base_new = TilePosition( (*base)->getPosition() );
-                    int new_dist = inventory.getRadialDistanceOutFromEnemy( (*base)->getPosition() );
-                    
-                    if ( new_dist < old_dist ) {
-                        central_base = central_base_new;
-                        old_dist = new_dist;
+                    for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
+
+                        TilePosition central_base_new = TilePosition( (*base)->getPosition() );
+                        int new_dist = inventory.getRadialDistanceOutFromEnemy( (*base)->getPosition() );
+
+                        if ( new_dist < old_dist ) {
+                            central_base = central_base_new;
+                            old_dist = new_dist;
+                        }
+                    }
+                } //confirm we have identified a base around which to build.
+
+                int chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position( central_base ) );
+                for ( int x = -5; x <= 5; ++x ) {
+                    for ( int y = -5; y <= 5; ++y ) {
+                        double centralize_x = central_base.x + x;
+                        double centralize_y = central_base.y + y;
+                        if ( !(x == 0 && y == 0) &&
+                            centralize_x < Broodwar->mapWidth() &&
+                            centralize_y < Broodwar->mapHeight() &&
+                            centralize_x > 0 &&
+                            centralize_y > 0 &&
+                            getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
+                            inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) ) <= chosen_base_distance ) // Count all points further from home than we are.
+                        {
+                            final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
+                            chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) );
+                        }
                     }
                 }
             }
+            else {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
+                if ( central_base == TilePosition( 0, 0 ) ) {
+                    int old_dist = 9999999;
 
-            int chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position(central_base) );
-            TilePosition final_creep_colony_spot;
-            int adj_dx; // move n tiles closer to the center of the map.
-            int adj_dy;
+                    for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
 
-            for ( int x = -5; x <= 5; ++x ) {
-                for ( int y = -5; y <= 5; ++y ) {
-                    double centralize_x = central_base.x + x;
-                    double centralize_y = central_base.y + y;
-                    if ( !(x == 0 && y == 0) &&
-                        centralize_x < Broodwar->mapWidth() &&
-                        centralize_y < Broodwar->mapHeight() &&
-                        centralize_x > 0 &&
-                        centralize_y > 0 &&
-                        getResourceInventoryInRadius(neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
-                        inventory.getRadialDistanceOutFromEnemy( Position(TilePosition(centralize_x, centralize_y)) ) < chosen_base_distance ) // Count all points further from home than we are.
-                    {
-                        final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
-                        chosen_base_distance = inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) );
+                        TilePosition central_base_new = TilePosition( (*base)->getPosition() );
+                        int new_dist = inventory.getRadialDistanceOutFromHome( (*base)->getPosition() );
+
+                        if ( new_dist > old_dist ) {
+                            central_base = central_base_new;
+                            old_dist = new_dist;
+                        }
+                    }
+                } //confirm we have identified a base around which to build.
+
+                int chosen_base_distance = inventory.getRadialDistanceOutFromHome( Position( central_base ) );
+                for ( int x = -5; x <= 5; ++x ) {
+                    for ( int y = -5; y <= 5; ++y ) {
+                        double centralize_x = central_base.x + x;
+                        double centralize_y = central_base.y + y;
+                        if ( !(x == 0 && y == 0) &&
+                            centralize_x < Broodwar->mapWidth() &&
+                            centralize_y < Broodwar->mapHeight() &&
+                            centralize_x > 0 &&
+                            centralize_y > 0 &&
+                            getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
+                            inventory.getRadialDistanceOutFromHome( Position( TilePosition( centralize_x, centralize_y ) ) ) >= chosen_base_distance ) // Count all points further from home than we are.
+                        {
+                            final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
+                            chosen_base_distance = inventory.getRadialDistanceOutFromHome( Position( TilePosition( centralize_x, centralize_y ) ) );
+                        }
                     }
                 }
+
             }
 
             TilePosition buildPosition = Broodwar->getBuildLocation( building, final_creep_colony_spot, 5 );
@@ -106,16 +147,10 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 buildorder.setBuilding_Complete( building );
                 return true;
             } //extractors must have buildings nearby or we shouldn't build them.
-        }
-        
-        if ( unit->canMorph( building ) )
-        {
-            if ( unit->morph( building ) ) {
-                buildorder.setBuilding_Complete( building ); // Takes no time, no need for the reserve system.
-                return true;
-            }
-        }
+        } 
     }
+
+
     return false;
 }
 
@@ -125,7 +160,7 @@ bool MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, co
     if ( unit->canUpgrade( ups ) && my_reservation.checkAffordablePurchase( ups ) && (buildorder.checkUpgrade_Desired( ups ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
         if ( unit->upgrade( ups ) ) {
             buildorder.updateRemainingBuildOrder( ups );
-            Broodwar->sendText( "Upgrading %s. Let's hope it finishes!", ups.c_str() );
+            Broodwar->sendText( "Upgrading %s.", ups.c_str() );
             return true;
         }
     }
@@ -134,12 +169,10 @@ bool MeatAIModule::Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, co
 
 bool MeatAIModule::Check_N_Research( const TechType &tech, const Unit &unit, const bool &extra_critera )
 {
-    if ( unit->canResearch( tech ) &&
-        my_reservation.checkAffordablePurchase( tech ) &&
-        (buildorder.checkResearch_Desired( tech ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
+    if ( unit->canResearch( tech ) && my_reservation.checkAffordablePurchase( tech ) &&  (buildorder.checkResearch_Desired( tech ) || (extra_critera && buildorder.checkEmptyBuildOrder())) ) {
         if ( unit->research( tech ) ) {
             buildorder.updateRemainingBuildOrder( tech );
-            Broodwar->sendText( "Researching %s. Let's hope it finishes!", tech.c_str() );
+            Broodwar->sendText( "Researching %s.", tech.c_str() );
             return true;
         }
     }
@@ -227,12 +260,12 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
                 Broodwar->sendText( "Reactionary Lurker Upgrade" );
             }
 
-            is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
+            is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) == 0 );
         }
 
         is_building += Check_N_Grow( UnitTypes::Zerg_Ultralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) > 0 ); // catchall ground units.
         is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
-        is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) );
+        is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern , ui ) == 0 );
         is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         is_building += Check_N_Grow( UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) > 0 );
     }
@@ -361,7 +394,7 @@ void Building_Gene::updateRemainingBuildOrder( const TechType &research ) {
 }
 
 void Building_Gene::setBuilding_Complete( UnitType ut ) {
-    if ( ut.isBuilding() && ut.whatBuilds().first == UnitTypes::Zerg_Drone ) {
+    if ( ut.isBuilding() ) {
         last_build_order = ut;
         Broodwar->sendText( "Building a %s", last_build_order.c_str() );
     }

@@ -788,12 +788,18 @@ int Inventory::getDifferentialDistanceOutFromEnemy( Position A, Position B )
         WalkPosition wp_b = WalkPosition( B );
         return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
     }
+    else {
+        return 0;
+    }
 }
 
 int Inventory::getRadialDistanceOutFromEnemy( Position A){
     if ( map_veins_in_.size() > 0 ) {
         WalkPosition wp_a = WalkPosition( A );
         return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
+    }
+    else {
+        return 0;
     }
 }
 
@@ -804,12 +810,18 @@ int Inventory::getDifferentialDistanceOutFromHome( Position A, Position B )
         WalkPosition wp_b = WalkPosition( B );
         return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
     }
+    else {
+        return 0;
+    }
 }
 int Inventory::getRadialDistanceOutFromHome( Position A )
 {
     if ( map_veins_out_.size() > 0 ) {
         WalkPosition wp_a = WalkPosition( A );
         return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
+    }
+    else {
+        return 0;
     }
 }
 
