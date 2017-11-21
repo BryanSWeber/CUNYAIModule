@@ -40,7 +40,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     string build_order_out;
     double build_order_rand = dis( gen );
-    if ( build_order_rand <= 0.05 ) {
+    if ( build_order_rand <= 0.20 ) {
         build_order_out = "drone pool drone drone ling ling ling ling ling ling";
     }
     else if ( build_order_rand <= 0.40  && build_order_rand > 0.20 ) {
@@ -221,10 +221,11 @@ GeneticHistory::GeneticHistory( string file ) {
         }
     } 
 
+    //What model is this? It's greedy...
     vector<double> probabilities = { winning_player_map_race / (double)max( winning_player_map_race + losing_player_map_race, 1 ), winning_player_map / (double)max( winning_player_map + losing_player_map, 1 ) , winning_player_race / (double)max( winning_player_race + losing_player_race, 1 ), winning_player / (double)max( winning_player + losing_player,1 ), winning_race / (double)max( winning_race + losing_race, 1 ) , winning_map / (double)max( winning_map + losing_map,1 ) };
     int counter = 1;
     for ( auto it = probabilities.begin(); it != probabilities.end() && !probabilities.empty(); it++ ) {
-        if ( dis( gen ) > *it ) {
+        if ( dis( gen ) > *it ) { // If random die roll would not indicate a victory for that run.
             counter++;
             continue;
         }

@@ -60,6 +60,7 @@ struct Unit_Inventory {
     int max_range_;
 	int worker_count_;
 	int volume_;
+    int detector_count_;
 
 	std::map <Unit, Stored_Unit> unit_inventory_;
 

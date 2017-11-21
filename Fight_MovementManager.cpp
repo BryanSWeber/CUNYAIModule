@@ -140,7 +140,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && (unit->isUnderAttack() || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((unit->isUnderAttack() && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
             }
@@ -155,7 +155,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
             unit->attack( target.bwapi_unit_ );
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && (unit->isUnderAttack() || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((unit->isUnderAttack() && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
             }
@@ -217,7 +217,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             unit->unburrow();
             return;
         }
-        else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isDetected() && MeatAIModule::Can_Fight( unit, e_unit ) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+        else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.detector_count_ == 0 && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
             unit->burrow();
             return;
         }

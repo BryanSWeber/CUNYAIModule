@@ -145,6 +145,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int range = 0;
 	int worker_count = 0;
 	int volume = 0;
+    int detector_count = 0;
+
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
@@ -174,6 +176,10 @@ void Unit_Inventory::updateUnitInventorySummary() {
 					range = 7 * 32; // depends on upgrades and unit contents.
 				}
 
+                if ( u_iter.second.type_.isDetector() ) {
+                    detector_count++;
+                }
+
                 already_seen_types.push_back( u_iter.second.type_ );
             }
 
@@ -201,6 +207,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     max_range_ = range;
 	worker_count_ = worker_count;
 	volume_ = volume;
+    detector_count_ = detector_count;
 }
 
 //Stored_Unit functions.
