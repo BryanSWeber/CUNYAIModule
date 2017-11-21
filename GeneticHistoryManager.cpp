@@ -58,6 +58,20 @@ GeneticHistory::GeneticHistory( string file ) {
 
     int win_count = 0;
     int relevant_game_count = 0;
+    int winning_player_map_race = 0;
+    int winning_player_map = 0;
+    int winning_player_race = 0;
+    int winning_map_race = 0;
+    int winning_player = 0;
+    int winning_map = 0;
+    int winning_race = 0;
+    int losing_player_map_race = 0;
+    int losing_player_map = 0;
+    int losing_player_race = 0;
+    int losing_map_race = 0;
+    int losing_player = 0;
+    int losing_map = 0;
+    int losing_race = 0;
 
     string entry; // entered string from stream
     vector<double> delta_in;
@@ -141,9 +155,107 @@ GeneticHistory::GeneticHistory( string file ) {
     string e_race = Broodwar->enemy()->getRace().c_str();
     string map_name = Broodwar->mapFileName().c_str();
 
+    for ( int j = 0; j < csv_length; ++j ) { // what is the best conditional to use? Keep in mind we would like variation.
+        if ( name_in[j] == e_name ) {
+            if ( win_in[j] == 1 ) {
+                winning_player++;
+            }
+            else {
+                losing_player++;
+            }
+        }
+
+        if ( race_in[j] == e_race ) {
+            if ( win_in[j] == 1 ) {
+                winning_race++;
+            }
+            else {
+                losing_race++;
+            }
+        } 
+
+        if ( map_name_in[j] == map_name ) {
+            if ( win_in[j] == 1 ) {
+                winning_map++;
+            }
+            else {
+                losing_map++;
+            }
+        }
+
+        if ( name_in[j] == e_name && race_in[j] == e_race ) {
+            if ( win_in[j] == 1 ) {
+                winning_player_race++;
+            }
+            else {
+                losing_player_race++;
+            }
+        }
+
+        if ( name_in[j] == e_name && map_name_in[j] == map_name ) {
+            if ( win_in[j] == 1 ) {
+                winning_player_map++;
+            }
+            else {
+                losing_player_map++;
+            }
+        }
+
+
+        if ( race_in[j] == e_race && map_name_in[j] == map_name ) {
+            if ( win_in[j] == 1 ) {
+                winning_map_race++;
+            }
+            else {
+                losing_map_race++;
+            }
+        }
+
+        if ( name_in[j] == e_name && race_in[j] == e_race && map_name_in[j] == map_name ) {
+            if ( win_in[j] == 1 ) {
+                winning_player_map_race++;
+            }
+            else {
+                losing_player_map_race++;
+            }
+        }
+    } 
+
+    vector<double> probabilities = { winning_player_map_race / (double)max( winning_player_map_race + losing_player_map_race, 1 ), winning_player_map / (double)max( winning_player_map + losing_player_map, 1 ) , winning_player_race / (double)max( winning_player_race + losing_player_race, 1 ), winning_player / (double)max( winning_player + losing_player,1 ), winning_race / (double)max( winning_race + losing_race, 1 ) , winning_map / (double)max( winning_map + losing_map,1 ) };
+    int counter = 1;
+    for ( auto it = probabilities.begin(); it != probabilities.end() && !probabilities.empty(); it++ ) {
+        if ( dis( gen ) > *it ) {
+            counter++;
+            continue;
+        }
+        else {
+            break;
+        }
+    }
+
     for ( int j = 0; j < csv_length; ++j ) {
-        //count wins.
-        if ( win_in[j] == 1 && race_in[j] == e_race && name_in[j] == e_name && map_name_in[j] == map_name) {
+        bool condition;
+        switch ( counter )
+        {
+        case 1: condition = name_in[j] == e_name && race_in[j] == e_race && map_name_in[j] == map_name;
+            break;
+        case 2: condition = name_in[j] == e_name && map_name_in[j] == map_name;
+            break;
+        case 3: condition = name_in[j] == e_name && race_in[j] == e_race;
+            break;
+        case 4: condition = race_in[j] == e_race && map_name_in[j] == map_name;
+            break;
+        case 5: condition = name_in[j] == e_name;
+            break;
+        case 6: condition = race_in[j] == e_race;
+            break;
+        case 7: condition = map_name_in[j] == map_name;
+            break;
+        default:
+            break;
+        }
+
+        if ( condition && win_in[j] == 1 ) {
             delta_win.push_back( delta_in[j] );
             gamma_win.push_back( gamma_in[j] );
             a_army_win.push_back( a_army_in[j] );
@@ -151,69 +263,13 @@ GeneticHistory::GeneticHistory( string file ) {
             a_tech_win.push_back( a_tech_in[j] );
             build_order_win.push_back( build_order_in[j] );
             win_count++;
-        }
-        if ( race_in[j] == e_race && name_in[j] == e_name && map_name_in[j] == map_name ) {
+        } 
+        else if ( condition ) {
             relevant_game_count++;
         }
-    } // either by opponent name.
-    if ( win_count == 0 && e_race == "Unknown" ) {
-        relevant_game_count = 0;
-        win_count = 0;
-        for ( int j = 0; j < csv_length; ++j ) {
-            if ( win_in[j] == 1 && name_in[j] == e_name && map_name_in[j] == map_name ) {
-                delta_win.push_back( delta_in[j] );
-                gamma_win.push_back( gamma_in[j] );
-                a_army_win.push_back( a_army_in[j] );
-                a_econ_win.push_back( a_econ_in[j] );
-                a_tech_win.push_back( a_tech_in[j] );
-                build_order_win.push_back( build_order_in[j] );
-                win_count++;
-            }
-            if ( name_in[j] == e_name && map_name_in[j] == map_name ) {
-                relevant_game_count++;
-            }
-        } //or by name only (eg, random)
-    }
+    } //or widest hunt possible.
 
-    if ( win_count == 0 && e_race == "Unknown" ) {
-        relevant_game_count = 0;
-        win_count = 0;
-        for ( int j = 0; j < csv_length; ++j ) {
-            if ( win_in[j] == 1 && (name_in[j] == e_name || map_name_in[j] == map_name) ) {
-                delta_win.push_back( delta_in[j] );
-                gamma_win.push_back( gamma_in[j] );
-                a_army_win.push_back( a_army_in[j] );
-                a_econ_win.push_back( a_econ_in[j] );
-                a_tech_win.push_back( a_tech_in[j] );
-                build_order_win.push_back( build_order_in[j] );
-                win_count++;
-            }
-            if ( name_in[j] == e_name || map_name_in[j] == map_name ) {
-                relevant_game_count++;
-            }
-        } //or wide hunt by name/map only
-    }
-
-    if ( win_count == 0 ) { // chance of pulling by race, map, or opponent name.
-        relevant_game_count = 0;
-        win_count = 0;
-        for ( int j = 0; j < csv_length; ++j ) {
-            if ( win_in[j] == 1 && (race_in[j] == e_race || name_in[j] == e_name || map_name_in[j] == map_name) ) {
-                delta_win.push_back( delta_in[j] );
-                gamma_win.push_back( gamma_in[j] );
-                a_army_win.push_back( a_army_in[j] );
-                a_econ_win.push_back( a_econ_in[j] );
-                a_tech_win.push_back( a_tech_in[j] );
-                build_order_win.push_back( build_order_in[j] );
-                win_count++;
-            }
-            if ( race_in[j] == e_race || name_in[j] == e_name || map_name_in[j] == map_name ) {
-                relevant_game_count++;
-            }
-        } //or widest hunt possible.
-    }
-
-    if ( win_count > 0 && dis( gen ) > (double)win_count / (double)relevant_game_count && dis( gen ) > 0.5 ) { // redefine final output.  Chance of playing raw as well.
+    if ( win_count > 0 ) { // redefine final output.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
 

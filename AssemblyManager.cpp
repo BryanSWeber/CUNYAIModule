@@ -30,12 +30,16 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 buildorder.setBuilding_Complete( building );
                 return true;
             }
+            else if ( buildorder.checkBuilding_Desired( building ) ) {
+                Broodwar->sendText( "I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y );
+                buildorder.updateRemainingBuildOrder( building ); // skips the building.
+            }
         }
         else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Creep_Colony ) { // creep colony loop specifically.
 
             Unitset base_core = unit->getUnitsInRadius( 1, IsBuilding && IsResourceDepot && IsCompleted ); // don't want undefined crash online 44.
             TilePosition central_base = TilePosition( 0, 0 );
-            TilePosition final_creep_colony_spot;
+            TilePosition final_creep_colony_spot = TilePosition( 0, 0 );
             int furth_x_dist = 0;
             int furth_y_dist = 0;
             int adj_dx; // move n tiles closer to the center of the map.
@@ -61,7 +65,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 }
             }
 
-            if ( inventory.map_veins_in_.size() > 0 ) { // if we have identified the enemy's base, build at the spot closest to them.
+            if ( inventory.map_veins_in_.size() != 0 && inventory.getRadialDistanceOutFromEnemy( unit->getPosition() ) > 0 ) { // if we have identified the enemy's base, build at the spot closest to them.
                 if ( central_base == TilePosition( 0, 0 ) ) {
                     int old_dist = 9999999;
 
@@ -70,7 +74,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                         TilePosition central_base_new = TilePosition( (*base)->getPosition() );
                         int new_dist = inventory.getRadialDistanceOutFromEnemy( (*base)->getPosition() );
 
-                        if ( new_dist < old_dist ) {
+                        if ( new_dist <= old_dist ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                         }
@@ -88,6 +92,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                             centralize_x > 0 &&
                             centralize_y > 0 &&
                             getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
+                            Broodwar->canBuildHere( TilePosition( centralize_x, centralize_y ), UnitTypes::Zerg_Creep_Colony, unit, false ) &&
                             inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) ) <= chosen_base_distance ) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
@@ -96,16 +101,17 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                     }
                 }
             }
-            else {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
+
+            if( final_creep_colony_spot == TilePosition( 0, 0 ) ) {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
                 if ( central_base == TilePosition( 0, 0 ) ) {
-                    int old_dist = 9999999;
+                    int old_dist = 0;
 
                     for ( auto base = base_core.begin(); base != base_core.end(); ++base ) {
 
                         TilePosition central_base_new = TilePosition( (*base)->getPosition() );
                         int new_dist = inventory.getRadialDistanceOutFromHome( (*base)->getPosition() );
 
-                        if ( new_dist > old_dist ) {
+                        if ( new_dist >= old_dist ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                         }
@@ -123,6 +129,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                             centralize_x > 0 &&
                             centralize_y > 0 &&
                             getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
+                            Broodwar->canBuildHere( TilePosition( centralize_x, centralize_y ), UnitTypes::Zerg_Creep_Colony, unit, false ) &&
                             inventory.getRadialDistanceOutFromHome( Position( TilePosition( centralize_x, centralize_y ) ) ) >= chosen_base_distance ) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
@@ -130,14 +137,17 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                         }
                     }
                 }
-
             }
 
-            TilePosition buildPosition = Broodwar->getBuildLocation( building, final_creep_colony_spot, 5 );
+            TilePosition buildPosition = Broodwar->getBuildLocation( building, final_creep_colony_spot, 4 );
             if ( unit->build( building, buildPosition ) ) {
                 my_reservation.addReserveSystem( building , buildPosition);
                 buildorder.setBuilding_Complete( building );
                 return true;
+            }
+            else if ( buildorder.checkBuilding_Desired( building ) ) {
+                Broodwar->sendText( "I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y );
+                buildorder.updateRemainingBuildOrder( building ); // skips the building.
             }
         }
         else if ( unit->canBuild( building ) && building == UnitTypes::Zerg_Extractor ) {
@@ -147,6 +157,10 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                 buildorder.setBuilding_Complete( building );
                 return true;
             } //extractors must have buildings nearby or we shouldn't build them.
+            else if ( buildorder.checkBuilding_Desired( building ) ) {
+                Broodwar->sendText( "I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y );
+                buildorder.updateRemainingBuildOrder( building ); // skips the building.
+            }
         } 
     }
 

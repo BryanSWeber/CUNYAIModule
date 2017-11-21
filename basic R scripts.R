@@ -5,27 +5,27 @@ library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 
 out <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", col_names = FALSE))
-# out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
+out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
 
 names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
-# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","map","opponent_name", "build_order")
-
+# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
+# 
 # out<-rbind(out, out_2)
 # out<-out[!duplicated(out),]
-# new<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
-#                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
-#                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
-#                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
-#                                          , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
- # write.table(out,"C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
-# out<-new
- 
+# # # new<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
+# # #                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
+# # #                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
+# # #                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
+# # #                                          , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
+#  write.table(out,"C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
+# # # out<-new
+#  
 #(out$shortct>=321 | out$Winner==1) -> out$Winner
 out$race_win <- factor( paste ( out$Winner, out$Race , sep= " " ))
 out$race_opp <- factor( paste ( out$Race, abbreviate(out$opponent_name) , sep= " " ))
 out$race_map <- factor( paste ( out$map, out$Race , sep= " " ))
 out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= " " ))
-out$race_build <- factor( paste ( abbreviate(out$build_order), out$map , sep= " " ))
+out$build_map <- factor( paste ( abbreviate(out$build_order), out$map , sep= " " ))
 
 #out<-subset(out,out$Winner==1)
 
@@ -56,6 +56,7 @@ out$race_build <- factor( paste ( abbreviate(out$build_order), out$map , sep= " 
 
  table(out$race_build, out$Winner)
  table(out$race_map, out$Winner)
+ table(out$build_map, out$Winner)
  table(out$opponent_name,out$Winner)
  
 # summary(out)
@@ -104,17 +105,17 @@ for(i in seq(0,360,30)){
 } #[out$Winner==1] , [out$Winner==0], or none
 
 corrgram(out[out$Winner==1,c(1:6, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
-plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
-econ<-c(1,1000)
-army<-c(1,1000)
-tech<-c(1,1000)
-for(i in 1:1000){
-  a<-runif(1)*0.50+0.50
-  b<-runif(1)*0.5
-  c<-runif(1)*0.75+0.25
-  econ[i]<-a/(a+b+c)
-  tech[i]<-b/(a+b+c)
-  army[i]<-c/(a+b+c)}
-hist(econ)
-hist(army)
-hist(tech)
+# plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
+# econ<-c(1,1000)
+# army<-c(1,1000)
+# tech<-c(1,1000)
+# for(i in 1:1000){
+#   a<-runif(1)*0.50+0.50
+#   b<-runif(1)*0.5
+#   c<-runif(1)*0.75+0.25
+#   econ[i]<-a/(a+b+c)
+#   tech[i]<-b/(a+b+c)
+#   army[i]<-c/(a+b+c)}
+# hist(econ)
+# hist(army)
+# hist(tech)
