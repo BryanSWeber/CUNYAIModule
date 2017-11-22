@@ -61,6 +61,7 @@ struct Unit_Inventory {
 	int worker_count_;
 	int volume_;
     int detector_count_;
+    int cloaker_count_;
 
 	std::map <Unit, Stored_Unit> unit_inventory_;
 

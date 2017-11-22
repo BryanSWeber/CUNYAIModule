@@ -106,10 +106,11 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 if ( critical_target ) {
                     e_priority = 3;
                 }
-                else if ( MeatAIModule::Can_Fight( e->second, unit ) || 
-                    e_type.spaceProvided() > 0 || 
-                    (e_type.isSpellcaster() && !e_type.isBuilding()) || 
+                else if ( MeatAIModule::Can_Fight( e->second, unit ) ||
+                    e_type.spaceProvided() > 0 ||
+                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     e_type == UnitTypes::Protoss_Carrier ||
+                    e_type.isDetector() && ui.cloaker_count_ > 0 ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing())) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }
@@ -120,7 +121,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_priority = 0; // should leave stuff like larvae and eggs in here. Low, low priority.
                 }
 
-                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && dist_to_enemy < max_dist) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && (dist_to_enemy < max_dist || (priority < 2 && dist_to_enemy < max_dist_no_priority)) ) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
                     visible_target_atk = true;
                     priority = e_priority;

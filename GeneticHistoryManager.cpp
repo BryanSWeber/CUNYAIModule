@@ -148,7 +148,6 @@ GeneticHistory::GeneticHistory( string file ) {
         getline( input, entry ); //diff. End of line char, not ','
         build_order_in.push_back( entry );
 
-
     } // closure for each row
 
     string e_name = Broodwar->enemy()->getName().c_str();
@@ -264,6 +263,7 @@ GeneticHistory::GeneticHistory( string file ) {
             a_tech_win.push_back( a_tech_in[j] );
             build_order_win.push_back( build_order_in[j] );
             win_count++;
+            relevant_game_count++;
         } 
         else if ( condition ) {
             relevant_game_count++;
@@ -337,10 +337,17 @@ GeneticHistory::GeneticHistory( string file ) {
         a_tech_out_mutate_ = mutation_1 == 2 ? a_tech_out * mutation : a_tech_out;
 
         // Normalize the CD part of the gene.
-        double a_tot = a_army_out_mutate_ + a_econ_out_mutate_ + a_tech_out_mutate_;
+        //double a_tot = a_army_out_mutate_ + a_econ_out_mutate_ + a_tech_out_mutate_;
+        //a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
+        //a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
+        //a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
+
+        // Normalize the CD part of the gene with CAPITAL AUGMENTING TECHNOLOGY.
+        double a_tot = a_army_out_mutate_ + a_econ_out_mutate_;
         a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
         a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
-        a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
+        a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
+
         build_order_ = build_order_out;
 
         if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.01 ) {

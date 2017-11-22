@@ -442,7 +442,7 @@ void MeatAIModule::onFrame()
 
             Broodwar->drawTextScreen( 250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100 );  // As %s
             Broodwar->drawTextScreen( 250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100 ); //
-            Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f %%", CD.alpha_tech * 100 ); //
+            Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100 ); // No longer a % with capital-augmenting technology.
 
             Broodwar->drawTextScreen( 250, 80, "Delta_gas: %4.2f", delta ); //
             Broodwar->drawTextScreen( 250, 90, "Gamma_supply: %4.2f", gamma ); //
@@ -738,7 +738,7 @@ void MeatAIModule::onFrame()
                 int apppropriate_cooldown = u->isFlying() ? e_closest->type_.airWeapon().damageCooldown() : e_closest->type_.groundWeapon().damageCooldown();
                 int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ; // how far can you get before he shoots?
 
-                int search_radius = chargable_distance_net + appropriate_range + e_closest->type_.canAttack() ? 128 : 256 ;
+                int search_radius = max(chargable_distance_net + appropriate_range, enemy_inventory.max_range_);
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
 
                 Boids boids;
@@ -792,14 +792,14 @@ void MeatAIModule::onFrame()
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                                 (!IsFightingUnit(e_closest->bwapi_unit_) && 32 > enemy_loc.max_range_) ||
                                 ((friend_loc.max_range_ > enemy_loc.max_range_ || 32 > enemy_loc.max_range_) && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
-                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && enemy_loc.max_range_ > chargable_distance_net && u->getType().airWeapon().maxRange() < 32 && u->getType().groundWeapon().maxRange() < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && enemy_loc.max_range_ > chargable_distance_net && appropriate_range < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
 //                                  );
 
-                            bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && (u->isUnderAttack() || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
+                            bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you

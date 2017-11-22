@@ -9,11 +9,26 @@ using namespace std;
 //complete but long creator method. Normalizes to 1 automatically.
 CobbDouglas::CobbDouglas( double a_army, double army_stk, bool army_possible, double a_tech, double tech_stk, bool tech_possible, double a_econ, double wk_stk, bool econ_possible )
 {
-    double a_tot = a_econ + a_army + a_tech;
+    //double a_tot = a_econ + a_army + a_tech;
 
+    // CD takes the form Y= labor^alpha_l * capital^alpha_k * A. I assume A is a technology augmenting both labor and capital, and takes the form tech^(alpha_t). For the sake of parsimony I normalize the sum of alphas to 1. 
+    //alpha_econ = a_econ / a_tot;
+    //alpha_army = a_army / a_tot;
+    //alpha_tech = a_tech / a_tot;
+
+    //worker_stock = wk_stk;
+    //army_stock = army_stk;
+    //tech_stock = tech_stk;
+
+    //econ_derivative = (alpha_econ / worker_stock) * econ_possible;
+    //army_derivative = (alpha_army / army_stock) * army_possible;
+    //tech_derivative = (alpha_tech / tech_stock) * tech_possible;
+
+    // CD takes the form Y= (A*labor)^alpha_l * capital^(alpha_k). I assume A is a technology augmenting only capital, and takes the form tech^(alpha_t). I can still normalize the sum of alpha_l and alpha_k to 1. 
+    double a_tot = a_econ + a_army;
     alpha_econ = a_econ / a_tot;
     alpha_army = a_army / a_tot;
-    alpha_tech = a_tech / a_tot;
+    alpha_tech = a_tech;
 
     worker_stock = wk_stk;
     army_stock = army_stk;
@@ -21,7 +36,7 @@ CobbDouglas::CobbDouglas( double a_army, double army_stk, bool army_possible, do
 
     econ_derivative = (alpha_econ / worker_stock) * econ_possible;
     army_derivative = (alpha_army / army_stock) * army_possible;
-    tech_derivative = (alpha_tech / tech_stock) * tech_possible;
+    tech_derivative = (alpha_tech * alpha_army / tech_stock) * tech_possible;
 
 }
 
@@ -30,8 +45,8 @@ double CobbDouglas::getlny()
 {
     double ln_y = 0;
     try {
-        ln_y = alpha_army * log( army_stock / worker_stock ) + alpha_tech * log( tech_stock / worker_stock );
-
+        //ln_y = alpha_army * log( army_stock / worker_stock ) + alpha_tech * log( tech_stock / worker_stock );
+        ln_y = log( ( pow( army_stock * pow(tech_stock,alpha_tech) , alpha_army) + pow( worker_stock, alpha_econ) ) / worker_stock ); //theory is messier than typical constant growth assumptions. A direct calculation instead.
     }
     catch ( ... ) {
         BWAPI::Broodwar->sendText( "Uh oh. We are out of something critical..." );
@@ -44,7 +59,8 @@ double CobbDouglas::getlnY()
 {
     double ln_Y = 0;
     try {
-        ln_Y = alpha_army * log( army_stock ) + alpha_tech * log( tech_stock ) + alpha_econ * log( worker_stock ); //Analog to GDP
+        //ln_Y = alpha_army * log( army_stock ) + alpha_tech * log( tech_stock ) + alpha_econ * log( worker_stock ); //Analog to GDP
+        ln_Y = alpha_army * log( army_stock ) + alpha_army * alpha_tech * log( tech_stock ) + alpha_econ * log( worker_stock ); //Analog to GDP
     }
     catch ( ... ) {
         BWAPI::Broodwar->sendText( "Uh oh. We are out of something critical..." );

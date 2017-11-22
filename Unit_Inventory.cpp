@@ -146,6 +146,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	int worker_count = 0;
 	int volume = 0;
     int detector_count = 0;
+    int cloaker_count = 0;
 
     vector<UnitType> already_seen_types;
 
@@ -180,6 +181,9 @@ void Unit_Inventory::updateUnitInventorySummary() {
                     detector_count++;
                 }
 
+                if ( u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak() ) {
+                    cloaker_count++;
+                }
                 already_seen_types.push_back( u_iter.second.type_ );
             }
 
@@ -208,6 +212,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	worker_count_ = worker_count;
 	volume_ = volume;
     detector_count_ = detector_count;
+    cloaker_count_ = cloaker_count;
 }
 
 //Stored_Unit functions.

@@ -261,7 +261,6 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
                 buildorder.building_gene_.push_back( Build_Order_Object( UnitTypes::Zerg_Spire ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Spire" );
             }
-
             is_building += Check_N_Grow( UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 );
         }
         else if ( ei.stock_total_ - ei.stock_shoots_down_ > 0.75 * ei.stock_total_ ) {
@@ -273,7 +272,12 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
                 buildorder.building_gene_.push_back( Build_Order_Object( TechTypes::Lurker_Aspect ) ); // force in a hydralisk den if they have Air.
                 Broodwar->sendText( "Reactionary Lurker Upgrade" );
             }
+            else if ( Count_Units( UnitTypes::Zerg_Lair, ui ) == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 && !Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) && !Broodwar->self()->isResearching( TechTypes::Lurker_Aspect ) && buildorder.checkEmptyBuildOrder() ) {
+                buildorder.building_gene_.push_back( Build_Order_Object( UnitTypes::Zerg_Lair ) ); // force in a hydralisk den if they have Air.
+                Broodwar->sendText( "Reactionary Lair, for Lurkers" );
+            }
 
+            is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) == 0 && Count_Units(UnitTypes::Zerg_Hydralisk, ui) == 0 );
             is_building += Check_N_Grow( UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect ) && Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, ui ) == 0 );
         }
 
