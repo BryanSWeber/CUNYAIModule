@@ -121,14 +121,14 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_priority = 0; // should leave stuff like larvae and eggs in here. Low, low priority.
                 }
 
-                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && (dist_to_enemy < max_dist || (priority < 2 && dist_to_enemy < max_dist_no_priority)) ) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && dist_to_enemy < max_dist && priority >= 2) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
                     visible_target_atk = true;
                     priority = e_priority;
                     dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
                     target = e->second;
                 }
-                else if ( !target_sentinel && dist_to_enemy >= max_dist && dist_to_enemy < max_dist_no_priority ) {
+                else if ( !target_sentinel && (dist_to_enemy >= max_dist || (e_priority > priority && priority < 2)) && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
                     visible_target_atk = true;
                     dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
@@ -172,7 +172,6 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
         }
         MeatAIModule::Diagnostic_Line( unit->getPosition(), target.pos_, color );
     }
-
 }
 
 // Basic retreat logic, range = enemy range
@@ -236,7 +235,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             // redefine this to be a walkable one.
         }
 
-        if ( retreat_spot && retreat_spot.isValid() ) {
+        if ( retreat_spot && retreat_spot.isValid() && unit->hasPath(retreat_spot) && !unit->isBurrowed() ) {
             unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
             MeatAIModule::Diagnostic_Line( pos, retreat_spot, color );
         }

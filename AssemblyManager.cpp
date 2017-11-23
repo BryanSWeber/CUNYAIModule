@@ -230,7 +230,8 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 
     //Army build/replenish.  Cycle through military units available.
     if ( army_starved && is_building == 0 ) {
-        if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not)
+
+        if ( ei.stock_fliers_ > ui.stock_shoots_up_ ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
             is_building += Check_N_Grow( UnitTypes::Zerg_Scourge, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Spire, ui ) > 0 && Count_Units( UnitTypes::Zerg_Scourge, ui ) < 5 ); // hard cap on scourges, they build 2 at a time. 
             is_building += Check_N_Grow( UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units( UnitTypes::Zerg_Hydralisk_Den, ui ) > 0 );
         
