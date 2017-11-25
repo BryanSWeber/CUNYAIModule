@@ -58,6 +58,7 @@ struct Unit_Inventory {
     int stock_high_ground_;
     int stock_total_;
     int max_range_;
+    int max_cooldown_;
 	int worker_count_;
 	int volume_;
     int detector_count_;

@@ -81,7 +81,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     //rng_direction_ = dis( gen );
 
-    int dist = MeatAIModule::getProperSpeed( unit ) * 24 + ui.max_range_;
+    int dist = MeatAIModule::getProperSpeed( unit ) * ei.max_cooldown_ + ui.max_range_;
     int helpless_e = unit->isFlying() ? ei.stock_total_ - ei.stock_shoots_up_ : ei.stock_total_ - ei.stock_shoots_down_;
     int helpful_e = unit->isFlying() ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
 
@@ -91,6 +91,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool visible_target_atk = false;
+
 
     for ( auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e ) {
         if ( e->second.valid_pos_ ) {
@@ -110,7 +111,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_type.spaceProvided() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     e_type == UnitTypes::Protoss_Carrier ||
-                    e_type.isDetector() && ui.cloaker_count_ > 0 ||
+                    (e_type.isDetector() && ui.cloaker_count_ > 0) ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing())) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }
@@ -121,14 +122,18 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_priority = 0; // should leave stuff like larvae and eggs in here. Low, low priority.
                 }
 
-                if ( (e_priority == priority && dist_to_enemy <= dist) || (e_priority > priority && dist_to_enemy < max_dist && priority >= 2) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
-                    target_sentinel = true;
+
+                if ( e_priority >= priority && dist_to_enemy <= dist ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                    if ( e_priority >= 2 ) {
+                        target_sentinel = true;
+                    }
                     visible_target_atk = true;
                     priority = e_priority;
                     dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
                     target = e->second;
                 }
-                else if ( !target_sentinel && (dist_to_enemy >= max_dist || (e_priority > priority && priority < 2)) && dist_to_enemy < max_dist_no_priority ) {
+
+                if ( (!target_sentinel || (priority < 2 && e_priority >= 2)) && dist_to_enemy >= max_dist && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
                     visible_target_atk = true;
                     dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
@@ -141,30 +146,30 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((unit->isUnderAttack() && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((dist < ei.max_range_ && ei.detector_count_ == 0) || dist < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->unburrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
                 return;
             }
             unit->attack( target.bwapi_unit_ );
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((unit->isUnderAttack() && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((dist < ei.max_range_ && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->unburrow();
                 return;
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !unit->isUnderAttack() && unit->getDistance( target.pos_ ) > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->move( target.pos_ );
                 return;
             }

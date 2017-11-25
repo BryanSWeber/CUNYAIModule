@@ -147,6 +147,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	int volume = 0;
     int detector_count = 0;
     int cloaker_count = 0;
+    int max_cooldown = 0;
 
     vector<UnitType> already_seen_types;
 
@@ -173,6 +174,9 @@ void Unit_Inventory::updateUnitInventorySummary() {
                     range = u_iter.second.type_.groundWeapon().maxRange() > u_iter.second.type_.airWeapon().maxRange() ? u_iter.second.type_.groundWeapon().maxRange() : u_iter.second.type_.airWeapon().maxRange();
                 }
 
+                if ( u_iter.second.type_.groundWeapon().damageCooldown() > max_cooldown || u_iter.second.type_.airWeapon().damageCooldown() > max_cooldown ) {
+                    max_cooldown = u_iter.second.type_.groundWeapon().damageCooldown() > u_iter.second.type_.airWeapon().damageCooldown() ? u_iter.second.type_.groundWeapon().damageCooldown() : u_iter.second.type_.airWeapon().damageCooldown();
+                }
 				if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 > range){
 					range = 7 * 32; // depends on upgrades and unit contents.
 				}
@@ -209,6 +213,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     stock_high_ground_= high_ground;
     stock_total_ = stock_ground_units_ + stock_fliers_;
     max_range_ = range;
+    max_cooldown_ = max_cooldown;
 	worker_count_ = worker_count;
 	volume_ = volume;
     detector_count_ = detector_count;

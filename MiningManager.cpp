@@ -13,8 +13,8 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         int dist = 99999999;
 
         bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
-            !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 ) || 
-            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 250 )->type_.isWorker();
+            !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) || 
+            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {

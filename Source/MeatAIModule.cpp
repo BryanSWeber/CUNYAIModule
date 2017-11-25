@@ -646,9 +646,8 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
-            ////Retarget Expos, check for a roadblock.
-            //if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 1 * 24 ) {
-
+            //Retarget Expos, check for a roadblock.
+            //if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 5 * 24 ) {
             //    my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
             //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
             //    
@@ -735,8 +734,7 @@ void MeatAIModule::onFrame()
 
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
                 int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
-                int apppropriate_cooldown = u->isFlying() ? e_closest->type_.airWeapon().damageCooldown() : e_closest->type_.groundWeapon().damageCooldown();
-                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * apppropriate_cooldown ; // how far can you get before he shoots?
+                int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * enemy_inventory.max_cooldown_ ; // how far can you get before he shoots?
 
                 int search_radius = max(chargable_distance_net + appropriate_range, enemy_inventory.max_range_);
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
@@ -745,7 +743,7 @@ void MeatAIModule::onFrame()
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * apppropriate_cooldown * 2);
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * enemy_loc.max_cooldown_ * 2 + sqrt( (double)enemy_loc.volume_ / 3.1414 ) );
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
