@@ -722,7 +722,7 @@ void MeatAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord )
+        if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && u->getLastCommandFrame() < Broodwar->getFrameCount() - 7)
         {
 
             Stored_Unit* e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 999999 );
@@ -730,20 +730,23 @@ void MeatAIModule::onFrame()
                 e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 256 );
             }
 
-            if ( e_closest /*&& e_closest->bwapi_unit_ && (e_closest->bwapi_unit_)->exists()*/ ) { // if there are bad guys, search for friends within that area. Only attacks visible units.
+
+            if ( e_closest ) { // if there are bad guys, search for friends within that area. 
+                e_closest->pos_.x += e_closest->bwapi_unit_->getVelocityX();
+                e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
                 int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
                 int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * enemy_inventory.max_cooldown_ ; // how far can you get before he shoots?
 
                 int search_radius = max(chargable_distance_net + appropriate_range, enemy_inventory.max_range_);
-                Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, search_radius );
+                Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
 
                 Boids boids;
 
                 if ( army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone ) { //In normal, non-massive army scenarioes...  
 
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, search_radius + getProperSpeed(u) * enemy_loc.max_cooldown_ * 2 + sqrt( (double)enemy_loc.volume_ / 3.1414 ) );
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + search_radius /* + sqrt( (double)enemy_loc.volume_ / 3.1414 )*/ );
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
@@ -776,7 +779,7 @@ void MeatAIModule::onFrame()
                           //    helpless_u += enemy_loc.stock_ground_units_;
                           //}
 
-                        if ( e_closest->valid_pos_ ) {  // only attacks VISIBLE units. This should probably be fixed.
+                        if ( e_closest->valid_pos_ ) {  // Must have a valid postion on record to attack.
 
                             double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                             double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
@@ -784,23 +787,25 @@ void MeatAIModule::onFrame()
                             double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                             //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
-                            bool neccessary_attack = helpful_e < 0.75 * helpful_u || // attack if you outclass them and your boys are ready to fight.
+                            bool neccessary_attack = helpful_e < /*0.75* */ helpful_u || // attack if you outclass them and your boys are ready to fight.
                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                (!IsFightingUnit(e_closest->bwapi_unit_) && 32 > enemy_loc.max_range_) ||
-                                ((friend_loc.max_range_ > enemy_loc.max_range_ || 32 > enemy_loc.max_range_) && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
-                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && enemy_loc.max_range_ > chargable_distance_net && appropriate_range < 32);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                (!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
+                                //((friend_loc.max_range_ > enemy_loc.max_range_ || 32 > enemy_loc.max_range_) && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
+                                (distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24 ) || // a stutterstep component. Should seperate it off.
+                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && appropriate_range > 64);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
 //                                  );
 
-                            bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
+                            bool force_retreat = (u->getType().isFlyer() && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints() && u->getType() != UnitTypes::Zerg_Scourge) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
+                                (distance_to_foe < 64 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u->getType().groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u->getType().groundWeapon().maxRange() > 64 && !u->isBurrowed()) || //kiting?
                                 //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
@@ -935,6 +940,7 @@ void MeatAIModule::onFrame()
         for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++ ) {
             if ( (*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable() ) {
                 c = (*e).second.pos_; // then we may to send in some vision.
+\
                 Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, c, e->second.type_.sightRange() ); // we check this cloaker has any friendly units nearby.
 
                 if ( !friend_loc.unit_inventory_.empty() ) {
@@ -959,16 +965,15 @@ void MeatAIModule::onFrame()
                 }
             }
             if ( detector_found ) {
-                //Position detector_pos = detector_of_choice->getPosition();
-                //double theta = atan2( c.y-detector_pos.y , c.x - detector_pos.x );
-                //Position closest_loc_to_c_that_gives_vision = Position( c.x - cos( theta ) * SightRange( detector_of_choice ) * 0.75, c.y - sin( theta ) * SightRange( detector_of_choice ) ) * 0.75;
-                detector_of_choice->move( c );
+                Position detector_pos = detector_of_choice->getPosition();
+                double theta = atan2( c.y - detector_pos.y , c.x - detector_pos.x );
+                Position closest_loc_to_c_that_gives_vision = Position( c.x + cos( theta ) * SightRange( detector_of_choice ) * 0.75, c.y + sin( theta ) * SightRange( detector_of_choice ) ) * 0.75;
+                detector_of_choice->move( closest_loc_to_c_that_gives_vision );
                 if ( _ANALYSIS_MODE ) {
                     Broodwar->drawCircleMap( c, 25, Colors::Cyan );
                     Diagnostic_Line( detector_of_choice->getPosition(), c, Colors::Cyan );
                 }
             }
-
         }
     }
     auto end_detector = std::chrono::high_resolution_clock::now();

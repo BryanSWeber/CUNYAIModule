@@ -33,7 +33,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
         setCentralize( pos, inventory );
     } // closure: flyers
 
-    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
+    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 && !MeatAIModule::getClosestAttackableStored(ei, UnitTypes::Zerg_Lurker,pos,UnitTypes::Zerg_Lurker.groundWeapon().maxRange() ) ) {
         unit->unburrow();
         return;
     }
@@ -112,7 +112,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     e_type == UnitTypes::Protoss_Carrier ||
                     (e_type.isDetector() && ui.cloaker_count_ > 0) ||
-                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && (e->second.bwapi_unit_->isAttacking() || e->second.bwapi_unit_->isRepairing())) ) { // if they can fight us, carry troops, or cast spells.
+                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && ( MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e->second.bwapi_unit_->isRepairing() ) ) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 2;
                 }
                 else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva ) {
@@ -155,7 +155,9 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 return;
             }
             else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->move( target.pos_ );
+                double theta = atan2( target.pos_.y - unit->getPosition().y, target.pos_.x - unit->getPosition().x );
+                Position closest_loc_to_permit_attacking = Position( target.pos_.x + cos( theta ) * unit->getType().groundWeapon().maxRange() * 0.75, target.pos_.y + sin( theta ) * unit->getType().groundWeapon().maxRange() * 0.75);
+                unit->move( closest_loc_to_permit_attacking );
                 return;
             }
             unit->attack( target.bwapi_unit_ );
@@ -170,7 +172,9 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 return;
             }
             else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->move( target.pos_ );
+                double theta = atan2( target.pos_.y - unit->getPosition().y, target.pos_.x - unit->getPosition().x );
+                Position closest_loc_to_permit_attacking = Position( target.pos_.x + cos( theta ) * unit->getType().groundWeapon().maxRange() * 0.75, target.pos_.y + sin( theta ) * unit->getType().groundWeapon().maxRange() * 0.75);
+                unit->move( closest_loc_to_permit_attacking );
                 return;
             }
                 unit->attack( target.pos_ );
@@ -204,8 +208,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         int dist_x = e_unit.pos_.x - pos.x;
         int dist_y = e_unit.pos_.y - pos.y;
         double theta = atan2( dist_y, dist_x ); // att_y/att_x = tan (theta).
-        double retreat_dx = -cos( theta ) * (range + chargable_distance_net - dist) ;
-        double retreat_dy = -sin( theta ) * (range + chargable_distance_net - dist) ; // get -range- outside of their range.  Should be safe.
+        double retreat_dx = -cos( theta ) * ( chargable_distance_net ) ;
+        double retreat_dy = -sin( theta ) * ( chargable_distance_net ) ; // get -range- outside of their range.  Should be safe.
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
@@ -240,11 +244,16 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             // redefine this to be a walkable one.
         }
 
-        if ( retreat_spot && retreat_spot.isValid() && unit->hasPath(retreat_spot) && !unit->isBurrowed() ) {
+        walkable_plus = retreat_spot.isValid() &&
+            (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
+            (MeatAIModule::isClearRayTrace( pos, retreat_spot, inventory ) && //or does it cross an unwalkable position? 
+                MeatAIModule::checkOccupiedArea( ui, retreat_spot, 32 ))); // or does it end on a unit?
+
+        if ( retreat_spot && retreat_spot.isValid() && unit->hasPath(retreat_spot) && !unit->isBurrowed() && walkable_plus ) {
             unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
             MeatAIModule::Diagnostic_Line( pos, retreat_spot, color );
         }
-        else {
+        else if ( unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
             unit->attack( retreat_spot );
         }
     }
@@ -352,7 +361,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
 
             Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
 
-            if ( e && e->pos_ && e->pos_.getDistance(pos) > ei.max_range_ + 96 ) {
+            if ( e && e->pos_ && e->pos_.getDistance(pos) > ei.max_range_ + 512 ) {
                 if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
                     int dist = unit->getDistance( e->pos_ );
                     int dist_x = e->pos_.x - pos.x;
@@ -397,8 +406,8 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                         if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
                             double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
                             int distance_metric = inv.getDifferentialDistanceOutFromEnemy( e->pos_, pos );
-                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64 );
-                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64 );
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 );
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 );
                         }
                     } else if ( enemy_spot > my_spot ) {
                         my_spot = inv.getRadialDistanceOutFromHome( pos );
@@ -422,8 +431,8 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                         if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
                             double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
                             int distance_metric = inv.getDifferentialDistanceOutFromHome( e->pos_, pos );
-                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 + 64);
-                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 + 64);
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 );
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 );
                         }
                     }
                 }

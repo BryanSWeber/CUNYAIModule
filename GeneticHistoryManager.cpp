@@ -41,7 +41,7 @@ GeneticHistory::GeneticHistory( string file ) {
     string build_order_out;
     double build_order_rand = dis( gen );
     if ( build_order_rand <= 0.20 ) {
-        build_order_out = "drone pool drone drone ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling";
+        build_order_out = "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling";
     }
     else if ( build_order_rand <= 0.40  && build_order_rand > 0.20 ) {
         build_order_out = "drone drone drone drone drone overlord pool drone extractor drone drone";

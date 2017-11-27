@@ -127,7 +127,7 @@ public:
 	  // When should we reset the lock?
 	  bool isInLine(const Unit &unit);
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
-	  bool IsFightingUnit(const Unit &unit);
+	  static bool IsFightingUnit(const Unit &unit);
 	  // evaluates if it was order to fight recently.
 	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.

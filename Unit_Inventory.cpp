@@ -153,7 +153,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
-            if ( u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_.maxEnergy() > 0 ) {
+            if ( u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_.maxEnergy() > 0 || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier || u_iter.second.type_ == UnitTypes::Protoss_Reaver ) {
 
                 if ( u_iter.second.type_.isFlyer() ) {
                     fliers += MeatAIModule::Stock_Units( u_iter.second.type_, *this ); // add the value of that type of unit to the flier stock.

@@ -93,6 +93,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                             centralize_y > 0 &&
                             getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
                             Broodwar->canBuildHere( TilePosition( centralize_x, centralize_y ), UnitTypes::Zerg_Creep_Colony, unit, false ) &&
+                            inventory.map_veins_[WalkPosition(TilePosition( centralize_x, centralize_y )).x][WalkPosition( TilePosition( centralize_x, centralize_y ) ).y] < 150 && // don't wall off please. Wide berth around blue veins.
                             inventory.getRadialDistanceOutFromEnemy( Position( TilePosition( centralize_x, centralize_y ) ) ) <= chosen_base_distance ) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
@@ -130,6 +131,7 @@ bool MeatAIModule::Check_N_Build( const UnitType &building, const Unit &unit, co
                             centralize_y > 0 &&
                             getResourceInventoryInRadius( neutral_inventory, Position( TilePosition( centralize_x, centralize_y ) ), 64 ).resource_inventory_.empty() &&
                             Broodwar->canBuildHere( TilePosition( centralize_x, centralize_y ), UnitTypes::Zerg_Creep_Colony, unit, false ) &&
+                            inventory.map_veins_[WalkPosition( TilePosition( centralize_x, centralize_y ) ).x][WalkPosition( TilePosition( centralize_x, centralize_y ) ).y] < 150 && // don't wall off please. wide berth around blue veins
                             inventory.getRadialDistanceOutFromHome( Position( TilePosition( centralize_x, centralize_y ) ) ) >= chosen_base_distance ) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition( centralize_x, centralize_y );
