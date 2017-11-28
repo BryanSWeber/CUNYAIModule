@@ -105,7 +105,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
                 if ( critical_target ) {
-                    e_priority = 3;
+                    e_priority = 4;
                 }
                 else if ( MeatAIModule::Can_Fight( e->second, unit ) ||
                     e_type.spaceProvided() > 0 ||
@@ -113,9 +113,12 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_type == UnitTypes::Protoss_Carrier ||
                     (e_type.isDetector() && ui.cloaker_count_ > 0) ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && ( MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e->second.bwapi_unit_->isRepairing() ) ) ) { // if they can fight us, carry troops, or cast spells.
+                    e_priority = 3;
+                }
+                else if ( e_type.isWorker() ) {
                     e_priority = 2;
                 }
-                else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva ) {
+                else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
                     e_priority = 1; // or if they cant fight back we'll get those last.
                 }
                 else {

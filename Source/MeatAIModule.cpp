@@ -647,14 +647,13 @@ void MeatAIModule::onFrame()
             } // Close Build loop
 
             //Retarget Expos, check for a roadblock.
-            //if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 5 * 24 ) {
-            //    my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
-            //    inventory.getExpoPositions( enemy_inventory, friendly_inventory );
-            //    
-            //    if ( Expo( miner.bwapi_unit_, true, inventory ) ) { // update this guy's target if he passes near a mineral patch.
-            //        continue;
-            //    }
-            //}
+            if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 15 * 24 ) {
+                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+                Worker_Clear( u, friendly_inventory );
+                if ( miner.locked_mine_ ) {
+                    continue;
+                }
+            }
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( !miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
@@ -686,6 +685,13 @@ void MeatAIModule::onFrame()
                 }
             }
 
+            if ( isIdleEmpty(miner.bwapi_unit_) && my_reservation.last_builder_sent_ < t_game - 15 * 24 ) {
+                Worker_Clear( u, friendly_inventory );
+                if ( miner.locked_mine_ ) {
+                    continue;
+                }
+            }
+
             if ( miner.bwapi_unit_->isCarryingMinerals() || miner.bwapi_unit_->isCarryingGas() || miner.bwapi_unit_->getOrderTarget() == NULL ) {
                 continue;
             }
@@ -706,7 +712,7 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        if ( isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || (u->isBurrowed() && u->getLastCommandFrame() < t_game - 7)) )
+        if ( (isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 12) )
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
@@ -722,7 +728,7 @@ void MeatAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && u->getLastCommandFrame() < Broodwar->getFrameCount() - 7)
+        if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && u->getLastCommandFrame() < Broodwar->getFrameCount() - 12 )
         {
 
             Stored_Unit* e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 999999 );
@@ -966,13 +972,23 @@ void MeatAIModule::onFrame()
             }
             if ( detector_found ) {
                 Position detector_pos = detector_of_choice->getPosition();
-                double theta = atan2( c.y - detector_pos.y , c.x - detector_pos.x );
+                double theta = atan2( c.y - detector_pos.y, c.x - detector_pos.x );
                 Position closest_loc_to_c_that_gives_vision = Position( c.x + cos( theta ) * SightRange( detector_of_choice ) * 0.75, c.y + sin( theta ) * SightRange( detector_of_choice ) ) * 0.75;
-                detector_of_choice->move( closest_loc_to_c_that_gives_vision );
-                if ( _ANALYSIS_MODE ) {
-                    Broodwar->drawCircleMap( c, 25, Colors::Cyan );
-                    Diagnostic_Line( detector_of_choice->getPosition(), c, Colors::Cyan );
+                if ( closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0,0) ) {
+                    detector_of_choice->move( closest_loc_to_c_that_gives_vision );
+                    if ( _ANALYSIS_MODE ) {
+                        Broodwar->drawCircleMap( c, 25, Colors::Cyan );
+                        Diagnostic_Line( detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, Colors::Cyan );
+                    }
                 }
+                else {
+                    detector_of_choice->move( detector_pos );
+                    if ( _ANALYSIS_MODE ) {
+                        Broodwar->drawCircleMap( c, 25, Colors::Cyan );
+                        Diagnostic_Line( detector_of_choice->getPosition(), c, Colors::Cyan );
+                    }
+                }
+
             }
         }
     }

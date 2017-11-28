@@ -301,8 +301,9 @@ bool MeatAIModule::Reactive_Build( const Unit &larva, const Inventory &inv, cons
 bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv ) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
-    bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_;
+    bool expansion_meaningful_or_larvae_starved = (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 3 * Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ))) || inventory.min_fields_ < 8 || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) < inventory.hatches_ || inventory.min_workers_ + inventory.gas_workers_ <= Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) + 3;
     bool larva_empty = Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0;
+    bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0 && !army_starved));
 
     buildings_started += Expo( drone, buildings_started == 0 && expansion_meaningful_or_larvae_starved, inventory );
 
@@ -316,12 +317,12 @@ bool MeatAIModule::Building_Begin( const Unit &drone, const Inventory &inv, cons
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0 );
 
     //Tech Buildings
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && buildings_started == 0 &&
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, upgrade_bool && buildings_started == 0 &&
         Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 0 &&
         Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Lair ) > 0 &&
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 );
 
-    buildings_started += Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, (tech_starved || Count_Units( UnitTypes::Zerg_Larva, friendly_inventory ) == 0) && buildings_started == 0 &&
+    buildings_started += Check_N_Build( UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, upgrade_bool && buildings_started == 0 &&
         Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 1 &&
         Count_Units_Doing( UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits() ) == 1 &&
         Count_Units( UnitTypes::Zerg_Lair, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Lair ) > 0 &&
