@@ -1,6 +1,6 @@
 #pragma once
 
-#include <BWAPI.h> //4.2.0 BWAPI
+#include <BWAPI.h> //4.1.2 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
@@ -9,15 +9,15 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE false
-#define _ANALYSIS_MODE true
-#define _COBB_DOUGLASS_REVEALED false
-#define _AT_HOME_MODE false
-
-//#define _RESIGN_MODE true
+//#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE true
-//#define _AT_HOME_MODE true
-//#define _COBB_DOUGLASS_REVEALED true
+//#define _COBB_DOUGLASS_REVEALED false
+//#define _AT_HOME_MODE false
+
+#define _RESIGN_MODE true
+#define _ANALYSIS_MODE true
+#define _AT_HOME_MODE true
+#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -61,6 +61,7 @@ public:
   double win_rate; //fairly straighforward.
 
   int miner_count_; // a temp variable
+  int gas_count_;
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
@@ -167,6 +168,7 @@ public:
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
+      static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );

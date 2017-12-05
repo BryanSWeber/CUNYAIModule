@@ -1,23 +1,23 @@
 
-library("lattice", lib.loc="C:/Program Files/R/R-3.4.0/library")
+library("lattice", lib.loc="~/R/win-library/3.4")
 library(readr)
 library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 
-out <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", col_names = FALSE))
-out_2 <- as.data.frame(read_csv("C:/Program Files (x86)/StarCraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
+out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
+# out_2 <- as.data.frame(read_csv("C:/Users/Bryan/Documents/starcraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
 
 names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
 # names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
 # 
 # out<-rbind(out, out_2)
 # out<-out[!duplicated(out),]
-# # # new<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
-# # #                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
-# # #                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
-# # #                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
-# # #                                          , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
-#  write.table(out,"C:/Program Files (x86)/StarCraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
+# out<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
+#                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
+#                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
+#                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
+                                         # , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
+ # write.table(out,"C:/Users/Bryan/Documents/starcraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
 # # # out<-new
 #  
 #(out$shortct>=321 | out$Winner==1) -> out$Winner
@@ -26,15 +26,17 @@ out$race_opp <- factor( paste ( out$Race, abbreviate(out$opponent_name) , sep= "
 out$race_map <- factor( paste ( out$map, out$Race , sep= " " ))
 out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= " " ))
 out$build_map <- factor( paste ( abbreviate(out$build_order), out$map , sep= " " ))
+out$build_map_race <- factor( paste ( abbreviate(out$build_order), out$map, out$Race , sep= " " ))
+out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
 
 #out<-subset(out,out$Winner==1)
 
 # histogram( ~out$delta_gas | out$race_win, type="count") #
 # histogram( ~out$gamma_supply | out$race_win, type="count") #
 # histogram( ~out$alpha_vis | out$race_win, type="count") #0.6
-# histogram( ~out$alpha_army | out$race_win, type="count") #0.525
-# histogram( ~out$alpha_econ | out$race_win, type="count") #0.008-0.009
-# histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
+histogram( ~out$alpha_army | out$race_win, type="count") #0.525
+histogram( ~out$alpha_econ | out$race_win, type="count") #0.008-0.009
+histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
 # 
 # by(out, out$Race, function(x) summary(glm( Winner ~ delta_gas + gamma_supply + alpha_army * alpha_econ * alpha_tech - alpha_army - alpha_econ - alpha_tech - alpha_army:alpha_econ:alpha_tech, family = quasibinomial(link = "logit"), data=x)))
 # #by(out, out$Race, function(x) summary(glm( Winner ~ delta_gas + gamma_supply + alpha_army + alpha_econ + alpha_tech, family = quasibinomial(link = "logit"), data=x)))
@@ -44,8 +46,8 @@ out$build_map <- factor( paste ( abbreviate(out$build_order), out$map , sep= " "
 # ks.test( c(out$delta_gas[out$Winner==1]), c(out$delta_gas[out$Winner==0]) )
 # ks.test( c(out$gamma_supply[out$Winner==1]), c(out$gamma_supply[out$Winner==0]) )
 # ks.test( c(out$alpha_army[out$Winner==1]), c(out$alpha_army[out$Winner==0]) )
-# ks.test( c(out$alpha_econ[out$Winner==1]), c(out$alpha_econ[out$Winner==0]) )
-# ks.test( c(out$alpha_tech[out$Winner==1]), c(out$alpha_tech[out$Winner==0]) )
+ ks.test( c(out$alpha_econ[out$Winner==1]), c(out$alpha_econ[out$Winner==0]) )
+ ks.test( c(out$alpha_tech[out$Winner==1]), c(out$alpha_tech[out$Winner==0]) )
 # 
  histogram( ~ out$Winner | out$`Race`, xlab="Win % of Bot vs each Race")
  # histogram( ~ out$Winner | out$`opponent_name`, xlab="Win % of Bot vs each NAME")
@@ -58,6 +60,8 @@ out$build_map <- factor( paste ( abbreviate(out$build_order), out$map , sep= " "
  table(out$race_map, out$Winner)
  table(out$build_map, out$Winner)
  table(out$opponent_name,out$Winner)
+ table(out$build_map_race,out$Winner)
+ table(out$opp_map,out$Winner)
  
 # # summary(out)
 #  mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
@@ -88,7 +92,7 @@ plot(t_t,out$Winner[out$Race == "Terran"] ); #protoss should be longest, hopeful
 colors <- c("#999999", "#E69F00", "#56B4E9") 
 unique(as.factor(out$Race[out$Winner==1])) #grey=p orange=t blue=z
 colors <- colors[as.factor(out$Race[out$Winner==1])]
-for(i in seq(0,360,30)){
+for(i in seq(0,360,60)){
   scatterplot3d(out$alpha_army[out$Winner==1],
             out$alpha_tech[out$Winner==1],
             out$alpha_econ[out$Winner==1],

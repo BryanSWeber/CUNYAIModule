@@ -24,6 +24,7 @@ public:
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // towards enemy or enemy base.
     void setAttraction( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved );
+    void scoutEnemyBase(const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv, const bool & army_starved);
     // from enemy or towards home.
     void setAttractionHome( const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv, const bool & army_starved );
     void setSeperation( const Unit &unit, const Position &pos, const Unit_Inventory &ui );

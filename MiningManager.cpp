@@ -18,7 +18,6 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
-
                 int dist_temp = inv.getDifferentialDistanceOutFromHome( friendly_inventory.getMeanBuildingLocation(), Position(p) );
                 bool safe_expo = enemy_inventory.unit_inventory_.empty() ||
                     !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
@@ -34,7 +33,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             }
         }
         else {
-            unit->stop();
+            return false;
         }
 
         if ( inv.next_expo_ )
@@ -151,7 +150,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Resource_Inventory available_fields;
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == 0 && r->second.current_stock_value_ <= 8 ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == 0 && r->second.current_stock_value_ <= 8 && !getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) ) {
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.

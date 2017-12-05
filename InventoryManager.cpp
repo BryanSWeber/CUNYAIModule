@@ -1067,7 +1067,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
     }
 }
 
-void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Inventory &u_inv ) {
+void Inventory::getExpoPositions() {
 
     expo_positions_.clear();
 
@@ -1123,10 +1123,7 @@ void Inventory::getExpoPositions( const Unit_Inventory &e_inv, const Unit_Invent
                     }
                 }
 
-
-                bool condition = local_maximum;
-
-                if ( condition ) {
+                if ( local_maximum ) {
                     expo_positions_.push_back( { static_cast<int>(x), static_cast<int>(y) } );
                 }
 

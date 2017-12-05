@@ -47,7 +47,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Morph && !unit->isMorphing()) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
-                         (u_type == UnitCommandTypes::Return_Cargo && !laden_worker) ||
+                         (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
@@ -416,6 +416,27 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 	}
 
 	return return_unit;
+}
+
+//Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
+Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
+    int min_dist = dist;
+    double temp_dist = 999999;
+    Stored_Resource *return_unit = nullptr;
+
+    if (!ri.resource_inventory_.empty()) {
+        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+            if (r->second.type_ == r_type && r->second.valid_pos_) {
+                temp_dist = (*r).second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(r->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
 }
 
 //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.

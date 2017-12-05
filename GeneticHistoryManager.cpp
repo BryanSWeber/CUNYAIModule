@@ -8,6 +8,7 @@
 # include <cstring>
 # include <ctime>
 # include <string>
+# include <algorithm>
 # include <random> // C++ base random is low quality.
 
 
@@ -40,23 +41,36 @@ GeneticHistory::GeneticHistory( string file ) {
 
     string build_order_out;
     double build_order_rand = dis( gen );
-    if ( build_order_rand <= 0.20 ) {
-        build_order_out = "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling";
+    if ( build_order_rand <= 0.125 ) {
+        build_order_out = "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
     }
-    else if ( build_order_rand <= 0.40  && build_order_rand > 0.20 ) {
-        build_order_out = "drone drone drone drone drone overlord pool drone extractor drone drone";
+    else if ( build_order_rand <= 0.25  && build_order_rand > 0.125) {
+        build_order_out = "drone drone drone drone drone overlord pool drone extractor drone drone"; // 9pool
     }
-    else if ( build_order_rand <= 0.60  && build_order_rand > 0.40 ){
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone";
+    else if ( build_order_rand <= 0.375  && build_order_rand > 0.25 ){
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone"; // 12hatch-pool
     }
-    else if ( build_order_rand <= 0.80  && build_order_rand > 0.60 ) {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling";
+    else if ( build_order_rand <= 0.5 && build_order_rand > 0.375 ) {
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling"; // 2h lurker
     }
-    else {
-        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
+    else if (build_order_rand <= 0.625 && build_order_rand > 0.5) {
+        build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta"; // 2h - Muta
     }
+	else if (build_order_rand <= 0.75 && build_order_rand > 0.625) {
+		build_order_out = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //zerg_9pool - UAB
+	}
+	else if (build_order_rand <= 0.875 && build_order_rand > 0.75) {
+		build_order_out = "drone drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract"; //zerg_2hatchhydra - UAB
+	}
+	else {
+		build_order_out = "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
+	}
+	//build_order_out = "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
 
+    int selected_win_count = 0;
+    int selected_lose_count = 0;
     int win_count = 0;
+    int lose_count = 0;
     int relevant_game_count = 0;
     int winning_player_map_race = 0;
     int winning_player_map = 0;
@@ -72,6 +86,8 @@ GeneticHistory::GeneticHistory( string file ) {
     int losing_player = 0;
     int losing_map = 0;
     int losing_race = 0;
+
+    double prob_win_given_conditions;
 
     string entry; // entered string from stream
     vector<double> delta_in;
@@ -97,6 +113,9 @@ GeneticHistory::GeneticHistory( string file ) {
     vector<double> a_tech_win;
     vector<string> map_name_win;
     vector<string> build_order_win;
+
+    vector<string> build_orders_tried;
+    vector<string> enemy_races_tried;
 
     loss_rate_ = 1;
 
@@ -155,7 +174,15 @@ GeneticHistory::GeneticHistory( string file ) {
     string map_name = Broodwar->mapFileName().c_str();
 
     for ( int j = 0; j < csv_length; ++j ) { // what is the best conditional to use? Keep in mind we would like variation.
-        if ( name_in[j] == e_name ) {
+
+        if (win_in[j] == 1) {
+            win_count++;
+        }
+        else {
+            lose_count++;
+        }
+
+        if (name_in[j] == e_name && race_in[j] != e_race && map_name_in[j] != map_name) {
             if ( win_in[j] == 1 ) {
                 winning_player++;
             }
@@ -164,7 +191,7 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
 
-        if ( race_in[j] == e_race ) {
+        if ( name_in[j] != e_name && race_in[j] == e_race && map_name_in[j] != map_name) {
             if ( win_in[j] == 1 ) {
                 winning_race++;
             }
@@ -173,7 +200,7 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         } 
 
-        if ( map_name_in[j] == map_name ) {
+        if ( name_in[j] != e_name && race_in[j] != e_race && map_name_in[j] == map_name) {
             if ( win_in[j] == 1 ) {
                 winning_map++;
             }
@@ -182,7 +209,7 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
 
-        if ( name_in[j] == e_name && race_in[j] == e_race ) {
+        if ( name_in[j] == e_name && race_in[j] == e_race && map_name_in[j] != map_name) {
             if ( win_in[j] == 1 ) {
                 winning_player_race++;
             }
@@ -191,7 +218,7 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
 
-        if ( name_in[j] == e_name && map_name_in[j] == map_name ) {
+        if (name_in[j] == e_name && race_in[j] != e_race && map_name_in[j] == map_name) {
             if ( win_in[j] == 1 ) {
                 winning_player_map++;
             }
@@ -201,7 +228,7 @@ GeneticHistory::GeneticHistory( string file ) {
         }
 
 
-        if ( race_in[j] == e_race && map_name_in[j] == map_name ) {
+        if (name_in[j] != e_name && race_in[j] == e_race && map_name_in[j] == map_name) {
             if ( win_in[j] == 1 ) {
                 winning_map_race++;
             }
@@ -218,38 +245,83 @@ GeneticHistory::GeneticHistory( string file ) {
                 losing_player_map_race++;
             }
         }
+        if (name_in[j] == e_name ) {
+            enemy_races_tried.push_back(race_in[j]);
+        }
     } 
 
     //What model is this? It's greedy...
-    vector<double> probabilities = { winning_player_map_race / (double)max( winning_player_map_race + losing_player_map_race, 1 ), winning_player_map / (double)max( winning_player_map + losing_player_map, 1 ) , winning_player_race / (double)max( winning_player_race + losing_player_race, 1 ), winning_player / (double)max( winning_player + losing_player,1 ), winning_race / (double)max( winning_race + losing_race, 1 ) , winning_map / (double)max( winning_map + losing_map,1 ) };
+    vector<double> probabilities = { winning_player_map_race / (double)max((winning_player_map_race + losing_player_map_race) , 1),
+        winning_player_map / (double)max(winning_player_map + losing_player_map, 1),
+        winning_player_race / (double)max(winning_player_race + losing_player_race, 1), //not independent at all. Correct later.
+        winning_player / (double)max(winning_player + losing_player, 1),
+        winning_map_race / (double)max(winning_map_race + losing_map_race, 1),
+        winning_race / (double)max(winning_race + losing_race, 1),
+        winning_map / (double)max(winning_map + losing_map, 1) };
+
+    double prior = win_count / (double)max(win_count + lose_count, 1);
+
+    int min_frequency = 99999;
     int counter = 1;
-    for ( auto it = probabilities.begin(); it != probabilities.end() && !probabilities.empty(); it++ ) {
-        if ( dis( gen ) > *it ) { // If random die roll would not indicate a victory for that run.
-            counter++;
-            continue;
-        }
-        else {
-            break;
-        }
+    double likelihood_w = 1;
+    double likelihood_l = 1;
+    double rand_value = dis(gen);
+
+
+    //for (std::vector<int>::size_type it = 0; it != probabilities.size(); it++) {
+    //    //if ( it == 3 ){
+    //    //    if (e_race == "Unknown") {
+    //    //        likelihood_w *= 1 / 3;
+    //    //        continue; // if you're random, it's 1/3 whatever the historical values suggest.
+    //    //    }
+    //    //    else {
+    //    //        continue; // if we know the player, and you're not random... we know the race.
+    //    //    }
+    //    //} 
+
+    //    if (probabilities[it] > 0 && probabilities[it] < 1) {
+    //        likelihood_w += probabilities[it];
+    //    }
+    //    if (probabilities[it] > 0 && probabilities[it] < 1) {
+    //        likelihood_l += 1 - probabilities[it];
+    //    }
+    //}
+
+    //prob_win_given_conditions = (likelihood_w ) / (likelihood_w  + likelihood_l);
+
+    vector<int> frequency = { winning_player_map_race + losing_player_map_race, // cumulative total of those that meet inclusive critera.
+        winning_player_map + losing_player_map + winning_player_map_race + losing_player_map_race,
+        winning_player_race + losing_player_race + winning_player_map_race + losing_player_map_race, //not independent at all. Correct later.
+        winning_player + losing_player + winning_player_map_race + losing_player_map_race + winning_player_map + losing_player_map + winning_player_race + losing_player_race,
+        winning_map_race + losing_map_race + winning_player_map_race + losing_player_map_race,
+        winning_race + losing_race + winning_player_map_race + losing_player_map_race + winning_player_race + losing_player_race,
+        winning_map + losing_map + winning_player_map_race + losing_player_map_race + winning_player_map + losing_player_map + winning_map_race + losing_map_race };
+
+    for (std::vector<int>::size_type it = 0; it != frequency.size(); it++) {
+        if ( frequency[it] < min_frequency && frequency[it] > 0 ) {
+            counter = static_cast<int>(it);
+            min_frequency = frequency[it];
+            prob_win_given_conditions = probabilities[it];
+        } // the one with the lowest frequency of wins will have the largest marginal impact.
     }
 
     for ( int j = 0; j < csv_length; ++j ) {
-        bool condition;
+        bool condition = true; 
         switch ( counter )
         {
         case 1: condition = name_in[j] == e_name && race_in[j] == e_race && map_name_in[j] == map_name;
             break;
-        case 2: condition = name_in[j] == e_name && map_name_in[j] == map_name;
+        case 2: condition = name_in[j] == e_name && race_in[j] != e_race && map_name_in[j] == map_name;
             break;
-        case 3: condition = name_in[j] == e_name && race_in[j] == e_race;
+        case 3: condition = name_in[j] == e_name && race_in[j] == e_race && map_name_in[j] != map_name;
             break;
-        case 4: condition = race_in[j] == e_race && map_name_in[j] == map_name;
+        case 4: condition = name_in[j] == e_name && race_in[j] != e_race && map_name_in[j] != map_name;
             break;
-        case 5: condition = name_in[j] == e_name;
+        case 5: condition = name_in[j] != e_name && race_in[j] == e_race && map_name_in[j] == map_name;
             break;
-        case 6: condition = race_in[j] == e_race;
+        case 6: condition = name_in[j] != e_name && race_in[j] == e_race && map_name_in[j] != map_name;
             break;
-        case 7: condition = map_name_in[j] == map_name;
+        case 7: condition = name_in[j] != e_name && race_in[j] != e_race && map_name_in[j] == map_name;
             break;
         default:
             break;
@@ -262,20 +334,31 @@ GeneticHistory::GeneticHistory( string file ) {
             a_econ_win.push_back( a_econ_in[j] );
             a_tech_win.push_back( a_tech_in[j] );
             build_order_win.push_back( build_order_in[j] );
-            win_count++;
-            relevant_game_count++;
+            build_orders_tried.push_back(build_order_in[j]);
+            selected_win_count++;
         } 
         else if ( condition ) {
-            relevant_game_count++;
+            selected_lose_count++;
+            build_orders_tried.push_back(build_order_in[j]);
         }
     } //or widest hunt possible.
 
-    if ( win_count > 0 ) { // redefine final output.
+    std::sort(build_orders_tried.begin(), build_orders_tried.end());
+    int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-        std::uniform_real_distribution<double> unif_dist_to_win_count( max( 0, win_count - 25 ), win_count );
+    if ( selected_win_count > 0 ) { // redefine final output.
+
+        std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
+        std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
 
         int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
         int parent_2 = (int)(unif_dist_to_win_count( gen ));
+
+        build_order_out = build_order_win[parent_1];
+
+        while (build_order_out != build_order_win[parent_2]) {
+            parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+        }
 
         double linear_combo = dis( gen ); //linear_crossover, interior of parents. Big mutation at the end, though.
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
@@ -283,9 +366,6 @@ GeneticHistory::GeneticHistory( string file ) {
         a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
         a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
         a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
-
-        build_order_out = linear_combo < 0.5 ? build_order_win[parent_2] : build_order_win[parent_1]; // Otherwise, use the build from which you used more of the history.
-
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
         //int chrom_0 = (rand() % 100 + 1) / 2;
@@ -308,17 +388,18 @@ GeneticHistory::GeneticHistory( string file ) {
         //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
         if ( win_count > 0 ) { // if we have a win to work with
 
-            double loss_rate_temp = 1 - (double)win_count / (double)relevant_game_count;
+            loss_rate_ = 1 - prob_win_given_conditions /*(double)win_count / (double)relevant_game_count*/;
 
-            if ( loss_rate_temp < 0.01 ) {
-                loss_rate_ = 0.01; // Don't set all your parameters to zero on game two if you win game one.
-            }
-            else if ( loss_rate_temp > 0.99 ) {
-                loss_rate_ = 0.99; // Don't set all your parameters to zero on game two if you win game one.
-            }
-            else {
-                loss_rate_ = loss_rate_temp; // Don't set all your parameters to zero on game two if you win game one.
-            }
+        //    if ( loss_rate_temp < 0.01 ) {
+        //        loss_rate_ = 0.01; // Don't set all your parameters to zero on game two if you win game one.
+        //    }
+        //    else if ( loss_rate_temp > 0.99 ) {
+        //        loss_rate_ = 0.99; // Don't set all your parameters to zero on game two if you win game one.
+        //    }
+        //    else {
+        //        loss_rate_ = loss_rate_temp; // Don't set all your parameters to zero on game two if you win game one.
+        //    }
+
         }
 
         //From genetic history, random parent for each gene. Mutate the genome

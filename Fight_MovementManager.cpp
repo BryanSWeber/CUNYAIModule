@@ -21,11 +21,25 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 
     double rng_direction_ = dis( gen );
 
+    bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
+    bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
+    bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp(inventory.ln_army_stock_);
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) || inventory.start_positions_.empty();
+
     setAlignment( unit, flock );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
-    setAttraction( unit, pos, ei, inventory, army_starved ); // applies to overlords.
 
+    setAttractionHome(unit, pos, ei, inventory, army_starved);
+
+    if (!enemy_scouted && healthy && ready_to_fight) {
+        if (!inventory.start_positions_.empty()) {
+            scoutEnemyBase(unit, pos, ei, inventory, army_starved);
+        }
+        else {
+            setAttraction( unit, pos, ei, inventory, army_starved ); // applies to overlords.
+        }
+    }
                                                              // The following do NOT apply to flying units: Seperation, centralization.
     if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
         Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 32 );
@@ -33,7 +47,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
         setCentralize( pos, inventory );
     } // closure: flyers
 
-    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 && !MeatAIModule::getClosestAttackableStored(ei, UnitTypes::Zerg_Lurker,pos,UnitTypes::Zerg_Lurker.groundWeapon().maxRange() ) ) {
+    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 && !MeatAIModule::getClosestThreatOrTargetStored(ei, UnitTypes::Zerg_Lurker,pos,max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_) ) ) {
         unit->unburrow();
         return;
     }
@@ -442,19 +456,20 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
             }
         }
     }
-    else if ( !enemy_scouted && healthy && ready_to_fight ) {
+}
+
+void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved) {
         int randomIndex = rand() % inv.start_positions_.size();
-        if ( inv.start_positions_[randomIndex] ) {
+        if (inv.start_positions_[randomIndex]) {
             Position possible_base = inv.start_positions_[randomIndex];
-            int dist = unit->getDistance( possible_base );
+            int dist = unit->getDistance(possible_base);
             int dist_x = possible_base.x - pos.x;
             int dist_y = possible_base.y - pos.y;
-            double theta = atan2( dist_y, dist_x );
-            attract_dx_ = cos( theta ) * dist; // run 100% towards them.
-            attract_dy_ = sin( theta ) * dist;
-            inv.start_positions_.erase( inv.start_positions_.begin() + randomIndex );
+            double theta = atan2(dist_y, dist_x);
+            attract_dx_ = cos(theta) * dist; // run 100% towards them.
+            attract_dy_ = sin(theta) * dist;
+            inv.start_positions_.erase(inv.start_positions_.begin() + randomIndex);
         }
-    }
 }
 
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.

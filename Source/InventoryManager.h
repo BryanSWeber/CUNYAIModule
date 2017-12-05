@@ -106,7 +106,7 @@ struct Inventory {
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     
 	// updates the next target expo.
-	void Inventory::getExpoPositions(const Unit_Inventory &e_inv, const Unit_Inventory &u_inv);
+	void Inventory::getExpoPositions();
 	// Changes the next expo to X:
 	void Inventory::setNextExpo(const TilePosition tp);
 
