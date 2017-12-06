@@ -13,15 +13,17 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         int dist = 99999999;
 
         bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
-            !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) || 
+            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getDifferentialDistanceOutFromHome( friendly_inventory.getMeanBuildingLocation(), Position(p) );
+
                 bool safe_expo = enemy_inventory.unit_inventory_.empty() ||
-                    !getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
+                    getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) == nullptr ||
                     getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
+
                 bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
@@ -104,10 +106,10 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui, const int 
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.
-    if ( !available_fields.resource_inventory_.empty() ) {
-        Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
-        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-            miner.startMine( *closest, neutral_inventory );
+    if (!available_fields.resource_inventory_.empty()) {
+        Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
+        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+            miner.startMine(*closest, neutral_inventory);
         }
     }
 
@@ -131,8 +133,8 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
     } //find closest mine meeting this criteria.
     if ( !available_fields.resource_inventory_.empty() ) {
         Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
-        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-            miner.startMine( *closest, neutral_inventory );
+        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+            miner.startMine(*closest, neutral_inventory);
         }
     }
 
@@ -141,26 +143,41 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui, const int l
 
 void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
-    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-        my_reservation.removeReserveSystem( unit->getBuildType() );
-    }
-
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
+    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
     Resource_Inventory available_fields;
 
-    for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ == 0 && r->second.current_stock_value_ <= 8 && !getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) ) {
-            available_fields.addStored_Resource( r->second );
+    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+        my_reservation.removeReserveSystem(unit->getBuildType());
+    }
+
+    for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
+        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.type_.isMineralField() ) {
+            available_fields.addStored_Resource(r->second);
+        }
+    } //find closest mine meeting this criteria.
+    if (!available_fields.resource_inventory_.empty()) {
+        Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
+        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+            miner.startMine(*closest, neutral_inventory);
+        }
+    }
+}
+
+bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui)
+{
+
+    bool already_assigned = false;
+    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Resource_Inventory available_fields;
+
+    for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
+        if (r->second.current_stock_value_ <= 8 && getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) == nullptr) {
+            return true;
         }
     } //find closest mine meeting this criteria.
 
-    if ( !available_fields.resource_inventory_.empty() ) {
-        Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
-        if ( miner.bwapi_unit_->getLastCommand().getTarget() != closest->bwapi_unit_ && miner.bwapi_unit_->gather( closest->bwapi_unit_ ) ) {
-            miner.startMine( *closest, neutral_inventory );
-        }
-    }
+    return false;
 }
 
   //Returns True if there is an out for gas. Does not consider all possible gas outlets.

@@ -96,7 +96,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int y_sum = 0;
      int count = 0;
      for ( const auto &u : this->unit_inventory_ ) {
-         if ( u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding() ) {
+         if ( u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding() || u.second.bwapi_unit_->isMorphing() ) {
              x_sum += u.second.pos_.x;
              y_sum += u.second.pos_.y;
              count++;
@@ -283,8 +283,14 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
 	}
 }
 
+Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
+    Stored_Resource* tenative_resource = nullptr;
+    tenative_resource = &ri.resource_inventory_.find( locked_mine_ )->second;
+    return tenative_resource;
+}
+
 bool Stored_Unit::isClearing(Resource_Inventory &ri) {
-    if (locked_mine_ && locked_mine_->exists()) {
+    if ( locked_mine_ ) {
         map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
         if (iter != ri.resource_inventory_.end()) {
             if (iter->second.current_stock_value_ <= 8) {

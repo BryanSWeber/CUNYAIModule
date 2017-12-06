@@ -9,12 +9,12 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
+#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 
-#define _RESIGN_MODE true
+//#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 #define _AT_HOME_MODE true
 #define _COBB_DOUGLASS_REVEALED true
@@ -115,6 +115,7 @@ public:
 	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui, const int low_drone );
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
+      bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
       // Checks if there is a way to spend gas.
       bool Gas_Outlet();
 

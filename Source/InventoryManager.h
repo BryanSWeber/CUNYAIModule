@@ -45,6 +45,7 @@ struct Inventory {
 
     TilePosition next_expo_;
 	bool list_cleared_;
+    bool workers_are_clearing_;
 
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock( const Unit_Inventory &ui );
@@ -104,7 +105,8 @@ struct Inventory {
     int Inventory::getRadialDistanceOutFromHome( Position A );
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
-    
+    void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri);
+
 	// updates the next target expo.
 	void Inventory::getExpoPositions();
 	// Changes the next expo to X:

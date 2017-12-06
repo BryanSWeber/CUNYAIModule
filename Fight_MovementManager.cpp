@@ -24,21 +24,21 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp(inventory.ln_army_stock_);
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) || inventory.start_positions_.empty();
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
 
     setAlignment( unit, flock );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
 
-    setAttractionHome(unit, pos, ei, inventory, army_starved);
+    setAttractionHome(unit, pos, ei, inventory);
 
     if (!enemy_scouted && healthy && ready_to_fight) {
         if (!inventory.start_positions_.empty()) {
-            scoutEnemyBase(unit, pos, ei, inventory, army_starved);
+            scoutEnemyBase(unit, pos, ei, inventory);
         }
-        else {
-            setAttraction( unit, pos, ei, inventory, army_starved ); // applies to overlords.
-        }
+    }
+    else if ( healthy && ready_to_fight ) {
+        setAttraction(unit, pos, ei, inventory, army_starved); // applies to overlords.
     }
                                                              // The following do NOT apply to flying units: Seperation, centralization.
     if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -65,12 +65,12 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
         brownian_pos = { (int)(pos.x + x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_), (int)(pos.y + y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_) };// redefine this to be a walkable one.
     }
 
-    if ( unit->canAttack( brownian_pos ) ) {
-        unit->attack( brownian_pos );
-    }
-    else {
+    //if ( unit->canAttack( brownian_pos ) ) {
+    //    unit->attack( brownian_pos );
+    //}
+    //else {
         unit->move( brownian_pos );
-    }
+    //}
 
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black );//Stutter
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green );//Alignment
@@ -161,7 +161,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
         }
     }
 
-    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.bwapi_unit_) ) {
+    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
             if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((dist < ei.max_range_ && ei.detector_count_ == 0) || dist < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
                 unit->burrow();
@@ -230,7 +230,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         setAlignment( unit, ui );
         setCohesion( unit, pos, ui );
-        setAttractionHome( unit, pos, ei, inventory, false ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
+        setAttractionHome( unit, pos, ei, inventory ); // We need to modify this in order to properly retreat. It is simply redundant with the typical retreating algortithm and sends in careening in the wrong direction.
 
         // The following do NOT apply to flying units: Seperation.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -458,7 +458,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
     }
 }
 
-void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved) {
+void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv) {
         int randomIndex = rand() % inv.start_positions_.size();
         if (inv.start_positions_[randomIndex]) {
             Position possible_base = inv.start_positions_[randomIndex];
@@ -473,12 +473,7 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory
 }
 
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
-void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved ) {
-
-    bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
-    bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ );
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Position( 0, 0 ) || inv.start_positions_.empty();
+void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv ) {
 
     int dist = 999999;
     bool visible_unit_found = false;

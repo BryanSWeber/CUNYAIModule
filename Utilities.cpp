@@ -363,7 +363,7 @@ Unitset MeatAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
 Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     double temp_dist = 999999;
-    Stored_Unit *return_unit = nullptr;
+    Stored_Unit* return_unit = nullptr;
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
@@ -382,7 +382,7 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
 	double temp_dist = 999999;
-	Stored_Unit *return_unit = nullptr;
+	Stored_Unit* return_unit = nullptr;
 
 	if (!ui.unit_inventory_.empty()) {
 		for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
@@ -403,7 +403,7 @@ Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
 Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
 	double temp_dist = 999999;
-	Stored_Resource *return_unit = nullptr;
+	Stored_Resource* return_unit = nullptr;
 
 	if (!ri.resource_inventory_.empty()) {
 		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
@@ -422,7 +422,7 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     double temp_dist = 999999;
-    Stored_Resource *return_unit = nullptr;
+    Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
@@ -444,7 +444,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const
     int min_dist = dist;
     bool can_attack;
     double temp_dist = 999999;
-    Stored_Unit *return_unit = nullptr; 
+    Stored_Unit* return_unit = nullptr; 
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
@@ -467,7 +467,7 @@ Stored_Unit* MeatAIModule::getClosestVisibleAttackableStored( Unit_Inventory &ui
     int min_dist = dist;
     bool can_attack;
     double temp_dist = 999999;
-    Stored_Unit *return_unit = nullptr;
+    Stored_Unit* return_unit = nullptr;
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
@@ -490,13 +490,13 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit *return_unit = nullptr;
+    Stored_Unit* return_unit = nullptr;
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected())  || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected() && e->second.valid_pos_);
+            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected())  || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected());
             can_be_attacked_by = (e->second.type_.airWeapon() != WeaponTypes::None && u_type.isFlyer()) || (e->second.type_.groundWeapon() != WeaponTypes::None && !u_type.isFlyer()) || e->second.type_.maxEnergy() > 0 ;
-            if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() ) {
+            if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = e->second.pos_.getDistance( origin );
                 if ( temp_dist <= min_dist ) {
                     min_dist = temp_dist;

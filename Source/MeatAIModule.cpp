@@ -326,6 +326,7 @@ void MeatAIModule::onFrame()
 
     inventory.updateMin_Possessed();
     inventory.updateHatcheries( friendly_inventory );  // macro variables, not every unit I have.
+    inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
 
     inventory.updateStartPositions();
     if ( t_game == 0 ) {
@@ -347,9 +348,9 @@ void MeatAIModule::onFrame()
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
 
-                                  //Knee-jerk states: gas, supply.
+    //Knee-jerk states: gas, supply.
     gas_starved = (inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
-        (!buildorder.building_gene_.empty() && (buildorder.building_gene_.begin()->getUnit().gasPrice() > Broodwar->self()->gas() || buildorder.building_gene_.begin()->getUpgrade().gasPrice() > Broodwar->self()->gas()) || buildorder.building_gene_.begin()->getResearch().gasPrice() > Broodwar->self()->gas()) ||// you need gas for a required build order item.
+        (!buildorder.building_gene_.empty() && (buildorder.building_gene_.begin()->getUnit().gasPrice() > Broodwar->self()->gas() || buildorder.building_gene_.begin()->getUpgrade().gasPrice() > Broodwar->self()->gas() || buildorder.building_gene_.begin()->getResearch().gasPrice() > Broodwar->self()->gas())) ||// you need gas for a required build order item.
         (tech_starved && Tech_Avail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
     supply_starved = (inventory.getLn_Supply_Ratio()  < gamma &&   //If your supply is disproportionately low, then you are gas starved, unless
         Broodwar->self()->supplyTotal() <= 400); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
@@ -634,16 +635,25 @@ void MeatAIModule::onFrame()
         auto start_worker = std::chrono::high_resolution_clock::now();
         if ( u->getType().isWorker() && !isRecentCombatant( u ) )
         {
+            if (Broodwar->getFrameCount() == 0) {
+                u->stop();
+                continue; // fixes the fact that drones auto-lock to something on game start. Now we don't triple-stack part of our initial drones.
+            }
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find( u )->second;
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units( UnitTypes::Zerg_Extractor, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
 
+
             if ( miner.locked_mine_ ) {
                 Diagnostic_Line(miner.pos_, miner.locked_mine_->getPosition(), Colors::Green);
             }
-            // Building subloop.
 
-            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && /* miner.bwapi_unit_->getLastCommand().getTargetTilePosition() != inventory.next_expo_*/ my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+            // Building subloop.
+            if (miner.isClearing(neutral_inventory)) {
+                continue;
+            }
+
+            if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame ){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
                 inventory.getExpoPositions();
                 if ( Building_Begin( u, inventory, enemy_inventory ) ) {
@@ -651,14 +661,19 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
-            //Retarget Expos, check for a roadblock.
-            if ( miner.bwapi_unit_->getLastCommand().getTargetTilePosition() == inventory.next_expo_ && my_reservation.last_builder_sent_ < t_game - 15 * 24 ) {
-                my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+            if ( my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end() && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals( u, friendly_inventory) && !inventory.workers_are_clearing_ ) {
+                //my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+                Worker_Clear(u, friendly_inventory);
+                if (miner.locked_mine_) {
+                    inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
+                    continue;
+                }
             }
+
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( (!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || 
-                ( (want_gas || gas_flooded) && inventory.last_gas_check_ < t_game - 5 * 24) && !miner.isClearing(neutral_inventory) ) ) { //if this is your first worker of the frame consider resetting him.
+                ( (want_gas || gas_flooded ) && inventory.last_gas_check_ < t_game - 5 * 24) ) && !miner.isClearing(neutral_inventory) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
@@ -666,19 +681,24 @@ void MeatAIModule::onFrame()
                     if ( miner.locked_mine_ ) {
                         continue;
                     }
+                    else { // do SOMETHING.
+                        Worker_Mine(u, friendly_inventory, low_drone_min);
+                        if (miner.locked_mine_) {
+                            continue;
+                        }
+                    }
                 }
                 else if ( !want_gas ) {
                     Worker_Mine( u, friendly_inventory, low_drone_min );
                     if ( miner.locked_mine_ ) {
                         continue;
                     }
-                }
-            }
-
-            if ( isIdleEmpty(miner.bwapi_unit_) && my_reservation.last_builder_sent_ < t_game - 15 * 24 ) {
-                Worker_Clear( u, friendly_inventory );
-                if ( miner.locked_mine_ ) {
-                    continue;
+                    else { // do SOMETHING.
+                        Worker_Gas(u, friendly_inventory, low_drone_gas);
+                        if (miner.locked_mine_) {
+                            continue;
+                        }
+                    }
                 }
             }
 
@@ -691,8 +711,12 @@ void MeatAIModule::onFrame()
                     my_reservation.removeReserveSystem( miner.bwapi_unit_->getBuildType() );
                 }
 
-                if ( !miner.bwapi_unit_->gather( miner.locked_mine_ ) ) {
+                if ( !miner.getMine(neutral_inventory) ) {
                     miner.stopMine( neutral_inventory ); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
+                }
+
+                if (miner.getMine(neutral_inventory) && !miner.bwapi_unit_->gather(miner.locked_mine_) && miner.bwapi_unit_->getLastCommand().getTargetPosition() != Position(miner.getMine(neutral_inventory)->pos_)) {
+                    miner.stopMine(neutral_inventory); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
                 }
             }
 
@@ -706,11 +730,11 @@ void MeatAIModule::onFrame()
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            if ( (!enemy_found || !inventory.start_positions_.empty()) && army_derivative > 0 ) {
+            if ( (!enemy_found && inventory.start_positions_.empty()) && (!army_starved || army_derivative == 0) ) {
                 boids.Boids_Movement( u, 12, friendly_inventory, enemy_inventory, inventory, army_starved && army_derivative > 0);
             }
             else {
-                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved && army_derivative > 0); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved && army_derivative > 0 ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -1183,6 +1207,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
             if ( potential_miner->second.locked_mine_ == unit ) {
                 potential_miner->second.stopMine( neutral_inventory ); // Find that particular worker stored_unit in map using the unit index. Tell him to stop mining
             }
+
         }
         auto found_mineral_ptr = neutral_inventory.resource_inventory_.find( unit );
         if ( found_mineral_ptr != neutral_inventory.resource_inventory_.end() ) {

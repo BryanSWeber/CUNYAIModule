@@ -28,6 +28,7 @@ struct Stored_Unit {
 
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
+    Stored_Resource * getMine(Resource_Inventory & ri);
     bool isClearing(Resource_Inventory &ri);  // If the unit is clearing a spot.
 	//void addMine(Stored_Resource mine);
 
