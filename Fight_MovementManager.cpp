@@ -475,20 +475,19 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
 void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv ) {
 
-    int dist = 999999;
+
     bool visible_unit_found = false;
     if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
 
-        Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist );
+        Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), 999999 );
 
         if ( e && e->pos_ ) {
             if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
-                int dist = unit->getDistance( e->pos_ );
                 int dist_x = e->pos_.x - pos.x;
                 int dist_y = e->pos_.y - pos.y;
                 double theta = atan2( dist_y, dist_x );
-                attract_dx_ = - cos( theta ) * (dist * 0.02 + 64); // pull 2% away from them, plus 2 tiles.
-                attract_dy_ = - sin( theta ) * (dist * 0.02 + 64);
+                attract_dx_ = - cos( theta ) * (ei.max_range_ + 64); // get safe from them.
+                attract_dy_ = - sin( theta ) * (ei.max_range_ + 64);
             }
             else if ( !inv.map_veins_out_.empty() ) {
                 double temp_attract_dx_ = 0;

@@ -670,10 +670,9 @@ void MeatAIModule::onFrame()
                 }
             }
 
-
             // Lock all loose workers down. Maintain gas/mineral balance. 
             if ( (!miner.locked_mine_ || !miner.locked_mine_->exists() || isIdleEmpty( miner.bwapi_unit_ ) || 
-                ( (want_gas || gas_flooded ) && inventory.last_gas_check_ < t_game - 5 * 24) ) && !miner.isClearing(neutral_inventory) ) { //if this is your first worker of the frame consider resetting him.
+                ( (want_gas || gas_flooded ) && inventory.last_gas_check_ < t_game - 5 * 24) ) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
@@ -726,15 +725,15 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        if ( (isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 12) )
+        if ( (isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() && u->getType() != UnitTypes::Zerg_Overlord && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24 ) )
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
             if ( (!enemy_found && inventory.start_positions_.empty()) && (!army_starved || army_derivative == 0) ) {
-                boids.Boids_Movement( u, 12, friendly_inventory, enemy_inventory, inventory, army_starved && army_derivative > 0);
+                boids.Boids_Movement( u, 12, friendly_inventory, enemy_inventory, inventory, false); // not army starved in this case.
             }
             else {
-                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, army_starved && army_derivative > 0 ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, true ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
             }
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -899,6 +898,64 @@ void MeatAIModule::onFrame()
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 
+        // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.
+        auto start_detector = std::chrono::high_resolution_clock::now();
+        Position c; // holder for cloaked unit position.
+        bool sentinel_value = false;
+        if ( /*(!army_starved || army_derivative == 0) &&*/ !supply_starved) {
+            for (auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++) {
+                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
+                    c = (*e).second.pos_; // then we may to send in some vision.
+                    Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, c, e->second.type_.sightRange()); // we check this cloaker has any friendly units nearby.
+                    if (!friend_loc.unit_inventory_.empty() && friend_loc.detector_count_ == 0) {
+                        sentinel_value = true;
+                        break;
+                    }
+                } //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
+            }
+            if (sentinel_value) {
+                int dist = 999999;
+                int dist_temp = 0;
+                bool detector_found = false;
+                Unit detector_of_choice;
+                for (auto d : Broodwar->self()->getUnits()) {
+                    if (d->getType() == UnitTypes::Zerg_Overlord &&
+                        !d->isUnderAttack() &&
+                        d->getHitPoints() > 0.25 * d->getInitialHitPoints() /*&&
+                        d->getLastCommandFrame() < Broodwar->getFrameCount() - 12*/) {
+                        dist_temp = d->getDistance(c);
+                        if (dist_temp < dist) {
+                            dist = dist_temp;
+                            detector_of_choice = d;
+                            detector_found = true;
+                        }
+                    }
+                }
+                if (detector_found) {
+                    Position detector_pos = detector_of_choice->getPosition();
+                    double theta = atan2(c.y - detector_pos.y, c.x - detector_pos.x);
+                    Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * SightRange(detector_of_choice) * 0.75, c.y + sin(theta) * SightRange(detector_of_choice)) * 0.75;
+                    if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
+                        detector_of_choice->move(closest_loc_to_c_that_gives_vision);
+                        if (_ANALYSIS_MODE) {
+                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, Colors::Cyan);
+                        }
+                    }
+                    else {
+                        detector_of_choice->move(c);
+                        if (_ANALYSIS_MODE) {
+                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice->getPosition(), c, Colors::Cyan);
+                        }
+                    }
+
+                }
+            }
+        }
+        auto end_detector = std::chrono::high_resolution_clock::now();
+        detector_time += end_detector - start_detector;
+
         //Upgrade loop:
         auto start_upgrade = std::chrono::high_resolution_clock::now();
         if ( isIdleEmpty( u ) && !u->canAttack() && u->getType() != UnitTypes::Zerg_Larva && !upgrade_check_this_frame && // no trying to morph hydras anymore.
@@ -952,64 +1009,7 @@ void MeatAIModule::onFrame()
         creepcolony_time += end_creepcolony - start_creepcolony;
     } // closure: unit iterator
 
-      // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.
-    auto start_detector = std::chrono::high_resolution_clock::now();
-    Position c; // holder for cloaked unit position.
-    bool sentinel_value = false;
-    if ( /*(!army_starved || army_derivative == 0) &&*/ !supply_starved ) {
-        for ( auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++ ) {
-            if ( (*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable() ) {
-                c = (*e).second.pos_; // then we may to send in some vision.
-\
-                Unit_Inventory friend_loc = getUnitInventoryInRadius( friendly_inventory, c, e->second.type_.sightRange() ); // we check this cloaker has any friendly units nearby.
-                if ( !friend_loc.unit_inventory_.empty() && friend_loc.detector_count_ == 0) {
-                    sentinel_value = true;
-                    break;
-                }
-            } //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
-        }
-        if ( sentinel_value ) {
-            int dist = 999999;
-            int dist_temp = 0;
-            bool detector_found = false;
-            Unit detector_of_choice;
-            for ( auto d : Broodwar->self()->getUnits() ) {
-                if ( d->getType() == UnitTypes::Zerg_Overlord &&
-                    !d->isUnderAttack() && 
-                    d->getHitPoints() > 0.25 * d->getInitialHitPoints() &&
-                    d->getLastCommandFrame() < Broodwar->getFrameCount() - 12) {
-                    dist_temp = d->getDistance( c );
-                    if ( dist_temp < dist ) {
-                        dist = dist_temp;
-                        detector_of_choice = d;
-                        detector_found = true;
-                    }
-                }
-            }
-            if ( detector_found ) {
-                Position detector_pos = detector_of_choice->getPosition();
-                double theta = atan2( c.y - detector_pos.y, c.x - detector_pos.x );
-                Position closest_loc_to_c_that_gives_vision = Position( c.x + cos( theta ) * SightRange( detector_of_choice ) * 0.75, c.y + sin( theta ) * SightRange( detector_of_choice ) ) * 0.75;
-                if ( closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0,0) ) {
-                    detector_of_choice->move( closest_loc_to_c_that_gives_vision );
-                    if ( _ANALYSIS_MODE ) {
-                        Broodwar->drawCircleMap( c, 25, Colors::Cyan );
-                        Diagnostic_Line( detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, Colors::Cyan );
-                    }
-                }
-                else {
-                    detector_of_choice->move( detector_pos );
-                    if ( _ANALYSIS_MODE ) {
-                        Broodwar->drawCircleMap( c, 25, Colors::Cyan );
-                        Diagnostic_Line( detector_of_choice->getPosition(), c, Colors::Cyan );
-                    }
-                }
 
-            }
-        }
-    }
-    auto end_detector = std::chrono::high_resolution_clock::now();
-    detector_time += end_detector - start_detector;
     auto end = std::chrono::high_resolution_clock::now();
     total_frame_time = end - start_preamble;
 

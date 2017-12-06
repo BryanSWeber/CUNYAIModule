@@ -292,10 +292,8 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
 bool Stored_Unit::isClearing(Resource_Inventory &ri) {
     if ( locked_mine_ ) {
         map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
-        if (iter != ri.resource_inventory_.end()) {
-            if (iter->second.current_stock_value_ <= 8) {
-                return true;
-            }
+        if (iter != ri.resource_inventory_.end() && iter->second.current_stock_value_ <= 8) {
+            return true;
         }
     }
     return false;

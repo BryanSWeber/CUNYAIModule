@@ -156,7 +156,10 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Stored_Resource* closest_gas = getClosestStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, unit->getPosition(), 99999);
             if (closest_gas) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64);
-                if (getUnitInventoryInRadius(friendly_inventory, Position(buildPosition), 500).getMeanBuildingLocation() != Position(0, 0) && unit->build(building, buildPosition)) {
+                bool occupied_gas_geyser = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hatchery, Position(buildPosition), 500) ||
+                    getClosestStored(friendly_inventory, UnitTypes::Zerg_Lair, Position(buildPosition), 500) ||
+                    getClosestStored(friendly_inventory, UnitTypes::Zerg_Hive, Position(buildPosition), 500);
+                if ( occupied_gas_geyser && unit->build(building, buildPosition) ) {
                     my_reservation.addReserveSystem(building, buildPosition);
                     buildorder.setBuilding_Complete(building);
                     return true;
