@@ -64,10 +64,10 @@ histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
  table(out$opp_map,out$Winner)
  
 # # summary(out)
-#  mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
-#  plot(mav(out$Winner[out$Race == "Zerg"] , 3))
-#  plot(mav(out$Winner[out$Race == "Terran"] , 3))
-#  plot(mav(out$Winner[out$Race == "Protoss"] , 3))
+ mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
+ plot(mav(out$Winner[out$Race == "Zerg"] , 3))
+ plot(mav(out$Winner[out$Race == "Terran"] , 3))
+ plot(mav(out$Winner[out$Race == "Protoss"] , 3))
  
  t_z= 1:nrow(out[out$Race == "Zerg",]); t2 = t_z^2; t3 = t_z^3;
  reg_z<-glm(out$Winner[out$Race == "Zerg"] ~ t_z + t2 + t3, family = binomial(link = "logit") )

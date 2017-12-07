@@ -642,7 +642,7 @@ void MeatAIModule::onFrame()
                 }
             } // Close Build loop
 
-            if ( (my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end()  || Broodwar->self()->minerals() > 150) && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals( u, friendly_inventory) && !inventory.workers_are_clearing_ ) {
+            if ( my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end() && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals( u, friendly_inventory) && !inventory.workers_are_clearing_ ) {
                 //my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
                 Worker_Clear(u, friendly_inventory);
                 if (miner.locked_mine_) {

@@ -54,6 +54,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                           u_type == UnitCommandTypes::None ||
+                          u_type == UnitCommandTypes::Stop ||
 						  u_type == UnitCommandTypes::Unknown;
 
 	bool spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();

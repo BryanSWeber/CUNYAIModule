@@ -93,7 +93,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y > 0 &&
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 125 && // don't wall off please. Wide berth around blue veins.
+                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 100 && // don't wall off please. Wide berth around blue veins.
                             inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
@@ -131,7 +131,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y > 0 &&
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 125 && // don't wall off please. wide berth around blue veins
+                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 100 && // don't wall off please. wide berth around blue veins
                             inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
@@ -156,9 +156,9 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Stored_Resource* closest_gas = getClosestStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, unit->getPosition(), 99999);
             if (closest_gas) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64);
-                bool occupied_gas_geyser = getClosestStored(friendly_inventory, UnitTypes::Zerg_Hatchery, Position(buildPosition), 500) ||
-                    getClosestStored(friendly_inventory, UnitTypes::Zerg_Lair, Position(buildPosition), 500) ||
-                    getClosestStored(friendly_inventory, UnitTypes::Zerg_Hive, Position(buildPosition), 500);
+                bool occupied_gas_geyser = !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Hatchery, Position(buildPosition), 500).unit_inventory_.empty() ||
+                    !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Lair, Position(buildPosition), 500).unit_inventory_.empty() ||
+                    !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Hive, Position(buildPosition), 500).unit_inventory_.empty();
                 if ( occupied_gas_geyser && unit->build(building, buildPosition) ) {
                     my_reservation.addReserveSystem(building, buildPosition);
                     buildorder.setBuilding_Complete(building);
@@ -223,6 +223,10 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 {
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     int is_building = 0;
+
+    if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
+        is_building += Check_N_Grow(buildorder.building_gene_.front().getUnit(), larva, true);
+    }
 
     //Supply blocked protection 
     is_building += Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved);
@@ -293,6 +297,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
             Broodwar->sendText("Reactionary Lair, for Lurkers");
         }
     }
+
     return is_building > 0;
 
 }
@@ -305,13 +310,15 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool larva_empty = Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) == 0;
     bool upgrade_bool = (tech_starved || (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) == 0 && !army_starved));
 
+    //Gas Buildings
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
+        Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
+
     buildings_started += Expo(drone, buildings_started == 0 && expansion_meaningful_or_larvae_starved, inventory);
 
     buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && army_starved && Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ && Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hatchery) == 0); // only macrohatch if you are short on larvae and being a moron.
-     //Gas Buildings
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
-        Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
-                                                                                 //Basic Buildings
+
+                                                                    //Basic Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&
         Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) == 0);
 
@@ -350,16 +357,15 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
 
                                                                                                                                                                                                                                    //Combat Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, army_starved &&  // army starved.
-         //Count_Units( UnitTypes::Zerg_Creep_Colony, friendly_inventory ) == 0 && // no creep colonies waiting to upgrade
+        Count_Units( UnitTypes::Zerg_Creep_Colony, friendly_inventory ) == 0 && // no creep colonies waiting to upgrade
         upgradable_creep_colonies &&
         buildings_started == 0 &&
         (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || inventory.getDifferentialDistanceOutFromHome(e_inv.getMeanCombatLocation(), drone->getPosition())  < 10000) && // Only throw down a sunken if you have no larva floating around.
         inv.hatches_ > 1 &&
         (inv.hatches_ * (inv.hatches_ + 1)) / 2 > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
-                                                                                                                                                                                   //hatches >= 2 ); // and don't build them if you're on one base.
+         //hatches >= 2 ); // and don't build them if you're on one base.
 
     return buildings_started > 0;
-
 };
 
 //bool operator==( const Build_Order_Object &lhs, const Build_Order_Object & rhs )

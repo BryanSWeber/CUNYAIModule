@@ -9,12 +9,12 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
+#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 
-#define _RESIGN_MODE true
+//#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 #define _AT_HOME_MODE true
 #define _COBB_DOUGLASS_REVEALED true
@@ -110,9 +110,9 @@ public:
       //Forces selected unit (drone, hopefully!) to expo:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
       // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit , Unit_Inventory &ui, const int low_drone );
+      void Worker_Mine( const Unit &unit , Unit_Inventory &ui );
       // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui, const int low_drone );
+	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui );
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
