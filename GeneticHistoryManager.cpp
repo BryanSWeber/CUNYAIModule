@@ -210,13 +210,13 @@ GeneticHistory::GeneticHistory( string file ) {
     int min_frequency = 99999;
     int counter = 1;
     double race_or_player_w = winning_player > 0 ? winning_player : winning_race;
-    double race_or_player_l = winning_player > 0 ? losing_player : losing_race;
+    double race_or_player_l = losing_player > 0 ? losing_player : losing_race;
 
-    double likelihood_w =  race_or_player_w/(double)win_count * winning_map / (double)win_count ;
-    double likelihood_l = race_or_player_l/(double)lose_count * losing_map / (double)lose_count;
+    double likelihood_w =  race_or_player_w/(double)win_count * winning_map/(double)win_count ;
+    double likelihood_l = race_or_player_l/(double)lose_count * losing_map/(double)lose_count;
     double rand_value = dis(gen);
 
-    prob_win_given_conditions = (likelihood_w * win_count ) / (likelihood_w * win_count + likelihood_l * lose_count);
+    prob_win_given_conditions = fmax( (likelihood_w * win_count ) / (likelihood_w * win_count + likelihood_l * lose_count), 0.0 );
 
     vector<int> frequency = { winning_player, winning_race, winning_map };
 
@@ -319,11 +319,11 @@ GeneticHistory::GeneticHistory( string file ) {
 
         //From genetic history, random parent for each gene. Mutate the genome
         std::uniform_real_distribution<double> unif_dist_to_mutate( 0, 4 );
-        std::uniform_real_distribution<double> unif_mutation_size(-0.01, 0.01);
+        std::uniform_real_distribution<double> unif_mutation_size(-0.05, 0.05);
 
         int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
 
-        double mutation = pow( 1 + /*loss_rate_ */ unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
+        double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
 
         delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;
         gamma_out_mutate_ = mutation_0 == 1 ? gamma_out  * mutation : gamma_out;

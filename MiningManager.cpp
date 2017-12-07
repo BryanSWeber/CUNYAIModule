@@ -176,13 +176,17 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     }
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.type_.isMineralField() ) {
+        if (r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.type_.isMineralField() ) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
     if (!available_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+            miner.startMine(*closest, neutral_inventory);
+        }
+        else {
+            miner.bwapi_unit_->move(closest->pos_);
             miner.startMine(*closest, neutral_inventory);
         }
     }
@@ -196,7 +200,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.current_stock_value_ <= 8 && getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) == nullptr) {
+        if (r->second.current_stock_value_ <= 8 && getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) == nullptr && unit->getDistance(r->second.pos_) < 2000 ) {
             return true;
         }
     } //find closest mine meeting this criteria.

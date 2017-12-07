@@ -536,16 +536,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            if ( !inventory.map_veins_out_.empty() ) {
-                for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
-                        //if ( inventory.map_veins_[i][j] > 175 ) {
-                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
-                        }
-                    }
-                } // Pretty to look at!
-            }
+            //if ( !inventory.map_veins_out_.empty() ) {
+            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
+            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+            //            //if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
+            //            }
+            //        }
+            //    } // Pretty to look at!
+            //}
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -644,6 +644,7 @@ void MeatAIModule::onFrame()
 
             if ( (my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end()  || Broodwar->self()->minerals() > 150) && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals( u, friendly_inventory) && !inventory.workers_are_clearing_ ) {
                 //my_reservation.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+                miner.stopMine(neutral_inventory);
                 Worker_Clear(u, friendly_inventory);
                 if (miner.locked_mine_) {
                     inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
@@ -652,7 +653,7 @@ void MeatAIModule::onFrame()
             }
 
             // Lock all loose workers down. Maintain gas/mineral balance. 
-            if ( /*!miner.locked_mine_ || !miner.locked_mine_->exists() ||*/ isIdleEmpty( miner.bwapi_unit_ ) || (want_gas && !miner.isClearing(neutral_inventory) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
+            if ( isIdleEmpty( miner.bwapi_unit_ ) || (want_gas && !miner.isClearing(neutral_inventory) && inventory.last_gas_check_ < t_game - 5 * 24) ) { //if this is your first worker of the frame consider resetting him.
                 miner.stopMine( neutral_inventory );
                 inventory.last_gas_check_ = t_game;
                 if ( want_gas ) {
@@ -956,7 +957,7 @@ void MeatAIModule::onFrame()
         bool can_sunken = Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0;
         bool can_spore = Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0;
         bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
-        bool want_static_d = army_starved && local_e.stock_total_ > 0 && (can_sunken || can_spore) && Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) == 0;
+        bool want_static_d = army_starved && local_e.stock_total_ > 0 && (can_sunken || can_spore);
 
         local_e.updateUnitInventorySummary();
 

@@ -1070,6 +1070,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
 void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
 {
     bool clearing_workers_found = false;
+
     if (!ui.unit_inventory_.empty()) {
         for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
             if ( w->second.isClearing(ri) ) {

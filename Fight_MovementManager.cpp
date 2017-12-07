@@ -155,7 +155,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 if ( (!target_sentinel || (priority < 2 && e_priority >= 2)) /*&& dist_to_enemy >= max_dist*/ && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
                     visible_target_atk = true;
-                    dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
+                    //dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
                     target = e->second;
                 }
@@ -165,40 +165,22 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((dist < ei.max_range_ && ei.detector_count_ == 0) || dist < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->burrow();
-                return;
+            if (fix_lurker_burrow(unit, ui, ei, target.pos_)) {
+                //
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->unburrow();
-                return;
+            else {
+                unit->attack(target.bwapi_unit_);
+                MeatAIModule::Diagnostic_Line(unit->getPosition(), target.pos_, color);
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                double theta = atan2( target.pos_.y - unit->getPosition().y, target.pos_.x - unit->getPosition().x );
-                Position closest_loc_to_permit_attacking = Position( target.pos_.x + cos( theta ) * unit->getType().groundWeapon().maxRange() * 0.75, target.pos_.y + sin( theta ) * unit->getType().groundWeapon().maxRange() * 0.75);
-                unit->move( closest_loc_to_permit_attacking );
-                return;
-            }
-            unit->attack( target.bwapi_unit_ );
-            MeatAIModule::Diagnostic_Line(unit->getPosition(), target.pos_, color);
         }
         else if (target.valid_pos_ && unit->hasPath( target.pos_ ) ) {
-            if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ((dist < ei.max_range_ && ei.detector_count_ == 0) || unit->getDistance( target.pos_ ) < unit->getType().groundWeapon().maxRange()) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->burrow();
-                return;
+            if (fix_lurker_burrow(unit, ui, ei, target.pos_)) {
+                //
             }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                unit->unburrow();
-                return;
-            }
-            else if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && dist > unit->getType().groundWeapon().maxRange() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-                double theta = atan2( target.pos_.y - unit->getPosition().y, target.pos_.x - unit->getPosition().x );
-                Position closest_loc_to_permit_attacking = Position( target.pos_.x + cos( theta ) * unit->getType().groundWeapon().maxRange() * 0.75, target.pos_.y + sin( theta ) * unit->getType().groundWeapon().maxRange() * 0.75);
-                unit->move( closest_loc_to_permit_attacking );
-                return;
-            }
-                unit->attack( target.pos_ );
+            else {
+                unit->attack(target.pos_);
                 MeatAIModule::Diagnostic_Line(unit->getPosition(), target.pos_, color);
+            }
         }
     }
 }
@@ -592,4 +574,28 @@ void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Invento
         walkability_dx_ = cos( theta + tilt ) * temp_dist * 0.25;
         walkability_dy_ = sin( theta + tilt ) * temp_dist * 0.25;
     }
+}
+
+
+// returns TRUE if the lurker needed fixing. For Attack.
+bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
+    int dist_to_threat_or_target = unit->getDistance(position_of_target);
+    bool hide_condition = ((dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ == 0) || dist_to_threat_or_target < unit->getType().groundWeapon().maxRange());
+
+    if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+        unit->burrow();
+        return true;
+    }
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+        unit->unburrow();
+        return true;
+    }
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+        double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
+        Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * unit->getType().groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * unit->getType().groundWeapon().maxRange() * 0.75);
+        unit->move(closest_loc_to_permit_attacking);
+        return true;
+    }
+
+    return false;
 }

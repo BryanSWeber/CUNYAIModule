@@ -31,6 +31,8 @@ public:
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );
 
+    bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
+
 private:
     double x_stutter_ = 0;
     double y_stutter_ = 0;
