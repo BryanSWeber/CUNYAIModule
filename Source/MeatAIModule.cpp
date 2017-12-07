@@ -742,7 +742,7 @@ void MeatAIModule::onFrame()
                 int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
                 int chargable_distance_net = (getProperSpeed(u) + e_closest->type_.topSpeed()) * enemy_inventory.max_cooldown_ ; // how far can you get before he shoots?
 
-                int search_radius = max(chargable_distance_net + appropriate_range, enemy_inventory.max_range_);
+                int search_radius = max(chargable_distance_net + appropriate_range + 64, enemy_inventory.max_range_ + 64);
                 Unit_Inventory enemy_loc = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
 
                 Boids boids;

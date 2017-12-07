@@ -152,7 +152,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     target = e->second;
                 }
 
-                if ( (!target_sentinel || (priority < 2 && e_priority >= 2)) /*&& dist_to_enemy >= max_dist*/ && dist_to_enemy < max_dist_no_priority ) {
+                if ( !target_sentinel && (priority < 2 && e_priority >= 2) && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
                     visible_target_atk = true;
                     //dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
@@ -590,7 +590,7 @@ bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const 
         unit->unburrow();
         return true;
     }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
         double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
         Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * unit->getType().groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * unit->getType().groundWeapon().maxRange() * 0.75);
         unit->move(closest_loc_to_permit_attacking);
