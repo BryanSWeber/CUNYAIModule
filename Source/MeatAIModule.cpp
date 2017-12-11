@@ -521,7 +521,7 @@ void MeatAIModule::onFrame()
         if ( _COBB_DOUGLASS_REVEALED ) {
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-                    if ( inventory.map_veins_[i][j] > 175 ) {
+                    if ( inventory.map_veins_[i][j] > 100 ) {
                         if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );

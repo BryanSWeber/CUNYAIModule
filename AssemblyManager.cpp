@@ -93,7 +93,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y > 0 &&
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 100 && // don't wall off please. Wide berth around blue veins.
+                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
                             inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
@@ -131,7 +131,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y > 0 &&
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] < 100 && // don't wall off please. wide berth around blue veins
+                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
                             inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
@@ -255,7 +255,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         one_tech_per_base &&
         buildorder.checkEmptyBuildOrder();
 
-    bool right_density_for_lurkers = ei.stock_ground_units_ / (double)ei.volume_ >= Stored_Unit(UnitTypes::Terran_Medic).current_stock_value_ / (double)(Stored_Unit(UnitTypes::Terran_Medic).type_.height()* Stored_Unit(UnitTypes::Terran_Medic).type_.width());
+    bool enemy_mostly_ground = ei.stock_ground_units_ > ei.stock_total_ * 0.75;
 
     bool enemy_lacks_AA = ei.stock_shoots_up_ < 0.25 * ei.stock_total_;
 
@@ -285,7 +285,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
             is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && Broodwar->self()->minerals() - Broodwar->self()->gas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
-        else if (ei.stock_ground_units_ > ei.stock_total_ * 0.75 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && ei.stock_ground_units_ / (double)ei.volume_ >= Stored_Unit(UnitTypes::Terran_Medic).current_stock_value_ / (double)(Stored_Unit(UnitTypes::Terran_Medic).type_.height()* Stored_Unit(UnitTypes::Terran_Medic).type_.width())) {
+        else if (enemy_mostly_ground) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0 && Count_Units(UnitTypes::Zerg_Hydralisk, ui) == 0);
             is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0);
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Broodwar->self()->minerals() - Broodwar->self()->gas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
@@ -308,7 +308,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
             buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire)); // force in a hydralisk den if they have Air.
             Broodwar->sendText("Reactionary Spire");
     }
-    else if (right_density_for_lurkers && would_force_lurkers && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
+    else if (enemy_mostly_ground && would_force_lurkers && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
        buildorder.building_gene_.push_back(Build_Order_Object(TechTypes::Lurker_Aspect)); // force in a hydralisk den if they have Air.
        Broodwar->sendText("Reactionary Lurker Upgrade");
     }
@@ -327,7 +327,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory) < inv.hatches_;
     bool upgradable_creep_colonies = (Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0 - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
-    bool right_density_for_lurkers = e_inv.stock_ground_units_ / (double)e_inv.volume_ >= Stored_Unit(UnitTypes::Terran_Medic).current_stock_value_ / (double)(Stored_Unit(UnitTypes::Terran_Medic).type_.height()* Stored_Unit(UnitTypes::Terran_Medic).type_.width());
+    bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_total_;
 
     //Macro-related Buildings.
