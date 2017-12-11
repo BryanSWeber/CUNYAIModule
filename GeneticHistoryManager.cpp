@@ -29,10 +29,10 @@ GeneticHistory::GeneticHistory( string file ) {
     double delta_out = dis( gen ) * 0.15 + 0.40;
     double gamma_out = dis( gen ) * 0.55; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
-    double a_army_out = dis( gen ) * 0.75 + 0.25;
+    double a_army_out = dis( gen );
     double a_vis_out = dis( gen );
-    double a_econ_out = dis( gen ) * 0.50 + 0.50;
-    double a_tech_out = dis( gen ) * 0.50;
+    double a_econ_out = dis( gen ) * 0.75 + 0.25;
+    double a_tech_out = dis( gen ) * 0.25;
     
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
     // drone drone drone drone drone overlord pool extractor// overpool
@@ -46,9 +46,9 @@ GeneticHistory::GeneticHistory( string file ) {
         "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
         "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
-        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta
+        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
-        "drone drone drone overlord drone drone drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
     };
     std::uniform_real_distribution<double> rand_bo(0, build_order_list.size());
     double build_order_rand = rand_bo(gen);
@@ -107,6 +107,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     vector<string> build_orders_tried;
     vector<string> enemy_races_tried;
+
 
     loss_rate_ = 1;
 
@@ -207,8 +208,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     //What model is this? It's greedy...
 
-    int min_frequency = 99999;
-    int counter = 1;
+    int counter = 0;
     double race_or_player_w = winning_player > 0 ? winning_player : winning_race;
     double race_or_player_l = losing_player > 0 ? losing_player : losing_race;
 
@@ -220,29 +220,29 @@ GeneticHistory::GeneticHistory( string file ) {
 
     vector<int> frequency = { winning_player, winning_race, winning_map };
 
-    for (std::vector<int>::size_type it = 0; it != frequency.size(); it++) {
-        if ( frequency[it] < min_frequency && frequency[it] > 0 ) {
-            counter = static_cast<int>(it) + 1;
-            min_frequency = frequency[it];
-            //prob_win_given_conditions = probabilities[it];
-        } // the one with the lowest frequency of wins will have the largest marginal impact.
-    }
-
     for ( int j = 0; j < csv_length; ++j ) {
-        bool condition = true; 
-        switch ( counter )
-        {
-        case 1: condition = name_in[j] == e_name;
-            break;
-        case 2: condition = race_in[j] == e_race ;
-            break;
-        case 3: condition = map_name_in[j] == map_name;
-            break;
-        default:
-            break;
+
+        bool conditions_for_inclusion = true;
+
+        for (std::vector<int>::size_type it = 0; it != frequency.size(); it++) { //This loop is inelegant.
+            if ( /*frequency[it] < min_frequency &&*/ frequency[it] > 0) {
+                counter = static_cast<int>(it);
+                //prob_win_given_conditions = probabilities[it];
+            } // the one with the lowest frequency of wins will have the largest marginal impact.
+            switch (counter)
+            {
+            case 0: conditions_for_inclusion *= name_in[j] == e_name;
+                break;
+            case 1: conditions_for_inclusion *= race_in[j] == e_race;
+                break;
+            case 2: conditions_for_inclusion *= map_name_in[j] == map_name;
+                break;
+            default:
+                break;
+            }
         }
 
-        if ( condition && win_in[j] == 1 ) {
+        if (conditions_for_inclusion && win_in[j] == 1 ) {
             delta_win.push_back( delta_in[j] );
             gamma_win.push_back( gamma_in[j] );
             a_army_win.push_back( a_army_in[j] );
@@ -252,7 +252,7 @@ GeneticHistory::GeneticHistory( string file ) {
             build_orders_tried.push_back(build_order_in[j]);
             selected_win_count++;
         } 
-        else if ( condition ) {
+        else if ( conditions_for_inclusion ) {
             selected_lose_count++;
             build_orders_tried.push_back(build_order_in[j]);
         }
@@ -261,7 +261,7 @@ GeneticHistory::GeneticHistory( string file ) {
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 ) { // redefine final output.
+    if ( selected_win_count > 0 && !(winning_player == 0 && dis(gen) > prob_win_given_conditions) ) { // redefine final output.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
         std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
@@ -269,11 +269,18 @@ GeneticHistory::GeneticHistory( string file ) {
         int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
         int parent_2 = (int)(unif_dist_to_win_count( gen ));
 
-        build_order_out = build_order_win[parent_1];
-
-        while (build_order_out != build_order_win[parent_2]) {
-            parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+        if (uniqueCount < build_order_list.size() && build_order_out != build_order_win[parent_1]) { 
+            // then continue with the random build order.
         }
+        else { // use one from your history.
+            build_order_out = build_order_win[parent_1];
+
+            while (build_order_out != build_order_win[parent_2]) {
+                parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+            }
+        }
+
+
 
         double linear_combo = dis( gen ); //linear_crossover, interior of parents. Big mutation at the end, though.
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
@@ -296,32 +303,19 @@ GeneticHistory::GeneticHistory( string file ) {
         //double a_vis_out_temp = chrom_3 > 50 ? a_vis_win[parent_1] : a_vis_win[parent_2];
         //double a_econ_out_temp = chrom_4 > 50 ? a_econ_win[parent_1] : a_econ_win[parent_2];
         //double a_tech_out_temp = chrom_5 > 50 ? a_tech_win[parent_1] : a_tech_win[parent_2];
+
+        loss_rate_ = 1 - prob_win_given_conditions /*(double)win_count / (double)relevant_game_count*/;
+
     }
 
     for ( int i = 0; i<1000; i++ ) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
-
-        //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
-        if ( win_count > 0 ) { // if we have a win to work with
-
-            loss_rate_ = 1 - prob_win_given_conditions /*(double)win_count / (double)relevant_game_count*/;
-
-        //    if ( loss_rate_temp < 0.01 ) {
-        //        loss_rate_ = 0.01; // Don't set all your parameters to zero on game two if you win game one.
-        //    }
-        //    else if ( loss_rate_temp > 0.99 ) {
-        //        loss_rate_ = 0.99; // Don't set all your parameters to zero on game two if you win game one.
-        //    }
-        //    else {
-        //        loss_rate_ = loss_rate_temp; // Don't set all your parameters to zero on game two if you win game one.
-        //    }
-
-        }
 
         //From genetic history, random parent for each gene. Mutate the genome
         std::uniform_real_distribution<double> unif_dist_to_mutate( 0, 4 );
         std::uniform_real_distribution<double> unif_mutation_size(-0.05, 0.05);
 
         int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
+        //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
         double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
 

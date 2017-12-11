@@ -122,7 +122,7 @@ void Inventory::updateLn_Worker_Stock() {
 
     double total = 0;
 
-    double cost = sqrt( pow( UnitTypes::Zerg_Drone.mineralPrice(), 2 ) + pow( 1.25 * UnitTypes::Zerg_Drone.gasPrice(), 2 ) + pow( 25 * UnitTypes::Zerg_Drone.supplyRequired(), 2 ) );
+    double cost = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
 
     updateGas_Workers();
     updateMin_Workers();

@@ -64,7 +64,7 @@ struct Building_Gene {
     void updateRemainingBuildOrder( const TechType & research );// drops item from list as complete.
 	void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
     void clearRemainingBuildOrder(); // empties the build order.
-    void setBuilding_Complete( UnitType ut );  // do we have a guy going to build it?
+    void announceBuildingAttempt( UnitType ut );  // do we have a guy going to build it?
     bool checkBuilding_Desired( UnitType ut ); 
     bool checkUpgrade_Desired( UpgradeType upgrade );
     bool checkResearch_Desired( TechType upgrade );

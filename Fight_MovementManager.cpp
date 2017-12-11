@@ -23,14 +23,14 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp(inventory.ln_army_stock_);
+    bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ && !army_starved;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
 
     setAlignment( unit, flock );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
 
-    if (!enemy_scouted && healthy && ready_to_fight) {
+    if (!enemy_scouted && healthy) {
         if (!inventory.start_positions_.empty()) {
             scoutEnemyBase(unit, pos, ei, inventory);
         }
@@ -108,7 +108,6 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     bool target_sentinel_poor_target_atk = false;
     bool visible_target_atk = false;
 
-
     for ( auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e ) {
         if ( e->second.valid_pos_ ) {
             UnitType e_type = e->second.type_;
@@ -152,7 +151,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     target = e->second;
                 }
 
-                if ( !target_sentinel && (priority < 2 && e_priority >= 2) && dist_to_enemy < max_dist_no_priority ) {
+                if ( !target_sentinel && (priority < 2 /*&& e_priority >= 2*/) && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
                     visible_target_atk = true;
                     //dist = dist_to_enemy; // if nothing is within range, let's take any old target. We do not look for priority among these, merely closeness. helps melee units lock onto target instead of diving continually into enemy lines.
@@ -253,7 +252,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             (MeatAIModule::isClearRayTrace( pos, retreat_spot, inventory ) && //or does it cross an unwalkable position? 
              !MeatAIModule::checkOccupiedArea( ui, retreat_spot, 32 ))); // or does it end on a unit?
 
-        if (retreat_spot /*&& unit->hasPath(retreat_spot)*/ && !unit->isBurrowed() && walkable_plus) {
+        if (retreat_spot && !unit->isBurrowed() && walkable_plus ) {
 
             unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
 
@@ -357,10 +356,10 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
 
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = !army_starved || ei.stock_total_ <= 0.75 * exp( inv.ln_army_stock_ );
+    bool ready_to_fight = ei.stock_total_ <= exp( inv.ln_army_stock_ ) && !army_starved ;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position( 0, 0 ) || inv.start_positions_.empty();
 
-    if ( armed && healthy && ready_to_fight && enemy_scouted ) { // and your army is relatively large.
+    if ( armed && healthy && ready_to_fight /*&& enemy_scouted */) { // and your army is relatively large.
         int dist = 999999;
         bool visible_unit_found = false;
         if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
@@ -382,7 +381,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
                     int enemy_spot = inv.getRadialDistanceOutFromEnemy( e->pos_ );
                     int my_spot = inv.getRadialDistanceOutFromEnemy( pos );
-                    if ( enemy_spot < my_spot ) {
+                    if ( enemy_spot < my_spot ) { // if he's inside my ground dist from base.
                         for ( int x = -5; x <= 5; ++x ) {
                             for ( int y = -5; y <= 5; ++y ) {
                                 double centralize_x = WalkPosition( pos ).x + x;
@@ -406,7 +405,7 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                             attract_dx_ = cos( theta ) * (distance_metric * 0.001 );
                             attract_dy_ = sin( theta ) * (distance_metric * 0.001 );
                         }
-                    } else if ( enemy_spot > my_spot ) {
+                    } else if ( enemy_spot > my_spot ) { // if he's outside my ground dist from base.
                         my_spot = inv.getRadialDistanceOutFromHome( pos );
                         for ( int x = -5; x <= 5; ++x ) {
                             for ( int y = -5; y <= 5; ++y ) {
@@ -498,7 +497,6 @@ void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inven
                     attract_dx_ = cos(theta) * (distance_metric * 0.001 );
                     attract_dy_ = sin(theta) * (distance_metric * 0.001 );
                 }
-                
                 //else if ( enemy_spot < my_spot && !inv.map_veins_in_.empty() ) {
                 //    my_spot = inv.getRadialDistanceOutFromEnemy( pos );
                 //    for ( int x = -5; x <= 5; ++x ) {

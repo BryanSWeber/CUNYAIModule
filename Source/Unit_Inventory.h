@@ -82,6 +82,7 @@ struct Unit_Inventory {
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
     Position getMeanCombatLocation() const;
+    friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
 };
 
 

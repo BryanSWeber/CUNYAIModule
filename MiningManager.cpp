@@ -72,7 +72,6 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
                 my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery, inv.next_expo_ );
-                buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
                 Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }
@@ -200,7 +199,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.current_stock_value_ <= 8 && getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) == nullptr && unit->getDistance(r->second.pos_) < 2000 ) {
+        if (r->second.current_stock_value_ <= 8 && getClosestThreatOrTargetStored(enemy_inventory, UnitTypes::Zerg_Drone, r->second.pos_, 500) == nullptr && unit->getDistance(r->second.pos_) < 5000 ) {
             return true;
         }
     } //find closest mine meeting this criteria.

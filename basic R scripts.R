@@ -5,18 +5,18 @@ library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 
 out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
-# out_2 <- as.data.frame(read_csv("C:/Users/Bryan/Documents/starcraft/bwapi-data/write/output_from_online_games.txt", col_names = FALSE))
+out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output-2.txt", col_names = FALSE))
 
 names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
-# names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
+names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
 # 
 # out<-rbind(out, out_2)
 # out<-out[!duplicated(out),]
-# out<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
-#                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
-#                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
-#                                          , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
-                                         # , "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
+out<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
+                                         , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
+                                         , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
+                                         , "Mar Sara"      ,    "Shelak Tribe"   ,    "Cronus Wing"    ,    "Fenris Brood"   ,    "Kel-Morian Combine"
+, "Grendel Brood"   ,   "Venatir Tribe" ,     "Atlas Wing"   ,      "Delta Squadron"  )),]
  # write.table(out,"C:/Users/Bryan/Documents/starcraft/bwapi-data/write/output.txt", sep= ",", quote = FALSE, row.names = FALSE, col.names = FALSE)
 # # # out<-new
 #  

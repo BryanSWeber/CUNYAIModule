@@ -61,7 +61,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         int modified_min_cost = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
         int modified_gas_cost = unit->getType().gasPrice();
 
-        stock_value_ = (int)sqrt( pow( modified_min_cost, 2 ) + pow( 1.25 * modified_gas_cost, 2 ) + pow( 25 * modified_supply, 2 ) );
+        stock_value_ = modified_min_cost + modified_gas_cost + 25 * modified_supply;
+
 
         if ( unit->getType().isTwoUnitsInOneEgg() ) {
             stock_value_ = stock_value_ / 2;
@@ -130,6 +131,15 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          return Position( 0, 0 );  // you might be dead at this point, fyi.
      }
 
+ }
+
+ Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+ {
+    Unit_Inventory total;
+    total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
+    total.unit_inventory_.insert(rhs.unit_inventory_.begin(), rhs.unit_inventory_.end());
+    total.updateUnitInventorySummary();
+    return total;
  }
 
 void Unit_Inventory::updateUnitInventorySummary() {
@@ -232,7 +242,7 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     int modified_min_cost =unittype == UnitTypes::Terran_Barracks ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
     int modified_gas_cost =unittype.gasPrice();
 
-    stock_value_ = (int)sqrt( pow( modified_min_cost, 2 ) + pow( 1.25 * modified_gas_cost, 2 ) + pow( 25 * modified_supply, 2 ) );
+    stock_value_ = modified_min_cost + modified_gas_cost + 25 * modified_supply;
 
     if (unittype.isTwoUnitsInOneEgg() ) {
         stock_value_ = stock_value_ / 2;
@@ -258,7 +268,7 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     int modified_min_cost = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
     int modified_gas_cost = unit->getType().gasPrice();
 
-    stock_value_ = (int)sqrt( pow( modified_min_cost, 2 ) + pow( 1.25 * modified_gas_cost, 2 ) + pow( 25 * modified_supply, 2 ) );
+    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
     if ( unit->getType().isTwoUnitsInOneEgg() ) {
         stock_value_ = stock_value_ / 2;

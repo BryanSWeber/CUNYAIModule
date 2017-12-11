@@ -203,7 +203,7 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
-    int cost = (int)sqrt( pow( building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice(), 2 ) + pow( 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice(), 2 ) + pow( 25 * UnitTypes::Zerg_Drone.supplyRequired(), 2 ) );
+    int cost = building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
     int instances = Count_Units( building , ui );
     int total_stock = cost * instances;
     return total_stock;
@@ -214,7 +214,7 @@ int MeatAIModule::Stock_Ups( const UpgradeType &ups ) {
     int lvl = Broodwar->self()->getUpgradeLevel( ups ) + (int)Broodwar->self()->isUpgrading( ups );
     int total_stock = 0;
     for ( int i = 1; i <= lvl; i++ ) {
-        int cost = (int)sqrt( pow( ups.mineralPrice(), 2 ) + pow( 1.25 * ups.gasPrice(), 2 ) );
+        int cost = ups.mineralPrice() + 1.25 * ups.gasPrice();
         total_stock += cost;
     }
     return total_stock;
