@@ -42,7 +42,9 @@ GeneticHistory::GeneticHistory( string file ) {
     string build_order_out;
     
 
-    vector<string> build_order_list = { "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
+    vector<string> build_order_list = {
+        "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
+        "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
         "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
         "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
@@ -77,7 +79,7 @@ GeneticHistory::GeneticHistory( string file ) {
     int losing_player = 0;
     int losing_map = 0;
     int losing_race = 0;
-
+    int games_since_last_win = 0;
     double prob_win_given_conditions;
 
     string entry; // entered string from stream
@@ -174,7 +176,7 @@ GeneticHistory::GeneticHistory( string file ) {
             lose_count++;
         }
 
-        if (name_in[j] == e_name ) {
+        if (name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race)) {
             if ( win_in[j] == 1 ) {
                 winning_player++;
             }
@@ -208,7 +210,6 @@ GeneticHistory::GeneticHistory( string file ) {
 
     //What model is this? It's greedy...
 
-    int counter = 0;
     double race_or_player_w = winning_player > 0 ? winning_player : winning_race;
     double race_or_player_l = losing_player > 0 ? losing_player : losing_race;
 
@@ -220,26 +221,35 @@ GeneticHistory::GeneticHistory( string file ) {
 
     vector<int> frequency = { winning_player, winning_race, winning_map };
 
+
+
     for ( int j = 0; j < csv_length; ++j ) {
 
         bool conditions_for_inclusion = true;
+        int counter = 0;
+        //int min_frequency = 9999999999;
 
         for (std::vector<int>::size_type it = 0; it != frequency.size(); it++) { //This loop is inelegant.
-            if ( /*frequency[it] < min_frequency &&*/ frequency[it] > 0) {
+
+            if (/*frequency[it] < min_frequency &&*/ frequency[it] > 0) {
                 counter = static_cast<int>(it);
+                //min_frequency = frequency[it];
                 //prob_win_given_conditions = probabilities[it];
+
+                switch (counter)
+                {
+                case 0: conditions_for_inclusion *= name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race); //choice in race for random players is like a whole new ball park.
+                    break;
+                case 1: conditions_for_inclusion *= race_in[j] == e_race;
+                    break;
+                case 2: conditions_for_inclusion *= map_name_in[j] == map_name;
+                    break;
+                default:
+                    break;
+                }
+
             } // the one with the lowest frequency of wins will have the largest marginal impact.
-            switch (counter)
-            {
-            case 0: conditions_for_inclusion *= name_in[j] == e_name;
-                break;
-            case 1: conditions_for_inclusion *= race_in[j] == e_race;
-                break;
-            case 2: conditions_for_inclusion *= map_name_in[j] == map_name;
-                break;
-            default:
-                break;
-            }
+
         }
 
         if (conditions_for_inclusion && win_in[j] == 1 ) {
@@ -251,17 +261,19 @@ GeneticHistory::GeneticHistory( string file ) {
             build_order_win.push_back( build_order_in[j] );
             build_orders_tried.push_back(build_order_in[j]);
             selected_win_count++;
+            games_since_last_win = 0;
         } 
         else if ( conditions_for_inclusion ) {
             selected_lose_count++;
             build_orders_tried.push_back(build_order_in[j]);
+            games_since_last_win++;
         }
     } //or widest hunt possible.
 
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 && !(winning_player == 0 && dis(gen) > prob_win_given_conditions) ) { // redefine final output.
+    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(5 + games_since_last_win) ) { // redefine final output.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
         std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
@@ -311,8 +323,8 @@ GeneticHistory::GeneticHistory( string file ) {
     for ( int i = 0; i<1000; i++ ) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
 
         //From genetic history, random parent for each gene. Mutate the genome
-        std::uniform_real_distribution<double> unif_dist_to_mutate( 0, 4 );
-        std::uniform_real_distribution<double> unif_mutation_size(-0.05, 0.05);
+        std::uniform_real_distribution<double> unif_dist_to_mutate( 0, 5 );
+        std::uniform_real_distribution<double> unif_mutation_size(-0.10, 0.10);
 
         int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
         //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.

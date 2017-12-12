@@ -60,6 +60,12 @@ void Reservation::decrementReserveTimer() {
     }
 }
 
+int Reservation::getExcessMineral() {
+    return max( Broodwar->self()->minerals() - min_reserve_ , 0 ) ;
+}
+int Reservation::getExcessGas() {
+    return max( Broodwar->self()->gas() - gas_reserve_ , 0 );
+}
 
 bool Reservation::checkAffordablePurchase( const UnitType type ) {
     bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
@@ -95,7 +101,13 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             removeReserveSystem( remove_me );  // contains an erase.
         }
     }
-    
+
+    if (reservation_map_.empty()) {
+        reservation_map_.clear();
+        min_reserve_ = 0;
+        gas_reserve_ = 0;
+    }
+
     if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
         Broodwar->sendText( "...We're stuck, aren't we? Have a friendly nudge." );
         reservation_map_.clear();

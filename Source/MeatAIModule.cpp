@@ -329,6 +329,7 @@ void MeatAIModule::onFrame()
     inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
 
     inventory.updateStartPositions();
+
     if ( t_game == 0 ) {
         inventory.getExpoPositions(); // prime this once on game start.
     }
@@ -1021,7 +1022,7 @@ void MeatAIModule::onFrame()
     if ( total_frame_time.count() > 10000 ) {
         long_delay += 1;
     }
-    if ( (short_delay > 320 || Broodwar->elapsedTime() > 90 * 60) /*|| Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0 || enemy_inventory.stock_total_> friendly_inventory.stock_total_ * 2*/ && _RESIGN_MODE ) //if game times out or lags out, end game with resignation.
+    if ( (short_delay > 320 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0) /* enemy_inventory.stock_total_> friendly_inventory.stock_total_ * 2*/ && _RESIGN_MODE ) //if game times out or lags out, end game with resignation.
     {
         Broodwar->leaveGame();
     }

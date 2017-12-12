@@ -23,6 +23,9 @@ struct Reservation {
     // Decrements the clock. Simple but works.
     void Reservation::decrementReserveTimer();
 
+    int Reservation::getExcessMineral();
+    int Reservation::getExcessGas();
+
     bool Reservation::checkAffordablePurchase( const UnitType type );
     bool Reservation::checkAffordablePurchase( const TechType type );
     bool Reservation::checkAffordablePurchase( const UpgradeType type );

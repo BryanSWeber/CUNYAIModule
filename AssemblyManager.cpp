@@ -224,13 +224,6 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     int is_building = 0;
 
-    if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
-        is_building += Check_N_Grow(buildorder.building_gene_.front().getUnit(), larva, true);
-    }
-
-    //Supply blocked protection 
-    is_building += Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved);
-
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
     bool wasting_larva_soon = false;
@@ -242,7 +235,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, ui) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, ui) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, ui) > 85;
     bool drone_conditional = econ_starved || (Count_Units(UnitTypes::Zerg_Larva, ui) > 0 && !army_starved); // Econ supercedes non-army needs.
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory) < inv.hatches_;
-    
+
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, ui) == 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
         !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) &&
@@ -259,45 +252,65 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 
     bool enemy_lacks_AA = ei.stock_shoots_up_ < 0.25 * ei.stock_total_;
 
+    // Do required build first.
+    if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
+        is_building += Check_N_Grow(buildorder.building_gene_.front().getUnit(), larva, true);
+    }
+
+    //Supply blocked protection 
+    is_building += Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved && is_building == 0);
+    // Eco building.
     is_building += Check_N_Grow(larva->getType().getRace().getWorker(), larva, (drone_conditional || wasting_larva_soon) && !enough_drones);
 
     //Army build/replenish.  Cycle through military units available.
-    if (army_starved && is_building == 0) {
-        if (ei.stock_fliers_ > ui.stock_shoots_up_) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
-            is_building += Check_N_Grow(UnitTypes::Zerg_Scourge, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && Count_Units(UnitTypes::Zerg_Scourge, ui) < 5); // hard cap on scourges, they build 2 at a time. 
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
+    if (ei.stock_fliers_ > ui.stock_shoots_up_) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
+        is_building += Check_N_Grow(UnitTypes::Zerg_Scourge, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && Count_Units(UnitTypes::Zerg_Scourge, ui) < 5); // hard cap on scourges, they build 2 at a time. 
+        is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
 
-            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
-                buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber)); // force in a hydralisk den if they have Air.
-                Broodwar->sendText("Reactionary Evo Chamber");
-            }
-            else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
-                buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den));
-                Broodwar->sendText("Reactionary Hydra Den");
-            }
-            else if (Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
-                buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire));
-                Broodwar->sendText("Reactionary Spire");
-            }
+        if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
+            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber)); // force in a hydralisk den if they have Air.
+            Broodwar->sendText("Reactionary Evo Chamber");
+        }
+        else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
+            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den));
+            Broodwar->sendText("Reactionary Hydra Den");
+        }
+        else if (Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, ui) == 0 && buildorder.checkEmptyBuildOrder()) {
+            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire));
+            Broodwar->sendText("Reactionary Spire");
+        }
 
-        }
-        else if (enemy_lacks_AA && Count_Units(UnitTypes::Zerg_Spire, ui) > 0) {
-            is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && Broodwar->self()->minerals() - Broodwar->self()->gas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
-        }
-        else if (enemy_mostly_ground) {
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0 && Count_Units(UnitTypes::Zerg_Hydralisk, ui) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Broodwar->self()->minerals() - Broodwar->self()->gas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
-        }
-        else {
-            is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) > 0); // catchall ground units.
-            is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
+    }
+    else if (enemy_lacks_AA && Count_Units(UnitTypes::Zerg_Spire, ui) > 0) {
+        is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
+        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0 && my_reservation.getExcessMineral()-my_reservation.getExcessGas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
+    }
+    else if (enemy_mostly_ground) {
+        is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0);
+
+        if (Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) > 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) == 0) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) > 0);
         }
+        else if(Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0 && Count_Units(UnitTypes::Zerg_Lair, ui) == 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)) {
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lair.mineralPrice() && my_reservation.getExcessGas() > UnitTypes::Zerg_Lair.gasPrice());
+            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lair.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
+        } else if ( Count_Units(UnitTypes::Zerg_Lair, ui) > 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)) {
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > TechTypes::Lurker_Aspect.mineralPrice() && my_reservation.getExcessGas() > TechTypes::Lurker_Aspect.gasPrice() );
+            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > TechTypes::Lurker_Aspect.mineralPrice() ); // if you are floating minerals relative to gas, feel free to buy some lings.
+        }
+        else {
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice() && my_reservation.getExcessGas() >  UnitTypes::Zerg_Lurker.gasPrice());
+            is_building += Check_N_Grow( UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice() ); // if you are floating minerals relative to gas, feel free to buy some lings.
+        }
     }
+    else {
+        is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) > 0); // catchall ground units.
+        is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, ui) > 0);
+        is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, ui) == 0);
+        is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0);
+        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, ui) > 0);
+    }
+
 
     //if ((would_force_lurkers || would_force_spire) && Count_Units(UnitTypes::Zerg_Lair, ui) == 0 && inv.hatches_ >= 2 && Count_Units(UnitTypes::Zerg_Extractor, ui) > 0 ) {
     //    buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Lair)); // force lair if you need it and are in a position for it.
