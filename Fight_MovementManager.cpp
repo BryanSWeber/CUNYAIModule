@@ -24,16 +24,14 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ && !army_starved;
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
-
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) && !inventory.start_positions_.empty();
+    bool overlord_safe_for_scouting = (ei.stock_shoots_up_ == 0 && unit->getType() == UnitTypes::Zerg_Overlord) || unit->getType() != UnitTypes::Zerg_Overlord;
     setAlignment( unit, flock );
     setStutter( unit, n );
     setCohesion( unit, pos, flock );
 
-    if (!enemy_scouted && healthy) {
-        if (!inventory.start_positions_.empty()) {
-            scoutEnemyBase(unit, pos, ei, inventory);
-        }
+    if ( !enemy_scouted && healthy && overlord_safe_for_scouting) {
+        scoutEnemyBase(unit, pos, ei, inventory);
     }
     else if ( healthy && ready_to_fight ) {
         setAttraction(unit, pos, ei, inventory, army_starved); // applies to overlords.
@@ -41,7 +39,8 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     else {
         setAttractionHome(unit, pos, ei, inventory);
     }
-                                                             // The following do NOT apply to flying units: Seperation, centralization.
+   
+    // The following do NOT apply to flying units: Seperation, centralization.
     if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
         Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 32 );
         setSeperation( unit, pos, neighbors );
@@ -262,7 +261,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             unit->attack( retreat_spot );
         }
     }
-    else if ( unit->isAttacking() && !unit->isAttackFrame() ) {
+    else if ((unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && !unit->isAttackFrame() ) {
         unit->stop();
     }
 }
@@ -438,16 +437,16 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
 }
 
 void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv) {
-        int randomIndex = rand() % inv.start_positions_.size();
-        if (inv.start_positions_[randomIndex]) {
-            Position possible_base = inv.start_positions_[randomIndex];
+        if (!inv.start_positions_.empty()) {
+            Position possible_base = inv.start_positions_[1];
             int dist = unit->getDistance(possible_base);
             int dist_x = possible_base.x - pos.x;
             int dist_y = possible_base.y - pos.y;
             double theta = atan2(dist_y, dist_x);
             attract_dx_ = cos(theta) * dist; // run 100% towards them.
             attract_dy_ = sin(theta) * dist;
-            inv.start_positions_.erase(inv.start_positions_.begin() + randomIndex);
+
+            std::rotate(inv.start_positions_.begin(), inv.start_positions_.begin() + 1, inv.start_positions_.end());
         }
 }
 

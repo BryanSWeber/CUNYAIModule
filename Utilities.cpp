@@ -200,7 +200,22 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 
 	return count;
 }
+// Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
+int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
+{
+    int count = 0;
+    for (const auto & unit : ui.unit_inventory_)
+    {
+        if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
+            count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        }
+        else if (unit.second.type_ == type && unit.second.bwapi_unit_ && unit.second.bwapi_unit_->exists() && unit.second.bwapi_unit_->getLastCommand().getType() == u_command_type) {
+            count++;
+        }
+    }
 
+    return count;
+}
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
     int cost = building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();

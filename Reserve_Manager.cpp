@@ -19,37 +19,28 @@ Reservation::Reservation() {
 }
 
 bool Reservation::addReserveSystem( UnitType type, TilePosition pos ) {
-    bool safe = true;
-    map<UnitType, TilePosition>::iterator it = reservation_map_.find( type );
-    if ( it == reservation_map_.end() ) {
+    bool safe = reservation_map_.insert({ type, pos }).second;
+    if ( safe ) {
         min_reserve_ += type.mineralPrice();
         gas_reserve_ += type.gasPrice();
-        safe = reservation_map_.insert( { type, pos } ).second;
         building_timer_ = type.buildTime() > building_timer_ ? type.buildTime() : building_timer_;
+        last_builder_sent_ = Broodwar->getFrameCount();
     }
-    last_builder_sent_ = Broodwar->getFrameCount();
 
     return safe;
 }
 
-void Reservation::removeReserveSystem( UnitType type ) {
-    if ( reservation_map_.empty() ) {
-        min_reserve_ = 0;
-        gas_reserve_ = 0;
+void Reservation::removeReserveSystem(UnitType type) {
+    map<UnitType, TilePosition>::iterator it = reservation_map_.find(type);
+    if (it != reservation_map_.end()) {
+        reservation_map_.erase(type);
+        min_reserve_ -= type.mineralPrice();
+        gas_reserve_ -= type.gasPrice();
     }
-    else {
-        map<UnitType, TilePosition>::iterator it = reservation_map_.find( type );
-        if ( it != reservation_map_.end() ) {
-            reservation_map_.erase( type );
-            min_reserve_ -= type.mineralPrice();
-            gas_reserve_ -= type.gasPrice();
-        }
-        else if ( type != UnitTypes::None ) {
-            Broodwar->sendText( "We're trying to remove %s from the reservation queue but can't find it.", type.c_str() );
-        }
+    else if (type != UnitTypes::None) {
+        Broodwar->sendText("We're trying to remove %s from the reservation queue but can't find it.", type.c_str());
     }
 };
-
 
 void Reservation::decrementReserveTimer() {
     if ( Broodwar->getFrameCount() == 0 ) {
@@ -82,6 +73,9 @@ bool Reservation::checkAffordablePurchase( const UpgradeType type ) {
 
 void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
 
+    min_reserve_ = 0;
+    gas_reserve_ = 0;
+
     for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); ) {
         bool keep = false;
 
@@ -102,10 +96,9 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
         }
     }
 
-    if (reservation_map_.empty()) {
-        reservation_map_.clear();
-        min_reserve_ = 0;
-        gas_reserve_ = 0;
+    for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); res_it++ ) {
+        min_reserve_ += res_it->first.mineralPrice();
+        gas_reserve_ += res_it->first.gasPrice();
     }
 
     if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {

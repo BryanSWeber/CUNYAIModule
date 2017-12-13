@@ -228,6 +228,13 @@ void Unit_Inventory::updateUnitInventorySummary() {
     cloaker_count_ = cloaker_count;
 }
 
+void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
+    if (u->getType().isWorker()) {
+        Stored_Unit& miner = unit_inventory_.find(u)->second;
+        miner.stopMine(ri);
+    }
+}
+
 //Stored_Unit functions.
 Stored_Unit::Stored_Unit() = default;
 
@@ -282,7 +289,6 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
-
 void Stored_Unit::stopMine(Resource_Inventory &ri){
 	if (locked_mine_ && locked_mine_->exists()){
 		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
@@ -308,3 +314,4 @@ bool Stored_Unit::isClearing(Resource_Inventory &ri) {
     }
     return false;
 }
+

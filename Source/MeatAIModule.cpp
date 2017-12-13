@@ -272,7 +272,10 @@ void MeatAIModule::onFrame()
             r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
             r->second.valid_pos_ = true;
             r->second.type_ = r->second.bwapi_unit_->getType();
-            r->second.occupied_natural_ = !r->second.bwapi_unit_->getUnitsInRadius( 256, IsResourceDepot && IsOwned  ).empty() || !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Lair, r->second.pos_, 256).unit_inventory_.empty() || !getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Hive, r->second.pos_, 256 ).unit_inventory_.empty(); // is there a resource depot in 250 of it?
+            Unit_Inventory local_area = getUnitInventoryInRadius(friendly_inventory, r->second.pos_, 320);
+            r->second.occupied_natural_ = getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hatchery, r->second.pos_, 320).unit_inventory_.size() - Count_Units_Doing(UnitTypes::Zerg_Hatchery,UnitCommandTypes::Morph, local_area) > 0 ||
+                !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Lair, r->second.pos_, 320).unit_inventory_.empty() ||
+                !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hive, r->second.pos_, 320 ).unit_inventory_.empty(); // is there a resource depot in 10 tiles of it?
            //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
         }
 
@@ -329,6 +332,10 @@ void MeatAIModule::onFrame()
     inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
 
     inventory.updateStartPositions();
+
+    if (inventory.map_veins_in_.empty() && t_game > 24 && !inventory.start_positions_.empty() && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
+        inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[1]);
+    } // the enemy is "out there somewhere". Choose a start position, but make sure to elimiate your own via updateStartPositions.
 
     if ( t_game == 0 ) {
         inventory.getExpoPositions(); // prime this once on game start.
@@ -799,11 +806,11 @@ void MeatAIModule::onFrame()
                             bool neccessary_attack = helpful_e < helpful_u || // attack if you outclass them and your boys are ready to fight.
                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
-                                //(friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
+                                (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                                 (!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                                ((friend_loc.max_range_ > enemy_loc.max_range_ || 32 > enemy_loc.max_range_) && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
+                                ( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
                                 (distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24 ) || // a stutterstep component. Should seperate it off.
-                                (distance_to_foe < enemy_loc.max_range_ && distance_to_foe < chargable_distance_net && appropriate_range > 64);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                (distance_to_foe < enemy_loc.max_range_/2 && distance_to_foe < chargable_distance_net && appropriate_range > 64);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
@@ -830,7 +837,7 @@ void MeatAIModule::onFrame()
                             bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
                             if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem ) {
-
+                                friendly_inventory.stopMine(u, neutral_inventory);
                                 boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
                                                                                       //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
@@ -849,20 +856,24 @@ void MeatAIModule::onFrame()
 
                             }
                             else if ( is_spelled ) {
+                                friendly_inventory.stopMine(u, neutral_inventory);
                                 Stored_Unit* closest = getClosestThreatOrTargetStored( friendly_inventory, u->getType(), u->getPosition(), 128 );
                                 if ( closest ) {
                                     boids.Retreat_Logic( u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
                                 }
                             }
                             else if ( drone_problem ) {
-
                                 if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
-                                    //friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+                                    friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+                                    u->getLastCommand().getType() != UnitCommandTypes::Build &&
+                                    Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
+                                    friendly_inventory.stopMine(u, neutral_inventory);
                                     boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
                                 }
                             }
                             else {
+                                friendly_inventory.stopMine(u, neutral_inventory);
                                 boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
                                 if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2)) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone) ) {

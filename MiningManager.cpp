@@ -70,14 +70,12 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 my_reservation.removeReserveSystem( unit->getBuildType() );
             }
 
-            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
-                my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery, inv.next_expo_ );
+            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }
-            if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
+            if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 unit->move( Position( inv.next_expo_ ) );
-                my_reservation.addReserveSystem( UnitTypes::Zerg_Hatchery, inv.next_expo_ );
                 Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }

@@ -200,6 +200,7 @@ public:
       static int Count_Units( const UnitType &type, const Reservation &res );
 	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
 	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
+      static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.

@@ -52,10 +52,10 @@ GeneticHistory::GeneticHistory( string file ) {
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
         "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
     };
-    std::uniform_real_distribution<double> rand_bo(0, build_order_list.size());
-    double build_order_rand = rand_bo(gen);
+    std::uniform_real_distribution<double> rand_bo(0, build_order_list.size() );
+    size_t build_order_rand = rand_bo(gen);
 
-    build_order_out = build_order_list[ (int)build_order_rand ];
+    build_order_out = build_order_list[ build_order_rand ];
 	
   // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
 	// "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
@@ -229,27 +229,30 @@ GeneticHistory::GeneticHistory( string file ) {
         int counter = 0;
         //int min_frequency = 9999999999;
 
-        for (std::vector<int>::size_type it = 0; it != frequency.size(); it++) { //This loop is inelegant.
-
-            if (/*frequency[it] < min_frequency &&*/ frequency[it] > 0) {
-                counter = static_cast<int>(it);
-                //min_frequency = frequency[it];
-                //prob_win_given_conditions = probabilities[it];
-
-                switch (counter)
-                {
-                case 0: conditions_for_inclusion *= name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race); //choice in race for random players is like a whole new ball park.
-                    break;
-                case 1: conditions_for_inclusion *= race_in[j] == e_race;
-                    break;
-                case 2: conditions_for_inclusion *= map_name_in[j] == map_name;
-                    break;
-                default:
-                    break;
-                }
-
-            } // the one with the lowest frequency of wins will have the largest marginal impact.
-
+        // an indelegant statement follows. How do I make this into a switch?
+        if (winning_player > 0 && winning_race > 0 && winning_map > 0) { //choice in race for random players is like a whole new ball park.
+            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race && map_name_in[j] == map_name;
+        }
+        else if (winning_player > 0 && winning_race > 0) {
+            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race;
+        }
+        else if (winning_player > 0 && winning_map > 0) {
+            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && map_name_in[j] == map_name;
+        }
+        else if (winning_race > 0 && winning_map > 0) {
+            conditions_for_inclusion = race_in[j] == e_race && map_name_in[j] == map_name;
+        }
+        else if (winning_player > 0 && winning_race > 0) {
+            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race;
+        }
+        else if (winning_player > 0) {
+            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race);
+        }
+        else if (winning_race > 0) {
+            conditions_for_inclusion = race_in[j] == e_race;
+        }
+        else if ( winning_map > 0) {
+            conditions_for_inclusion = map_name_in[j] == map_name;
         }
 
         if (conditions_for_inclusion && win_in[j] == 1 ) {
@@ -273,7 +276,7 @@ GeneticHistory::GeneticHistory( string file ) {
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(5 + games_since_last_win) ) { // redefine final output.
+    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(double)(5 + games_since_last_win) ) { // redefine final output.
 
         std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
         std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
@@ -330,6 +333,9 @@ GeneticHistory::GeneticHistory( string file ) {
         //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
         double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
+        if (games_since_last_win == 0) {
+            mutation = 1; // no mutation if it worked perfectly last time.
+        }
 
         delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;
         gamma_out_mutate_ = mutation_0 == 1 ? gamma_out  * mutation : gamma_out;
