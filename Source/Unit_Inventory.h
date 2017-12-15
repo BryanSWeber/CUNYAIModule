@@ -39,6 +39,10 @@ struct Stored_Unit {
     // evaluates the value of a stock of specific unit, in terms of pythagorian distance of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
+    bool hasTarget_;
+
+    int velocity_x_;
+    int velocity_y_;
 
     Unit bwapi_unit_;
 
@@ -84,6 +88,8 @@ struct Unit_Inventory {
     Position getMeanCombatLocation() const;
     void stopMine(Unit u, Resource_Inventory & ri);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
+    friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
+
 };
 
 

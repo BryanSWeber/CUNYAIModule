@@ -15,7 +15,11 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         //if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
         //    my_reservation.removeReserveSystem( unit->getBuildType() );
         //}
-        if (unit->canMorph(building)) {
+        if (unit->canMorph(building) && 
+            (unit->getType().isBuilding() ||
+            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery,unit->getPosition(), 500).unit_inventory_.empty() ||
+            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Lair, unit->getPosition(), 500).unit_inventory_.empty() ||
+            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hive, unit->getPosition(), 500).unit_inventory_.empty()) ) {
             if (unit->morph(building)) {
                 buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                 return true;
@@ -36,7 +40,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 
-            Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash online 44.
+            Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
             TilePosition central_base = TilePosition(0, 0);
             TilePosition final_creep_colony_spot = TilePosition(0, 0);
             int furth_x_dist = 0;
@@ -51,7 +55,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 else if (u.second.type_ == UnitTypes::Zerg_Lair) {
                     base_core.insert(u.second.bwapi_unit_);
                 }
-                else if (u.second.type_ == UnitTypes::Zerg_Lair) {
+                else if (u.second.type_ == UnitTypes::Zerg_Hive) {
                     base_core.insert(u.second.bwapi_unit_);
                 }
             }
@@ -69,13 +73,15 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     int old_dist = 9999999;
 
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) {
-
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
-
-                        if (new_dist <= old_dist) {
+                        bool enemy_nearby = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+                        if (new_dist <= old_dist || enemy_nearby) {
                             central_base = central_base_new;
                             old_dist = new_dist;
+                            if (enemy_nearby) { 
+                                break; 
+                            }
                         }
                     }
                 } //confirm we have identified a base around which to build.
@@ -93,7 +99,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
-                            inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
+                            (inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance || getUnitInventoryInRadius(enemy_inventory, Position(TilePosition(centralize_x, centralize_y)), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_)); // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
                             chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y)));
@@ -131,7 +137,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
-                            inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
+                            (inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance || getUnitInventoryInRadius(enemy_inventory, Position(TilePosition(centralize_x, centralize_y)), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_)) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
                             chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y)));
@@ -154,10 +160,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Stored_Resource* closest_gas = getClosestStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, unit->getPosition(), 99999);
             if (closest_gas) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64);
-                bool occupied_gas_geyser = !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Hatchery, Position(buildPosition), 500).unit_inventory_.empty() ||
-                    !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Lair, Position(buildPosition), 500).unit_inventory_.empty() ||
-                    !getUnitInventoryInRadius(friendly_inventory, UnitTypes::Zerg_Hive, Position(buildPosition), 500).unit_inventory_.empty();
-                if ( occupied_gas_geyser && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
+                if (closest_gas->occupied_natural_ && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;
                 } //extractors must have buildings nearby or we shouldn't build them.
@@ -236,18 +239,16 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, ui) == 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
         !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) &&
-        one_tech_per_base &&
         buildorder.checkEmptyBuildOrder();
 
     bool would_force_lurkers = Count_Units(UnitTypes::Zerg_Hydralisk_Den, ui) > 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
         !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) &&
-        one_tech_per_base &&
         buildorder.checkEmptyBuildOrder();
 
-    bool enemy_mostly_ground = ei.stock_ground_units_ > ei.stock_total_ * 0.75;
+    bool enemy_mostly_ground = ei.stock_ground_units_ >= ei.stock_total_ * 0.75;
 
-    bool enemy_lacks_AA = ei.stock_shoots_up_ < 0.25 * ei.stock_total_;
+    bool enemy_lacks_AA = ei.stock_shoots_up_ <= 0.25 * ei.stock_total_;
 
     // Do required build first.
     if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
@@ -395,7 +396,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
             Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) == 1 &&
             Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits()) == 1 &&
             Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Build, Broodwar->self()->getUnits()) == 0 && //costly, slow.
+            Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Morph, Broodwar->self()->getUnits()) == 0 && //costly, slow.
             Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0 &&
             inv.hatches_ > 2);
 

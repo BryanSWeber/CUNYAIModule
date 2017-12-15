@@ -1014,7 +1014,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
-                        MeatAIModule::isMapClearRayTrace( Position( prosepective_location_upper_left ), Position( min_pos_t ), *this )) { // if it is 3 away from the resource, and has clear vision to the resource.
+                        (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
+                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
+                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
+                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource.
 
                         int local_min = 0;
 

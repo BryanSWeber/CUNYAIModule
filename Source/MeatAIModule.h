@@ -179,6 +179,8 @@ public:
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
+
 	  static Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
 	  //Overload. Searches for units of a specific type. 
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
@@ -201,6 +203,7 @@ public:
 	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
 	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
+      static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.

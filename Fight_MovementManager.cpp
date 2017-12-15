@@ -24,14 +24,16 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ && !army_starved;
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0) && !inventory.start_positions_.empty();
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool overlord_safe_for_scouting = (ei.stock_shoots_up_ == 0 && unit->getType() == UnitTypes::Zerg_Overlord) || unit->getType() != UnitTypes::Zerg_Overlord;
     setAlignment( unit, flock );
-    setStutter( unit, n );
-    setCohesion( unit, pos, flock );
+    setCohesion(unit, pos, flock);
 
-    if ( !enemy_scouted && healthy && overlord_safe_for_scouting) {
+    if ( !enemy_scouted && healthy && overlord_safe_for_scouting && !inventory.start_positions_.empty() ) {
         scoutEnemyBase(unit, pos, ei, inventory);
+    }
+    else if (!enemy_scouted && healthy && overlord_safe_for_scouting ) {
+        setStutter(unit, n);
     }
     else if ( healthy && ready_to_fight ) {
         setAttraction(unit, pos, ei, inventory, army_starved); // applies to overlords.
@@ -69,7 +71,9 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     //    unit->attack( brownian_pos );
     //}
     //else {
-        unit->move( brownian_pos );
+    if (unit->getLastCommand().getTargetPosition() != brownian_pos) {
+        unit->move(brownian_pos);
+    }
     //}
 
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black );//Stutter
@@ -160,8 +164,8 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
             }
         }
     }
-
-    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) ) {
+    bool spam_guard = !unit->getLastCommand().getTarget() || (unit->getLastCommand().getTarget() != target.bwapi_unit_ && unit->getLastCommand().getTargetPosition() != target.pos_);
+    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) && spam_guard ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
             if (fix_lurker_burrow(unit, ui, ei, target.pos_)) {
                 //
@@ -345,8 +349,8 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2( cohesion_y, cohesion_x );
-        cohesion_dx_ = cos( theta ) * 0.25 * unit->getDistance( loc_center );
-        cohesion_dy_ = sin( theta ) * 0.25 * unit->getDistance( loc_center );
+        cohesion_dx_ = cos( theta ) * 0.30 * unit->getDistance( loc_center );
+        cohesion_dy_ = sin( theta ) * 0.30 * unit->getDistance( loc_center );
     }
 }
 
@@ -401,8 +405,8 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                         if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
                             double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
                             int distance_metric = inv.getDifferentialDistanceOutFromEnemy( e->pos_, pos );
-                            attract_dx_ = cos( theta ) * (distance_metric * 0.001 );
-                            attract_dy_ = sin( theta ) * (distance_metric * 0.001 );
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 );
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 );
                         }
                     } else if ( enemy_spot > my_spot ) { // if he's outside my ground dist from base.
                         my_spot = inv.getRadialDistanceOutFromHome( pos );
@@ -426,8 +430,8 @@ void Boids::setAttraction( const Unit &unit, const Position &pos, Unit_Inventory
                         if ( temp_attract_dx_ != 0 && temp_attract_dy_ != 0 ) {
                             double theta = atan2( temp_attract_dy_, temp_attract_dx_ );
                             int distance_metric = inv.getDifferentialDistanceOutFromHome( e->pos_, pos );
-                            attract_dx_ = cos( theta ) * (distance_metric * 0.001 );
-                            attract_dy_ = sin( theta ) * (distance_metric * 0.001 );
+                            attract_dx_ = cos( theta ) * (distance_metric * 0.01 );
+                            attract_dy_ = sin( theta ) * (distance_metric * 0.01 );
                         }
                     }
                 }
@@ -457,7 +461,7 @@ void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inven
     bool visible_unit_found = false;
     if ( !ei.unit_inventory_.empty() ) { // if there isn't a visible targetable enemy, but we have an inventory of them...
 
-        Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), 999999 );
+        Stored_Unit* e = MeatAIModule::getClosestThreatOrTargetStored( ei, unit->getType(), unit->getPosition(), 999999 );
 
         if ( e && e->pos_ ) {
             if ( MeatAIModule::isClearRayTrace( pos, e->pos_, inv ) || unit->isFlying() ) { // go to it if the path is clear,
@@ -493,8 +497,8 @@ void Boids::setAttractionHome( const Unit &unit, const Position &pos, Unit_Inven
                 if (temp_attract_dx_ != 0 && temp_attract_dy_ != 0) {
                     double theta = atan2(temp_attract_dy_, temp_attract_dx_);
                     int distance_metric = inv.getDifferentialDistanceOutFromHome(e->pos_, pos);
-                    attract_dx_ = cos(theta) * (distance_metric * 0.001 );
-                    attract_dy_ = sin(theta) * (distance_metric * 0.001 );
+                    attract_dx_ = cos(theta) * (distance_metric * 0.01 + 96);
+                    attract_dy_ = sin(theta) * (distance_metric * 0.01 + 96);
                 }
                 //else if ( enemy_spot < my_spot && !inv.map_veins_in_.empty() ) {
                 //    my_spot = inv.getRadialDistanceOutFromEnemy( pos );

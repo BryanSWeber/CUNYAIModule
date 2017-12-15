@@ -44,12 +44,12 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
     UnitCommandType u_type = unit->getLastCommand().getType();
 
 	bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
-                         (u_type == UnitCommandTypes::Morph && !unit->isMorphing()) ||
+                         (u_type == UnitCommandTypes::Morph && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
-                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !unit->isMoving() ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
+                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
@@ -65,7 +65,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
 // Did the unit fight in the last 5 seconds?
 bool MeatAIModule::isRecentCombatant(const Unit &unit) {
 	bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
-	bool recent_order = unit->getLastCommandFrame() + 5 * 24 > Broodwar->getFrameCount();
+	bool recent_order = unit->getLastCommandFrame() + 1 * 24 > Broodwar->getFrameCount();
 	return fighting_now && recent_order;
 }
 
@@ -209,6 +209,9 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
         if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
         }
+        else if (unit.second.type_ == UnitTypes::Zerg_Drone && unit.second.build_type_ == type) { // Count units under construction
+            count++;
+        }
         else if (unit.second.type_ == type && unit.second.bwapi_unit_ && unit.second.bwapi_unit_->exists() && unit.second.bwapi_unit_->getLastCommand().getType() == u_command_type) {
             count++;
         }
@@ -216,6 +219,25 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 
     return count;
 }
+
+// Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
+int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
+{
+    int count = 0;
+    for (const auto & unit : ui.unit_inventory_)
+    {
+        if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
+            count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        }
+        else if (unit.second.type_ == type.whatBuilds().first && unit.second.build_type_ == type) { // Count units under construction
+            count++;
+        }
+
+    }
+
+    return count;
+}
+
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
     int cost = building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * building.gasPrice()+ UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
@@ -556,6 +578,17 @@ Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inv
 		}
 	}
 	return ri_out;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+Unit_Inventory MeatAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
+    Unit_Inventory ui_out;
+    for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+        if (u->second.valid_pos_ && ( !(*u).second.bwapi_unit_->canMove() && !(*u).second.bwapi_unit_->isInWeaponRange(target) ) ) {
+            ui_out.addStored_Unit((*u).second); // if we take any distance and they are in inventory.
+        }
+    }
+    return ui_out;
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.

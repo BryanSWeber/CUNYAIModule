@@ -46,11 +46,14 @@ GeneticHistory::GeneticHistory( string file ) {
         "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
         "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
         "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
+        "drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
+        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative.
         "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta
-        "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
-        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
+       "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
+       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
     };
     std::uniform_real_distribution<double> rand_bo(0, build_order_list.size() );
     size_t build_order_rand = rand_bo(gen);
@@ -281,23 +284,35 @@ GeneticHistory::GeneticHistory( string file ) {
         std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
         std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
 
-        int parent_1 = (int)(unif_dist_to_win_count( gen )); // safe even if there is only 1 win., index starts at 0.
-        int parent_2 = (int)(unif_dist_to_win_count( gen ));
+        int parent_1 = (int)(unif_dist_to_win_count(gen)); // safe even if there is only 1 win., index starts at 0.
+        int parent_2 = (int)(unif_dist_to_win_count(gen));
+        double linear_combo = dis(gen); //linear_crossover, interior of parents. Big mutation at the end, though.
 
-        if (uniqueCount < build_order_list.size() && build_order_out != build_order_win[parent_1]) { 
-            // then continue with the random build order.
-        }
-        else { // use one from your history.
-            build_order_out = build_order_win[parent_1];
-
-            while (build_order_out != build_order_win[parent_2]) {
-                parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
-            }
+        if (games_since_last_win == 0) {
+            parent_1 = selected_win_count; // safe even if there is only 1 win., index starts at 0.
+            parent_2 = selected_win_count;
+            build_order_out = build_order_win[selected_win_count];
         }
 
+        build_order_out = build_order_win[parent_1];
+
+        while (build_order_out != build_order_win[parent_2]) {
+            parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+        }
+
+        //if (uniqueCount < build_order_list.size() && build_order_out != build_order_win[parent_1] && dis(gen) > games_since_last_win / (double)(5 + games_since_last_win) ) {
+        //    // then continue with the random build order.
+        //}
+        //else { // use one from your history.
+        //    build_order_out = build_order_win[parent_1];
+
+        //    while (build_order_out != build_order_win[parent_2]) {
+        //        parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+        //    }
+        //}
 
 
-        double linear_combo = dis( gen ); //linear_crossover, interior of parents. Big mutation at the end, though.
+
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
         gamma_out = linear_combo * gamma_win[parent_1] + (1 - linear_combo) * gamma_win[parent_2];
         a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
@@ -355,7 +370,6 @@ GeneticHistory::GeneticHistory( string file ) {
         a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
         a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
         a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
-
         build_order_ = build_order_out;
 
         if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.01 ) {

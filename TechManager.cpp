@@ -93,18 +93,18 @@ bool MeatAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui) {
     busy += Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3));
 
 
-    if (inventory.hatches_ > 1) {
-        busy += Check_N_Build(UnitTypes::Zerg_Lair, building, ui, upgrade_bool &&
+   busy += Check_N_Build(UnitTypes::Zerg_Lair, building, ui, upgrade_bool &&
+            inventory.hatches_ > 1 &&
             Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
             Count_Units(UnitTypes::Zerg_Hive, friendly_inventory) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
             building->getType() == UnitTypes::Zerg_Hatchery);
-    }
-    if (inventory.hatches_ > 2) {
-        busy += Check_N_Build(UnitTypes::Zerg_Hive, building, ui, upgrade_bool &&
+
+   busy += Check_N_Build(UnitTypes::Zerg_Hive, building, ui, upgrade_bool &&
+            inventory.hatches_ > 2 &&
             Count_Units(UnitTypes::Zerg_Queens_Nest, friendly_inventory) >= 0 &&
             building->getType() == UnitTypes::Zerg_Lair &&
             Count_Units(UnitTypes::Zerg_Hive, friendly_inventory) == 0); //If you're tech-starved at this point, don't make random hives.
-    }
+
 
 
     

@@ -27,7 +27,7 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
 		}
 		else {
 			for (const auto & u : unit_set) {
-				if (unit_inventory_.count(u) > 0){
+				if (unit_inventory_.find(u) != unit_inventory_.end() ){
 					unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
 				}
 				else {
@@ -54,11 +54,15 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 		type_ = unit->getType();
 		build_type_ = unit->getBuildType();
 		current_hp_ = unit->getHitPoints();
+        velocity_x_ = unit->getVelocityX();
+        velocity_y_ = unit->getVelocityY();
 
         //Get unit's status. Precalculated, precached.
         int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
         modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-        int modified_min_cost = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
+        int modified_min_cost = unit->getType().mineralPrice();
+            modified_min_cost += unit->getType() == UnitTypes::Terran_Barracks ? 50 : 0; // Assume bunkers are loaded.
+            modified_min_cost += unit->getType().whatBuilds().first == UnitTypes::Zerg_Creep_Colony ? UnitTypes::Zerg_Creep_Colony.mineralPrice() : 0;
         int modified_gas_cost = unit->getType().gasPrice();
 
         stock_value_ = modified_min_cost + modified_gas_cost + 25 * modified_supply;
@@ -82,9 +86,11 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     int count = 0;
     Position out = Position(0,0);
     for ( const auto &u : this->unit_inventory_ ) {
-        x_sum += u.second.pos_.x;
-        y_sum += u.second.pos_.y;
-        count++;
+        if (u.second.valid_pos_) {
+            x_sum += u.second.pos_.x;
+            y_sum += u.second.pos_.y;
+            count++;
+        }
     }
     if ( count > 0 ) {
         out = Position( x_sum / count, y_sum / count );
@@ -97,7 +103,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int y_sum = 0;
      int count = 0;
      for ( const auto &u : this->unit_inventory_ ) {
-         if ( u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding() || u.second.bwapi_unit_->isMorphing() ) {
+         if ( ((u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding()) || u.second.bwapi_unit_->isMorphing()) && u.second.valid_pos_) {
              x_sum += u.second.pos_.x;
              y_sum += u.second.pos_.y;
              count++;
@@ -140,6 +146,23 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     total.unit_inventory_.insert(rhs.unit_inventory_.begin(), rhs.unit_inventory_.end());
     total.updateUnitInventorySummary();
     return total;
+ }
+
+ Unit_Inventory operator-(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+ {
+     Unit_Inventory total;
+     total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
+
+     for (map<Unit,Stored_Unit>::const_iterator& it = rhs.unit_inventory_.begin(); it != rhs.unit_inventory_.end();) {
+         if (total.unit_inventory_.find(it->first) != total.unit_inventory_.end() ) {
+             total.unit_inventory_.erase(it->first);
+         }
+         else {
+             it++;
+         }
+     }
+     total.updateUnitInventorySummary();
+     return total;
  }
 
 void Unit_Inventory::updateUnitInventorySummary() {

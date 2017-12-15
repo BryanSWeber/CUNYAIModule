@@ -215,7 +215,13 @@ void MeatAIModule::onFrame()
                 }
             }
             if ( !present || enemies_tile.empty() ) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. 
-                e->second.valid_pos_ = false;
+                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
+                if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)) ) ) {
+                    e->second.pos_ = potential_running_spot;
+                }
+                else {
+                    e->second.valid_pos_ = false;
+                }
                 //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
             }
         }
@@ -243,7 +249,7 @@ void MeatAIModule::onFrame()
 
     //Unitset enemy_set_all = getUnit_Set( enemy_inventory, { 0,0 }, 999999 ); // for allin mode.
 
-                                                                             // easy to update friendly unit inventory.
+    // easy to update friendly unit inventory.
     if ( friendly_inventory.unit_inventory_.size() == 0 ) {
         friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() );
     }
@@ -273,7 +279,7 @@ void MeatAIModule::onFrame()
             r->second.valid_pos_ = true;
             r->second.type_ = r->second.bwapi_unit_->getType();
             Unit_Inventory local_area = getUnitInventoryInRadius(friendly_inventory, r->second.pos_, 320);
-            r->second.occupied_natural_ = getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hatchery, r->second.pos_, 320).unit_inventory_.size() - Count_Units_Doing(UnitTypes::Zerg_Hatchery,UnitCommandTypes::Morph, local_area) > 0 ||
+            r->second.occupied_natural_ = getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hatchery, r->second.pos_, 320).unit_inventory_.size() - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
                 !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Lair, r->second.pos_, 320).unit_inventory_.empty() ||
                 !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hive, r->second.pos_, 320 ).unit_inventory_.empty(); // is there a resource depot in 10 tiles of it?
            //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
@@ -341,8 +347,17 @@ void MeatAIModule::onFrame()
         inventory.getExpoPositions(); // prime this once on game start.
     }
 
+
     if ( buildorder.building_gene_.empty() ) {
         buildorder.ever_clear_ = true;
+    }
+    else {
+        bool need_gas_now = buildorder.building_gene_.front().getResearch().gasPrice() > 0 || buildorder.building_gene_.front().getUnit().gasPrice() > 0 || buildorder.building_gene_.front().getResearch().gasPrice() > 0;
+        bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) == 0;
+        if (need_gas_now && no_extractor) {
+            buildorder.clearRemainingBuildOrder();
+            Broodwar->sendText("Uh oh, something's went wrong with building an extractor!");
+        }
     }
 
     my_reservation.decrementReserveTimer();
@@ -544,12 +559,12 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            //if ( !inventory.map_veins_out_.empty() ) {
-            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_out_.size(); ++i ) {
-            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_out_[i].size(); ++j ) {
+            //if ( !inventory.map_veins_in_.empty() ) {
+            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
+            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
             //            //if ( inventory.map_veins_[i][j] > 175 ) {
             //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_[i][j] );
+            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
             //            }
             //        }
             //    } // Pretty to look at!
@@ -637,10 +652,6 @@ void MeatAIModule::onFrame()
                 Diagnostic_Line(miner.pos_, miner.locked_mine_->getPosition(), Colors::Green);
             }
 
-            //// Building subloop.
-            //if (miner.isClearing(neutral_inventory)) {
-            //    continue;
-            //}
 
             if ( !IsCarryingGas( u ) && !IsCarryingMinerals( u ) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame ){ //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
@@ -718,19 +729,19 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        if ( (isIdleEmpty( u ) && !u->isAttacking() && !u->isUnderAttack() /*&& u->getType() != UnitTypes::Zerg_Overlord*/ && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24 ) )
+        if ((isIdleEmpty(u) && !u->isAttacking() && !u->isUnderAttack() /*&& u->getType() != UnitTypes::Zerg_Overlord*/ && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24))
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
-            bool enemy_found = enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) && enemy_inventory.stock_total_ > 0; //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            if ( (!enemy_found && inventory.start_positions_.empty()) && (!army_starved || army_derivative == 0) ) {
-                boids.Boids_Movement( u, 12, friendly_inventory, enemy_inventory, inventory, false); // not army starved in this case.
+            bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
+            bool avoiding_fights = (army_starved && army_derivative > 0);
+            if (!enemy_found) {
+                boids.Boids_Movement(u, 12, friendly_inventory, enemy_inventory, inventory, true); // not army starved in this case.
             }
             else {
-                boids.Boids_Movement( u, 1, friendly_inventory, enemy_inventory, inventory, true ); // keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
-            }
+                boids.Boids_Movement(u, 1, friendly_inventory, enemy_inventory, inventory, avoiding_fights);
+            }// keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
-
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -754,7 +765,8 @@ void MeatAIModule::onFrame()
                 int search_radius = max(chargable_distance_net + appropriate_range + 64, enemy_inventory.max_range_ + 64);
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
-                Unit_Inventory enemy_loc = enemy_loc_around_target + enemy_loc_around_self;
+                //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_inventory, u);
+                Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
                 Boids boids;
 
@@ -762,7 +774,8 @@ void MeatAIModule::onFrame()
 
                     Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + search_radius );
                     Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc = friend_loc_around_target + friend_loc_around_me;
+                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
+                    Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
                     enemy_loc.updateUnitInventorySummary();
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
@@ -807,8 +820,8 @@ void MeatAIModule::onFrame()
                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                (!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                                ( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || // trying to do something with these surface areas.
+                                //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
+                                //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
                                 (distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24 ) || // a stutterstep component. Should seperate it off.
                                 (distance_to_foe < enemy_loc.max_range_/2 && distance_to_foe < chargable_distance_net && appropriate_range > 64);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
 
@@ -821,6 +834,7 @@ void MeatAIModule::onFrame()
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
                                 //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
+                                (getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_ ,7*32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7*32 ) ||
                                 (distance_to_foe < 64 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u->getType().groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u->getType().groundWeapon().maxRange() > 64 && !u->isBurrowed() && Can_Fight(*e_closest, u)) || //kiting?
                                 //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
@@ -863,9 +877,9 @@ void MeatAIModule::onFrame()
                                 }
                             }
                             else if ( drone_problem ) {
-                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
+                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits()) < enemy_loc.worker_count_ + 1 &&
                                     friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
-                                    u->getLastCommand().getType() != UnitCommandTypes::Build &&
+                                    u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                                     Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
                                     friendly_inventory.stopMine(u, neutral_inventory);
@@ -876,7 +890,7 @@ void MeatAIModule::onFrame()
                                 friendly_inventory.stopMine(u, neutral_inventory);
                                 boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
-                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2)) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone) ) {
+                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2)) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0,0) ) ) {
                                     if ( u->getType() == UnitTypes::Zerg_Overlord ) {
                                         //see unit destruction case. We will replace this overlord, likely a foolish scout.
                                     }
@@ -1098,7 +1112,6 @@ Broodwar->sendText( "Where's the nuke?" );
 
 void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 {
-    bool initially_empty = enemy_inventory.getMeanBuildingLocation() == Position( 0, 0 );
 
     if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
                                                                                              //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
@@ -1183,39 +1196,6 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
     if ( unit && unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
         my_reservation.removeReserveSystem( unit->getType() );
     }
-
-    //if ( Broodwar->getFrameCount() > 1 ) {
-    //    buildorder.updateRemainingBuildOrder( unit );
-    //}
-
-    //if (unit && unit->getType().isWorker()) {
-    //    Stored_Unit& miner = friendly_inventory.unit_inventory_.find(unit)->second;
-    //    bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor));  // enough gas if (many critera), incomplete 
-
-    //    if (miner.bwapi_unit_) {
-    //        miner.stopMine(neutral_inventory);
-    //        if (want_gas) {
-    //            Worker_Gas(unit, friendly_inventory);
-    //            if (miner.locked_mine_) {
-    //            }
-    //            else { // do SOMETHING.
-    //                Worker_Mine(unit, friendly_inventory);
-    //                if (miner.locked_mine_) {
-    //                }
-    //            }
-    //        }
-    //        else if (!want_gas) {
-    //            Worker_Mine(unit, friendly_inventory);
-    //            if (miner.locked_mine_) {
-    //            }
-    //            else { // do SOMETHING.
-    //                Worker_Gas(unit, friendly_inventory);
-    //                if (miner.locked_mine_) {
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 }
 
 

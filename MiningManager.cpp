@@ -179,7 +179,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     } //find closest mine meeting this criteria.
     if (!available_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
-        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_) && miner.bwapi_unit_->hasPath(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
         }
         else {
