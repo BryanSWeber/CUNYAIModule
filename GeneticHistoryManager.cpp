@@ -33,7 +33,7 @@ GeneticHistory::GeneticHistory( string file ) {
     double a_vis_out = dis( gen );
     double a_econ_out = dis( gen ) * 0.75 + 0.25;
     double a_tech_out = dis( gen ) * 0.25;
-    
+
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
@@ -55,7 +55,7 @@ GeneticHistory::GeneticHistory( string file ) {
        "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits.
     };
-    std::uniform_real_distribution<double> rand_bo(0, build_order_list.size() );
+    std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1 );
     size_t build_order_rand = rand_bo(gen);
 
     build_order_out = build_order_list[ build_order_rand ];
@@ -86,21 +86,21 @@ GeneticHistory::GeneticHistory( string file ) {
     double prob_win_given_conditions;
 
     string entry; // entered string from stream
-    vector<double> delta_in;
-    vector<double> gamma_in;
-    vector<double> a_army_in;
-    vector<double> a_vis_in;
-    vector<double> a_econ_in;
-    vector<double> a_tech_in;
-    vector<string> race_in;
+    vector<double> delta_total;
+    vector<double> gamma_total;
+    vector<double> a_army_total;
+    vector<double> a_vis_total;
+    vector<double> a_econ_total;
+    vector<double> a_tech_total;
+    vector<string> race_total;
 
-    vector<int> win_in;
-    vector<int> sdelay_in;
-    vector<int> mdelay_in;
-    vector<int> ldelay_in;
-    vector<string> name_in;
-    vector<string> map_name_in;
-    vector<string> build_order_in;
+    vector<int> win_total;
+    vector<int> sdelay_total;
+    vector<int> mdelay_total;
+    vector<int> ldelay_total;
+    vector<string> name_total;
+    vector<string> map_name_total;
+    vector<string> build_order_total;
 
     vector<double> delta_win;
     vector<double> gamma_win;
@@ -132,37 +132,38 @@ GeneticHistory::GeneticHistory( string file ) {
     for ( int j = 0; j < csv_length; ++j ) { // further brute force inelegance.
 
         getline( input, entry, ',' );
-        delta_in.push_back( stod( entry ) );
+        delta_total.push_back( stod( entry ) );
 
         getline( input, entry, ',' );
-        gamma_in.push_back( stod( entry ) );
+        gamma_total.push_back( stod( entry ) );
 
         getline( input, entry, ',' );
-        a_army_in.push_back( stod( entry ) );
+        a_army_total.push_back( stod( entry ) );
         getline( input, entry, ',' );
-        a_econ_in.push_back( stod( entry ) );
+        a_econ_total.push_back( stod( entry ) );
         getline( input, entry, ',' );
-        a_tech_in.push_back( stod( entry ) );
+        a_tech_total.push_back( stod( entry ) );
 
         getline( input, entry, ',' );
-        race_in.push_back( entry );
+        race_total.push_back( entry );
 
         getline( input, entry, ',' );
-        win_in.push_back( stoi( entry ) );
+        win_total.push_back( stoi( entry ) );
 
         getline( input, entry, ',' );
-        sdelay_in.push_back( stoi( entry ) );
+        sdelay_total.push_back( stoi( entry ) );
         getline( input, entry, ',' );
-        mdelay_in.push_back( stoi( entry ) );
+        mdelay_total.push_back( stoi( entry ) );
         getline( input, entry, ',' );
-        ldelay_in.push_back( stoi( entry ) );
+        ldelay_total.push_back( stoi( entry ) );
 
         getline( input, entry, ',' );
-        name_in.push_back( entry );
+        name_total.push_back( entry );
         getline( input, entry, ',' );
-        map_name_in.push_back( entry );
+        map_name_total.push_back( entry );
+
         getline( input, entry ); //diff. End of line char, not ','
-        build_order_in.push_back( entry );
+        build_order_total.push_back( entry );
 
     } // closure for each row
 
@@ -170,17 +171,18 @@ GeneticHistory::GeneticHistory( string file ) {
     string e_race = Broodwar->enemy()->getRace().c_str();
     string map_name = Broodwar->mapFileName().c_str();
 
+
     for ( int j = 0; j < csv_length; ++j ) { // what is the best conditional to use? Keep in mind we would like variation.
 
-        if (win_in[j] == 1) {
+        if (win_total[j] == 1) {
             win_count++;
         }
         else {
             lose_count++;
         }
 
-        if (name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race)) {
-            if ( win_in[j] == 1 ) {
+        if (name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race)) {
+            if ( win_total[j] == 1 ) {
                 winning_player++;
             }
             else {
@@ -188,8 +190,8 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
 
-        if ( race_in[j] == e_race ) {
-            if ( win_in[j] == 1 ) {
+        if ( race_total[j] == e_race ) {
+            if ( win_total[j] == 1 ) {
                 winning_race++;
             }
             else {
@@ -197,8 +199,8 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         } 
 
-        if ( map_name_in[j] == map_name) {
-            if ( win_in[j] == 1 ) {
+        if ( map_name_total[j] == map_name) {
+            if ( win_total[j] == 1 ) {
                 winning_map++;
             }
             else {
@@ -206,8 +208,8 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
 
-        if (name_in[j] == e_name ) {
-            enemy_races_tried.push_back(race_in[j]);
+        if (name_total[j] == e_name ) {
+            enemy_races_tried.push_back(race_total[j]);
         }
     } 
 
@@ -232,46 +234,46 @@ GeneticHistory::GeneticHistory( string file ) {
         int counter = 0;
         //int min_frequency = 9999999999;
 
-        // an indelegant statement follows. How do I make this into a switch?
+        // an inelegant statement follows. How do I make this into a switch?
         if (winning_player > 0 && winning_race > 0 && winning_map > 0) { //choice in race for random players is like a whole new ball park.
-            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race && map_name_in[j] == map_name;
+            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race && map_name_total[j] == map_name;
         }
         else if (winning_player > 0 && winning_race > 0) {
-            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race;
+            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race;
         }
         else if (winning_player > 0 && winning_map > 0) {
-            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && map_name_in[j] == map_name;
+            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && map_name_total[j] == map_name;
         }
         else if (winning_race > 0 && winning_map > 0) {
-            conditions_for_inclusion = race_in[j] == e_race && map_name_in[j] == map_name;
+            conditions_for_inclusion = race_total[j] == e_race && map_name_total[j] == map_name;
         }
         else if (winning_player > 0 && winning_race > 0) {
-            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race) && race_in[j] == e_race;
+            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race;
         }
         else if (winning_player > 0) {
-            conditions_for_inclusion = name_in[j] == e_name && (e_race == "Unknown" || race_in[j] == e_race);
+            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race);
         }
         else if (winning_race > 0) {
-            conditions_for_inclusion = race_in[j] == e_race;
+            conditions_for_inclusion = race_total[j] == e_race;
         }
         else if ( winning_map > 0) {
-            conditions_for_inclusion = map_name_in[j] == map_name;
+            conditions_for_inclusion = map_name_total[j] == map_name;
         }
 
-        if (conditions_for_inclusion && win_in[j] == 1 ) {
-            delta_win.push_back( delta_in[j] );
-            gamma_win.push_back( gamma_in[j] );
-            a_army_win.push_back( a_army_in[j] );
-            a_econ_win.push_back( a_econ_in[j] );
-            a_tech_win.push_back( a_tech_in[j] );
-            build_order_win.push_back( build_order_in[j] );
-            build_orders_tried.push_back(build_order_in[j]);
+        if (conditions_for_inclusion && win_total[j] == 1 ) {
+            delta_win.push_back( delta_total[j] );
+            gamma_win.push_back( gamma_total[j] );
+            a_army_win.push_back( a_army_total[j] );
+            a_econ_win.push_back( a_econ_total[j] );
+            a_tech_win.push_back( a_tech_total[j] );
+            build_order_win.push_back( build_order_total[j] );
+            build_orders_tried.push_back(build_order_total[j]);
             selected_win_count++;
             games_since_last_win = 0;
         } 
         else if ( conditions_for_inclusion ) {
             selected_lose_count++;
-            build_orders_tried.push_back(build_order_in[j]);
+            build_orders_tried.push_back(build_order_total[j]);
             games_since_last_win++;
         }
     } //or widest hunt possible.
@@ -281,37 +283,24 @@ GeneticHistory::GeneticHistory( string file ) {
 
     if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(double)(5 + games_since_last_win) ) { // redefine final output.
 
-        std::uniform_real_distribution<double> unif_dist_to_win_count( 0, selected_win_count);
-        std::uniform_real_distribution<double> unif_dist_of_build_orders(0, selected_win_count);
+        std::uniform_int_distribution<size_t> unif_dist_to_win_count( 0 , build_order_win.size() - 1 );
 
-        int parent_1 = (int)(unif_dist_to_win_count(gen)); // safe even if there is only 1 win., index starts at 0.
-        int parent_2 = (int)(unif_dist_to_win_count(gen));
+        size_t parent_1 = unif_dist_to_win_count(gen); // safe even if there is only 1 win., index starts at 0.
+        size_t parent_2 = unif_dist_to_win_count(gen);
+
         double linear_combo = dis(gen); //linear_crossover, interior of parents. Big mutation at the end, though.
 
-        if (games_since_last_win == 0) {
-            parent_1 = selected_win_count; // safe even if there is only 1 win., index starts at 0.
-            parent_2 = selected_win_count;
-            build_order_out = build_order_win[selected_win_count];
+        if ( games_since_last_win == 0 ) {
+            parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
+            parent_2 = build_order_win.size() - 1;
+            build_order_out = build_order_win.back();// vectors start at 0.
         }
 
-        build_order_out = build_order_win[parent_1];
+        build_order_out = build_order_win[parent_2];
 
         while (build_order_out != build_order_win[parent_2]) {
-            parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
+            parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
         }
-
-        //if (uniqueCount < build_order_list.size() && build_order_out != build_order_win[parent_1] && dis(gen) > games_since_last_win / (double)(5 + games_since_last_win) ) {
-        //    // then continue with the random build order.
-        //}
-        //else { // use one from your history.
-        //    build_order_out = build_order_win[parent_1];
-
-        //    while (build_order_out != build_order_win[parent_2]) {
-        //        parent_2 = (int)(unif_dist_to_win_count(gen)); // get a matching parent.
-        //    }
-        //}
-
-
 
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
         gamma_out = linear_combo * gamma_win[parent_1] + (1 - linear_combo) * gamma_win[parent_2];
@@ -338,13 +327,14 @@ GeneticHistory::GeneticHistory( string file ) {
 
     }
 
+
     for ( int i = 0; i<1000; i++ ) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
 
         //From genetic history, random parent for each gene. Mutate the genome
-        std::uniform_real_distribution<double> unif_dist_to_mutate( 0, 5 );
+        std::uniform_int_distribution<size_t> unif_dist_to_mutate( 0, 4 );
         std::uniform_real_distribution<double> unif_mutation_size(-0.10, 0.10);
 
-        int mutation_0 = (int)unif_dist_to_mutate( gen ); // rand int between 0-2
+        size_t mutation_0 = unif_dist_to_mutate( gen ); // rand int between 0-4
         //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
         double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.

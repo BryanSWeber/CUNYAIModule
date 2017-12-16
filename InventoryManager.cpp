@@ -489,7 +489,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
         map_veins_out_.push_back( temp );
     }
 
-    int minitile_x, minitile_y, dx, dy, distance_right_x, distance_below_y;
+    int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
     minitile_y = startloc.y;
     distance_right_x = max( map_x - minitile_x, map_x );
@@ -705,7 +705,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
         map_veins_in_.push_back( temp );
     }
 
-    int minitile_x, minitile_y, dx, dy, distance_right_x, distance_below_y;
+    int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
     minitile_y = startloc.y;
     distance_right_x = max( map_x - minitile_x, map_x );

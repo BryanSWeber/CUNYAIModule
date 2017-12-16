@@ -279,7 +279,7 @@ void MeatAIModule::onFrame()
             r->second.valid_pos_ = true;
             r->second.type_ = r->second.bwapi_unit_->getType();
             Unit_Inventory local_area = getUnitInventoryInRadius(friendly_inventory, r->second.pos_, 320);
-            r->second.occupied_natural_ = getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hatchery, r->second.pos_, 320).unit_inventory_.size() - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
+            r->second.occupied_natural_ = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
                 !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Lair, r->second.pos_, 320).unit_inventory_.empty() ||
                 !getUnitInventoryInRadius(local_area, UnitTypes::Zerg_Hive, r->second.pos_, 320 ).unit_inventory_.empty(); // is there a resource depot in 10 tiles of it?
            //r->second.full_resource_ = r->second.number_of_miners_ >= 2 ; // not used at this time. Inproperly initialized so I am leaving it as null to help identify when there is a problem faster.
@@ -340,7 +340,7 @@ void MeatAIModule::onFrame()
     inventory.updateStartPositions();
 
     if (inventory.map_veins_in_.empty() && t_game > 24 && !inventory.start_positions_.empty() && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
-        inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[1]);
+        inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
     } // the enemy is "out there somewhere". Choose a start position, but make sure to elimiate your own via updateStartPositions.
 
     if ( t_game == 0 ) {
@@ -841,12 +841,7 @@ void MeatAIModule::onFrame()
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
                                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
-                            bool only_workers = Stock_Units( UnitTypes::Zerg_Drone, enemy_loc ) == enemy_loc.stock_ground_units_ ||
-                                Stock_Units( UnitTypes::Protoss_Probe, enemy_loc ) == enemy_loc.stock_ground_units_ ||
-                                Stock_Units( UnitTypes::Terran_SCV, enemy_loc ) == enemy_loc.stock_ground_units_;
-
-
-                            bool drone_problem = only_workers && u->getType() == UnitTypes::Zerg_Drone;
+                            bool drone_problem = u->getType() == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
 
                             bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
@@ -890,7 +885,7 @@ void MeatAIModule::onFrame()
                                 friendly_inventory.stopMine(u, neutral_inventory);
                                 boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
-                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || (only_workers && enemy_loc.unit_inventory_.size() > 2)) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0,0) ) ) {
+                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0,0) ) ) {
                                     if ( u->getType() == UnitTypes::Zerg_Overlord ) {
                                         //see unit destruction case. We will replace this overlord, likely a foolish scout.
                                     }
@@ -1135,6 +1130,10 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
                 if ( center_unit ) {
                     inventory.updateMapVeinsOutFromFoe( center_unit->pos_ );
                 }
+                else {
+                    inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
+
+                }
 
             }
         }
@@ -1246,10 +1245,12 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
             //update maps, requires up-to date enemy inventories.
             if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
                 Stored_Unit* center_unit = getClosestStored( enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999 ); // If the mean location is over water, nothing will be updated.
-                if ( center_unit ) {
+                if (center_unit) {
                     inventory.updateMapVeinsOutFromFoe(center_unit->pos_);
                 }
-
+                else {
+                    inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
+                }
             }
         }
     }

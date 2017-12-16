@@ -44,7 +44,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
     UnitCommandType u_type = unit->getLastCommand().getType();
 
 	bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
-                         (u_type == UnitCommandTypes::Morph && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
+                         (u_type == UnitCommandTypes::Morph && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
@@ -229,7 +229,10 @@ int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inven
         if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
         }
-        else if (unit.second.type_ == type.whatBuilds().first && unit.second.build_type_ == type) { // Count units under construction
+        else if (unit.second.type_ == UnitTypes::Zerg_Drone && unit.second.build_type_ == type) { // Count units under construction
+            count++;
+        }
+        else if (unit.second.bwapi_unit_ && unit.second.bwapi_unit_->getBuildType() == type ) { // Count units under construction
             count++;
         }
 
@@ -1024,8 +1027,8 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 	return squares_counted;
 }
 
-int MeatAIModule::getProperSpeed( const Unit u ) {
-    int base_speed = u->getType().topSpeed();
+double MeatAIModule::getProperSpeed( const Unit u ) {
+    double base_speed = u->getType().topSpeed();
     if ( u->getType() == UnitTypes::Zerg_Zergling && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0 ) {
         base_speed *= 1.5;
     }

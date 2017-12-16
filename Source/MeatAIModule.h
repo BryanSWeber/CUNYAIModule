@@ -141,7 +141,7 @@ public:
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
       // Returns top speed of unit with upgrades.
-      static int getProperSpeed( const Unit u );
+      static double getProperSpeed( const Unit u );
 
       //checks if there is a smooth path to target. in minitiles
       static bool isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv );

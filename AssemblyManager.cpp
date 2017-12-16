@@ -45,8 +45,6 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             TilePosition final_creep_colony_spot = TilePosition(0, 0);
             int furth_x_dist = 0;
             int furth_y_dist = 0;
-            int adj_dx; // move n tiles closer to the center of the map.
-            int adj_dy;
 
             for (const auto &u : ui.unit_inventory_) {
                 if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
@@ -99,7 +97,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
-                            (inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance || getUnitInventoryInRadius(enemy_inventory, Position(TilePosition(centralize_x, centralize_y)), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_)); // Count all points further from home than we are.
+                            inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
                             chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y)));
@@ -137,7 +135,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 64).resource_inventory_.empty() &&
                             Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
-                            (inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance || getUnitInventoryInRadius(enemy_inventory, Position(TilePosition(centralize_x, centralize_y)), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_)) // Count all points further from home than we are.
+                            inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
                             chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y)));
@@ -349,7 +347,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool larva_starved = Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_;
     bool upgrade_bool = (tech_starved || (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) == 0 && !army_starved));
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory) < inv.hatches_;
-    bool upgradable_creep_colonies = (Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0 - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
+    bool upgradable_creep_colonies = (Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_total_;
