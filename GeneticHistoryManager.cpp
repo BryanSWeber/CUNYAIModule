@@ -281,7 +281,7 @@ GeneticHistory::GeneticHistory( string file ) {
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(double)(5 + games_since_last_win) ) { // redefine final output.
+    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(double)( 1 + uniqueCount + games_since_last_win) ) { // redefine final output.
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count( 0 , build_order_win.size() - 1 );
 

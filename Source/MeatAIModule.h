@@ -104,7 +104,7 @@ public:
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
-      bool Building_Begin( const Unit &drone, const Inventory &inv, const Unit_Inventory &u_inv );
+      bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, const Unit_Inventory & u_inv);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:

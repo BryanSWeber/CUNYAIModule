@@ -15,11 +15,12 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         //if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
         //    my_reservation.removeReserveSystem( unit->getBuildType() );
         //}
+        Unit_Inventory local_area = getUnitInventoryInRadius( ui, unit->getPosition(), 500);
+        bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
+            Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
+            Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
         if (unit->canMorph(building) && 
-            (unit->getType().isBuilding() ||
-            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery,unit->getPosition(), 500).unit_inventory_.empty() ||
-            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Lair, unit->getPosition(), 500).unit_inventory_.empty() ||
-            !getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hive, unit->getPosition(), 500).unit_inventory_.empty()) ) {
+            (unit->getType().isBuilding() || hatch_nearby ) ){
             if (unit->morph(building)) {
                 buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                 return true;
@@ -29,7 +30,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor)
         {
             TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony);
-            if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
+            if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
                 buildorder.announceBuildingAttempt(building);
                 return true;
             }
@@ -73,8 +74,21 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) {
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
-                        bool enemy_nearby = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 500).stock_shoots_down_ > Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-                        if (new_dist <= old_dist || enemy_nearby) {
+                        Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
+                        Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, Position(central_base_new), 750);
+                        int closest_enemy = 0;
+                        int closest_hatch = 0;
+                        bool enemy_nearby = false;
+                        bool enemy_has_not_penetrated = true;
+                        if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) {
+                            closest_enemy = inventory.getRadialDistanceOutFromHome(getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)->pos_);
+                            closest_hatch = inventory.getRadialDistanceOutFromHome((*base)->getPosition());
+                            enemy_nearby = e_loc.stock_ground_units_ > friend_loc.stock_ground_units_;
+                            enemy_has_not_penetrated = closest_enemy > closest_hatch;
+                        }
+
+
+                        if (new_dist <= old_dist || (enemy_nearby && enemy_has_not_penetrated) ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                             if (enemy_nearby) { 
@@ -157,7 +171,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = getClosestStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, unit->getPosition(), 99999);
             if (closest_gas) {
-                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64);
+                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 12);
                 if (closest_gas->occupied_natural_ && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;
@@ -340,7 +354,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 }
 
 //Creates a new building with DRONE. Incomplete.
-bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv) {
+bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
     bool expansion_meaningful = (Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 2 * Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory))) || inventory.min_fields_ < 8;
@@ -351,7 +365,18 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_total_;
-    bool nearby_enemy = getUnitInventoryInRadius(enemy_inventory,drone->getPosition(), 5000).stock_total_ > 0;
+    bool nearby_enemy = getUnitInventoryInRadius(enemy_inventory,drone->getPosition(), 2500).stock_total_ > 0;
+    Unit_Inventory e_loc = getUnitInventoryInRadius(e_inv, drone->getPosition(), 1500);
+    Unit_Inventory u_loc = getUnitInventoryInRadius(u_inv, drone->getPosition(), 1500);
+
+    //Combat Buildings
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_total_ > u_loc.stock_total_) &&  // army starved or under attack.
+        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) == 0 && // no creep colonies waiting to upgrade
+        upgradable_creep_colonies &&
+        buildings_started == 0 &&
+        (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
+        inv.hatches_ > 1); //&&
+        //max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 5) > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //Macro-related Buildings.
     buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
@@ -360,14 +385,6 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_total_< friendly_inventory.stock_total_ ) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && army_starved && larva_starved && Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hatchery) == 0); // only macrohatch if you are short on larvae and being a moron.
 
-    //Combat Buildings
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, army_starved &&  // army starved.
-        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) == 0 && // no creep colonies waiting to upgrade
-        upgradable_creep_colonies &&
-        buildings_started == 0 &&
-        (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved ) && // Only throw down a sunken if you have no larva floating around, or need the supply.
-        inv.hatches_ > 1 &&
-       max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 5) > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //Tech Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&
@@ -381,7 +398,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
 
         buildings_started += Check_N_Build(UnitTypes::Zerg_Spire, drone, friendly_inventory, upgrade_bool && buildings_started == 0 && one_tech_per_base &&
             Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) >= 0 &&
+            Count_Units(UnitTypes::Zerg_Lair, friendly_inventory) > 0 &&
             inv.hatches_ > 1);
 
         buildings_started += Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, upgrade_bool && buildings_started == 0 &&
