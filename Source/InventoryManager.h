@@ -99,10 +99,10 @@ struct Inventory {
     // Updates veins going out of the enemy base for attacking ease.
     void Inventory::updateMapVeinsOutFromFoe( const Position center );
     // Gets distance using
-    int Inventory::getDifferentialDistanceOutFromEnemy( Position A, Position B );
-    int Inventory::getRadialDistanceOutFromEnemy( Position A );
-    int Inventory::getDifferentialDistanceOutFromHome( Position A, Position B );
-    int Inventory::getRadialDistanceOutFromHome( Position A );
+    int Inventory::getDifferentialDistanceOutFromEnemy( const Position A, const Position B );
+    int Inventory::getRadialDistanceOutFromEnemy(const Position A );
+    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B );
+    int Inventory::getRadialDistanceOutFromHome(const Position A );
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri);

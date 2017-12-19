@@ -10,8 +10,8 @@ out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-dat
 names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
  # names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
 # 
- out<-rbind(out, out_2)
- out<-out[!duplicated(out),]
+ # out<-rbind(out, out_2)
+ # out<-out[!duplicated(out),]
 # out<-out[which( !out$opponent_name %in% c("Jormungand Brood" ,  "Auriga Tribe"  ,     "Epsilon Squadron" ,  "Sargas Tribe"    ,   "Furinax Tribe"
 #                                          , "Ara Tribe"  ,        "Akilae Tribe"   ,    "Garm Brood"    ,     "Antiga"      ,       "Surtur Brood"
 #                                          , "Leviathan Brood"  ,  "Elite Guard"   ,     "Baelrog Brood"    ,  "Tiamat Brood"  ,     "Velari Tribe"
@@ -55,7 +55,8 @@ histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
  histogram( ~ out$Winner | abbreviate(out$`build_order`), xlab="Win % of Bot vs each Opening")
  histogram( ~ out$Winner | out$`map`, xlab="Win % of Bot vs each Map")
  histogram( ~ out$Winner | abbreviate(out$`race_map`), xlab="Win % of Bot vs each Map")
-
+ 
+ table(abbreviate(out$build_order), out$Winner)
  table(out$race_build, out$Winner)
  table(out$race_map, out$Winner)
  table(out$build_map, out$Winner)

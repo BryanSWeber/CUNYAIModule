@@ -19,7 +19,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-        if (unit->canMorph(building) && 
+        if (unit->canMorph(building) && checkSafeBuildLoc( unit->getPosition(), inventory, enemy_inventory, friendly_inventory) ||
             (unit->getType().isBuilding() || hatch_nearby ) ){
             if (unit->morph(building)) {
                 buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
@@ -44,8 +44,6 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
             TilePosition central_base = TilePosition(0, 0);
             TilePosition final_creep_colony_spot = TilePosition(0, 0);
-            int furth_x_dist = 0;
-            int furth_y_dist = 0;
 
             for (const auto &u : ui.unit_inventory_) {
                 if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
@@ -75,20 +73,16 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
+                        Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 250);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, Position(central_base_new), 750);
                         int closest_enemy = 0;
                         int closest_hatch = 0;
                         bool enemy_nearby = false;
-                        bool enemy_has_not_penetrated = true;
                         if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) {
-                            closest_enemy = inventory.getRadialDistanceOutFromHome(getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)->pos_);
-                            closest_hatch = inventory.getRadialDistanceOutFromHome((*base)->getPosition());
                             enemy_nearby = e_loc.stock_ground_units_ > friend_loc.stock_ground_units_;
-                            enemy_has_not_penetrated = closest_enemy > closest_hatch;
                         }
 
-
-                        if (new_dist <= old_dist || (enemy_nearby && enemy_has_not_penetrated) ) {
+                        if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_inventory, friendly_inventory) ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                             if (enemy_nearby) { 
@@ -339,8 +333,8 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     //    return is_building > 0;
     //} 
 
-    if (enemy_lacks_AA && would_force_spire && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
-        buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire)); // force in a hydralisk den if they have Air.
+    if (enemy_lacks_AA && would_force_spire && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, ui) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
+        buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire)); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
         Broodwar->sendText("Reactionary Spire");
         return is_building > 0;
     }

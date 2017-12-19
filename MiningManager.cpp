@@ -20,9 +20,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getDifferentialDistanceOutFromHome( friendly_inventory.getMeanBuildingLocation(), Position(p) );
 
-                bool safe_expo = enemy_inventory.unit_inventory_.empty() ||
-                    getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) == nullptr ||
-                    getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 )->type_.isWorker();
+                bool safe_expo = checkSafeBuildLoc(Position(p), inventory, enemy_inventory, friendly_inventory);
 
                 bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||

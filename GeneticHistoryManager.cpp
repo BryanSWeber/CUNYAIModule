@@ -281,7 +281,7 @@ GeneticHistory::GeneticHistory( string file ) {
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 && dis(gen) > games_since_last_win/(double)( 1 + uniqueCount + games_since_last_win) ) { // redefine final output.
+    if ( selected_win_count > 0 && (dis(gen) > games_since_last_win/(double)( 1 + uniqueCount + games_since_last_win) || !_LEARNING_MODE) ) { // redefine final output.
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count( 0 , build_order_win.size() - 1 );
 
@@ -300,6 +300,10 @@ GeneticHistory::GeneticHistory( string file ) {
 
         while (build_order_out != build_order_win[parent_2]) {
             parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
+        }
+
+        if (!_LEARNING_MODE) {
+            parent_2 = parent_1;
         }
 
         delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
@@ -340,6 +344,9 @@ GeneticHistory::GeneticHistory( string file ) {
         double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
         if (games_since_last_win == 0) {
             mutation = 1; // no mutation if it worked perfectly last time.
+        }
+        if (_LEARNING_MODE) {
+            mutation = 1;
         }
 
         delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;

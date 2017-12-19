@@ -9,15 +9,16 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
-//#define _ANALYSIS_MODE true
-//#define _COBB_DOUGLASS_REVEALED false
-//#define _AT_HOME_MODE false
-
-#define _RESIGN_MODE true
+#define _RESIGN_MODE false
 #define _ANALYSIS_MODE true
-#define _AT_HOME_MODE true
-#define _COBB_DOUGLASS_REVEALED true
+#define _COBB_DOUGLASS_REVEALED false
+#define _AT_HOME_MODE false
+#define _LEARNING_MODE false
+
+//#define _RESIGN_MODE true
+//#define _ANALYSIS_MODE true
+//#define _AT_HOME_MODE true
+//#define _COBB_DOUGLASS_REVEALED true
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -226,6 +227,8 @@ public:
       static bool isOnScreen( const Position &pos );
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);
+      // checks if it is safe to build, uses heuristic critera.
+      bool checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui);
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);
