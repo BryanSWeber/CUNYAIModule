@@ -122,8 +122,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int x_sum = 0;
      int y_sum = 0;
      int count = 0;
-     for ( const auto &u : this->unit_inventory_ ) {
-         if ( u.second.type_.canAttack() ) {
+     for ( const auto &u : this->unit_inventory_) {
+         if ( u.second.type_.canAttack() && u.second.valid_pos_ ) {
              x_sum += u.second.pos_.x;
              y_sum += u.second.pos_.y;
              count++;
@@ -184,6 +184,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
+
             if ( u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_.maxEnergy() > 0 || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier || u_iter.second.type_ == UnitTypes::Protoss_Reaver ) {
 
                 if ( u_iter.second.type_.isFlyer() ) {
@@ -208,16 +209,17 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 if ( u_iter.second.type_.groundWeapon().damageCooldown() > max_cooldown || u_iter.second.type_.airWeapon().damageCooldown() > max_cooldown ) {
                     max_cooldown = u_iter.second.type_.groundWeapon().damageCooldown() > u_iter.second.type_.airWeapon().damageCooldown() ? u_iter.second.type_.groundWeapon().damageCooldown() : u_iter.second.type_.airWeapon().damageCooldown();
                 }
-				if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 > range){
-					range = 7 * 32; // depends on upgrades and unit contents.
-				}
+
+                if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 > range) {
+                    range = 7 * 32; // depends on upgrades and unit contents.
+                }
 
                 if ( u_iter.second.type_.isDetector() ) {
-                    detector_count++;
+                    detector_count += MeatAIModule::Count_Units(u_iter.second.type_, *this);
                 }
 
                 if ( u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak() ) {
-                    cloaker_count++;
+                    cloaker_count += MeatAIModule::Count_Units(u_iter.second.type_, *this);
                 }
                 already_seen_types.push_back( u_iter.second.type_ );
             }

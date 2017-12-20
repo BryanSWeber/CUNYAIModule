@@ -368,7 +368,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) == 0 && // no creep colonies waiting to upgrade
         upgradable_creep_colonies &&
         buildings_started == 0 &&
-        (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
+        (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved ) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1); //&&
         //max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 5) > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 

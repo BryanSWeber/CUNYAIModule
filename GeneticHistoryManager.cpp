@@ -282,7 +282,8 @@ GeneticHistory::GeneticHistory( string file ) {
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
     if ( selected_win_count > 0 && (dis(gen) > games_since_last_win/(double)( 1 + uniqueCount + games_since_last_win) || !_LEARNING_MODE) ) { // redefine final output.
-
+        //win_count-selected_win_count/(double)(win_count-selected_win_count+lose_count-selected_lose_count)
+        //pow( 1 - prob_win_given_conditions, games_since_last_win )
         std::uniform_int_distribution<size_t> unif_dist_to_win_count( 0 , build_order_win.size() - 1 );
 
         size_t parent_1 = unif_dist_to_win_count(gen); // safe even if there is only 1 win., index starts at 0.
