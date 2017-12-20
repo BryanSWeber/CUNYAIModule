@@ -1173,9 +1173,11 @@ Position MeatAIModule::getUnit_Center(Unit unit){
 	return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
 }
 
-bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui) {
+// checks if a location is safe and doesn't block minerals.
+bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
     Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
+    //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
     Unit_Inventory e_too_close = getUnitInventoryInRadius(ei, pos, 250);
     Unit_Inventory friend_loc = getUnitInventoryInRadius(ui, pos, 750);
     int radial_distance_to_closest_enemy = 0;
@@ -1189,7 +1191,7 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
         can_still_save = e_too_close.stock_total_ > ui.stock_total_ || inventory.min_fields_ <= 12; // can still save it or you don't have a choice.
     }
 
-    return enemy_has_not_penetrated && can_still_save;
+    return enemy_has_not_penetrated && can_still_save ;
 }
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,

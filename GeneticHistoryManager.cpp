@@ -345,7 +345,7 @@ GeneticHistory::GeneticHistory( string file ) {
         if (games_since_last_win == 0) {
             mutation = 1; // no mutation if it worked perfectly last time.
         }
-        if (_LEARNING_MODE) {
+        if (!_LEARNING_MODE) {
             mutation = 1;
         }
 

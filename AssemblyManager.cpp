@@ -19,7 +19,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-        if (unit->canMorph(building) && checkSafeBuildLoc( unit->getPosition(), inventory, enemy_inventory, friendly_inventory) ||
+        if (unit->canMorph(building) && checkSafeBuildLoc( unit->getPosition(), inventory, enemy_inventory, friendly_inventory, neutral_inventory) ||
             (unit->getType().isBuilding() || hatch_nearby ) ){
             if (unit->morph(building)) {
                 buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
@@ -82,7 +82,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             enemy_nearby = e_loc.stock_ground_units_ > friend_loc.stock_ground_units_;
                         }
 
-                        if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_inventory, friendly_inventory) ) {
+                        if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_inventory, friendly_inventory, neutral_inventory) ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                             if (enemy_nearby) { 
