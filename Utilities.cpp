@@ -220,7 +220,7 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
     return count;
 }
 
-// Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
+// Overload. Counts all units in a set of one type owned by player. Includes individual units in production.  I have doubts about this function.
 int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
 {
     int count = 0;
@@ -607,7 +607,7 @@ bool MeatAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &
     return false;
 }
 
-//Searches an inventory for buildings of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+//Searches an inventory for buildings. Returns TRUE if the area is occupied. 
 bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
 
     for ( auto & e : ui.unit_inventory_) {
@@ -622,7 +622,7 @@ bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Po
     return false;
 }
 
-//Searches an inventory for buildings of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+//Searches an inventory for a resource
 bool MeatAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, const Position &origin ) {
 
     for ( auto & e : ri.resource_inventory_ ) {
@@ -1045,6 +1045,28 @@ double MeatAIModule::getProperSpeed( const Unit u ) {
     return base_speed;
 }
 
+double MeatAIModule::getProperSpeed(const UnitType &type) {
+    double base_speed = type.topSpeed();
+    if (type == UnitTypes::Zerg_Zergling && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0) {
+        base_speed *= 1.5;
+    }
+    else if (type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0) {
+        base_speed *= 1.5;
+    }
+    else if (type == UnitTypes::Zerg_Hydralisk && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Muscular_Augments) > 0) {
+        base_speed *= 1.5;
+    }
+    else if (type == UnitTypes::Zerg_Ultralisk && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
+        base_speed *= 1.5;
+    }
+
+    return base_speed;
+}
+
+int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
+{
+    return MeatAIModule::getProperSpeed(u) * ei_loc.max_cooldown_ + max(u->getType().groundWeapon().maxRange(), u->getType().airWeapon().maxRange());
+}
 
 
 //finds nearest choke or best location within 100 minitiles.
@@ -1188,7 +1210,7 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
         radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        can_still_save = e_too_close.stock_total_ > ui.stock_total_ || inventory.min_fields_ <= 12; // can still save it or you don't have a choice.
+        can_still_save = e_too_close.stock_total_ > ui.stock_total_ || inv.min_fields_ <= 12 || inv.getRadialDistanceOutFromHome(pos) < 20000; // can still save it or you don't have a choice.
     }
 
     return enemy_has_not_penetrated && can_still_save ;

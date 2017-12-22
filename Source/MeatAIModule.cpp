@@ -579,16 +579,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            //if ( !inventory.map_veins_in_.empty() ) {
-            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
-            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
-            //            //if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-            //            }
-            //        }
-            //    } // Pretty to look at!
-            //}
+            if ( !inventory.map_veins_in_.empty() ) {
+                for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
+                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
+                        //if ( inventory.map_veins_[i][j] > 175 ) {
+                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+                        }
+                    }
+                } // Crowded but super helpful. 
+            }
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -770,10 +770,9 @@ void MeatAIModule::onFrame()
                 e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
-                int appropriate_range = u->isFlying() ? e_closest->type_.airWeapon().maxRange() : e_closest->type_.groundWeapon().maxRange() ;
-                int chargable_distance_net = getProperSpeed(u) * enemy_inventory.max_cooldown_ ; // how far can you get before he shoots?
+                int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
 
-                int search_radius = max(chargable_distance_net + appropriate_range + 64, enemy_inventory.max_range_ + 64);
+                int search_radius = max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64);
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_inventory, u);
@@ -844,8 +843,10 @@ void MeatAIModule::onFrame()
                             bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                                 //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                                 !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
-                                //helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
-                                (getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_ ,7*32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7*32 ) ||
+                                helpful_u < helpful_e * 0.75 || // Run if they have local advantage on you
+                                //(getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_ ,7*32 - enemy_loc.max_range_ - 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_ - 32).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7*32 ) ||
+                                (friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) ||
+
                                 (distance_to_foe < 64 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u->getType().groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u->getType().groundWeapon().maxRange() > 64 && !u->isBurrowed() && Can_Fight(*e_closest, u)) || //kiting?
                                 //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.

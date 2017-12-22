@@ -783,7 +783,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
 
 int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B )
 {
-    if ( map_veins_in_.size() > 0 ) {
+    if ( map_veins_in_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
         WalkPosition wp_b = WalkPosition( B );
         return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
@@ -794,7 +794,7 @@ int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Posit
 }
 
 int Inventory::getRadialDistanceOutFromEnemy( const Position A){
-    if ( map_veins_in_.size() > 0 ) {
+    if ( map_veins_in_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
         return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
     }
@@ -805,7 +805,7 @@ int Inventory::getRadialDistanceOutFromEnemy( const Position A){
 
 int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B )
 {
-    if ( map_veins_out_.size() > 0 ) {
+    if ( map_veins_out_.size() > 0 && A.isValid() && B.isValid() ) {
         WalkPosition wp_a = WalkPosition( A );
         WalkPosition wp_b = WalkPosition( B );
         return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
@@ -816,7 +816,7 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
 }
 int Inventory::getRadialDistanceOutFromHome( const Position A )
 {
-    if ( map_veins_out_.size() > 0 ) {
+    if ( map_veins_out_.size() > 0 && A.isValid() ) {
         WalkPosition wp_a = WalkPosition( A );
         return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
     }

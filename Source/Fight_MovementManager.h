@@ -19,11 +19,12 @@ public:
     Position Output;
 
     void setAlignment( const Unit &unit, const Unit_Inventory &ui );
+    void setDirectRetreat(const Position & pos, const Position &e_pos, const UnitType & type, const Unit_Inventory & ei);
     void setCentralize( const Position &pos, const Inventory &inventory );
     void setStutter( const Unit &unit, const double &n );
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // towards enemy or enemy base.
-    void setAttraction( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &army_starved );
+    void setAttractionEnemy( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory & inv);
     void scoutEnemyBase(const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv);
     // from enemy or towards home.
     void setAttractionHome( const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv);
@@ -47,6 +48,8 @@ private:
     double seperation_dy_ = 0;
     double attract_dx_ = 0;
     double attract_dy_ = 0;
+    double retreat_dx_ = 0;
+    double retreat_dy_ = 0;
     double walkability_dx_ = 0;
     double walkability_dy_ = 0;
 

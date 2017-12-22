@@ -98,7 +98,7 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
         if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isMineralField() && r->second.occupied_natural_) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_) {
+        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             low_drone_min = r->second.number_of_miners_;
         }
     } // find drone minima.
@@ -132,7 +132,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
     int low_drone_gas = 2; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isRefinery() && r->second.occupied_natural_) {
+        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             gas_count_ += r->second.number_of_miners_;
         }
         if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_) {
@@ -145,7 +145,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
     }
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.
@@ -171,7 +171,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     }
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() ) {
+        if (r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.

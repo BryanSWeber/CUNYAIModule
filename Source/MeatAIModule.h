@@ -9,13 +9,13 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
+#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 //#define _LEARNING_MODE false
 
-#define _RESIGN_MODE true
+//#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 #define _AT_HOME_MODE true
 #define _COBB_DOUGLASS_REVEALED true
@@ -144,6 +144,8 @@ public:
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
+      static double getProperSpeed( const UnitType & type );
+      static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
 
       //checks if there is a smooth path to target. in minitiles
       static bool isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv );
