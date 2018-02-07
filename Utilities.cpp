@@ -1206,14 +1206,17 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
     int radial_distance_to_build_position = 0;
     bool enemy_has_not_penetrated = true;
     bool can_still_save = true;
+    bool have_to_save = false;
+
     if ( e_loc.stock_total_ > 0 && e_closest ) {
         radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        can_still_save = e_too_close.stock_total_ > ui.stock_total_ || inv.min_fields_ <= 12 || inv.getRadialDistanceOutFromHome(pos) < 20000; // can still save it or you don't have a choice.
+        can_still_save = e_too_close.stock_total_ > ui.stock_total_; // can still save it or you don't have a choice.
+        have_to_save = inv.min_fields_ <= 12 || inv.getRadialDistanceOutFromHome(pos) < 20000 || inv.hatches_ == 1;
     }
 
-    return enemy_has_not_penetrated && can_still_save ;
+    return enemy_has_not_penetrated && (can_still_save || have_to_save) ;
 }
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,

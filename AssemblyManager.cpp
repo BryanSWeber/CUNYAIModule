@@ -240,7 +240,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, ui) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, ui) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, ui) > 85;
     bool drone_conditional = econ_starved || (Count_Units(UnitTypes::Zerg_Larva, ui) > 0 && !army_starved); // Econ supercedes non-army needs.
-    bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory) < inv.hatches_;
+    bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, friendly_inventory) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory) < inv.hatches_;
 
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, ui) == 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
@@ -364,10 +364,11 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     Unit_Inventory u_loc = getUnitInventoryInRadius(u_inv, drone->getPosition(), 1500);
 
     //Combat Buildings
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_total_ > u_loc.stock_total_) &&  // army starved or under attack.
-        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) == 0 && // no creep colonies waiting to upgrade
-        upgradable_creep_colonies &&
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_total_ > u_loc.stock_total_) &&  // army starved or under attack. ? And?
+        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) * 50 + 50 < my_reservation.getExcessMineral() && // Only build a creep colony if we can afford another worker.
+        !upgradable_creep_colonies &&
         buildings_started == 0 &&
+        Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) < 8 &&
         (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved ) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1); //&&
         //max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 5) > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.

@@ -9,13 +9,13 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE false
-//#define _ANALYSIS_MODE true
+//#define _RESIGN_MODE false
+//define _ANALYSIS_MODE true
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 //#define _LEARNING_MODE false
 
-//#define _RESIGN_MODE true
+#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 #define _AT_HOME_MODE true
 #define _COBB_DOUGLASS_REVEALED true

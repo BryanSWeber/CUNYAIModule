@@ -20,6 +20,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool unit_safe_for_scouting = (ei.stock_shoots_up_ == 0 && unit->getType() == UnitTypes::Zerg_Overlord) || unit->getType() != UnitTypes::Zerg_Overlord;
     bool strong_cohesion_needed = true;
+    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1500);
 
     // Units should scout when there is a large gap in our knowledge.
     if ( !enemy_scouted && healthy && unit_safe_for_scouting && !inventory.start_positions_.empty() ) { // check his bases first.
@@ -27,7 +28,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     }
     else if (!enemy_scouted && healthy && unit_safe_for_scouting && inventory.start_positions_.empty() ) { // then wander about searching.
         setStutter(unit, n);
-        setSeperationScout( unit, pos, ui );
+        setSeperationScout( unit, pos, local_neighborhood );
         strong_cohesion_needed = false;
     }
 
@@ -41,10 +42,10 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
    
     // Units should stick together if we're not scouting.
     if (strong_cohesion_needed) {
-        setAlignment(unit, ui);
+        setAlignment(unit, local_neighborhood);
         setCohesion(unit, pos, ui);
-        if ((!unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge)) {
-            setSeperation(unit, pos, ui);
+        if (!unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge) {
+            setSeperation(unit, pos, local_neighborhood);
         } // closure: flyers
     }
 
@@ -90,7 +91,6 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
-    bool visible_target_atk = false;
 
     for ( auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e ) {
         if ( e->second.valid_pos_ ) {
@@ -100,20 +100,19 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
             if ( MeatAIModule::Can_Fight( unit, e->second ) ) { // if we can fight this enemy and there is a clear path to them:
                 int dist_to_enemy = unit->getDistance( e->second.pos_ );
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
+                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
+                    (e_type.isDetector() && ui.cloaker_count_ > ei.detector_count_) ||
+                    e_type == UnitTypes::Protoss_Carrier ||
+                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                     //(e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second, unit )) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
                 if ( critical_target ) {
-                    e_priority = 7;
-                }
-                else if ( e_type.spaceProvided() > 0 ||
-                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
-                    e_type == UnitTypes::Protoss_Carrier ||
-                    (e_type.isDetector() && ui.cloaker_count_ > ei.detector_count_) ||
-                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ) { // if they can fight us, carry troops, or cast spells.
                     e_priority = 6;
                 }
-                else if ((e->second.bwapi_unit_ && unit->getDistance(e->second.bwapi_unit_) < chargeable_dist && unit->getLastCommand().getTarget() == e->second.bwapi_unit_) ) {
+                else if (e->second.bwapi_unit_ && unit->getLastCommand().getTarget() && MeatAIModule::Can_Fight(e->second, unit) && unit->getDistance(e->second.bwapi_unit_) < chargeable_dist &&
+                   ( unit->getLastCommand().getTarget() == e->second.bwapi_unit_  || 
+                        (e->second.type_ == unit->getLastCommand().getTarget()->getType() && e->second.current_hp_ < unit->getLastCommand().getTarget()->getHitPoints() ) ) ) {
                     e_priority = 5;
                 }
                 else if (MeatAIModule::Can_Fight(e->second, unit)) {
@@ -122,7 +121,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 else if ( e_type.isWorker() ) {
                     e_priority = 3;
                 }
-                else if (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && MeatAIModule::IsFightingUnit(e->second.bwapi_unit_)) {
+                else if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e_type.spaceProvided() > 0 ) {
                     e_priority = 2;
                 }
                 else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
@@ -134,18 +133,16 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
 
                 if ( e_priority >= priority && dist_to_enemy <= max_dist) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
-                    if ( e_priority > 3 ) {
+                    if ( e_priority > 4 ) {
                         target_sentinel = true;
                     }
-                    visible_target_atk = true;
                     priority = e_priority;
                     max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
                     target = e->second;
                 }
 
-                if ( !target_sentinel && priority <= 3 && dist_to_enemy < max_dist_no_priority ) {
+                if ( !target_sentinel && priority <= 4 && dist_to_enemy < max_dist_no_priority ) {
                     target_sentinel_poor_target_atk = true;
-                    visible_target_atk = true;
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
                     target = e->second;
                 }
@@ -153,7 +150,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
         }
     }
 
-    bool spam_guard = !unit->getLastCommand().getTarget() || (unit->getLastCommand().getTarget() != target.bwapi_unit_ && unit->getLastCommand().getTargetPosition() != target.pos_);
+    bool spam_guard = !unit->getLastCommand().getTarget() || (unit->getLastCommand().getTarget() != target.bwapi_unit_);
     if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) && spam_guard ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
             if (fix_lurker_burrow(unit, ui, ei, target.pos_)) {
@@ -185,6 +182,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     int chargable_distance_net = (MeatAIModule::getProperSpeed(unit) + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
     int range = unit->isFlying() ? air_range : ground_range;
     Position pos = unit->getPosition();
+    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1500);
 
     if (dist < range + chargable_distance_net + 96) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
@@ -195,8 +193,12 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);
         }
 
-        setAlignment( unit, ui );
-        setCohesion( unit, pos, ui );
+        //setAlignment( unit, ui );
+        if (MeatAIModule::isClearRayTrace(pos, e_unit.pos_, inventory)) {
+            setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);
+        }
+        setAlignment( unit, local_neighborhood);
+        setCohesion( unit, pos, local_neighborhood);
         setAttractionHome( unit, pos, ei, inventory ); 
 
         // Flying units to not need to seperate.
@@ -215,8 +217,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         }
 
           //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_), 
-                                  (int)(pos.y + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_) }; //attract is zero when it's not set.
+        Position retreat_spot = { (int)(pos.x + attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_), 
+                                  (int)(pos.y + attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_) }; //attract is zero when it's not set.
 
         bool walkable_plus = retreat_spot.isValid() &&
             (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
@@ -234,11 +236,12 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         unit->stop();
     }
 
+    MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, Colors::White);//Run directly away
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black);//Stutter
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green);//Alignment
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, Colors::Blue); // Centraliziation.
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, Colors::Purple); // Cohesion
-    MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, Colors::Red); //Attraction towards attackable enemies.
+    MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, Colors::Red); //Attraction towards attackable enemies or home base.
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, Colors::Orange); // Seperation, does not apply to fliers.
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, Colors::Cyan); // Push from unwalkability, different 
 

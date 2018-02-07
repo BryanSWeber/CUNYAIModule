@@ -63,6 +63,7 @@ bool Reservation::checkAffordablePurchase( const UnitType type ) {
     bool open_reservation = reservation_map_.find(type)==reservation_map_.end();
     return affordable && open_reservation;
 }
+
 bool Reservation::checkAffordablePurchase( const TechType type ) {
     return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
 }
