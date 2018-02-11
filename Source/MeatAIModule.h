@@ -62,6 +62,10 @@ public:
     bool gas_starved;
   double win_rate; //fairly straighforward.
 
+  double alpha_army_temp;
+  double alpha_tech_temp;
+  double alpha_econ_temp;
+
   int miner_count_; // a temp variable
   int gas_count_;
  //Game should begin some universally declared inventories.

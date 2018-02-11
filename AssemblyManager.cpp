@@ -21,13 +21,13 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
         if (unit->canMorph(building) && checkSafeBuildLoc( unit->getPosition(), inventory, enemy_inventory, friendly_inventory, neutral_inventory) &&
             (unit->getType().isBuilding() || hatch_nearby ) ){
-            if (unit->morph(building)) {
-                buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
-                return true;
-            }
+                if (unit->morph(building)) {
+                    buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
+                    return true;
+                }
         }
 
-        if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor)
+        if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
             TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64, building == UnitTypes::Zerg_Creep_Colony);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
@@ -170,6 +170,19 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     buildorder.announceBuildingAttempt(building);
                     return true;
                 } //extractors must have buildings nearby or we shouldn't build them.
+                else if (buildorder.checkBuilding_Desired(building)) {
+                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
+                    buildorder.updateRemainingBuildOrder(building); // skips the building.
+                }
+            }
+        }
+        else if (unit->canBuild(building) && building == UnitTypes::Zerg_Hatchery) {
+            if (unit->canBuild(building) && checkSafeBuildLoc(unit->getPosition(), inventory, enemy_inventory, friendly_inventory, neutral_inventory) && hatch_nearby ) {
+                TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64);
+                if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
+                    buildorder.announceBuildingAttempt(building);
+                    return true;
+                }
                 else if (buildorder.checkBuilding_Desired(building)) {
                     Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
                     buildorder.updateRemainingBuildOrder(building); // skips the building.
@@ -365,13 +378,12 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
 
     //Combat Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_total_ > u_loc.stock_total_) &&  // army starved or under attack. ? And?
-        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) * 50 + 50 < my_reservation.getExcessMineral() && // Only build a creep colony if we can afford another worker.
+        Count_Units(UnitTypes::Zerg_Creep_Colony, friendly_inventory) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         !upgradable_creep_colonies &&
         buildings_started == 0 &&
-        Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) < 8 &&
         (Count_Units(UnitTypes::Zerg_Larva, friendly_inventory) < inv.hatches_ || nearby_enemy || supply_starved ) && // Only throw down a sunken if you have no larva floating around, or need the supply.
-        inv.hatches_ > 1); //&&
-        //max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 5) > Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+        inv.hatches_ > 1 &&
+        Count_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) + Count_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) < max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 8)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //Macro-related Buildings.
     buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, friendly_inventory) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&

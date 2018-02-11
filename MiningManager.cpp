@@ -90,6 +90,8 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
+    Resource_Inventory long_dist_fields;
+
 //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     int low_drone_min = 1;
@@ -109,17 +111,27 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
     }
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ ) {
-            available_fields.addStored_Resource( r->second );
+        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_min && r->second.type_.isMineralField() ) {
+            if (r->second.occupied_natural_) {
+                available_fields.addStored_Resource(r->second);
+            }
+            else {
+                long_dist_fields.addStored_Resource(r->second);
+            }
         }
     } //find closest mine meeting this criteria.
+
     if (!available_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
         }
+    } else if (!long_dist_fields.resource_inventory_.empty()) {
+        Stored_Resource* closest = getClosestStored(long_dist_fields, miner.pos_, 9999999);
+        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+           miner.startMine(*closest, neutral_inventory);
+        }
     }
-
 } // closure worker mine
 
   //Sends a Worker to gather Gas.

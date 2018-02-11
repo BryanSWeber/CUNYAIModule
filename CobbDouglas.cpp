@@ -109,3 +109,21 @@ bool CobbDouglas::tech_starved()
         return false;
     }
 }
+
+//Sets enemy utility function parameters based on known information.
+void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible) {
+    //If optimally chose, the derivatives will all be equal.
+    //enemy_alpha_tech = (e_tech_stock / (double)e_army_stock);
+    enemy_alpha_army = max(min(0.5 * e_army_stock / (double)(e_worker_stock + e_army_stock), 0.95), 0.05);  //Check the math again.
+    enemy_alpha_econ = max(min(0.5 * e_worker_stock / (double)(e_worker_stock + e_army_stock), 0.95), 0.05);  //Check the math again.
+
+    //Shift alpha towards enemy choices.
+    alpha_army = (0.75 * alpha_army + 0.25 * enemy_alpha_army) / (0.75 * alpha_army + 0.25 * enemy_alpha_army + 0.75 * alpha_econ + 0.25 * enemy_alpha_econ);
+    alpha_econ = (0.75 * alpha_econ + 0.25 * enemy_alpha_econ) / (0.75 * alpha_army + 0.25 * enemy_alpha_army + 0.75 * alpha_econ + 0.25 * enemy_alpha_econ);
+    //alpha_tech = alpha_tech + (enemy_alpha_tech - alpha_tech) * 0.10;
+
+    //reevaluate our tech choices.
+    econ_derivative = (alpha_econ / worker_stock) * econ_possible;
+    army_derivative = (alpha_army / army_stock) * army_possible;
+    //tech_derivative = (alpha_tech * alpha_army / tech_stock) * tech_possible;
+};

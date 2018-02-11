@@ -54,6 +54,7 @@ void Reservation::decrementReserveTimer() {
 int Reservation::getExcessMineral() {
     return max( Broodwar->self()->minerals() - min_reserve_ , 0 ) ;
 }
+
 int Reservation::getExcessGas() {
     return max( Broodwar->self()->gas() - gas_reserve_ , 0 );
 }

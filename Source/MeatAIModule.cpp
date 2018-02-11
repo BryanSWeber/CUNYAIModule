@@ -125,6 +125,11 @@ void MeatAIModule::onStart()
     alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
     alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
     alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+    
+    alpha_army_temp = alpha_army; // temp, will be overridden as we meet our enemy and scout.
+    alpha_econ_temp = alpha_econ;
+    alpha_tech_temp = alpha_tech;
+
     win_rate = (1 - gene_history.loss_rate_);
 
     //get initial build order.
@@ -215,7 +220,12 @@ void MeatAIModule::onFrame()
                 }
             }
             if ( !present || enemies_tile.empty() ) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. 
-                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
+                Position potential_running_spot = e->second.pos_;
+                int x = 1;
+                while (potential_running_spot.isValid() && Broodwar->isVisible(TilePosition(potential_running_spot)) && x < 25 ){
+                    potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_ * x * 6, e->second.pos_.y + e->second.velocity_y_ * x * 6);
+                    x++;
+                }
                 if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && 
                     (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)) ) ) {
                     e->second.pos_ = potential_running_spot;
@@ -398,14 +408,37 @@ void MeatAIModule::onFrame()
     supply_starved = (inventory.getLn_Supply_Ratio()  < gamma &&   //If your supply is disproportionately low, then you are gas starved, unless
         Broodwar->self()->supplyTotal() <= 400); // you have not hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
-                                                 //Discontinuities (Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible. 
+    //Discontinuities -Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible, or if their army is critically larger than ours.
+    //bool desperate_army = enemy_inventory.stock_total_ > friendly_inventory.stock_total_ * 1.10;
     bool econ_possible = inventory.min_workers_ <= inventory.min_fields_ * 2 && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
-    bool vision_possible = true; // no vision cutoff ATM.
-    bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army / alpha_econ || Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) + Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
+    //bool vision_possible = true; // no vision cutoff ATM.
+    bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army_temp / alpha_econ_temp || 
+        Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) 
+        + Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hydralisk_Den) 
+        + Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spire) 
+        + Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Ultralisk_Cavern) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
     bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
-
                                        //Feed alpha values and cuttoff calculations into Cobb Douglas.
-    CobbDouglas CD = CobbDouglas( alpha_army, exp( inventory.ln_army_stock_ ), army_possible, alpha_tech, exp( inventory.ln_tech_stock_ ), tech_possible, alpha_econ, exp( inventory.ln_worker_stock_ ), econ_possible );
+
+    CobbDouglas CD = CobbDouglas( alpha_army_temp, exp( inventory.ln_army_stock_ ), army_possible, alpha_tech_temp, exp( inventory.ln_tech_stock_ ), tech_possible, alpha_econ_temp, exp( inventory.ln_worker_stock_ ), econ_possible );
+
+    //Update existing CD functions to more closely mirror opponent. Do every 30 sec or so.
+    if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_total_ > 0 ) {
+        int worker_value = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
+        int est_worker_count = min(max(enemy_inventory.worker_count_, Broodwar->getFrameCount() / UnitTypes::Zerg_Drone.buildTime() + 4 ), 85);
+        int e_worker_stock = est_worker_count * worker_value;
+        CD.enemy_eval(enemy_inventory.stock_total_ - e_worker_stock, army_possible, 1, tech_possible, e_worker_stock, tech_possible);
+        alpha_army_temp = CD.alpha_army;
+        alpha_econ_temp = CD.alpha_econ;
+        alpha_tech_temp = CD.alpha_tech;
+        Broodwar->sendText("Matching expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
+    }
+    else if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_total_ == 0) {
+        alpha_army_temp = alpha_army;
+        alpha_econ_temp = alpha_econ;
+        alpha_tech_temp = alpha_tech;
+        Broodwar->sendText("Reseting expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
+    }
 
     tech_starved = CD.tech_starved();
     army_starved = CD.army_starved();
@@ -579,16 +612,16 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            if ( !inventory.map_veins_in_.empty() ) {
-                for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
-                    for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
-                        //if ( inventory.map_veins_[i][j] > 175 ) {
-                        if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-                            Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-                        }
-                    }
-                } // Crowded but super helpful. 
-            }
+            //if ( !inventory.map_veins_in_.empty() ) {
+            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
+            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
+            //            //if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
+            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
+            //            }
+            //        }
+            //    } // Crowded but super helpful. 
+            //}
         }
 
         //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
@@ -771,7 +804,7 @@ void MeatAIModule::onFrame()
 
                 int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
                 int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
-                int search_radius = max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64);
+                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
@@ -884,13 +917,13 @@ void MeatAIModule::onFrame()
                                 }
                             }
                             else if ( drone_problem ) {
-                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits()) < enemy_loc.worker_count_ + 1 &&
+                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
                                     friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
                                     u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                                     Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
-                                    friendly_inventory.stopMine(u, neutral_inventory);
-                                    boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
+                                        friendly_inventory.stopMine(u, neutral_inventory);
+                                        boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
                                 }
                                 else if ((u->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (u->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && !u->isAttackFrame()) {
                                     u->stop();

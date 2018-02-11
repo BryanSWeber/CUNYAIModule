@@ -31,6 +31,13 @@ public:
     bool army_starved();
     bool econ_starved();
     bool tech_starved();
+
+    void enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible);
+
+    double enemy_alpha_army;
+    double enemy_alpha_tech;
+    double enemy_alpha_econ;
+
 };
 
 
