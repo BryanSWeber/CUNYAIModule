@@ -147,7 +147,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
         if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             gas_count_ += r->second.number_of_miners_;
         }
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_) {
+        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_) {
             low_drone_gas = r->second.number_of_miners_;
         }
     } // find drone minima.

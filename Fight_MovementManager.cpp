@@ -86,8 +86,8 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     int helpful_e = unit->isFlying() ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
     int helpful_u = unit->isFlying() ? ui.stock_fliers_ : ui.stock_ground_units_;
 
-    double limit_units_diving = ( helpful_e - helpful_u <= 1 ? 1 : log( helpful_e - helpful_u));
-    int max_dist = ei.max_range_ / (double)limit_units_diving + chargeable_dist;
+    double limit_units_diving = 2 * ( helpful_e - helpful_u <= 1 ? 1 : log( helpful_e - helpful_u));
+    int max_dist = (ei.max_range_ + chargeable_dist ) / (double)limit_units_diving ;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
@@ -112,8 +112,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && last_target && MeatAIModule::Can_Fight(e->second, unit) && dist_to_enemy < min(chargeable_dist,32) &&
-                   ( last_target == e->second.bwapi_unit_  ||
-                    (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints() ) ) ) {
+                   ( last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints() ) ) ) {
                     e_priority = 5;
                 }
                 else if (MeatAIModule::Can_Fight(e->second, unit)) {
@@ -224,18 +223,36 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
                 MeatAIModule::checkOccupiedArea( ui, retreat_spot, 32 ))); // or does it end on a unit?
 
         if (retreat_spot && !unit->isBurrowed() && walkable_plus ) {
-            unit->move( retreat_spot ); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
+            unit->move( retreat_spot ); //run away.
         }
-        //else if ( unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) {
-        //    unit->attack( retreat_spot );
-        //}
+        else if ( unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) { // if that spot will not work for you, then instead check along that vector.
+
+            int velocity_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
+            int velocity_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
+            int x = 0;
+
+            Position potential_running_spot = retreat_spot;
+            while (!walkable_plus && x < 5) {
+                potential_running_spot = Position(retreat_spot.x + velocity_x * x / (double) 5, retreat_spot.y + velocity_y * x / (double) 5);
+                walkable_plus = potential_running_spot.isValid() &&
+                    (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
+                    (MeatAIModule::isClearRayTrace(pos, potential_running_spot, inventory) && //or does it cross an unwalkable position? 
+                     MeatAIModule::checkOccupiedArea(ui, potential_running_spot, 32))); // or does it end on a unit?
+                x++;
+            }
+            if (walkable_plus) {
+                unit->move(potential_running_spot); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
+            }
+            else {
+                unit->attack(retreat_spot);
+            }
+        }
     }
     else if ((unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && !unit->isAttackFrame() ) {
         unit->stop();
     }
 
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, Colors::White);//Run directly away
-    MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black);//Stutter
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green);//Alignment
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, Colors::Blue); // Centraliziation.
     MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, Colors::Purple); // Cohesion

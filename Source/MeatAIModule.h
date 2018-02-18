@@ -71,6 +71,7 @@ public:
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
+    Unit_Inventory dead_enemy_inventory; // dead units.
 	Resource_Inventory neutral_inventory; // neutral resources.
 
     Inventory inventory;  // macro variables, not every unit I have.
@@ -221,6 +222,8 @@ public:
       static int Stock_Buildings( const UnitType &building, const Unit_Inventory &ei );
       // evaluates the value of a stock of upgrades, in terms of total cost (min+gas).
       static int Stock_Ups( const UpgradeType &ups );
+      // evaluates stock of tech (eg. lurker_aspect);
+      static int Stock_Tech(const TechType & tech);
 
 
       //Evaluates stock of allied units in set that can shoot up.

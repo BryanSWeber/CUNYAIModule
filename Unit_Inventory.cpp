@@ -65,7 +65,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             modified_min_cost += unit->getType().whatBuilds().first == UnitTypes::Zerg_Creep_Colony ? UnitTypes::Zerg_Creep_Colony.mineralPrice() : 0;
         int modified_gas_cost = unit->getType().gasPrice();
 
-        stock_value_ = modified_min_cost + modified_gas_cost + 25 * modified_supply;
+        stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
 
         if ( unit->getType().isTwoUnitsInOneEgg() ) {
@@ -293,9 +293,9 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
     modified_supply =unittype == UnitTypes::Terran_Barracks ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
     int modified_min_cost =unittype == UnitTypes::Terran_Barracks ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost =unittype.gasPrice();
+    int modified_gas_cost = unittype.gasPrice();
 
-    stock_value_ = modified_min_cost + modified_gas_cost + 25 * modified_supply;
+    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
     if (unittype.isTwoUnitsInOneEgg() ) {
         stock_value_ = stock_value_ / 2;
