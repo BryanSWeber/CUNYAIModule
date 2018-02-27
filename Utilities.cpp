@@ -116,25 +116,25 @@ bool MeatAIModule::Futile_Fight( Unit unit, Unit enemy ) {
 
 // Outlines the case where UNIT can attack ENEMY;
 bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
-    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Barracks || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
-    return !e_invunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
+    bool e_vunerable = (enemy->isFlying() && unit->getType().airWeapon() != WeaponTypes::None) || (!enemy->isFlying() && unit->getType().groundWeapon() != WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Barracks || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
+    return e_vunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
 bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
-    bool e_invunerable = (enemy.type_.isFlyer() && unit->getType().airWeapon() == WeaponTypes::None) || (!enemy.type_.isFlyer() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Barracks || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy.type_.isFlyer()); // if we cannot attack them.
-    if ( enemy.bwapi_unit_  && enemy.bwapi_unit_->exists() ) {
-        return !e_invunerable && enemy.bwapi_unit_->isDetected();
+    bool e_vunerable = (enemy.type_.isFlyer() && unit->getType().airWeapon() != WeaponTypes::None) || (!enemy.type_.isFlyer() && unit->getType().groundWeapon() != WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Barracks || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy.type_.isFlyer()); // if we cannot attack them.
+    if ( enemy.bwapi_unit_ && enemy.bwapi_unit_->exists() ) {
+        return e_vunerable && enemy.bwapi_unit_->isDetected();
     }
     else {
-        return !e_invunerable; // also if they are cloaked and can attack us.
+        return e_vunerable; // also if they are cloaked and can attack us.
     }
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
 bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
-    bool e_invunerable = (enemy->isFlying() && unit.type_.airWeapon() == WeaponTypes::None) || (!enemy->isFlying() && unit.type_.groundWeapon() == WeaponTypes::None) || unit.type_ == UnitTypes::Terran_Barracks || unit.type_ == UnitTypes::Protoss_Carrier || (unit.type_ == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
-    return !e_invunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
+    bool e_vunerable = (enemy->isFlying() && unit.type_.airWeapon() != WeaponTypes::None) || (!enemy->isFlying() && unit.type_.groundWeapon() != WeaponTypes::None) || unit.type_ == UnitTypes::Terran_Barracks || unit.type_ == UnitTypes::Protoss_Carrier || (unit.type_ == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
+    return e_vunerable && enemy->isDetected(); // also if they are cloaked and can attack us.
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.

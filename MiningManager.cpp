@@ -106,10 +106,6 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
     } // find drone minima.
 
 
-    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-        my_reservation.removeReserveSystem( unit->getBuildType() );
-    }
-
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_min && r->second.type_.isMineralField() ) {
             if (r->second.occupied_natural_) {
@@ -125,11 +121,17 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
+            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+                my_reservation.removeReserveSystem(unit->getBuildType());
+            }
         }
     } else if (!long_dist_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestStored(long_dist_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
            miner.startMine(*closest, neutral_inventory);
+           if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+               my_reservation.removeReserveSystem(unit->getBuildType());
+           }
         }
     }
 } // closure worker mine
@@ -152,10 +154,6 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
         }
     } // find drone minima.
 
-    if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-        my_reservation.removeReserveSystem( unit->getBuildType() );
-    }
-
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
         if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             available_fields.addStored_Resource( r->second );
@@ -166,6 +164,11 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
         Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
+
+            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+                my_reservation.removeReserveSystem(unit->getBuildType());
+            }
+
         }
     }
 
@@ -178,12 +181,8 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
     Resource_Inventory available_fields;
 
-    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
-        my_reservation.removeReserveSystem(unit->getBuildType());
-    }
-
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ <= 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
+        if (r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
@@ -191,10 +190,19 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_) && miner.bwapi_unit_->hasPath(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
+
+            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+                my_reservation.removeReserveSystem(unit->getBuildType());
+            }
+
         }
         else {
             miner.bwapi_unit_->move(closest->pos_);
             miner.startMine(*closest, neutral_inventory);
+
+            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+                my_reservation.removeReserveSystem(unit->getBuildType());
+            }
         }
     }
 }

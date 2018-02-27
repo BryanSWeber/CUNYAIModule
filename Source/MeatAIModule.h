@@ -10,7 +10,7 @@
 #include <chrono> // for in-game frame clock.
 
 //#define _RESIGN_MODE false
-//define _ANALYSIS_MODE true
+//#define _ANALYSIS_MODE false
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 //#define _LEARNING_MODE false

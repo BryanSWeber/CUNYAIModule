@@ -449,6 +449,8 @@ void MeatAIModule::onFrame()
     double army_derivative = CD.army_derivative;
     double tech_derivative = CD.tech_derivative;
 
+    bool massive_army = (army_derivative > 0 && friendly_inventory.stock_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Drone, friendly_inventory) >= enemy_inventory.stock_total_ * 5);
+
     //Unitset enemy_set = getEnemy_Set(enemy_inventory);
     enemy_inventory.updateUnitInventorySummary();
     friendly_inventory.updateUnitInventorySummary();
@@ -761,11 +763,9 @@ void MeatAIModule::onFrame()
             }
 
             if (miner.locked_mine_ && miner.locked_mine_->getID() != miner.bwapi_unit_->getOrderTarget()->getID() ) {
-
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) {
                     miner.stopMine(neutral_inventory); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
                 }
-
             }
 
 
@@ -778,12 +778,12 @@ void MeatAIModule::onFrame()
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            bool avoiding_fights = (army_starved && army_derivative > 0);
-            if (!enemy_found) {
-                boids.Boids_Movement(u, 12, friendly_inventory, enemy_inventory, inventory, true); // not army starved in this case.  Scout seperation included.
+            bool potential_fears = (army_starved && !massive_army);
+            if (!enemy_found || !potential_fears) {
+                boids.Boids_Movement(u, 5, friendly_inventory, enemy_inventory, inventory, potential_fears); // not army starved in this case.  Scout seperation included.
             }
             else {
-                boids.Boids_Movement(u, 0, friendly_inventory, enemy_inventory, inventory, avoiding_fights);
+                boids.Boids_Movement(u, 0, friendly_inventory, enemy_inventory, inventory, potential_fears);
             }// keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -792,7 +792,6 @@ void MeatAIModule::onFrame()
         auto start_combat = std::chrono::high_resolution_clock::now();
         if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && u->getLastCommandFrame() < Broodwar->getFrameCount() - 12 )
         {
-
             Stored_Unit* e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 999999 );
             if ( u->getType() == UnitTypes::Zerg_Drone || u->getType() == UnitTypes::Zerg_Overlord ) {
                 e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 256 );
@@ -814,16 +813,14 @@ void MeatAIModule::onFrame()
 
                 Boids boids;
 
-                if ( (army_derivative > 0 || u->getType() == UnitTypes::Zerg_Drone) && friendly_inventory.stock_total_ - Stock_Buildings(UnitTypes::Zerg_Sunken_Colony,friendly_inventory) - Stock_Buildings(UnitTypes::Zerg_Spore_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Drone, friendly_inventory) <= enemy_inventory.stock_total_ * 2) { //In normal, non-massive army scenarioes...  
-
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + search_radius );
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius);
+                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + search_radius + massive_army * 999999 );
+                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius + massive_army * 999999);
                     //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
                     Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                    enemy_loc.updateUnitInventorySummary();
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
 
+                        enemy_loc.updateUnitInventorySummary();
                         friend_loc.updateUnitInventorySummary();
 
                         //Tally up crucial details about enemy. 
@@ -947,10 +944,6 @@ void MeatAIModule::onFrame()
                         }
                     } // close local examination.
                 }
-                else { // who cares what they have if the override is triggered?
-                    boids.Tactical_Logic( u, enemy_inventory, friendly_inventory, Colors::Black ); // enemy inventory?
-                }
-            }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 

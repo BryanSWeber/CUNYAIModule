@@ -158,8 +158,37 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      else {
          return Position(0, 0);  // you might be dead at this point, fyi.
      }
-
  }
+
+ //for the army that can actually move.
+ Position Unit_Inventory::getClosestMeanArmyLocation() const {
+     int x_sum = 0;
+     int y_sum = 0;
+     int count = 0;
+     for (const auto &u : this->unit_inventory_) {
+         if (u.second.type_.canAttack() && u.second.valid_pos_ && u.second.type_.canMove() && !u.second.type_.isWorker()) {
+             x_sum += u.second.pos_.x;
+             y_sum += u.second.pos_.y;
+             count++;
+         }
+     }
+     if (count > 0) {
+         Position mean_pos = { x_sum / count, y_sum / count };
+         Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && !IsOwned, 500);
+         if (nearest_neighbor && nearest_neighbor->getPosition() ) {
+             Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && !IsOwned, 500)->getPosition();
+             return out;
+         }
+         else {
+             return Position(0, 0);  // you might be dead at this point, fyi.
+         }
+     }
+     else {
+         return Position(0, 0);  // you might be dead at this point, fyi.
+     }
+ }
+
+
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
  {
     Unit_Inventory total;
