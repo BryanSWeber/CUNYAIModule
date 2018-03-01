@@ -412,7 +412,7 @@ void MeatAIModule::onFrame()
     //bool desperate_army = enemy_inventory.stock_total_ > friendly_inventory.stock_total_ * 1.10;
     bool econ_possible = inventory.min_workers_ <= inventory.min_fields_ * 2 && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
     //bool vision_possible = true; // no vision cutoff ATM.
-    bool army_possible = Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army_temp / alpha_econ_temp || 
+    bool army_possible = (Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army_temp / alpha_econ_temp) || 
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) 
         + Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hydralisk_Den) 
         + Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spire) 
@@ -762,7 +762,7 @@ void MeatAIModule::onFrame()
                 continue;
             }
 
-            if (miner.locked_mine_ && miner.locked_mine_->getID() != miner.bwapi_unit_->getOrderTarget()->getID() ) {
+            if (miner.locked_mine_ && miner.locked_mine_->getID() != miner.bwapi_unit_->getOrderTarget()->getID() && miner.locked_mine_->exists() ) {
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) {
                     miner.stopMine(neutral_inventory); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
                 }
@@ -778,9 +778,9 @@ void MeatAIModule::onFrame()
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            bool potential_fears = (army_starved && !massive_army);
-            if (!enemy_found || !potential_fears) {
-                boids.Boids_Movement(u, 5, friendly_inventory, enemy_inventory, inventory, potential_fears); // not army starved in this case.  Scout seperation included.
+            bool potential_fears = ( army_derivative > 0 && !massive_army);
+            if (!enemy_found || !potential_fears) { // note stuttering is disabled so secretly these are both the same.
+                boids.Boids_Movement(u, 3, friendly_inventory, enemy_inventory, inventory, potential_fears); 
             }
             else {
                 boids.Boids_Movement(u, 0, friendly_inventory, enemy_inventory, inventory, potential_fears);

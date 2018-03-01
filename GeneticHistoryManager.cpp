@@ -30,7 +30,7 @@ GeneticHistory::GeneticHistory( string file ) {
     double gamma_out = dis( gen ) * 0.55; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis( gen );
-    double a_vis_out = dis( gen );
+    double a_vis_out =  dis( gen );
     double a_econ_out = dis( gen ) * 0.75 + 0.25;
     double a_tech_out = dis( gen ) * 0.25;
 

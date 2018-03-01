@@ -88,6 +88,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
 
     bool already_assigned = false;
+    bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
     Resource_Inventory long_dist_fields;
@@ -97,17 +98,17 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
     int low_drone_min = 1;
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isMineralField() && r->second.occupied_natural_) {
+        if (r->second.bwapi_unit_ /*&& r->second.bwapi_unit_->exists()*/ && r->second.pos_.isValid() && r->second.type_.isMineralField() && r->second.occupied_natural_) {
             miner_count_ += r->second.number_of_miners_;
         }
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
+        if (r->second.bwapi_unit_/* && r->second.bwapi_unit_->exists()*/ && r->second.pos_.isValid() && r->second.number_of_miners_< low_drone_min && r->second.type_.isMineralField() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
             low_drone_min = r->second.number_of_miners_;
         }
     } // find drone minima.
 
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_min && r->second.type_.isMineralField() ) {
+        if ( r->second.bwapi_unit_ /*&& r->second.bwapi_unit_->exists()*/ && r->second.number_of_miners_ <= low_drone_min && r->second.type_.isMineralField() ) {
             if (r->second.occupied_natural_) {
                 available_fields.addStored_Resource(r->second);
             }
@@ -121,17 +122,26 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
         Stored_Resource* closest = getClosestStored(available_fields, miner.pos_, 9999999);
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
-            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+            if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
         }
     } else if (!long_dist_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestStored(long_dist_fields, miner.pos_, 9999999);
-        if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+        if (miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
            miner.startMine(*closest, neutral_inventory);
-           if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+
+           if (building_unit) {
                my_reservation.removeReserveSystem(unit->getBuildType());
            }
+
+        }
+        else if (miner.bwapi_unit_->move(closest->pos_)){
+            miner.startMine(*closest, neutral_inventory);
+
+            if (building_unit) {
+                my_reservation.removeReserveSystem(unit->getBuildType());
+            }
         }
     }
 } // closure worker mine
@@ -140,22 +150,23 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
 void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
 
     bool already_assigned = false;
+    bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     Stored_Unit& miner = ui.unit_inventory_.find( unit )->second;
     Resource_Inventory available_fields;
 
     int low_drone_gas = 2; //letabot has code on this. "AssignEvenSplit(Unit* unit)"
 
     for (auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
+        if (r->second.bwapi_unit_ /*&& r->second.bwapi_unit_->exists()*/ && r->second.pos_.isValid() && r->second.type_.isRefinery() && r->second.occupied_natural_ ) {
             gas_count_ += r->second.number_of_miners_;
         }
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_) {
+        if (r->second.bwapi_unit_ /*&& r->second.bwapi_unit_->exists()*/ && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_) {
             low_drone_gas = r->second.number_of_miners_;
         }
     } // find drone minima.
 
     for ( auto& r = neutral_inventory.resource_inventory_.begin(); r != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); r++ ) {
-        if ( r->second.bwapi_unit_ && r->second.bwapi_unit_->exists() && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ && checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)) {
+        if ( r->second.bwapi_unit_ /*&& r->second.bwapi_unit_->exists()*/ && r->second.number_of_miners_ <= low_drone_gas && r->second.type_.isRefinery() && r->second.occupied_natural_ /*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, neutral_inventory)*/) {
             available_fields.addStored_Resource( r->second );
         }
     } //find closest mine meeting this criteria.
@@ -165,7 +176,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
 
-            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+            if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
 
@@ -178,6 +189,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
 void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
     bool already_assigned = false;
+    bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
     Resource_Inventory available_fields;
 
@@ -191,16 +203,14 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
         if (closest->bwapi_unit_->exists() && miner.bwapi_unit_->gather(closest->bwapi_unit_) && miner.bwapi_unit_->hasPath(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
 
-            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+            if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
 
         }
-        else {
-            miner.bwapi_unit_->move(closest->pos_);
+        else if ( miner.bwapi_unit_->move(closest->pos_) ) {
             miner.startMine(*closest, neutral_inventory);
-
-            if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_)) {
+            if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
         }

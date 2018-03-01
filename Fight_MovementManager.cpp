@@ -45,7 +45,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     }
     else {
         setCohesion(unit, pos, local_neighborhood);
-        setStutter(unit, n);
+        //setStutter(unit, n);
     }
 
     setAlignment(unit, local_neighborhood);
@@ -180,25 +180,22 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     int dist = unit->getDistance(e_unit.pos_);
     int air_range = e_unit.type_.airWeapon().maxRange();
     int ground_range = e_unit.type_.groundWeapon().maxRange();
-    int chargable_distance_net = (MeatAIModule::getProperSpeed(unit) + e_unit.type_.topSpeed()) * unit->isFlying() ? e_unit.type_.airWeapon().damageCooldown() : e_unit.type_.groundWeapon().damageCooldown();
+    int chargable_distance_net = MeatAIModule::getChargableDistance(unit, ei);
     int range = unit->isFlying() ? air_range : ground_range;
     Position pos = unit->getPosition();
-    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1500);
-    Position e_mean = ei.getClosestMeanArmyLocation();
+    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
+    Position e_mean = ei.getMeanArmyLocation();
 
     if (dist < range + chargable_distance_net + 96) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Broodwar->drawCircleMap(e_unit.pos_, range + chargable_distance_net + 96, Colors::Red);
 
         //initial retreat spot from enemy.
-        if (unit->isFlying()) { // go to it if the path is clear,
+        if (unit->isFlying() || MeatAIModule::isClearRayTrace(pos, e_unit.pos_, inventory)) { // go to it if the path is clear,
             setDirectRetreat(pos, e_mean, unit->getType(), ei);
         }
 
         //setAlignment( unit, ui );
-        if (MeatAIModule::isClearRayTrace(pos, e_unit.pos_, inventory)) {
-            setDirectRetreat(pos, e_mean, unit->getType(), ei);
-        }
 
         setAlignment( unit, local_neighborhood);
         setCohesion( unit, pos, local_neighborhood);
