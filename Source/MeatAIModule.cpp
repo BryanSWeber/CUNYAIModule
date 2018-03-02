@@ -412,7 +412,7 @@ void MeatAIModule::onFrame()
     //bool desperate_army = enemy_inventory.stock_total_ > friendly_inventory.stock_total_ * 1.10;
     bool econ_possible = inventory.min_workers_ <= inventory.min_fields_ * 2 && (Count_Units( UnitTypes::Zerg_Drone, friendly_inventory ) < 85); // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
     //bool vision_possible = true; // no vision cutoff ATM.
-    bool army_possible = (Broodwar->self()->supplyUsed() < 375 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 2 * alpha_army_temp / alpha_econ_temp) || 
+    bool army_possible = (Broodwar->self()->supplyUsed() < 400 && exp( inventory.ln_army_stock_ ) / exp( inventory.ln_worker_stock_ ) < 5 * alpha_army_temp / alpha_econ_temp) || 
         Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) 
         + Count_Units( UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hydralisk_Den) 
         + Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spire) 
@@ -426,7 +426,11 @@ void MeatAIModule::onFrame()
     if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_total_ > 0 ) {
         int worker_value = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
         int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
-        int est_worker_count = min(max(enemy_inventory.worker_count_, Broodwar->getFrameCount() / UnitTypes::Zerg_Drone.buildTime() + 4 - dead_worker_count), 85);
+        double r = log(85/(double)4) / (double)14400;
+        //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
+        int approx_worker_count = (exp( r * Broodwar->getFrameCount() * 0.75 ) - dead_worker_count ) * exp(r * Broodwar->getFrameCount() * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
+
+        int est_worker_count = min(max(enemy_inventory.worker_count_, approx_worker_count ), 85);
         int e_worker_stock = est_worker_count * worker_value;
         CD.enemy_eval(enemy_inventory.stock_total_ - enemy_inventory.worker_count_*worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible);
         alpha_army_temp = CD.alpha_army;
@@ -774,7 +778,8 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        if ((isIdleEmpty(u) && !isRecentCombatant(u) && u->getType() != UnitTypes::Zerg_Overlord && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24))
+        bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran);
+        if ((isIdleEmpty(u) && !isRecentCombatant(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() && !u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24))
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)

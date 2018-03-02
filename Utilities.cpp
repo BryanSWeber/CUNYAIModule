@@ -1228,6 +1228,14 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
 
     return enemy_has_not_penetrated && (can_still_save || have_to_save) ;
 }
+
+bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
+    Unit_Inventory friend_loc = getUnitInventoryInRadius(ui, pos, 750);
+    bool desperate_for_minerals = inv.min_fields_ < 6;
+    bool safe_mine = friend_loc.stock_total_ > 0 ;
+    return  safe_mine || desperate_for_minerals;
+}
+
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,
 //Zerg_Missile_Attacks = 11,

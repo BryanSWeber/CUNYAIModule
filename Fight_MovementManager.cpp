@@ -18,24 +18,23 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = ei.stock_total_ <= ui.stock_total_;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
-    bool unit_safe_for_scouting = (ei.stock_shoots_up_ == 0 && unit->getType() == UnitTypes::Zerg_Overlord) || unit->getType() != UnitTypes::Zerg_Overlord;
     bool strong_cohesion_needed = true;
     Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
 
     // Units should scout when there is a large gap in our knowledge.
-    if ( (!enemy_scouted || !potential_fears) && healthy && unit_safe_for_scouting && !inventory.start_positions_.empty() ) { // check his bases first.
+    if ( (!enemy_scouted || !potential_fears) && healthy && !inventory.start_positions_.empty() ) { // check his bases first.
         scoutEnemyBase(unit, pos, ei, inventory);
     }
-    else if ( (!enemy_scouted || !potential_fears) && healthy && unit_safe_for_scouting && inventory.start_positions_.empty() ) { // then wander about searching.
+    else if ( (!enemy_scouted || !potential_fears) && healthy && inventory.start_positions_.empty() ) { // then wander about searching.
         setSeperationScout( unit, pos, local_neighborhood ); //This is triggering too often and your army is scattering, not everything else.  
         strong_cohesion_needed = false;
     }
 
     // Units should go to the enemy when it's time to pick a fight, home otherwise.
-    if ( enemy_scouted && healthy && ready_to_fight && unit_safe_for_scouting) {
+    if ( enemy_scouted && healthy && ready_to_fight ) {
         setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
     }
-    else if (enemy_scouted && (!healthy || !ready_to_fight || !unit_safe_for_scouting) ) {
+    else if (enemy_scouted && ( !healthy || !ready_to_fight ) ) {
         setAttractionHome(unit, pos, ei, inventory);
     }
    
@@ -369,7 +368,7 @@ void Boids::setAttractionEnemy( const Unit &unit, const Position &pos, Unit_Inve
 
             Stored_Unit* e = MeatAIModule::getClosestAttackableStored( ei, unit->getType(), unit->getPosition(), dist ); 
 
-            if ( e && e->pos_ && e->pos_.getDistance(pos) > ei.max_range_ + 512 * potential_fears ) {
+            if ( e && e->pos_ && e->pos_.getDistance(pos) > (ei.max_range_ + 512) * potential_fears ) {
                 if ( !inv.map_veins_in_.empty() ){
                     double temp_attract_dx_ = 0;
                     double temp_attract_dy_ = 0;

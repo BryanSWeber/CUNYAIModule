@@ -136,7 +136,7 @@ void MeatAIModule::Worker_Mine( const Unit &unit, Unit_Inventory &ui ) {
            }
 
         }
-        else if (miner.bwapi_unit_->move(closest->pos_)){
+        else if ( miner.bwapi_unit_->move(closest->pos_) && checkSafeMineLoc(closest->pos_, ui, inventory) ){
             miner.startMine(*closest, neutral_inventory);
 
             if (building_unit) {
@@ -208,7 +208,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
             }
 
         }
-        else if ( miner.bwapi_unit_->move(closest->pos_) ) {
+        else if ( miner.bwapi_unit_->move(closest->pos_) && checkSafeMineLoc(closest->pos_, ui, inventory) ) {
             miner.startMine(*closest, neutral_inventory);
             if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());

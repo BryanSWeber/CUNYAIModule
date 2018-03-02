@@ -10,15 +10,15 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE false
-#define _ANALYSIS_MODE false
-#define _COBB_DOUGLASS_REVEALED false
-#define _AT_HOME_MODE false
+//#define _ANALYSIS_MODE false
+//#define _COBB_DOUGLASS_REVEALED false
+//#define _AT_HOME_MODE false
 //#define _LEARNING_MODE false
 
 //#define _RESIGN_MODE true
-//#define _ANALYSIS_MODE true
-//#define _AT_HOME_MODE true
-//#define _COBB_DOUGLASS_REVEALED true
+#define _ANALYSIS_MODE true
+#define _AT_HOME_MODE true
+#define _COBB_DOUGLASS_REVEALED true
 #define _LEARNING_MODE true
 
 // Remember not to use "Broodwar" in any global class constructor!
@@ -239,6 +239,8 @@ public:
 	  static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
       bool checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      // Checks if it is safe to mine, uses heuristic critera.
+      bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);
