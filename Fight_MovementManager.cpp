@@ -115,7 +115,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 if ( critical_target ) {
                     e_priority = 6;
                 }
-                else if (e->second.bwapi_unit_ && last_target && MeatAIModule::Can_Fight(e->second, unit) && dist_to_enemy < min(chargeable_dist,32) &&
+                else if (e->second.bwapi_unit_ && MeatAIModule::Can_Fight(e->second, unit) && dist_to_enemy < min(chargeable_dist,32) && last_target &&
                    ( last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints() ) ) ) {
                     e_priority = 5;
                 }
@@ -125,7 +125,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 else if ( e_type.isWorker() ) {
                     e_priority = 3;
                 }
-                else if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e_type.spaceProvided() > 0 ) {
+                else if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && ( MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e_type.spaceProvided() > 0 ) ) {
                     e_priority = 2;
                 }
                 else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
