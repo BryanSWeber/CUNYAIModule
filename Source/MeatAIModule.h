@@ -9,13 +9,13 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE false
+//#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE false
 //#define _COBB_DOUGLASS_REVEALED false
 //#define _AT_HOME_MODE false
 //#define _LEARNING_MODE false
 
-//#define _RESIGN_MODE true
+#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 #define _AT_HOME_MODE true
 #define _COBB_DOUGLASS_REVEALED true
@@ -112,6 +112,8 @@ public:
       bool Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
       bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, const Unit_Inventory & u_inv);
+      // Returns a tile that is suitable for building.
+      TilePosition getBuildablePosition(TilePosition target_pos, UnitType build_type, int tile_grid_size);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
@@ -137,6 +139,7 @@ public:
 	  bool isInLine(const Unit &unit);
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
 	  static bool IsFightingUnit(const Unit &unit);
+      static bool IsFightingUnit(const Stored_Unit & unit);
 	  // evaluates if it was order to fight recently.
 	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
@@ -146,6 +149,7 @@ public:
       // Outlines the case where you can attack their type (air/ground/cloaked)
       static bool Can_Fight( Unit unit, Unit enemy );
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
+      static bool Can_Fight( Stored_Unit unit, Stored_Unit enemy);
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
@@ -235,6 +239,7 @@ public:
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos );
+      static bool spamGuard(const Unit & unit);
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.

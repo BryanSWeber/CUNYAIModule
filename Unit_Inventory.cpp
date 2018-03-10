@@ -103,7 +103,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int y_sum = 0;
      int count = 0;
      for ( const auto &u : this->unit_inventory_ ) {
-         if ( ((u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding()) || u.second.bwapi_unit_->isMorphing()) && u.second.valid_pos_) {
+         if ( ( (u.second.type_.isBuilding() && !u.second.type_.isSpecialBuilding()) || u.second.bwapi_unit_->isMorphing() ) && u.second.valid_pos_ ) {
              x_sum += u.second.pos_.x;
              y_sum += u.second.pos_.y;
              count++;

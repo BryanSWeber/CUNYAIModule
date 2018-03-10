@@ -16,7 +16,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
 
     bool armed = unit->getType().airWeapon() != WeaponTypes::None || unit->getType().groundWeapon() != WeaponTypes::None;
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = ei.stock_total_ <= ui.stock_total_;
+    bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool strong_cohesion_needed = true;
     Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
@@ -34,7 +34,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     if ( enemy_scouted && healthy && ready_to_fight ) {
         setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
     }
-    else if (enemy_scouted && ( !healthy || !ready_to_fight ) ) {
+    else if ( enemy_scouted && ( !healthy || !ready_to_fight ) ) {
         setAttractionHome(unit, pos, ei, inventory);
     }
    
@@ -54,7 +54,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     } // closure: flyers
 
     // lurkers should move when we need them to scout.
-    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 && !MeatAIModule::getClosestThreatOrTargetStored(ei, UnitTypes::Zerg_Lurker,pos,max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_) ) ) {
+    if ( unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && MeatAIModule::spamGuard(unit) && !MeatAIModule::getClosestThreatOrTargetStored(ei, UnitTypes::Zerg_Lurker,pos,max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_) ) ) {
         unit->unburrow();
         return;
     }
@@ -66,7 +66,6 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     if (unit->getLastCommand().getTargetPosition() != brownian_pos) {
         unit->move(brownian_pos);
     }
-
 
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, Colors::Black );//Stutter
     MeatAIModule::Diagnostic_Line( unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, Colors::Green );//Alignment
@@ -84,13 +83,13 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     UnitType u_type = unit->getType();
     Stored_Unit target;
     int priority = 0;
-     
+    bool u_flyer = unit->isFlying();
     int chargeable_dist = MeatAIModule::getChargableDistance(unit, ei);
-    int helpless_e = unit->isFlying() ? ei.stock_total_ - ei.stock_shoots_up_ : ei.stock_total_ - ei.stock_shoots_down_;
-    int helpful_e = unit->isFlying() ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
-    int helpful_u = unit->isFlying() ? ui.stock_fliers_ : ui.stock_ground_units_;
-
-    double limit_units_diving = 2 * ( helpful_e - helpful_u <= 1 ? 1 : log( helpful_e - helpful_u));
+    int helpless_e = u_flyer ? ei.stock_total_ - ei.stock_shoots_up_ : ei.stock_total_ - ei.stock_shoots_down_;
+    int helpful_e = u_flyer ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
+    int helpful_u = u_flyer ? ui.stock_fliers_ : ui.stock_ground_units_;
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 250);
+    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log( helpful_e - helpful_u);
     int max_dist = (ei.max_range_ + chargeable_dist ) / (double)limit_units_diving ;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
@@ -125,7 +124,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 else if ( e_type.isWorker() ) {
                     e_priority = 3;
                 }
-                else if ( e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && ( MeatAIModule::IsFightingUnit(e->second.bwapi_unit_) || e_type.spaceProvided() > 0 ) ) {
+                else if ( /*e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() &&*/ ( MeatAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0 ) ) {
                     e_priority = 2;
                 }
                 else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
@@ -206,11 +205,11 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setSeperation( unit, pos, neighbors );
         } // closure: flyers
 
-        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && !MeatAIModule::Can_Fight(unit, e_unit) && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && !MeatAIModule::Can_Fight(unit, e_unit) && MeatAIModule::spamGuard(unit)) {
             unit->unburrow();
             return;
         }
-        else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && MeatAIModule::Can_Fight(unit, e_unit) && ei.detector_count_ == 0 && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+        else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && MeatAIModule::Can_Fight(unit, e_unit) && ei.detector_count_ == 0 && MeatAIModule::spamGuard(unit)) {
             unit->burrow();
             return;
         }
@@ -227,7 +226,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         if (retreat_spot && !unit->isBurrowed() && walkable_plus ) {
             unit->move( retreat_spot ); //run away.
         }
-        else if ( unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7 ) { // if that spot will not work for you, then instead check along that vector.
+        else if (MeatAIModule::spamGuard(unit) ) { // if that spot will not work for you, then instead check along that vector.
 
             int velocity_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
             int velocity_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
@@ -556,15 +555,15 @@ bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const 
     int dist_to_threat_or_target = unit->getDistance(position_of_target);
     bool hide_condition = ((dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ == 0) || dist_to_threat_or_target < unit->getType().groundWeapon().maxRange());
 
-    if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+    if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && MeatAIModule::spamGuard(unit)) {
         unit->burrow();
         return true;
     }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !hide_condition && MeatAIModule::spamGuard(unit)) {
         unit->unburrow();
         return true;
     }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !hide_condition && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7) {
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !hide_condition && MeatAIModule::spamGuard(unit)) {
         double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
         Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * unit->getType().groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * unit->getType().groundWeapon().maxRange() * 0.75);
         unit->move(closest_loc_to_permit_attacking);

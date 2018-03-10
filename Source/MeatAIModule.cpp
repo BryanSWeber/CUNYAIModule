@@ -428,7 +428,7 @@ void MeatAIModule::onFrame()
         int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
         double r = log(85/(double)4) / (double)14400;
         //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
-        int approx_worker_count = (exp( r * Broodwar->getFrameCount() * 0.75 ) - dead_worker_count ) * exp(r * Broodwar->getFrameCount() * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
+        int approx_worker_count = (4 * exp( r * Broodwar->getFrameCount() * 0.75 ) - dead_worker_count ) * exp(r * Broodwar->getFrameCount() * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
 
         int est_worker_count = min(max(enemy_inventory.worker_count_, approx_worker_count ), 85);
         int e_worker_stock = est_worker_count * worker_value;
@@ -558,7 +558,7 @@ void MeatAIModule::onFrame()
         Broodwar->drawTextScreen( 500, 150, creep_colony_string );
 
         for ( auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p ) {
-            if ( isOnScreen( p->second.pos_ ) ) {
+            if ( _ANALYSIS_MODE && isOnScreen( p->second.pos_ ) ) {
                 Broodwar->drawCircleMap( p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
                 Broodwar->drawTextMap( p->second.pos_, "%d", p->second.current_stock_value_ ); // Plot their current value.
                 Broodwar->drawTextMap( p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_ ); // Plot their current value.
@@ -586,13 +586,13 @@ void MeatAIModule::onFrame()
         for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
             for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
                 if ( inventory.smoothed_barriers_[i][j] == 0 ) {
-                    if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                    if ( _ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
                         //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
                         //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
                     }
                 }
                 else if ( inventory.smoothed_barriers_[i][j] > 0 ) {
-                    if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                    if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
                         //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
                         Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
                     }
@@ -605,13 +605,13 @@ void MeatAIModule::onFrame()
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
                     if ( inventory.map_veins_[i][j] > 100 ) {
-                        if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                        if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
                         }
                     }
                     if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                        if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
+                        if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
                         }
@@ -795,46 +795,45 @@ void MeatAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && u->getLastCommandFrame() < Broodwar->getFrameCount() - 12 )
+        if ( ( (u->getType() != UnitTypes::Zerg_Larva && u->getType().canAttack()) || u->getType() == UnitTypes::Zerg_Overlord ) && spamGuard(u) )
         {
             Stored_Unit* e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 999999 );
             if ( u->getType() == UnitTypes::Zerg_Drone || u->getType() == UnitTypes::Zerg_Overlord ) {
                 e_closest = getClosestThreatOrTargetStored( enemy_inventory, u->getType(), u->getPosition(), 256 );
             }
 
-
-            if ( e_closest ) { // if there are bad guys, search for friends within that area. 
+            if (e_closest) { // if there are bad guys, search for friends within that area. 
                 //e_closest->pos_.x += e_closest->bwapi_unit_->getVelocityX();
                 //e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
-                int distance_to_foe = e_closest->pos_.getDistance( u->getPosition() );
+                int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
                 int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
 
-                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius( enemy_inventory, e_closest->pos_, distance_to_foe + search_radius );
+                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_inventory, u);
                 Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
                 Boids boids;
 
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius( friendly_inventory, e_closest->pos_, distance_to_foe + search_radius + massive_army * 999999 );
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius + massive_army * 999999);
+                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
+                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
                     Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
                     if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
+                        //Tally up crucial details about enemy. 
 
                         enemy_loc.updateUnitInventorySummary();
                         friend_loc.updateUnitInventorySummary();
 
-                        //Tally up crucial details about enemy. 
                         int e_count = enemy_loc.unit_inventory_.size();
 
                         int helpless_e = u->isFlying() ? enemy_loc.stock_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_total_ - enemy_loc.stock_shoots_down_;
                         int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
 
-                                                                                                                   //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
+                        //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
                         int helpful_u = 0; // filled below.
 
                         if ( enemy_inventory.stock_fliers_ > 0 ) {
@@ -863,6 +862,7 @@ void MeatAIModule::onFrame()
                             //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                             bool neccessary_attack = helpful_e * 1.05 < helpful_u || // attack if you outclass them and your boys are ready to fight.
+                                massive_army ||
                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                        //!army_starved || // fight your army is appropriately sized.
                                 (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
@@ -887,7 +887,7 @@ void MeatAIModule::onFrame()
                                 //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                                 (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                                 (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
-                                                                                                                                                      //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
+                                //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
                             bool drone_problem = u->getType() == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
 
@@ -897,9 +897,9 @@ void MeatAIModule::onFrame()
                                 friendly_inventory.stopMine(u, neutral_inventory);
                                 boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
-                                                                                      //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
-                                                                                      //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
-                                                                                      //}
+                                //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
+                                //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
+                                //}
 
                                 if ( _ANALYSIS_MODE ) {
                                     if ( isOnScreen( u->getPosition() ) ) {
@@ -1023,38 +1023,39 @@ void MeatAIModule::onFrame()
 
         //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
-        Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), sqrt(pow(map_x * 32, 2) + pow(map_y * 32, 2)) / Broodwar->getStartLocations().size());
-        bool can_sunken = Count_Units( UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0;
-        bool can_spore = Count_Units( UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) > 0;
-        bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
-        bool want_static_d = (army_starved || local_e.stock_total_ > 0) && (can_sunken || can_spore);
 
-        local_e.updateUnitInventorySummary();
-
-        if ( u->getType() == UnitTypes::Zerg_Creep_Colony && ( need_static_d || want_static_d ) ) {
-
-            //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
-            bool cloak_nearby = local_e.cloaker_count_ > 0;
+        if (u->getType() == UnitTypes::Zerg_Creep_Colony) {
+            Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), sqrt(pow(map_x * 32, 2) + pow(map_y * 32, 2)) / Broodwar->getStartLocations().size());
             local_e.updateUnitInventorySummary();
-            bool local_air_problem = local_e.stock_fliers_ > 0;
-            bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_ * 0.75;
-            buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
-            buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony);
-            if ( can_sunken && can_spore ) {
-                if ( local_air_problem || global_air_problem || cloak_nearby ) { // if they have a flyer (that can attack), get spores.
-                    Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
-                }
-                else {
-                    Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
-                }
-            } // build one of the two colonies based on the presence of closest units.
-            else if ( can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby ) {
-                Check_N_Build( UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true );
-            } // build sunkens if you only have that
-            else if ( can_spore && !can_sunken ) {
-                Check_N_Build( UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true );
-            } // build spores if you only have that.
-        } // closure: Creep colony loop
+            bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0;
+            bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0;
+            bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
+            bool want_static_d = (army_starved || local_e.stock_total_ > 0) && (can_sunken || can_spore);
+
+            if (need_static_d || want_static_d) {
+                //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
+                bool cloak_nearby = local_e.cloaker_count_ > 0;
+                bool local_air_problem = local_e.stock_fliers_ > 0;
+                bool global_air_problem = enemy_inventory.stock_fliers_ > friendly_inventory.stock_shoots_up_ * 0.75;
+                buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
+                buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony);
+                if (can_sunken && can_spore) {
+                    if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
+                        Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                    }
+                    else {
+                        Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                    }
+                } // build one of the two colonies based on the presence of closest units.
+                else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
+                    Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                } // build sunkens if you only have that
+                else if (can_spore && !can_sunken) {
+                    Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                } // build spores if you only have that.
+            } // closure: Creep colony loop
+        }
+
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
 
         larva_time += end_larva - start_larva;

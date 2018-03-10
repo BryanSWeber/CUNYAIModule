@@ -69,7 +69,7 @@ bool MeatAIModule::isRecentCombatant(const Unit &unit) {
 	return fighting_now && recent_order;
 }
 
-// Checks for if a unit is a combat unit.
+// Checks if a unit is a combat unit.
 bool MeatAIModule::IsFightingUnit(const Unit &unit)
 {
     if ( !unit )
@@ -89,7 +89,37 @@ bool MeatAIModule::IsFightingUnit(const Unit &unit)
     // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
     if ( unit->getType().canAttack() ||
         unit->getType() == BWAPI::UnitTypes::Protoss_High_Templar ||
+        unit->getType() == BWAPI::UnitTypes::Terran_Bunker ||
         unit->isFlying() && unit->getType().spaceProvided() > 0 )
+    {
+        return true;
+    }
+
+    return false;
+}
+
+// Checks if a stored unit is a combat unit.
+bool MeatAIModule::IsFightingUnit(const Stored_Unit &unit)
+{
+    if (!unit.valid_pos_)
+    {
+        return false;
+    }
+
+    // no workers or buildings allowed. Or overlords, or larva..
+    if (unit.type_.isWorker() ||
+        unit.type_.isBuilding() ||
+        unit.type_ == BWAPI::UnitTypes::Zerg_Larva ||
+        unit.type_ == BWAPI::UnitTypes::Zerg_Overlord)
+    {
+        return false;
+    }
+
+    // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
+    if (unit.type_.canAttack() ||
+        unit.type_ == BWAPI::UnitTypes::Protoss_High_Templar ||
+        unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
+        unit.type_.isFlyer() && unit.type_.spaceProvided() > 0)
     {
         return true;
     }
@@ -133,6 +163,21 @@ bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
 bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
+    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
+    bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
+    if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
+        return e_vunerable && enemy.bwapi_unit_->isDetected();
+    }
+    else {
+        return e_vunerable; // also if they are cloaked and can attack us.
+    }
+}
+
+// Outlines the case where UNIT can attack ENEMY; 
+bool MeatAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
+    UnitType e_type = enemy.type_;
+    UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
     bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
@@ -686,8 +731,11 @@ bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &orig
 bool MeatAIModule::isOnScreen( const Position &pos ) {
     bool inrange_x = Broodwar->getScreenPosition().x < pos.x && Broodwar->getScreenPosition().x + 640 > pos.x;
     bool inrange_y = Broodwar->getScreenPosition().y < pos.y && Broodwar->getScreenPosition().y + 480 > pos.y;
-
     return inrange_x && inrange_y;
+}
+
+bool MeatAIModule::spamGuard(const Unit &unit) {
+    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7;
 }
 
 //checks if there is a smooth path to target. in minitiles
