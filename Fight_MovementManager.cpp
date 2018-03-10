@@ -19,7 +19,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool strong_cohesion_needed = true;
-    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
+    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 500);
 
     // Units should scout when there is a large gap in our knowledge.
     if ( (!enemy_scouted || !potential_fears) && healthy && !inventory.start_positions_.empty() ) { // check his bases first.
@@ -41,6 +41,7 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     // Units should stick together if we're not scouting.
     if ( strong_cohesion_needed ) {
         setCohesion(unit, pos, ui);
+        setCohesion(unit, pos, local_neighborhood);
     }
     else {
         setCohesion(unit, pos, local_neighborhood);
@@ -350,8 +351,8 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2( cohesion_y, cohesion_x );
-        cohesion_dx_ = cos( theta ) * 0.20 * unit->getDistance( loc_center );
-        cohesion_dy_ = sin( theta ) * 0.20 * unit->getDistance( loc_center );
+        cohesion_dx_ += cos( theta ) * 0.20 * unit->getDistance( loc_center );
+        cohesion_dy_ += sin( theta ) * 0.20 * unit->getDistance( loc_center );
     }
 }
 
