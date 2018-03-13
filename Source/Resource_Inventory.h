@@ -7,6 +7,8 @@
 using namespace std;
 using namespace BWAPI;
 
+class Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
+
 struct Stored_Resource{
 
 	//Creator methods
@@ -45,10 +47,17 @@ struct Resource_Inventory {
 	//Removes Resource
 	void removeStored_Resource(Unit unit);
 
-	//Updates summary of inventory, stored here.
-	void updateResourceInventorySummary();
+	//Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
 	Position getMeanLocation() const;
 	Position getMeanBuildingLocation() const;
 	Position getMeanCombatLocation() const;
+
+    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei);
+
+    int total_miners_;
+    int total_gas_;
+
+    void updateMiners();
+    void updateGasCollectors();
 };

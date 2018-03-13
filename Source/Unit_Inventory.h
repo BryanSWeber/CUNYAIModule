@@ -82,12 +82,16 @@ struct Unit_Inventory {
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
 	void updateUnitInventory(const Unitset &unit_set);
+    void purgeBrokenUnits();
+    void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
     Position getClosestMeanArmyLocation() const;
+
+
     void stopMine(Unit u, Resource_Inventory & ri);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);

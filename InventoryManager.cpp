@@ -13,12 +13,13 @@ using namespace std;
 Inventory::Inventory() {};
 Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
 
+    updateUnit_Counts( ui );
     updateLn_Army_Stock( ui );
     updateLn_Tech_Stock( ui );
     updateLn_Worker_Stock();
     updateVision_Count();
 
-    updateLn_Supply_Remain( ui );
+    updateLn_Supply_Remain();
     updateLn_Supply_Total();
 
     updateLn_Gas_Total();
@@ -28,7 +29,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateMin_Workers();
 
     updateMin_Possessed();
-    updateHatcheries( ui );
+    updateHatcheries();
 
     if ( smoothed_barriers_.size() == 0 ) {
 
@@ -76,6 +77,30 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     }
 };
 
+// Tallies up my units for rapid counting.
+void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
+
+    vector <UnitType> already_seen;
+    vector <int> unit_count_temp;
+    vector <int> unit_incomplete_temp;
+    for (auto const & u_iter : ui.unit_inventory_) { // should only search through unit types not per unit.
+        UnitType u_type = u_iter.second.type_;
+        bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
+        if ( new_unit_type ) {
+            int found_units = MeatAIModule::Count_Units(u_type, ui);
+            int incomplete_units = MeatAIModule::Count_Units_In_Progress(u_type, ui);
+            already_seen.push_back(u_type);
+            unit_count_temp.push_back(found_units);
+            unit_incomplete_temp.push_back(incomplete_units);
+        }
+    }
+
+    unit_type_ = already_seen;
+    unit_count_ = unit_count_temp;
+    unit_incomplete_ = unit_incomplete_temp;
+}
+
+
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
@@ -122,7 +147,7 @@ void Inventory::updateLn_Worker_Stock() {
 
     double total = 0;
 
-    double cost = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
+    double cost = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
 
     updateGas_Workers();
     updateMin_Workers();
@@ -139,13 +164,13 @@ void Inventory::updateLn_Worker_Stock() {
 };
 
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
-void Inventory::updateLn_Supply_Remain( const Unit_Inventory &ui ) {
+void Inventory::updateLn_Supply_Remain() {
 
     double total = 0;
     for ( int i = 37; i != 48; i++ )
     { // iterating through all units.  (including buildings).
         UnitType u_current = (UnitType)i;
-        total += MeatAIModule::Stock_Supply( u_current, ui );
+        total += MeatAIModule::Stock_Supply( u_current, *this );
     }
 
     total = total - Broodwar->self()->supplyUsed();
@@ -299,10 +324,10 @@ void Inventory::updateVision_Count() {
 }
 
 // Updates the number of hatcheries (and decendent buildings).
-void Inventory::updateHatcheries( const Unit_Inventory &ui ) {
-    hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, ui ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Lair, ui ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, ui );
+void Inventory::updateHatcheries() {
+    hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
+        MeatAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
+        MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
 }
 
 

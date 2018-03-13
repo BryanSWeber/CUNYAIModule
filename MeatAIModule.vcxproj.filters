@@ -49,6 +49,7 @@
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\Fight_MovementManager.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
+    <ClInclude Include="Source\Resource_Inventory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

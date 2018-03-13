@@ -27,7 +27,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     // default values for output.
     double delta_out = dis( gen ) * 0.15 + 0.40;
-    double gamma_out = dis( gen ) * 0.55; // Artifically chosen upper bounds. But above this, they often get truely silly.
+    double gamma_out = dis( gen ) * 0.25 + 0.30; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis( gen );
     double a_vis_out =  dis( gen );
@@ -370,7 +370,7 @@ GeneticHistory::GeneticHistory( string file ) {
         a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
         build_order_ = build_order_out;
 
-        if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.01 ) {
+        if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20 ) {
             break; // if we have an interior solution, let's use it, if not, we try again.
         }
     }

@@ -31,8 +31,11 @@ struct Inventory {
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;
 
+    vector< UnitType > unit_type_;
+    vector< int > unit_count_;
+    vector< int > unit_incomplete_;
     vector< vector<bool> > buildable_positions_ ;
-    vector<vector<bool>> unwalkable_barriers_;
+    vector< vector<bool> > unwalkable_barriers_;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
     vector< vector<int> > map_veins_out_;
@@ -47,6 +50,8 @@ struct Inventory {
 	bool list_cleared_;
     bool workers_are_clearing_;
 
+    // Counts my units so I don't have to do this for each unit onframe.
+    void updateUnit_Counts(const Unit_Inventory & ui);
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock( const Unit_Inventory &ui );
     // Updates the (safe) log of our army stock.
@@ -55,7 +60,7 @@ struct Inventory {
     void updateLn_Worker_Stock();
 
     // Updates the (safe) log of our supply stock.
-    void updateLn_Supply_Remain( const Unit_Inventory &ui );
+    void updateLn_Supply_Remain();
     // Updates the (safe) log of our supply total.
     void updateLn_Supply_Total();
     // Updates the (safe) log of our gas total.
@@ -79,7 +84,7 @@ struct Inventory {
     void Inventory::updateMin_Possessed();
 
     // Updates the number of hatcheries (and decendents).
-    void Inventory::updateHatcheries( const Unit_Inventory &ui );
+    void Inventory::updateHatcheries();
 
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
     void Inventory::updateBuildablePos();

@@ -12,12 +12,12 @@
 //#define _RESIGN_MODE false
 //#define _ANALYSIS_MODE false
 //#define _COBB_DOUGLASS_REVEALED false
-//#define _AT_HOME_MODE false
+#define _MOVE_OUTPUT_BACK_TO_READ false
 //#define _LEARNING_MODE false
 
 #define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
-#define _AT_HOME_MODE true
+//#define _MOVE_OUTPUT_BACK_TO_READ true
 #define _COBB_DOUGLASS_REVEALED true
 #define _LEARNING_MODE true
 
@@ -66,8 +66,6 @@ public:
   double alpha_tech_temp;
   double alpha_econ_temp;
 
-  int miner_count_; // a temp variable
-  int gas_count_;
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
@@ -100,7 +98,7 @@ public:
 // Personally made functions:
 
   // Assembly Functions
-      //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and delays the building timer 25 frames, or ~1 sec.
+      //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
       bool Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
@@ -169,6 +167,7 @@ public:
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
+      void Print_Universal_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
       // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
@@ -183,6 +182,7 @@ public:
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
+      static Stored_Resource * getSafestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin, const int & dist);
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
@@ -213,10 +213,13 @@ public:
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
+      // Counts the tally of all created units in my personal inventory of that type.
+      static int Count_Units(const UnitType & type, const Inventory & inv);
 	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
 	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
+      static int Count_Units_In_Progress(const UnitType & type, const Inventory & inv);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.
@@ -235,11 +238,11 @@ public:
       // Evaluates stock of allied units in set that can shoot down.
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
-      static int Stock_Supply( const UnitType &unit, const Unit_Inventory &ui );
+      static int Stock_Supply( const UnitType &unit, const Inventory &inv );
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos );
-      static bool spamGuard(const Unit & unit);
+      static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.

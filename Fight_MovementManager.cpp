@@ -18,16 +18,15 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
-    bool strong_cohesion_needed = true;
+    bool spread_forces = !enemy_scouted || !potential_fears;
     Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 500);
 
     // Units should scout when there is a large gap in our knowledge.
-    if ( (!enemy_scouted || !potential_fears) && healthy && !inventory.start_positions_.empty() ) { // check his bases first.
+    if ( spread_forces && healthy && !inventory.start_positions_.empty() ) { // check his bases first.
         scoutEnemyBase(unit, pos, ei, inventory);
     }
-    else if ( (!enemy_scouted || !potential_fears) && healthy && inventory.start_positions_.empty() ) { // then wander about searching.
+    else if (spread_forces && healthy && inventory.start_positions_.empty() ) { // then wander about searching.
         setSeperationScout( unit, pos, local_neighborhood ); //This is triggering too often and your army is scattering, not everything else.  
-        strong_cohesion_needed = false;
     }
 
     // Units should go to the enemy when it's time to pick a fight, home otherwise.
@@ -39,9 +38,9 @@ void Boids::Boids_Movement( const Unit &unit, const double &n, const Unit_Invent
     }
    
     // Units should stick together if we're not scouting.
-    if ( strong_cohesion_needed ) {
+    if (spread_forces) {
         setCohesion(unit, pos, ui);
-        setCohesion(unit, pos, local_neighborhood);
+        //setCohesion(unit, pos, local_neighborhood);
     }
     else {
         setCohesion(unit, pos, local_neighborhood);
@@ -89,9 +88,10 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
     int helpless_e = u_flyer ? ei.stock_total_ - ei.stock_shoots_up_ : ei.stock_total_ - ei.stock_shoots_down_;
     int helpful_e = u_flyer ? ei.stock_shoots_up_ : ui.stock_shoots_down_; // both forget value of psi units.
     int helpful_u = u_flyer ? ui.stock_fliers_ : ui.stock_ground_units_;
-    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 250);
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 750);
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log( helpful_e - helpful_u);
-    int max_dist = (ei.max_range_ + chargeable_dist ) / (double)limit_units_diving ;
+    int max_dist = (ei.max_range_ + chargeable_dist);
+    int max_chargable_dist = max_dist/ (double)limit_units_diving;
     int max_dist_no_priority = 9999999;
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
@@ -104,6 +104,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 
             if ( MeatAIModule::Can_Fight( unit, e->second ) ) { // if we can fight this enemy 
                 int dist_to_enemy = unit->getDistance( e->second.pos_ );
+
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     (e_type.isDetector() && ui.cloaker_count_ > ei.detector_count_) ||
@@ -111,8 +112,9 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                     //(e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && MeatAIModule::Can_Fight( e->second, unit )) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
+                bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
-                if ( critical_target ) {
+                if ( critical_target && dist_to_enemy <= max_chargable_dist && !lurkers_diving) {
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && MeatAIModule::Can_Fight(e->second, unit) && dist_to_enemy < min(chargeable_dist,32) && last_target &&
@@ -125,7 +127,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 else if ( e_type.isWorker() ) {
                     e_priority = 3;
                 }
-                else if ( /*e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() &&*/ ( MeatAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0 ) ) {
+                else if ( MeatAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0 ) {
                     e_priority = 2;
                 }
                 else if ( e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
@@ -150,8 +152,8 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
         }
     }
 
-    bool spam_guard = !last_target || (last_target != target.bwapi_unit_);
-    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) && spam_guard ) {
+    //bool spam_guard = !last_target || (last_target != target.bwapi_unit_);
+    if ( (target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_) && MeatAIModule::spamGuard(unit) ) {
         if ( target.bwapi_unit_ && target.bwapi_unit_->exists() ) {
             if (fix_lurker_burrow(unit, ui, ei, target.pos_)) {
                 //
@@ -206,11 +208,11 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             setSeperation( unit, pos, neighbors );
         } // closure: flyers
 
-        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && !MeatAIModule::Can_Fight(unit, e_unit) && MeatAIModule::spamGuard(unit)) {
+        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0 && MeatAIModule::spamGuard(unit)) {
             unit->unburrow();
             return;
         }
-        else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && MeatAIModule::Can_Fight(unit, e_unit) && ei.detector_count_ == 0 && MeatAIModule::spamGuard(unit)) {
+        else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0 && MeatAIModule::spamGuard(unit)) {
             unit->burrow();
             return;
         }
@@ -227,15 +229,15 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         if (retreat_spot && !unit->isBurrowed() && walkable_plus ) {
             unit->move( retreat_spot ); //run away.
         }
-        else if (MeatAIModule::spamGuard(unit) ) { // if that spot will not work for you, then instead check along that vector.
+        else if ( MeatAIModule::spamGuard(unit) ) { // if that spot will not work for you, then instead check along that vector.
 
             int velocity_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
             int velocity_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
-            int x = 0;
+            int x = 1;
 
             Position potential_running_spot = retreat_spot;
             while (!walkable_plus && x < 5) {
-                potential_running_spot = Position(retreat_spot.x + velocity_x * x / (double) 5, retreat_spot.y + velocity_y * x / (double) 5);
+                potential_running_spot = Position(retreat_spot.x + velocity_x * (x-5) / (double) 5, retreat_spot.y + velocity_y * (x - 5) / (double) 5);
                 walkable_plus = potential_running_spot.isValid() &&
                     (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
                     (MeatAIModule::isClearRayTrace(pos, potential_running_spot, inventory) && //or does it cross an unwalkable position? 
@@ -250,7 +252,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             }
         }
     }
-    else if ((unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && !unit->isAttackFrame() ) {
+    else if ((unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && MeatAIModule::spamGuard(unit) ) {
         unit->stop();
     }
 
@@ -351,8 +353,8 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2( cohesion_y, cohesion_x );
-        cohesion_dx_ += cos( theta ) * 0.20 * unit->getDistance( loc_center );
-        cohesion_dy_ += sin( theta ) * 0.20 * unit->getDistance( loc_center );
+        cohesion_dx_ = cos( theta ) * 0.20 * unit->getDistance( loc_center );
+        cohesion_dy_ = sin( theta ) * 0.20 * unit->getDistance( loc_center );
     }
 }
 

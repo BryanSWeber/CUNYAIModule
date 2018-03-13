@@ -57,9 +57,9 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                           u_type == UnitCommandTypes::Stop ||
 						  u_type == UnitCommandTypes::Unknown;
 
-	bool spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();
+	bool special_spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();
 
-    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spam_guard ;
+    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && special_spam_guard;
 }
 
 // Did the unit fight in the last 5 seconds?
@@ -138,8 +138,8 @@ void MeatAIModule::Diagnostic_Line( Position s_pos, Position f_pos, Color col = 
 
 // Outlines the case where UNIT cannot attack ENEMY type (air/ground), while ENEMY can attack UNIT.  Essentially bidirectional Can_Fight checks.
 bool MeatAIModule::Futile_Fight( Unit unit, Unit enemy ) {
-    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Barracks || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
-    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Barracks || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
+    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
+    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
     
     return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
 }
@@ -149,7 +149,7 @@ bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if ( enemy->exists() ) {
         return e_vunerable && enemy->isDetected();
@@ -164,7 +164,7 @@ bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -179,7 +179,7 @@ bool MeatAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -194,7 +194,7 @@ bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Barracks || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy->exists()) {
         return e_vunerable && enemy->isDetected();
@@ -249,6 +249,32 @@ int MeatAIModule::Count_Units( const UnitType &type, const Reservation &res )
     }
 
     return count;
+}
+
+// Counts all units of one type in existance and owned by me. Counts units under construction.
+int MeatAIModule::Count_Units(const UnitType &type, const Inventory &inv)
+{
+    auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
+    if (c_iter == inv.unit_type_.end()) {
+        return 0;
+    }
+    else {
+        int distance = std::distance(inv.unit_type_.begin(), c_iter);
+        return inv.unit_count_[distance];
+    }
+
+}
+// Counts all units of one type in existance and in progress by me. Counts units under construction.
+int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory &inv)
+{
+    auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
+    if (c_iter == inv.unit_type_.end()) {
+        return 0;
+    }
+    else {
+        int distance = std::distance(inv.unit_type_.begin(), c_iter);
+        return inv.unit_incomplete_[distance];
+    }
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
@@ -386,9 +412,9 @@ int MeatAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 }
 
 // evaluates the value of a stock of unit, in terms of supply added.
-int MeatAIModule::Stock_Supply( const UnitType &unit, const Unit_Inventory &ui ) {
+int MeatAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
     int supply = unit.supplyProvided();
-    int instances = Count_Units( unit, ui );
+    int instances = Count_Units( unit, inv );
     int total_stock = supply * instances;
     return total_stock;
 }
@@ -402,6 +428,21 @@ void MeatAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_
         if ( u_count > 0 ) {
             Broodwar->drawTextScreen( screen_x, screen_y, "Inventoried Units:" );  //
             Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10 , "%s: %d", noRaceName( ((UnitType)i).c_str()), u_count );  //
+            another_sort_of_unit++;
+        }
+    }
+}
+
+// Announces to player the name and type of all units in the unit inventory. Bland but practical.
+void MeatAIModule::Print_Universal_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
+    int another_sort_of_unit = 0;
+    for (auto i : inv.unit_type_)
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        int u_count = MeatAIModule::Count_Units(i, inv);
+        int u_incomplete_count = MeatAIModule::Count_Units_In_Progress(i, inv);
+        if (u_count > 0) {
+            Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //
             another_sort_of_unit++;
         }
     }
@@ -534,6 +575,25 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 	}
 
 	return return_unit;
+}
+
+
+Stored_Resource* MeatAIModule::getSafestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin, const int &dist = 999999) {
+    int min_dist = dist;
+    double temp_dist = 999999;
+    Stored_Resource* return_unit = nullptr;
+
+    if (!ri.resource_inventory_.empty()) {
+        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+            temp_dist = inv.getRadialDistanceOutFromHome(r->second.pos_);
+            if (temp_dist <= min_dist) {
+                min_dist = temp_dist;
+                return_unit = &(r->second);
+            }
+        }
+    }
+
+    return return_unit;
 }
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
@@ -734,8 +794,51 @@ bool MeatAIModule::isOnScreen( const Position &pos ) {
     return inrange_x && inrange_y;
 }
 
-bool MeatAIModule::spamGuard(const Unit &unit) {
-    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - 7;
+bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
+
+    bool unit_fighting = unit->isAttackFrame() || unit->isStartingAttack();
+    if (unit_fighting) {
+        return false;
+    }
+
+    if (cd_frames_chosen != 99) { // if the person has selected some specific delay they are looking for, check that.
+        return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames_chosen, Broodwar->getLatencyFrames() + 1);
+    }
+
+    int cd_frames = cd_frames_chosen;
+    Order u_order = unit->getOrder();
+
+    if ( u_order == Orders::AttackUnit ) {
+        UnitType u_type = unit->getType();
+
+        if (u_type == UnitTypes::Zerg_Drone) {
+            cd_frames = 1;
+        }
+        else if (u_type == UnitTypes::Zerg_Zergling) {
+            cd_frames = 5;
+        }
+        else if (u_type == UnitTypes::Zerg_Hydralisk) {
+            cd_frames = 7;
+        }
+        else if (u_type == UnitTypes::Zerg_Lurker) {
+            cd_frames = 2;
+        }
+        else if (u_type == UnitTypes::Zerg_Mutalisk) {
+            cd_frames = 1;
+        }
+        else if (u_type == UnitTypes::Zerg_Ultralisk) {
+            cd_frames = 15;
+        }
+    }
+    else if (u_order == Orders::Burrowing || u_order == Orders::Unburrowing) {
+        cd_frames = 16;
+    }
+    else {
+        cd_frames = 7;
+    }
+
+    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(max(cd_frames + 1, Broodwar->getLatencyFrames() + 1), 5); // we must wait at least 5 frames before issuing them a new command regardless.
+
 }
 
 //checks if there is a smooth path to target. in minitiles

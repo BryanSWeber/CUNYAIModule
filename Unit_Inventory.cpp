@@ -38,6 +38,30 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
 		updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
+void Unit_Inventory::purgeBrokenUnits()
+{
+    for (auto e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
+            e->second.type_ == UnitTypes::None) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
+            e = this->unit_inventory_.erase(e); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+        }
+        else {
+            ++e;
+        }
+    }
+}
+
+void Unit_Inventory::purgeUnseenUnits()
+{
+    for (auto f = this->unit_inventory_.begin(); f != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+        if (!f->second.bwapi_unit_ || !f->second.bwapi_unit_->exists()) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
+            f = this->unit_inventory_.erase(f); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+        }
+        else {
+            ++f;
+        }
+    }
+}
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
@@ -59,9 +83,9 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 
         //Get unit's status. Precalculated, precached.
         int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-        modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
+        modified_supply = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
         int modified_min_cost = unit->getType().mineralPrice();
-            modified_min_cost += unit->getType() == UnitTypes::Terran_Barracks ? 50 : 0; // Assume bunkers are loaded.
+            modified_min_cost += unit->getType() == UnitTypes::Terran_Bunker ? 50 : 0; // Assume bunkers are loaded.
             modified_min_cost += unit->getType().whatBuilds().first == UnitTypes::Zerg_Creep_Colony ? UnitTypes::Zerg_Creep_Colony.mineralPrice() : 0;
         int modified_gas_cost = unit->getType().gasPrice();
 
@@ -260,7 +284,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                     max_cooldown = u_iter.second.type_.groundWeapon().damageCooldown() > u_iter.second.type_.airWeapon().damageCooldown() ? u_iter.second.type_.groundWeapon().damageCooldown() : u_iter.second.type_.airWeapon().damageCooldown();
                 }
 
-                if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 > range) {
+                if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
                     range = 7 * 32; // depends on upgrades and unit contents.
                 }
 
@@ -320,8 +344,8 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     //Get unit's status. Precalculated, precached.
     int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply =unittype == UnitTypes::Terran_Barracks ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost =unittype == UnitTypes::Terran_Barracks ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
+    modified_supply =unittype == UnitTypes::Terran_Bunker ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost =unittype == UnitTypes::Terran_Bunker ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
     int modified_gas_cost = unittype.gasPrice();
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
@@ -346,8 +370,8 @@ Stored_Unit::Stored_Unit( Unit unit ) {
 
     //Get unit's status. Precalculated, precached.
     int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = unit->getType() == UnitTypes::Terran_Barracks ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
+    modified_supply = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
     int modified_gas_cost = unit->getType().gasPrice();
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
