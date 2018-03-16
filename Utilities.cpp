@@ -222,7 +222,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
     return count;
 }
 
-// Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
+// Overload. (Very slow, since it uses BWAPI Unitsets) Counts all units in a set of one type owned by player. Includes individual units in production. 
 int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 {
     int count = 0;
@@ -833,11 +833,12 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     else if (u_order == Orders::Burrowing || u_order == Orders::Unburrowing) {
         cd_frames = 16;
     }
-    else {
+    
+    if (cd_frames < 7) {
         cd_frames = 7;
     }
 
-    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(max(cd_frames + 1, Broodwar->getLatencyFrames() + 1), 5); // we must wait at least 5 frames before issuing them a new command regardless.
+    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames + 1, Broodwar->getLatencyFrames() + 1); // we must wait at least 5 frames before issuing them a new command regardless.
 
 }
 

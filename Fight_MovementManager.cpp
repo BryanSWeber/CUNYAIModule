@@ -556,8 +556,8 @@ void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Invento
 // returns TRUE if the lurker needed fixing. For Attack.
 bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
     int dist_to_threat_or_target = unit->getDistance(position_of_target);
-    bool hide_condition = ((dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ == 0) || dist_to_threat_or_target < unit->getType().groundWeapon().maxRange());
-
+    bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+    bool hide_condition = ((dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ <= ui.cloaker_count_ ) || hide_condition);
     if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && hide_condition && MeatAIModule::spamGuard(unit)) {
         unit->burrow();
         return true;
@@ -566,7 +566,7 @@ bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const 
         unit->unburrow();
         return true;
     }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !hide_condition && MeatAIModule::spamGuard(unit)) {
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !dist_condition && MeatAIModule::spamGuard(unit)) {
         double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
         Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * unit->getType().groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * unit->getType().groundWeapon().maxRange() * 0.75);
         unit->move(closest_loc_to_permit_attacking);

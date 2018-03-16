@@ -258,11 +258,12 @@ void MeatAIModule::onFrame()
 
 
     // easy to update friendly unit inventory.
+
     if ( friendly_inventory.unit_inventory_.size() == 0 ) {
-        friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() );
+        friendly_inventory = Unit_Inventory( Broodwar->self()->getUnits() ); // if you only do this you will lose track of all of your locked minerals. 
     }
     else {
-        friendly_inventory.updateUnitInventory( Broodwar->self()->getUnits() );
+        friendly_inventory.updateUnitInventory( Broodwar->self()->getUnits() ); // safe for locked minerals.
     }
     // Purge unwanted friendly inventory units. If I can't see it or it doesn't exist, it's broken and I should purge it.
     friendly_inventory.purgeBrokenUnits();
@@ -605,8 +606,11 @@ void MeatAIModule::onFrame()
 
     // Prevent spamming by only running our onFrame once every number of latency frames.
     // Latency frames are the number of frames before commands are processed.
-    if ( Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0 )
+    if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0) {
+        auto end = std::chrono::high_resolution_clock::now();
+        total_frame_time = end - start_preamble;
         return;
+    }
 
     // Iterate through all the units that we own
     for ( auto &u : Broodwar->self()->getUnits() )
@@ -727,7 +731,7 @@ void MeatAIModule::onFrame()
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
         bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran);
-        if ((isIdleEmpty(u) && !isRecentCombatant(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() && !u->isBurrowed()) && u->getLastCommandFrame() < t_game - 24))
+        if (isIdleEmpty(u) && !isRecentCombatant(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && spamGuard(u))
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
@@ -842,12 +846,11 @@ void MeatAIModule::onFrame()
                             bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
                             if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem ) {
-                                friendly_inventory.stopMine(u, neutral_inventory);
+                                if (u->getType().isWorker()) {
+                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                                }
                                 boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
 
-                                //if (u->getType() == UnitTypes::Zerg_Drone && !ignore){
-                                //	friendly_inventory.unit_inventory_.find(u)->second.stopMine(neutral_inventory);
-                                //}
 
                                 if ( _ANALYSIS_MODE ) {
                                     if ( isOnScreen( u->getPosition() ) ) {
@@ -861,11 +864,14 @@ void MeatAIModule::onFrame()
 
                             }
                             else if ( is_spelled ) {
-                                friendly_inventory.stopMine(u, neutral_inventory);
+                                if (u->getType().isWorker()) {
+                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                                }
                                 Stored_Unit* closest = getClosestThreatOrTargetStored( friendly_inventory, u->getType(), u->getPosition(), 128 );
                                 if ( closest ) {
                                     boids.Retreat_Logic( u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
                                 }
+
                             }
                             else if ( drone_problem ) {
                                 if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
@@ -873,15 +879,25 @@ void MeatAIModule::onFrame()
                                     u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                                     Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
                                     u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
-                                        friendly_inventory.stopMine(u, neutral_inventory);
+
+                                    if (u->getType().isWorker()) {
+                                        friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                                    }
                                         boids.Tactical_Logic( u, enemy_loc, friend_loc, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
                                 }
                                 else if ((u->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (u->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && MeatAIModule::spamGuard(u) ) {
+                                    if (u->getType().isWorker()) {
+                                        friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                                    }
                                     u->stop();
                                 }
                             }
                             else {
-                                friendly_inventory.stopMine(u, neutral_inventory);
+
+                                if (u->getType().isWorker()) {
+                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                                }
+
                                 boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
 
                                 if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0,0) ) ) {
@@ -1253,14 +1269,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
     }
 
     if ( unit && unit->getType().isWorker() ) {
-        map<Unit, Stored_Unit>::iterator iter = friendly_inventory.unit_inventory_.find( unit );
-        if ( iter != friendly_inventory.unit_inventory_.end() ) {
-            Stored_Unit& miner = iter->second;
-            miner.stopMine( neutral_inventory );
-        }
-        if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-            my_reservation.removeReserveSystem( unit->getBuildType() );
-        }
+        friendly_inventory.purgeWorkerRelations(unit, neutral_inventory, inventory, my_reservation);
     }
 }
 

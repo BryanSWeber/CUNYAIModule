@@ -3,11 +3,12 @@
 #include <BWAPI.h>
 #include "Source\MeatAIModule.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\InventoryManager.h"
+#include "Source\Reservation_Manager.h"
 
 
 //Unit_Inventory functions.
 //Creates an instance of the unit inventory class.
-
 Unit_Inventory::Unit_Inventory(){}
 
 Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
@@ -20,12 +21,12 @@ Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
 }
 
 void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
-		if (unit_inventory_.empty()){ // it thinks it's ALWAYS empty.
-			for (const auto & u : unit_set) {
-				unit_inventory_.insert({ u, Stored_Unit(u) });
-			}
-		}
-		else {
+		//if (unit_inventory_.empty()){ // it thinks it's ALWAYS empty.
+		//	for (const auto & u : unit_set) {
+		//		unit_inventory_.insert({ u, Stored_Unit(u) });
+		//	}
+		//}
+		//else {
 			for (const auto & u : unit_set) {
 				if (unit_inventory_.find(u) != unit_inventory_.end() ){
 					unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
@@ -34,7 +35,7 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
 					unit_inventory_.insert({ u, Stored_Unit(u) });
 				}
 			}
-		}
+//		}
 		updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
@@ -62,6 +63,18 @@ void Unit_Inventory::purgeUnseenUnits()
         }
     }
 }
+void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
+{
+    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
+    if (iter != unit_inventory_.end()) {
+        Stored_Unit& miner = iter->second;
+        miner.stopMine(ri);
+    }
+    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inv.next_expo_)) {
+        res.removeReserveSystem(unit->getBuildType());
+    }
+}
+
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
@@ -73,29 +86,19 @@ void Unit_Inventory::addStored_Unit( Stored_Unit stored_unit ) {
 
 void Stored_Unit::updateStoredUnit(const Unit &unit){
 
-		valid_pos_ = true;
-		pos_ = unit->getPosition();
-		type_ = unit->getType();
-		build_type_ = unit->getBuildType();
-		current_hp_ = unit->getHitPoints();
-        velocity_x_ = unit->getVelocityX();
-        velocity_y_ = unit->getVelocityY();
+    valid_pos_ = true;
+    pos_ = unit->getPosition();
+    build_type_ = unit->getBuildType();
+    current_hp_ = unit->getHitPoints();
+    velocity_x_ = unit->getVelocityX();
+    velocity_y_ = unit->getVelocityY();
 
-        //Get unit's status. Precalculated, precached.
-        int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-        modified_supply = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-        int modified_min_cost = unit->getType().mineralPrice();
-            modified_min_cost += unit->getType() == UnitTypes::Terran_Bunker ? 50 : 0; // Assume bunkers are loaded.
-            modified_min_cost += unit->getType().whatBuilds().first == UnitTypes::Zerg_Creep_Colony ? UnitTypes::Zerg_Creep_Colony.mineralPrice() : 0;
-        int modified_gas_cost = unit->getType().gasPrice();
-
-        stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
-
-
-        if ( unit->getType().isTwoUnitsInOneEgg() ) {
-            stock_value_ = stock_value_ / 2;
+        if (type_ != unit->getType() ) {
+            type_ = unit->getType();
+            stock_value_ = Stored_Unit(type_).stock_value_;
         }
-		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())); // Precalculated, precached.
+
+		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints())); // Precalculated, precached.
 }
 
 //Removes units that have died
@@ -382,6 +385,7 @@ Stored_Unit::Stored_Unit( Unit unit ) {
 
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
 }
+
 
 void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
 	locked_mine_ = new_resource.bwapi_unit_;

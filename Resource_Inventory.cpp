@@ -96,30 +96,29 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
 
-        if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists()) {
-            r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
-            r->second.valid_pos_ = true;
-            r->second.type_ = r->second.bwapi_unit_->getType();
-            Unit_Inventory local_area = MeatAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320);
-            r->second.occupied_natural_ = MeatAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - MeatAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
-                MeatAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
-                MeatAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
-            if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
-                Stored_Unit eu = Stored_Unit(r->first);
-                if (ei.unit_inventory_.insert({ r->first, eu }).second) {
-                    Broodwar->sendText("Huh, a geyser IS an enemy. Even the map is against me now...");
-                }
-            }
-        }
-
         if (Broodwar->isVisible(resource_pos)) {
-            Unitset resource_tile = Broodwar->getUnitsOnTile(resource_pos, IsMineralField || IsResourceContainer || IsRefinery);  // Confirm it is present.
-            if (resource_tile.empty()) {
-                r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
-                erasure_sentinel = true;
+            if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists()) {
+                r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
+                r->second.valid_pos_ = true;
+                r->second.type_ = r->second.bwapi_unit_->getType();
+                Unit_Inventory local_area = MeatAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320);
+                r->second.occupied_natural_ = MeatAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - MeatAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
+                    MeatAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
+                    MeatAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
+                if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
+                    Stored_Unit eu = Stored_Unit(r->first);
+                    if (ei.unit_inventory_.insert({ r->first, eu }).second) {
+                        Broodwar->sendText("Huh, a geyser IS an enemy. Even the map is against me now...");
+                    }
+                }
+            } else {
+//                Unitset resource_tile = Broodwar->getUnitsOnTile(resource_pos, IsMineralField || IsResourceContainer || IsRefinery);  // Confirm it is present.
+//                if (resource_tile.empty()) {
+                    r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+                    erasure_sentinel = true;
+//                }
             }
         }
-
         if (!erasure_sentinel) {
             r++;
         }

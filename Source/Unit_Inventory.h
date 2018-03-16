@@ -3,12 +3,15 @@
 #include <BWAPI.h>
 #include "MeatAIModule.h"
 #include "Resource_Inventory.h"
+#include "InventoryManager.h"
+#include "Reservation_Manager.h"
 
 using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-//struct Stored_Resource;
+class Inventory;
+class Reservation;
 
 struct Stored_Unit {
 
@@ -84,6 +87,7 @@ struct Unit_Inventory {
 	void updateUnitInventory(const Unitset &unit_set);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
+    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

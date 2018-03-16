@@ -81,6 +81,19 @@ public:
     int med_delay;
     int long_delay;
 
+
+    // Performance Qeuery Timer
+    // http://www.decompile.com/cpp/faq/windows_timer_api.htm
+    std::chrono::duration<double, std::milli> preamble_time;
+    std::chrono::duration<double, std::milli> larva_time;
+    std::chrono::duration<double, std::milli> worker_time;
+    std::chrono::duration<double, std::milli> scout_time;
+    std::chrono::duration<double, std::milli> combat_time;
+    std::chrono::duration<double, std::milli> detector_time;
+    std::chrono::duration<double, std::milli> upgrade_time;
+    std::chrono::duration<double, std::milli> creepcolony_time;
+    std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
+
 	char delay_string [50];
 	char preamble_string [50];
 	char larva_string [50];
