@@ -128,9 +128,9 @@ bool MeatAIModule::IsFightingUnit(const Stored_Unit &unit)
 }
 
 // This function limits the drawing that needs to be done by the bot.
-void MeatAIModule::Diagnostic_Line( Position s_pos, Position f_pos, Color col = Colors::White ) {
+void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
     if ( _ANALYSIS_MODE ) {
-        if ( isOnScreen( s_pos ) || isOnScreen( f_pos ) ) {
+        if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
         }
     }
@@ -202,6 +202,16 @@ bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     else {
         return e_vunerable; // also if they are cloaked and can attack us.
     }
+}
+
+bool MeatAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
+{
+    bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
+    bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || unittype == UnitTypes::Protoss_Reaver;
+    bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
+
+    return e_vunerable; // also if they are cloaked and can attack us.
+
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
@@ -617,42 +627,20 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Un
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
-Stored_Unit* MeatAIModule::getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
-    int min_dist = dist;
-    bool can_attack;
-    double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr; 
 
-    if ( !ui.unit_inventory_.empty() ) {
-        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
-            if ( can_attack && e->second.pos_.isValid() && e->second.valid_pos_ ) {
-                temp_dist = e->second.pos_.getDistance( origin );
-                if ( temp_dist <= min_dist ) {
-                    min_dist = temp_dist;
-                    return_unit = &(e->second); 
-                }
-            }
-        }
-    }
-
-    return return_unit;
-}
-
-//Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
-Stored_Unit* MeatAIModule::getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+//Gets pointer to closest attackable unit from unit in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
+Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
     bool can_attack;
     double temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if ( !ui.unit_inventory_.empty() ) {
-        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer()) || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer());
-            if ( can_attack && e->second.pos_.isValid() && e->second.bwapi_unit_ && e->second.bwapi_unit_->isVisible() && e->second.valid_pos_ ) {
-                temp_dist = e->second.pos_.getDistance( origin );
-                if ( temp_dist <= min_dist ) {
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            can_attack = MeatAIModule::Can_Fight(unit, e->second);
+            if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
+                temp_dist = e->second.pos_.getDistance(unit->getPosition());
+                if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
                 }
@@ -672,11 +660,37 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            can_attack = (u_type.airWeapon() != WeaponTypes::None && e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected())  || (u_type.groundWeapon() != WeaponTypes::None && !e->second.type_.isFlyer() && e->second.bwapi_unit_->isDetected());
-            can_be_attacked_by = (e->second.type_.airWeapon() != WeaponTypes::None && u_type.isFlyer()) || (e->second.type_.groundWeapon() != WeaponTypes::None && !u_type.isFlyer()) || e->second.type_.maxEnergy() > 0 ;
+            can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
+            can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = e->second.pos_.getDistance( origin );
                 if ( temp_dist <= min_dist ) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist = 999999) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+            can_be_attacked_by = Can_Fight(e->second, unit);
+
+            if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
+                temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
                 }
@@ -788,9 +802,9 @@ bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &orig
     return false;
 }
 
-bool MeatAIModule::isOnScreen( const Position &pos ) {
-    bool inrange_x = Broodwar->getScreenPosition().x < pos.x && Broodwar->getScreenPosition().x + 640 > pos.x;
-    bool inrange_y = Broodwar->getScreenPosition().y < pos.y && Broodwar->getScreenPosition().y + 480 > pos.y;
+bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
+    bool inrange_x = screen_pos.x < pos.x && screen_pos.x + 640 > pos.x;
+    bool inrange_y = screen_pos.y < pos.y && screen_pos.y + 480 > pos.y;
     return inrange_x && inrange_y;
 }
 
@@ -834,6 +848,10 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 16;
     }
     
+    if (u_order == Orders::Move || u_order == Orders::AttackMove) {
+        cd_frames = 12;
+    }
+
     if (cd_frames < 7) {
         cd_frames = 7;
     }

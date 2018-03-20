@@ -9,7 +9,7 @@ public:
     // Basic retreat logic
     void Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color );
     // Tells the unit to fight. If it can attack both air and ground.
-    void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Unit_Inventory &ui, const Color & color );
+    void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Unit_Inventory &ui, const Inventory &inv, const Color & color );
     //Forces a unit to flock in a boids manner. Initial versions merely stuttered in a brownian manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.
     void Boids_Movement( const Unit &unit, const double &n, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &potential_fears);
 
@@ -33,7 +33,7 @@ public:
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );
 
-    bool Boids::fix_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
+    bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
 private:
     double x_stutter_ = 0;

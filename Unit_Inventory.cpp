@@ -75,6 +75,22 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
     }
 }
 
+void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Inventory & ri)
+{
+    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
+    if (iter != unit_inventory_.end()) {
+        Stored_Unit& miner = iter->second;
+        miner.stopMine(ri);
+    }
+}
+
+void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & inv, Reservation & res)
+{
+    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inv.next_expo_)) {
+        res.removeReserveSystem(unit->getBuildType());
+    }
+}
+
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
@@ -218,8 +234,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
  {
-    Unit_Inventory total;
-    total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
+    Unit_Inventory total = lhs;
+    //total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
     total.unit_inventory_.insert(rhs.unit_inventory_.begin(), rhs.unit_inventory_.end());
     total.updateUnitInventorySummary();
     return total;
@@ -393,7 +409,7 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 }
 
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_ && locked_mine_->exists()){
+	if (locked_mine_ /*&& locked_mine_->exists()*/){
 		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
 		if (iter != ri.resource_inventory_.end()){
 			iter->second.number_of_miners_--;

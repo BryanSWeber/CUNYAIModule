@@ -13,6 +13,7 @@ struct Inventory {
     Inventory();
     Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri );
 
+    Position screen_position;
     double ln_army_stock_;
     double ln_tech_stock_;
     double ln_worker_stock_;

@@ -253,14 +253,14 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
-    bool wasting_larva_soon = false;
+    bool wasting_larva_soon = true;
 
     if (larva->getHatchery()) {
-        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 && larva->getHatchery()->getLarva().size() == 3;
+        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 && larva->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
     }
 
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, inv) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, inv) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, inv) >= 85;
-    bool drone_conditional = econ_starved || (Count_Units(UnitTypes::Zerg_Larva, inv) > 0 && !army_starved); // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
+    bool drone_conditional = econ_starved || tech_starved; // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < inv.hatches_;
 
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, inv) == 0 &&
@@ -285,8 +285,8 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui) +
         TechTypes::Lurker_Aspect.mineralPrice() + 1.25 * TechTypes::Lurker_Aspect.gasPrice() - Stock_Tech(TechTypes::Lurker_Aspect);
 
-    int remaining_cost_to_get_mutas = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ + Stock_Units(UnitTypes::Zerg_Spawning_Pool, ui) +
-        Stored_Unit(UnitTypes::Zerg_Spire).stock_value_ + Stock_Units(UnitTypes::Zerg_Spire, ui) +
+    int remaining_cost_to_get_mutas = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ - Stock_Units(UnitTypes::Zerg_Spawning_Pool, ui) +
+        Stored_Unit(UnitTypes::Zerg_Spire).stock_value_ - Stock_Units(UnitTypes::Zerg_Spire, ui) +
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
 
@@ -345,7 +345,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         }
         else if (lurkers_incoming) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice() && my_reservation.getExcessGas() > UnitTypes::Zerg_Lurker.gasPrice());
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice() && (my_reservation.getExcessGas() > UnitTypes::Zerg_Lurker.gasPrice() || Count_Units(UnitTypes::Zerg_Hydralisk, inv) == 0));
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
         else if (ultralisks_ready) {
@@ -378,7 +378,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     //    return is_building > 0;
     //} 
 
-    if (enemy_lacks_AA && would_force_spire && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
+    if (u_relatively_weak_against_air && would_force_spire && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
         buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire)); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
         Broodwar->sendText("Reactionary Spire");
         return is_building > 0;

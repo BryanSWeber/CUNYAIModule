@@ -9,13 +9,13 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
-//#define _ANALYSIS_MODE false
-//#define _COBB_DOUGLASS_REVEALED false
-#define _MOVE_OUTPUT_BACK_TO_READ false
-//#define _LEARNING_MODE false
+#define _RESIGN_MODE false // must be off for proper game close in SC-docker
+//#define _ANALYSIS_MODE false // Visualizations
+//#define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
+#define _MOVE_OUTPUT_BACK_TO_READ false // should be on for sc-docker
+//#define _LEARNING_MODE false //if we are exploring new positions or simply keeping existing ones.
 
-#define _RESIGN_MODE true
+//#define _RESIGN_MODE true
 #define _ANALYSIS_MODE true
 //#define _MOVE_OUTPUT_BACK_TO_READ true
 #define _COBB_DOUGLASS_REVEALED true
@@ -81,19 +81,6 @@ public:
     int med_delay;
     int long_delay;
 
-
-    // Performance Qeuery Timer
-    // http://www.decompile.com/cpp/faq/windows_timer_api.htm
-    std::chrono::duration<double, std::milli> preamble_time;
-    std::chrono::duration<double, std::milli> larva_time;
-    std::chrono::duration<double, std::milli> worker_time;
-    std::chrono::duration<double, std::milli> scout_time;
-    std::chrono::duration<double, std::milli> combat_time;
-    std::chrono::duration<double, std::milli> detector_time;
-    std::chrono::duration<double, std::milli> upgrade_time;
-    std::chrono::duration<double, std::milli> creepcolony_time;
-    std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
-
 	char delay_string [50];
 	char preamble_string [50];
 	char larva_string [50];
@@ -154,7 +141,7 @@ public:
 	  // evaluates if it was order to fight recently.
 	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
-      static void Diagnostic_Line( Position s_pos, Position f_pos, Color col );
+      static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
       static bool Futile_Fight( Unit unit, Unit enemy );
       // Outlines the case where you can attack their type (air/ground/cloaked)
@@ -162,6 +149,9 @@ public:
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
       static bool Can_Fight( Stored_Unit unit, Stored_Unit enemy);
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
+      // Can_Fight_Type does NOT check cloaked status.
+      static bool Can_Fight_Type( UnitType unittype, UnitType enemytype);
+
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
       static double getProperSpeed( const UnitType & type );
@@ -198,10 +188,11 @@ public:
       static Stored_Resource * getSafestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin, const int & dist);
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
-      static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
-      static Stored_Unit* getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
-      //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
+      static Stored_Unit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
+      //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
+      static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist);
+
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
@@ -254,7 +245,7 @@ public:
       static int Stock_Supply( const UnitType &unit, const Inventory &inv );
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
-      static bool isOnScreen( const Position &pos );
+      static bool isOnScreen( const Position &pos , const Position &screen_pos);
       static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);

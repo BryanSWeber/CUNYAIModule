@@ -88,6 +88,8 @@ struct Unit_Inventory {
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
+    void purgeWorkerMineRelations(const Unit &unit, Resource_Inventory &ri);
+    void purgeWorkerBuildRelations(const Unit &unit, Inventory &inv, Reservation &res);
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
