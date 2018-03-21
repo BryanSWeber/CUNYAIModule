@@ -853,7 +853,7 @@ int Inventory::getRadialDistanceOutFromHome( const Position A )
 void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
-    int area_modified = 12 * 8;
+    int area_modified = 32 * 8;
 
 
     //modified areas stopping at bounds. bounds are 1 inside edge of map.

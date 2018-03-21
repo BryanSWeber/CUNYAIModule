@@ -256,7 +256,6 @@ void MeatAIModule::onFrame()
     }
     enemy_inventory.purgeBrokenUnits();
 
-
     // easy to update friendly unit inventory.
 
     if ( friendly_inventory.unit_inventory_.size() == 0 ) {
@@ -309,7 +308,7 @@ void MeatAIModule::onFrame()
     inventory.updateMin_Possessed();
     inventory.updateHatcheries();  // macro variables, not every unit I have.
     inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
-
+    inventory.my_portion_of_the_map_ = sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size();
     inventory.updateStartPositions();
 
     if (inventory.map_veins_in_.empty() && t_game > 24 && !inventory.start_positions_.empty() && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
@@ -338,7 +337,10 @@ void MeatAIModule::onFrame()
 
     bool build_check_this_frame = false;
     bool upgrade_check_this_frame = false;
+    Position mutating_creep_colony_position = Position{0,0}; // this is a simply practical check that saves a TON of resources.
+    UnitType mutating_creep_colony_type = UnitTypes::Zerg_Creep_Colony;
     bool mutating_creep_this_frame = false;
+
     //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
@@ -727,18 +729,13 @@ void MeatAIModule::onFrame()
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
-        bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran);
+        bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) || (massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
         if (isIdleEmpty(u) && !isRecentCombatant(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && spamGuard(u, 24))
         { //Scout if you're not a drone or larva and can move.
             Boids boids;
             bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
             bool potential_fears = ( army_derivative > 0 && !massive_army);
-            if (!enemy_found || !potential_fears) { // note stuttering is disabled so secretly these are both the same.
-                boids.Boids_Movement(u, 3, friendly_inventory, enemy_inventory, inventory, potential_fears); 
-            }
-            else {
-                boids.Boids_Movement(u, 0, friendly_inventory, enemy_inventory, inventory, potential_fears);
-            }// keep this because otherwise they clump up very heavily, like mutas. Don't want to lose every overlord to one AOE.
+            boids.Boids_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
 
@@ -819,7 +816,7 @@ void MeatAIModule::onFrame()
                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                                 //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
                                 //(distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24) || // a stutterstep component. Should seperate it off.
-                                (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net );// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                                (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
                                 //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                 //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
                                 //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
@@ -916,12 +913,13 @@ void MeatAIModule::onFrame()
         auto start_detector = std::chrono::high_resolution_clock::now();
         Position c; // holder for cloaked unit position.
         bool call_detector = false;
-        if ( /*(!army_starved || army_derivative == 0) &&*/ !supply_starved) {
+        if ( !supply_starved ) {
             for (auto e = enemy_inventory.unit_inventory_.begin(); e != enemy_inventory.unit_inventory_.end() && !enemy_inventory.unit_inventory_.empty(); e++) {
                 if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
                     c = (*e).second.pos_; // then we may to send in some vision.
-                    Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, c, e->second.type_.sightRange()); // we check this cloaker has any friendly units nearby.
-                    if (!friend_loc.unit_inventory_.empty() && friend_loc.detector_count_ == 0) {
+                    //Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, c, e->second.type_.sightRange()); // we check this cloaker has any friendly units nearby.
+                    //if (!friend_loc.unit_inventory_.empty() && friend_loc.detector_count_ == 0) {
+                    if( checkOccupiedArea(friendly_inventory, c, e->second.type_.sightRange()) ){ // if it exists & is visible. Checks rectangle rather than radius for performance reasons.
                         call_detector = true;
                         break;
                     }
@@ -935,8 +933,7 @@ void MeatAIModule::onFrame()
                 for (auto d : Broodwar->self()->getUnits()) {
                     if (d->getType() == UnitTypes::Zerg_Overlord &&
                         !d->isUnderAttack() &&
-                        d->getHitPoints() > 0.25 * d->getInitialHitPoints() /*&&
-                        d->getLastCommandFrame() < Broodwar->getFrameCount() - 12*/) {
+                        d->getHitPoints() > 0.25 * d->getInitialHitPoints()) {
                         dist_temp = d->getDistance(c);
                         if (dist_temp < dist) {
                             dist = dist_temp;
@@ -945,7 +942,7 @@ void MeatAIModule::onFrame()
                         }
                     }
                 }
-                if (detector_found) {
+                if (detector_found && spamGuard(detector_of_choice) ) {
                     Position detector_pos = detector_of_choice->getPosition();
                     double theta = atan2(c.y - detector_pos.y, c.x - detector_pos.x);
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * SightRange(detector_of_choice) * 0.75, c.y + sin(theta) * SightRange(detector_of_choice)) * 0.75;
@@ -984,17 +981,21 @@ void MeatAIModule::onFrame()
         //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
-        if (u->getType() == UnitTypes::Zerg_Creep_Colony && !mutating_creep_this_frame) {
-            if (Count_Units_In_Progress(UnitTypes::Zerg_Sunken_Colony, inventory) > 0) {
+        if ( u->getType() == UnitTypes::Zerg_Creep_Colony ) {
+            if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() / 2 && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
                 Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                mutating_creep_colony_position = u->getPosition();
+                mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                 mutating_creep_this_frame = true;
             }
-            else if (Count_Units_In_Progress(UnitTypes::Zerg_Spore_Colony, inventory) > 0) {//the check below is exhaustive and may cause me to lag if ran too often. 
+            else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() / 2 && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
                 Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                mutating_creep_colony_position = u->getPosition();
+                mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                 mutating_creep_this_frame = true;
             }
-            else {
-                Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), sqrt(pow(map_x * 32, 2) + pow(map_y * 32, 2)) / Broodwar->getStartLocations().size());
+            else if (!mutating_creep_this_frame){
+                Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), inventory.my_portion_of_the_map_);
                 local_e.updateUnitInventorySummary();
                 bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, friendly_inventory) > 0;
                 bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0;
@@ -1011,20 +1012,28 @@ void MeatAIModule::onFrame()
                     if (can_sunken && can_spore) {
                         if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
                             Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                            mutating_creep_colony_position = u->getPosition();
+                            mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
+                            mutating_creep_this_frame = true;
                         }
                         else {
                             Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                            mutating_creep_colony_position = u->getPosition();
+                            mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
+                            mutating_creep_this_frame = true;
                         }
                     } // build one of the two colonies based on the presence of closest units.
                     else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
                         Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                        mutating_creep_colony_position = u->getPosition();
+                        mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                         mutating_creep_this_frame = true;
 
                     } // build sunkens if you only have that
                     else if (can_spore && !can_sunken) {
-                        Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                        mutating_creep_colony_position = u->getPosition();
+                        mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                         mutating_creep_this_frame = true;
-
                     } // build spores if you only have that.
                 } // closure: Creep colony loop
             }

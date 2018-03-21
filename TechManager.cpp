@@ -12,19 +12,19 @@ bool MeatAIModule::Tech_Avail() {
     for ( auto & u : BWAPI::Broodwar->self()->getUnits() ) {
 
         if ( u->getType() == BWAPI::UnitTypes::Zerg_Drone ) {
-            bool long_condition = (u->canBuild( BWAPI::UnitTypes::Zerg_Spawning_Pool ) && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Evolution_Chamber ) && Count_Units( BWAPI::UnitTypes::Zerg_Evolution_Chamber, friendly_inventory ) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den, friendly_inventory ) == 0)||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire, friendly_inventory ) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest, friendly_inventory ) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire, friendly_inventory ) > 0 ) || // I have hardcoded spire before queens nest.
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) == 0);
+            bool long_condition = (u->canBuild( BWAPI::UnitTypes::Zerg_Spawning_Pool ) && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Evolution_Chamber ) && Count_Units( BWAPI::UnitTypes::Zerg_Evolution_Chamber, inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den, inventory) == 0)||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest, inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) > 0 ) || // I have hardcoded spire before queens nest.
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, inventory) == 0);
             if ( long_condition ) {
                 return true;
             }
         }
         else if ( (u->getType() == BWAPI::UnitTypes::Zerg_Hatchery || u->getType() == BWAPI::UnitTypes::Zerg_Lair || u->getType() == BWAPI::UnitTypes::Zerg_Hive) && !u->isUpgrading() && !u->isMorphing() ) {
-            bool long_condition = (u->canMorph( BWAPI::UnitTypes::Zerg_Lair ) && Count_Units( BWAPI::UnitTypes::Zerg_Lair, friendly_inventory ) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Hive, friendly_inventory ) == 0) ||
-                    (u->canMorph( BWAPI::UnitTypes::Zerg_Hive ) && Count_Units( BWAPI::UnitTypes::Zerg_Hive, friendly_inventory ) == 0);
+            bool long_condition = (u->canMorph( BWAPI::UnitTypes::Zerg_Lair ) && Count_Units( BWAPI::UnitTypes::Zerg_Lair, inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Hive, inventory) == 0) ||
+                    (u->canMorph( BWAPI::UnitTypes::Zerg_Hive ) && Count_Units( BWAPI::UnitTypes::Zerg_Hive, inventory) == 0);
             if ( long_condition ) {
                 return true;
             }

@@ -230,7 +230,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 bool MeatAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( MeatAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, friendly_inventory ) > 0 ) {
+    if ( MeatAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) > 0 ) {
         outlet_avail = true;
     }
 

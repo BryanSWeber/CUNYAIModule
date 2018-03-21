@@ -219,7 +219,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 {
     int count = 0;
 
-    for ( const auto & e : ui.unit_inventory_) {
+    for ( auto & e : ui.unit_inventory_) {
 
         if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -236,7 +236,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 {
     int count = 0;
-    for ( const auto & unit : unit_set )
+    for ( auto & unit : unit_set )
     {
         if ( unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type ) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -734,7 +734,7 @@ Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inv
 	return ri_out;
 }
 
-//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+//Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
 Unit_Inventory MeatAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
     Unit_Inventory ui_out;
     for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {

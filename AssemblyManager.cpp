@@ -290,8 +290,8 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
 
-    bool u_relatively_weak_against_air = ei.stock_fliers_ / (ui.stock_shoots_up_ + 1) > ei.stock_ground_units_ / (ui.stock_shoots_down_ + 1); // div by zero concern.
-    bool e_relatively_weak_against_air = ui.stock_fliers_ / (ei.stock_shoots_up_ + 1) > ui.stock_ground_units_ / (ei.stock_shoots_down_ + 1); // div by zero concern.
+    bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) > ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern.
+    bool e_relatively_weak_against_air = ui.stock_fliers_ / (double)(ei.stock_shoots_up_ + 1) > ui.stock_ground_units_ / (double)(ei.stock_shoots_down_ + 1); // div by zero concern.
 
     // Do required build first.
     if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
@@ -434,7 +434,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
 
     buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_total_< friendly_inventory.stock_total_ ) && (expansion_meaningful || larva_starved || econ_starved), inventory);
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && larva_starved && Count_Units(UnitTypes::Zerg_Drone, inv) > inv.hatches_ * 8 /*&& my_reservation.getExcessMineral() < UnitTypes::Zerg_Hatchery.mineralPrice() && Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hatchery) == 0 */); // only macrohatch if you are short on larvae and can afford to spend.
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5 ); // only macrohatch if you are short on larvae and can afford to spend.
 
     //Tech Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&
