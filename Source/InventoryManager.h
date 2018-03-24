@@ -13,7 +13,7 @@ struct Inventory {
     Inventory();
     Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri );
 
-    Position screen_position;
+    Position screen_position_;
     double ln_army_stock_;
     double ln_tech_stock_;
     double ln_worker_stock_;
@@ -37,7 +37,7 @@ struct Inventory {
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
     vector< vector<bool> > buildable_positions_ ;
-    vector< vector<bool> > unwalkable_barriers_;
+    vector< vector<int> > unwalkable_barriers_;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
     vector< vector<int> > map_veins_out_;
@@ -71,7 +71,8 @@ struct Inventory {
     void updateLn_Min_Total();
     // Updates the count of our vision total, in tiles
     void updateVision_Count();
-
+    // Updates our screen poisition. A little gratuitous but nevertheless useful.
+    void updateScreen_Position();
     // Updates the (safe) log gas ratios, ln(gas)/(ln(min)+ln(gas))
     double getLn_Gas_Ratio();
     // Updates the (safe) log of our supply total. Returns very high int instead of infinity.

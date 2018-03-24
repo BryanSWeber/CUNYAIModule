@@ -91,7 +91,7 @@ public:
 	char upgrade_string [50];
 	char creep_colony_string [50];
 
-    Race last_enemy_race;
+    Race starting_enemy_race;
 
   int t_build;
 

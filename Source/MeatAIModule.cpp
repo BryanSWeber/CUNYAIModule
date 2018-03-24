@@ -67,7 +67,7 @@ void MeatAIModule::onStart()
     // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
     Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
 
-    // Enable the UserInput flag, which allows us to control the bot and type messages.
+    // Enable the UserInput flag, which allows us to control the bot and type messages. Also needed to get the screen position.
     Broodwar->enableFlag( Flag::UserInput );
 
     // Uncomment the following line and the bot will know about everything through the fog of war (cheat).
@@ -80,6 +80,7 @@ void MeatAIModule::onStart()
     // Check if this is a replay
     if ( Broodwar->isReplay() )
     {
+
         // Announce the players in the replay
         Broodwar << "The following players are in this replay:" << std::endl;
 
@@ -109,8 +110,6 @@ void MeatAIModule::onStart()
     econ_starved = true;
     tech_starved = false;
 
-    last_enemy_race = Broodwar->enemy()->getRace();
-
     //Initialize model variables. 
     GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
@@ -131,9 +130,6 @@ void MeatAIModule::onStart()
 
     //get initial build order.
     buildorder.getInitialBuildOrder( gene_history.build_order_ );
-
-    //update local resources
-    Resource_Inventory neutral_inventory; // for first initialization.
 
     //update Map Grids
     inventory.updateUnit_Counts(friendly_inventory);
@@ -191,9 +187,6 @@ void MeatAIModule::onFrame()
 
     auto start_preamble = std::chrono::high_resolution_clock::now();
 
-    //store screen position
-    inventory.screen_position = Broodwar->getScreenPosition();
-
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
 
@@ -219,12 +212,9 @@ void MeatAIModule::onFrame()
             }
             if ( (!present || enemies_tile.empty()) && e->second.valid_pos_ && e->second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
                 Position potential_running_spot = e->second.pos_;
-                int x = 1;
-                while (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot)) && x < 24 ){
-                    potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_ * x, e->second.pos_.y + e->second.velocity_y_ * x );
-                    x++;
-                }
-                if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && 
+                if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot)) ){
+                    potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_ , e->second.pos_.y + e->second.velocity_y_ );
+                } else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
                     (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)) ) ) {
                     e->second.pos_ = potential_running_spot;
                     e->second.valid_pos_ = true;
@@ -244,12 +234,12 @@ void MeatAIModule::onFrame()
         }
 
         if ( _ANALYSIS_MODE && e->second.valid_pos_ == true ) {
-            if ( isOnScreen( e->second.pos_, inventory.screen_position)) {
+            if ( isOnScreen( e->second.pos_, inventory.screen_position_)) {
                 Broodwar->drawCircleMap( e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red ); // Plot their last known position.
             }
         }        
         if (_ANALYSIS_MODE && e->second.valid_pos_ == false) {
-            if (isOnScreen(e->second.pos_, inventory.screen_position)) {
+            if (isOnScreen(e->second.pos_, inventory.screen_position_)) {
                 Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
             }
         }
@@ -271,7 +261,7 @@ void MeatAIModule::onFrame()
     //Update posessed minerals. Erase those that are mined out.
     neutral_inventory.updateResourceInventory(friendly_inventory, enemy_inventory);
 
-    if ( last_enemy_race != Broodwar->enemy()->getRace() ) {
+    if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
         //Initialize model variables. 
         GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
@@ -285,8 +275,7 @@ void MeatAIModule::onFrame()
         alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
         alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
         win_rate = (1 - gene_history.loss_rate_);
-        last_enemy_race = Broodwar->enemy()->getRace();
-        Broodwar->sendText( "WHOA! %s is broken. That's a good random.", last_enemy_race.c_str() );
+        Broodwar->sendText( "WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str() );
     }
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
@@ -310,13 +299,20 @@ void MeatAIModule::onFrame()
     inventory.updateWorkersClearing(friendly_inventory, neutral_inventory);
     inventory.my_portion_of_the_map_ = sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size();
     inventory.updateStartPositions();
+    inventory.updateScreen_Position();
+    inventory.getExpoPositions(); // prime this once on game start.
 
     if (inventory.map_veins_in_.empty() && t_game > 24 && !inventory.start_positions_.empty() && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
         inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
     } // the enemy is "out there somewhere". Choose a start position, but make sure to elimiate your own via updateStartPositions.
 
-    if ( t_game == 0 ) {
-        inventory.getExpoPositions(); // prime this once on game start.
+   if ( t_game == 0 ) {
+
+        //update local resources
+        Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
+        Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
+        neutral_inventory = mineral_inventory + geyser_inventory; // for first initialization.
+        inventory.updateBaseLoc(neutral_inventory);
     }
 
 
@@ -324,7 +320,22 @@ void MeatAIModule::onFrame()
         buildorder.ever_clear_ = true;
     }
     else {
-        bool need_gas_now = buildorder.building_gene_.front().getResearch().gasPrice() > 0 || buildorder.building_gene_.front().getUnit().gasPrice() > 0 || buildorder.building_gene_.front().getResearch().gasPrice() > 0;
+        bool need_gas_now = false;
+        if (buildorder.building_gene_.front().getResearch()) {
+            if (buildorder.building_gene_.front().getResearch().gasPrice()) {
+                buildorder.building_gene_.front().getResearch().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
+            }
+        } else if (buildorder.building_gene_.front().getUnit()) {
+            if (buildorder.building_gene_.front().getUnit().gasPrice()) {
+                buildorder.building_gene_.front().getUnit().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
+            }
+        }
+        else if (buildorder.building_gene_.front().getUpgrade()) {
+            if (buildorder.building_gene_.front().getUpgrade().gasPrice()) {
+                buildorder.building_gene_.front().getUpgrade().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
+            }
+        }
+
         bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor, inventory) == 0;
         if (need_gas_now && no_extractor) {
             buildorder.clearRemainingBuildOrder();
@@ -474,9 +485,9 @@ void MeatAIModule::onFrame()
         }
 
         for ( auto &p : inventory.expo_positions_ ) {
-            Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, TRUE );
+            Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, true );
         }
-        Broodwar->drawCircleMap( Position( inventory.next_expo_ ), 10, Colors::Red, TRUE );
+        Broodwar->drawCircleMap( Position( inventory.next_expo_ ), 10, Colors::Red, true );
 
         //vision belongs here.
 
@@ -506,61 +517,43 @@ void MeatAIModule::onFrame()
         Broodwar->drawTextScreen( 500, 140, upgrade_string );
         Broodwar->drawTextScreen( 500, 150, creep_colony_string );
 
-        for ( auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p ) {
-            if ( _ANALYSIS_MODE && isOnScreen( p->second.pos_, inventory.screen_position) ) {
-                Broodwar->drawCircleMap( p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
-                Broodwar->drawTextMap( p->second.pos_, "%d", p->second.current_stock_value_ ); // Plot their current value.
-                Broodwar->drawTextMap( p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_ ); // Plot their current value.
+        if (_ANALYSIS_MODE) {
+            for ( auto p = neutral_inventory.resource_inventory_.begin(); p != neutral_inventory.resource_inventory_.end() && !neutral_inventory.resource_inventory_.empty(); ++p ) {
+                if ( isOnScreen( p->second.pos_, inventory.screen_position_) ) {
+                    Broodwar->drawCircleMap( p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan ); // Plot their last known position.
+                    Broodwar->drawTextMap( p->second.pos_, "%d", p->second.current_stock_value_ ); // Plot their current value.
+                    Broodwar->drawTextMap( p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_ ); // Plot their current value.
+                }
             }
-        }
 
-        //for ( vector<int>::size_type i = 0; i != inventory.buildable_positions_.size(); ++i ) {
-        //    for ( vector<int>::size_type j = 0; j != inventory.buildable_positions_[i].size(); ++j ) {
-        //        if ( inventory.buildable_positions_[i][j] == false ) {
-        //            if ( isOnScreen( { (int)i * 32 + 16, (int)j * 32 + 16 } ) ) {
-        //                Broodwar->drawCircleMap( i * 32 + 16, j * 32 + 16, 1, Colors::Yellow );
-        //            }
-        //        }
-        //    }
-        //} // both of these structures are on the same tile system.
-
-        //for ( vector<int>::size_type i = 0; i != inventory.base_values_.size(); ++i ) {
-        //    for ( vector<int>::size_type j = 0; j != inventory.base_values_[i].size(); ++j ) {
-        //        if ( inventory.base_values_[i][j] > 1 ) {
-        //            Broodwar->drawTextMap( i * 32 + 16, j * 32 + 16, "%d", inventory.base_values_[i][j] );
-        //        }
-        //    };
-        //} // not that pretty to look at.
-
-        for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
-                if ( inventory.smoothed_barriers_[i][j] == 0 ) {
-                    if ( _ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-                        //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+            for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
+                    if ( inventory.smoothed_barriers_[i][j] == 0 ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                        }
                     }
-                }
-                else if ( inventory.smoothed_barriers_[i][j] > 0 ) {
-                    if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                    else if ( inventory.smoothed_barriers_[i][j] > 0 ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                        }
                     }
-                }
 
-            };
-        } // Pretty to look at!
+                };
+            } // Pretty to look at!
 
-        if ( _COBB_DOUGLASS_REVEALED ) {
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
                     if ( inventory.map_veins_[i][j] > 100 ) {
-                        if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position) ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
                         }
                     }
                     if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                        if (_ANALYSIS_MODE && isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position) ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
                         }
@@ -568,30 +561,6 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            //if ( !inventory.map_veins_in_.empty() ) {
-            //    for ( vector<int>::size_type i = 0; i < inventory.map_veins_in_.size(); ++i ) {
-            //        for ( vector<int>::size_type j = 0; j < inventory.map_veins_in_[i].size(); ++j ) {
-            //            //if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if ( isOnScreen( Position( i * 8 + 4, j * 8 + 4 ) ) && inventory.map_veins_[i][j] > 175 ) {
-            //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_in_[i][j] );
-            //            }
-            //        }
-            //    } // Crowded but super helpful. 
-            //}
-        }
-
-        //for ( vector<int>::size_type i = 0; i < inventory.map_chokes_.size(); ++i ) {
-        //    for ( vector<int>::size_type j = 0; j < inventory.map_chokes_[i].size(); ++j ) {
-        //        if ( inventory.map_chokes_[i][j] > 1 ) {
-        //            if ( isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 } ) ) {
-        //                Broodwar->drawTextMap( i * 8 + 4, j * 8 + 4, "%d", inventory.map_chokes_[i][j] );
-        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, inventory.map_chokes_[i][j]*8, Colors::Cyan );
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
-
-        if ( _ANALYSIS_MODE ) {
             for ( auto &u : Broodwar->self()->getUnits() ) {
                 if ( u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getType() != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit ) {
                     Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
@@ -661,7 +630,7 @@ void MeatAIModule::onFrame()
 
 
             if ( miner.locked_mine_) {
-                Diagnostic_Line(miner.pos_, miner.locked_mine_->getPosition(), inventory.screen_position, Colors::Green);
+                Diagnostic_Line(miner.pos_, miner.locked_mine_->getPosition(), inventory.screen_position_, Colors::Green);
             }
 
 
@@ -846,11 +815,11 @@ void MeatAIModule::onFrame()
 
 
                                 if ( _ANALYSIS_MODE ) {
-                                    if ( isOnScreen( u->getPosition(), inventory.screen_position) ) {
+                                    if ( isOnScreen( u->getPosition(), inventory.screen_position_) ) {
                                         Broodwar->drawTextMap( u->getPosition().x, u->getPosition().y, "%d", helpful_u );
                                     }
                                     Position mean_loc = enemy_loc.getMeanLocation();
-                                    if ( isOnScreen( mean_loc, inventory.screen_position) ) {
+                                    if ( isOnScreen( mean_loc, inventory.screen_position_) ) {
                                         Broodwar->drawTextMap( mean_loc.x, mean_loc.y, "%d", enemy_loc.stock_total_ );
                                     }
                                 }
@@ -950,14 +919,14 @@ void MeatAIModule::onFrame()
                         detector_of_choice->move(closest_loc_to_c_that_gives_vision);
                         if (_ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, inventory.screen_position, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
                         }
                     }
                     else {
                         detector_of_choice->move(c);
                         if (_ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice->getPosition(), inventory.screen_position, c, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice->getPosition(), inventory.screen_position_, c, Colors::Cyan);
                         }
                     }
 

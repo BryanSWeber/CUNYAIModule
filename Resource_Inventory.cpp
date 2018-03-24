@@ -9,17 +9,17 @@
 //Creates an instance of the resource inventory class.
 Resource_Inventory::Resource_Inventory(){
 	// Updates the static locations of minerals and gas on the map. Should only be called on game start.
-	if (Broodwar->getFrameCount() == 0){
-		Unitset min = Broodwar->getStaticMinerals();
-		Unitset geysers = Broodwar->getStaticGeysers();
+	//if (Broodwar->getFrameCount() == 0){
+	//	Unitset min = Broodwar->getStaticMinerals();
+	//	Unitset geysers = Broodwar->getStaticGeysers();
 
-		for (auto m = min.begin(); m != min.end(); ++m) {
-				this->addStored_Resource(*m);
-		}
-		for (auto g = geysers.begin(); g != geysers.end(); ++g) {
-			this->addStored_Resource(*g);
-		}
-	}
+	//	for (auto m = min.begin(); m != min.end(); ++m) {
+	//			this->addStored_Resource(*m);
+	//	}
+	//	for (auto g = geysers.begin(); g != geysers.end(); ++g) {
+	//		this->addStored_Resource(*g);
+	//	}
+	//}
 }
 
 Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
@@ -147,3 +147,27 @@ void Resource_Inventory::updateGasCollectors()
     } 
 }
 
+Resource_Inventory operator+(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
+{
+    Resource_Inventory total = lhs;
+    //total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
+    total.resource_inventory_.insert(rhs.resource_inventory_.begin(), rhs.resource_inventory_.end());
+    return total;
+}
+
+Resource_Inventory operator-(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
+{
+    Resource_Inventory total;
+    total.resource_inventory_.insert(lhs.resource_inventory_.begin(), lhs.resource_inventory_.end());
+
+    for (map<Unit, Stored_Resource>::const_iterator& it = rhs.resource_inventory_.begin(); it != rhs.resource_inventory_.end();) {
+        if (total.resource_inventory_.find(it->first) != total.resource_inventory_.end()) {
+            total.resource_inventory_.erase(it->first);
+        }
+        else {
+            it++;
+        }
+    }
+
+    return total;
+}

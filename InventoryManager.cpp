@@ -323,6 +323,11 @@ void Inventory::updateVision_Count() {
     vision_tile_count_ = total_tiles;
 }
 
+void Inventory::updateScreen_Position()
+{
+    screen_position_ = Broodwar->getScreenPosition();
+}
+
 // Updates the number of hatcheries (and decendent buildings).
 void Inventory::updateHatcheries() {
     hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
@@ -354,7 +359,7 @@ void Inventory::updateUnwalkable() {
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     for ( int x = 0; x <= map_x; ++x ) {
-        vector<bool> temp;
+        vector<int> temp;
         for ( int y = 0; y <= map_y; ++y ) {
             temp.push_back( !Broodwar->isWalkable( x, y ) );
         }
@@ -369,13 +374,7 @@ void Inventory::updateSmoothPos() {
     int choke_score = 0;
 
     // first, define matrixes to recieve the walkable locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( !Broodwar->isWalkable( x, y ) );
-        }
-        smoothed_barriers_.push_back( temp );
-    }
+    smoothed_barriers_ = unwalkable_barriers_;
 
     for ( auto iter = 2; iter < 100; iter++ ) { // iteration 1 is already done by labling unwalkables.
         for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
@@ -430,14 +429,8 @@ void Inventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
-                                           // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
-        }
-        map_veins_.push_back( temp );
-    }
+    // first, define matrixes to recieve the map_vein locations for every minitile.
+    map_veins_ = unwalkable_barriers_;
 
     for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling unwalkables.
         for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
@@ -505,14 +498,10 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     WalkPosition startloc = WalkPosition( center );
     map_veins_out_.clear();
 
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
-        }
-        map_veins_out_.push_back( temp );
-    }
+    // first, define matrixes to recieve the map_vein locations for every minitile.
+
+    // first, define matrixes to recieve the walkable locations for every minitile.
+    map_veins_out_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -720,15 +709,10 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     WalkPosition startloc = WalkPosition( center );
 
     map_veins_in_.clear();
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
-        }
-        map_veins_in_.push_back( temp );
-    }
+    // first, define matrixes to recieve the map_vein locations for every minitile.
+
+    // first, define matrixes to recieve the walkable locations for every minitile.
+    map_veins_in_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;

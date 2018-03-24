@@ -54,6 +54,8 @@ struct Resource_Inventory {
 	Position getMeanCombatLocation() const;
 
     void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei);
+    friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
+    friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
 
     int total_miners_;
     int total_gas_;

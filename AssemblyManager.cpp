@@ -2,6 +2,7 @@
 #include "Source\MeatAIModule.h"
 #include "Source\InventoryManager.h"
 #include "Source\AssemblyManager.h"
+#include <iterator>
 
 using namespace BWAPI;
 using namespace Filter;
