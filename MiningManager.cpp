@@ -167,7 +167,7 @@ void MeatAIModule::Worker_Gas( const Unit &unit, Unit_Inventory &ui ) {
 
     if ( !available_fields.resource_inventory_.empty() ) {
         Stored_Resource* closest = getClosestStored( available_fields, miner.pos_, 9999999 );
-        if (closest->bwapi_unit_->exists() && checkSafeMineLoc(closest->pos_,ui, inventory) && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
+        if (closest->bwapi_unit_->exists() /*&& checkSafeMineLoc(closest->pos_,ui, inventory)*/ && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
             miner.startMine(*closest, neutral_inventory);
             if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());

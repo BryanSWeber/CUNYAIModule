@@ -28,7 +28,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 
         if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
-            TilePosition buildPosition = MeatAIModule::getBuildablePosition(unit->getTilePosition(), building, 64);
+            TilePosition buildPosition = MeatAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
                 buildorder.announceBuildingAttempt(building);
                 return true;

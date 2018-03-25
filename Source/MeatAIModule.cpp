@@ -14,7 +14,6 @@
 #include <stdio.h>  //for removal of files.
 
 // MeatAI V1.00. Current V goal-> defeat GARMBOT regularly.
-// Mineral Locking.
 // build order selection
 // Transition to air?
 
@@ -121,7 +120,8 @@ void MeatAIModule::onStart()
     alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
     alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
     alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
-    
+    rate_of_worker_growth = gene_history.r_out_mutate_; //rate of worker growth.
+
     alpha_army_temp = alpha_army; // temp, will be overridden as we meet our enemy and scout.
     alpha_econ_temp = alpha_econ;
     alpha_tech_temp = alpha_tech;
@@ -158,7 +158,7 @@ void MeatAIModule::onEnd( bool isWinner )
     ofstream output; // Prints to brood war file proper.
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
+    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << rate_of_worker_growth << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
     if (_MOVE_OUTPUT_BACK_TO_READ) {
@@ -211,9 +211,9 @@ void MeatAIModule::onFrame()
                 }
             }
             if ( (!present || enemies_tile.empty()) && e->second.valid_pos_ && e->second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
-                Position potential_running_spot = e->second.pos_;
+                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
                 if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot)) ){
-                    potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_ , e->second.pos_.y + e->second.velocity_y_ );
+                    e->second.valid_pos_ = false;
                 } else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
                     (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)) ) ) {
                     e->second.pos_ = potential_running_spot;
@@ -265,7 +265,6 @@ void MeatAIModule::onFrame()
         //Initialize model variables. 
         GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
-
         delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
         gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
 
@@ -274,6 +273,7 @@ void MeatAIModule::onFrame()
         alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
         alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
         alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+        rate_of_worker_growth = gene_history.r_out_mutate_; //rate of worker growth.
         win_rate = (1 - gene_history.loss_rate_);
         Broodwar->sendText( "WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str() );
     }
@@ -307,14 +307,14 @@ void MeatAIModule::onFrame()
     } // the enemy is "out there somewhere". Choose a start position, but make sure to elimiate your own via updateStartPositions.
 
    if ( t_game == 0 ) {
-
         //update local resources
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         neutral_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         inventory.updateBaseLoc(neutral_inventory);
     }
-
+   neutral_inventory.updateGasCollectors();
+   neutral_inventory.updateMiners();
 
     if ( buildorder.building_gene_.empty() ) {
         buildorder.ever_clear_ = true;
@@ -379,15 +379,14 @@ void MeatAIModule::onFrame()
 
     CobbDouglas CD = CobbDouglas( alpha_army_temp, exp( inventory.ln_army_stock_ ), army_possible, alpha_tech_temp, exp( inventory.ln_tech_stock_ ), tech_possible, alpha_econ_temp, exp( inventory.ln_worker_stock_ ), econ_possible );
 
+    int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
+    //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
+    int approx_worker_count = (4 * exp(rate_of_worker_growth * (double)t_game * 0.75) - dead_worker_count) * exp(rate_of_worker_growth * (double)t_game * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
+    int est_worker_count = min(max(enemy_inventory.worker_count_, approx_worker_count), 85);
+
     //Update existing CD functions to more closely mirror opponent. Do every 30 sec or so.
     if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_total_ > 0 ) {
-        int worker_value = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
-        int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
-        double r = log(85/(double)4) / (double)14400; //assumes from 4 to max in 10 minutes, 14400 frames. Typical game maxes vary from 12.5min to 16 min according to antiga.
-        //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
-        int approx_worker_count = (4 * exp( r * Broodwar->getFrameCount() * 0.75 ) - dead_worker_count ) * exp(r * Broodwar->getFrameCount() * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
-
-        int est_worker_count = min(max(enemy_inventory.worker_count_, approx_worker_count ), 85);
+        int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
         int e_worker_stock = est_worker_count * worker_value;
         CD.enemy_eval(enemy_inventory.stock_total_ - enemy_inventory.worker_count_*worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible);
         alpha_army_temp = CD.alpha_army;
@@ -463,10 +462,11 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 0, "Econ Gradient: %.2g", CD.econ_derivative );  //
             Broodwar->drawTextScreen( 250, 10, "Army Gradient: %.2g", CD.army_derivative ); //
             Broodwar->drawTextScreen( 250, 20, "Tech Gradient: %.2g", CD.tech_derivative ); //
-
+            Broodwar->drawTextScreen( 250, 30, "Enemy R: %.2g ", rate_of_worker_growth); // 
             Broodwar->drawTextScreen( 250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100 );  // As %s
             Broodwar->drawTextScreen( 250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100 ); //
             Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100 ); // No longer a % with capital-augmenting technology.
+            Broodwar->drawTextScreen( 250, 70, "Enemy Worker Est: %d ", est_worker_count ); // No longer a % with capital-augmenting technology.
 
             Broodwar->drawTextScreen( 250, 80, "Delta_gas: %4.2f", delta ); //
             Broodwar->drawTextScreen( 250, 90, "Gamma_supply: %4.2f", gamma ); //
@@ -725,156 +725,155 @@ void MeatAIModule::onFrame()
                 int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
 
+                Boids boids;
+
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_inventory, u);
                 Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
-                Boids boids;
+                //Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
+                //Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius);
+                //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
+                //Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_inventory, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
-                    Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
+                Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
 
-                    if ( !friend_loc.unit_inventory_.empty() ) { // if you exist (implied by friends).
-                        //Tally up crucial details about enemy. 
+                //enemy_loc.updateUnitInventorySummary();
+                friend_loc.updateUnitInventorySummary();
 
-                        enemy_loc.updateUnitInventorySummary();
-                        friend_loc.updateUnitInventorySummary();
+                int e_count = enemy_loc.unit_inventory_.size();
 
-                        int e_count = enemy_loc.unit_inventory_.size();
+                int helpless_e = u->isFlying() ? enemy_loc.stock_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_total_ - enemy_loc.stock_shoots_down_;
+                int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
 
-                        int helpless_e = u->isFlying() ? enemy_loc.stock_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_total_ - enemy_loc.stock_shoots_down_;
-                        int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
+                //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
+                int helpful_u = 0; // filled below.
 
-                        //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
-                        int helpful_u = 0; // filled below.
+                if (enemy_inventory.stock_fliers_ > 0) {
+                    helpful_u += friend_loc.stock_shoots_up_; // double-counts hydras and units that attack both air and ground.
+                }
+                if (enemy_inventory.stock_ground_units_ > 0) {
+                    helpful_u += friend_loc.stock_shoots_down_; // double-counts hydras and units that attack both air and ground.
+                }
+                if (enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0) {
+                    helpful_u += friend_loc.stock_total_;
+                } // if you're off the charts, throw everything in.
 
-                        if ( enemy_inventory.stock_fliers_ > 0 ) {
-                            helpful_u += friend_loc.stock_shoots_up_; // double-counts hydras and units that attack both air and ground.
+                  //if ( u->getType().airWeapon() != WeaponTypes::None ) {
+                  //    helpless_u += Stock_Units_ShootDown( friend_loc );
+                  //}
+                  //if ( u->getType().groundWeapon() != WeaponTypes::None ) {
+                  //    helpless_u += enemy_loc.stock_ground_units_;
+                  //}
+
+                if (e_closest->valid_pos_) {  // Must have a valid postion on record to attack.
+
+                    //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
+                    //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
+                    //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
+                    //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
+                    //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
+
+                    bool neccessary_attack = helpful_e * 1.05 < helpful_u || // attack if you outclass them and your boys are ready to fight.
+                        massive_army ||
+                        //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
+                                                                                               //!army_starved || // fight your army is appropriately sized.
+                        (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
+                        //(Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0 ) || // Don't run if static d is present.
+                        //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
+                        //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
+                        //(distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24) || // a stutterstep component. Should seperate it off.
+                        (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                        //  bool retreat = u->canMove() && ( // one of the following conditions are true:
+                        //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
+                        //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
+                        //                                  );
+
+                    bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
+                        //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
+                        !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
+                        helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
+                        (getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 - enemy_loc.max_range_ - 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_ - 32).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7 * 32) ||
+                        //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) ||
+                        //(distance_to_foe < 96 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u->getType().groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u->getType().groundWeapon().maxRange() > 64 && !u->isBurrowed() && Can_Fight(*e_closest, u)) || //kiting?
+                        //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
+                        (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
+                        (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
+                        //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
+
+                    bool drone_problem = u->getType() == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
+
+                    bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
+
+                    if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem) {
+                        if (u->getType().isWorker()) {
+                            friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
                         }
-                        if ( enemy_inventory.stock_ground_units_ > 0 ) {
-                            helpful_u += friend_loc.stock_shoots_down_; // double-counts hydras and units that attack both air and ground.
+                        boids.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+
+
+                        if (_ANALYSIS_MODE) {
+                            if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
+                                Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d", helpful_u);
+                            }
+                            Position mean_loc = enemy_loc.getMeanLocation();
+                            if (isOnScreen(mean_loc, inventory.screen_position_)) {
+                                Broodwar->drawTextMap(mean_loc.x, mean_loc.y, "%d", enemy_loc.stock_total_);
+                            }
                         }
-                        if ( enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0 ) {
-                            helpful_u += friend_loc.stock_total_;
-                        } // if you're off the charts, throw everything in.
 
-                          //if ( u->getType().airWeapon() != WeaponTypes::None ) {
-                          //    helpless_u += Stock_Units_ShootDown( friend_loc );
-                          //}
-                          //if ( u->getType().groundWeapon() != WeaponTypes::None ) {
-                          //    helpless_u += enemy_loc.stock_ground_units_;
-                          //}
+                    }
+                    else if (is_spelled) {
+                        if (u->getType().isWorker()) {
+                            friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                        }
+                        Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u, 128);
+                        if (closest) {
+                            boids.Retreat_Logic(u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                        }
 
-                        if ( e_closest->valid_pos_ ) {  // Must have a valid postion on record to attack.
+                    }
+                    else if (drone_problem) {
+                        if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits()) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits()) < enemy_loc.worker_count_ + 1 &&
+                            friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+                            u->getLastCommand().getType() != UnitCommandTypes::Morph &&
+                            Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
+                            u->getHitPoints() > 0.50 * u->getType().maxHitPoints()) {
 
-                            //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
-                            //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
-                            //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
-                            //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
-                            //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-
-                            bool neccessary_attack = helpful_e * 1.05 < helpful_u || // attack if you outclass them and your boys are ready to fight.
-                                massive_army ||
-                                //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
-                                                                                                       //!army_starved || // fight your army is appropriately sized.
-                                (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                                //(Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0 ) || // Don't run if static d is present.
-                                //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                                //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                                //(distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24) || // a stutterstep component. Should seperate it off.
-                                (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net);// don't run if they're in range and you're melee. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
-                                //  bool retreat = u->canMove() && ( // one of the following conditions are true:
-                                //(u->getType().isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
-                                //( e_closest->isInWeaponRange( u ) && ( u->getType().airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u->getType().groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
-                                //                                  );
-
-                            bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
-                                //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
-                                !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
-                                helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
-                                (getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_ , 7 * 32 - enemy_loc.max_range_ - 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_ - 32).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7*32 ) ||
-                                //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) ||
-                                //(distance_to_foe < 96 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u->getType().groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u->getType().groundWeapon().maxRange() > 64 && !u->isBurrowed() && Can_Fight(*e_closest, u)) || //kiting?
-                                //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-                                (u->getType() == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
-                                (u->getType() == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 * u->getType().maxHitPoints())); // Run if drone and (we have forces elsewhere or the drone is injured).
-                                //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
-
-                            bool drone_problem = u->getType() == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
-
-                            bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
-
-                            if ( neccessary_attack && !force_retreat && !is_spelled && !drone_problem ) {
-                                if (u->getType().isWorker()) {
-                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
-                                }
-                                boids.Tactical_Logic( u, enemy_loc, friend_loc, inventory, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
-
-
-                                if ( _ANALYSIS_MODE ) {
-                                    if ( isOnScreen( u->getPosition(), inventory.screen_position_) ) {
-                                        Broodwar->drawTextMap( u->getPosition().x, u->getPosition().y, "%d", helpful_u );
-                                    }
-                                    Position mean_loc = enemy_loc.getMeanLocation();
-                                    if ( isOnScreen( mean_loc, inventory.screen_position_) ) {
-                                        Broodwar->drawTextMap( mean_loc.x, mean_loc.y, "%d", enemy_loc.stock_total_ );
-                                    }
-                                }
-
+                            if (u->getType().isWorker()) {
+                                friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
                             }
-                            else if ( is_spelled ) {
-                                if (u->getType().isWorker()) {
-                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
-                                }
-                                Stored_Unit* closest = getClosestThreatOrTargetStored( friendly_inventory, u, 128 );
-                                if ( closest ) {
-                                    boids.Retreat_Logic( u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue ); // this is not actually getting out of storm. It is simply scattering.
-                                }
-
+                            boids.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                        }
+                        else if ((u->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (u->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && MeatAIModule::spamGuard(u)) {
+                            if (u->getType().isWorker()) {
+                                friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
                             }
-                            else if ( drone_problem ) {
-                                if ( Count_Units_Doing( UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, Broodwar->self()->getUnits() ) + Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Move, Broodwar->self()->getUnits() ) < enemy_loc.worker_count_ + 1 &&
-                                    friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
-                                    u->getLastCommand().getType() != UnitCommandTypes::Morph &&
-                                    Stock_Units(UnitTypes::Zerg_Drone, friend_loc) == friend_loc.stock_ground_units_ &&
-                                    u->getHitPoints() > 0.50 * u->getType().maxHitPoints() ) {
+                            u->stop();
+                        }
+                    }
+                    else {
 
-                                    if (u->getType().isWorker()) {
-                                        friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
-                                    }
-                                        boids.Tactical_Logic( u, enemy_loc, friend_loc, inventory, Colors::Orange ); // move towards enemy untill tactical logic takes hold at about 150 range.
-                                }
-                                else if ((u->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (u->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && MeatAIModule::spamGuard(u) ) {
-                                    if (u->getType().isWorker()) {
-                                        friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
-                                    }
-                                    u->stop();
-                                }
+                        if (u->getType().isWorker()) {
+                            friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
+                        }
+
+                        boids.Retreat_Logic(u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White);
+
+                        if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0, 0))) {
+                            if (u->getType() == UnitTypes::Zerg_Overlord) {
+                                //see unit destruction case. We will replace this overlord, likely a foolish scout.
                             }
                             else {
-
-                                if (u->getType().isWorker()) {
-                                    friendly_inventory.purgeWorkerRelations(u, neutral_inventory, inventory, my_reservation);
-                                }
-
-                                boids.Retreat_Logic( u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White );
-
-                                if ( !buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u->getType().canAttack() || u->getType() == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0,0) ) ) {
-                                    if ( u->getType() == UnitTypes::Zerg_Overlord ) {
-                                        //see unit destruction case. We will replace this overlord, likely a foolish scout.
-                                    }
-                                    else {
-                                        buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
-                                    }
-                                }
-
+                                buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
                             }
                         }
-                    } // close local examination.
+
+                    }
                 }
+            } // close local examination.
+                
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 

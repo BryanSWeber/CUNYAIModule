@@ -676,7 +676,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist = 999999) {
+Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -690,6 +690,35 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+//Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, Inventory &inv, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+            can_be_attacked_by = Can_Fight(e->second, unit);
+            if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
+                //if (e->second.type_.isFlyer()) {
+                //    temp_dist = unit->getDistance(e->second.pos_) / 4; // a hackney air/ground conversion. 
+                //}
+                //else {
+                    temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
+                //}
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1422,9 +1451,9 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
 }
 
 bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
-    Unit_Inventory friend_loc = getUnitInventoryInRadius(ui, pos, 750);
+
     bool desperate_for_minerals = inv.min_fields_ < 6;
-    bool safe_mine = friend_loc.stock_total_ > 0 ;
+    bool safe_mine = checkOccupiedArea(ui,pos,250);
     return  safe_mine || desperate_for_minerals;
 }
 

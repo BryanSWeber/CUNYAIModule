@@ -60,7 +60,8 @@ public:
     bool supply_starved;
   double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
     bool gas_starved;
-  double win_rate; //fairly straighforward.
+  double rate_of_worker_growth; //Assumed enemy rate of worker growth.
+    double win_rate; //fairly straighforward.
 
   double alpha_army_temp;
   double alpha_tech_temp;
@@ -191,7 +192,8 @@ public:
       static Stored_Unit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
       //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
-      static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist);
+      static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, Inventory & inv, const int & dist = 999999);
 
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
