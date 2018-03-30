@@ -181,7 +181,7 @@ bool MeatAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
     bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
-    if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
+    if ( enemy.bwapi_unit_ && enemy.bwapi_unit_->exists() ) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
     }
     else {
@@ -588,15 +588,34 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 }
 
 
-Stored_Resource* MeatAIModule::getSafestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin, const int &dist = 999999) {
-    int min_dist = dist;
+Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
+    int min_dist = 999999;
     double temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = inv.getRadialDistanceOutFromHome(r->second.pos_);
+            temp_dist = inv.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist) {
+                min_dist = temp_dist;
+                return_unit = &(r->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
+// Allows type -specific- selection. 
+Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
+    int min_dist = 999999;
+    double temp_dist = 999999;
+    Stored_Resource* return_unit = nullptr;
+
+    if (!ri.resource_inventory_.empty()) {
+        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+            temp_dist = inv.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
+            bool right_type = (type == r->second.type_ || type.isMineralField() && r->second.type_.isMineralField()); //WARNING:: Minerals have 4 types.
+            if (temp_dist <= min_dist && right_type ) { 
                 min_dist = temp_dist;
                 return_unit = &(r->second);
             }
@@ -703,22 +722,26 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, Inventory &inv, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
+    bool can_attack, can_be_attacked_by, we_are_a_flyer;
     double temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
+    we_are_a_flyer = unit->getType().isFlyer();
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             can_attack = Can_Fight(unit, e->second);
             can_be_attacked_by = Can_Fight(e->second, unit);
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                //if (e->second.type_.isFlyer()) {
-                //    temp_dist = unit->getDistance(e->second.pos_) / 4; // a hackney air/ground conversion. 
-                //}
-                //else {
-                    temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
-                //}
+                if (we_are_a_flyer) {
+                    temp_dist = unit->getDistance(e->second.pos_);
+                }
+                temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
+                
+                if (temp_dist = 9999999 ) { // if it has no meaningful return, unit is over an unreachable location.
+                    temp_dist = 3.14 * pow(unit->getDistance(e->second.pos_) / 8, 2); // a hackney air/ground conversion. 
+                }
+
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -786,6 +809,35 @@ bool MeatAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &
 
     return false;
 }
+
+//Searches an inventory for buildings. Returns TRUE if the area is occupied. 
+bool MeatAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
+
+    for (auto & e : ui.unit_inventory_) {
+        if (e.second.type_ == type) {
+            if (e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
+                e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+//bool MeatAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
+//
+//    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+//        if ((*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
+//            (*e).second.pos_.y < origin.y + dist && (*e).second.pos_.y > origin.y - dist &&
+//            MeatAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
+//            return true;
+//        }
+//    }
+//
+//    return false;
+//}
 
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
 bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
@@ -1453,7 +1505,7 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const U
 bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
 
     bool desperate_for_minerals = inv.min_fields_ < 6;
-    bool safe_mine = checkOccupiedArea(ui,pos,250);
+    bool safe_mine = checkOccupiedArea(ui, pos,250);
     return  safe_mine || desperate_for_minerals;
 }
 

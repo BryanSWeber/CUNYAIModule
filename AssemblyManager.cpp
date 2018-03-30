@@ -56,7 +56,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, friendly_inventory) > 0 && enemy_inventory.stock_fliers_ > 0.75 * friendly_inventory.stock_shoots_up_) {
+            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && enemy_inventory.stock_fliers_ > 0.75 * friendly_inventory.stock_shoots_up_) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500);
                 Stored_Unit *close_hatch = getClosestStored(hacheries, unit->getPosition(), 500);
                 if (close_hatch) {
@@ -64,7 +64,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            if (inventory.map_veins_in_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit->getPosition()) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
+            if (inventory.map_veins_out_from_enemy_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit->getPosition()) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
                 if (central_base == TilePosition(0, 0)) {
                     int old_dist = 9999999;
 
@@ -162,7 +162,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             }
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
-            Stored_Resource* closest_gas = getClosestStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, unit->getPosition(), 99999);
+            Stored_Resource* closest_gas = MeatAIModule::getClosestGroundStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit->getPosition());
             if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
                 TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = MeatAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);
@@ -291,8 +291,10 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
 
-    bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) > ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern.
-    bool e_relatively_weak_against_air = ui.stock_fliers_ / (double)(ei.stock_shoots_up_ + 1) > ui.stock_ground_units_ / (double)(ei.stock_shoots_down_ + 1); // div by zero concern.
+    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) > ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern.
+    bool u_relatively_weak_against_air = - ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1),2) < - ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1),2); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
+    //bool e_relatively_weak_against_air = ui.stock_fliers_ / (double)(ei.stock_shoots_up_ + 1) > ui.stock_ground_units_ / (double)(ei.stock_shoots_down_ + 1); // div by zero concern.  
+    bool e_relatively_weak_against_air = 1 / (double)(ei.stock_shoots_up_ + 1) > 1 / (double)(ei.stock_shoots_down_ + 1); // div by zero concern. Derivative of the above equation.
 
     // Do required build first.
     if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
@@ -307,6 +309,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     //Army build/replenish.  Cycle through military units available.
     if (ei.stock_fliers_ > ui.stock_shoots_up_ || u_relatively_weak_against_air ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         is_building += Check_N_Grow(UnitTypes::Zerg_Scourge, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && Count_Units(UnitTypes::Zerg_Scourge, inv) < 5); // hard cap on scourges, they build 2 at a time. May (still) overbuild within a single frame.
+        is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
 
         if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 0 && buildorder.checkEmptyBuildOrder()) {
@@ -405,9 +408,15 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_total_;
-    bool nearby_enemy = getUnitInventoryInRadius(enemy_inventory,drone->getPosition(), 2500).stock_total_ > 0;
-    Unit_Inventory e_loc = getUnitInventoryInRadius(e_inv, drone->getPosition(), 1500);
-    Unit_Inventory u_loc = getUnitInventoryInRadius(u_inv, drone->getPosition(), 1500);
+    bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), 2500);
+    Unit_Inventory e_loc;
+    Unit_Inventory u_loc;
+
+    if (nearby_enemy) {
+        e_loc = getUnitInventoryInRadius(e_inv, drone->getPosition(), inv.my_portion_of_the_map_);
+        u_loc = getUnitInventoryInRadius(u_inv, drone->getPosition(), inv.my_portion_of_the_map_);
+    }
+
 
     int invest_in_lurkers = Stock_Units(UnitTypes::Zerg_Spawning_Pool, u_inv) +
         Stock_Units(UnitTypes::Zerg_Hydralisk_Den, u_inv) +
@@ -487,8 +496,8 @@ TilePosition MeatAIModule::getBuildablePosition(TilePosition target_pos, UnitTyp
     int widest_dim_in_minitiles = 0.25 * max(build_type.height(), build_type.width()) + 8;
     for (int x = -tile_grid_size; x <= tile_grid_size; ++x) {
         for (int y = -tile_grid_size; y <= tile_grid_size; ++y) {
-            double centralize_x = target_pos.x + x;
-            double centralize_y = target_pos.y + y;
+            int centralize_x = target_pos.x + x;
+            int centralize_y = target_pos.y + y;
             if (!(x == 0 && y == 0) &&
                 centralize_x < Broodwar->mapWidth() &&
                 centralize_y < Broodwar->mapHeight() &&
@@ -498,6 +507,7 @@ TilePosition MeatAIModule::getBuildablePosition(TilePosition target_pos, UnitTyp
                 inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
             ) {
                 canidate_return_position = TilePosition(centralize_x, centralize_y);
+                break;
             }
         }
     }
@@ -617,6 +627,7 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object hydra_den = Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den);
     Build_Order_Object lurker_tech = Build_Order_Object(TechTypes::Lurker_Aspect);
     Build_Order_Object grooved_spines = Build_Order_Object(UpgradeTypes::Grooved_Spines);
+    Build_Order_Object muscular_augments = Build_Order_Object(UpgradeTypes::Muscular_Augments);
 
     for (auto &build : build_string) {
         if (build == "hatch") {
@@ -672,6 +683,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
         }
         else if (build == "grooved_spines") {
             building_gene_.push_back(grooved_spines);
+        }
+        else if (build == "muscular_augments") {
+            building_gene_.push_back(muscular_augments);
         }
     }
 }

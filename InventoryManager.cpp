@@ -28,7 +28,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateGas_Workers();
     updateMin_Workers();
 
-    updateMin_Possessed();
+    updateMin_Possessed( ri );
     updateHatcheries();
 
     if ( smoothed_barriers_.size() == 0 ) {
@@ -284,20 +284,14 @@ void Inventory::updateMin_Workers() {
 }
 
 // Updates the number of mineral fields we "possess".
-void Inventory::updateMin_Possessed() {
+void Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
 
     int min_fields = 0;
-    Unitset resource = Broodwar->getMinerals(); // get any mineral field that exists on the map.
-    if ( !resource.empty() ) { // check if the minerals exist
-        for ( auto r = resource.begin(); r != resource.end() && !resource.empty(); ++r ) { //for each mineral
-            if ( (*r) && (*r)->exists() ) {
-                Unitset mybases = Broodwar->getUnitsInRadius( (*r)->getPosition(), 250, Filter::IsResourceDepot && Filter::IsOwned ); // is there a mining base near there?
-                if ( !mybases.empty() ) { // check if there is a base nearby
-                    min_fields++; // if there is a base near it, then this mineral counts.
-                } // closure if base is nearby
-            } // closure for existance check.
-        } // closure: for each mineral
-    } // closure, minerals are visible on map.
+    for (auto r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); ++r) { //for each mineral
+        if (r->second.occupied_natural_ && r->second.type_.isMineralField() ) {
+                min_fields++; // if there is a base near it, then this mineral counts.
+        } // closure for existance check.
+    } // closure: for each mineral
 
     min_fields_ = min_fields;
 }
@@ -496,12 +490,15 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
-    map_veins_out_.clear();
 
-    // first, define matrixes to recieve the map_vein locations for every minitile.
+    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0 ) {
+        return;
+    } 
+
+    map_veins_out_from_main_.clear();
 
     // first, define matrixes to recieve the walkable locations for every minitile.
-    map_veins_out_ = unwalkable_barriers_;
+    map_veins_out_from_main_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -509,20 +506,20 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     distance_right_x = max( map_x - minitile_x, map_x );
     distance_below_y = max( map_y - minitile_y, map_y );
     int t = std::max( map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y );
-    int maxI = t*t; // total number of spiral steps we have to make.
+    //int maxI = t*t; // total number of spiral steps we have to make.
     int total_squares_filled = 0;
-    int steps_until_next_turn = 1;
-    int steps_since_last_turn = 0;
-    bool turn_trigger = false;
-    int turns_at_this_count = 0;
-    int number_of_turns = 0;
-    int direction = 1;
+    //int steps_until_next_turn = 1;
+    //int steps_since_last_turn = 0;
+    //bool turn_trigger = false;
+    //int turns_at_this_count = 0;
+    //int number_of_turns = 0;
+    //int direction = 1;
 
     vector <WalkPosition> fire_fill_queue;
 
     //begin with a fire fill.
         total_squares_filled++;
-        map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
+        map_veins_out_from_main_[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back( { minitile_x, minitile_y } );
 
         int minitile_x_temp = minitile_x;
@@ -535,45 +532,45 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
             fire_fill_queue.erase( fire_fill_queue.begin() );
 
             // north
-            if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+            if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
             }
             // north east
-            if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+            if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
             }
             // north west
-            if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+            if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
             }
             //south east
-            if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+            if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
             }
             //south west
-            if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+            if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
             }
             // east
-            if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+            if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
             }
             //west
-            if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+            if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
             }
         }
@@ -581,65 +578,65 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
         //    if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
 
         //            // Working flood fill below:
-        //        if ( map_veins_out_[minitile_x][minitile_y] == 0 /*&& map_veins_[minitile_x][minitile_y] > 175*/ ) { // if it is walkable, consider it a canidate for a choke.
+        //        if ( map_veins_out_from_main_[minitile_x][minitile_y] == 0 /*&& map_veins_[minitile_x][minitile_y] > 175*/ ) { // if it is walkable, consider it a canidate for a choke.
         //            total_squares_filled++;
-        //            map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
+        //            map_veins_out_from_main_[minitile_x][minitile_y] = total_squares_filled;
         //            bool dead_end = false;
         //            int minitile_x_temp = minitile_x;
         //            int minitile_y_temp = minitile_y;
         //            int total_squares_filled_temp = total_squares_filled;
         //            while ( !dead_end ) { // this portion is a flood fill.
         //                // north
-        //                if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // north east
-        //                if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // north west
-        //                if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp--;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //south east
-        //                if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+        //                if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
         //                    minitile_y_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //south west
-        //                if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+        //                if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_y_temp--;
         //                    minitile_x_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // east
-        //                if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+        //                if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //west
-        //                if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+        //                if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                dead_end = true;
@@ -708,11 +705,14 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
 
-    map_veins_in_.clear();
-    // first, define matrixes to recieve the map_vein locations for every minitile.
+    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0) {
+        return;
+    }
+
+    map_veins_out_from_enemy_.clear();
 
     // first, define matrixes to recieve the walkable locations for every minitile.
-    map_veins_in_ = unwalkable_barriers_;
+    map_veins_out_from_enemy_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -733,7 +733,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
 
     //begin with a fire fill.
     total_squares_filled++;
-    map_veins_in_[minitile_x][minitile_y] = total_squares_filled;
+    map_veins_out_from_enemy_[minitile_x][minitile_y] = total_squares_filled;
     fire_fill_queue.push_back( { minitile_x, minitile_y } );
 
     int minitile_x_temp = minitile_x;
@@ -746,92 +746,105 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
         fire_fill_queue.erase( fire_fill_queue.begin() );
 
         // north
-        if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+        if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
         }
         // north east
-        if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+        if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
         }
         // north west
-        if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+        if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
         }
         //south east
-        if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+        if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
         }
         //south west
-        if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+        if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
         }
         // east
-        if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+        if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
         }
         //west
-        if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+        if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
     }
 }
 
-int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B )
+int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
 {
-    if ( map_veins_in_.size() > 0 && A.isValid() && B.isValid()) {
-        WalkPosition wp_a = WalkPosition( A );
-        WalkPosition wp_b = WalkPosition( B );
-        return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    if (map_veins_out_from_enemy_.size() > 0 && A.isValid() && B.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        WalkPosition wp_b = WalkPosition(B);
+        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_veins_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
+        if (A > 0 && B > 0) {
+            return abs(A - B);
+        }
     }
-    else {
-        return 0;
-    }
+
+     return 9999999;
 }
 
-int Inventory::getRadialDistanceOutFromEnemy( const Position A){
-    if ( map_veins_in_.size() > 0 && A.isValid()) {
+int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
+{
+    if ( map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
-        return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 0) {
+            return map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        }
     }
-    else {
-        return 0;
-    }
+
+      return 9999999;
+
 }
 
-int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B )
+int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
 {
-    if ( map_veins_out_.size() > 0 && A.isValid() && B.isValid() ) {
-        WalkPosition wp_a = WalkPosition( A );
-        WalkPosition wp_b = WalkPosition( B );
-        return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
+    if ( map_veins_out_from_main_.size() > 0 && A.isValid() && B.isValid() ) {
+        WalkPosition wp_a = WalkPosition(A);
+        WalkPosition wp_b = WalkPosition(B);
+        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
+        if (A > 0 && B > 0) {
+            return abs(A - B);
+        }
     }
-    else {
-        return 0;
-    }
+
+    return 9999999;
 }
-int Inventory::getRadialDistanceOutFromHome( const Position A )
+int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
-    if ( map_veins_out_.size() > 0 && A.isValid() ) {
-        WalkPosition wp_a = WalkPosition( A );
-        return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
+    if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 0) {
+            return map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        }
     }
-    else {
-        return 0;
-    }
+
+    return 9999999;
+
 }
 
 void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
@@ -1103,32 +1116,6 @@ void Inventory::getExpoPositions() {
     //Regionset neighbors;
     bool local_maximum = true;
 
-    //neighbors.insert(home);
-
-    //Unit_Inventory bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hatchery, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
-    //bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Lair, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
-    //bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hive, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
 
     for ( vector<int>::size_type x = 0; x != base_values_.size(); ++x ) {
         for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {

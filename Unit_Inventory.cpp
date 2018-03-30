@@ -65,13 +65,17 @@ void Unit_Inventory::purgeUnseenUnits()
 }
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
+    UnitCommand command = unit->getLastCommand();
     map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
     if (iter != unit_inventory_.end()) {
         Stored_Unit& miner = iter->second;
         miner.stopMine(ri);
     }
-    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inv.next_expo_)) {
+    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build ) {
         res.removeReserveSystem(unit->getBuildType());
+    }
+    if (command.getTargetPosition() == Position(inv.next_expo_) ) {
+        res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
 }
 
@@ -86,10 +90,15 @@ void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Invent
 
 void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & inv, Reservation & res)
 {
-    if (unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inv.next_expo_)) {
+    UnitCommand command = unit->getLastCommand();
+    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
         res.removeReserveSystem(unit->getBuildType());
     }
+    if (command.getTargetPosition() == Position(inv.next_expo_)) {
+        res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+    }
 }
+
 
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
@@ -235,7 +244,6 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
  {
     Unit_Inventory total = lhs;
-    //total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
     total.unit_inventory_.insert(rhs.unit_inventory_.begin(), rhs.unit_inventory_.end());
     total.updateUnitInventorySummary();
     return total;

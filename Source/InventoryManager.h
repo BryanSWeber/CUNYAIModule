@@ -40,8 +40,8 @@ struct Inventory {
     vector< vector<int> > unwalkable_barriers_;
     vector< vector<int> > smoothed_barriers_;
     vector< vector<int> > map_veins_;
-    vector< vector<int> > map_veins_out_;
-    vector< vector<int> > map_veins_in_;
+    vector< vector<int> > map_veins_out_from_main_;
+    vector< vector<int> > map_veins_out_from_enemy_;
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -84,7 +84,7 @@ struct Inventory {
     void Inventory::updateMin_Workers();
 
     // Updates the number of mineral fields we "possess".
-    void Inventory::updateMin_Possessed();
+    void Inventory::updateMin_Possessed(const Resource_Inventory & ri);
 
     // Updates the number of hatcheries (and decendents).
     void Inventory::updateHatcheries();
@@ -107,10 +107,10 @@ struct Inventory {
     // Updates veins going out of the enemy base for attacking ease.
     void Inventory::updateMapVeinsOutFromFoe( const Position center );
     // Gets distance using
-    int Inventory::getDifferentialDistanceOutFromEnemy( const Position A, const Position B );
-    int Inventory::getRadialDistanceOutFromEnemy(const Position A );
-    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B );
-    int Inventory::getRadialDistanceOutFromHome(const Position A );
+    int Inventory::getDifferentialDistanceOutFromEnemy( const Position A, const Position B ) const;
+    int Inventory::getRadialDistanceOutFromEnemy(const Position A ) const;
+    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B ) const;
+    int Inventory::getRadialDistanceOutFromHome(const Position A ) const;
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri);

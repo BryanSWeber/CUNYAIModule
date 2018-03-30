@@ -101,7 +101,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                 r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
                 r->second.valid_pos_ = true;
                 r->second.type_ = r->second.bwapi_unit_->getType();
-                Unit_Inventory local_area = MeatAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320);
+                Unit_Inventory local_area = MeatAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320 );
                 r->second.occupied_natural_ = MeatAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - MeatAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
                     MeatAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
                     MeatAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?

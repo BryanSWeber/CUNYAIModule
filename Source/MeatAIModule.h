@@ -10,16 +10,12 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE false // must be off for proper game close in SC-docker
-//#define _ANALYSIS_MODE false // Visualizations
-//#define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
-#define _MOVE_OUTPUT_BACK_TO_READ false // should be on for sc-docker
-//#define _LEARNING_MODE false //if we are exploring new positions or simply keeping existing ones.
+#define _ANALYSIS_MODE true // Visualizations
+#define _COBB_DOUGLASS_REVEALED true // The CD function specifically.
+#define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
+#define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
 
-//#define _RESIGN_MODE true
-#define _ANALYSIS_MODE true
-//#define _MOVE_OUTPUT_BACK_TO_READ true
-#define _COBB_DOUGLASS_REVEALED true
-#define _LEARNING_MODE true
+
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -117,10 +113,8 @@ public:
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
-      // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit , Unit_Inventory &ui );
-      // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui );
+      // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
+      void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
@@ -186,7 +180,9 @@ public:
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-      static Stored_Resource * getSafestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin, const int & dist);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
+
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
@@ -205,6 +201,8 @@ public:
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      static bool checkOccupiedArea(const Unit_Inventory & ui, const UnitType type, const Position & origin);
+      static bool checkThreatenedArea(const Unit_Inventory & ui, const UnitType & type, const Position & origin, const int & dist);
       //Searches an inventory for buildings. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkBuildingOccupiedArea( const Unit_Inventory & ui, const Position & origin);
       //Searches an inventory for resources. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
@@ -267,5 +265,5 @@ public:
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages morph.
-      bool Tech_Begin(Unit building, const Unit_Inventory &ui);
+      bool Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv);
 };
