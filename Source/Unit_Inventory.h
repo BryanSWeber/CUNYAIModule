@@ -5,6 +5,7 @@
 #include "Resource_Inventory.h"
 #include "InventoryManager.h"
 #include "Reservation_Manager.h"
+#include "Fight_MovementManager.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -26,8 +27,8 @@ struct Stored_Unit {
     UnitType type_;
     UnitType build_type_;
     Position pos_; // in pixels
-
 	Unit locked_mine_;
+    //Boids unit_movement_;
 
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);

@@ -29,9 +29,9 @@ public:
     // Causes a unit to be pulled towards others of their kind.
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards enemy base.
-    void setAttractionEnemy( const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory & inv, const bool &potential_fears);
+    void setAttractionEnemy( const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory & inv, const bool &potential_fears);
     // causes a unit to move directly towards the enemy base.
-    void scoutEnemyBase(const Unit & unit, const Position & pos, Unit_Inventory & ei, Inventory & inv);
+    void scoutEnemyBase(const Unit & unit, const Position & pos, Inventory & inv);
     // causes a unit to be pulled homeward.
     void setAttractionHome( const Unit & unit, const Position & pos, const Unit_Inventory & ei, const Inventory & inv);
     // causes a unit to seperate itself from others.
@@ -45,9 +45,9 @@ public:
     bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
     // gives a vector that has the direction on ground towards home.
-    vector<double> getVectorTowardsHome(const Position & pos, const Inventory & inv);
+    vector<double> getVectorTowardsHome(const Position & pos, const Inventory & inv) const;
     // gives a vector that has the direction on ground towards enemy.
-    vector<double> getVectorTowardsEnemy(const Position & pos, const Inventory & inv);
+    vector<double> getVectorTowardsEnemy(const Position & pos, const Inventory & inv) const;
 
 private:
     double x_stutter_ = 0;

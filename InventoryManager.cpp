@@ -72,7 +72,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
         Broodwar->sendText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
     }
 
-    if ( start_positions_.empty() && !list_cleared_ ) {
+    if ( start_positions_.empty() && !cleared_all_start_positions_) {
         getStartPositions();
     }
 };
@@ -104,12 +104,7 @@ void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
-    double total = ui.stock_total_;
-    for ( auto & u : ui.unit_inventory_ ) {
-        if ( u.second.type_ == UnitTypes::Zerg_Drone ) {
-            total -= u.second.current_stock_value_;
-        }
-    }
+    double total = ui.stock_total_ - MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui);
 
     if ( total <= 0 ) {
         total = 1;
@@ -374,7 +369,7 @@ void Inventory::updateSmoothPos() {
         for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
             for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
 
-                                                                             // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
+                                                               // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
                                                                              // Repeat untill finished.
 
                 if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
@@ -491,12 +486,12 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
 
-    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0 ) {
+    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
         return;
-    } 
-
-    map_veins_out_from_main_.clear();
-
+    }
+    else {
+        map_veins_out_from_main_.clear();
+    }
     // first, define matrixes to recieve the walkable locations for every minitile.
     map_veins_out_from_main_ = unwalkable_barriers_;
 
@@ -705,11 +700,12 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
 
-    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0) {
+    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
         return;
     }
-
-    map_veins_out_from_enemy_.clear();
+    else {
+        map_veins_out_from_enemy_.clear();
+    }
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     map_veins_out_from_enemy_ = unwalkable_barriers_;
@@ -1157,13 +1153,18 @@ void Inventory::updateStartPositions() {
     for ( auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
         if ( Broodwar->isExplored( TilePosition( *visible_base ) ) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base) ) {
             visible_base = start_positions_.erase( visible_base );
+            if ( *visible_base == start_positions_[0] ) {
+                updateMapVeinsOutFromFoe(start_positions_[0]);
+            }
+
         }
         else {
             ++visible_base;
         }
     }
+
     if ( start_positions_.empty() ) {
-        list_cleared_ = true;
+        cleared_all_start_positions_ = true;
     }
 }
 

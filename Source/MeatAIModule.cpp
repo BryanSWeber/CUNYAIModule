@@ -207,6 +207,10 @@ void MeatAIModule::onFrame()
             for ( auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et ) {
                 present = (*et)->getID() == e->second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
                 if ( present ) {
+                    (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+                    (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+                    (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints();
+                    (*e).second.valid_pos_ = true;
                     break;
                 }
             }
@@ -302,7 +306,7 @@ void MeatAIModule::onFrame()
     inventory.updateScreen_Position();
     inventory.getExpoPositions(); // prime this once on game start.
 
-    if (inventory.map_veins_out_from_enemy_.empty() && t_game > 24 && !inventory.start_positions_.empty() && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
+    if (inventory.map_veins_out_from_enemy_.empty() && t_game > 24 && !inventory.cleared_all_start_positions_ && enemy_inventory.getMeanBuildingLocation() == Position(0,0) ) {
         inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
     } // the enemy is "out there somewhere". Choose a start position, but make sure to elimiate your own via updateStartPositions.
 
@@ -606,8 +610,7 @@ void MeatAIModule::onFrame()
             continue;
         // Ignore the unit if it is in one of the following states
         if ( u->isLoaded() ||
-            !u->isPowered() ||
-            u->isStuck() )
+            !u->isPowered() /*|| u->isStuck()*/ )
             continue;
         // Ignore the unit if it is incomplete or busy constructing
         if ( !u->isCompleted() ||
@@ -714,17 +717,6 @@ void MeatAIModule::onFrame()
         } // Close Worker management loop
         auto end_worker = std::chrono::high_resolution_clock::now();
 
-        //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
-        auto start_scout = std::chrono::high_resolution_clock::now();
-        bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) || (massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
-        if (isIdleEmpty(u) && !isRecentCombatant(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && spamGuard(u, 24))
-        { //Scout if you're not a drone or larva and can move.
-            Boids boids;
-            bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
-            bool potential_fears = ( army_derivative > 0 && !massive_army);
-            boids.Boids_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
-        } // If it is a combat unit, then use it to attack the enemy.
-        auto end_scout = std::chrono::high_resolution_clock::now();
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -762,21 +754,16 @@ void MeatAIModule::onFrame()
 
                 int e_count = enemy_loc.unit_inventory_.size();
 
-                int helpless_e = u->isFlying() ? enemy_loc.stock_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_total_ - enemy_loc.stock_shoots_down_;
-                int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
+                //int helpless_e = u->isFlying() ? enemy_loc.stock_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_total_ - enemy_loc.stock_shoots_down_;
+                //int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
+                int helpful_e = friend_loc.stock_fliers_ / (double)(friend_loc.stock_total_ + 1) * enemy_loc.stock_shoots_up_ + friend_loc.stock_ground_units_ / (double)(friend_loc.stock_total_ + 1)* enemy_loc.stock_shoots_down_; // permits a noncombat enemy to be seen as worthless, 0 stock.
 
                 //int helpless_u = 0; // filled below.  Need to actually reflect MY inventory.
-                int helpful_u = 0; // filled below.
+                int helpful_u = enemy_loc.stock_fliers_ / (double)(enemy_loc.stock_total_ + 1) * friend_loc.stock_shoots_up_ + enemy_loc.stock_ground_units_ / (double)(enemy_loc.stock_total_ + 1)  * friend_loc.stock_shoots_down_;
 
-                if (enemy_inventory.stock_fliers_ > 0) {
-                    helpful_u += friend_loc.stock_shoots_up_; // double-counts hydras and units that attack both air and ground.
-                }
-                if (enemy_inventory.stock_ground_units_ > 0) {
-                    helpful_u += friend_loc.stock_shoots_down_; // double-counts hydras and units that attack both air and ground.
-                }
-                if (enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0) {
-                    helpful_u += friend_loc.stock_total_;
-                } // if you're off the charts, throw everything in.
+                //if (enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0) {
+                //    helpful_u += friend_loc.stock_total_;
+                //} // if you're off the charts, throw everything in.
 
                   //if ( u->getType().airWeapon() != WeaponTypes::None ) {
                   //    helpless_u += Stock_Units_ShootDown( friend_loc );
@@ -793,7 +780,7 @@ void MeatAIModule::onFrame()
                     //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                     //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
-                    bool neccessary_attack = helpful_e * 1.05 < helpful_u || // attack if you outclass them and your boys are ready to fight.
+                    bool neccessary_attack = helpful_e <= helpful_u * 0.95|| // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                         massive_army ||
                         //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                                                                                                //!army_starved || // fight your army is appropriately sized.
@@ -810,7 +797,7 @@ void MeatAIModule::onFrame()
 
                     bool force_retreat = (u->getType().isFlyer() && u->getType() != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > 0.75 * friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                         //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
-                        !e_closest->bwapi_unit_->isDetected() ||  // Run if they are cloaked. Must be visible to know if they are cloaked.
+                        (e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
                         helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
                         (getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 - enemy_loc.max_range_ - 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_ - 32).unit_inventory_.size() > 0 && enemy_loc.max_range_ < 7 * 32) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) ||
@@ -895,6 +882,18 @@ void MeatAIModule::onFrame()
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 
+        //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
+        auto start_scout = std::chrono::high_resolution_clock::now();
+        bool acceptable_ovi_scout = u->getType() != UnitTypes::Zerg_Overlord || (enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) || (massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
+        if (isIdleEmpty(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone &&  u->getType() != UnitTypes::Zerg_Larva && (u->canMove() || u->isBurrowed()) && spamGuard(u))
+        { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
+            Boids boids;
+            bool enemy_found = enemy_inventory.getMeanLocation() != Position(0, 0); //(u->getType() == UnitTypes::Zerg_Overlord && !supply_starved)
+            bool potential_fears = (army_derivative > 0 && !massive_army);
+            boids.Boids_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
+        } // If it is a combat unit, then use it to attack the enemy.
+        auto end_scout = std::chrono::high_resolution_clock::now();
+
         // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.
         auto start_detector = std::chrono::high_resolution_clock::now();
         Position c; // holder for cloaked unit position.
@@ -968,13 +967,13 @@ void MeatAIModule::onFrame()
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
         if ( u->getType() == UnitTypes::Zerg_Creep_Colony ) {
-            if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() / 2 && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
+            if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
                 Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                 mutating_creep_this_frame = true;
             }
-            else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() / 2 && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
+            else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
                 Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;

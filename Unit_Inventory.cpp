@@ -5,6 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\InventoryManager.h"
 #include "Source\Reservation_Manager.h"
+#include "Source\Fight_MovementManager.h"
 
 
 //Unit_Inventory functions.
@@ -214,21 +215,11 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
  //for the army that can actually move.
  Position Unit_Inventory::getClosestMeanArmyLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     for (const auto &u : this->unit_inventory_) {
-         if (u.second.type_.canAttack() && u.second.valid_pos_ && u.second.type_.canMove() && !u.second.type_.isWorker()) {
-             x_sum += u.second.pos_.x;
-             y_sum += u.second.pos_.y;
-             count++;
-         }
-     }
-     if (count > 0) {
-         Position mean_pos = { x_sum / count, y_sum / count };
-         Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && !IsOwned, 500);
+     Position mean_pos = getMeanArmyLocation();
+     if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
+        Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
          if (nearest_neighbor && nearest_neighbor->getPosition() ) {
-             Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && !IsOwned, 500)->getPosition();
+             Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
              return out;
          }
          else {
@@ -286,7 +277,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
 
-            if ( u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_.maxEnergy() > 0 || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier || u_iter.second.type_ == UnitTypes::Protoss_Reaver ) {
+            if ( MeatAIModule::IsFightingUnit(u_iter.second) ) {
 
                 if ( u_iter.second.type_.isFlyer() ) {
                     fliers += MeatAIModule::Stock_Units( u_iter.second.type_, *this ); // add the value of that type of unit to the flier stock.

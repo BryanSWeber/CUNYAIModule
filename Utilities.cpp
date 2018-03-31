@@ -57,15 +57,14 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                           u_type == UnitCommandTypes::Stop ||
 						  u_type == UnitCommandTypes::Unknown;
 
-	bool special_spam_guard = unit->getLastCommandFrame() + Broodwar->getLatencyFrames() < Broodwar->getFrameCount();
 
-    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && special_spam_guard;
+    return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spamGuard(unit);
 }
 
 // Did the unit fight in the last 5 seconds?
 bool MeatAIModule::isRecentCombatant(const Unit &unit) {
 	bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
-	bool recent_order = unit->getLastCommandFrame() + 1 * 24 > Broodwar->getFrameCount();
+	bool recent_order = unit->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
 	return fighting_now && recent_order;
 }
 
@@ -76,21 +75,22 @@ bool MeatAIModule::IsFightingUnit(const Unit &unit)
     {
         return false;
     }
+    UnitType u_type = unit->getType();
 
     // no workers or buildings allowed. Or overlords, or larva..
-    if ( unit && unit->getType().isWorker() ||
-        unit->getType().isBuilding() ||
-        unit->getType() == BWAPI::UnitTypes::Zerg_Larva ||
-        unit->getType() == BWAPI::UnitTypes::Zerg_Overlord )
+    if ( unit && u_type.isWorker() ||
+        u_type.isBuilding() ||
+        u_type == BWAPI::UnitTypes::Zerg_Larva ||
+        u_type == BWAPI::UnitTypes::Zerg_Overlord )
     {
         return false;
     }
 
     // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
-    if ( unit->getType().canAttack() ||
-        unit->getType() == BWAPI::UnitTypes::Protoss_High_Templar ||
-        unit->getType() == BWAPI::UnitTypes::Terran_Bunker ||
-        unit->isFlying() && unit->getType().spaceProvided() > 0 )
+    if (u_type.canAttack() ||
+        u_type == BWAPI::UnitTypes::Protoss_High_Templar ||
+        u_type == BWAPI::UnitTypes::Terran_Bunker ||
+        unit->isFlying() && u_type.spaceProvided() > 0 )
     {
         return true;
     }
@@ -377,7 +377,7 @@ int MeatAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &
     int total_stock = 0;
 
     for ( auto & u : ui.unit_inventory_ ) {
-        if ( u.second.type_ == unit_type ) {
+        if ( u.second.type_ == unit_type ) {  // if you impose valid_pos here many of YOUR OWN UNITS will not be counted.
             total_stock += u.second.current_stock_value_;
         }
     }
@@ -720,7 +720,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     return return_unit;
 }
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, Inventory &inv, const int &dist) {
+Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Inventory &inv, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     double temp_dist = 999999;
@@ -736,8 +736,10 @@ Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
                 if (we_are_a_flyer) {
                     temp_dist = unit->getDistance(e->second.pos_);
                 }
-                temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
-                
+                else {
+                    temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
+                }
+
                 if (temp_dist = 9999999 ) { // if it has no meaningful return, unit is over an unreachable location.
                     temp_dist = 3.14 * pow(unit->getDistance(e->second.pos_) / 8, 2); // a hackney air/ground conversion. 
                 }
@@ -891,9 +893,12 @@ bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos)
 
 bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
+    bool ready_to_move = true;
+
     bool unit_fighting = unit->isAttackFrame() || unit->isStartingAttack();
     if (unit_fighting) {
-        return false;
+        ready_to_move = false;
+        return ready_to_move;
     }
 
     if (cd_frames_chosen != 99) { // if the person has selected some specific delay they are looking for, check that.
@@ -926,18 +931,22 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         }
     }
     else if (u_order == Orders::Burrowing || u_order == Orders::Unburrowing) {
-        cd_frames = 16;
+        cd_frames = 14;
     }
     
-    if (u_order == Orders::Move || u_order == Orders::AttackMove) {
+    if (u_order == Orders::Move && ( (!unit->isMoving() && !unit->isAccelerating()) || unit->isBraking() ) ) {
+        cd_frames = 7; // if it's not moving, accellerating or IS breaking.
+    }
+
+    if ( u_order == Orders::AttackMove) {
         cd_frames = 12;
     }
 
-    if (cd_frames < 7) {
-        cd_frames = 7;
+    if (cd_frames < Broodwar->getLatencyFrames() ) {
+        cd_frames = Broodwar->getLatencyFrames();
     }
-
-    return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames + 1, Broodwar->getLatencyFrames() + 1); // we must wait at least 5 frames before issuing them a new command regardless.
+    ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames;
+    return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
 }
 
@@ -1479,7 +1488,7 @@ Position MeatAIModule::getUnit_Center(Unit unit){
 }
 
 // checks if a location is safe and doesn't block minerals.
-bool MeatAIModule::checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
+bool MeatAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
     Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
     //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.

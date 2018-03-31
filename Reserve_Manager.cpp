@@ -59,7 +59,7 @@ int Reservation::getExcessGas() {
     return max( Broodwar->self()->gas() - gas_reserve_ , 0 );
 }
 
-bool Reservation::checkAffordablePurchase( const UnitType type ) {
+bool Reservation::checkAffordablePurchase( const UnitType type ) { // make a template?
     bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
     bool open_reservation = reservation_map_.find(type)==reservation_map_.end();
     return affordable && open_reservation;

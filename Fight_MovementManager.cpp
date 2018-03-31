@@ -12,7 +12,6 @@ using namespace std;
 //Forces a unit to stutter in a boids manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved, const bool &potential_fears) {
 
-    if (MeatAIModule::spamGuard(unit)) {
         Position pos = unit->getPosition();
         if (pos) {
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
@@ -21,10 +20,11 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 500);
 
             // Units should scout when there is a large gap in our knowledge.
-            if (!enemy_scouted && healthy && !inventory.start_positions_.empty()) { // check his bases first.
-                scoutEnemyBase(unit, pos, ei, inventory);
+            if (!enemy_scouted && healthy && !inventory.cleared_all_start_positions_) { // check his bases first.
+                //scoutEnemyBase(unit, pos, inventory); 
+                setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
             }
-            else if (!enemy_scouted && healthy && inventory.start_positions_.empty()) { // then wander about searching.
+            else if (!enemy_scouted && healthy && inventory.cleared_all_start_positions_) { // then wander about searching.
                 setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
             }
             else {
@@ -35,7 +35,7 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
 
             // Units should go to the enemy when it's time to pick a fight, home otherwise.
             if (enemy_scouted && healthy && ready_to_fight && !army_starved) {
-                setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
+                setAttractionEnemy(unit, pos, ei, inventory, potential_fears); 
             }
             else if (enemy_scouted && (!healthy || !ready_to_fight || army_starved)) {
                 setAttractionHome(unit, pos, ei, inventory);
@@ -67,8 +67,13 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             }
 
             //Move to the final position.
-            Position brownian_pos = { (int)(pos.x + x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_),
-                                      (int)(pos.y + y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_) };
+            int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
+            int vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
+            int dist = MeatAIModule::getProperSpeed(unit) * 48;
+            int norm_x = cos(vector_x) * dist;
+            int norm_y = sin(vector_y) * dist;
+            Position brownian_pos = { (int)(pos.x + vector_x),
+                                      (int)(pos.y + vector_y) };
 
 
             unit->move(brownian_pos);
@@ -81,13 +86,11 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             MeatAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
         }
-    }
 };
 
 // This is basic combat logic for nonspellcasting units.
 void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White )
 {
-    if (MeatAIModule::spamGuard(unit)) {
         UnitType u_type = unit->getType();
         Stored_Unit target;
         int priority = 0;
@@ -181,7 +184,6 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                 }
             }
         }
-    }
 }
 
 // Basic retreat logic, range = enemy range
@@ -190,13 +192,13 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     int dist = unit->getDistance(e_unit.pos_);
     int air_range = e_unit.type_.airWeapon().maxRange();
     int ground_range = e_unit.type_.groundWeapon().maxRange();
-    int chargable_distance_net = MeatAIModule::getChargableDistance(unit, ei);
+    int chargable_distance_net = MeatAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
     int range = unit->isFlying() ? air_range : ground_range;
     Position pos = unit->getPosition();
     Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
     Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
-    if (dist < range + chargable_distance_net + 96 && MeatAIModule::spamGuard(unit) ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
+    if (dist < range + chargable_distance_net + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
         Broodwar->drawCircleMap(e_unit.pos_, range + chargable_distance_net + 96, Colors::Red);
 
@@ -211,7 +213,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         // Flying units to not need to seperate.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
-            Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 32 );
+            Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 96 );
             setSeperation( unit, pos, neighbors );
         } // closure: flyers
 
@@ -223,10 +225,16 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             unit->burrow();
             return;
         }
+        
+        int vector_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
+        int vector_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
+        int dist = MeatAIModule::getProperSpeed(unit) * 48;
+        int norm_x = cos(vector_x) * dist;
+        int norm_y = sin(vector_y) * dist;
 
           //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_), 
-                                  (int)(pos.y + attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_) }; //attract is zero when it's not set.
+        Position retreat_spot = { (int)(pos.x + vector_x),
+                                  (int)(pos.y + vector_y) }; //attract is zero when it's not set.
 
         bool walkable_plus = retreat_spot.isValid() &&
             (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
@@ -244,8 +252,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
             int x = 1;
 
             Position potential_running_spot = retreat_spot;
-            while (!walkable_plus && x < 2) {
-                potential_running_spot = Position(retreat_spot.x + velocity_x * (2-x)/2, retreat_spot.y + velocity_y * (2-x)/2);
+            while (!walkable_plus && x < 3) {
+                potential_running_spot = Position(retreat_spot.x + velocity_x * (3-x)/(double)3, retreat_spot.y + velocity_y * (3-x)/(double)3);
                 walkable_plus = potential_running_spot.isValid() &&
                     (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
                     MeatAIModule::isClearRayTrace(pos, potential_running_spot, inventory)); //&& //or does it cross an unwalkable position? 
@@ -381,7 +389,7 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
     }
 }
 
-void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv) {
+void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
         if (!inv.start_positions_.empty()) {
             Position possible_base = inv.start_positions_[0];
             int dist = unit->getDistance(possible_base);
@@ -396,33 +404,55 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Unit_Inventory
 }
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place. Only sees visible units.
-void Boids::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, Inventory &inv, const bool &potential_fears) {
+void Boids::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
 
     if (MeatAIModule::IsFightingUnit(unit)) {
-        int dist = 999999;
+        bool safe_distance_away = true;
+        bool enemy_found = false;
+        int distance_metric = MeatAIModule::getProperSpeed(unit);
+
         if (!ei.unit_inventory_.empty()) { // if there isn't a visible targetable enemy, but we have an inventory of them...
                                            //Stored_Unit* e = MeatAIModule::getClosestAttackableStored(ei, unit, dist); // only returns valid postitions.
-            Stored_Unit* e = MeatAIModule::getMostAdvancedThreatOrTargetStored(ei, unit, inv, dist); //test replace for above line.
-            bool not_too_close = e->pos_.getDistance(pos) > (ei.max_range_ + MeatAIModule::getChargableDistance(unit, ei)) * potential_fears;
-            if (e && e->pos_ && !unit->isFlying() && not_too_close) {
+            Stored_Unit* e = MeatAIModule::getMostAdvancedThreatOrTargetStored(ei, unit, inv, 999999); //test replace for above line.
+            if (e && e->pos_ && e->valid_pos_) {
+                safe_distance_away = e->pos_.getDistance(pos) > (ei.max_range_ + MeatAIModule::getChargableDistance(unit, ei)) * potential_fears;
+                enemy_found = true;
+            }
+
+            if ((inv.map_veins_out_from_enemy_.empty() || unit->isFlying()) && safe_distance_away && enemy_found) {
+                int dist_x = e->pos_.x - pos.x;
+                int dist_y = e->pos_.y - pos.y;
+                double theta = atan2(dist_y, dist_x);
+                attract_dx_ = cos(theta) * distance_metric * 24; // run towards them.
+                attract_dy_ = sin(theta) * distance_metric * 24;
+                return;
+            }
+            
+        }
+
+        if (ei.unit_inventory_.empty()) { // if there isn't a visible targetable enemy, but we have an inventory of them...
+
+            if ( !unit->isFlying() && safe_distance_away) {
                 if (!inv.map_veins_out_from_enemy_.empty()) {
                     double temp_attract_dx_ = 0;
                     double temp_attract_dy_ = 0;
                     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
                     vector<double> vector_to_enemy = getVectorTowardsEnemy(pos, inv);
-                    int distance_metric = MeatAIModule::getProperSpeed(unit);
                     attract_dx_ = vector_to_enemy[0] * (distance_metric * 24);
                     attract_dy_ = vector_to_enemy[1] * (distance_metric * 24);
+                    return;
                 }
             }
-            else if ((inv.map_veins_out_from_enemy_.empty() || unit->isFlying()) && not_too_close) {
-                int dist_x = e->pos_.x - pos.x;
-                int dist_y = e->pos_.y - pos.y;
-                double theta = atan2(dist_y, dist_x);
-                attract_dx_ = cos(theta) * dist; // run 100% towards them.
-                attract_dy_ = sin(theta) * dist;
 
+            if ( !inv.start_positions_.empty() && unit->isFlying() && safe_distance_away && enemy_found) {
+                int dist_x = inv.start_positions_[0].x - pos.x;
+                int dist_y = inv.start_positions_[0].y - pos.y;
+                double theta = atan2(dist_y, dist_x);
+                attract_dx_ = cos(theta) * distance_metric * 24; // run towards them.
+                attract_dy_ = sin(theta) * distance_metric * 24;
+                return;
             }
+
         }
     }
 }
@@ -461,14 +491,16 @@ void Boids::setSeperation( const Unit &unit, const Position &pos, const Unit_Inv
         seperation_y += u.second.pos_.y - pos.y;
     }
     double theta = atan2(seperation_y, seperation_x);
-    seperation_dx_ = cos(theta) * 32; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
+    seperation_dx_ = cos(theta) * 32; // run 1 tiles away from everyone. Should help avoid being stuck in those wonky spots.
     seperation_dy_ = sin(theta) * 32;
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
 void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
-    int distance = unit->getType().sightRange();
-    Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, distance);
+    UnitType type = unit->getType();
+    int distance = type.sightRange();
+    int largest_dim = max(type.height(), type.width());
+    Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, distance + largest_dim);
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
@@ -540,9 +572,12 @@ bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, con
     return false;
 }
 
-vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory &inv) {
+vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory &inv) const{
     vector<double> return_vector = { 0, 0 };
     int my_spot = inv.getRadialDistanceOutFromHome(pos);
+    double temp_x = 0;
+    double temp_y = 0;
+    double theta = 0;
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
     for (int x = -5; x <= 5; ++x) {
         for (int y = -5; y <= 5; ++y) {
@@ -556,19 +591,26 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
                 inv.map_veins_out_from_main_[centralize_x][centralize_y] > 0 &&
                 inv.map_veins_out_from_main_[centralize_x][centralize_y] < my_spot ) // go directly home to our base if they are outside of us.
             {
-                double theta = atan2(y, x);
-                return_vector[0] += cos(theta);
-                return_vector[1] += sin(theta);
+                theta = atan2(y, x);
+                temp_x += cos(theta);
+                temp_y += sin(theta);
             }
         }
     }
 
+    theta = atan2(temp_y, temp_x);
+    return_vector[0] = cos(theta);
+    return_vector[1] = sin(theta);
+
     return  return_vector;
 }
 
-vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory &inv) {
+vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory &inv) const{
     vector<double> return_vector = { 0, 0 };
     int my_spot = inv.getRadialDistanceOutFromEnemy(pos);
+    double temp_x = 0;
+    double temp_y = 0;
+    double theta = 0;
 
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
     for (int x = -5; x <= 5; ++x) {
@@ -583,12 +625,16 @@ vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory
                 inv.map_veins_out_from_enemy_[centralize_x][centralize_y] > 0 &&
                 inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly home to our base if they are outside of us.
             {
-                double theta = atan2(y, x);
-                return_vector[0] += cos(theta);
-                return_vector[1] += sin(theta);
+                theta = atan2(y, x);
+                temp_x += cos(theta);
+                temp_y += sin(theta);
             }
         }
     }
+
+    theta = atan2(temp_y, temp_x);
+    return_vector[0] = cos(theta);
+    return_vector[1] = sin(theta);
 
     return  return_vector;
 }

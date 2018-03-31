@@ -49,7 +49,7 @@ struct Inventory {
     int est_enemy_stock_;
 
     TilePosition next_expo_;
-	bool list_cleared_;
+	bool cleared_all_start_positions_;
     bool workers_are_clearing_;
 
     // Counts my units so I don't have to do this for each unit onframe.
