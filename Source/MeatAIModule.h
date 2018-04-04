@@ -1,6 +1,6 @@
 #pragma once
 
-#include <BWAPI.h> //4.1.2 BWAPI
+#include <BWAPI.h> //4.2.0 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
@@ -9,9 +9,9 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE false // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE true // Visualizations
-#define _COBB_DOUGLASS_REVEALED true // The CD function specifically.
+#define _RESIGN_MODE true // must be off for proper game close in SC-docker
+#define _ANALYSIS_MODE false // Visualizations
+#define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
 
@@ -137,6 +137,10 @@ public:
 	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
+      static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
+      static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
+
       // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
       static bool Futile_Fight( Unit unit, Unit enemy );
       // Outlines the case where you can attack their type (air/ground/cloaked)
@@ -243,6 +247,8 @@ public:
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
       static int Stock_Supply( const UnitType &unit, const Inventory &inv );
+      // returns both useful stocks if both groups were to have a fight;
+      static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos , const Position &screen_pos);
@@ -253,6 +259,7 @@ public:
       bool checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
+
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);

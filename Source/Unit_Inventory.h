@@ -5,7 +5,6 @@
 #include "Resource_Inventory.h"
 #include "InventoryManager.h"
 #include "Reservation_Manager.h"
-#include "Fight_MovementManager.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -28,7 +27,16 @@ struct Stored_Unit {
     UnitType build_type_;
     Position pos_; // in pixels
 	Unit locked_mine_;
-    //Boids unit_movement_;
+
+    // Unit Orders
+    Order order_;
+    int time_since_last_command_;
+
+    //Unit Movement Information;
+    Position attract_;
+    Position seperation_;
+    Position retreat_;
+    Position cohesion_;
 
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
@@ -63,6 +71,7 @@ struct Unit_Inventory {
 
     int stock_fliers_;
     int stock_ground_units_;
+    int stock_both_up_and_down_;
     int stock_shoots_up_;
     int stock_shoots_down_;
     int stock_high_ground_;
@@ -91,13 +100,15 @@ struct Unit_Inventory {
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
     void purgeWorkerMineRelations(const Unit &unit, Resource_Inventory &ri);
     void purgeWorkerBuildRelations(const Unit &unit, Inventory &inv, Reservation &res);
+    void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
+    void drawAllHitPoints(const Inventory & inv) const;
+    void drawAllSpamGuards(const Inventory & inv) const;
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
     Position getClosestMeanArmyLocation() const;
-
 
     void stopMine(Unit u, Resource_Inventory & ri);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);

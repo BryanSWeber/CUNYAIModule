@@ -104,7 +104,7 @@ void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
-    double total = ui.stock_total_ - MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui);
+    double total = ui.stock_total_ /*- MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
 
     if ( total <= 0 ) {
         total = 1;
@@ -419,7 +419,7 @@ void Inventory::updateMapVeins() {
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
     // first, define matrixes to recieve the map_vein locations for every minitile.
-    map_veins_ = unwalkable_barriers_;
+    map_veins_ = smoothed_barriers_;
 
     for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling unwalkables.
         for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
@@ -699,6 +699,8 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
+    
+    enemy_base_ = center;
 
     if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
         return;
@@ -1027,10 +1029,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                     TilePosition prosepective_location_lower_left = { possible_base_tile_x , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
                     TilePosition prosepective_location_lower_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
 
-                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
+                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ) <= 5 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 5 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 5 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 5 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
                         (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
@@ -1055,9 +1057,9 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                             //}
 
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
-                                min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
-                                    min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
-                                        j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
+                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
+                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
+                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
 
                             if ( long_condition <= 5 * 32 ) {
                                 //residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
@@ -1149,13 +1151,13 @@ void Inventory::getStartPositions() {
     }
 }
 
-void Inventory::updateStartPositions() {
+void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     for ( auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
         if ( Broodwar->isExplored( TilePosition( *visible_base ) ) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base) ) {
             visible_base = start_positions_.erase( visible_base );
-            if ( *visible_base == start_positions_[0] ) {
-                updateMapVeinsOutFromFoe(start_positions_[0]);
-            }
+            //if ( *visible_base == start_positions_[0] ) {
+            //    updateMapVeinsOutFromFoe(start_positions_[0]);
+            //}
 
         }
         else {
@@ -1165,6 +1167,9 @@ void Inventory::updateStartPositions() {
 
     if ( start_positions_.empty() ) {
         cleared_all_start_positions_ = true;
+    }
+    else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
+        updateMapVeinsOutFromFoe(start_positions_[0]);
     }
 }
 

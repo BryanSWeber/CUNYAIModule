@@ -32,16 +32,17 @@ struct Inventory {
 
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;
-
+    Position enemy_base_;
+    Position home_base_;
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
-    vector< vector<bool> > buildable_positions_ ;
-    vector< vector<int> > unwalkable_barriers_;
-    vector< vector<int> > smoothed_barriers_;
-    vector< vector<int> > map_veins_;
-    vector< vector<int> > map_veins_out_from_main_;
-    vector< vector<int> > map_veins_out_from_enemy_;
+    vector< vector<bool> > buildable_positions_ ; // buildable/unbuildable.
+    vector< vector<int> > unwalkable_barriers_; // unwalkablity only
+    vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer
+    vector< vector<int> > map_veins_; //updates for building locations
+    vector< vector<int> > map_veins_out_from_main_; // distance from our own main.
+    vector< vector<int> > map_veins_out_from_enemy_; // distance from enemy base.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -123,6 +124,6 @@ struct Inventory {
 	// Adds start positions to inventory object.
 	void Inventory::getStartPositions();
 	// Updates map positions and removes all visible ones;
-	void Inventory::updateStartPositions();
+	void Inventory::updateStartPositions(const Unit_Inventory &ei);
 
 }; 

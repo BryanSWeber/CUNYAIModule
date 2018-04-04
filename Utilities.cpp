@@ -106,18 +106,19 @@ bool MeatAIModule::IsFightingUnit(const Stored_Unit &unit)
         return false;
     }
 
-    // no workers or buildings allowed. Or overlords, or larva..
+    // no workers, overlords, or larva...
     if (unit.type_.isWorker() ||
-        unit.type_.isBuilding() ||
+        //unit.type_.isBuilding() ||
         unit.type_ == BWAPI::UnitTypes::Zerg_Larva ||
         unit.type_ == BWAPI::UnitTypes::Zerg_Overlord)
     {
         return false;
     }
 
-    // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
+    // This is a last minute check for psi-ops or transports.
     if (unit.type_.canAttack() ||
-        unit.type_ == BWAPI::UnitTypes::Protoss_High_Templar ||
+        unit.type_.maxEnergy() > 0 ||
+        unit.type_.isDetector() ||
         unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
         unit.type_.isFlyer() && unit.type_.spaceProvided() > 0)
     {
@@ -132,6 +133,81 @@ void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
     if ( _ANALYSIS_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
+        }
+    }
+}
+
+void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
+    if (_ANALYSIS_MODE) {
+        Position upper_left = unit.pos_;
+        if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints()) {
+            // Draw the red background.
+            upper_left.y = upper_left.y + unit.type_.dimensionUp();
+            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.y = upper_left.y + 10;
+
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
+
+            //Overlay the appropriate green above it.
+            lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width() * unit.current_hp_ / (double) unit.type_.maxHitPoints();
+            lower_right.y = upper_left.y + 10;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
+
+            //Overlay the 10hp rectangles over it.
+        }
+    }
+}
+
+void MeatAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
+    if (_ANALYSIS_MODE) {
+        Position upper_left = resource.pos_;
+        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
+            // Draw the orange background.
+            upper_left.y = upper_left.y + resource.type_.dimensionUp();
+            upper_left.x = upper_left.x - resource.type_.dimensionLeft();
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + resource.type_.width();
+            lower_right.y = upper_left.y + 10;
+
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
+
+            //Overlay the appropriate blue above it.
+            lower_right = upper_left;
+            lower_right.x = upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_;
+            lower_right.y = upper_left.y + 10;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Cyan, true);
+
+            //Overlay the 10hp rectangles over it.
+        }
+    }
+}
+
+void MeatAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
+{
+    if (_ANALYSIS_MODE) {
+        Position upper_left = unit.pos_;
+        if (isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24 ) {
+            // Draw the black background.
+            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+            upper_left.y = upper_left.y - 10;
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.y = upper_left.y + 10;
+
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, true);
+
+            //Overlay the appropriate grey above it.
+            lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 );
+            lower_right.y = upper_left.y + 10;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
+
         }
     }
 }
@@ -427,6 +503,29 @@ int MeatAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
     int instances = Count_Units( unit, inv );
     int total_stock = supply * instances;
     return total_stock;
+}
+
+// returns helpful_friendly and helpful_enemy units from respective inventories.
+vector<int> MeatAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
+{
+        int helpful_e, helpful_u;
+
+        helpful_e = enemy_loc.stock_shoots_down_ + enemy_loc.stock_shoots_up_ - 2 * enemy_loc.stock_both_up_and_down_; // A+B - 2 * A Union B
+            if (friend_loc.stock_ground_units_ == 0) {
+                helpful_e = enemy_loc.stock_shoots_up_;
+            }
+            else if (friend_loc.stock_fliers_ == 0) {
+                helpful_e = enemy_loc.stock_shoots_down_;
+            }
+        helpful_u = friend_loc.stock_shoots_down_ + friend_loc.stock_shoots_up_ - 2 * friend_loc.stock_both_up_and_down_;
+            if (enemy_loc.stock_ground_units_ == 0) {
+                helpful_u = friend_loc.stock_shoots_up_;
+            }
+            else if (enemy_loc.stock_fliers_ == 0) {
+                helpful_u = friend_loc.stock_shoots_down_;
+            }
+        vector<int> return_vec = { helpful_u, helpful_e };
+        return return_vec;
 }
 
 // Announces to player the name and type of all units in the unit inventory. Bland but practical.
@@ -740,10 +839,6 @@ Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
                     temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
                 }
 
-                if (temp_dist = 9999999 ) { // if it has no meaningful return, unit is over an unreachable location.
-                    temp_dist = 3.14 * pow(unit->getDistance(e->second.pos_) / 8, 2); // a hackney air/ground conversion. 
-                }
-
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -894,6 +989,15 @@ bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos)
 bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool ready_to_move = true;
+    int cd_frames;
+
+    if (cd_frames_chosen == 99) {
+        cd_frames = 0;
+    } 
+    else { // if the person has selected some specific delay they are looking for, check that.
+        ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames_chosen, Broodwar->getLatencyFrames() + 1);
+        return ready_to_move;
+    }
 
     bool unit_fighting = unit->isAttackFrame() || unit->isStartingAttack();
     if (unit_fighting) {
@@ -901,14 +1005,9 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         return ready_to_move;
     }
 
-    if (cd_frames_chosen != 99) { // if the person has selected some specific delay they are looking for, check that.
-        return unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames_chosen, Broodwar->getLatencyFrames() + 1);
-    }
+    UnitCommandType u_command = unit->getLastCommand().getType();
 
-    int cd_frames = cd_frames_chosen;
-    Order u_order = unit->getOrder();
-
-    if ( u_order == Orders::AttackUnit ) {
+    if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
         UnitType u_type = unit->getType();
 
         if (u_type == UnitTypes::Zerg_Drone) {
@@ -930,17 +1029,20 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
             cd_frames = 15;
         }
     }
-    else if (u_order == Orders::Burrowing || u_order == Orders::Unburrowing) {
+    else if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
     }
     
-    if (u_order == Orders::Move && ( (!unit->isMoving() && !unit->isAccelerating()) || unit->isBraking() ) ) {
-        cd_frames = 7; // if it's not moving, accellerating or IS breaking.
+    if (u_command == UnitCommandTypes::Attack_Move) {
+        cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     }
+    //if (u_order == Orders::Move && ( (!unit->isMoving() && !unit->isAccelerating()) || unit->isBraking() ) ) {
+    //    cd_frames = 7; // if it's not moving, accellerating or IS breaking.
+    //}
 
-    if ( u_order == Orders::AttackMove) {
-        cd_frames = 12;
-    }
+    //if ( u_order == Orders::AttackMove) {
+    //    cd_frames = 12;
+    //}
 
     if (cd_frames < Broodwar->getLatencyFrames() ) {
         cd_frames = Broodwar->getLatencyFrames();
@@ -1016,7 +1118,7 @@ bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 		}
 
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
-		if ( safety_check && inv.smoothed_barriers_[x][y] == 1) {
+		if ( safety_check && inv.map_veins_[x][y] == 1) {
 			return false;
 		}
 
@@ -1041,7 +1143,7 @@ bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 			}
 
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			if (safety_check && inv.map_veins_[x][y] == 1) {
 				return false;
 			}
 		}
@@ -1061,7 +1163,7 @@ bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 			ye = initial.y;
 		}
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+		if (safety_check && inv.map_veins_[x][y] == 1) {
 			return false;
 		}
 
@@ -1085,7 +1187,7 @@ bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 				py = py + 2 * (dx1 - dy1);
 			}
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			if (safety_check && inv.map_veins_[x][y] == 1) {
 				return false;
 			}
 
@@ -1240,7 +1342,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 		}
 
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+		if (safety_check && inv.map_veins_[x][y] == 1) {
 			squares_counted++;
 		}
 
@@ -1265,7 +1367,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 			}
 
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			if (safety_check && inv.map_veins_[x][y] == 1) {
 				squares_counted++;
 			}
 		}
@@ -1285,7 +1387,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 			ye = initial.y;
 		}
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.smoothed_barriers_[x][y] == 1) {
+		if (safety_check && inv.map_veins_[x][y] == 1) {
 			squares_counted++;
 		}
 
@@ -1309,7 +1411,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 				py = py + 2 * (dx1 - dy1);
 			}
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if ( safety_check && inv.smoothed_barriers_[x][y] == 1) {
+			if ( safety_check && inv.map_veins_[x][y] == 1) {
 				squares_counted++;
 			}
 
@@ -1318,6 +1420,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 
 	return squares_counted;
 }
+
 
 double MeatAIModule::getProperSpeed( const Unit u ) {
     double base_speed = u->getType().topSpeed();

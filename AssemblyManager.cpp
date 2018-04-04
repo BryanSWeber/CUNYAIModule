@@ -101,13 +101,13 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
                             centralize_y > 0 &&
-                            getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 96).resource_inventory_.empty() &&
-                            Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
-                            inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
+                            getResourceInventoryInRadius(neutral_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
+                            Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
+                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
+                            inventory.getRadialDistanceOutFromEnemy(Position(TilePosition((int)centralize_x, (int)centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
                         {
-                            final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
-                            chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(TilePosition(centralize_x, centralize_y)));
+                            final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
+                            chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(TilePosition((int)centralize_x, (int)centralize_y)));
                         }
                     }
                 }
@@ -139,13 +139,13 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
                             centralize_y > 0 &&
-                            getResourceInventoryInRadius(neutral_inventory, Position(TilePosition(centralize_x, centralize_y)), 96).resource_inventory_.empty() &&
-                            Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
-                            inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
+                            getResourceInventoryInRadius(neutral_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
+                            Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
+                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
+                            inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
                         {
-                            final_creep_colony_spot = TilePosition(centralize_x, centralize_y);
-                            chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition(centralize_x, centralize_y)));
+                            final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
+                            chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y)));
                         }
                     }
                 }
@@ -331,25 +331,27 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     }
     else if ( !e_relatively_weak_against_air) {
         is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0); // catchall ground units.
+
         bool lings_only = Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv ) == 0 && Count_Units(UnitTypes::Zerg_Lair, inv) == 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0;
         bool hydras_only = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0 && Count_Units(UnitTypes::Zerg_Lair, inv) == 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0;
         bool saving_for_lurkers = Count_Units(UnitTypes::Zerg_Lair, inv) > 0 && !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) && !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0;
         bool lurkers_incoming = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0;
         bool ultralisks_ready = Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0;
+
         if (lings_only) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0);
         }
         else if (hydras_only) {
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lair.mineralPrice() && my_reservation.getExcessGas() > UnitTypes::Zerg_Lair.gasPrice());
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.checkExcessIsGreaterThan(UnitTypes::Zerg_Lair) );
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lair.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
         else if (saving_for_lurkers) {
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > TechTypes::Lurker_Aspect.mineralPrice() && my_reservation.getExcessGas() > TechTypes::Lurker_Aspect.gasPrice());
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.checkExcessIsGreaterThan(TechTypes::Lurker_Aspect));
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > TechTypes::Lurker_Aspect.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
         else if (lurkers_incoming) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice() && (my_reservation.getExcessGas() > UnitTypes::Zerg_Lurker.gasPrice() || Count_Units(UnitTypes::Zerg_Hydralisk, inv) == 0));
+            is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.checkExcessIsGreaterThan(UnitTypes::Zerg_Lurker) || Count_Units(UnitTypes::Zerg_Hydralisk, inv) == 0);
             is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
         else if (ultralisks_ready) {

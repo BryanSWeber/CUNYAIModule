@@ -4,9 +4,12 @@
 #include "Source\MeatAIModule.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\InventoryManager.h"
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
+
+
 Resource_Inventory::Resource_Inventory(){
 	// Updates the static locations of minerals and gas on the map. Should only be called on game start.
 	//if (Broodwar->getFrameCount() == 0){
@@ -73,6 +76,9 @@ Stored_Resource::Stored_Resource() = default;
 Stored_Resource::Stored_Resource(Unit resource) {
 
 	current_stock_value_ = resource->getResources();
+    if (Broodwar->getFrameCount() == 0) {
+        max_stock_value_ = current_stock_value_;
+    }
 	number_of_miners_ = 0;
 	full_resource_ = false;
 	occupied_natural_ = false;
@@ -123,6 +129,14 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
             r++;
         }
     }
+}
+
+void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
+{
+    for (auto u : resource_inventory_) {
+        MeatAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);
+    }
+
 }
 
 //how many workers are mining?

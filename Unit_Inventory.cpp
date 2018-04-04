@@ -5,7 +5,6 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\InventoryManager.h"
 #include "Source\Reservation_Manager.h"
-#include "Source\Fight_MovementManager.h"
 
 
 //Unit_Inventory functions.
@@ -22,22 +21,15 @@ Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
 }
 
 void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
-		//if (unit_inventory_.empty()){ // it thinks it's ALWAYS empty.
-		//	for (const auto & u : unit_set) {
-		//		unit_inventory_.insert({ u, Stored_Unit(u) });
-		//	}
-		//}
-		//else {
-			for (const auto & u : unit_set) {
-				if (unit_inventory_.find(u) != unit_inventory_.end() ){
-					unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
-				}
-				else {
-					unit_inventory_.insert({ u, Stored_Unit(u) });
-				}
-			}
-//		}
-		updateUnitInventorySummary(); //this call is a CPU sink.
+    for (const auto & u : unit_set) {
+        if (unit_inventory_.find(u) != unit_inventory_.end()) {
+            unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
+        }
+        else {
+            unit_inventory_.insert({ u, Stored_Unit(u) });
+        }
+    }
+    updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
 void Unit_Inventory::purgeBrokenUnits()
@@ -100,6 +92,27 @@ void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & in
     }
 }
 
+void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
+{
+    for (auto u : unit_inventory_) {
+        Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
+        MeatAIModule::Diagnostic_Line(u.second.pos_, destination, inv.screen_position_, Colors::Green);
+    }
+}
+
+void Unit_Inventory::drawAllHitPoints(const Inventory &inv) const
+{
+    for (auto u : unit_inventory_) {
+        MeatAIModule::DiagnosticHitPoints(u.second, inv.screen_position_);
+    }
+
+}
+void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
+{
+    for (auto u : unit_inventory_) {
+        MeatAIModule::DiagnosticSpamGuard(u.second, inv.screen_position_);
+    }
+}
 
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
@@ -118,6 +131,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     current_hp_ = unit->getHitPoints();
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
+    order_ = unit->getOrder();
+    time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
 
         if (type_ != unit->getType() ) {
             type_ = unit->getType();
@@ -264,6 +279,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int ground_unit = 0;
     int shoots_up = 0;
     int shoots_down = 0;
+    int shoots_both = 0;
     int high_ground = 0;
     int range = 0;
 	int worker_count = 0;
@@ -279,19 +295,28 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
             if ( MeatAIModule::IsFightingUnit(u_iter.second) ) {
 
+                int unit_value = MeatAIModule::Stock_Units(u_iter.second.type_, *this);
+
                 if ( u_iter.second.type_.isFlyer() ) {
-                    fliers += MeatAIModule::Stock_Units( u_iter.second.type_, *this ); // add the value of that type of unit to the flier stock.
+                    fliers += unit_value; // add the value of that type of unit to the flier stock.
                 }
                 else {
-                    ground_unit += MeatAIModule::Stock_Units( u_iter.second.type_, *this );
+                    ground_unit += unit_value;
                 }
 
-                if ( u_iter.second.type_.airWeapon() != WeaponTypes::None ) {
-                    shoots_up += MeatAIModule::Stock_Units( u_iter.second.type_, *this );
+                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None;
+                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None;
+
+                if (up_gun) {
+                    shoots_up += unit_value;
                 }
 
-                if ( u_iter.second.type_.groundWeapon() != WeaponTypes::None ) {
-                    shoots_down += MeatAIModule::Stock_Units( u_iter.second.type_, *this );
+                if (down_gun) {
+                    shoots_down += unit_value;
+                }
+
+                if (up_gun && down_gun) {
+                    shoots_both += unit_value;
                 }
 
                 if ( u_iter.second.type_.groundWeapon().maxRange() > range || u_iter.second.type_.airWeapon().maxRange() > range ) {
@@ -333,6 +358,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     stock_fliers_ = fliers;
     stock_ground_units_ = ground_unit;
+    stock_both_up_and_down_ = shoots_both;
     stock_shoots_up_ = shoots_up;
     stock_shoots_down_ = shoots_down;
     stock_high_ground_= high_ground;
@@ -385,6 +411,10 @@ Stored_Unit::Stored_Unit( Unit unit ) {
     build_type_ = unit->getBuildType();
     current_hp_ = unit->getHitPoints();
 	locked_mine_ = nullptr;
+    velocity_x_ = unit->getVelocityX();
+    velocity_y_ = unit->getVelocityY();
+    order_ = unit->getOrder();
+    time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
 
     //Get unit's status. Precalculated, precached.
     int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
