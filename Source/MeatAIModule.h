@@ -9,8 +9,8 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
+#define _RESIGN_MODE false // must be off for proper game close in SC-docker
+#define _ANALYSIS_MODE true // Visualizations
 #define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
@@ -252,6 +252,7 @@ public:
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos , const Position &screen_pos);
+      //Returns TRUE if a unit is safe to send an order to. False if the unit has been ordered about recently.
       static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);

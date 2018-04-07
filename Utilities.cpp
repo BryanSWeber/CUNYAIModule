@@ -138,7 +138,7 @@ void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
 }
 
 void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
-    if (_ANALYSIS_MODE) {
+    if (_ANALYSIS_MODE && unit.valid_pos_) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints()) {
             // Draw the red background.
@@ -986,6 +986,7 @@ bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos)
     return inrange_x && inrange_y;
 }
 
+//Returns TRUE if the unit is ready to move and false if the unit should be ignored for now.
 bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool ready_to_move = true;

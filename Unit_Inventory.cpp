@@ -114,6 +114,15 @@ void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
     }
 }
 
+void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv) const
+{
+    for (auto u : unit_inventory_) {
+        if (u.second.locked_mine_) {
+            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+        }
+    }
+}
+
 // Updates the count of units.
 void Unit_Inventory::addStored_Unit( Unit unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );

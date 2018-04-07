@@ -16,40 +16,57 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
+            bool scouting_returned_nothing = !enemy_scouted && inventory.cleared_all_start_positions_;
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
             bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
+            UnitType u_type = unit->getType();
 
-            // Units should scout when there is a large gap in our knowledge.
-            if (!enemy_scouted && healthy && !inventory.cleared_all_start_positions_) { // check his bases first.
-                //scoutEnemyBase(unit, pos, inventory); 
-                setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
+            if (u_type != UnitTypes::Zerg_Overlord) {
+                // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
+                if (healthy && ((ready_to_fight && !army_starved) || !inventory.cleared_all_start_positions_)) {
+                    setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
+                    //scoutEnemyBase(unit, pos, inventory); 
+                }
+                else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
+                    setAttractionHome(unit, pos, ei, inventory);
+                }
+                else if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
+                    setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+                }
+                else { // give units that basic seperation otherwise.
+                    if (!u_type.isFlyer() || u_type == UnitTypes::Zerg_Scourge) {
+                        setSeperation(unit, pos, local_neighborhood);
+                    }
+                }
+
+                if (potential_fears) {
+                    setCohesion(unit, pos, ui);
+                }
+                else {
+                    setCohesion(unit, pos, local_neighborhood);
+                }
             }
-            else if (!enemy_scouted && healthy && inventory.cleared_all_start_positions_) { // then wander about searching.
+            else { //If you are an overlord, follow an abbreviated version of this.
+                // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
+                //if (healthy && !inventory.cleared_all_start_positions_) {
+                //    //setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
+                //    scoutEnemyBase(unit, pos, inventory); 
+                //}
+                //else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
+                //    setAttractionHome(unit, pos, ei, inventory);
+                //}
+                //else {
+                //    setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+                //}
+                if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
+                    setAttractionHome(unit, pos, ei, inventory);
+                }
                 setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
             }
-            else {
-                if (!unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge) {
-                    setSeperation(unit, pos, local_neighborhood);
-                } // closure: flyers
-            }
 
-            // Units should go to the enemy when it's time to pick a fight, home otherwise.
-            if (enemy_scouted && healthy && ready_to_fight && !army_starved) {
-                setAttractionEnemy(unit, pos, ei, inventory, potential_fears); 
-            }
-            else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) {
-                setAttractionHome(unit, pos, ei, inventory);
-            }
-
-            if (potential_fears) {
-                setCohesion(unit, pos, ui);
-            }
-            else {
-                setCohesion(unit, pos, local_neighborhood);
-            }
 
             // lurkers should move when we need them to scout.
-            if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !MeatAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
+            if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !MeatAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
                 unit->unburrow();
                 return;
             }
@@ -455,19 +472,21 @@ void Boids::setAttractionHome(const Unit &unit, const Position &pos, const Unit_
 
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
-void Boids::setSeperation( const Unit &unit, const Position &pos, const Unit_Inventory &ui ) {
+void Boids::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     int largest_dim = max(type.height(), type.width());
     Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, 32 + largest_dim);
     int seperation_x = 0;
     int seperation_y = 0;
-    for ( auto &u : neighbors.unit_inventory_  ) { // don't seperate from yourself, that would be a disaster.
+    for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
         seperation_x += u.second.pos_.x - pos.x;
         seperation_y += u.second.pos_.y - pos.y;
     }
-    double theta = atan2(seperation_y, seperation_x);
-    seperation_dx_ = cos(theta) * 32; // run 1 tiles away from everyone. Should help avoid being stuck in those wonky spots.
-    seperation_dy_ = sin(theta) * 32;
+    if (seperation_y != 0 || seperation_x != 0) {
+        double theta = atan2(seperation_y, seperation_x);
+        seperation_dx_ = cos(theta) * 32; // run 1 tile away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_dy_ = sin(theta) * 32;
+    }
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
@@ -482,12 +501,14 @@ void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit
         seperation_x += u.second.pos_.x - pos.x;
         seperation_y += u.second.pos_.y - pos.y;
     }
-    double theta = atan2(seperation_y, seperation_x);
-    seperation_dx_ = cos(theta) * distance; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
-    seperation_dy_ = sin(theta) * distance;
+    if (seperation_y != 0 || seperation_x != 0) {
+        double theta = atan2(seperation_y, seperation_x);
+        seperation_dx_ = cos(theta) * distance; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_dy_ = sin(theta) * distance;
+    }
 }
 
-void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory ) {
+void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory ) { // now defunct.
 
     double temp_walkability_dx_ = 0;
     double temp_walkability_dy_ = 0;
@@ -546,7 +567,7 @@ bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, con
     return false;
 }
 
-vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory &inv) const{
+vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory &inv) const {
     vector<double> return_vector = { 0, 0 };
     int my_spot = inv.getRadialDistanceOutFromHome(pos);
     double temp_x = 0;
@@ -571,7 +592,7 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] <= 1) // repulse from unwalkable.
                 {
                     theta = atan2(y, x);
                     x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
@@ -580,9 +601,11 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
         }
     }
 
-    theta = atan2(temp_y, temp_x);
-    return_vector[0] = cos(theta);
-    return_vector[1] = sin(theta);
+    if (temp_y != 0 || temp_x != 0) {
+        theta = atan2(temp_y, temp_x);
+        return_vector[0] = cos(theta);
+        return_vector[1] = sin(theta);
+    }
 
     return  return_vector;
 }
@@ -612,7 +635,7 @@ vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < 1 ) // repulse from unwalkable.
+                else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] <= 1 ) // repulse from unwalkable.
                 {
                     theta = atan2(y, x);
                     x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
@@ -621,9 +644,11 @@ vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory
         }
     }
 
-    theta = atan2(temp_y, temp_x);
-    return_vector[0] = cos(theta);
-    return_vector[1] = sin(theta);
+    if (temp_y != 0 || temp_x != 0) {
+        theta = atan2(temp_y, temp_x);
+        return_vector[0] = cos(theta);
+        return_vector[1] = sin(theta);
+    }
 
     return  return_vector;
 }

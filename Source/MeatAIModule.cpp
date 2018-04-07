@@ -258,6 +258,7 @@ void MeatAIModule::onFrame()
     //friendly_inventory.drawAllVelocities(inventory);
     friendly_inventory.drawAllHitPoints(inventory);
     friendly_inventory.drawAllSpamGuards(inventory); 
+    friendly_inventory.drawAllWorkerLocks(inventory);
 
     //Update posessed minerals. Erase those that are mined out.
     neutral_inventory.updateResourceInventory(friendly_inventory, enemy_inventory);
@@ -303,6 +304,7 @@ void MeatAIModule::onFrame()
     inventory.updateStartPositions(enemy_inventory);
     inventory.updateScreen_Position();
     inventory.getExpoPositions(); // prime this once on game start.
+    inventory.drawExpoPositions();
 
    if ( t_game == 0 ) {
         //update local resources
@@ -483,11 +485,6 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice() );
         }
 
-        for ( auto &p : inventory.expo_positions_ ) {
-            Broodwar->drawCircleMap( Position( p ), 25, Colors::Green, true );
-        }
-        Broodwar->drawCircleMap( Position( inventory.next_expo_ ), 10, Colors::Red, true );
-
         //vision belongs here.
 
         Broodwar->drawTextScreen( 375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_ );
@@ -525,23 +522,6 @@ void MeatAIModule::onFrame()
                 }
             }
 
-            for ( vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j ) {
-                    if ( inventory.smoothed_barriers_[i][j] == 0 ) {
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-                            //Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-                        }
-                    }
-                    else if ( inventory.smoothed_barriers_[i][j] > 0 ) {
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j] );
-                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-                        }
-                    }
-
-                };
-            } // Pretty to look at!
 
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
@@ -560,16 +540,6 @@ void MeatAIModule::onFrame()
                 }
             } // Pretty to look at!
 
-            for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_enemy_.size(); ++i) {
-                for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_enemy_[i].size(); ++j) {
-                    if (inventory.map_veins_out_from_enemy_[i][j] == 1) {
-                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::White);
-                        }
-                    }
-                }
-            } // Pretty to look at!
 
             for ( auto &u : Broodwar->self()->getUnits() ) {
                 if ( u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getType() != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit ) {
@@ -640,12 +610,6 @@ void MeatAIModule::onFrame()
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
 
             //bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-
-
-            if (miner.locked_mine_) {
-                Diagnostic_Line(miner.pos_, miner.locked_mine_->getPosition(), inventory.screen_position_, Colors::Green);
-            }
-
 
             if (!IsCarryingGas(u) && !IsCarryingMinerals(u) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                 build_check_this_frame = true;
@@ -755,17 +719,6 @@ void MeatAIModule::onFrame()
                 vector<int> useful_stocks = MeatAIModule::getUsefulStocks(friendly_inventory, enemy_inventory);
                 int helpful_u = useful_stocks[0];
                 int helpful_e = useful_stocks[1]; // both forget value of psi units.
-
-                //if (enemy_inventory.stock_ground_units_ == 0 && enemy_inventory.stock_fliers_ == 0) {
-                //    helpful_u += friend_loc.stock_total_;
-                //} // if you're off the charts, throw everything in.
-
-                  //if ( u->getType().airWeapon() != WeaponTypes::None ) {
-                  //    helpless_u += Stock_Units_ShootDown( friend_loc );
-                  //}
-                  //if ( u->getType().groundWeapon() != WeaponTypes::None ) {
-                  //    helpless_u += enemy_loc.stock_ground_units_;
-                  //}
 
                 if (e_closest->valid_pos_) {  // Must have a valid postion on record to attack.
 
@@ -885,7 +838,7 @@ void MeatAIModule::onFrame()
             (u->getType() == UnitTypes::Zerg_Overlord && enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) || 
             (u->getType() == UnitTypes::Zerg_Overlord && massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
 
-        if ( spamGuard(u) && acceptable_ovi_scout && u->getType() != UnitTypes::Zerg_Drone && u->getType() != UnitTypes::Zerg_Larva && !u->getType().isBuilding() )
+        if ( spamGuard(u) /*&& acceptable_ovi_scout*/ && u->getType() != UnitTypes::Zerg_Drone && u->getType() != UnitTypes::Zerg_Larva && !u->getType().isBuilding() )
         { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
             Boids boids;
             bool potential_fears = (army_derivative > 0 && !massive_army);

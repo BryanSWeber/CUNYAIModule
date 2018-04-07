@@ -139,6 +139,7 @@ void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
 
 }
 
+
 //how many workers are mining?
 void Resource_Inventory::updateMiners()
 {

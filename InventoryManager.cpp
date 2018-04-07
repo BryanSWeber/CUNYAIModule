@@ -421,13 +421,13 @@ void Inventory::updateMapVeins() {
     // first, define matrixes to recieve the map_vein locations for every minitile.
     map_veins_ = smoothed_barriers_;
 
-    for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling unwalkables.
+    for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling smoothed away.
         for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
             for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
 
-                                                                             // Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-                                                                             // If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc. Mark it as unwalkable.  Do not consider it unwalkable this cycle.
-                                                                             // if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable. Do not consider it unwalkable this cycle.
+                                                                             // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+                                                                             // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
+                                                                             // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
                                                                              // Repeat untill finished.
 
                 if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
@@ -471,7 +471,7 @@ void Inventory::updateMapVeins() {
                     if ( open_path && opposing_tiles ) {  //mark chokes when found.
                         map_veins_[minitile_x][minitile_y] = 299 - iter;
                     }
-                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
+                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as smoothed away and continue. Will seal map.
                         map_veins_[minitile_x][minitile_y] = iter;
                     }
                 }
@@ -486,14 +486,14 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
 
-    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
+    if (!map_veins_out_from_main_.empty() && smoothed_barriers_[startloc.x][startloc.y] != 0 ) {
         return;
     }
     else {
         map_veins_out_from_main_.clear();
     }
     // first, define matrixes to recieve the walkable locations for every minitile.
-    map_veins_out_from_main_ = unwalkable_barriers_;
+    map_veins_out_from_main_ = smoothed_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -702,7 +702,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     
     enemy_base_ = center;
 
-    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
+    if (!map_veins_out_from_enemy_.empty() && smoothed_barriers_[startloc.x][startloc.y] != 0) {
         return;
     }
     else {
@@ -710,7 +710,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     }
 
     // first, define matrixes to recieve the walkable locations for every minitile.
-    map_veins_out_from_enemy_ = unwalkable_barriers_;
+    map_veins_out_from_enemy_ = smoothed_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -873,13 +873,13 @@ void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &
         }
     }
 
-    for ( auto iter = 2; iter < 175; iter++ ) { // iteration 1 is already done by labling unwalkables. Less loops are needed because most of the map is already plotted.
+    for ( auto iter = 2; iter < 175; iter++ ) { // iteration 1 is already done by labling smoothed barriers. Less loops are needed because most of the map is already plotted.
         for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
             for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
 
-                                             //Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-                                             //    If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc.Mark it as unwalkable.Do not consider it unwalkable this cycle.
-                                           //    if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable.Do not consider it unwalkable this cycle.
+                                             //Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+                                             //    If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc.Mark it as smoothed away.Do not consider it smoothed away this cycle.
+                                           //    if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away.Do not consider it smoothed away this cycle.
                                              //        Repeat until finished.
 
                 Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
@@ -1029,10 +1029,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                     TilePosition prosepective_location_lower_left = { possible_base_tile_x , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
                     TilePosition prosepective_location_lower_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
 
-                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ) <= 5 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 5 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 5 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 5 * 32) &&
+                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
+                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
                         (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
@@ -1175,6 +1175,22 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
 
 void Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
+}
+
+void Inventory::drawExpoPositions() const
+{
+    Position lower_left = Position(next_expo_);
+    lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+    lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+    Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, true);
+
+    for (auto &p : expo_positions_) {
+        Position lower_left = Position(p);
+        lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+        lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+        Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+    }
+
 }
 
 //Zerg_Zergling, 37

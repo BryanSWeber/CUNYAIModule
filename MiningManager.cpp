@@ -22,7 +22,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
                 bool safe_expo = checkSafeBuildLoc(Position(p), inventory, enemy_inventory, friendly_inventory, neutral_inventory);
 
-                bool occupied_expo = getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
+                bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
 
