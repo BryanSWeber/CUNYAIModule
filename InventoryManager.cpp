@@ -935,48 +935,81 @@ void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &
     }
 }
 
-void Inventory::updateMapChokes() {
+void Inventory::updateMapChokes() { // in progress
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
-    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
+    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+    int current_region_number = 1;
+    int count_of_adjacent_importent_points = 0;
+    int current_ceiling = 100;
+    map_chokes_ = smoothed_barriers_;
 
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( 0 );
-        }
-        map_chokes_.push_back( temp );
-    }
+    vector <WalkPosition> fire_fill_queue;
 
-    for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
-        for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
+    fire_fill_queue.push_back(WalkPosition(this->home_base_));
 
-            int max_observed = map_veins_[minitile_x][minitile_y];
-            int counter = 0;
+    int minitile_x_temp = WalkPosition(this->home_base_).x;
+    int minitile_y_temp = WalkPosition(this->home_base_).y;
 
-            if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
-                for ( int x = -1; x <= 1; ++x ) {
-                    for ( int y = -1; y <= 1; ++y ) {
-                        int testing_x = minitile_x + x;
-                        int testing_y = minitile_y + y;
-                        if ( !(x == 0 && y == 0) &&
-                            testing_x < map_dim.x &&
-                            testing_y < map_dim.y &&
-                            testing_x > 0 &&
-                            testing_y > 0 ) { // check for being within reference space.
+    while (current_ceiling > 0) {
+        while (!fire_fill_queue.empty()) { // this portion is a fire fill.
 
-                            if ( map_veins_[testing_x][testing_y] <= max_observed ) {
-                                counter++;
-                                if ( counter == 8 ) {
-                                    map_chokes_[minitile_x][minitile_y] = 300 - map_veins_[minitile_x][minitile_y];
-                                }
-                            }
-                        }
-                    }
-                }
+            minitile_x_temp = fire_fill_queue.begin()->x;
+            minitile_y_temp = fire_fill_queue.begin()->y;
+            fire_fill_queue.erase(fire_fill_queue.begin());
+
+            map_chokes_[minitile_x_temp][minitile_y_temp] = current_region_number;
+
+            // north
+            if (count_of_adjacent_importent_points < 5 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp++] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp++});
+            }
+            // north east
+            if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp++][minitile_y_temp++] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp++ });
+            }
+            // north west
+            if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+
+            }
+            //south east
+            if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp++][minitile_y_temp--] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp-- });
+            }
+            //south west
+            if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+
+            }
+            // east
+            if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp++][minitile_y_temp] > current_ceiling) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp });
+            }
+            //west
+            if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp] > 0) {
+                count_of_adjacent_importent_points++;
+                fire_fill_queue.push_back({ minitile_x_temp--, minitile_y_temp });
+            }
+
+            // Make a final decision about the point.
+            if (count_of_adjacent_importent_points >= 5 && map_veins_[minitile_x_temp][minitile_y_temp] > 0 ) {
+                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+                count_of_adjacent_importent_points = 0;
+            }
+            else if( map_veins_[minitile_x_temp][minitile_y_temp] > 0 ){
+                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+                count_of_adjacent_importent_points = 0;
             }
         }
+        current_ceiling--;
+        current_region_number++;
     }
 }
 

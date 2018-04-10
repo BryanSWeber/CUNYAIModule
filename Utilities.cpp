@@ -630,7 +630,7 @@ Unitset MeatAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
 Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
     if ( !ui.unit_inventory_.empty() ) {
@@ -649,7 +649,7 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 //Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
 Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
-	double temp_dist = 999999;
+	int temp_dist = 999999;
 	Stored_Unit* return_unit = nullptr;
 
 	if (!ui.unit_inventory_.empty()) {
@@ -670,7 +670,7 @@ Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
-	double temp_dist = 999999;
+	int temp_dist = 999999;
 	Stored_Resource* return_unit = nullptr;
 
 	if (!ri.resource_inventory_.empty()) {
@@ -689,7 +689,7 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 
 Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
     int min_dist = 999999;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
@@ -707,7 +707,7 @@ Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri, In
 // Allows type -specific- selection. 
 Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
     int min_dist = 999999;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
@@ -727,13 +727,13 @@ Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
             if (r->second.type_ == r_type && r->second.valid_pos_) {
-                temp_dist = (*r).second.pos_.getDistance(origin);
+                temp_dist = (int)(*r).second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(r->second);
@@ -750,14 +750,14 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Un
 Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
     bool can_attack;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             can_attack = MeatAIModule::Can_Fight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
-                temp_dist = e->second.pos_.getDistance(unit->getPosition());
+                temp_dist = (int)e->second.pos_.getDistance(unit->getPosition());
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -773,7 +773,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
 Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
     if ( !ui.unit_inventory_.empty() ) {
@@ -781,7 +781,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
             can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
             can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = e->second.pos_.getDistance( origin );
+                temp_dist = (int)e->second.pos_.getDistance( origin );
                 if ( temp_dist <= min_dist ) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -797,7 +797,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
@@ -807,7 +807,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
             can_be_attacked_by = Can_Fight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = e->second.pos_.getDistance(origin);
+                temp_dist = (int)e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -822,7 +822,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Inventory &inv, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
     we_are_a_flyer = unit->getType().isFlyer();
@@ -1424,44 +1424,88 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 
 
 double MeatAIModule::getProperSpeed( const Unit u ) {
-    double base_speed = u->getType().topSpeed();
-    if ( u->getType() == UnitTypes::Zerg_Zergling && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0 ) {
+    UnitType u_type = u->getType();
+    Player owner = u->getPlayer();
+
+    double base_speed = u_type.topSpeed();
+    if (u_type == UnitTypes::Zerg_Zergling && owner->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0) {
         base_speed *= 1.5;
     }
-    else if ( u->getType() == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel( UpgradeTypes::Pneumatized_Carapace ) > 0 ) {
+    else if (u_type == UnitTypes::Zerg_Overlord && owner->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0) {
         base_speed *= 1.5;
     }
-    else if ( u->getType() == UnitTypes::Zerg_Hydralisk && Broodwar->self()->getUpgradeLevel( UpgradeTypes::Muscular_Augments ) > 0 ) {
+    else if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Muscular_Augments) > 0) {
         base_speed *= 1.5;
     }
-    else if ( u->getType() == UnitTypes::Zerg_Ultralisk && Broodwar->self()->getUpgradeLevel( UpgradeTypes::Anabolic_Synthesis ) > 0 ) {
+    else if (u_type == UnitTypes::Zerg_Ultralisk && owner->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
         base_speed *= 1.5;
     }
 
     return base_speed;
 }
 
-double MeatAIModule::getProperSpeed(const UnitType &type) {
+double MeatAIModule::getProperSpeed(const UnitType &type, const Player owner) {
     double base_speed = type.topSpeed();
-    if (type == UnitTypes::Zerg_Zergling && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0) {
+
+    if (type == UnitTypes::Zerg_Zergling && owner->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0) {
         base_speed *= 1.5;
     }
-    else if (type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0) {
+    else if (type == UnitTypes::Zerg_Overlord && owner->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0) {
         base_speed *= 1.5;
     }
-    else if (type == UnitTypes::Zerg_Hydralisk && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Muscular_Augments) > 0) {
+    else if (type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Muscular_Augments) > 0) {
         base_speed *= 1.5;
     }
-    else if (type == UnitTypes::Zerg_Ultralisk && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
+    else if (type == UnitTypes::Zerg_Ultralisk && owner->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
         base_speed *= 1.5;
     }
 
     return base_speed;
 }
 
+int MeatAIModule::getProperRange(const Unit u) {
+    UnitType u_type = u->getType();
+    Player owner = u->getPlayer();
+    int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+    if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
+        base_range += 2 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
+        base_range += 3 * 32;
+    }
+
+    return base_range;
+}
+
+int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
+    int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+    if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
+        base_range += 2 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
+        base_range += 3 * 32;
+    }
+    else if ( u_type == UnitTypes::Terran_Barracks ) {
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+    }
+
+    return base_range;
+}
 int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return MeatAIModule::getProperSpeed(u) * (UnitTypes::Zerg_Lurker != u->getType()) * ei_loc.max_cooldown_ + max(u->getType().groundWeapon().maxRange(), u->getType().airWeapon().maxRange());
+    return (int)MeatAIModule::getProperSpeed(u) * (UnitTypes::Zerg_Lurker != u->getType()) * ei_loc.max_cooldown_ + getProperRange(u);
 }
 
 

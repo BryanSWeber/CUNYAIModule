@@ -735,6 +735,7 @@ void MeatAIModule::onFrame()
                         (friend_loc.worker_count_ > 0 && u->getType() != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                         (Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
                         //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
+                        (enemy_loc.stock_shoots_up_ == 0 && u->isFlying()) ||
                         //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
                         //(distance_to_foe < u->getType().groundWeapon().maxRange() && u->getType().groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24) || // a stutterstep component. Should seperate it off.
                         (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net && ( !u->getType().isFlyer() || u->getType() == UnitTypes::Zerg_Scourge || u->getType() == UnitTypes::Zerg_Overlord ));// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
@@ -879,7 +880,7 @@ void MeatAIModule::onFrame()
                         }
                     }
                 }
-                if (detector_found && spamGuard(detector_of_choice) ) {
+                if (detector_found /*&& spamGuard(detector_of_choice)*/ ) {
                     Position detector_pos = detector_of_choice->getPosition();
                     double theta = atan2(c.y - detector_pos.y, c.x - detector_pos.x);
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * SightRange(detector_of_choice) * 0.75, c.y + sin(theta) * SightRange(detector_of_choice)) * 0.75;
@@ -1182,9 +1183,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
             neutral_inventory.resource_inventory_.erase( unit ); //Clear that mine from the resource inventory.
             //inventory.updateBaseLoc( neutral_inventory );
         }
-        else {
-            //then nothing.
-        }
+        Worker_Gather(unit, UnitTypes::Resource_Mineral_Field, friendly_inventory); // we don't want it to overlap on an existing mine.
     }
 
     if ( !buildorder.ever_clear_ && unit->getType() == UnitTypes::Zerg_Overlord ) {

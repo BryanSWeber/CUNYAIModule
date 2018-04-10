@@ -14,7 +14,7 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
 
             Position pos = unit->getPosition();
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-            bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears;
+            bool ready_to_fight = ei.stock_total_ <= ui.stock_total_ || !potential_fears || !army_starved || unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit ;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
             bool scouting_returned_nothing = !enemy_scouted && inventory.cleared_all_start_positions_;
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
@@ -23,12 +23,12 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
 
             if (u_type != UnitTypes::Zerg_Overlord) {
                 // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-                if (healthy && ((ready_to_fight && !army_starved) || !inventory.cleared_all_start_positions_)) {
+                if (healthy && ( (ready_to_fight && enemy_scouted /*&& !army_starved*/) || !inventory.cleared_all_start_positions_)) {
                     setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
                     //scoutEnemyBase(unit, pos, inventory); 
                 }
-                else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
-                    setAttractionHome(unit, pos, ei, inventory);
+                else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight /*|| army_starved*/)) { // Otherwise, return home.
+                    setAttractionHome(unit, pos, ui, inventory);
                 }
                 else if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
                     setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
@@ -47,19 +47,8 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
                 }
             }
             else { //If you are an overlord, follow an abbreviated version of this.
-                // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-                //if (healthy && !inventory.cleared_all_start_positions_) {
-                //    //setAttractionEnemy(unit, pos, ei, inventory, potential_fears);
-                //    scoutEnemyBase(unit, pos, inventory); 
-                //}
-                //else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
-                //    setAttractionHome(unit, pos, ei, inventory);
-                //}
-                //else {
-                //    setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
-                //}
-                if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight || army_starved)) { // Otherwise, return home.
-                    setAttractionHome(unit, pos, ei, inventory);
+                if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight /*|| army_starved*/)) { // Otherwise, return home.
+                    setAttractionHome(unit, pos, ui, inventory);
                 }
                 setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
             }
@@ -152,7 +141,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     }
 
 
-                    if (e_priority >= priority && e_priority >= 4 && dist_to_enemy <= max_dist) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                    if (e_priority >= priority && e_priority >= 3 && dist_to_enemy <= max_dist) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                         target_sentinel = true;
                         priority = e_priority;
                         max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
@@ -193,10 +182,11 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
 void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White ) {
 
     int dist = unit->getDistance(e_unit.pos_);
-    int air_range = e_unit.type_.airWeapon().maxRange();
-    int ground_range = e_unit.type_.groundWeapon().maxRange();
+    //int air_range = e_unit.type_.airWeapon().maxRange();
+    //int ground_range = e_unit.type_.groundWeapon().maxRange();
     int chargable_distance_net = MeatAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
-    int range = unit->isFlying() ? air_range : ground_range;
+    //int range = unit->isFlying() ? air_range : ground_range;
+    int range = MeatAIModule::getProperRange( e_unit.type_, Broodwar->enemy() );// will bug if multiple enemies. 
     Position pos = unit->getPosition();
     Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
     //Position e_mean = ei.getMeanArmyLocation();
@@ -208,7 +198,7 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
         //initial retreat spot from enemy.
 
         //setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);
-        setAttractionHome(unit, pos, ei, inventory);
+        setAttractionHome(unit, pos, ui, inventory);
 
         //setAlignment( unit, ui );
         //setAlignment( unit, local_neighborhood);
@@ -492,7 +482,8 @@ void Boids::setSeperation(const Unit &unit, const Position &pos, const Unit_Inve
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
 void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
-    int distance = type.sightRange();
+    bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0 ;
+    int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32) * 2 ;
     int largest_dim = max(type.height(), type.width());
     Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, distance + largest_dim);
     int seperation_x = 0;

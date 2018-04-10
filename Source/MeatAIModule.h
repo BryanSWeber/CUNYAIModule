@@ -10,7 +10,7 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE false // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE true // Visualizations
+#define _ANALYSIS_MODE false // Visualizations
 #define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
@@ -153,7 +153,9 @@ public:
 
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
-      static double getProperSpeed( const UnitType & type );
+      static double getProperSpeed(const UnitType & type, const Player owner = Broodwar->self() );
+      static int getProperRange(const Unit u);
+      static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
       static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
 
       //checks if there is a smooth path to target. in minitiles

@@ -328,17 +328,20 @@ void Unit_Inventory::updateUnitInventorySummary() {
                     shoots_both += unit_value;
                 }
 
-                if ( u_iter.second.type_.groundWeapon().maxRange() > range || u_iter.second.type_.airWeapon().maxRange() > range ) {
-                    range = u_iter.second.type_.groundWeapon().maxRange() > u_iter.second.type_.airWeapon().maxRange() ? u_iter.second.type_.groundWeapon().maxRange() : u_iter.second.type_.airWeapon().maxRange();
+                if ( u_iter.second.bwapi_unit_ && MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) > range ) { // if you can see it, get the proper type.
+                    range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
+                }
+                else if (!u_iter.second.bwapi_unit_ && MeatAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy() ) > range) { // if you cannot see it, it must be an enemy unit.
+                    range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
                 }
 
                 if ( u_iter.second.type_.groundWeapon().damageCooldown() > max_cooldown || u_iter.second.type_.airWeapon().damageCooldown() > max_cooldown ) {
                     max_cooldown = u_iter.second.type_.groundWeapon().damageCooldown() > u_iter.second.type_.airWeapon().damageCooldown() ? u_iter.second.type_.groundWeapon().damageCooldown() : u_iter.second.type_.airWeapon().damageCooldown();
                 }
 
-                if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
-                    range = 7 * 32; // depends on upgrades and unit contents.
-                }
+                //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
+                //    range = 7 * 32; // depends on upgrades and unit contents.
+                //}
 
                 if ( u_iter.second.type_.isDetector() ) {
                     detector_count += MeatAIModule::Count_Units(u_iter.second.type_, *this);
