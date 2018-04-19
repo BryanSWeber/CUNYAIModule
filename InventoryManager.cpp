@@ -472,16 +472,16 @@ void Inventory::updateMapVeins() {
             int minitile_x = position_to_investigate->x;
             int minitile_y = position_to_investigate->y;
 
-            local_grid[0][0] = flattened_map_veins[ (minitile_x - 1) * map_y + (minitile_y - 1)] < iter && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] > 0;
-            local_grid[0][1] = flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]< iter && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] > 0;
+            local_grid[0][0] = flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] < iter && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] > 0;
+            local_grid[0][1] = flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]      < iter && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] > 0;
             local_grid[0][2] = flattened_map_veins[(minitile_x - 1)* map_y + (minitile_y + 1)] < iter && flattened_map_veins[(minitile_x - 1)* map_y +(minitile_y + 1)] > 0;
 
             local_grid[1][0] = flattened_map_veins[minitile_x* map_y +(minitile_y - 1)] < iter && flattened_map_veins[minitile_x* map_y +(minitile_y - 1)] > 0;
-            local_grid[1][1] = flattened_map_veins[minitile_x* map_y + minitile_y] < iter && flattened_map_veins[minitile_x* map_y +minitile_y] > 0;
+            local_grid[1][1] = flattened_map_veins[minitile_x* map_y + minitile_y]      < iter && flattened_map_veins[minitile_x* map_y +minitile_y] > 0;
             local_grid[1][2] = flattened_map_veins[minitile_x* map_y +(minitile_y + 1)] < iter && flattened_map_veins[minitile_x* map_y +(minitile_y + 1)] > 0;
 
             local_grid[2][0] = flattened_map_veins[(minitile_x + 1)* map_y + (minitile_y - 1)] < iter && flattened_map_veins[(minitile_x + 1)* map_y + (minitile_y - 1)] > 0;
-            local_grid[2][1] = flattened_map_veins[(minitile_x + 1)* map_y + minitile_y] < iter && flattened_map_veins[(minitile_x + 1)* map_y + minitile_y] > 0;
+            local_grid[2][1] = flattened_map_veins[(minitile_x + 1)* map_y + minitile_y]       < iter && flattened_map_veins[(minitile_x + 1)* map_y + minitile_y] > 0;
             local_grid[2][2] = flattened_map_veins[(minitile_x + 1)* map_y + (minitile_y + 1)] < iter && flattened_map_veins[(minitile_x + 1)* map_y  +(minitile_y + 1)] > 0;
 
             //local_grid[0][0] = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
