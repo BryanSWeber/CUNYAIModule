@@ -724,6 +724,27 @@ Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,con
     return return_unit;
 }
 
+//Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
+Stored_Unit* MeatAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if (e->second.type_.isBuilding()) {
+                temp_dist = (*e).second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist && e->second.valid_pos_) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;

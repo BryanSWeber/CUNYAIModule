@@ -483,19 +483,26 @@ void Boids::setSeperation(const Unit &unit, const Position &pos, const Unit_Inve
 void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0 ;
-    int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32) * 2 ;
+    int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32) ;
     int largest_dim = max(type.height(), type.width());
-    Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, distance + largest_dim);
+    Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, distance * 2 + largest_dim);
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
         seperation_x += u.second.pos_.x - pos.x;
         seperation_y += u.second.pos_.y - pos.y;
     }
+
+    // move away from map edge too, as if they were barriers. Don't waste vision. Note how the above is enemy_pos-our_pos, it will assist with the +/- below.
+    if (pos.x + distance > Broodwar->mapWidth() * 32)  seperation_x += 1;
+    if (pos.x - distance < 0)                          seperation_x -= 1;
+    if (pos.y + distance > Broodwar->mapHeight() * 32) seperation_y += 1;
+    if (pos.y - distance < 0)                          seperation_y -= 1;
+
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_dx_ = cos(theta) * distance; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ = sin(theta) * distance;
+        seperation_dx_ = cos(theta) * distance * 2; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_dy_ = sin(theta) * distance * 2;
     }
 }
 
@@ -563,6 +570,9 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
     int my_spot = inv.getRadialDistanceOutFromHome(pos);
     double temp_x = 0;
     double temp_y = 0;
+    double adj_x = 0;
+    double adj_y = 0;
+
     double theta = 0;
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
     for (int x = -5; x <= 5; ++x) {
@@ -576,24 +586,26 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
                 centralize_y > 0 &&
                 centralize_y > 0) // Is the spot acceptable?
             {
+                theta = atan2(y, x);
+
                 if (inv.map_veins_out_from_main_[centralize_x][centralize_y] > 1 &&
                     inv.map_veins_out_from_main_[centralize_x][centralize_y] < my_spot) // go directly to my base.
                 {
-                    theta = atan2(y, x);
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] <= 1) // repulse from unwalkable.
+                else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
                 {
-                    theta = atan2(y, x);
                     x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                    //adj_x -= cos(theta);
+                    //adj_y -= sin(theta);
                 }
             }
         }
     }
 
     if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y, temp_x);
+        theta = atan2(temp_y + adj_y, temp_x + adj_x);
         return_vector[0] = cos(theta);
         return_vector[1] = sin(theta);
     }
@@ -607,6 +619,8 @@ vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory
     double temp_x = 0;
     double temp_y = 0;
     double theta = 0;
+    double adj_x = 0;
+    double adj_y = 0;
 
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
     for (int x = -5; x <= 5; ++x) {
@@ -619,24 +633,26 @@ vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory
                 centralize_x > 0 &&
                 centralize_y > 0) // Is the spot acceptable?
             {
+                theta = atan2(y, x);
+
                 if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] > 1 &&
                     inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly to their base.
                 { 
-                    theta = atan2(y, x);
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] <= 1 ) // repulse from unwalkable.
+                else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < 1 ) // repulse from unwalkable.
                 {
-                    theta = atan2(y, x);
                     x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                    //adj_x -= cos(theta);
+                    //adj_y -= sin(theta);
                 }
             }
         }
     }
 
     if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y, temp_x);
+        theta = atan2(temp_y + adj_y, temp_x + adj_x);
         return_vector[0] = cos(theta);
         return_vector[1] = sin(theta);
     }

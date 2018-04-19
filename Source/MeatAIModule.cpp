@@ -131,7 +131,7 @@ void MeatAIModule::onStart()
     inventory.updateSmoothPos();
     inventory.updateMapVeins();
     inventory.updateMapVeinsOutFromMain( Position(Broodwar->self()->getStartLocation()) );
-    //inventory.updateMapChokes();
+    inventory.updateMapChokes();
     inventory.updateBaseLoc( neutral_inventory );
     inventory.getStartPositions();
 
@@ -305,6 +305,45 @@ void MeatAIModule::onFrame()
     inventory.updateScreen_Position();
     inventory.getExpoPositions(); // prime this once on game start.
     inventory.drawExpoPositions();
+    
+    bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+
+    if (inventory.unwalkable_needs_updating ) {
+
+        inventory.updateLiveUnwalkable(friendly_inventory, enemy_inventory, neutral_inventory);
+        inventory.unwalkable_needs_updating = false;
+        inventory.smoothed_needs_updating = true; // next step on ladder now.
+
+    } else if (inventory.smoothed_needs_updating ) {
+
+        inventory.updateSmoothPos();
+        inventory.smoothed_needs_updating = false;
+        inventory.veins_need_updating = true;
+
+    } else if (inventory.veins_need_updating ) {
+
+        inventory.updateMapVeins();
+        inventory.veins_need_updating = false;
+        inventory.veins_out_need_updating = true;
+
+    } else if (inventory.veins_out_need_updating ) {
+
+        Stored_Unit* center_building = getClosestStoredBuilding(enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        if (center_building && center_building->pos_.isValid() && center_building->pos_ != inventory.enemy_base_) {
+            inventory.updateMapVeinsOutFromFoe(center_building->pos_);
+        }
+        else if (!center_building && enemy_inventory.getMeanBuildingLocation() != Position(0,0) ) {
+            inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
+        }
+        else if (!center_building && enemy_inventory.getMeanLocation() != Position(0, 0)) { // if they have no known buildings we need to update the center to somewhere... Right? 
+            inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanLocation());
+        }
+        else if (!center_building ) {
+            inventory.updateMapVeinsOutFromFoe(Position(Broodwar->mapWidth() / 2 * 32, Broodwar->mapHeight() / 2 * 32));
+        }
+
+        inventory.veins_out_need_updating = false;
+    }
 
    if ( t_game == 0 ) {
         //update local resources
@@ -525,13 +564,19 @@ void MeatAIModule::onFrame()
 
             for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
                 for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-                    if ( inventory.map_veins_[i][j] > 100 ) {
+                    if ( inventory.map_veins_[i][j] > 175 ) {
                         if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
                         }
                     }
-                    if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+                    else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+                        }
+                    }
+                    else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
                         if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
                             //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                             Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
@@ -541,11 +586,44 @@ void MeatAIModule::onFrame()
             } // Pretty to look at!
 
 
-            for ( auto &u : Broodwar->self()->getUnits() ) {
-                if ( u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getType() != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit ) {
-                    Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
-                }
-            }
+            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
+            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
+            //        if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 && inventory.map_veins_out_from_main_[i][j] > 1 ) { 
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
+            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
+
+            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_enemy_.size(); ++i) {
+            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_enemy_[i].size(); ++j) {
+            //        if (inventory.map_veins_out_from_enemy_[i][j] % 100 == 0 && inventory.map_veins_out_from_enemy_[i][j] > 1) {
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_enemy_[i][j]);
+            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
+
+            //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
+            //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
+            //        if ( inventory.smoothed_barriers_[i][j] > 0) {
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                //Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j]);
+            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
+
+            //for ( auto &u : Broodwar->self()->getUnits() ) {
+            //    if ( u->getLastCommand().getType() != UnitCommandTypes::Attack_Move && u->getType() != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit ) {
+            //        Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
+            //    }
+            //}
         }
 
     }// close analysis mode
@@ -1079,19 +1157,10 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 
     //update maps, requires up-to date enemy inventories.
     if ( unit && unit->getType().isBuilding() ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
-        if ( unit->getPlayer() == Broodwar->enemy() ) {
+        inventory.unwalkable_needs_updating = true;
+        if (unit->getPlayer() == Broodwar->enemy()) {
             //update maps, requires up-to date enemy inventories.
-            if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
-                Stored_Unit* center_unit = getClosestStored( enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999 ); // If the mean location is over water, nothing will be updated.
-                if ( center_unit && center_unit->pos_.isValid()) {
-                    inventory.updateMapVeinsOutFromFoe( center_unit->pos_ );
-                }
-                else {
-                    inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
-
-                }
-            }
+            inventory.veins_out_need_updating = true;
         }
     }
 
@@ -1191,7 +1260,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
     }
 
     if ( unit && unit->getType().isBuilding() ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
+        inventory.unwalkable_needs_updating = true;
         if ( unit->getPlayer() == Broodwar->self() ) {
             Position current_home;
             if ( unit->getType().isResourceDepot() && unit->getClosestUnit( IsOwned && IsResourceDepot ) && unit->getClosestUnit( IsOwned && IsResourceDepot )->exists()) {
@@ -1201,24 +1270,9 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit )
         }
         if ( unit->getPlayer() == Broodwar->enemy() ) {
             //update maps, requires up-to date enemy inventories.
-            if ( enemy_inventory.getMeanBuildingLocation() != Position( 0, 0 ) ) {
-                Stored_Unit* center_unit = getClosestStored( enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999 ); // If the mean location is over water, nothing will be updated.
-                if (center_unit) {
-                    inventory.updateMapVeinsOutFromFoe(center_unit->pos_);
-                }
-                else {
-                    inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
-                }
-            }
-            else if (enemy_inventory.getMeanLocation() != Position(0,0)) { // if they have no known buildings we need to update the center to somewhere... Right? 
-                inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanLocation());
-            }
-            else {
-                inventory.updateMapVeinsOutFromFoe(Position(Broodwar->mapWidth() / 2 * 32, Broodwar->mapHeight() / 2 * 32));
-            }
-        }
+                inventory.veins_out_need_updating = true;
+       }
     }
-
 }
 
 void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
@@ -1245,7 +1299,7 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
     if ( unit && unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        inventory.updateLiveMapVeins( unit, friendly_inventory, enemy_inventory, neutral_inventory );
+        inventory.unwalkable_needs_updating = true;
         my_reservation.removeReserveSystem( unit->getType() );
     }
 

@@ -37,10 +37,11 @@ struct Inventory {
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
-    vector< vector<bool> > buildable_positions_ ; // buildable/unbuildable.
-    vector< vector<int> > unwalkable_barriers_; // unwalkablity only
-    vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer
-    vector< vector<int> > map_veins_; //updates for building locations
+    // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
+    vector< vector<bool> > buildable_positions_ ; // buildable = 1, otherwise 0.
+    vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
+    vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
+    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, 1+ if otherwise. Veins decend from a value of 300.
     vector< vector<int> > map_veins_out_from_main_; // distance from our own main.
     vector< vector<int> > map_veins_out_from_enemy_; // distance from enemy base.
     vector< vector<int> > base_values_;
@@ -52,6 +53,11 @@ struct Inventory {
     TilePosition next_expo_;
 	bool cleared_all_start_positions_;
     bool workers_are_clearing_;
+
+    bool unwalkable_needs_updating = false;
+    bool smoothed_needs_updating = false;
+    bool veins_need_updating = false;
+    bool veins_out_need_updating = false;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);
@@ -94,13 +100,17 @@ struct Inventory {
     void Inventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
     void Inventory::updateUnwalkable();
+    // Updates unwalkable portions with existing blockades.
+    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri);
+
     // Marks and smooths the edges of the map.
     void Inventory::updateSmoothPos();
     // Marks the main arteries of the map.
     void Inventory::updateMapVeins();
 
     // Updates the visible map arteries. Only checks buildings.
-    void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );    
+    //void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
+    //void Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
     // Updates the chokes on the map.
     void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
