@@ -562,28 +562,28 @@ void MeatAIModule::onFrame()
             }
 
 
-            for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-                    if ( inventory.map_veins_[i][j] > 175 ) {
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-                        }
-                    }
-                    else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-                        }
-                    }
-                    else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-                        }
-                    }
-                }
-            } // Pretty to look at!
+            //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
+            //        if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+            //            }
+            //        }
+            //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+            //            }
+            //        }
+            //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
 
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
