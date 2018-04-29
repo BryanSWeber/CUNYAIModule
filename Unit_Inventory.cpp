@@ -308,28 +308,25 @@ void Unit_Inventory::updateUnitInventorySummary() {
             
             bool flying_unit = u_iter.second.type_.isFlyer();
             int unit_value = MeatAIModule::Stock_Units(u_iter.second.type_, *this);
+            int count_of_unit = MeatAIModule::Count_Units(u_iter.second.type_, *this) ;
 
             if ( MeatAIModule::IsFightingUnit(u_iter.second) ) {
 
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_== UnitTypes::Terran_Bunker;
                 bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
-
+                int range_temp = (bool)(u_iter.second.bwapi_unit_) * MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * MeatAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
+                
                 fliers          += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
                 ground_unit     += !flying_unit * unit_value;
                 shoots_up       += up_gun * unit_value;
                 shoots_down     += down_gun * unit_value;
                 shoots_both     += (up_gun && down_gun) * unit_value;
-                cloaker_count   += cloaker * MeatAIModule::Count_Units(u_iter.second.type_, *this);
-                detector_count  += u_iter.second.type_.isDetector() * MeatAIModule::Count_Units(u_iter.second.type_, *this);
+                cloaker_count   += cloaker * count_of_unit;
+                detector_count  += u_iter.second.type_.isDetector() * count_of_unit;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
 
-                if ( u_iter.second.bwapi_unit_ && MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) > range ) { // if you can see it, get the proper type.
-                    range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
-                }
-                else if (!u_iter.second.bwapi_unit_ && MeatAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy() ) > range) { // if you cannot see it, it must be an enemy unit.
-                    range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
-                }
+                range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
                 //    range = 7 * 32; // depends on upgrades and unit contents.
@@ -344,9 +341,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
             
             }
 
-			if (!flying_unit){
-				volume += u_iter.second.type_.height()*u_iter.second.type_.width() * MeatAIModule::Count_Units(u_iter.second.type_, *this);
-			}
+            volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
 
 			Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
             if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
