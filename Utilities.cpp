@@ -140,7 +140,7 @@ void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
 void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
     if (_ANALYSIS_MODE && unit.valid_pos_) {
         Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints()) {
+        if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
@@ -153,7 +153,7 @@ void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width() * unit.current_hp_ / (double) unit.type_.maxHitPoints();
+            lower_right.x = upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields()) ;
             lower_right.y = upper_left.y + 10;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
@@ -297,12 +297,14 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 
     for ( auto & e : ui.unit_inventory_) {
 
-        if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
-            count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-        } 
-        else if ( e.second.type_ == type ) {
-            count++;
-        }
+        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
+        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        //} 
+        //else if ( e.second.type_ == type ) {
+        //    count++;
+        //}
+
+        count += (e.second.type_ == type) + !(e.second.type_ == type) * 2 * (e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type); // better without if-conditions.
     }
 
     return count;
@@ -314,12 +316,14 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
     int count = 0;
     for ( auto & unit : unit_set )
     {
-        if ( unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type ) { // Count units under construction
-            count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-        } 
-        else if ( unit->getType() == type ) {
-            count++;
-        }
+        //if ( unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type ) { // Count units under construction
+        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        //} 
+        //else if ( unit->getType() == type ) {
+        //    count++;
+        //}
+        count += (unit->getType() == type) + !(unit->getType() == type) * 2 * (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type); // better without if-conditions.
+
     }
 
     return count;
@@ -508,24 +512,42 @@ int MeatAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
 // returns helpful_friendly and helpful_enemy units from respective inventories.
 vector<int> MeatAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
 {
-        int helpful_e, helpful_u;
+    int helpful_e, helpful_u;
 
-        helpful_e = enemy_loc.stock_shoots_down_ + enemy_loc.stock_shoots_up_ - 2 * enemy_loc.stock_both_up_and_down_; // A+B - 2 * A Union B
-            if (friend_loc.stock_ground_units_ == 0) {
-                helpful_e = enemy_loc.stock_shoots_up_;
-            }
-            else if (friend_loc.stock_fliers_ == 0) {
-                helpful_e = enemy_loc.stock_shoots_down_;
-            }
-        helpful_u = friend_loc.stock_shoots_down_ + friend_loc.stock_shoots_up_ - 2 * friend_loc.stock_both_up_and_down_;
-            if (enemy_loc.stock_ground_units_ == 0) {
-                helpful_u = friend_loc.stock_shoots_up_;
-            }
-            else if (enemy_loc.stock_fliers_ == 0) {
-                helpful_u = friend_loc.stock_shoots_down_;
-            }
+        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
+        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
+
+
+        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
+           //if (friend_loc.stock_ground_units_ == 0) {
+            //    helpful_e = enemy_loc.stock_shoots_up_;
+            //}
+            //else if (friend_loc.stock_fliers_ == 0) {
+            //    helpful_e = enemy_loc.stock_shoots_down_;
+            //}
+        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
+            //if (enemy_loc.stock_ground_units_ == 0) {
+            //    helpful_u = friend_loc.stock_shoots_up_;
+            //}
+            //else if (enemy_loc.stock_fliers_ == 0) {
+            //    helpful_u = friend_loc.stock_shoots_down_;
+            //}
+            
         vector<int> return_vec = { helpful_u, helpful_e };
         return return_vec;
+}
+int MeatAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+{
+    int targetable_e;
+    targetable_e = (u->getType().airWeapon() != WeaponTypes::None) * (enemy_loc.stock_fliers_ + enemy_loc.stock_air_fodder_ ) + (u->getType().groundWeapon() != WeaponTypes::None) * (enemy_loc.stock_ground_units_ + enemy_loc.stock_ground_fodder_);
+    return targetable_e;
+}
+
+int MeatAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+{
+    int threatening_e;
+    threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  (1 - u->getType().isFlyer()) * enemy_loc.stock_ground_units_;
+    return threatening_e;
 }
 
 // Announces to player the name and type of all units in the unit inventory. Bland but practical.
@@ -1669,11 +1691,11 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, c
     bool can_still_save = true;
     bool have_to_save = false;
 
-    if ( e_loc.stock_total_ > 0 && e_closest ) {
+    if ( e_loc.stock_fighting_total_ > 0 && e_closest ) {
         radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        can_still_save = e_too_close.stock_total_ > ui.stock_total_; // can still save it or you don't have a choice.
+        can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
         have_to_save = inv.min_fields_ <= 12 || inv.getRadialDistanceOutFromHome(pos) < 20000 || inv.hatches_ == 1;
     }
 

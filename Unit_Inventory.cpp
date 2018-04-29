@@ -56,6 +56,8 @@ void Unit_Inventory::purgeUnseenUnits()
         }
     }
 }
+
+
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
@@ -124,11 +126,11 @@ void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv) const
 }
 
 // Updates the count of units.
-void Unit_Inventory::addStored_Unit( Unit unit ) {
+void Unit_Inventory::addStored_Unit( const Unit &unit ) {
     unit_inventory_.insert( { unit, Stored_Unit( unit ) } );
 };
 
-void Unit_Inventory::addStored_Unit( Stored_Unit stored_unit ) {
+void Unit_Inventory::addStored_Unit( const Stored_Unit &stored_unit ) {
     unit_inventory_.insert( { stored_unit.bwapi_unit_ , stored_unit } );
 };
 
@@ -137,7 +139,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
-    current_hp_ = unit->getHitPoints();
+    current_hp_ = unit->getHitPoints() + unit->getShields();
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
@@ -148,7 +150,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             stock_value_ = Stored_Unit(type_).stock_value_;
         }
 
-		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints())); // Precalculated, precached.
+		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 }
 
 //Removes units that have died
@@ -296,37 +298,31 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int detector_count = 0;
     int cloaker_count = 0;
     int max_cooldown = 0;
+    int ground_fodder = 0;
+    int air_fodder = 0;
 
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
+            
+            bool flying_unit = u_iter.second.type_.isFlyer();
+            int unit_value = MeatAIModule::Stock_Units(u_iter.second.type_, *this);
 
             if ( MeatAIModule::IsFightingUnit(u_iter.second) ) {
 
-                int unit_value = MeatAIModule::Stock_Units(u_iter.second.type_, *this);
+                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_== UnitTypes::Terran_Bunker;
+                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
+                bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
 
-                if ( u_iter.second.type_.isFlyer() ) {
-                    fliers += unit_value; // add the value of that type of unit to the flier stock.
-                }
-                else {
-                    ground_unit += unit_value;
-                }
-
-                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None;
-                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None;
-
-                if (up_gun) {
-                    shoots_up += unit_value;
-                }
-
-                if (down_gun) {
-                    shoots_down += unit_value;
-                }
-
-                if (up_gun && down_gun) {
-                    shoots_both += unit_value;
-                }
+                fliers          += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
+                ground_unit     += !flying_unit * unit_value;
+                shoots_up       += up_gun * unit_value;
+                shoots_down     += down_gun * unit_value;
+                shoots_both     += (up_gun && down_gun) * unit_value;
+                cloaker_count   += cloaker * MeatAIModule::Count_Units(u_iter.second.type_, *this);
+                detector_count  += u_iter.second.type_.isDetector() * MeatAIModule::Count_Units(u_iter.second.type_, *this);
+                max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
 
                 if ( u_iter.second.bwapi_unit_ && MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) > range ) { // if you can see it, get the proper type.
                     range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
@@ -335,25 +331,20 @@ void Unit_Inventory::updateUnitInventorySummary() {
                     range = MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer());
                 }
 
-                if ( u_iter.second.type_.groundWeapon().damageCooldown() > max_cooldown || u_iter.second.type_.airWeapon().damageCooldown() > max_cooldown ) {
-                    max_cooldown = u_iter.second.type_.groundWeapon().damageCooldown() > u_iter.second.type_.airWeapon().damageCooldown() ? u_iter.second.type_.groundWeapon().damageCooldown() : u_iter.second.type_.airWeapon().damageCooldown();
-                }
-
                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
                 //    range = 7 * 32; // depends on upgrades and unit contents.
                 //}
 
-                if ( u_iter.second.type_.isDetector() ) {
-                    detector_count += MeatAIModule::Count_Units(u_iter.second.type_, *this);
-                }
-
-                if ( u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak() ) {
-                    cloaker_count += MeatAIModule::Count_Units(u_iter.second.type_, *this);
-                }
                 already_seen_types.push_back( u_iter.second.type_ );
             }
+            else {
 
-			if (!u_iter.second.type_.isFlyer()){
+                air_fodder += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
+                ground_fodder += !flying_unit * unit_value;
+            
+            }
+
+			if (!flying_unit){
 				volume += u_iter.second.type_.height()*u_iter.second.type_.width() * MeatAIModule::Count_Units(u_iter.second.type_, *this);
 			}
 
@@ -374,7 +365,10 @@ void Unit_Inventory::updateUnitInventorySummary() {
     stock_shoots_up_ = shoots_up;
     stock_shoots_down_ = shoots_down;
     stock_high_ground_= high_ground;
-    stock_total_ = stock_ground_units_ + stock_fliers_;
+    stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
+    stock_ground_fodder_ = ground_fodder;
+    stock_air_fodder_ = air_fodder;
+    stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
     max_range_ = range;
     max_cooldown_ = max_cooldown;
 	worker_count_ = worker_count;
@@ -406,22 +400,20 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    if (unittype.isTwoUnitsInOneEgg() ) {
-        stock_value_ = stock_value_ / 2;
-    }
+    stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
 
 };
 // We must be able to create Stored_Unit objects as well.
-Stored_Unit::Stored_Unit( Unit unit ) {
+Stored_Unit::Stored_Unit( const Unit &unit ) {
     valid_pos_ = true;
     unit_ID_ = unit->getID();
     bwapi_unit_ = unit;
     pos_ = unit->getPosition();
     type_ = unit->getType();
     build_type_ = unit->getBuildType();
-    current_hp_ = unit->getHitPoints();
+    current_hp_ = unit->getHitPoints() + unit->getShields();
 	locked_mine_ = nullptr;
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
@@ -440,7 +432,7 @@ Stored_Unit::Stored_Unit( Unit unit ) {
         stock_value_ = stock_value_ / 2;
     }
 
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints())) ; // Precalculated, precached.
+    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints() + unit->getType().maxShields())) ; // Precalculated, precached.
 }
 
 
@@ -465,7 +457,7 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     return tenative_resource;
 }
 
-bool Stored_Unit::isClearing(Resource_Inventory &ri) {
+bool Stored_Unit::isClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
         map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
         if (iter != ri.resource_inventory_.end() && iter->second.current_stock_value_ <= 8) {

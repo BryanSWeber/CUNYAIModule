@@ -18,7 +18,7 @@ struct Stored_Unit {
     //Creates a steryotyped ideal of the unit. For comparisons.
     Stored_Unit( const UnitType &unittype );
     // Creates an enemy unit object, an abbreviated version of the original.
-    Stored_Unit( Unit unit );
+    Stored_Unit( const Unit &unit );
     Stored_Unit();
 	void updateStoredUnit(const Unit &unit);
 
@@ -41,7 +41,7 @@ struct Stored_Unit {
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
-    bool isClearing(Resource_Inventory &ri);  // If the unit is clearing a spot.
+    bool isClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
 	//void addMine(Stored_Resource mine);
 
     int current_hp_;
@@ -75,6 +75,9 @@ struct Unit_Inventory {
     int stock_shoots_up_;
     int stock_shoots_down_;
     int stock_high_ground_;
+    int stock_fighting_total_;
+    int stock_ground_fodder_;
+    int stock_air_fodder_;
     int stock_total_;
     int max_range_;
     int max_cooldown_;
@@ -86,8 +89,8 @@ struct Unit_Inventory {
 	std::map <Unit, Stored_Unit> unit_inventory_;
 
     // Updates the count of  units.
-    void addStored_Unit( Unit unit );
-    void addStored_Unit( Stored_Unit stored_unit );
+    void addStored_Unit( const Unit &unit );
+    void addStored_Unit( const Stored_Unit &stored_unit );
 
     //Removes units
     void removeStored_Unit( Unit unit );

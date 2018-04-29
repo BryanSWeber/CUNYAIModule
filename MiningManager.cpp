@@ -110,7 +110,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isMineralField();
         }
         else {
-            mine_is_right_type = r->second.type_.isRefinery();
+            mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
         if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone && r->second.occupied_natural_) {

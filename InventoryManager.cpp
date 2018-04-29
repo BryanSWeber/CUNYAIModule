@@ -104,7 +104,7 @@ void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
-    double total = ui.stock_total_ /*- MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
+    double total = ui.stock_fighting_total_ /*- MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
 
     if ( total <= 0 ) {
         total = 1;
@@ -448,7 +448,7 @@ void Inventory::updateMapVeins() {
         }
     }
 
-    vector<int> flattened_map_veins;
+    vector<unsigned> flattened_map_veins;
     for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
         for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
@@ -472,17 +472,17 @@ void Inventory::updateMapVeins() {
             int minitile_y = position_to_investigate->y;
             bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 <= map_x && minitile_y + 1 <= map_y;
 
-            local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] < iter && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] > 0;
-            local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       < iter && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       > 0;
-            local_grid[0][2] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] < iter && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] > 0;
+            local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
+            local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
+            local_grid[0][2] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
 
-            local_grid[1][0] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] < iter && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] > 0;
+            local_grid[1][0] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1;
             //local_grid[1][1] = safety_check && flattened_map_veins[minitile_x       * map_y + minitile_y]       < iter && flattened_map_veins[minitile_x       * map_y + minitile_y]       > 0;
-            local_grid[1][2] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] < iter && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] > 0;
+            local_grid[1][2] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1;
 
-            local_grid[2][0] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] < iter && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] > 0;
-            local_grid[2][1] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y +  minitile_y]      < iter && flattened_map_veins[(minitile_x + 1) * map_y + minitile_y]       > 0;
-            local_grid[2][2] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] < iter && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] > 0;
+            local_grid[2][0] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1;
+            local_grid[2][1] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y +  minitile_y]      - 1 < iter - 1;
+            local_grid[2][2] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
 
             // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
             bool opposing_tiles =
@@ -538,7 +538,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
-
+ 
     if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
         return;
     }
@@ -546,6 +546,8 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
         map_veins_out_from_main_.clear();
     }
     // first, define matrixes to recieve the walkable locations for every minitile.
+
+    home_base_ = center;
 
     map_veins_out_from_main_.reserve(map_x);
     for (int x = 0; x <= map_x; ++x) {
@@ -1458,9 +1460,11 @@ void Inventory::getExpoPositions() {
     //Regionset neighbors;
     bool local_maximum = true;
 
+    int map_x = Broodwar->mapWidth();
+    int map_y = Broodwar->mapHeight();
 
-    for ( vector<int>::size_type x = 0; x != base_values_.size(); ++x ) {
-        for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {
+    for ( vector<int>::size_type x = 0; x != map_x; ++x ) {
+        for ( vector<int>::size_type y = 0; y != map_y; ++y ) {
             if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
 
                 local_maximum = true;
@@ -1471,7 +1475,7 @@ void Inventory::getExpoPositions() {
 
                 for ( int i = -12; i <= 12; i++ ) {
                     for ( int j = -12; j <= 12; j++ ) {
-                        bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
+                        bool safety_check = x + i < map_x && x - i > 0 && y + j < map_y && y - j > 0;
                         if ( safety_check && base_values_[x][y] < base_values_[x + i][y + j] ) {
                             local_maximum = false;
                             break;

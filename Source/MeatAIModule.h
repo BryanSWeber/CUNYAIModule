@@ -9,8 +9,8 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE false // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE true // Visualizations
+#define _RESIGN_MODE true // must be off for proper game close in SC-docker
+#define _ANALYSIS_MODE false // Visualizations
 #define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
@@ -253,6 +253,10 @@ public:
       static int Stock_Supply( const UnitType &unit, const Inventory &inv );
       // returns both useful stocks if both groups were to have a fight;
       static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
+      // returns the stock of opponants I can actually fight in their local area.
+      static int getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc);
+      // returns the stock of units that might actually threaten U in region.
+      static int getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc);
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
       static bool isOnScreen( const Position &pos , const Position &screen_pos);

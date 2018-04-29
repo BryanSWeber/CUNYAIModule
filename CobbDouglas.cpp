@@ -3,6 +3,8 @@
 #include <BWAPI.h>
 #include "Source\MeatAIModule.h"
 #include "Source\CobbDouglas.h"
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -127,3 +129,17 @@ void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_st
     army_derivative = (alpha_army / army_stock) * army_possible;
     //tech_derivative = (alpha_tech * alpha_army / tech_stock) * tech_possible;
 };
+
+
+void CobbDouglas::printModelParameters() { // we have poorly named parameters, alpha army is in MeatAIModule as well.
+    std::ofstream GameParameters;
+    GameParameters.open(".\\bwapi-data\\write\\GameParameters.txt", ios::app | ios::ate);
+    if (GameParameters.is_open()) {
+        GameParameters.seekp(0, ios::end); //to ensure the put pointer is at the end
+        GameParameters << getlnY() << "," << getlny() << "," << alpha_army << "," << alpha_econ << "," << alpha_tech << "," << econ_derivative << "," << army_derivative << "," << tech_derivative << "\n";
+        GameParameters.close();
+    }
+    else {
+        Broodwar->sendText("Failed to find GameParameters.txt");
+    }
+}

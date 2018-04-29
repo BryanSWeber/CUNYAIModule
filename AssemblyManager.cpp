@@ -157,11 +157,13 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
-                Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
-                buildorder.updateRemainingBuildOrder(building); // skips the building.
+                Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                //buildorder.updateRemainingBuildOrder(building); // skips the building.
+                buildorder.clearRemainingBuildOrder();
             }
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
+
             Stored_Resource* closest_gas = MeatAIModule::getClosestGroundStored(neutral_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit->getPosition());
             if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
                 TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
@@ -176,12 +178,15 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 //    return true;
                 //} //extractors must have buildings nearby or we shouldn't build them.
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) && buildorder.checkBuilding_Desired(building)) {
-                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
-                    buildorder.updateRemainingBuildOrder(building); // skips the building.
+                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                    //buildorder.updateRemainingBuildOrder(building); // skips the building.
+                    buildorder.clearRemainingBuildOrder();
                 }
             }
+
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Hatchery) {
+
             if (unit->canBuild(building) && checkSafeBuildLoc(unit->getPosition(), inventory, enemy_inventory, friendly_inventory, neutral_inventory) ) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64);
 
@@ -195,11 +200,13 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     return true;
                 }
                 else if (buildorder.checkBuilding_Desired(building)) {
-                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
-                    buildorder.updateRemainingBuildOrder(building); // skips the building.
+                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                    //buildorder.updateRemainingBuildOrder(building); // skips the building.
+                    buildorder.clearRemainingBuildOrder();
                 }
             }
         }
+
     }
     return false;
 }
@@ -274,7 +281,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) &&
         buildorder.checkEmptyBuildOrder();
 
-    bool enemy_mostly_ground = ei.stock_ground_units_ >= ei.stock_total_ * 0.75;
+    bool enemy_mostly_ground = ei.stock_ground_units_ >= ei.stock_fighting_total_ * 0.75;
     bool enemy_lacks_AA = ei.stock_shoots_up_ <= 0.25 * ei.stock_shoots_down_;
 
     //bool marginal_benifit_from_air = ui.stock_fliers_ / (ei.stock_shoots_up_ + 1);
@@ -307,7 +314,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     is_building += Check_N_Grow(larva->getType().getRace().getWorker(), larva, (drone_conditional || wasting_larva_soon) && !enough_drones);
 
     //Army build/replenish.  Cycle through military units available.
-    if (ei.stock_fliers_ > ui.stock_shoots_up_ || u_relatively_weak_against_air ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
+    if (/*ei.stock_fliers_ > ui.stock_shoots_up_ ||*/ u_relatively_weak_against_air ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         is_building += Check_N_Grow(UnitTypes::Zerg_Scourge, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && Count_Units(UnitTypes::Zerg_Scourge, inv) < 5); // hard cap on scourges, they build 2 at a time. May (still) overbuild within a single frame.
         is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
@@ -356,12 +363,12 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         }
         else if (ultralisks_ready) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() % 200 >  UnitTypes::Zerg_Zergling.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
+            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > 0 ); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
     }
     else if ( e_relatively_weak_against_air ) {
         is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
-        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > 50); // if you are floating minerals relative to gas, feel free to buy some lings.
+        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > 50 ); // if you are floating minerals relative to gas, feel free to buy some lings.
     }
 
     is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0 && !u_relatively_weak_against_air); // catchall units.
@@ -408,8 +415,8 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < Count_Units(UnitTypes::Zerg_Hatchery, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, inv);
     bool can_upgrade_colonies = (Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
-    bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_total_ * 0.75;
-    bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_total_;
+    bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
+    bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
     bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), 2500);
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -432,7 +439,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Stock_Buildings(UnitTypes::Zerg_Hive, u_inv);
 
     //Combat Buildings
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_total_ > u_loc.stock_total_) &&  // army starved or under attack. ? And?
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_fighting_total_ > u_loc.stock_fighting_total_) &&  // army starved or under attack. ? And?
         Count_Units(UnitTypes::Zerg_Creep_Colony, inv) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         buildings_started == 0 &&
@@ -445,7 +452,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
 
-    buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_total_< friendly_inventory.stock_total_ ) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+    buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_fighting_total_< friendly_inventory.stock_fighting_total_ ) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5 ); // only macrohatch if you are short on larvae and can afford to spend.
 
     //Tech Buildings
@@ -517,26 +524,6 @@ TilePosition MeatAIModule::getBuildablePosition(TilePosition target_pos, UnitTyp
     return canidate_return_position;
 }
 
-//bool operator==( const Build_Order_Object &lhs, const Build_Order_Object & rhs )
-//{
-//    bool research = lhs.getResearch().getID() != TechTypes::None.getID();
-//    bool unit = lhs.getUnit() != UnitTypes::None;
-//    bool upgrade = lhs.getUpgrade() != UpgradeTypes::None;
-//
-//}
-//
-//bool operator!=( const Build_Order_Object &lhs, const Build_Order_Object & rhs )
-//{
-//    return !operator==( lhs.getResearch(), rhs.getResearch() );
-//}
-//
-//bool operator==( const Building_Gene &lhs, const Building_Gene &rhs ) {
-//    return lhs.building_gene_ == rhs.building_gene_;
-//};
-//bool operator!=( const Building_Gene &lhs, const Building_Gene &rhs ) {
-//    return !operator==( lhs.building_gene_ , rhs.building_gene_ );
-//};
-
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getUnit() == u->getType()) {
@@ -576,10 +563,6 @@ void Building_Gene::announceBuildingAttempt(UnitType ut) {
     }
 }
 
-//void setBuilding_Destroyed( UnitType ut ) {
-//    --building_gene_[find( building_gene_.begin(), building_gene_.end(), u->getBuildType() )];
-//}
-
 bool Building_Gene::checkBuilding_Desired(UnitType ut) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
@@ -598,10 +581,6 @@ bool Building_Gene::checkResearch_Desired(TechType research) {
 bool Building_Gene::checkEmptyBuildOrder() {
     return building_gene_.empty();
 }
-
-//bool Building_Gene::checkExistsInBuild( UnitType unit ) {
-//    return find( building_gene_.begin(), building_gene_.end(), Build_Order_Object( unit ) )!= building_gene_.end() ;
-//}
 
 void Building_Gene::getInitialBuildOrder(string s) {
 
@@ -702,6 +681,4 @@ Building_Gene::Building_Gene(string s) { // unspecified items are unrestricted.
 
     getInitialBuildOrder(s);
 
-
-} // for zerg 9 pool speed into 3 hatch muta, T: 3 hatch muta, P: 10 hatch into 3 hatch hydra bust.
-
+}

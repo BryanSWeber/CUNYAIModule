@@ -33,11 +33,9 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
                 else if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
                     setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
                 }
-                else { // give units that basic seperation otherwise.
-                    if (!u_type.isFlyer() || u_type == UnitTypes::Zerg_Scourge) {
-                        setSeperation(unit, pos, local_neighborhood);
-                    }
-                }
+  
+                setSeperation(unit, pos, local_neighborhood);
+
 
                 if (potential_fears) {
                     setCohesion(unit, pos, ui);
@@ -47,18 +45,17 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
                 }
             }
             else { //If you are an overlord, follow an abbreviated version of this.
+
+                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+
                 if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight /*|| army_starved*/)) { // Otherwise, return home.
                     setAttractionHome(unit, pos, ui, inventory);
                 }
-                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+                //else if (!enemy_scouted && healthy && ready_to_fight) {
+                //    scoutEnemyBase(unit, pos, inventory);
+                //}
             }
 
-
-            // lurkers should move when we need them to scout.
-            if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !MeatAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
-                unit->unburrow();
-                return;
-            }
 
             //Move to the final position.
             int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
@@ -68,6 +65,13 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
                                       (int)(pos.y + vector_y ) };
 
             if (brownian_pos != pos) {
+
+                // lurkers should move when we need them to scout.
+                if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !MeatAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
+                    unit->unburrow();
+                    return;
+                }
+
                 unit->move(brownian_pos);
             }
 
@@ -130,14 +134,17 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
                     else if (e_type.isWorker()) {
                         e_priority = 3;
                     }
-                    else if (MeatAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0) {
+                    else if (e_type.isResourceDepot()) {
                         e_priority = 2;
                     }
+                    else if (MeatAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0) {
+                        e_priority = 1;
+                    }
                     else if (e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
-                        e_priority = 1; // or if they cant fight back we'll get those last.
+                        e_priority = 0; // or if they cant fight back we'll get those last.
                     }
                     else {
-                        e_priority = 0; // should leave stuff like larvae and eggs in here. Low, low priority.
+                        e_priority = -1; // should leave stuff like larvae and eggs in here. Low, low priority.
                     }
 
 
@@ -197,12 +204,12 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         //initial retreat spot from enemy.
 
-        //setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);
+        //setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);//might need this to solve scourge problem?
         setAttractionHome(unit, pos, ui, inventory);
 
         //setAlignment( unit, ui );
         //setAlignment( unit, local_neighborhood);
-        setCohesion( unit, pos, local_neighborhood);
+        //setCohesion( unit, pos, local_neighborhood);
 
         // Flying units do not need to seperate.
         if ( !unit->getType().isFlyer() || unit->getType() == UnitTypes::Zerg_Scourge ) {
@@ -387,7 +394,7 @@ void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inven
 }
 
 void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
-        if (!inv.start_positions_.empty()) {
+        if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end() ) {
             Position possible_base = inv.start_positions_[0];
             int dist = unit->getDistance(possible_base);
             int dist_x = possible_base.x - pos.x;
@@ -395,7 +402,7 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv
             double theta = atan2(dist_y, dist_x);
             attract_dx_ = cos(theta) * dist; // run 100% towards them.
             attract_dy_ = sin(theta) * dist;
-
+            cohesion_dx_ = seperation_dx_ = attune_dx_ = walkability_dx_ = centralization_dx_ = cohesion_dy_ = seperation_dy_ = attune_dy_ = walkability_dy_ = centralization_dy_ = 0;
             std::rotate(inv.start_positions_.begin(), inv.start_positions_.begin() + 1, inv.start_positions_.end());
         }
 }
@@ -451,8 +458,8 @@ void Boids::setAttractionHome(const Unit &unit, const Position &pos, const Unit_
             attract_dy_ = direction[1] * distance_metric;
         }
         else {
-            int dist_x = ui.getMeanBuildingLocation().x - pos.x;
-            int dist_y = ui.getMeanBuildingLocation().y - pos.y;
+            int dist_x = inv.home_base_.x - pos.x;
+            int dist_y = inv.home_base_.y - pos.y;
             double theta = atan2(dist_y, dist_x);
             attract_dx_ = cos(theta) * distance_metric; // run home!
             attract_dy_ = sin(theta) * distance_metric;
@@ -494,10 +501,10 @@ void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit
     }
 
     // move away from map edge too, as if they were barriers. Don't waste vision. Note how the above is enemy_pos-our_pos, it will assist with the +/- below.
-    if (pos.x + distance > Broodwar->mapWidth() * 32)  seperation_x += 1;
-    if (pos.x - distance < 0)                          seperation_x -= 1;
-    if (pos.y + distance > Broodwar->mapHeight() * 32) seperation_y += 1;
-    if (pos.y - distance < 0)                          seperation_y -= 1;
+    seperation_x += pos.x + distance > Broodwar->mapWidth() * 32;
+    seperation_x -= pos.x - distance < 0;
+    seperation_y += pos.y + distance > Broodwar->mapHeight() * 32;
+    seperation_y -= pos.y - distance < 0;
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
