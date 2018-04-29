@@ -5,7 +5,7 @@
 #include "Source\InventoryManager.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
-
+#include <algorithm>
 
 using namespace std;
 
@@ -13,12 +13,13 @@ using namespace std;
 Inventory::Inventory() {};
 Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
 
+    updateUnit_Counts( ui );
     updateLn_Army_Stock( ui );
     updateLn_Tech_Stock( ui );
     updateLn_Worker_Stock();
     updateVision_Count();
 
-    updateLn_Supply_Remain( ui );
+    updateLn_Supply_Remain();
     updateLn_Supply_Total();
 
     updateLn_Gas_Total();
@@ -27,8 +28,8 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateGas_Workers();
     updateMin_Workers();
 
-    updateMin_Possessed();
-    updateHatcheries( ui );
+    updateMin_Possessed( ri );
+    updateHatcheries();
 
     if ( smoothed_barriers_.size() == 0 ) {
 
@@ -71,20 +72,39 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
         Broodwar->sendText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
     }
 
-    if ( start_positions_.empty() && !list_cleared_ ) {
+    if ( start_positions_.empty() && !cleared_all_start_positions_) {
         getStartPositions();
     }
 };
 
+// Tallies up my units for rapid counting.
+void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
+
+    vector <UnitType> already_seen;
+    vector <int> unit_count_temp;
+    vector <int> unit_incomplete_temp;
+    for (auto const & u_iter : ui.unit_inventory_) { // should only search through unit types not per unit.
+        UnitType u_type = u_iter.second.type_;
+        bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
+        if ( new_unit_type ) {
+            int found_units = MeatAIModule::Count_Units(u_type, ui);
+            int incomplete_units = MeatAIModule::Count_Units_In_Progress(u_type, ui);
+            already_seen.push_back(u_type);
+            unit_count_temp.push_back(found_units);
+            unit_incomplete_temp.push_back(incomplete_units);
+        }
+    }
+
+    unit_type_ = already_seen;
+    unit_count_ = unit_count_temp;
+    unit_incomplete_ = unit_incomplete_temp;
+}
+
+
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
-    double total = ui.stock_total_;
-    for ( auto & u : ui.unit_inventory_ ) {
-        if ( u.second.type_ == UnitTypes::Zerg_Drone ) {
-            total -= u.second.current_stock_value_;
-        }
-    }
+    double total = ui.stock_fighting_total_ /*- MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
 
     if ( total <= 0 ) {
         total = 1;
@@ -122,7 +142,7 @@ void Inventory::updateLn_Worker_Stock() {
 
     double total = 0;
 
-    double cost = UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
+    double cost = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
 
     updateGas_Workers();
     updateMin_Workers();
@@ -139,13 +159,13 @@ void Inventory::updateLn_Worker_Stock() {
 };
 
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
-void Inventory::updateLn_Supply_Remain( const Unit_Inventory &ui ) {
+void Inventory::updateLn_Supply_Remain() {
 
     double total = 0;
     for ( int i = 37; i != 48; i++ )
     { // iterating through all units.  (including buildings).
         UnitType u_current = (UnitType)i;
-        total += MeatAIModule::Stock_Supply( u_current, ui );
+        total += MeatAIModule::Stock_Supply( u_current, *this );
     }
 
     total = total - Broodwar->self()->supplyUsed();
@@ -259,20 +279,14 @@ void Inventory::updateMin_Workers() {
 }
 
 // Updates the number of mineral fields we "possess".
-void Inventory::updateMin_Possessed() {
+void Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
 
     int min_fields = 0;
-    Unitset resource = Broodwar->getMinerals(); // get any mineral field that exists on the map.
-    if ( !resource.empty() ) { // check if the minerals exist
-        for ( auto r = resource.begin(); r != resource.end() && !resource.empty(); ++r ) { //for each mineral
-            if ( (*r) && (*r)->exists() ) {
-                Unitset mybases = Broodwar->getUnitsInRadius( (*r)->getPosition(), 250, Filter::IsResourceDepot && Filter::IsOwned ); // is there a mining base near there?
-                if ( !mybases.empty() ) { // check if there is a base nearby
-                    min_fields++; // if there is a base near it, then this mineral counts.
-                } // closure if base is nearby
-            } // closure for existance check.
-        } // closure: for each mineral
-    } // closure, minerals are visible on map.
+    for (auto r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); ++r) { //for each mineral
+        if (r->second.occupied_natural_ && r->second.type_.isMineralField() ) {
+                min_fields++; // if there is a base near it, then this mineral counts.
+        } // closure for existance check.
+    } // closure: for each mineral
 
     min_fields_ = min_fields;
 }
@@ -298,11 +312,16 @@ void Inventory::updateVision_Count() {
     vision_tile_count_ = total_tiles;
 }
 
+void Inventory::updateScreen_Position()
+{
+    screen_position_ = Broodwar->getScreenPosition();
+}
+
 // Updates the number of hatcheries (and decendent buildings).
-void Inventory::updateHatcheries( const Unit_Inventory &ui ) {
-    hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, ui ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Lair, ui ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, ui );
+void Inventory::updateHatcheries() {
+    hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
+        MeatAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
+        MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
 }
 
 
@@ -313,8 +332,10 @@ void Inventory::updateBuildablePos()
 
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
+    buildable_positions_.reserve(map_x);
     for ( int x = 0; x <= map_x; ++x ) {
         vector<bool> temp;
+        temp.reserve(map_y);
         for ( int y = 0; y <= map_y; ++y ) {
             temp.push_back( Broodwar->isBuildable( x, y ) );
         }
@@ -325,78 +346,77 @@ void Inventory::updateBuildablePos()
 void Inventory::updateUnwalkable() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
-    int choke_score = 0;
 
+    unwalkable_barriers_.reserve(map_x);
     // first, define matrixes to recieve the walkable locations for every minitile.
     for ( int x = 0; x <= map_x; ++x ) {
-        vector<bool> temp;
+        vector<int> temp;
+        temp.reserve(map_y);
         for ( int y = 0; y <= map_y; ++y ) {
             temp.push_back( !Broodwar->isWalkable( x, y ) );
         }
         unwalkable_barriers_.push_back( temp );
     }
-
 }
 
 void Inventory::updateSmoothPos() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     int choke_score = 0;
+    bool changed_a_value_last_cycle;
 
     // first, define matrixes to recieve the walkable locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( !Broodwar->isWalkable( x, y ) );
-        }
-        smoothed_barriers_.push_back( temp );
-    }
+    smoothed_barriers_ = unwalkable_barriers_;
 
-    for ( auto iter = 2; iter < 100; iter++ ) { // iteration 1 is already done by labling unwalkables.
-        for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
-            for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
+    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles. 
+        changed_a_value_last_cycle = false;
+        for (auto minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+            for (auto minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
 
-                                                                             // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
-                                                                             // Repeat untill finished.
+                 // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
+                 // Repeat untill finished.
 
-                if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
+                if (smoothed_barriers_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
+                    // Predefine grid we will search over.
+                    bool local_grid[3][3]; // WAY BETTER!
 
-                                                                         // Predefine grid we will search over.
-                    bool local_tile_0_0 = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    bool local_tile_1_0 = (smoothed_barriers_[minitile_x][(minitile_y - 1)]       < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
-                    bool local_tile_2_0 = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+                    local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y]       < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
+                    local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
 
-                    bool local_tile_0_1 = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter  && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
-                    bool local_tile_1_1 = (smoothed_barriers_[minitile_x][minitile_y]       < iter  && smoothed_barriers_[minitile_x][minitile_y] > 0);
-                    bool local_tile_2_1 = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter  && smoothed_barriers_[(minitile_x + 1)][minitile_y]> 0);
+                    local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
+                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y]       < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
+                    local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
 
-                    bool local_tile_0_2 = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)]  < iter  && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
-                    bool local_tile_1_2 = (smoothed_barriers_[minitile_x][(minitile_y + 1)]        < iter  && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
-                    bool local_tile_2_2 = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)]  < iter  && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
+                    local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y]       < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
+                    local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
 
                     // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
                     bool opposing_tiles =
-                        (local_tile_0_0 && (local_tile_2_2 || local_tile_2_1 || local_tile_1_2)) ||
-                        (local_tile_1_0 && (local_tile_1_2 || local_tile_0_2 || local_tile_2_2)) ||
-                        (local_tile_2_0 && (local_tile_0_2 || local_tile_0_1 || local_tile_1_2)) ||
-                        (local_tile_0_1 && (local_tile_2_1 || local_tile_2_0 || local_tile_2_2));
+                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
+                        //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+                        //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+                        //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
 
                     bool open_path =
-                        (!local_tile_0_0 && (!local_tile_2_2 || !local_tile_2_1 || !local_tile_1_2)) ||
-                        (!local_tile_1_0 && (!local_tile_1_2 || !local_tile_0_2 || !local_tile_2_2)) ||
-                        (!local_tile_2_0 && (!local_tile_0_2 || !local_tile_0_1 || !local_tile_1_2)) ||
-                        (!local_tile_0_1 && (!local_tile_2_1 || !local_tile_2_0 || !local_tile_2_2));
+                        (!local_grid[0][0] && !local_grid[2][2]) ||
+                        (!local_grid[1][0] && !local_grid[1][2]) ||
+                        (!local_grid[2][0] && !local_grid[0][2]) ||
+                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
 
-                    if ( open_path && (opposing_tiles) ) { // if it is closing off, but still has open space, mark as special and continue.  Will prevent algorithm from sealing map.
-                        smoothed_barriers_[minitile_x][minitile_y] = 99 - iter;
-                    }
 
-                    if ( !open_path && (opposing_tiles) ) { // if it is closed off or blocked, then seal it up and continue. 
-                        smoothed_barriers_[minitile_x][minitile_y] = iter;
-                    }
-
+                    changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
+                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * ( iter + open_path * (99 - 2 * iter) ); 
                 }
             }
+        }
+        if (changed_a_value_last_cycle == false) {
+            return; // if we did nothing last cycle, we don't need to punish ourselves.
         }
     }
 }
@@ -404,73 +424,113 @@ void Inventory::updateSmoothPos() {
 void Inventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    bool changed_a_value_last_cycle = false;
 
-                                           // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
+    // first, define matrixes to recieve the walkable locations for every minitile.
+    map_veins_.clear();
+    map_veins_.reserve(map_x);
+    for (int x = 0; x < map_x; ++x) {
         vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
+        temp.reserve(map_y);
+        for (int y = 0; y < map_y; ++y) {
+            temp.push_back(unwalkable_barriers_[x][y] == 1 );  //Was that location unwalkable? 
         }
-        map_veins_.push_back( temp );
+        map_veins_.push_back(temp); // Map veins intially contains 0 for unblocked locations, and 1 for blocked locations.
     }
 
-    for ( auto iter = 2; iter < 300; iter++ ) { // iteration 1 is already done by labling unwalkables.
-        for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
-            for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
-
-                                                                             // Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-                                                                             // If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc. Mark it as unwalkable.  Do not consider it unwalkable this cycle.
-                                                                             // if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable. Do not consider it unwalkable this cycle.
-                                                                             // Repeat untill finished.
-
-                if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
-
-                                                                 // Predefine grid we will search over.
-                    bool local_tile_0_0 = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    bool local_tile_1_0 = (map_veins_[minitile_x][(minitile_y - 1)]       < iter && map_veins_[minitile_x][(minitile_y - 1)] > 0);
-                    bool local_tile_2_0 = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0);
-
-                    bool local_tile_0_1 = (map_veins_[(minitile_x - 1)][minitile_y] < iter  && map_veins_[(minitile_x - 1)][minitile_y] > 0);
-                    bool local_tile_1_1 = (map_veins_[minitile_x][minitile_y]       < iter  && map_veins_[minitile_x][minitile_y] > 0);
-                    bool local_tile_2_1 = (map_veins_[(minitile_x + 1)][minitile_y] < iter  && map_veins_[(minitile_x + 1)][minitile_y]> 0);
-
-                    bool local_tile_0_2 = (map_veins_[(minitile_x - 1)][(minitile_y + 1)]  < iter  && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0);
-                    bool local_tile_1_2 = (map_veins_[minitile_x][(minitile_y + 1)]        < iter  && map_veins_[minitile_x][(minitile_y + 1)] > 0);
-                    bool local_tile_2_2 = (map_veins_[(minitile_x + 1)][(minitile_y + 1)]  < iter  && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0);
-
-                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-                    bool opposing_tiles =
-                        (local_tile_0_0 && (local_tile_2_2 || local_tile_2_1 || local_tile_1_2)) ||
-                        (local_tile_1_0 && (local_tile_1_2 || local_tile_0_2 || local_tile_2_2)) ||
-                        (local_tile_2_0 && (local_tile_0_2 || local_tile_0_1 || local_tile_1_2)) ||
-                        (local_tile_0_1 && (local_tile_2_1 || local_tile_2_0 || local_tile_2_2));
-
-                    bool open_path =
-                        (!local_tile_0_0 && !local_tile_2_2) ||
-                        (!local_tile_1_0 && !local_tile_1_2) ||
-                        (!local_tile_2_0 && !local_tile_0_2) ||
-                        (!local_tile_0_1 && !local_tile_2_1);
-
-                    bool adjacent_tiles =
-                        local_tile_0_0 && local_tile_0_1 && local_tile_0_2 || // left edge
-                        local_tile_2_0 && local_tile_2_1 && local_tile_2_2 || // right edge
-                        local_tile_0_0 && local_tile_1_0 && local_tile_2_0 || // bottom edge
-                        local_tile_0_2 && local_tile_1_2 && local_tile_2_2 || // top edge
-                        local_tile_0_1 && local_tile_1_0 && local_tile_0_0 || // lower left slice.
-                        local_tile_0_1 && local_tile_1_2 && local_tile_0_2 || // upper left slice.
-                        local_tile_1_2 && local_tile_2_1 && local_tile_2_2 || // upper right slice.
-                        local_tile_1_0 && local_tile_2_1 && local_tile_2_0; // lower right slice.
-
-                    if ( open_path && opposing_tiles ) {  //mark chokes when found.
-                        map_veins_[minitile_x][minitile_y] = 299 - iter;
-                    }
-                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
-                        map_veins_[minitile_x][minitile_y] = iter;
-                    }
-                }
+    vector<WalkPosition> needs_filling;
+    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations.
+            if (map_veins_[minitile_x][minitile_y] == 0) {
+                needs_filling.push_back({ minitile_x, minitile_y });// if it is walkable, consider it a canidate for a choke.
+                                                                    // Predefine list we will search over.
             }
         }
     }
+
+    vector<unsigned> flattened_map_veins;
+    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
+        }
+    }
+
+    //x = k / map_y;
+    //y = k- i*m or k % map_y;
+    //k = x * map_y + y;
+
+    for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
+        changed_a_value_last_cycle = false;
+        for (vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) {
+            // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+            // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
+            // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
+            // Repeat untill finished.
+
+            bool local_grid[3][3]; // WAY BETTER!
+            int minitile_x = position_to_investigate->x;
+            int minitile_y = position_to_investigate->y;
+            bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 <= map_x && minitile_y + 1 <= map_y;
+
+            local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
+            local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
+            local_grid[0][2] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
+
+            local_grid[1][0] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1;
+            //local_grid[1][1] = safety_check && flattened_map_veins[minitile_x       * map_y + minitile_y]       < iter && flattened_map_veins[minitile_x       * map_y + minitile_y]       > 0;
+            local_grid[1][2] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1;
+
+            local_grid[2][0] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1;
+            local_grid[2][1] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y +  minitile_y]      - 1 < iter - 1;
+            local_grid[2][2] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
+
+            // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+            bool opposing_tiles =
+                (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+                (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+                (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+                (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+                (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
+            //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+            //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+            //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
+
+            bool open_path =
+                (!local_grid[0][0] && !local_grid[2][2]) ||
+                (!local_grid[1][0] && !local_grid[1][2]) ||
+                (!local_grid[2][0] && !local_grid[0][2]) ||
+                (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
+
+            bool adjacent_tiles =
+                local_grid[0][0] && local_grid[0][1] && local_grid[0][2] || // left edge
+                local_grid[2][0] && local_grid[2][1] && local_grid[2][2] || // right edge
+                local_grid[0][0] && local_grid[1][0] && local_grid[2][0] || // bottom edge
+                local_grid[0][2] && local_grid[1][2] && local_grid[2][2] || // top edge
+                local_grid[0][1] && local_grid[1][0] && local_grid[0][0] || // lower left slice.
+                local_grid[0][1] && local_grid[1][2] && local_grid[0][2] || // upper left slice.
+                local_grid[1][2] && local_grid[2][1] && local_grid[2][2] || // upper right slice.
+                local_grid[1][0] && local_grid[2][1] && local_grid[2][0]; // lower right slice.
+
+            changed_a_value_last_cycle =  opposing_tiles || adjacent_tiles || changed_a_value_last_cycle;
+            int new_value = open_path * opposing_tiles * (299 - iter) + ((!open_path && opposing_tiles) || adjacent_tiles) * iter;
+            map_veins_[minitile_x][minitile_y] = new_value;
+            flattened_map_veins[minitile_x * map_y + minitile_y] = new_value;  //should just unpack this at the end.
+
+            if ( opposing_tiles || adjacent_tiles ) {
+                std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
+                needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
+            }
+            else { 
+                ++position_to_investigate; 
+            }
+        }
+        
+        if (changed_a_value_last_cycle == false) {
+            return; // if we did nothing last cycle, we don't need to punish ourselves.
+        } 
+
+    }
+
 }
 
 void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress.
@@ -478,16 +538,27 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
-    map_veins_out_.clear();
-
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
-        }
-        map_veins_out_.push_back( temp );
+ 
+    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
+        return;
     }
+    else {
+        map_veins_out_from_main_.clear();
+    }
+    // first, define matrixes to recieve the walkable locations for every minitile.
+
+    home_base_ = center;
+
+    map_veins_out_from_main_.reserve(map_x);
+    for (int x = 0; x <= map_x; ++x) {
+        vector<int> temp;
+        temp.reserve(map_y);
+        for (int y = 0; y <= map_y; ++y) {
+            temp.push_back(smoothed_barriers_[x][y] > 0);  //Was that location smoothed out? will be greater than 0 if so.
+        }
+        map_veins_out_from_main_.push_back(temp);
+    }
+    //map_veins_out_from_main_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -495,20 +566,20 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     distance_right_x = max( map_x - minitile_x, map_x );
     distance_below_y = max( map_y - minitile_y, map_y );
     int t = std::max( map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y );
-    int maxI = t*t; // total number of spiral steps we have to make.
+    //int maxI = t*t; // total number of spiral steps we have to make.
     int total_squares_filled = 0;
-    int steps_until_next_turn = 1;
-    int steps_since_last_turn = 0;
-    bool turn_trigger = false;
-    int turns_at_this_count = 0;
-    int number_of_turns = 0;
-    int direction = 1;
+    //int steps_until_next_turn = 1;
+    //int steps_since_last_turn = 0;
+    //bool turn_trigger = false;
+    //int turns_at_this_count = 0;
+    //int number_of_turns = 0;
+    //int direction = 1;
 
     vector <WalkPosition> fire_fill_queue;
 
     //begin with a fire fill.
         total_squares_filled++;
-        map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
+        map_veins_out_from_main_[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back( { minitile_x, minitile_y } );
 
         int minitile_x_temp = minitile_x;
@@ -521,111 +592,117 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
             fire_fill_queue.erase( fire_fill_queue.begin() );
 
             // north
-            if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+            if (minitile_y_temp + 1 < map_y && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
+                map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp + 1 });
             }
             // north east
-            if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+            if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
             }
             // north west
-            if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+            if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
+            }
+            //south
+            if (0 < minitile_y_temp - 1  && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] == 0) {
+                total_squares_filled++;
+                map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
             }
             //south east
-            if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+            if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
             }
             //south west
-            if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+            if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
             }
             // east
-            if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+            if (minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
+                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp });
             }
             //west
-            if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+            if (0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0) {
                 total_squares_filled++;
-                map_veins_out_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
+                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp });
             }
         }
         //for ( int i = 0; i < maxI; ) {
         //    if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
 
         //            // Working flood fill below:
-        //        if ( map_veins_out_[minitile_x][minitile_y] == 0 /*&& map_veins_[minitile_x][minitile_y] > 175*/ ) { // if it is walkable, consider it a canidate for a choke.
+        //        if ( map_veins_out_from_main_[minitile_x][minitile_y] == 0 /*&& map_veins_[minitile_x][minitile_y] > 175*/ ) { // if it is walkable, consider it a canidate for a choke.
         //            total_squares_filled++;
-        //            map_veins_out_[minitile_x][minitile_y] = total_squares_filled;
+        //            map_veins_out_from_main_[minitile_x][minitile_y] = total_squares_filled;
         //            bool dead_end = false;
         //            int minitile_x_temp = minitile_x;
         //            int minitile_y_temp = minitile_y;
         //            int total_squares_filled_temp = total_squares_filled;
         //            while ( !dead_end ) { // this portion is a flood fill.
         //                // north
-        //                if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // north east
-        //                if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // north west
-        //                if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+        //                if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp--;
         //                    minitile_y_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //south east
-        //                if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+        //                if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
         //                    minitile_y_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //south west
-        //                if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+        //                if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_y_temp--;
         //                    minitile_x_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                // east
-        //                if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 1 && map_veins_out_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+        //                if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 1 && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp++;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                //west
-        //                if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 1 && map_veins_out_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+        //                if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
         //                    total_squares_filled_temp++;
         //                    minitile_x_temp--;
-        //                    map_veins_out_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
+        //                    map_veins_out_from_main_[minitile_x_temp][minitile_y_temp] = total_squares_filled_temp;
         //                    continue;
         //                }
         //                dead_end = true;
@@ -693,17 +770,28 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
+    
+    enemy_base_ = center;
 
-    map_veins_in_.clear();
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( smoothed_barriers_[x][y] > 0 );  //Was that location smoothed out?
-        }
-        map_veins_in_.push_back( temp );
+    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
+        return;
     }
+    else {
+        map_veins_out_from_enemy_.clear();
+    }
+
+    //// first, define matrixes to recieve the walkable locations for every minitile.
+    map_veins_out_from_enemy_.reserve(map_x);
+    for (int x = 0; x <= map_x; ++x) {
+        vector<int> temp;
+        temp.reserve(map_y);
+        for (int y = 0; y <= map_y; ++y) {
+            temp.push_back(smoothed_barriers_[x][y] > 0);  //Was that location smoothed out?
+        }
+        map_veins_out_from_enemy_.push_back(temp);
+    }
+
+    //map_veins_out_from_enemy_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -724,7 +812,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
 
     //begin with a fire fill.
     total_squares_filled++;
-    map_veins_in_[minitile_x][minitile_y] = total_squares_filled;
+    map_veins_out_from_enemy_[minitile_x][minitile_y] = total_squares_filled;
     fire_fill_queue.push_back( { minitile_x, minitile_y } );
 
     int minitile_x_temp = minitile_x;
@@ -737,227 +825,505 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
         fire_fill_queue.erase( fire_fill_queue.begin() );
 
         // north
-        if ( minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
+        if ( minitile_y_temp + 1 < map_y && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
         }
         // north east
-        if ( minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp + 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
+        if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
         }
         // north west
-        if ( 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp - 1][minitile_y_temp + 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
+        if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
         }
-        //south east
-        if ( minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp + 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+        //south
+        if (0 < minitile_y_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] == 0) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
+            fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
+        }
+        //south east
+        if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
+            total_squares_filled++;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
         }
         //south west
-        if ( 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp - 1] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
+        if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
         }
         // east
-        if ( minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp + 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
+        if ( minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
         }
         //west
-        if ( 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp - 1][minitile_y_temp] > 0 && map_veins_in_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
+        if ( 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
             total_squares_filled++;
-            map_veins_in_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+            map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
     }
 }
 
-int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B )
+int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
 {
-    if ( map_veins_in_.size() > 0 && A.isValid() && B.isValid()) {
-        WalkPosition wp_a = WalkPosition( A );
-        WalkPosition wp_b = WalkPosition( B );
-        return abs( map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_in_[(size_t)wp_b.x][(size_t)wp_b.y] );
-    }
-    else {
-        return 0;
-    }
-}
-
-int Inventory::getRadialDistanceOutFromEnemy( const Position A){
-    if ( map_veins_in_.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition( A );
-        return map_veins_in_[(size_t)wp_a.x][(size_t)wp_a.y];
-    }
-    else {
-        return 0;
-    }
-}
-
-int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B )
-{
-    if ( map_veins_out_.size() > 0 && A.isValid() && B.isValid() ) {
-        WalkPosition wp_a = WalkPosition( A );
-        WalkPosition wp_b = WalkPosition( B );
-        return abs( map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y] - map_veins_out_[(size_t)wp_b.x][(size_t)wp_b.y] );
-    }
-    else {
-        return 0;
-    }
-}
-int Inventory::getRadialDistanceOutFromHome( const Position A )
-{
-    if ( map_veins_out_.size() > 0 && A.isValid() ) {
-        WalkPosition wp_a = WalkPosition( A );
-        return map_veins_out_[(size_t)wp_a.x][(size_t)wp_a.y];
-    }
-    else {
-        return 0;
-    }
-}
-
-void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
-    int area_modified = 100 * 8;
-
-
-    //modified areas stopping at bounds. bounds are 1 inside edge of map.
-    WalkPosition max_lower_right = WalkPosition( Position( building->getPosition().x + area_modified, building->getPosition().y + area_modified ) );
-    WalkPosition max_upper_left = WalkPosition( Position( building->getPosition().x - area_modified, building->getPosition().y - area_modified ) );
-
-    WalkPosition lower_right_modified = WalkPosition( max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1 );
-    WalkPosition upper_left_modified = WalkPosition( max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1 );
-
-    // clear tiles that may have been altered.
-    for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
-        for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
-            if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
-                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
-                if ( MeatAIModule::checkBuildingOccupiedArea( ui, pos ) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) || MeatAIModule::checkResourceOccupiedArea(ri,pos) ) {
-                    map_veins_[minitile_x][minitile_y] = 1;
-                }
-                else /*if ( MeatAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {
-                    map_veins_[minitile_x][minitile_y] = 0; // if it is nearby nuke it to 0 for recasting.
-                }
-            }
+    if (map_veins_out_from_enemy_.size() > 0 && A.isValid() && B.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        WalkPosition wp_b = WalkPosition(B);
+        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_veins_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
+        if (A > 0 && B > 0) {
+            return abs(A - B);
         }
     }
 
-    for ( auto iter = 2; iter < 175; iter++ ) { // iteration 1 is already done by labling unwalkables. Less loops are needed because most of the map is already plotted.
-        for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
-            for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
-
-                                             //Psudocode: if any two opposing points are unwalkable, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-                                             //    If any 3 points adjacent are unwalkable it is probably just a bad place to walk, dead end, etc.Mark it as unwalkable.Do not consider it unwalkable this cycle.
-                                           //    if any corner of it is inaccessable, it is a diagonal wall, mark it as unwalkable.Do not consider it unwalkable this cycle.
-                                             //        Repeat until finished.
-
-                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
-
-                if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
-
-                                                                 // Predefine grid we will search over.
-                    bool local_tile_0_0 = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    bool local_tile_1_0 = (map_veins_[minitile_x][(minitile_y - 1)] < iter && map_veins_[minitile_x][(minitile_y - 1)] > 0);
-                    bool local_tile_2_0 = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0);
-
-                    bool local_tile_0_1 = (map_veins_[(minitile_x - 1)][minitile_y] < iter  && map_veins_[(minitile_x - 1)][minitile_y] > 0);
-                    bool local_tile_1_1 = (map_veins_[minitile_x][minitile_y] < iter  && map_veins_[minitile_x][minitile_y] > 0);
-                    bool local_tile_2_1 = (map_veins_[(minitile_x + 1)][minitile_y] < iter  && map_veins_[(minitile_x + 1)][minitile_y]> 0);
-
-                    bool local_tile_0_2 = (map_veins_[(minitile_x - 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0);
-                    bool local_tile_1_2 = (map_veins_[minitile_x][(minitile_y + 1)] < iter  && map_veins_[minitile_x][(minitile_y + 1)] > 0);
-                    bool local_tile_2_2 = (map_veins_[(minitile_x + 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0);
-
-                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-                    bool opposing_tiles =
-                        (local_tile_0_0 && (local_tile_2_2 || local_tile_2_1 || local_tile_1_2)) ||
-                        (local_tile_1_0 && (local_tile_1_2 || local_tile_0_2 || local_tile_2_2)) ||
-                        (local_tile_2_0 && (local_tile_0_2 || local_tile_0_1 || local_tile_1_2)) ||
-                        (local_tile_0_1 && (local_tile_2_1 || local_tile_2_0 || local_tile_2_2));
-
-                    bool open_path =
-                        (!local_tile_0_0 && !local_tile_2_2) ||
-                        (!local_tile_1_0 && !local_tile_1_2) ||
-                        (!local_tile_2_0 && !local_tile_0_2) ||
-                        (!local_tile_0_1 && !local_tile_2_1);
-
-                    bool adjacent_tiles =
-                        local_tile_0_0 && local_tile_0_1 && local_tile_0_2 || // left edge
-                        local_tile_2_0 && local_tile_2_1 && local_tile_2_2 || // right edge
-                        local_tile_0_0 && local_tile_1_0 && local_tile_2_0 || // bottom edge
-                        local_tile_0_2 && local_tile_1_2 && local_tile_2_2 || // top edge
-                        local_tile_0_1 && local_tile_1_0 && local_tile_0_0 || // lower left slice.
-                        local_tile_0_1 && local_tile_1_2 && local_tile_0_2 || // upper left slice.
-                        local_tile_1_2 && local_tile_2_1 && local_tile_2_2 || // upper right slice.
-                        local_tile_1_0 && local_tile_2_1 && local_tile_2_0; // lower right slice.
-
-                    if ( open_path && opposing_tiles ) {  //mark chokes when found.
-                        map_veins_[minitile_x][minitile_y] = 299 - iter;
-                    }
-                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
-                        map_veins_[minitile_x][minitile_y] = iter;
-                    }
-
-                }
-            }
-        }
-    }
+     return 9999999;
 }
 
-void Inventory::updateMapChokes() {
+int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
+{
+    if ( map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition( A );
+        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 0) {
+            return map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        }
+    }
+
+      return 9999999;
+
+}
+
+int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
+{
+    if ( map_veins_out_from_main_.size() > 0 && A.isValid() && B.isValid() ) {
+        WalkPosition wp_a = WalkPosition(A);
+        WalkPosition wp_b = WalkPosition(B);
+        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
+        if (A > 0 && B > 0) {
+            return abs(A - B);
+        }
+    }
+
+    return 9999999;
+}
+int Inventory::getRadialDistanceOutFromHome( const Position A ) const
+{
+    if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 0) {
+            return map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        }
+    }
+
+    return 9999999;
+
+}
+
+//void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
+//    int start_iter = 2;
+//    // Predefine grid we will search over.
+//    bool local_grid[3][3]; // WAY BETTER!
+//
+//    //modified areas stopping at bounds. bounds are 1 inside edge of map.
+//    WalkPosition max_lower_right = WalkPosition( Position( building->getPosition().x + 2 * building->getType().tileWidth() * 32, building->getPosition().y + 2 * building->getType().tileHeight() * 32 ) );
+//    WalkPosition max_upper_left =  WalkPosition( Position( building->getPosition().x -     building->getType().tileWidth() * 32, building->getPosition().y -     building->getType().tileHeight() * 32 ) );
+//
+//    WalkPosition lower_right_modified = WalkPosition( max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1 );
+//    WalkPosition upper_left_modified = WalkPosition( max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1 );
+//
+//    // clear tiles that may have been altered.
+//    for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
+//        for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
+//            if ( unwalkable_barriers_[minitile_x][minitile_y] == 0 ) {
+//
+//                if ( start_iter < map_veins_[minitile_x][minitile_y] - building->getType().tileWidth() * 4  ) {
+//                     start_iter = map_veins_[minitile_x][minitile_y] - building->getType().tileWidth() * 4;
+//                }
+//
+//                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
+//                if ( MeatAIModule::checkBuildingOccupiedArea( ui, pos ) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) || MeatAIModule::checkResourceOccupiedArea(ri,pos) ) {
+//                    map_veins_[minitile_x][minitile_y] = 1;
+//                }
+//                else /*if ( MeatAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {
+//                    map_veins_[minitile_x][minitile_y] = 0; // if it is nearby nuke it to 0 for recasting.
+//                }
+//            }
+//        }
+//    }
+//
+//    for ( auto iter = start_iter; iter < 175; iter++ ) { // iteration 1 is already done by labling smoothed barriers. Less loops are needed because most of the map is already plotted.
+//       // bool changed_a_value_last_cycle = false;
+//        for ( auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x ) {
+//            for ( auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y ) { // Check all possible walkable locations.
+//
+//                                             //Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+//                                             //    If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc.Mark it as smoothed away.Do not consider it smoothed away this cycle.
+//                                             //    if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away.Do not consider it smoothed away this cycle.
+//                                             //        Repeat until finished.
+//
+//                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
+//
+//                if ( map_veins_[minitile_x][minitile_y] == 0 ) { // if it is walkable, consider it a canidate for a choke.
+//
+//                    local_grid[0][0] = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0 ); // if the edge is a barrier or has been counted.
+//                    local_grid[1][0] = (map_veins_[minitile_x]      [(minitile_y - 1)] < iter && map_veins_[minitile_x]      [(minitile_y - 1)] > 0 );
+//                    local_grid[2][0] = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0 );
+//
+//                    local_grid[0][1] = (map_veins_[(minitile_x - 1)][minitile_y] < iter && map_veins_[(minitile_x - 1)][minitile_y] > 0 );
+//                    local_grid[1][1] = (map_veins_[minitile_x]      [minitile_y] < iter && map_veins_[minitile_x]      [minitile_y] > 0 );
+//                    local_grid[2][1] = (map_veins_[(minitile_x + 1)][minitile_y] < iter && map_veins_[(minitile_x + 1)][minitile_y] > 0 );
+//
+//                    local_grid[0][2] = (map_veins_[(minitile_x - 1)][(minitile_y + 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0 );
+//                    local_grid[1][2] = (map_veins_[minitile_x]      [(minitile_y + 1)] < iter && map_veins_[minitile_x]      [(minitile_y + 1)] > 0 );
+//                    local_grid[2][2] = (map_veins_[(minitile_x + 1)][(minitile_y + 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0 );
+//
+//                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+//                    bool opposing_tiles =
+//                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+//                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+//                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+//                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+//                        (local_grid[0][2] && (local_grid[2][0] || local_grid[1][0] || local_grid[2][1])) ||
+//                        (local_grid[1][2] && (local_grid[1][0] || local_grid[0][0] || local_grid[2][0])) || //
+//                        (local_grid[2][1] && (local_grid[0][1] || local_grid[0][0] || local_grid[0][2])) || //
+//                        (local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])); // all of them, just in case. //11 is not opposed by anythign?!
+//
+//                    bool open_path =
+//                        (!local_grid[0][0] && !local_grid[2][2]) ||
+//                        (!local_grid[1][0] && !local_grid[1][2]) ||
+//                        (!local_grid[2][0] && !local_grid[0][2]) ||
+//                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
+//
+//                    bool adjacent_tiles =
+//                        local_grid[0][0] && local_grid[0][1] && local_grid[0][2] || // left edge
+//                        local_grid[2][0] && local_grid[2][1] && local_grid[2][2] || // right edge
+//                        local_grid[0][0] && local_grid[1][0] && local_grid[2][0] || // bottom edge
+//                        local_grid[0][2] && local_grid[1][2] && local_grid[2][2] || // top edge
+//                        local_grid[0][1] && local_grid[1][0] && local_grid[0][0] || // lower left slice.
+//                        local_grid[0][1] && local_grid[1][2] && local_grid[0][2] || // upper left slice.
+//                        local_grid[1][2] && local_grid[2][1] && local_grid[2][2] || // upper right slice.
+//                        local_grid[1][0] && local_grid[2][1] && local_grid[2][0]; // lower right slice.
+//
+//                    if ( open_path && opposing_tiles ) {  //mark chokes when found.
+//                        map_veins_[minitile_x][minitile_y] = 299 - iter;
+//                       // changed_a_value_last_cycle = true;
+//                    }
+//                    else if ( (!open_path && opposing_tiles) || adjacent_tiles ) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as unwalkable and continue. Will seal map.
+//                        map_veins_[minitile_x][minitile_y] = iter;
+//                       // changed_a_value_last_cycle = true;
+//                    }
+//                }
+//            }
+//        }
+//
+//        //if (changed_a_value_last_cycle == false) {
+//        //    return; // if we did nothing last cycle, we don't need to punish ourselves.
+//        //}
+//    }
+//}
+void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
-    WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
 
-    // first, define matrixes to recieve the smoothed locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
-        vector<int> temp;
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( 0 );
+    for (int x = 0; x <= map_x; ++x) {
+        for (int y = 0; y <= map_y; ++y) {
+            if (!Broodwar->isWalkable(x, y)) {
+                unwalkable_barriers_[x][y] = 1;  //Was that location smoothed out?
+            }
+            else {
+                unwalkable_barriers_[x][y] = 0;  //Was that location smoothed out?
+            }
         }
-        map_chokes_.push_back( temp );
     }
 
-    for ( auto minitile_x = 1; minitile_x <= map_x; ++minitile_x ) {
-        for ( auto minitile_y = 1; minitile_y <= map_y; ++minitile_y ) { // Check all possible walkable locations.
+    //mark all occupied areas.
 
-            int max_observed = map_veins_[minitile_x][minitile_y];
-            int counter = 0;
+    for (auto & u : ui.unit_inventory_) {
+        if (u.second.type_.isBuilding()) {
 
-            if ( smoothed_barriers_[minitile_x][minitile_y] == 0 ) {
-                for ( int x = -1; x <= 1; ++x ) {
-                    for ( int y = -1; y <= 1; ++y ) {
-                        int testing_x = minitile_x + x;
-                        int testing_y = minitile_y + y;
-                        if ( !(x == 0 && y == 0) &&
-                            testing_x < map_dim.x &&
-                            testing_y < map_dim.y &&
-                            testing_x > 0 &&
-                            testing_y > 0 ) { // check for being within reference space.
+            // mark the building's current position.
+            int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+            int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+            int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+            int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
 
-                            if ( map_veins_[testing_x][testing_y] <= max_observed ) {
-                                counter++;
-                                if ( counter == 8 ) {
-                                    map_chokes_[minitile_x][minitile_y] = 300 - map_veins_[minitile_x][minitile_y];
-                                }
-                            }
-                        }
-                    }
+            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+
+            //respect map bounds please.
+            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+
+            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
                 }
             }
         }
     }
+
+    for (auto & e : ei.unit_inventory_) {
+        if (e.second.type_.isBuilding()) {
+
+            // mark the building's current position.
+            int max_x = e.second.pos_.x + e.second.type_.dimensionLeft();
+            int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
+            int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
+            int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
+
+            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+
+            //respect map bounds please.
+            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+
+            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                }
+            }
+        }
+    }
+
+    for (auto & u : ri.resource_inventory_) {
+        // mark the building's current position.
+        int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
+        int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
+        int max_y = u.second.pos_.y + u.second.type_.dimensionUp();
+        int min_y = u.second.pos_.y - u.second.type_.dimensionDown();
+
+        WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+        WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+
+        //respect map bounds please.
+        WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+        WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+
+        for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+            for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+                unwalkable_barriers_[minitile_x][minitile_y] = 1;
+            }
+        }
+
+    }
+
+}
+
+//void Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
+//
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+//    int test_bool = 0;
+//                                           // Predefine grid we will search over.
+//    bool local_grid[3][3]; // WAY BETTER!
+//    map_veins_ = unwalkable_barriers_;
+//
+//    for (auto iter = 2; iter < 175; iter++) { // iteration 1 is already done by labling smoothed away.
+//        bool changed_a_value_last_cycle = false;
+//        for (auto minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+//            for (auto minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
+//
+//                                                                           // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+//                                                                           // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
+//                                                                           // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
+//                                                                           // Repeat untill finished.
+//
+//                if (map_veins_[minitile_x][minitile_y] == 0) { // if it is walkable, consider it a canidate for a choke.
+//
+//                    changed_a_value_last_cycle = true;
+//
+//                    local_grid[0][0] = (map_veins_[(minitile_x - 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x - 1)][(minitile_y - 1)] > 0);
+//                    local_grid[1][0] = (map_veins_[minitile_x][(minitile_y - 1)] < iter && map_veins_[minitile_x][(minitile_y - 1)] > 0);
+//                    local_grid[2][0] = (map_veins_[(minitile_x + 1)][(minitile_y - 1)] < iter && map_veins_[(minitile_x + 1)][(minitile_y - 1)] > 0);
+//
+//                    local_grid[0][1] = (map_veins_[(minitile_x - 1)][minitile_y] < iter  && map_veins_[(minitile_x - 1)][minitile_y] > 0);
+//                    local_grid[1][1] = (map_veins_[minitile_x][minitile_y] < iter  && map_veins_[minitile_x][minitile_y] > 0);
+//                    local_grid[2][1] = (map_veins_[(minitile_x + 1)][minitile_y] < iter  && map_veins_[(minitile_x + 1)][minitile_y] > 0);
+//
+//                    local_grid[0][2] = (map_veins_[(minitile_x - 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x - 1)][(minitile_y + 1)] > 0);
+//                    local_grid[1][2] = (map_veins_[minitile_x][(minitile_y + 1)] < iter  && map_veins_[minitile_x][(minitile_y + 1)] > 0);
+//                    local_grid[2][2] = (map_veins_[(minitile_x + 1)][(minitile_y + 1)] < iter  && map_veins_[(minitile_x + 1)][(minitile_y + 1)] > 0);
+//
+//                    // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
+//                    bool opposing_tiles =
+//                        (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
+//                        (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
+//                        (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
+//                        (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
+//                        (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1])) ||
+//                        (local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+//                        (local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+//                        (local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])); // all of them, just in case. //11 is not opposed by anythign?!
+//
+//                    bool open_path =
+//                        (!local_grid[0][0] && !local_grid[2][2]) ||
+//                        (!local_grid[1][0] && !local_grid[1][2]) ||
+//                        (!local_grid[2][0] && !local_grid[0][2]) ||
+//                        (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
+//
+//                    bool adjacent_tiles =
+//                        local_grid[0][0] && local_grid[0][1] && local_grid[0][2] || // left edge
+//                        local_grid[2][0] && local_grid[2][1] && local_grid[2][2] || // right edge
+//                        local_grid[0][0] && local_grid[1][0] && local_grid[2][0] || // bottom edge
+//                        local_grid[0][2] && local_grid[1][2] && local_grid[2][2] || // top edge
+//                        local_grid[0][1] && local_grid[1][0] && local_grid[0][0] || // lower left slice.
+//                        local_grid[0][1] && local_grid[1][2] && local_grid[0][2] || // upper left slice.
+//                        local_grid[1][2] && local_grid[2][1] && local_grid[2][2] || // upper right slice.
+//                        local_grid[1][0] && local_grid[2][1] && local_grid[2][0]; // lower right slice.
+//
+//                    if (open_path && opposing_tiles) {  //mark chokes when found.
+//                        map_veins_[minitile_x][minitile_y] = 299 - iter;
+//                    }
+//                    else if ((!open_path && opposing_tiles) || adjacent_tiles) { //if it is closing off in any other way than "formal choke"- it's just a bad place to walk. Mark as smoothed away and continue. Will seal map.
+//                        map_veins_[minitile_x][minitile_y] = iter;
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (changed_a_value_last_cycle == false) {
+//            return; // if we did nothing last cycle, we don't need to punish ourselves.
+//        }
+//    }
+//}
+
+void Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
+    int map_x = Broodwar->mapWidth() * 4;
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+    int current_region_number = 1;
+    int count_of_adjacent_importent_points = 0;
+    int temp_x = 0;
+    int temp_y = 0;
+    int local_tiles[9];
+
+    // first, define matrixes to recieve the walkable locations for every minitile.
+    //map_chokes_.reserve(map_x);
+    //for (int x = 0; x <= map_x; ++x) {
+    //    vector<int> temp;
+    //    temp.reserve(map_y);
+    //    for (int y = 0; y <= map_y; ++y) {
+    //        temp.push_back(unwalkable_barriers_[x][y] > 0);  //Was that location smoothed out?
+    //    }
+    //    map_chokes_.push_back(temp);
+    //}
+
+    map_chokes_ = unwalkable_barriers_;
+
+    for (int temp_x = 1; temp_x < map_x; temp_x++) {
+          for (int temp_y = 1; temp_y < map_y; temp_y++) {
+            if (smoothed_barriers_[temp_x][temp_y] == 0 ) { // if it is walkable, consider it a canidate for a choke. Need a buffer around 0,0 and the edge
+                int observed_difference = 0;
+
+                local_tiles[0] = map_veins_out_from_main_[(temp_x - 1)][(temp_y - 1)];
+                local_tiles[1] = map_veins_out_from_main_[temp_x]      [(temp_y - 1)];
+                local_tiles[2] = map_veins_out_from_main_[(temp_x + 1)][(temp_y - 1)];
+
+                local_tiles[3] = map_veins_out_from_main_[(temp_x - 1)][temp_y];
+                local_tiles[4] = map_veins_out_from_main_[temp_x]      [temp_y]; // middle value, local_tiles[4], index starts at 0.
+                local_tiles[5] = map_veins_out_from_main_[(temp_x + 1)][temp_y];
+
+                local_tiles[6] = map_veins_out_from_main_[(temp_x - 1)][(temp_y + 1)];
+                local_tiles[7] = map_veins_out_from_main_[temp_x]      [(temp_y + 1)];
+                local_tiles[8] = map_veins_out_from_main_[(temp_x + 1)][(temp_y + 1)];
+
+                for (auto iterated_value : local_tiles) {
+                    if ( abs(iterated_value - local_tiles[4]) > observed_difference && iterated_value > 1) {
+                        observed_difference = abs(iterated_value - local_tiles[4]);
+                    }
+
+                }
+
+                if (observed_difference < local_tiles[4]) { // something.
+                    map_chokes_[temp_x][temp_y] = observed_difference;
+                }
+            }
+        }
+    }
+
+    //vector <WalkPosition> fire_fill_queue;
+
+    //fire_fill_queue.push_back(WalkPosition(this->home_base_));
+
+    //int minitile_x_temp = WalkPosition(this->home_base_).x;
+    //int minitile_y_temp = WalkPosition(this->home_base_).y;
+
+    //while (current_ceiling > 0) {
+    //    while (!fire_fill_queue.empty()) { // this portion is a fire fill.
+
+    //        minitile_x_temp = fire_fill_queue.begin()->x;
+    //        minitile_y_temp = fire_fill_queue.begin()->y;
+    //        fire_fill_queue.erase(fire_fill_queue.begin());
+
+    //        map_chokes_[minitile_x_temp][minitile_y_temp] = current_region_number;
+
+    //        // north
+    //        if (count_of_adjacent_importent_points < 5 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp++] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp++});
+    //        }
+    //        // north east
+    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp++][minitile_y_temp++] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp++ });
+    //        }
+    //        // north west
+    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+
+    //        }
+    //        //south east
+    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp++][minitile_y_temp--] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp-- });
+    //        }
+    //        //south west
+    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+
+    //        }
+    //        // east
+    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp++][minitile_y_temp] > current_ceiling) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp });
+    //        }
+    //        //west
+    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp] > 0) {
+    //            count_of_adjacent_importent_points++;
+    //            fire_fill_queue.push_back({ minitile_x_temp--, minitile_y_temp });
+    //        }
+
+    //        // Make a final decision about the point.
+    //        if (count_of_adjacent_importent_points >= 5 && map_veins_[minitile_x_temp][minitile_y_temp] > 0 ) {
+    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+    //            count_of_adjacent_importent_points = 0;
+    //        }
+    //        else if( map_veins_[minitile_x_temp][minitile_y_temp] > 0 ){
+    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+    //            count_of_adjacent_importent_points = 0;
+    //        }
+    //    }
+    //    current_ceiling--;
+    //    current_region_number++;
+    //}
 }
 
 
@@ -1037,9 +1403,9 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                             //}
 
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
-                                min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
-                                    min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
-                                        j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
+                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
+                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
+                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
 
                             if ( long_condition <= 5 * 32 ) {
                                 //residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
@@ -1094,35 +1460,11 @@ void Inventory::getExpoPositions() {
     //Regionset neighbors;
     bool local_maximum = true;
 
-    //neighbors.insert(home);
+    int map_x = Broodwar->mapWidth();
+    int map_y = Broodwar->mapHeight();
 
-    //Unit_Inventory bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hatchery, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
-    //bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Lair, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
-    //bases = MeatAIModule::getUnitInventoryInRadius(u_inv, UnitTypes::Zerg_Hive, Position(center_self), 9999999);
-    //for (auto b = bases.unit_inventory_.begin(); b != bases.unit_inventory_.end() && !bases.unit_inventory_.empty(); b++){
-    //	home = Broodwar->getRegionAt(b->second.pos_);
-    //	Regionset new_neighbors = home->getNeighbors();
-    //	for (auto r = new_neighbors.begin(); r != new_neighbors.end() && !new_neighbors.empty(); r++) {
-    //		if ((*r)->isAccessible()){ neighbors.insert(*r); }
-    //	}
-    //}
-
-    for ( vector<int>::size_type x = 0; x != base_values_.size(); ++x ) {
-        for ( vector<int>::size_type y = 0; y != base_values_[x].size(); ++y ) {
+    for ( vector<int>::size_type x = 0; x != map_x; ++x ) {
+        for ( vector<int>::size_type y = 0; y != map_y; ++y ) {
             if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
 
                 local_maximum = true;
@@ -1133,7 +1475,7 @@ void Inventory::getExpoPositions() {
 
                 for ( int i = -12; i <= 12; i++ ) {
                     for ( int j = -12; j <= 12; j++ ) {
-                        bool safety_check = x + i < base_values_.size() && x - i > 0 && y + j < base_values_[x + i].size() && y - j > 0;
+                        bool safety_check = x + i < map_x && x - i > 0 && y + j < map_y && y - j > 0;
                         if ( safety_check && base_values_[x][y] < base_values_[x + i][y + j] ) {
                             local_maximum = false;
                             break;
@@ -1157,17 +1499,24 @@ void Inventory::getStartPositions() {
     }
 }
 
-void Inventory::updateStartPositions() {
+void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     for ( auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
         if ( Broodwar->isExplored( TilePosition( *visible_base ) ) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base) ) {
             visible_base = start_positions_.erase( visible_base );
+            //if ( *visible_base == start_positions_[0] ) {
+            //    updateMapVeinsOutFromFoe(start_positions_[0]);
+            //}
         }
         else {
             ++visible_base;
         }
     }
+
     if ( start_positions_.empty() ) {
-        list_cleared_ = true;
+        cleared_all_start_positions_ = true;
+    }
+    else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
+        updateMapVeinsOutFromFoe(start_positions_[0]);
     }
 }
 
@@ -1175,14 +1524,20 @@ void Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
 }
 
-//Zerg_Zergling, 37
-//Zerg_Hydralisk, 38
-//Zerg_Ultralisk, 39
-//Zerg_Broodling, 40
-//Zerg_Drone, 41
-//Zerg_Overlord, 42
-//Zerg_Mutalisk, 43
-//Zerg_Guardian, 44
-//Zerg_Queen, 45
-//Zerg_Defiler, 46
-//Zerg_Scourge, 47
+void Inventory::drawExpoPositions() const
+{
+
+    for (auto &p : expo_positions_) {
+        Position lower_left = Position(p);
+        lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+        lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+        Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+    }
+
+    Position lower_left = Position(next_expo_);
+    lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+    lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+    Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
+
+}
+

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <BWAPI.h> //4.1.2 BWAPI
+#include <BWAPI.h> //4.2.0 BWAPI
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
@@ -9,17 +9,13 @@
 #include "Reservation_Manager.h"
 #include <chrono> // for in-game frame clock.
 
-//#define _RESIGN_MODE false
-//#define _ANALYSIS_MODE false
-//#define _COBB_DOUGLASS_REVEALED false
-//#define _AT_HOME_MODE false
-//#define _LEARNING_MODE false
+#define _RESIGN_MODE true // must be off for proper game close in SC-docker
+#define _ANALYSIS_MODE false // Visualizations
+#define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
+#define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker
+#define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.
 
-#define _RESIGN_MODE true
-#define _ANALYSIS_MODE true
-#define _AT_HOME_MODE true
-#define _COBB_DOUGLASS_REVEALED true
-#define _LEARNING_MODE true
+
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -60,14 +56,13 @@ public:
     bool supply_starved;
   double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
     bool gas_starved;
-  double win_rate; //fairly straighforward.
+  double rate_of_worker_growth; //Assumed enemy rate of worker growth.
+    double win_rate; //fairly straighforward.
 
   double alpha_army_temp;
   double alpha_tech_temp;
   double alpha_econ_temp;
 
-  int miner_count_; // a temp variable
-  int gas_count_;
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
@@ -93,14 +88,14 @@ public:
 	char upgrade_string [50];
 	char creep_colony_string [50];
 
-    Race last_enemy_race;
+    Race starting_enemy_race;
 
   int t_build;
 
 // Personally made functions:
 
   // Assembly Functions
-      //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and delays the building timer 25 frames, or ~1 sec.
+      //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
       bool Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
@@ -118,10 +113,8 @@ public:
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
-      // Checks all bases for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Mine( const Unit &unit , Unit_Inventory &ui );
-      // Checks all refineries for undersaturation. Goes to any undersaturated location, preference for local mine.
-	  void Worker_Gas(const Unit &unit, Unit_Inventory &ui );
+      // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
+      void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
@@ -143,7 +136,11 @@ public:
 	  // evaluates if it was order to fight recently.
 	  bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
-      static void Diagnostic_Line( Position s_pos, Position f_pos, Color col );
+      static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
+      static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
+      static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
+
       // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
       static bool Futile_Fight( Unit unit, Unit enemy );
       // Outlines the case where you can attack their type (air/ground/cloaked)
@@ -151,9 +148,14 @@ public:
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
       static bool Can_Fight( Stored_Unit unit, Stored_Unit enemy);
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
+      // Can_Fight_Type does NOT check cloaked status.
+      static bool Can_Fight_Type( UnitType unittype, UnitType enemytype);
+
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
-      static double getProperSpeed( const UnitType & type );
+      static double getProperSpeed(const UnitType & type, const Player owner = Broodwar->self() );
+      static int getProperRange(const Unit u);
+      static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
       static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
 
       //checks if there is a smooth path to target. in minitiles
@@ -169,6 +171,7 @@ public:
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
+      void Print_Universal_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
       // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
@@ -183,12 +186,19 @@ public:
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
+
+      static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
+
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
-      static Stored_Unit* getClosestAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
-      static Stored_Unit* getClosestVisibleAttackableStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist );
-      //Gets pointer to closest threat or target to point in Unit_inventory. Checks range. Careful about visiblity.
+      static Stored_Unit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
+      //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
+      static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Inventory & inv, const int & dist = 999999);
+
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
@@ -199,6 +209,8 @@ public:
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      static bool checkOccupiedArea(const Unit_Inventory & ui, const UnitType type, const Position & origin);
+      static bool checkThreatenedArea(const Unit_Inventory & ui, const UnitType & type, const Position & origin, const int & dist);
       //Searches an inventory for buildings. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkBuildingOccupiedArea( const Unit_Inventory & ui, const Position & origin);
       //Searches an inventory for resources. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
@@ -213,10 +225,13 @@ public:
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
+      // Counts the tally of all created units in my personal inventory of that type.
+      static int Count_Units(const UnitType & type, const Inventory & inv);
 	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
 	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
+      static int Count_Units_In_Progress(const UnitType & type, const Inventory & inv);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.
@@ -235,17 +250,25 @@ public:
       // Evaluates stock of allied units in set that can shoot down.
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
-      static int Stock_Supply( const UnitType &unit, const Unit_Inventory &ui );
+      static int Stock_Supply( const UnitType &unit, const Inventory &inv );
+      // returns both useful stocks if both groups were to have a fight;
+      static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
+      // returns the stock of opponants I can actually fight in their local area.
+      static int getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc);
+      // returns the stock of units that might actually threaten U in region.
+      static int getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc);
 
       // Checks if a particular pixel position will be onscreen. Used to save drawing time on offscreen artwork.
-      static bool isOnScreen( const Position &pos );
-      static bool spamGuard(const Unit & unit);
+      static bool isOnScreen( const Position &pos , const Position &screen_pos);
+      //Returns TRUE if a unit is safe to send an order to. False if the unit has been ordered about recently.
+      static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
 	  // Returns the actual center of a unit.
 	  static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
-      bool checkSafeBuildLoc(const Position pos, Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      bool checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
+
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);
@@ -258,5 +281,5 @@ public:
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages morph.
-      bool Tech_Begin(Unit building, const Unit_Inventory &ui);
+      bool Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv);
 };

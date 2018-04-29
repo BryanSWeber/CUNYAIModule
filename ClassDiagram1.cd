@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Build_Order_Object" Collapsed="true">
+    <Position X="4.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAiAAAAABAAAAAAAAAAAAAAAAAAAAAIAAAAAAAEQQAA=</HashCode>
+      <FileName>Source\AssemblyManager.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Boids" Collapsed="true">
+    <Position X="6.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAQICwAUEGCQlAgAyKAQgCBAAAQAgABgAAAAAAGAA=</HashCode>
+      <FileName>Source\Fight_MovementManager.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MeatAIModule" Collapsed="true">
+    <Position X="6.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>SYknsWIIIpkFGaAmKhBaFNWgSBOaNkJCT+GFE18HuJc=</HashCode>
+      <FileName>Source\MeatAIModule.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Building_Gene" Collapsed="true">
+    <Position X="4.25" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAAABAAAAIAABgAEAAAAAAAAAAAiAAAQAAAAAAAUCI=</HashCode>
+      <FileName>Source\AssemblyManager.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="CobbDouglas" Collapsed="true">
+    <Position X="2.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CQAAGEBAAAkAAAAACAAAAAAAAABABEAABIAAACQRAAg=</HashCode>
+      <FileName>Source\CobbDouglas.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Reservation" Collapsed="true">
+    <Position X="4.25" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACBAIAAAAAAAAQAAEABAABAAAAQAAAEACEAAEAAAgAg=</HashCode>
+      <FileName>Source\Reservation_Manager.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Stored_Resource" Collapsed="true">
+    <Position X="9.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAiAAAAAAAAACAAAAIAEBAAAAABAAEgABAAA=</HashCode>
+      <FileName>Source\Resource_Inventory.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Resource_Inventory" Collapsed="true">
+    <Position X="9.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACCAAAAAAQACAAAIAAAEAABIAAAEgQAAAAAAAQAAABA=</HashCode>
+      <FileName>Source\Resource_Inventory.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Stored_Unit" Collapsed="true">
+    <Position X="8" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAKAAHAKCAEAgIABAAAAAAAIERAAAAAACIEgAVAAA=</HashCode>
+      <FileName>Source\Unit_Inventory.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Unit_Inventory" Collapsed="true">
+    <Position X="8" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>giQACAgAkSAAAAIAAAAJAQBAwAgAGBAlAAACwAAAAJA=</HashCode>
+      <FileName>Source\Unit_Inventory.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="GeneticHistory" Collapsed="true">
+    <Position X="3.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAgCAAAQAgAAIABAAAiAAAAAAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>Source\GeneticHistoryManager.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Inventory" Collapsed="true">
+    <Position X="11.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>woUgKMAGgABiXAsEGAEYYliBkLAAlC4QCaEASgEAEQY=</HashCode>
+      <FileName>Source\InventoryManager.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

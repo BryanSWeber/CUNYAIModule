@@ -7,7 +7,7 @@ library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
 # out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output-2.txt", col_names = FALSE))
 
-names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
+names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","r","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
  # names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
 # 
  # out<-rbind(out, out_2)
@@ -37,6 +37,8 @@ out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
 histogram( ~out$alpha_army | out$race_win, type="count") #0.525
 histogram( ~out$alpha_econ | out$race_win, type="count") #0.008-0.009
 histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
+histogram( ~out$r | out$race_win, type="count") #0.00014 almost exactly.
+
 # 
 # by(out, out$Race, function(x) summary(glm( Winner ~ delta_gas + gamma_supply + alpha_army * alpha_econ * alpha_tech - alpha_army - alpha_econ - alpha_tech - alpha_army:alpha_econ:alpha_tech, family = quasibinomial(link = "logit"), data=x)))
 # #by(out, out$Race, function(x) summary(glm( Winner ~ delta_gas + gamma_supply + alpha_army + alpha_econ + alpha_tech, family = quasibinomial(link = "logit"), data=x)))
@@ -66,18 +68,18 @@ histogram( ~out$alpha_tech | out$race_win, type="count") #0.002 almost exactly.
  
 # # summary(out)
  mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
- plot(mav(out$Winner[out$Race == "Zerg"] , 3))
- plot(mav(out$Winner[out$Race == "Terran"] , 3))
- plot(mav(out$Winner[out$Race == "Protoss"] , 3))
+ plot(mav(out$Winner[out$Race == "Zerg"] , 10))
+ plot(mav(out$Winner[out$Race == "Terran"] , 10))
+ plot(mav(out$Winner[out$Race == "Protoss"] , 10))
  
  t_z= 1:nrow(out[out$Race == "Zerg",]); t2 = t_z^2; t3 = t_z^3;
- reg_z<-glm(out$Winner[out$Race == "Zerg"] ~ t_z + t2 + t3, family = binomial(link = "logit") )
+ reg_z<-glm(out$Winner[out$Race == "Zerg"] ~ t_z , family = binomial(link = "logit") )
 # summary(reg_z)
 t_t= 1:nrow(out[out$Race == "Terran",]); t2 = t_t^2; t3 = t_t^3;
-reg_t<-glm(out$Winner[out$Race == "Terran"] ~ t_t  + t2 + t3 , family = binomial(link = "logit") )
+reg_t<-glm(out$Winner[out$Race == "Terran"] ~ t_t   , family = binomial(link = "logit") )
 
  t_p= 1:nrow(out[out$Race == "Protoss",]); t2 = t_p^2;  t3 = t_p^3;
- reg_p<-glm(out$Winner[out$Race == "Protoss"] ~ t_p  + t2 + t3 , family = binomial(link = "logit") )
+ reg_p<-glm(out$Winner[out$Race == "Protoss"] ~ t_p  , family = binomial(link = "logit") )
 
 plot(t_t,out$Winner[out$Race == "Terran"] ); #protoss should be longest, hopefully.
  points(t_z, reg_z$fitted.values, col = "#999999", type="l" )
@@ -109,7 +111,9 @@ for(i in seq(0,360,60)){
             )
 } #[out$Winner==1] , [out$Winner==0], or none
 
-corrgram(out[out$Winner==1,c(1:6, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+corrgram(out[out$Winner==1 & out$build_map_race == out$build_map_race[1],c(1:7, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+corrgram(out[out$Winner==1 ,c(1:7, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+
 # plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
 # econ<-c(1,1000)
 # army<-c(1,1000)

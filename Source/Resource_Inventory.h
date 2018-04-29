@@ -3,9 +3,13 @@
 #include <BWAPI.h>
 #include "MeatAIModule.h"
 #include "Unit_Inventory.h"
+#include "InventoryManager.h"
 
 using namespace std;
 using namespace BWAPI;
+
+class Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
+class Inventory;
 
 struct Stored_Resource{
 
@@ -14,6 +18,7 @@ struct Stored_Resource{
 	Stored_Resource(Unit unit);
 
 	int current_stock_value_;
+    int max_stock_value_;
 	int number_of_miners_;
 
 	bool occupied_natural_;
@@ -45,10 +50,21 @@ struct Resource_Inventory {
 	//Removes Resource
 	void removeStored_Resource(Unit unit);
 
-	//Updates summary of inventory, stored here.
-	void updateResourceInventorySummary();
+	//Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
 	Position getMeanLocation() const;
 	Position getMeanBuildingLocation() const;
 	Position getMeanCombatLocation() const;
+
+    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei);
+    void drawMineralRemaining(const Inventory &inv) const;
+
+    friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
+    friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
+
+    int total_miners_;
+    int total_gas_;
+
+    void updateMiners();
+    void updateGasCollectors();
 };

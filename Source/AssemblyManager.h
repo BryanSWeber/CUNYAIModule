@@ -48,6 +48,23 @@ public:
     };
 };
 
+
+//template<typename T>
+//class Build_Order_Object {
+//private:
+//
+//    UnitType _unit_in_queue;
+//    UpgradeType _upgrade_in_queue;
+//    TechType _research_in_queue;
+//
+//public:
+//    _unit_in_queue = typename;
+//    _upgrade_in_queue = UpgradeTypes::None;
+//    _research_in_queue = TechTypes::None;
+//}
+
+
+
 struct Building_Gene {
     Building_Gene();
     Building_Gene( string s );
