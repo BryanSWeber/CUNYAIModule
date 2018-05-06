@@ -461,7 +461,7 @@ void Inventory::updateMapVeins() {
 
     for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
-        for (vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) {
+        for (vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
             // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
             // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
             // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
@@ -470,7 +470,7 @@ void Inventory::updateMapVeins() {
             bool local_grid[3][3]; // WAY BETTER!
             int minitile_x = position_to_investigate->x;
             int minitile_y = position_to_investigate->y;
-            bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 <= map_x && minitile_y + 1 <= map_y;
+            bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 < map_x && minitile_y + 1 < map_y;
 
             local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
             local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
@@ -539,7 +539,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
  
-    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
+    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0 ) {
         return;
     }
     else {
@@ -773,7 +773,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     
     enemy_base_ = center;
 
-    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
+    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 1) {
         return;
     }
     else {
@@ -1515,9 +1515,9 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     if ( start_positions_.empty() ) {
         cleared_all_start_positions_ = true;
     }
-    else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
-        updateMapVeinsOutFromFoe(start_positions_[0]);
-    }
+    //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
+    //    updateMapVeinsOutFromFoe(start_positions_[0]);
+    //}
 }
 
 void Inventory::setNextExpo( const TilePosition tp ) {

@@ -29,6 +29,7 @@ struct Inventory {
     int hatches_;
     int last_gas_check_;
     int my_portion_of_the_map_;
+    int estimated_enemy_workers_;
 
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;

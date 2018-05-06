@@ -24,6 +24,7 @@ GeneticHistory::GeneticHistory( string file ) {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis( 0, 1 );    // default values for output.
+
     double delta_out = dis( gen ) * 0.15 + 0.40;
     double gamma_out = dis( gen ) * 0.25 + 0.30; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
@@ -32,7 +33,18 @@ GeneticHistory::GeneticHistory( string file ) {
     double a_econ_out = dis( gen ) * 0.75 + 0.25;
     double a_tech_out = dis( gen ) * 0.25;
     double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+    
+    if (_TRAINING_AGAINST_BASE_AI) {
+    
+        delta_out = dis(gen);
+        gamma_out = dis(gen); // Artifically chosen upper bounds. But above this, they often get truely silly.
+        // the values below will be normalized to 1.
+        a_army_out = dis(gen);
+        a_econ_out = dis(gen);
+        a_tech_out = dis(gen);
+        r_out = dis(gen)/10000; //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
 
+    }
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
@@ -42,18 +54,19 @@ GeneticHistory::GeneticHistory( string file ) {
     
 
     vector<string> build_order_list = {
-        "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
-        "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
-        "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
-        "drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
-        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-        "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
-        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
-        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
-       "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - UAB with edits. added an overlord.
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits. added an overlord.
+        //"drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
+        //"drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
+        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
+        //"drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
+        //"drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
+        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
+        //"drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
+        //"drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
+        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
+        //"drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
+       //"drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
+       //"drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - UAB with edits. added an overlord.
+       //"drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits. added an overlord.
     };
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1 );
     size_t build_order_rand = rand_bo(gen);
@@ -238,30 +251,33 @@ GeneticHistory::GeneticHistory( string file ) {
         int counter = 0;
         //int min_frequency = 9999999999;
 
+        bool name_matches = name_total[j] == e_name;
+        bool race_matches = (e_race == "Unknown" || race_total[j] == e_race);
+        bool map_matches = map_name_total[j] == map_name;
         // an inelegant statement follows. How do I make this into a switch?
         if (winning_player > 0 && winning_race > 0 && winning_map > 0) { //choice in race for random players is like a whole new ball park.
-            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race && map_name_total[j] == map_name;
+            conditions_for_inclusion = name_matches && race_matches && map_matches;
         }
-        else if (winning_player > 0 && winning_race > 0) {
-            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race;
+        else if (winning_player > 0 && winning_race > 0 && winning_map == 0) {
+            conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (winning_player > 0 && winning_map > 0) {
-            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && map_name_total[j] == map_name;
+        else if (winning_player > 0 && winning_race == 0 && winning_map > 0) {
+            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (winning_race > 0 && winning_map > 0) {
-            conditions_for_inclusion = race_total[j] == e_race && map_name_total[j] == map_name;
+        else if (winning_player == 0 && winning_race > 0 && winning_map > 0) {
+            conditions_for_inclusion = !name_matches && race_matches && map_matches;
         }
-        else if (winning_player > 0 && winning_race > 0) {
-            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race) && race_total[j] == e_race;
+        else if (winning_player > 0 && winning_race > 0 && winning_map == 0) {
+            conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (winning_player > 0) {
-            conditions_for_inclusion = name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race);
+        else if (winning_player > 0 && winning_race == 0 && winning_map == 0) {
+            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (winning_race > 0) {
-            conditions_for_inclusion = race_total[j] == e_race;
+        else if (winning_player == 0 && winning_race > 0 && winning_map == 0) {
+            conditions_for_inclusion = !name_matches && race_matches && !map_matches;
         }
-        else if ( winning_map > 0) {
-            conditions_for_inclusion = map_name_total[j] == map_name;
+        else if (winning_player == 0 && winning_race == 0 && winning_map > 0) {
+            conditions_for_inclusion = !name_matches && !race_matches && map_matches;
         }
 
         if (conditions_for_inclusion && win_total[j] == 1 ) {
@@ -276,7 +292,7 @@ GeneticHistory::GeneticHistory( string file ) {
             selected_win_count++;
             games_since_last_win = 0;
         } 
-        else if ( conditions_for_inclusion ) {
+        else if ( conditions_for_inclusion && win_total[j] == 0) {
             selected_lose_count++;
             build_orders_tried.push_back(build_order_total[j]);
             games_since_last_win++;
@@ -286,38 +302,77 @@ GeneticHistory::GeneticHistory( string file ) {
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if ( selected_win_count > 0 && (dis(gen) > uniqueCount /(double)( build_order_list.size() + games_since_last_win) || !_LEARNING_MODE) ) { // redefine final output.
+    if ( selected_win_count > 0 ) { // redefine final output.
         //win_count-selected_win_count/(double)(win_count-selected_win_count+lose_count-selected_lose_count)
         //pow( 1 - prob_win_given_conditions, games_since_last_win )
-        std::uniform_int_distribution<size_t> unif_dist_to_win_count( 0 , build_order_win.size() - 1 ); // safe even if there is only 1 win., index starts at 0.
+
+
+        std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, build_order_win.size() - 1); // safe even if there is only 1 win., index starts at 0.
 
         size_t parent_1 = unif_dist_to_win_count(gen); 
         size_t parent_2 = unif_dist_to_win_count(gen);
 
         double linear_combo = dis(gen); //linear_crossover, interior of parents. Big mutation at the end, though.
 
-        if ( games_since_last_win == 0 ) {
-            parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
-            parent_2 = build_order_win.size() - 1;
-            build_order_out = build_order_win.back();// vectors start at 0.
+        if ( _TRAINING_AGAINST_BASE_AI ) {
+
+            //set size of starting population.
+            if ( selected_win_count > 50) {
+                build_order_out = build_order_win[parent_1];
+                while (build_order_out != build_order_win[parent_2]) {
+                    parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
+                }
+
+                if (!_LEARNING_MODE) {
+                    parent_2 = parent_1;
+                }
+
+                delta_out   = linear_combo * delta_win[parent_1]  + (1 - linear_combo) * delta_win[parent_2];
+                gamma_out   = linear_combo * gamma_win[parent_1]  + (1 - linear_combo) * gamma_win[parent_2];
+                a_army_out  = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
+                a_econ_out  = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
+                a_tech_out  = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
+                r_out       = linear_combo * r_win[parent_1]      + (1 - linear_combo) * r_win[parent_2];
+            }
         }
+        else { 
+            //if we don't need diversity, combine our old wins together.
+            if (dis(gen) < uniqueCount / (double)build_order_list.size()) { // 
+                //Parent 2 must match the build of the first one.
+                build_order_out = build_order_win[parent_1];
+                while (build_order_out != build_order_win[parent_2]) {
+                    parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
+                }
 
-        build_order_out = build_order_win[parent_2];
+                if (!_LEARNING_MODE) {
+                    parent_2 = parent_1;
+                }
 
-        while (build_order_out != build_order_win[parent_2]) {
-            parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
+                delta_out = linear_combo * delta_win[parent_1]   + (1 - linear_combo) * delta_win[parent_2];
+                gamma_out = linear_combo * gamma_win[parent_1]   + (1 - linear_combo) * gamma_win[parent_2];
+                a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
+                a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
+                a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
+                r_out = linear_combo * r_win[parent_1] + (1 - linear_combo) * r_win[parent_2];
+            }
+            else { // we must need diversity.  
+                // use the random values we have determined in the beginning and the random opening.
+            }
+
+            //if we won our last game, change nothing.
+            if (games_since_last_win == 0) {
+                parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
+                parent_2 = build_order_win.size() - 1;
+                build_order_out = build_order_win.back();// vectors start at 0.
+
+                delta_out = delta_win[parent_1];
+                gamma_out = gamma_win[parent_1];
+                a_army_out = a_army_win[parent_1];
+                a_econ_out = a_econ_win[parent_1];
+                a_tech_out = a_tech_win[parent_1];
+                r_out = r_win[parent_1];
+            }
         }
-
-        if (!_LEARNING_MODE) {
-            parent_2 = parent_1;
-        }
-
-        delta_out = linear_combo * delta_win[parent_1] + (1 - linear_combo) * delta_win[parent_2];
-        gamma_out = linear_combo * gamma_win[parent_1] + (1 - linear_combo) * gamma_win[parent_2];
-        a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
-        a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
-        a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
-        r_out      = linear_combo * r_win[parent_1] + (1 - linear_combo) * r_win[parent_2];
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
         //int chrom_0 = (rand() % 100 + 1) / 2;
@@ -338,37 +393,39 @@ GeneticHistory::GeneticHistory( string file ) {
 
     }
 
-
-    for ( int i = 0; i<1000; i++ ) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
-
+    if (_TRAINING_AGAINST_BASE_AI) {
         //From genetic history, random parent for each gene. Mutate the genome
-        std::uniform_int_distribution<size_t> unif_dist_to_mutate( 0, 5 ); 
-        std::uniform_real_distribution<double> unif_mutation_size(-0.10, 0.10);
+        std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
+        std::normal_distribution<double> normal_mutation_size(0, 0.05);
 
-        size_t mutation_0 = unif_dist_to_mutate( gen ); // rand int between 0-5
-        //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
+        size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
+                                                      //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
-        double mutation = pow( 1 + loss_rate_ * unif_mutation_size(gen), 2 ); // will generate rand double between 0.05 and 1.05.
-        if (games_since_last_win == 0) {
-            mutation = 1; // no mutation if it worked perfectly last time.
+        double mutation = pow(1 + normal_mutation_size(gen), 2); // will generate rand double between 0.99 and 1.01.
+
+                                                                 // Chance of mutation.
+        if (dis(gen) > 0.95) {
+            // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
+            delta_out_mutate_ = mutation_0 == 0 ? delta_out * mutation : delta_out;
+            gamma_out_mutate_ = mutation_0 == 1 ? gamma_out * mutation : gamma_out;
+            //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
+            a_army_out_mutate_ = mutation_0 == 2 ? a_army_out * mutation : a_army_out;
+            a_econ_out_mutate_ = mutation_0 == 3 ? a_econ_out * mutation : a_econ_out;
+            a_tech_out_mutate_ = mutation_0 == 4 ? a_tech_out * mutation : a_tech_out;
+            r_out_mutate_ = mutation_0 == 5 ? r_out * mutation : r_out;
+
         }
-        if (!_LEARNING_MODE) {
-            mutation = 1;
+        else {
+
+            delta_out_mutate_ = delta_out;
+            gamma_out_mutate_ = gamma_out;
+            //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
+            a_army_out_mutate_ = a_army_out;
+            a_econ_out_mutate_ = a_econ_out;
+            a_tech_out_mutate_ = a_tech_out;
+            r_out_mutate_ = r_out;
+
         }
-
-        delta_out_mutate_ = mutation_0 == 0 ? delta_out  * mutation : delta_out;
-        gamma_out_mutate_ = mutation_0 == 1 ? gamma_out  * mutation : gamma_out;
-        //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
-        a_army_out_mutate_ = mutation_0 == 2 ? a_army_out * mutation : a_army_out;
-        a_econ_out_mutate_ = mutation_0 == 3 ? a_econ_out * mutation : a_econ_out;
-        a_tech_out_mutate_ = mutation_0 == 4 ? a_tech_out * mutation : a_tech_out;
-        r_out_mutate_ =     mutation_0 == 5 ? r_out * mutation : r_out;
-
-        // Normalize the CD part of the gene.
-        //double a_tot = a_army_out_mutate_ + a_econ_out_mutate_ + a_tech_out_mutate_;
-        //a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
-        //a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
-        //a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
 
         // Normalize the CD part of the gene with CAPITAL AUGMENTING TECHNOLOGY.
         double a_tot = a_army_out_mutate_ + a_econ_out_mutate_;
@@ -377,10 +434,64 @@ GeneticHistory::GeneticHistory( string file ) {
         a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
         build_order_ = build_order_out;
 
-        if ( a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50 
-            && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20 ) {
-            break; // if we have an interior solution, let's use it, if not, we try again.
+    }
+    else {
+
+        for (int i = 0; i < 1000; i++) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
+
+            //From genetic history, random parent for each gene. Mutate the genome
+            std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
+            std::normal_distribution<double> normal_mutation_size(0, 0.05);
+
+            size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
+            //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
+
+            double mutation = pow(1 + normal_mutation_size(gen), 2); // will generate rand double between 0.99 and 1.01.
+
+            // Chance of mutation.
+            if ( games_since_last_win == 0 || !_LEARNING_MODE) {
+                mutation = 1; // no mutation if it worked perfectly last time.
+            }
+            else if (dis(gen) > 0.95) {
+                // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
+                delta_out_mutate_ = mutation_0 == 0 ? delta_out * mutation : delta_out;
+                gamma_out_mutate_ = mutation_0 == 1 ? gamma_out * mutation : gamma_out;
+                //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
+                a_army_out_mutate_ = mutation_0 == 2 ? a_army_out * mutation : a_army_out;
+                a_econ_out_mutate_ = mutation_0 == 3 ? a_econ_out * mutation : a_econ_out;
+                a_tech_out_mutate_ = mutation_0 == 4 ? a_tech_out * mutation : a_tech_out;
+                r_out_mutate_ = mutation_0 == 5 ? r_out * mutation : r_out;
+
+            }
+            else {
+
+                delta_out_mutate_ = delta_out;
+                gamma_out_mutate_ = gamma_out;
+                //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
+                a_army_out_mutate_ = a_army_out;
+                a_econ_out_mutate_ = a_econ_out;
+                a_tech_out_mutate_ = a_tech_out;
+                r_out_mutate_ = r_out;
+
+            }
+
+            // Normalize the CD part of the gene.
+            //double a_tot = a_army_out_mutate_ + a_econ_out_mutate_ + a_tech_out_mutate_;
+            //a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
+            //a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
+            //a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
+
+            // Normalize the CD part of the gene with CAPITAL AUGMENTING TECHNOLOGY.
+            double a_tot = a_army_out_mutate_ + a_econ_out_mutate_;
+            a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
+            a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
+            a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
+            build_order_ = build_order_out;
+
+            if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
+                && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20) {
+                break; // if we have an interior solution, let's use it, if not, we try again.
+            }
         }
     }
-
 }

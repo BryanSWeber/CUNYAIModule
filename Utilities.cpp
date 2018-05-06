@@ -1507,20 +1507,23 @@ double MeatAIModule::getProperSpeed(const UnitType &type, const Player owner) {
 }
 
 int MeatAIModule::getProperRange(const Unit u) {
+
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
+
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
-        base_range += 1 * 32;
+        base_range += (1 * 32);
     }
     else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
-        base_range += 2 * 32;
+        base_range += (2 * 32);
     }
     else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
-        base_range += 1 * 32;
+        base_range += (1 * 32);
     }
     else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
-        base_range += 3 * 32;
+        base_range += (3 * 32);
     }
 
     return base_range;
@@ -1546,9 +1549,10 @@ int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
     return base_range;
 }
+
 int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (int)MeatAIModule::getProperSpeed(u) * (UnitTypes::Zerg_Lurker != u->getType()) * ei_loc.max_cooldown_ + getProperRange(u);
+    return (int)( !(u->getType() == UnitTypes::Zerg_Lurker) * (int)MeatAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + MeatAIModule::getProperRange(u) );
 }
 
 

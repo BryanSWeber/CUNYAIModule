@@ -146,16 +146,18 @@ void MeatAIModule::onStart()
 void MeatAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
-    //rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");
+    if (_MOVE_OUTPUT_BACK_TO_READ) { // don't write to the read folder. But we want the full read contents ready for us to write in.
+        rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file. 
+    }
 
-    ofstream output; // Prints to brood war file proper.
+    ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << rate_of_worker_growth << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
     if (_MOVE_OUTPUT_BACK_TO_READ) {
-        rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt");
+        rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
 }
 
@@ -306,8 +308,17 @@ void MeatAIModule::onFrame()
     inventory.getExpoPositions(); // prime this once on game start.
     inventory.drawExpoPositions();
     
+    if (t_game == 0) {
+        //update local resources
+        inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
+        Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
+        Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
+        neutral_inventory = mineral_inventory + geyser_inventory; // for first initialization.
+        inventory.updateBaseLoc(neutral_inventory);
+    }
+
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    bool waited_a_second = Broodwar->getFrameCount() % 24 * 1 == 0; // technically more.
+    bool waited_a_second = Broodwar->getFrameCount() % (24 * 2) == 0; // technically more.
 
     if (inventory.unwalkable_needs_updating && !unit_calculation_frame && waited_a_second) {
 
@@ -330,30 +341,22 @@ void MeatAIModule::onFrame()
     } else if (inventory.veins_out_need_updating && !unit_calculation_frame ) {
 
         Stored_Unit* center_building = getClosestStoredBuilding(enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        if (center_building && center_building->pos_.isValid() && center_building->pos_ != inventory.enemy_base_) {
+        if (center_building && center_building->pos_.isValid() && center_building->pos_ != inventory.enemy_base_ && center_building->pos_ != Position(0,0)) {
             inventory.updateMapVeinsOutFromFoe(center_building->pos_);
         }
-        else if (!center_building && enemy_inventory.getMeanBuildingLocation() != Position(0,0) ) {
+        else if (enemy_inventory.getMeanBuildingLocation() != Position(0, 0)) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
         }
-        else if (!center_building && enemy_inventory.getMeanLocation() != Position(0, 0)) { // if they have no known buildings we need to update the center to somewhere... Right? 
-            inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanLocation());
+        else if (!inventory.start_positions_.empty() && inventory.start_positions_[0] && inventory.start_positions_[0] != Position(0, 0) ){ // maybe it's a base we havent' seen yet?
+            inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
         }
-        else if (!center_building ) {
-            inventory.updateMapVeinsOutFromFoe(Position(Broodwar->mapWidth() / 2 * 32, Broodwar->mapHeight() / 2 * 32));
+        else { // Maybe it's in the middle?
+            inventory.updateMapVeinsOutFromFoe(Position((Broodwar->mapWidth() / (double)2) * 32, (Broodwar->mapHeight() / (double)2) * 32));
         }
 
         inventory.veins_out_need_updating = false;
     }
 
-   if ( t_game == 0 ) {
-        //update local resources
-       inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
-        Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
-        Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
-        neutral_inventory = mineral_inventory + geyser_inventory; // for first initialization.
-        inventory.updateBaseLoc(neutral_inventory);
-    }
    neutral_inventory.updateGasCollectors();
    neutral_inventory.updateMiners();
 
@@ -420,26 +423,37 @@ void MeatAIModule::onFrame()
 
     CobbDouglas CD = CobbDouglas( alpha_army_temp, exp( inventory.ln_army_stock_ ), army_possible, alpha_tech_temp, exp( inventory.ln_tech_stock_ ), tech_possible, alpha_econ_temp, exp( inventory.ln_worker_stock_ ), econ_possible );
 
-    int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
-    //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
-    int approx_worker_count = (4 * exp(rate_of_worker_growth * (double)t_game * 0.75) - dead_worker_count) * exp(rate_of_worker_growth * (double)t_game * 0.25); //assumes all workers died in the last 25% of this game, eg they were not early, critical worker picks.  Overestimates number of enemy workers if picks happened early, underestimates if picks were very recent.
-    int est_worker_count = min(max(enemy_inventory.worker_count_, approx_worker_count), 85);
+    if (_TIT_FOR_TAT_ENGAGED) {
 
-    //Update existing CD functions to more closely mirror opponent. Do every 30 sec or so.
-    if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ > 0 ) {
-        int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-        int e_worker_stock = est_worker_count * worker_value;
-        CD.enemy_eval(enemy_inventory.stock_fighting_total_ - enemy_inventory.worker_count_*worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible);
-        alpha_army_temp = CD.alpha_army;
-        alpha_econ_temp = CD.alpha_econ;
-        alpha_tech_temp = CD.alpha_tech;
-        //Broodwar->sendText("Matching expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
-    }
-    else if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ == 0 && (alpha_army != alpha_army_temp || alpha_econ != alpha_econ_temp) ) {
-        alpha_army_temp = alpha_army;
-        alpha_econ_temp = alpha_econ;
-        alpha_tech_temp = alpha_tech;
-        Broodwar->sendText("Reseting expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
+        int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
+
+        if (Broodwar->getFrameCount() == 0) {
+            inventory.estimated_enemy_workers_ = 4;
+        }
+        else {
+            inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth);
+        }
+        //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
+
+        int est_worker_count = min(max(enemy_inventory.worker_count_, inventory.estimated_enemy_workers_), 85);
+
+
+        //Update existing CD functions to more closely mirror opponent. Do every 15 sec or so.
+        if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ > 0) {
+            int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+            int e_worker_stock = est_worker_count * worker_value;
+            CD.enemy_eval(enemy_inventory.stock_fighting_total_ - enemy_inventory.worker_count_ * worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible);
+            alpha_army_temp = CD.alpha_army;
+            alpha_econ_temp = CD.alpha_econ;
+            alpha_tech_temp = CD.alpha_tech;
+            //Broodwar->sendText("Matching expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
+        }
+        else if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ == 0 && (alpha_army != alpha_army_temp || alpha_econ != alpha_econ_temp)) {
+            alpha_army_temp = alpha_army;
+            alpha_econ_temp = alpha_econ;
+            alpha_tech_temp = alpha_tech;
+            Broodwar->sendText("Reseting expenditures,%4.2f, %4.2f", alpha_econ_temp, alpha_army_temp);
+        }
     }
 
     tech_starved = CD.tech_starved();
@@ -511,7 +525,7 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100 );  // As %s
             Broodwar->drawTextScreen( 250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100 ); //
             Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100 ); // No longer a % with capital-augmenting technology.
-            Broodwar->drawTextScreen( 250, 70, "Enemy Worker Est: %d ", est_worker_count ); // No longer a % with capital-augmenting technology.
+            Broodwar->drawTextScreen( 250, 70, "Enemy Worker Est: %d ", inventory.estimated_enemy_workers_ ); // No longer a % with capital-augmenting technology.
 
             Broodwar->drawTextScreen( 250, 80, "Delta_gas: %4.2f", delta ); //
             Broodwar->drawTextScreen( 250, 90, "Gamma_supply: %4.2f", gamma ); //
@@ -774,7 +788,7 @@ void MeatAIModule::onFrame()
                 int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
                 int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
-
+                //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u->getType().c_str(), MeatAIModule::getProperRange(u), (int)MeatAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Boids boids;
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
@@ -1166,6 +1180,10 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
         else { // the insertion must have failed
                //Broodwar->sendText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
         }
+
+        if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
+            inventory.estimated_enemy_workers_--;
+        }
     }
 
     //update maps, requires up-to date enemy inventories.
@@ -1255,6 +1273,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
             enemy_inventory.unit_inventory_.erase( unit );
             dead_enemy_inventory.addStored_Unit(unit);
+            inventory.estimated_enemy_workers_--;
             //Broodwar->sendText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else {
