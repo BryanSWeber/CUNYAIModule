@@ -269,6 +269,8 @@ public:
       bool checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
+      // Checks if the player UI is weak against air in army ei.
+      static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
 
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 

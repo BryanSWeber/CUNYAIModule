@@ -55,8 +55,9 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     base_core.insert(u.second.bwapi_unit_);
                 }
             }
+            bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
 
-            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && enemy_inventory.stock_fliers_ > 0.75 * friendly_inventory.stock_shoots_up_) {
+            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_inventory.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500);
                 Stored_Unit *close_hatch = getClosestStored(hacheries, unit->getPosition(), 500);
                 if (close_hatch) {
@@ -298,10 +299,8 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
 
-    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) > ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern.
-    bool u_relatively_weak_against_air = - ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1),2) < - ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1),2); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
-    //bool e_relatively_weak_against_air = ui.stock_fliers_ / (double)(ei.stock_shoots_up_ + 1) > ui.stock_ground_units_ / (double)(ei.stock_shoots_down_ + 1); // div by zero concern.  
-    bool e_relatively_weak_against_air = 1 / (double)(ei.stock_shoots_up_ + 1) > 1 / (double)(ei.stock_shoots_down_ + 1); // div by zero concern. Derivative of the above equation.
+    bool u_relatively_weak_against_air = checkWeakAgainstAir(ui, ei); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
+    bool e_relatively_weak_against_air = checkWeakAgainstAir(ei, ui); // div by zero concern. Derivative of the above equation.
 
     // Do required build first.
     if (!buildorder.checkEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {
@@ -314,7 +313,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     is_building += Check_N_Grow(larva->getType().getRace().getWorker(), larva, (drone_conditional || wasting_larva_soon) && !enough_drones);
 
     //Army build/replenish.  Cycle through military units available.
-    if (/*ei.stock_fliers_ > ui.stock_shoots_up_ ||*/ u_relatively_weak_against_air ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
+    if ( u_relatively_weak_against_air && ei.stock_fliers_ > 0 ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         is_building += Check_N_Grow(UnitTypes::Zerg_Scourge, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && Count_Units(UnitTypes::Zerg_Scourge, inv) < 5); // hard cap on scourges, they build 2 at a time. May (still) overbuild within a single frame.
         is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
@@ -359,23 +358,23 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         else if (lurkers_incoming) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0);
             is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.checkExcessIsGreaterThan(UnitTypes::Zerg_Lurker) || Count_Units(UnitTypes::Zerg_Hydralisk, inv) == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Lurker.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
+            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Hydralisk.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
         else if (ultralisks_ready) {
             is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0);
-            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > 0 ); // if you are floating minerals relative to gas, feel free to buy some lings.
+            is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Ultralisk.mineralPrice() && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice()); // if you are floating minerals relative to gas, feel free to buy some lings.
         }
     }
     else if ( e_relatively_weak_against_air ) {
         is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
-        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > 50 ); // if you are floating minerals relative to gas, feel free to buy some lings.
+        is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice()  && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice() ); // if you are floating minerals relative to gas, feel free to buy some lings.
     }
 
-    is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0 && !u_relatively_weak_against_air); // catchall units.
-    is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
-    is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0 && !u_relatively_weak_against_air);
-    is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0 );
-    is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0 );
+    //is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0 && !u_relatively_weak_against_air); // catchall units.
+    //is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
+    //is_building += Check_N_Grow(UnitTypes::Zerg_Lurker, larva, army_starved && is_building == 0 && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0 && !u_relatively_weak_against_air);
+    //is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0 );
+    //is_building += Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0 );
 
 
     is_building += Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, false); // catchall ground units, in case you have a BO that needs to be done.
@@ -408,7 +407,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
-    bool expansion_meaningful = (Count_Units(UnitTypes::Zerg_Drone, inv) < 85 && (inventory.min_workers_ >= inventory.min_fields_ * 2 || inventory.gas_workers_ >= 2 * Count_Units(UnitTypes::Zerg_Extractor, inv))) || inventory.min_fields_ < 8;
+    bool expansion_meaningful = (Count_Units(UnitTypes::Zerg_Drone, inv) < 85 && (inventory.min_workers_ > inventory.min_fields_ * 2 || inventory.gas_workers_ > 2 * Count_Units(UnitTypes::Zerg_Extractor, inv))) || inventory.min_fields_ < 8;
     bool larva_starved = Count_Units(UnitTypes::Zerg_Larva, inv) <= Count_Units(UnitTypes::Zerg_Hatchery, inv);
     bool upgrade_bool = (tech_starved || (Count_Units(UnitTypes::Zerg_Larva, inv) == 0 && !army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
@@ -438,22 +437,23 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Stock_Buildings(UnitTypes::Zerg_Lair, u_inv) +
         Stock_Buildings(UnitTypes::Zerg_Hive, u_inv);
 
+    //Macro-related Buildings.
+    buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_fighting_total_< friendly_inventory.stock_fighting_total_) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+    //buildings_started += expansion_meaningful; // stop if you need an expo!
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
+
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 &&
+        (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
+        Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
+
     //Combat Buildings
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_fighting_total_ > u_loc.stock_fighting_total_) &&  // army starved or under attack. ? And?
+    buildings_started += Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_fighting_total_ > u_loc.stock_fighting_total_ || e_loc.stock_fliers_ > e_loc.stock_shoots_up_) &&  // army starved or under attack. ? And?
         Count_Units(UnitTypes::Zerg_Creep_Colony, inv) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         buildings_started == 0 &&
         ((larva_starved || supply_starved) && nearby_enemy) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1 &&
         Count_Units(UnitTypes::Zerg_Sunken_Colony, inv) + Count_Units(UnitTypes::Zerg_Spore_Colony, inv) < max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
-
-    //Macro-related Buildings.
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Extractor, drone, friendly_inventory, buildings_started == 0 && 
-        (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
-        Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count is off. Sometimes units are in the gas geyser.
-
-    buildings_started += Expo(drone, buildings_started == 0 && (!army_starved || e_inv.stock_fighting_total_< friendly_inventory.stock_fighting_total_ ) && (expansion_meaningful || larva_starved || econ_starved), inventory);
-    buildings_started += Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, buildings_started == 0 && larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5 ); // only macrohatch if you are short on larvae and can afford to spend.
 
     //Tech Buildings
     buildings_started += Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, friendly_inventory, !econ_starved && buildings_started == 0 &&

@@ -300,6 +300,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int max_cooldown = 0;
     int ground_fodder = 0;
     int air_fodder = 0;
+    int resource_depots = 0;
 
     vector<UnitType> already_seen_types;
 
@@ -325,7 +326,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 cloaker_count   += cloaker * count_of_unit;
                 detector_count  += u_iter.second.type_.isDetector() * count_of_unit;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
-
+                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
@@ -370,6 +371,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	volume_ = volume;
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
+    resource_depot_count_ = resource_depots;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {

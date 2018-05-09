@@ -59,6 +59,7 @@ struct Inventory {
     bool smoothed_needs_updating = false;
     bool veins_need_updating = false;
     bool veins_out_need_updating = false;
+    bool veins_in_need_updating = false;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);

@@ -3,8 +3,11 @@ library("lattice", lib.loc="~/R/win-library/3.4")
 library(readr)
 library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
+library("fBasics", lib.loc="~/R/win-library/3.4")
 
 out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output.txt", col_names = FALSE))
+#out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - exactly 5k + parent generation.txt", col_names = FALSE))
+#out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - reactive 5k.txt", col_names = FALSE))
 #out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
 #out<-rbind(out,out_2)
 dim(out)
@@ -92,11 +95,11 @@ out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
  #   )
  # } #[out$Winner==1] , [out$Winner==0], or none
  
- par(mar=c(1,1,1,1))
+ # par(mar=c(1,1,1,1))
  
  mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
- plot(mav(out$Winner[out$Race == "Zerg"] , 5))
- plot(mav(out$Winner[out$Race == "Terran"] , 5))
+ # plot(mav(out$Winner[out$Race == "Zerg"] , 5))
+ # plot(mav(out$Winner[out$Race == "Terran"] , 5))
  plot(mav(out$Winner[out$Race == "Protoss"] , 0.1*nrow(out)), ylab="Win Rate (500-game Moving Average)")
  PP.test(out$Winner[out$Race == "Protoss"]) # test if process has a unit root. Robust to arbitrary heteroskedacity.
  
@@ -119,17 +122,17 @@ plot(t_t,out$Winner[out$Race == "Terran"] ); #protoss should be longest, hopeful
  points(t_p, reg_p$fitted.values, col = "#56B4E9", type="l" )
  points(t_p, out$Winner[out$Race == "Protoss"], col =  "#56B4E9") #blue
  summary(reg_p)
-
-
- corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(1:5)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+# 
+   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5,6)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+#   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5,2,1)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
  #corrgram(out[out$Winner==1 ,c(1:7, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
 par(mar=c(1,1,1,1))
 
-summary(parents)
+basicStats(parents[,c(3,4,5,2,1,6,8)])
+basicStats(out[1:(0.05*nrow(out)),c(3,4,5,2,1,6,8)])#should be 250 games.
+basicStats(out[(0.95*nrow(out)):nrow(out),c(3,4,5,2,1,6,8)])
 
-summary(parents[parents$Winner == 1, ])
-summary(out[1:(0.05*nrow(out)),])
-summary(out[(0.95*nrow(out)):nrow(out),])
 
 # plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
 # econ<-c(1,1000)

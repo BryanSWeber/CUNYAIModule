@@ -546,7 +546,7 @@ int MeatAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & ene
 int MeatAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int threatening_e;
-    threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  (1 - u->getType().isFlyer()) * enemy_loc.stock_ground_units_;
+    threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
     return threatening_e;
 }
 
@@ -1713,6 +1713,10 @@ bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
     return  safe_mine || desperate_for_minerals;
 }
 
+bool MeatAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
+    return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
+}
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,
 //Zerg_Missile_Attacks = 11,

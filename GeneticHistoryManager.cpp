@@ -29,20 +29,21 @@ GeneticHistory::GeneticHistory( string file ) {
     double gamma_out = dis( gen ) * 0.25 + 0.30; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis( gen );
-    double a_vis_out =  dis( gen );
     double a_econ_out = dis( gen ) * 0.75 + 0.25;
     double a_tech_out = dis( gen ) * 0.25;
     double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
-    
+    //No longer used.
+    double a_vis_out = dis(gen);
+
     if (_TRAINING_AGAINST_BASE_AI) {
     
-        delta_out = dis(gen);
-        gamma_out = dis(gen); // Artifically chosen upper bounds. But above this, they often get truely silly.
+        delta_out = 0.4;
+        gamma_out = 0.4; // Artifically chosen
         // the values below will be normalized to 1.
         a_army_out = dis(gen);
         a_econ_out = dis(gen);
         a_tech_out = dis(gen);
-        r_out = dis(gen)/10000; //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+        r_out = dis(gen)/5500; 
 
     }
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
@@ -54,20 +55,25 @@ GeneticHistory::GeneticHistory( string file ) {
     
 
     vector<string> build_order_list = {
-        //"drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
-        //"drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
+        "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
+        "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
         "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-        //"drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
-        //"drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
-        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-        //"drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
-        //"drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
-        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
-        //"drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
-       //"drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
-       //"drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - UAB with edits. added an overlord.
-       //"drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits. added an overlord.
+        "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
+        "drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
+        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
+        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
+       "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone", //zerg_9pool - UAB
+       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - UAB with edits. added an overlord.
+       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - UAB with edits. added an overlord.
     };
+
+    if (_TRAINING_AGAINST_BASE_AI) {
+        build_order_list = { "drone drone drone drone drone overlord drone drone drone hatch pool drone drone" };
+    }
+
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1 );
     size_t build_order_rand = rand_bo(gen);
 
@@ -327,8 +333,8 @@ GeneticHistory::GeneticHistory( string file ) {
                     parent_2 = parent_1;
                 }
 
-                delta_out   = linear_combo * delta_win[parent_1]  + (1 - linear_combo) * delta_win[parent_2];
-                gamma_out   = linear_combo * gamma_win[parent_1]  + (1 - linear_combo) * gamma_win[parent_2];
+                delta_out   = 0.4;
+                gamma_out   = 0.4;
                 a_army_out  = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
                 a_econ_out  = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
                 a_tech_out  = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
@@ -395,7 +401,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     if (_TRAINING_AGAINST_BASE_AI) {
         //From genetic history, random parent for each gene. Mutate the genome
-        std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
+        std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 3);
         std::normal_distribution<double> normal_mutation_size(0, 0.05);
 
         size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
@@ -406,13 +412,12 @@ GeneticHistory::GeneticHistory( string file ) {
                                                                  // Chance of mutation.
         if (dis(gen) > 0.95) {
             // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
-            delta_out_mutate_ = mutation_0 == 0 ? delta_out * mutation : delta_out;
-            gamma_out_mutate_ = mutation_0 == 1 ? gamma_out * mutation : gamma_out;
+
             //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
-            a_army_out_mutate_ = mutation_0 == 2 ? a_army_out * mutation : a_army_out;
-            a_econ_out_mutate_ = mutation_0 == 3 ? a_econ_out * mutation : a_econ_out;
-            a_tech_out_mutate_ = mutation_0 == 4 ? a_tech_out * mutation : a_tech_out;
-            r_out_mutate_ = mutation_0 == 5 ? r_out * mutation : r_out;
+            a_army_out_mutate_ = mutation_0 == 0 ? a_army_out * mutation : a_army_out;
+            a_econ_out_mutate_ = mutation_0 == 1 ? a_econ_out * mutation : a_econ_out;
+            a_tech_out_mutate_ = mutation_0 == 2 ? a_tech_out * mutation : a_tech_out;
+            r_out_mutate_ = mutation_0 == 3 ? r_out * mutation : r_out;
 
         }
         else {

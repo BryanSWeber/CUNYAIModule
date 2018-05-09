@@ -539,7 +539,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
  
-    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 0 ) {
+    if (!map_veins_out_from_main_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 0 ) {
         return;
     }
     else {
@@ -773,7 +773,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     
     enemy_base_ = center;
 
-    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] == 1) {
+    if (!map_veins_out_from_enemy_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 1) {
         return;
     }
     else {
