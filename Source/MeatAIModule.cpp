@@ -113,7 +113,7 @@ void MeatAIModule::onStart()
     alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
     alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
     alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
-    rate_of_worker_growth = gene_history.r_out_mutate_; //rate of worker growth.
+    adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
 
     alpha_army_temp = alpha_army; // temp, will be overridden as we meet our enemy and scout.
     alpha_econ_temp = alpha_econ;
@@ -153,7 +153,7 @@ void MeatAIModule::onEnd( bool isWinner )
     ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << rate_of_worker_growth << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
+    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << adaptation_rate << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
     if (_MOVE_OUTPUT_BACK_TO_READ) {
@@ -279,7 +279,7 @@ void MeatAIModule::onFrame()
         alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
         alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
         alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
-        rate_of_worker_growth = gene_history.r_out_mutate_; //rate of worker growth.
+        adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
         win_rate = (1 - gene_history.loss_rate_);
         Broodwar->sendText( "WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str() );
     }
@@ -459,7 +459,7 @@ void MeatAIModule::onFrame()
         if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ > 0) {
             int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
             int e_worker_stock = est_worker_count * worker_value;
-            CD.enemy_eval(enemy_inventory.stock_fighting_total_ - enemy_inventory.worker_count_ * worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible);
+            CD.enemy_eval(enemy_inventory.stock_fighting_total_ - enemy_inventory.worker_count_ * worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible, adaptation_rate);
             alpha_army_temp = CD.alpha_army;
             alpha_econ_temp = CD.alpha_econ;
             alpha_tech_temp = CD.alpha_tech;
@@ -481,7 +481,7 @@ void MeatAIModule::onFrame()
     double army_derivative = CD.army_derivative;
     double tech_derivative = CD.tech_derivative;
 
-    if (_ANALYSIS_MODE && Broodwar->elapsedTime() % 30 == 0) {
+    if (_ANALYSIS_MODE && Broodwar->getFrameCount() % 24 == 0) {
         CD.printModelParameters();
     }
 
@@ -538,7 +538,7 @@ void MeatAIModule::onFrame()
             Broodwar->drawTextScreen( 250, 0, "Econ Gradient: %.2g", CD.econ_derivative );  //
             Broodwar->drawTextScreen( 250, 10, "Army Gradient: %.2g", CD.army_derivative ); //
             Broodwar->drawTextScreen( 250, 20, "Tech Gradient: %.2g", CD.tech_derivative ); //
-            Broodwar->drawTextScreen( 250, 30, "Enemy R: %.2g ", rate_of_worker_growth); // 
+            Broodwar->drawTextScreen( 250, 30, "Enemy R: %.2g ", adaptation_rate); // 
             Broodwar->drawTextScreen( 250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100 );  // As %s
             Broodwar->drawTextScreen( 250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100 ); //
             Broodwar->drawTextScreen( 250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100 ); // No longer a % with capital-augmenting technology.

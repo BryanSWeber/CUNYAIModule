@@ -12,8 +12,8 @@
 #define _RESIGN_MODE true // must be off for proper game close in SC-docker
 #define _ANALYSIS_MODE false // Visualizations
 #define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
-#define _TRAINING_AGAINST_BASE_AI true // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
-#define _MOVE_OUTPUT_BACK_TO_READ true // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
+#define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
+#define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 #define _TIT_FOR_TAT_ENGAGED true // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
 
@@ -57,7 +57,7 @@ public:
     bool supply_starved;
   double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
     bool gas_starved;
-  double rate_of_worker_growth; //Assumed enemy rate of worker growth.
+  double adaptation_rate; //Adaptation rate to opponent.
     double win_rate; //fairly straighforward.
 
   double alpha_army_temp;
@@ -271,6 +271,8 @@ public:
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
       // Checks if the player UI is weak against air in army ei.
       static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
+
+      static double bindBetween(double x, double lower_bound, double upper_bound);
 
         // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 

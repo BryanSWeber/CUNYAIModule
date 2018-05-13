@@ -32,7 +32,7 @@ public:
     bool econ_starved();
     bool tech_starved();
 
-    void enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible);
+    void enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible, double adaptation_rate);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
     void printModelParameters();

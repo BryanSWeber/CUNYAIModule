@@ -113,7 +113,7 @@ bool CobbDouglas::tech_starved()
 }
 
 //Sets enemy utility function parameters based on known information.
-void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible) {
+void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible, double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
 
     double K_over_L = ( e_army_stock + 1 ) / (double)(e_worker_stock + 1); // avoid NAN's
@@ -122,9 +122,9 @@ void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_st
     //enemy_alpha_tech = max(min( T/K, 0.95), 0.05);
 
     //Shift alpha towards enemy choices.
-    alpha_army += 0.1 * (enemy_alpha_army - alpha_army);
-    alpha_econ += 0.1 * (enemy_alpha_econ - alpha_econ);
-    //alpha_tech += 0.1 * (enemy_alpha_tech - alpha_tech);
+    alpha_army += adaptation_rate * (enemy_alpha_army - alpha_army);
+    alpha_econ += adaptation_rate * (enemy_alpha_econ - alpha_econ);
+    //alpha_tech += adaptation_rate * (enemy_alpha_tech - alpha_tech);
 
     if (isnan(alpha_army))  alpha_army = 0; 
     if (isnan(alpha_econ))  alpha_econ = 0; 

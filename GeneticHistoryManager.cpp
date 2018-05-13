@@ -31,7 +31,8 @@ GeneticHistory::GeneticHistory( string file ) {
     double a_army_out = dis( gen );
     double a_econ_out = dis( gen ) * 0.75 + 0.25;
     double a_tech_out = dis( gen ) * 0.25;
-    double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+    //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+    double r_out = dis(gen);
     //No longer used.
     double a_vis_out = dis(gen);
 
@@ -43,7 +44,7 @@ GeneticHistory::GeneticHistory( string file ) {
         a_army_out = dis(gen);
         a_econ_out = dis(gen);
         a_tech_out = dis(gen);
-        r_out = dis(gen)/5500; 
+        r_out = dis(gen); 
 
     }
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
@@ -250,8 +251,8 @@ GeneticHistory::GeneticHistory( string file ) {
     vector<int> frequency = { winning_player, winning_race, winning_map };
 
 
-
-    for ( int j = 0; j < csv_length; ++j ) {
+    // start from most recent and count our way back from there.
+    for ( int j = csv_length; j > 0 ; --j ) {
 
         bool conditions_for_inclusion = true;
         int counter = 0;
@@ -303,6 +304,10 @@ GeneticHistory::GeneticHistory( string file ) {
             build_orders_tried.push_back(build_order_total[j]);
             games_since_last_win++;
         }
+
+        if (selected_win_count >= 50) { // stop once we have 50 games in the parantage.
+            break;
+        }
     } //or widest hunt possible.
 
     std::sort(build_orders_tried.begin(), build_orders_tried.end());
@@ -318,12 +323,12 @@ GeneticHistory::GeneticHistory( string file ) {
         size_t parent_1 = unif_dist_to_win_count(gen); 
         size_t parent_2 = unif_dist_to_win_count(gen);
 
-        double linear_combo = dis(gen); //linear_crossover, interior of parents. Big mutation at the end, though.
+        double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
         if ( _TRAINING_AGAINST_BASE_AI ) {
 
             //set size of starting population.
-            if ( selected_win_count > 50) {
+            if ( selected_win_count >= 50) {
                 build_order_out = build_order_win[parent_1];
                 while (build_order_out != build_order_win[parent_2]) {
                     parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
@@ -335,10 +340,10 @@ GeneticHistory::GeneticHistory( string file ) {
 
                 delta_out   = 0.4;
                 gamma_out   = 0.4;
-                a_army_out  = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
-                a_econ_out  = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
-                a_tech_out  = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
-                r_out       = linear_combo * r_win[parent_1]      + (1 - linear_combo) * r_win[parent_2];
+                a_army_out = MeatAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+                a_econ_out = MeatAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
+                a_tech_out = MeatAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
+                r_out =      MeatAIModule::bindBetween(pow(r_win[parent_1], crossover)      * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
             }
         }
         else { 
@@ -354,12 +359,12 @@ GeneticHistory::GeneticHistory( string file ) {
                     parent_2 = parent_1;
                 }
 
-                delta_out = linear_combo * delta_win[parent_1]   + (1 - linear_combo) * delta_win[parent_2];
-                gamma_out = linear_combo * gamma_win[parent_1]   + (1 - linear_combo) * gamma_win[parent_2];
-                a_army_out = linear_combo * a_army_win[parent_1] + (1 - linear_combo) * a_army_win[parent_2];
-                a_econ_out = linear_combo * a_econ_win[parent_1] + (1 - linear_combo) * a_econ_win[parent_2];
-                a_tech_out = linear_combo * a_tech_win[parent_1] + (1 - linear_combo) * a_tech_win[parent_2];
-                r_out = linear_combo * r_win[parent_1] + (1 - linear_combo) * r_win[parent_2];
+                delta_out = MeatAIModule::bindBetween(pow(delta_win[parent_1], crossover)* pow(delta_win[parent_2], (1 - crossover)), 0., 1.);
+                gamma_out = MeatAIModule::bindBetween(pow(gamma_win[parent_1], crossover) * pow(gamma_win[parent_2], (1 - crossover)), 0., 1.);
+                a_army_out = MeatAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+                a_econ_out = MeatAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
+                a_tech_out = MeatAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
+                r_out = MeatAIModule::bindBetween(pow(r_win[parent_1], crossover) * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
             }
             else { // we must need diversity.  
                 // use the random values we have determined in the beginning and the random opening.
@@ -376,7 +381,7 @@ GeneticHistory::GeneticHistory( string file ) {
                 a_army_out = a_army_win[parent_1];
                 a_econ_out = a_econ_win[parent_1];
                 a_tech_out = a_tech_win[parent_1];
-                r_out = r_win[parent_1];
+                r_out =   r_win[parent_1];
             }
         }
 
@@ -395,6 +400,12 @@ GeneticHistory::GeneticHistory( string file ) {
         //double a_econ_out_temp = chrom_4 > 50 ? a_econ_win[parent_1] : a_econ_win[parent_2];
         //double a_tech_out_temp = chrom_5 > 50 ? a_tech_win[parent_1] : a_tech_win[parent_2];
 
+        //linear_crossover, interior of parents.
+        //a_army_out  = crossover * a_army_win[parent_1] + (1 - crossover) * a_army_win[parent_2];  
+        //a_econ_out  = crossover * a_econ_win[parent_1] + (1 - crossover) * a_econ_win[parent_2];
+        //a_tech_out  = crossover * a_tech_win[parent_1] + (1 - crossover) * a_tech_win[parent_2];
+        //r_out       = crossover * r_win[parent_1]      + (1 - crossover) * r_win[parent_2];
+
         loss_rate_ = 1 - prob_win_given_conditions /*(double)win_count / (double)relevant_game_count*/;
 
     }
@@ -407,24 +418,23 @@ GeneticHistory::GeneticHistory( string file ) {
         size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
                                                       //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
-        double mutation = pow(1 + normal_mutation_size(gen), 2); // will generate rand double between 0.99 and 1.01.
+        double mutation = normal_mutation_size(gen); // 
 
                                                                  // Chance of mutation.
         if (dis(gen) > 0.95) {
             // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
 
-            //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
-            a_army_out_mutate_ = mutation_0 == 0 ? a_army_out * mutation : a_army_out;
-            a_econ_out_mutate_ = mutation_0 == 1 ? a_econ_out * mutation : a_econ_out;
-            a_tech_out_mutate_ = mutation_0 == 2 ? a_tech_out * mutation : a_tech_out;
-            r_out_mutate_ = mutation_0 == 3 ? r_out * mutation : r_out;
+            //a_vis_out_mutate_; // currently does nothing, vision is an artifact atm.
+            a_army_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
+            a_econ_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
+            a_tech_out_mutate_ = mutation_0 == 2 ? MeatAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+            r_out_mutate_ =      mutation_0 == 3 ? MeatAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
         }
         else {
 
             delta_out_mutate_ = delta_out;
             gamma_out_mutate_ = gamma_out;
-            //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
             a_army_out_mutate_ = a_army_out;
             a_econ_out_mutate_ = a_econ_out;
             a_tech_out_mutate_ = a_tech_out;
@@ -451,7 +461,7 @@ GeneticHistory::GeneticHistory( string file ) {
             size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
             //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
 
-            double mutation = pow(1 + normal_mutation_size(gen), 2); // will generate rand double between 0.99 and 1.01.
+            double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
             // Chance of mutation.
             if ( games_since_last_win == 0 || !_LEARNING_MODE) {
@@ -459,20 +469,18 @@ GeneticHistory::GeneticHistory( string file ) {
             }
             else if (dis(gen) > 0.95) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
-                delta_out_mutate_ = mutation_0 == 0 ? delta_out * mutation : delta_out;
-                gamma_out_mutate_ = mutation_0 == 1 ? gamma_out * mutation : gamma_out;
-                //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
-                a_army_out_mutate_ = mutation_0 == 2 ? a_army_out * mutation : a_army_out;
-                a_econ_out_mutate_ = mutation_0 == 3 ? a_econ_out * mutation : a_econ_out;
-                a_tech_out_mutate_ = mutation_0 == 4 ? a_tech_out * mutation : a_tech_out;
-                r_out_mutate_ = mutation_0 == 5 ? r_out * mutation : r_out;
+                delta_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
+                gamma_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
+                a_army_out_mutate_ = mutation_0 == 2 ? MeatAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
+                a_econ_out_mutate_ = mutation_0 == 3 ? MeatAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
+                a_tech_out_mutate_ = mutation_0 == 4 ? MeatAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+                r_out_mutate_ =      mutation_0 == 5 ? MeatAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
             }
             else {
 
                 delta_out_mutate_ = delta_out;
                 gamma_out_mutate_ = gamma_out;
-                //a_vis_out_mutate_ = mutation_0 == 2 ? a_vis_out  * mutation : a_vis_out; // currently does nothing, vision is an artifact atm.
                 a_army_out_mutate_ = a_army_out;
                 a_econ_out_mutate_ = a_econ_out;
                 a_tech_out_mutate_ = a_tech_out;

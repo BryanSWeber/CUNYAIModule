@@ -6,13 +6,12 @@ library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 library("fBasics", lib.loc="~/R/win-library/3.4")
 
 out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output.txt", col_names = FALSE))
-#out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - exactly 5k + parent generation.txt", col_names = FALSE))
-#out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - reactive 5k.txt", col_names = FALSE))
-#out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
+# out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - geometric crossover unadaptive 50 population size.txt", col_names = FALSE))
+out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - geometric crossover unadaptive Z 50 pop size.txt", col_names = FALSE))
 #out<-rbind(out,out_2)
 dim(out)
 names(out)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","r","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
- # names(out_2)<- c("delta_gas","gamma_supply","alpha_army","alpha_econ","alpha_tech","Race","Winner","shortct","medct","lct","opponent_name","map", "build_order")
+names(out_2)<- names(out)
 # 
  # out<-rbind(out, out_2)
  # out<-out[!duplicated(out),]
@@ -32,8 +31,19 @@ out$race_build <- factor( paste ( abbreviate(out$build_order), out$Race , sep= "
 out$build_map <- factor( paste ( abbreviate(out$build_order), out$map , sep= " " ))
 out$build_map_race <- factor( paste ( abbreviate(out$build_order), out$map, out$Race , sep= " " ))
 out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
-
+out$k<- out$alpha_army / out$alpha_econ
+out$t<- out$k * out$alpha_tech
 #out<-subset(out,out$Winner==1)
+
+out_2$race_win <- factor( paste ( out_2$Winner, out_2$Race , sep= " " ))
+out_2$race_opp <- factor( paste ( out_2$Race, abbreviate(out_2$opponent_name) , sep= " " ))
+out_2$race_map <- factor( paste ( out_2$map, out_2$Race , sep= " " ))
+out_2$race_build <- factor( paste ( abbreviate(out_2$build_order), out_2$Race , sep= " " ))
+out_2$build_map <- factor( paste ( abbreviate(out_2$build_order), out_2$map , sep= " " ))
+out_2$build_map_race <- factor( paste ( abbreviate(out_2$build_order), out_2$map, out_2$Race , sep= " " ))
+out_2$opp_map <- factor( paste ( out_2$map, out_2$opponent_name , sep= " " ))
+out_2$k<- out_2$alpha_army / out_2$alpha_econ
+out_2$t<- out_2$k * out_2$alpha_tech
 
 # histogram( ~out$delta_gas | out$race_win, type="count") #
 # histogram( ~out$gamma_supply | out$race_win, type="count") #
@@ -72,10 +82,22 @@ out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
  
 # # summary(out)
  out$TotalWins<-cumsum(out$Winner)
+ out_2$TotalWins<-cumsum(out_2$Winner)
+ 
  #subset so the parental generation doesn't count.
  parents<-out[out$TotalWins <= 50,]
- out<-out[(nrow(parents)+1):(5000+nrow(parents)),]
+ parents2<-out_2[out_2$TotalWins <= 50,]
+ 
+ 
+ parents_2<-out_2[out_2$TotalWins <= 50,]
+ out<-out[(nrow(parents)+1):(1000+nrow(parents)),]
+ out_2<-out_2[(nrow(parents_2)+1):(1000+nrow(parents_2)),]
  out<-out[complete.cases(out),]
+ out_2<-out_2[complete.cases(out_2),]
+ 
+ finalpop<-out[max(out$TotalWins)-50 < out$TotalWins,]
+ finalpop_2<-out_2[max(out_2$TotalWins)-50 < out_2$TotalWins,]
+ 
  # colors <- c("#999999", "#E69F00", "#56B4E9") 
  # unique(as.factor(out$Race[out$Winner==1])) #grey=p orange=t blue=z
  # colors <- colors[as.factor(out$Race[out$Winner==1])]
@@ -100,7 +122,9 @@ out$opp_map <- factor( paste ( out$map, out$opponent_name , sep= " " ))
  mav <- function(x,n=5){filter(x,rep(1/n,n), sides=2)}
  # plot(mav(out$Winner[out$Race == "Zerg"] , 5))
  # plot(mav(out$Winner[out$Race == "Terran"] , 5))
- plot(mav(out$Winner[out$Race == "Protoss"] , 0.1*nrow(out)), ylab="Win Rate (500-game Moving Average)")
+ 
+ plot(mav(out$Winner , 0.1*nrow(out)), ylim=c(0,1), ylab="Win Rate (200-game Moving Average)")
+  points(mav(out_2$Winner , 0.1*nrow(out)), type = "l", col = "red")
  PP.test(out$Winner[out$Race == "Protoss"]) # test if process has a unit root. Robust to arbitrary heteroskedacity.
  
  t_z= 1:nrow(out[out$Race == "Zerg",]); t2 = t_z^2; t3 = t_z^3;
@@ -112,26 +136,28 @@ reg_t<-glm(out$Winner[out$Race == "Terran"] ~ t_t   , family = binomial(link = "
  t_p= 1:nrow(out[out$Race == "Protoss",]); t2 = t_p^2;  t3 = t_p^3;
  reg_p<-glm(out$Winner[out$Race == "Protoss"] ~ t_p , family = binomial(link = "logit") )
 
-plot(t_t,out$Winner[out$Race == "Terran"] ); #protoss should be longest, hopefully.
- points(t_z, reg_z$fitted.values, col = "#999999", type="l" )
- points(t_z, out$Winner[out$Race == "Zerg"], col = "#999999") #grey
-
- points(t_t, reg_t$fitted.values, col = "#E69F00", type="l" )
- points(t_t, out$Winner[out$Race == "Terran"], col =  "#E69F00") #orange
- 
- points(t_p, reg_p$fitted.values, col = "#56B4E9", type="l" )
- points(t_p, out$Winner[out$Race == "Protoss"], col =  "#56B4E9") #blue
+# plot(t_t,out$Winner[out$Race == "Terran"] ); #protoss should be longest, hopefully.
+#  points(t_z, reg_z$fitted.values, col = "#999999", type="l" )
+#  points(t_z, out$Winner[out$Race == "Zerg"], col = "#999999") #grey
+# 
+#  points(t_t, reg_t$fitted.values, col = "#E69F00", type="l" )
+#  points(t_t, out$Winner[out$Race == "Terran"], col =  "#E69F00") #orange
+#  
+  points(t_p, reg_p$fitted.values, col = "#56B4E9", type="l" )
+  points(t_p, out$Winner[out$Race == "Protoss"], col =  "#56B4E9") #blue
  summary(reg_p)
 # 
-   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
-   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5,6)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
-#   corrgram(out[(0.95*nrow(out)):nrow(out),][out$Winner==1 & out$build_map_race == out$build_map_race[1],c(3,4,5,2,1)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
- #corrgram(out[out$Winner==1 ,c(1:7, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+ # corrgram(finalpop[finalpop$Winner==1,c(3,4,5)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+ # corrgram(finalpop_2[finalpop_2$Winner==1 ,c(3,4,5,6)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+ # corrgram(finalpop_2[finalpop_2$Winner==1, c("k","t","r")], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+# corrgram(out[out$Winner==1 ,c(1:7, 12:13)], lower.panel = panel.pts, upper.panel = panel.conf, diag.panel = panel.density)
+
 par(mar=c(1,1,1,1))
 
-basicStats(parents[,c(3,4,5,2,1,6,8)])
-basicStats(out[1:(0.05*nrow(out)),c(3,4,5,2,1,6,8)])#should be 250 games.
-basicStats(out[(0.95*nrow(out)):nrow(out),c(3,4,5,2,1,6,8)])
+basicStats(parents[parents$Winner==1,c(3,4,5,6,22,23,8)])
+basicStats(parents_2[parents_2$Winner==1  ,c(3,4,5,6,22,23,8)])#should be 250 games.
+basicStats(finalpop[finalpop$Winner==1  ,c(3,4,5,6,22,23,8)])
+basicStats(finalpop_2[finalpop_2$Winner==1  ,c(3,4,5,6,22,23,8)])
 
 
 # plot(out$alpha_tech[out$Winner==1], out$alpha_econ[out$Winner==1])
@@ -149,4 +175,4 @@ basicStats(out[(0.95*nrow(out)):nrow(out),c(3,4,5,2,1,6,8)])
 # hist(army)
 # hist(tech)
 dim(out)
-
+basicStats(finalpop[,c(3,4,5,6,22,23,8)])
