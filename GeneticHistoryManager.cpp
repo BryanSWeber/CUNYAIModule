@@ -25,12 +25,12 @@ GeneticHistory::GeneticHistory( string file ) {
     std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis( 0, 1 );    // default values for output.
 
-    double delta_out = dis( gen ) * 0.15 + 0.40;
-    double gamma_out = dis( gen ) * 0.25 + 0.30; // Artifically chosen upper bounds. But above this, they often get truely silly.
+    double delta_out = dis( gen ) ;
+    double gamma_out = dis( gen ) ; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
-    double a_army_out = dis( gen );
-    double a_econ_out = dis( gen ) * 0.75 + 0.25;
-    double a_tech_out = dis( gen ) * 0.25;
+    double a_army_out = dis( gen ) ;
+    double a_econ_out = dis( gen ) ;
+    double a_tech_out = dis( gen ) ;
     //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
     double r_out = dis(gen);
     //No longer used.
@@ -59,8 +59,8 @@ GeneticHistory::GeneticHistory( string file ) {
         "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
         "drone pool drone drone ling ling ling ling ling ling overlord ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling ling", // 5pool with some commitment.
         "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-        "drone drone drone drone drone overlord pool drone extractor drone drone", // 9pool
-        "drone drone drone drone drone overlord drone drone drone pool drone extractor hatch ling ling ling ling ling ling speed", // 12-pool tenative.
+        "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
+        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling ling ling ling speed", // 12-pool tenative.
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling ling ling ling ling lurker_tech", //1 h lurker, tenative.
         "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling ling ling lurker lurker lurker lurker ling ling ling ling", // 2h lurker
@@ -452,7 +452,7 @@ GeneticHistory::GeneticHistory( string file ) {
     }
     else {
 
-        for (int i = 0; i < 1000; i++) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
+        //for (int i = 0; i < 1000; i++) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
 
             //From genetic history, random parent for each gene. Mutate the genome
             std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
@@ -465,9 +465,10 @@ GeneticHistory::GeneticHistory( string file ) {
 
             // Chance of mutation.
             if ( games_since_last_win == 0 || !_LEARNING_MODE) {
-                mutation = 1; // no mutation if it worked perfectly last time.
+                mutation = 0; // no mutation if it worked perfectly last time.
             }
-            else if (dis(gen) > 0.95) {
+            
+            if (dis(gen) > 0.95) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
                 delta_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
                 gamma_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
@@ -501,10 +502,10 @@ GeneticHistory::GeneticHistory( string file ) {
             a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
             build_order_ = build_order_out;
 
-            if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
-                && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20) {
-                break; // if we have an interior solution, let's use it, if not, we try again.
-            }
-        }
+            //if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
+            //    && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20) {
+            //    break; // if we have an interior solution, let's use it, if not, we try again.
+            //}
+        //}
     }
 }

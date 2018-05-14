@@ -43,6 +43,8 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
             TilePosition central_base = TilePosition(0, 0);
             TilePosition final_creep_colony_spot = TilePosition(0, 0);
+            bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
+
 
             for (const auto &u : ui.unit_inventory_) {
                 if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
@@ -55,7 +57,6 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     base_core.insert(u.second.bwapi_unit_);
                 }
             }
-            bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
 
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_inventory.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500);
@@ -79,7 +80,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         int closest_hatch = 0;
                         bool enemy_nearby = false;
                         if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) {
-                            enemy_nearby = e_loc.stock_ground_units_ > friend_loc.stock_ground_units_;
+                            enemy_nearby = e_loc.stock_fighting_total_ > friend_loc.stock_fighting_total_;
                         }
 
                         if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_inventory, friendly_inventory, neutral_inventory) ) {
@@ -152,7 +153,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            TilePosition buildPosition = Broodwar->getBuildLocation(building, final_creep_colony_spot, 4);
+            TilePosition buildPosition = MeatAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                 buildorder.announceBuildingAttempt(building);
                 return true;

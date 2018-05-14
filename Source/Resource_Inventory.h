@@ -56,7 +56,7 @@ struct Resource_Inventory {
 	Position getMeanBuildingLocation() const;
 	Position getMeanCombatLocation() const;
 
-    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei);
+    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Inventory &inv);
     void drawMineralRemaining(const Inventory &inv) const;
 
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);

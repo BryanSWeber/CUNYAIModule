@@ -264,7 +264,7 @@ void MeatAIModule::onFrame()
     friendly_inventory.drawAllWorkerLocks(inventory);
 
     //Update posessed minerals. Erase those that are mined out.
-    neutral_inventory.updateResourceInventory(friendly_inventory, enemy_inventory);
+    neutral_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
     neutral_inventory.drawMineralRemaining(inventory);
 
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
@@ -317,63 +317,10 @@ void MeatAIModule::onFrame()
         neutral_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         inventory.updateBaseLoc(neutral_inventory);
     }
+    inventory.updateEnemyBasePosition(friendly_inventory, enemy_inventory, neutral_inventory);
 
-    bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    bool waited_a_second = Broodwar->getFrameCount() % (24 * 2) == 0; // technically more.
-
-    if (inventory.unwalkable_needs_updating && !unit_calculation_frame && waited_a_second) {
-
-        inventory.updateLiveUnwalkable(friendly_inventory, enemy_inventory, neutral_inventory);
-        inventory.unwalkable_needs_updating = false;
-        inventory.smoothed_needs_updating = true; // next step on ladder now.
-
-    } else if (inventory.smoothed_needs_updating && !unit_calculation_frame ) {
-
-        inventory.updateSmoothPos();
-        inventory.smoothed_needs_updating = false;
-        inventory.veins_need_updating = true;
-
-    } else if (inventory.veins_need_updating && !unit_calculation_frame && waited_a_second) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
-
-        inventory.updateMapVeins();
-        inventory.veins_need_updating = false;
-        inventory.veins_out_need_updating = true;
-
-    } else if (inventory.veins_out_need_updating && !unit_calculation_frame ) {
-
-        Stored_Unit* center_building = getClosestStoredBuilding(enemy_inventory, enemy_inventory.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        if (center_building && center_building->pos_.isValid() && center_building->pos_ == inventory.enemy_base_ && center_building->pos_ != Position(0, 0)) {
-
-        } 
-        else if(center_building && center_building->pos_.isValid() && center_building->pos_ != inventory.enemy_base_ && center_building->pos_ != Position(0, 0)) {
-            inventory.updateMapVeinsOutFromFoe(center_building->pos_);
-        }
-        else if (enemy_inventory.getMeanBuildingLocation() != Position(0, 0)) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
-            inventory.updateMapVeinsOutFromFoe(enemy_inventory.getMeanBuildingLocation());
-        }
-        else if (!inventory.start_positions_.empty() && inventory.start_positions_[0] && inventory.start_positions_[0] != Position(0, 0) ){ // maybe it's a base we havent' seen yet?
-            inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
-        }
-        else { // Maybe it's in the middle?
-            inventory.updateMapVeinsOutFromFoe(Position((Broodwar->mapWidth() / (double)2) * 32, (Broodwar->mapHeight() / (double)2) * 32));
-        }
-
-        inventory.veins_out_need_updating = false;
-        inventory.veins_in_need_updating = true;
-    }
-    else if (inventory.veins_in_need_updating && !unit_calculation_frame) {
-        //Stored_Unit* center_building = getClosestStoredBuilding(friendly_inventory, friendly_inventory.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to 
-        //if (center_building && center_building->pos_.isValid() && center_building->pos_ == inventory.home_base_ && center_building->pos_ != Position(0, 0)) {
-
-        //}
-        //else if (center_building && center_building->pos_.isValid() && center_building->pos_ != inventory.home_base_ && center_building->pos_ != Position(0, 0)) {
-        //    inventory.updateMapVeinsOutFromMain(center_building->pos_);
-        //}
-        inventory.veins_in_need_updating = false;
-    }
-
-   neutral_inventory.updateGasCollectors();
-   neutral_inventory.updateMiners();
+    neutral_inventory.updateGasCollectors();
+    neutral_inventory.updateMiners();
 
     if ( buildorder.building_gene_.empty() ) {
         buildorder.ever_clear_ = true;
@@ -459,7 +406,7 @@ void MeatAIModule::onFrame()
         if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ > 0) {
             int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
             int e_worker_stock = est_worker_count * worker_value;
-            CD.enemy_eval(enemy_inventory.stock_fighting_total_ - enemy_inventory.worker_count_ * worker_value, army_possible, 1, tech_possible, e_worker_stock, econ_possible, adaptation_rate);
+            CD.enemy_eval(enemy_inventory.stock_fighting_total_, army_possible, 1, tech_possible, e_worker_stock, econ_possible, adaptation_rate);
             alpha_army_temp = CD.alpha_army;
             alpha_econ_temp = CD.alpha_econ;
             alpha_tech_temp = CD.alpha_tech;

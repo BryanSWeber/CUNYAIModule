@@ -116,9 +116,9 @@ bool CobbDouglas::tech_starved()
 void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_stock, bool tech_possible, int e_worker_stock, bool econ_possible, double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
 
-    double K_over_L = ( e_army_stock + 1 ) / (double)(e_worker_stock + 1); // avoid NAN's
-    enemy_alpha_army = max(min( K_over_L / ( 1 + K_over_L) , 0.95), 0.05); 
-    enemy_alpha_econ = max(min( 1 - enemy_alpha_army, 0.95), 0.05);
+    double K_over_L = (double)( e_army_stock + 1 ) / (double)(e_worker_stock + 1); // avoid NAN's
+    enemy_alpha_army = MeatAIModule::bindBetween( K_over_L / (double)( 1.0 + K_over_L) , 0.05, 0.95);
+    enemy_alpha_econ = MeatAIModule::bindBetween( 1 - enemy_alpha_army, 0.05, 0.95);
     //enemy_alpha_tech = max(min( T/K, 0.95), 0.05);
 
     //Shift alpha towards enemy choices.

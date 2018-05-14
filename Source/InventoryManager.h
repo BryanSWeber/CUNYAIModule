@@ -139,4 +139,7 @@ struct Inventory {
 	// Updates map positions and removes all visible ones;
 	void Inventory::updateStartPositions(const Unit_Inventory &ei);
 
+    // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
+    void updateEnemyBasePosition(const Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri);
+
 }; 
