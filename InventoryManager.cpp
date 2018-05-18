@@ -1597,20 +1597,24 @@ void Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
 }
 
-void Inventory::drawExpoPositions() const
+void Inventory::drawExpoPositions(const Inventory &inv) const
 {
+    if (_ANALYSIS_MODE) {
+        for (auto &p : expo_positions_) {
+            Position lower_left = Position(p);
+            if (MeatAIModule::isOnScreen(lower_left, inv.screen_position_)) {
+                lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+                lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+                Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+            }
+        }
 
-    for (auto &p : expo_positions_) {
-        Position lower_left = Position(p);
-        lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-        lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
-        Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+        Position lower_left = Position(next_expo_);
+        if (MeatAIModule::isOnScreen(lower_left, inv.screen_position_)) {
+            lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+            lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+            Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
+        }
     }
-
-    Position lower_left = Position(next_expo_);
-    lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-    lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
-    Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
-
 }
 

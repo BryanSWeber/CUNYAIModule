@@ -200,8 +200,9 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     bool order_sent = false;
     if (dist < range + chargable_distance_net + 96 ) { //  Run if you're a noncombat unit or army starved. +3 tiles for safety. Retreat function now accounts for walkability.
 
-        Broodwar->drawCircleMap(e_unit.pos_, range + chargable_distance_net + 96, Colors::Red);
-
+        if (_ANALYSIS_MODE) {
+            Broodwar->drawCircleMap(e_unit.pos_, range + chargable_distance_net + 96, Colors::Red);
+        }
         //initial retreat spot from enemy.
 
         //setDirectRetreat(pos, e_unit.pos_, unit->getType(), ei);//might need this to solve scourge problem?

@@ -99,6 +99,7 @@ struct Unit_Inventory {
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
 	void updateUnitInventory(const Unitset &unit_set);
+    void updateUnitsControlledByOthers();
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
@@ -108,6 +109,7 @@ struct Unit_Inventory {
     void drawAllHitPoints(const Inventory & inv) const;
     void drawAllSpamGuards(const Inventory & inv) const;
     void drawAllWorkerLocks(const Inventory & inv) const;
+    void drawAllLocations(const Inventory &inv) const;
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

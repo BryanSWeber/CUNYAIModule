@@ -102,7 +102,7 @@ GeneticHistory::GeneticHistory( string file ) {
     int losing_player = 0;
     int losing_map = 0;
     int losing_race = 0;
-    int games_since_last_win = 0;
+    int games_since_last_win = 999; // starting at 0 makes the script think it WON the last game. 999 is a functional marker for having never won.
     double prob_win_given_conditions;
 
     string entry; // entered string from stream
@@ -371,18 +371,18 @@ GeneticHistory::GeneticHistory( string file ) {
             }
 
             //if we won our last game, change nothing.
-            if (games_since_last_win == 0) {
-                parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
-                parent_2 = build_order_win.size() - 1;
-                build_order_out = build_order_win.back();// vectors start at 0.
+            //if (games_since_last_win == 0) {
+            //    parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
+            //    parent_2 = build_order_win.size() - 1;
+            //    build_order_out = build_order_win.back();// vectors start at 0.
 
-                delta_out = delta_win[parent_1];
-                gamma_out = gamma_win[parent_1];
-                a_army_out = a_army_win[parent_1];
-                a_econ_out = a_econ_win[parent_1];
-                a_tech_out = a_tech_win[parent_1];
-                r_out =   r_win[parent_1];
-            }
+            //    delta_out = delta_win[parent_1];
+            //    gamma_out = gamma_win[parent_1];
+            //    a_army_out = a_army_win[parent_1];
+            //    a_econ_out = a_econ_win[parent_1];
+            //    a_tech_out = a_tech_win[parent_1];
+            //    r_out =   r_win[parent_1];
+            //}
         }
 
         //Gene swapping between parents. Not as popular for continuous optimization problems.
@@ -464,10 +464,6 @@ GeneticHistory::GeneticHistory( string file ) {
             double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
             // Chance of mutation.
-            if ( games_since_last_win == 0 || !_LEARNING_MODE) {
-                mutation = 0; // no mutation if it worked perfectly last time.
-            }
-            
             if (dis(gen) > 0.95) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
                 delta_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;

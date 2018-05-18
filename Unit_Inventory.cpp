@@ -32,6 +32,58 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
+void Unit_Inventory::updateUnitsControlledByOthers()
+{
+    for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
+        if ((*e).second.bwapi_unit_ && (*e).second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
+            (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+            (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+            (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
+            (*e).second.valid_pos_ = true;
+            //Broodwar->sendText( "Relocated a %s.", (*e).second.type_.c_str() );
+        }
+        else if (Broodwar->isVisible(TilePosition(e->second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
+
+            bool present = false;
+
+            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e->second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Addons convert to neutral if their main base disappears.
+            for (auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et) {
+                present = (*et)->getID() == e->second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
+                if (present) {
+                    (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+                    (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+                    (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
+                    (*e).second.valid_pos_ = true;
+                    break;
+                }
+            }
+            if ((!present || enemies_tile.empty()) && e->second.valid_pos_ && e->second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
+                if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
+                    e->second.valid_pos_ = false;
+                }
+                else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
+                    (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                    e->second.pos_ = potential_running_spot;
+                    e->second.valid_pos_ = true;
+                }
+                else {
+                    e->second.valid_pos_ = false;
+                }
+                //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
+            }
+            else {
+                e->second.valid_pos_ = false;
+            }
+        }
+
+        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser) { // Destroyed refineries revert to geyers, requiring the manual catch 
+            e->second.valid_pos_ = false;
+        }
+
+    }
+}
+
 void Unit_Inventory::purgeBrokenUnits()
 {
     for (auto e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
@@ -121,6 +173,22 @@ void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv) const
     for (auto u : unit_inventory_) {
         if (u.second.locked_mine_) {
             MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+        }
+    }
+}
+
+void Unit_Inventory::drawAllLocations(const Inventory & inv) const
+{
+    if (_ANALYSIS_MODE) {
+        for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
+            if (MeatAIModule::isOnScreen(e->second.pos_, inv.screen_position_)) {
+                if (e->second.valid_pos_) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
+                }
+                else if (!e->second.valid_pos_) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
+                }
+            }
         }
     }
 }

@@ -10,10 +10,11 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
-#define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
+#define _ANALYSIS_MODE true // Visualizations
+#define _COBB_DOUGLASS_REVEALED true // The CD function specifically.
 #define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
+#define _SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
 #define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 #define _TIT_FOR_TAT_ENGAGED true // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
 
@@ -67,8 +68,10 @@ public:
  //Game should begin some universally declared inventories.
     Unit_Inventory enemy_inventory; // enemy units.
     Unit_Inventory friendly_inventory; // friendly units.
+    Unit_Inventory neutral_inventory; // neutral units.
     Unit_Inventory dead_enemy_inventory; // dead units.
-	Resource_Inventory neutral_inventory; // neutral resources.
+	Resource_Inventory land_inventory; // resources.
+
 
     Inventory inventory;  // macro variables, not every unit I have.
     Building_Gene buildorder; //

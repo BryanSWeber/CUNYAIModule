@@ -132,7 +132,7 @@ struct Inventory {
 	void Inventory::getExpoPositions();
 	// Changes the next expo to X:
 	void Inventory::setNextExpo(const TilePosition tp);
-    void Inventory::drawExpoPositions() const;
+    void Inventory::drawExpoPositions(const Inventory &inv) const;
 
 	// Adds start positions to inventory object.
 	void Inventory::getStartPositions();

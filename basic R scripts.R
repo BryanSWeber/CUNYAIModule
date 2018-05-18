@@ -90,8 +90,8 @@ out_2$t<- out_2$k * out_2$alpha_tech
  
  
  parents_2<-out_2[out_2$TotalWins <= 50,]
- out<-out[(nrow(parents)+1):(1000+nrow(parents)),]
- out_2<-out_2[(nrow(parents_2)+1):(1000+nrow(parents_2)),]
+ out<-out[(nrow(parents)+1):(250+nrow(parents)),]
+ out_2<-out_2[(nrow(parents_2)+1):(250+nrow(parents_2)),]
  out<-out[complete.cases(out),]
  out_2<-out_2[complete.cases(out_2),]
  
@@ -154,6 +154,9 @@ reg_t<-glm(out$Winner[out$Race == "Terran"] ~ t_t   , family = binomial(link = "
 
 par(mar=c(1,1,1,1))
 
+basicStats(parents[,c(3,4,5,6,22,23,8)])
+basicStats(finalpop[,c(3,4,5,6,22,23,8)])
+
 basicStats(parents[parents$Winner==1,c(3,4,5,6,22,23,8)])
 basicStats(parents_2[parents_2$Winner==1  ,c(3,4,5,6,22,23,8)])#should be 250 games.
 basicStats(finalpop[finalpop$Winner==1  ,c(3,4,5,6,22,23,8)])
@@ -175,4 +178,5 @@ basicStats(finalpop_2[finalpop_2$Winner==1  ,c(3,4,5,6,22,23,8)])
 # hist(army)
 # hist(tech)
 dim(out)
-basicStats(finalpop[,c(3,4,5,6,22,23,8)])
+out[,c(3,4,5,6,22,23,8)]
+
