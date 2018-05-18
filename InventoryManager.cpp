@@ -1438,17 +1438,16 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
 
 void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
 {
-    bool clearing_workers_found = false;
+    int clearing_workers_found = 0;
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
             if ( w->second.isClearing(ri) ) {
-                clearing_workers_found = true;
-                break;
+                clearing_workers_found ++;
             }
         }
     }
-    workers_are_clearing_ = clearing_workers_found;
+    workers_clearing_ = clearing_workers_found;
 }
 
 void Inventory::getExpoPositions() {

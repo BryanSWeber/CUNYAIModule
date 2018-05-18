@@ -610,6 +610,7 @@ void MeatAIModule::onFrame()
         // Worker Loop
         auto start_worker = std::chrono::high_resolution_clock::now();
         if (u->getType().isWorker()) {
+
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool too_much_gas = Broodwar->self()->gas() > Broodwar->self()->minerals() * delta;
 
@@ -633,7 +634,7 @@ void MeatAIModule::onFrame()
 
             //need to clean this up. It's tretcherous.
             bool building_worker = (u->getLastCommand().getType() == UnitCommandTypes::Morph || u->getLastCommand().getType() == UnitCommandTypes::Build || u->getLastCommand().getTargetPosition() == Position(inventory.next_expo_));
-            if ((my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end() || Broodwar->self()->minerals() > 150) && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory) && !inventory.workers_are_clearing_ && building_worker) {
+            if ((my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end() || Broodwar->self()->minerals() > 150) && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory) && inventory.workers_clearing_ == 0 && !miner.bwapi_unit_->isCarryingMinerals() && !miner.bwapi_unit_->isCarryingGas() /*&& building_worker*/) {
                 friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                 Worker_Clear(u, friendly_inventory);
                 if (miner.locked_mine_) {
@@ -677,7 +678,7 @@ void MeatAIModule::onFrame()
             }
 
             if (miner.locked_mine_ && miner.locked_mine_->getID() != miner.bwapi_unit_->getOrderTarget()->getID() && miner.locked_mine_->exists()) {
-                if (!miner.bwapi_unit_->gather(miner.locked_mine_)) {
+                if (!miner.bwapi_unit_->gather(miner.locked_mine_) || miner.bwapi_unit_->getTargetPosition() != miner.locked_mine_->getPosition() ) {
                     friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //Hey! If you can't get back to work something's wrong with you and we're resetting you.
                 }
             }
@@ -1100,17 +1101,17 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
         }
     }
 
-    if ( unit->getPlayer()->isNeutral() ) { // safety check.
+    if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.
                                                                                  //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
-        Stored_Unit eu = Stored_Unit(unit);
+        Stored_Unit nu = Stored_Unit(unit);
+        neutral_inventory.addStored_Unit(nu);
 
-        if (neutral_inventory.unit_inventory_.insert({ unit, eu }).second) { // if the insertion succeeded
-                                                                           //Broodwar->sendText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
-        }
-        else { // the insertion must have failed
-               //Broodwar->sendText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
-        }
+    }
 
+    if (unit->getPlayer()->isNeutral() && unit->getType().isResourceContainer() ) { // safety check.
+                                                                   //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+        Stored_Resource ru = Stored_Resource(unit);
+        land_inventory.addStored_Resource(ru);
     }
 
     //update maps, requires up-to date enemy inventories.
@@ -1224,19 +1225,26 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if ( IsMineralField( unit ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
+        auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
+        if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
+            land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
+                                                            //inventory.updateBaseLoc( land_inventory );
+        }
+
         for ( auto potential_miner = friendly_inventory.unit_inventory_.begin(); potential_miner != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); potential_miner++ ) {
             if ( potential_miner->second.locked_mine_ == unit ) {
                 friendly_inventory.purgeWorkerRelations( potential_miner->first , land_inventory, inventory, my_reservation);
                 if (potential_miner->second.bwapi_unit_) {
                     potential_miner->second.bwapi_unit_->stop();
                 }
+                Worker_Clear(potential_miner->second.bwapi_unit_, friendly_inventory); // reassign clearing workers again.
+                if (potential_miner->second.locked_mine_) {
+                    inventory.updateWorkersClearing(friendly_inventory, land_inventory);
+                    continue;
+                }
             }
         }
-        auto found_mineral_ptr = land_inventory.resource_inventory_.find( unit );
-        if ( found_mineral_ptr != land_inventory.resource_inventory_.end() ) {
-            land_inventory.resource_inventory_.erase( unit ); //Clear that mine from the resource inventory.
-            //inventory.updateBaseLoc( land_inventory );
-        }
+
     }
 
     if ( !buildorder.ever_clear_ && unit->getType() == UnitTypes::Zerg_Overlord ) {

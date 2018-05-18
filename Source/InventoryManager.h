@@ -53,7 +53,7 @@ struct Inventory {
 
     TilePosition next_expo_;
 	bool cleared_all_start_positions_;
-    bool workers_are_clearing_;
+    int workers_clearing_;
 
     bool unwalkable_needs_updating = false;
     bool smoothed_needs_updating = false;

@@ -43,7 +43,7 @@ struct Resource_Inventory {
 
 	std::map <Unit, Stored_Resource> resource_inventory_;
 
-	// Updates the count of enemy units.
+	// Updates the count of resource units.
 	void addStored_Resource(Unit unit);
 	void addStored_Resource(Stored_Resource stored_resource);
 

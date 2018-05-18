@@ -192,7 +192,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
             }
 
         }
-        else if (closest && miner.bwapi_unit_->move(closest->pos_) && checkSafeMineLoc(closest->pos_, ui, inventory) ) {
+        else if (closest && miner.bwapi_unit_->move(closest->pos_) /*&& checkSafeMineLoc(closest->pos_, ui, inventory)*/ ) {
             miner.startMine(*closest, land_inventory); // I think the problem is here. Starting to mine a location without a proper bwapi unit.
             if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
