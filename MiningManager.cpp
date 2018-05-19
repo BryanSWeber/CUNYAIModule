@@ -177,7 +177,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if ( r->second.current_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() ) {
+        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() ) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.

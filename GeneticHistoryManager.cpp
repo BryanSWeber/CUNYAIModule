@@ -314,9 +314,6 @@ GeneticHistory::GeneticHistory( string file ) {
     int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
     if ( selected_win_count > 0 ) { // redefine final output.
-        //win_count-selected_win_count/(double)(win_count-selected_win_count+lose_count-selected_lose_count)
-        //pow( 1 - prob_win_given_conditions, games_since_last_win )
-
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, build_order_win.size() - 1); // safe even if there is only 1 win., index starts at 0.
 
@@ -347,8 +344,9 @@ GeneticHistory::GeneticHistory( string file ) {
             }
         }
         else { 
+
             //if we don't need diversity, combine our old wins together.
-            if (dis(gen) < uniqueCount / (double)build_order_list.size()) { // 
+            if ( dis(gen) < uniqueCount / (double)build_order_list.size() ) { // 
                 //Parent 2 must match the build of the first one.
                 build_order_out = build_order_win[parent_1];
                 while (build_order_out != build_order_win[parent_2]) {
@@ -464,7 +462,7 @@ GeneticHistory::GeneticHistory( string file ) {
             double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
             // Chance of mutation.
-            if (dis(gen) > 0.95) {
+            if (dis(gen) > 0.95 || selected_win_count < 50 ) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
                 delta_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
                 gamma_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;

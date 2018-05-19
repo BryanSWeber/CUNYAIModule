@@ -5,7 +5,7 @@ library("corrgram", lib.loc="~/R/win-library/3.4")
 library("scatterplot3d", lib.loc="~/R/win-library/3.4")
 library("fBasics", lib.loc="~/R/win-library/3.4")
 
-out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output.txt", col_names = FALSE))
+out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\write\\output.txt", col_names = FALSE))
 # out <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - geometric crossover unadaptive 50 population size.txt", col_names = FALSE))
 out_2 <- as.data.frame(read_csv("C:\\Users\\Bryan\\Documents\\starcraft\\bwapi-data\\read\\output - geometric crossover unadaptive Z 50 pop size.txt", col_names = FALSE))
 #out<-rbind(out,out_2)

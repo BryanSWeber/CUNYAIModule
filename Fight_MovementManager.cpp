@@ -98,7 +98,7 @@ void Boids::Tactical_Logic( const Unit &unit, const Unit_Inventory &ei, const Un
         bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
         double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log( helpful_e - helpful_u);
         int max_dist = (ei.max_range_ + chargeable_dist);
-        int max_chargable_dist = max_dist/ (double)limit_units_diving;
+        int max_chargable_dist = max_dist/ (double)limit_units_diving; 
         int max_dist_no_priority = 9999999;
         bool target_sentinel = false;
         bool target_sentinel_poor_target_atk = false;

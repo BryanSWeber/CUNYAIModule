@@ -1537,7 +1537,7 @@ void Inventory::updateEnemyBasePosition(const Unit_Inventory &ui, Unit_Inventory
         updateLiveUnwalkable(ui, ei, ri);
         unwalkable_needs_updating = false;
         smoothed_needs_updating = true; // next step on ladder now.
-
+ 
     }
     else if (smoothed_needs_updating && !unit_calculation_frame) {
 

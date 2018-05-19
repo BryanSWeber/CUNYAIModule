@@ -110,6 +110,7 @@ void Unit_Inventory::purgeUnseenUnits()
 }
 
 
+// Decrements all resources worker was attached to, clears all reservations associated with that worker.
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
@@ -126,6 +127,7 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
     }
 }
 
+// Decrements all resources worker was attached to.
 void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Inventory & ri)
 {
     map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
@@ -135,6 +137,7 @@ void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Invent
     }
 }
 
+//clears all reservations associated with that worker.
 void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & inv, Reservation & res)
 {
     UnitCommand command = unit->getLastCommand();
@@ -501,11 +504,13 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 }
 
 
+//Increments the number of miners on a resource.
 void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
 	locked_mine_ = new_resource.bwapi_unit_;
 	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
+//Decrements the number of miners on a resource.
 void Stored_Unit::stopMine(Resource_Inventory &ri){
 	if (locked_mine_ /*&& locked_mine_->exists()*/){
 		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
@@ -516,6 +521,7 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
 	}
 }
 
+//finds mine- Will return true something even if the mine DNE.
 Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     Stored_Resource* tenative_resource = nullptr;
     tenative_resource = &ri.resource_inventory_.find( locked_mine_ )->second;
@@ -524,9 +530,9 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
 
 bool Stored_Unit::isClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
-        map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
-        if (iter != ri.resource_inventory_.end() && iter->second.current_stock_value_ <= 8) {
-            return true;
+        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = getMine(ri);
+            return mine_of_choice->max_stock_value_ <= 8;
         }
     }
     return false;

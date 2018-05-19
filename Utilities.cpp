@@ -1552,7 +1552,7 @@ int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
 int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (int)( !(u->getType() == UnitTypes::Zerg_Lurker) * (int)MeatAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + MeatAIModule::getProperRange(u) );
+    return (int)( u->getType() != UnitTypes::Zerg_Lurker * (int)MeatAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + MeatAIModule::getProperRange(u) );
 }
 
 
@@ -1713,6 +1713,7 @@ bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
     return  safe_mine || desperate_for_minerals;
 }
 
+//Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units.
 bool MeatAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
     //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
     return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?

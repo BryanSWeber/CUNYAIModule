@@ -46,6 +46,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
 
 
+            //get all the bases that might need a new creep colony.
             for (const auto &u : ui.unit_inventory_) {
                 if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
                     base_core.insert(u.second.bwapi_unit_);
@@ -58,6 +59,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
+            // If you need a spore, any old place will do for now.
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_inventory.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit->getPosition(), 500);
                 Stored_Unit *close_hatch = getClosestStored(hacheries, unit->getPosition(), 500);
@@ -66,6 +68,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
+            // Let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
             if (inventory.map_veins_out_from_enemy_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit->getPosition()) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
                 if (central_base == TilePosition(0, 0)) {
                     int old_dist = 9999999;
@@ -94,18 +97,20 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 } //confirm we have identified a base around which to build.
 
                 int chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(central_base));
-                for (int x = -5; x <= 5; ++x) {
-                    for (int y = -5; y <= 5; ++y) {
+                for (int x = -10; x <= 10; ++x) {
+                    for (int y = -10; y <= 10; ++y) {
                         double centralize_x = central_base.x + x;
                         double centralize_y = central_base.y + y;
-                        if (!(x == 0 && y == 0) &&
-                            centralize_x < Broodwar->mapWidth() &&
+                        bool within_map = centralize_x < Broodwar->mapWidth() &&
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
-                            centralize_y > 0 &&
-                            getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
+                            centralize_y > 0;
+                        bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty();
+                        if (!(x == 0 && y == 0) &&
+                            within_map &&
+                            not_blocking_minerals &&
                             Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. Wide berth around blue veins.
+                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
                             inventory.getRadialDistanceOutFromEnemy(Position(TilePosition((int)centralize_x, (int)centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
