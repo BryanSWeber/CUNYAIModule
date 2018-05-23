@@ -48,7 +48,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 
             //get all the bases that might need a new creep colony.
             for (const auto &u : ui.unit_inventory_) {
-                if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
+                if ( u.second.type_ == UnitTypes::Zerg_Hatchery ) {
                     base_core.insert(u.second.bwapi_unit_);
                 }
                 else if (u.second.type_ == UnitTypes::Zerg_Lair) {
@@ -120,43 +120,43 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            if (final_creep_colony_spot == TilePosition(0, 0)) {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
-                if (central_base == TilePosition(0, 0)) {
-                    int old_dist = 0;
+            //if (final_creep_colony_spot == TilePosition(0, 0)) {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
+            //    if (central_base == TilePosition(0, 0)) {
+            //        int old_dist = 0;
 
-                    for (auto base = base_core.begin(); base != base_core.end(); ++base) {
+            //        for (auto base = base_core.begin(); base != base_core.end(); ++base) {
 
-                        TilePosition central_base_new = TilePosition((*base)->getPosition());
-                        int new_dist = inventory.getRadialDistanceOutFromHome((*base)->getPosition());
+            //            TilePosition central_base_new = TilePosition((*base)->getPosition());
+            //            int new_dist = inventory.getRadialDistanceOutFromHome((*base)->getPosition());
 
-                        if (new_dist >= old_dist) {
-                            central_base = central_base_new;
-                            old_dist = new_dist;
-                        }
-                    }
-                } //confirm we have identified a base around which to build.
+            //            if (new_dist >= old_dist) {
+            //                central_base = central_base_new;
+            //                old_dist = new_dist;
+            //            }
+            //        }
+            //    } //confirm we have identified a base around which to build.
 
-                int chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(central_base));
-                for (int x = -5; x <= 5; ++x) {
-                    for (int y = -5; y <= 5; ++y) {
-                        double centralize_x = central_base.x + x;
-                        double centralize_y = central_base.y + y;
-                        if (!(x == 0 && y == 0) &&
-                            centralize_x < Broodwar->mapWidth() &&
-                            centralize_y < Broodwar->mapHeight() &&
-                            centralize_x > 0 &&
-                            centralize_y > 0 &&
-                            getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
-                            Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
-                            inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
-                        {
-                            final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
-                            chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y)));
-                        }
-                    }
-                }
-            }
+            //    int chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(central_base));
+            //    for (int x = -5; x <= 5; ++x) {
+            //        for (int y = -5; y <= 5; ++y) {
+            //            double centralize_x = central_base.x + x;
+            //            double centralize_y = central_base.y + y;
+            //            if (!(x == 0 && y == 0) &&
+            //                centralize_x < Broodwar->mapWidth() &&
+            //                centralize_y < Broodwar->mapHeight() &&
+            //                centralize_x > 0 &&
+            //                centralize_y > 0 &&
+            //                getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
+            //                Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
+            //                inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
+            //                inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
+            //            {
+            //                final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
+            //                chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y)));
+            //            }
+            //        }
+            //    }
+            //}
 
             TilePosition buildPosition = MeatAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
@@ -423,7 +423,8 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
-    bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), 2500);
+    bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), inv.my_portion_of_the_map_);
+    bool weak_against_air = checkWeakAgainstAir(u_inv, e_inv);
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
 
@@ -458,7 +459,8 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Count_Units(UnitTypes::Zerg_Creep_Colony, inv) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         buildings_started == 0 &&
-        ((larva_starved || supply_starved) && nearby_enemy) && // Only throw down a sunken if you have no larva floating around, or need the supply.
+        nearby_enemy &&
+        (larva_starved || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1 &&
         Count_Units(UnitTypes::Zerg_Sunken_Colony, inv) + Count_Units(UnitTypes::Zerg_Spore_Colony, inv) < max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 

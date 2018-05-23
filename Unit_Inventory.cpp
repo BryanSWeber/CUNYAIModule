@@ -468,7 +468,7 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    //stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
 
@@ -489,18 +489,17 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
 
     //Get unit's status. Precalculated, precached.
-    int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = unit->getType().gasPrice();
+    int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+    modified_supply = type_ == UnitTypes::Terran_Bunker ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost = type_ == UnitTypes::Terran_Bunker ? type_.mineralPrice() + 50 : type_.mineralPrice(); // Assume bunkers are loaded.
+    int modified_gas_cost = type_.gasPrice();
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    if ( unit->getType().isTwoUnitsInOneEgg() ) {
-        stock_value_ = stock_value_ / 2;
-    }
+    //stock_value_ = stock_value_ / (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints() + unit->getType().maxShields())) ; // Precalculated, precached.
+
+    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())) ; // Precalculated, precached.
 }
 
 

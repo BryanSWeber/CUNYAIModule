@@ -21,7 +21,7 @@ public:
     // Causes a unit to match headings with neighboring units.
     void setAlignment( const Unit &unit, const Unit_Inventory &ui );
     // Causes UNIT to run directly from enemy.
-    void setDirectRetreat(const Position & pos, const Position &e_pos, const UnitType & type, const Unit_Inventory & ei);
+    void setDirectRetreat(const Position & pos, const Position &e_pos, const UnitType & type);
     // Causes a unit to move towards central map veins.
     void setCentralize( const Position &pos, const Inventory &inventory );
     // causes a unit to move about in a random (brownian) fashion.

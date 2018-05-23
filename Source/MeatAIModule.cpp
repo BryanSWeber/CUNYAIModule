@@ -257,7 +257,8 @@ void MeatAIModule::onFrame()
     inventory.updateStartPositions(enemy_inventory);
     inventory.updateScreen_Position();
     inventory.getExpoPositions(); // prime this once on game start.
-    inventory.drawExpoPositions(inventory);
+    inventory.drawExpoPositions();
+    inventory.drawBasePositions();
     
     if (t_game == 0) {
         //update local resources
@@ -382,7 +383,7 @@ void MeatAIModule::onFrame()
         CD.printModelParameters();
     }
 
-    bool massive_army = (army_derivative > 0 && friendly_inventory.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) >= enemy_inventory.stock_fighting_total_ * 3);
+    bool massive_army = (army_derivative != 0 && friendly_inventory.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) >= enemy_inventory.stock_fighting_total_ * 3);
 
     //Unitset enemy_set = getEnemy_Set(enemy_inventory);
     enemy_inventory.updateUnitInventorySummary();
@@ -622,7 +623,7 @@ void MeatAIModule::onFrame()
                 //e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
                 int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
-                int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory); // how far can you get before he shoots?
+                int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory) + MeatAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory); // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
                 //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), MeatAIModule::getProperRange(u), (int)MeatAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Boids boids;
@@ -673,22 +674,24 @@ void MeatAIModule::onFrame()
                         (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                         (Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
                         //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                        (enemy_loc.stock_shoots_up_ == 0 && u->isFlying()) ||
+                        threatening_stocks == 0 ||
+                        (u_type == UnitTypes::Zerg_Scourge && distance_to_foe < enemy_loc.max_range_ + 2 * chargable_distance_net) || // the only sucide unit should not be prevented from suiciding.
                         //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
                         //(distance_to_foe < u_type.groundWeapon().maxRange() && u_type.groundWeapon().maxRange() > 32 && u->getLastCommandFrame() < Broodwar->getFrameCount() - 24) || // a stutterstep component. Should seperate it off.
-                        (distance_to_foe < enemy_loc.max_range_ * 0.75 && distance_to_foe < chargable_distance_net && ( !u_type.isFlyer() || u_type == UnitTypes::Zerg_Scourge || u_type == UnitTypes::Zerg_Overlord )));// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                        ((distance_to_foe < enemy_loc.max_range_ * 0.50 || distance_to_foe < max(chargable_distance_net, 32) ) && ( !u_type.isFlyer() || u_type == UnitTypes::Zerg_Overlord )));// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. Don't remember why overlord is here, though.
                         //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                         //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
                         //( e_closest->isInWeaponRange( u ) && ( u_type.airWeapon().maxRange() > e_closest->getType().airWeapon().maxRange() || u_type.groundWeapon().maxRange() > e_closest->getType().groundWeapon().maxRange() ) ) || // If you outrange them and they are attacking you. Kiting?
                         //                                  );
 
-                    bool force_retreat = //(u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || helpful_e > 0.75 * helpful_u)) || // run if you are flying (like a muta) and cannot be practical.
+                    bool force_retreat = 
+                        ( targetable_stocks == 0 && threatening_stocks > 0 ) ||
+                        (u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_ )) || // run if you are flying (like a muta) and cannot be practical.
                         //(friend_loc.stock_shoots_up_ == 0 && enemy_loc.stock_fliers_ > 0 && enemy_loc.stock_shoots_down_ > 0 && enemy_loc.stock_ground_units_ == 0) || //run if you're getting picked off from above.
                         (e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
                         //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
-                        ( !getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32 + enemy_loc.max_range_).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
+                        ( !getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32 ) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) ||
-                        //(distance_to_foe < 96 && e_closest->type_.topSpeed() <= getProperSpeed(u) && u_type.groundWeapon().maxRange() > enemy_loc.max_range_ && enemy_loc.max_range_ < 64 &&  u_type.groundWeapon().maxRange() > 64 && !u->isBurrowed() && Can_Fight(*e_closest, u)) || //kiting?
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                         (u_type == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                         (u_type == UnitTypes::Zerg_Drone && (!army_starved || u->getHitPoints() < 0.50 *  u_type.maxHitPoints()) ); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
@@ -698,7 +701,10 @@ void MeatAIModule::onFrame()
 
                     bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
 
-                    if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem) {
+                    bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
+                    bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
+
+                    if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
 
                         if (u_type.isWorker()) {
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
@@ -732,8 +738,8 @@ void MeatAIModule::onFrame()
                         if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, friend_loc) <= enemy_loc.worker_count_ &&
                             friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
-                            u->getHitPoints()/(double)(u_type.maxHitPoints() + u_type.maxShields()) >= e_closest->current_hp_ /(double)(e_closest->type_.maxHitPoints() + e_closest->type_.maxShields())
-                            ) {
+                            u->getHitPoints() / (double)(u_type.maxHitPoints() + u_type.maxShields()) >= e_closest->current_hp_ / (double)(e_closest->type_.maxHitPoints() + e_closest->type_.maxShields()) &&
+                            u->getHitPoints() > (double)(u_type.maxHitPoints() + u_type.maxShields()) * 0.25) {
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                             boids.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
@@ -770,10 +776,9 @@ void MeatAIModule::onFrame()
             (u_type == UnitTypes::Zerg_Overlord && enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) || 
             (u_type == UnitTypes::Zerg_Overlord && massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
 
-        if ( spamGuard(u) /*&& acceptable_ovi_scout*/ && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() )
-        { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
+        if ( spamGuard(u) /*&& acceptable_ovi_scout*/ && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() ) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
             Boids boids;
-            bool potential_fears = (army_derivative > 0 && !massive_army);
+            bool potential_fears = !massive_army; // just a name change.
             boids.Boids_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
@@ -849,7 +854,7 @@ void MeatAIModule::onFrame()
             }
 
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
-            if (!isRecentCombatant(miner.bwapi_unit_) || !miner.isClearing(land_inventory)) { //Do not disturb fighting workers or workers assigned to clear a position. Allow them to remain locked on their task.
+            if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isClearing(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
 
                 if (!IsCarryingGas(u) && !IsCarryingMinerals(u) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
@@ -863,7 +868,7 @@ void MeatAIModule::onFrame()
                //Workers need to clear empty patches.
                 bool building_worker = (u->getLastCommand().getType() == UnitCommandTypes::Morph || u->getLastCommand().getType() == UnitCommandTypes::Build || u->getLastCommand().getTargetPosition() == Position(inventory.next_expo_));
                 bool time_to_start_clearing_a_path = (my_reservation.reservation_map_.find(UnitTypes::Zerg_Hatchery) != my_reservation.reservation_map_.end() || Broodwar->self()->minerals() > 150) && inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory);
-                if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && !miner.bwapi_unit_->isCarryingMinerals() && !miner.bwapi_unit_->isCarryingGas() /*&& building_worker*/) {
+                if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && !miner.bwapi_unit_->isCarryingMinerals() && !miner.bwapi_unit_->isCarryingGas() ) {
                     friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                     Worker_Clear(u, friendly_inventory);
                     if (miner.locked_mine_) {
@@ -911,8 +916,9 @@ void MeatAIModule::onFrame()
 
             // Otherwise, maintain the lock.
             if (miner.locked_mine_ && miner.locked_mine_->getID() != miner.bwapi_unit_->getOrderTarget()->getID() && miner.locked_mine_->exists()) {
-                if (!miner.bwapi_unit_->gather(miner.locked_mine_) || miner.bwapi_unit_->getTargetPosition() != miner.locked_mine_->getPosition()) { // reassign him back to work.
+                if (!miner.bwapi_unit_->gather(miner.locked_mine_) /*|| miner.bwapi_unit_->getTargetPosition() != miner.locked_mine_->getPosition()*/) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    u->stop();
                 }
             }
 
@@ -1110,6 +1116,8 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
         Stored_Resource* ru = &Stored_Resource(unit);
         ru->max_stock_value_ = ru->current_stock_value_; // its value is what it has now, since it was somehow missing at game start. Must be passed by refrence or it will be forgotten.
         land_inventory.addStored_Resource(*ru);
+        //inventory.updateBaseLoc(land_inventory); // this line breaks the expos? How? Is this even plausible?
+        inventory.unwalkable_needs_updating = true;
     }
 
     //update maps, requires up-to date enemy inventories.
@@ -1208,16 +1216,18 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         for ( auto potential_miner = friendly_inventory.unit_inventory_.begin(); potential_miner != friendly_inventory.unit_inventory_.end() && !friendly_inventory.unit_inventory_.empty(); potential_miner++ ) {
             if (potential_miner->second.locked_mine_ == unit) {
 
+                if (potential_miner->second.bwapi_unit_) {
+                    potential_miner->second.bwapi_unit_->stop();
+                }
+
                 bool was_clearing = potential_miner->second.isClearing(land_inventory); // Was the mine being cleared with intent?
 
                 friendly_inventory.purgeWorkerRelations(potential_miner->first, land_inventory, inventory, my_reservation); // reset the worker
-                if (potential_miner->second.bwapi_unit_ && !was_clearing) {
-                    potential_miner->second.bwapi_unit_->stop();
-                }
+                
                 auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
                 if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
                     land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
-                                                                    //inventory.updateBaseLoc( land_inventory );
+                    //inventory.updateBaseLoc( land_inventory );
                 }
 
                 if (_ANALYSIS_MODE) {
@@ -1232,7 +1242,6 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                 }
             }
         }
-
 
         // clear it just in case. 
         auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
@@ -1294,7 +1303,7 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
     if ( unit->getType().isWorker()) {
-        unit->stop(); // makes sure their last command isn't the problematic "morph".
+        //unit->stop(); // makes sure their last command isn't the problematic "morph".
         friendly_inventory.purgeWorkerRelations(unit, land_inventory, inventory, my_reservation);
     }
 

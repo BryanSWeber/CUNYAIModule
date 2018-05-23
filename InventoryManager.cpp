@@ -1383,7 +1383,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
-                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource.
+                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
 
                         int local_min = 0;
 
@@ -1521,7 +1521,6 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
 
 void Inventory::updateEnemyBasePosition(const Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri) {
 
-
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
     bool waited_a_second = Broodwar->getFrameCount() % (24 * 2) == 0; // technically more.
@@ -1596,12 +1595,12 @@ void Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
 }
 
-void Inventory::drawExpoPositions(const Inventory &inv) const
+void Inventory::drawExpoPositions() const
 {
     if (_ANALYSIS_MODE) {
         for (auto &p : expo_positions_) {
             Position lower_left = Position(p);
-            if (MeatAIModule::isOnScreen(lower_left, inv.screen_position_)) {
+            if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
                 lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
                 lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
                 Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
@@ -1609,7 +1608,7 @@ void Inventory::drawExpoPositions(const Inventory &inv) const
         }
 
         Position lower_left = Position(next_expo_);
-        if (MeatAIModule::isOnScreen(lower_left, inv.screen_position_)) {
+        if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
             lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
             lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
             Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
@@ -1617,3 +1616,10 @@ void Inventory::drawExpoPositions(const Inventory &inv) const
     }
 }
 
+void Inventory::drawBasePositions() const
+{
+    if (_ANALYSIS_MODE) {
+        Broodwar->drawCircleMap(enemy_base_, 25, Colors::Red, true);
+        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+    }
+}
