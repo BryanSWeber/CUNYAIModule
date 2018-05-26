@@ -41,7 +41,12 @@ struct Stored_Unit {
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
-    bool isClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
+    bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
+    bool isAssignedMining(Resource_Inventory & ri); // If the unit is assigned to mine a spot.
+    bool isAssignedBuilding(); // If the unit is assigned to build something.
+    bool isBrokenLock(); // If the unit has been distracted somehow.
+    bool isLongRangeLock(); // if the unit cannot see its target.
+    bool isMovingLock(); // if the unit is moving towards its target not gathering.
 	//void addMine(Stored_Resource mine);
 
     int current_hp_;
@@ -103,12 +108,10 @@ struct Unit_Inventory {
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
-    void purgeWorkerMineRelations(const Unit &unit, Resource_Inventory &ri);
-    void purgeWorkerBuildRelations(const Unit &unit, Inventory &inv, Reservation &res);
     void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
     void drawAllHitPoints(const Inventory & inv) const;
     void drawAllSpamGuards(const Inventory & inv) const;
-    void drawAllWorkerLocks(const Inventory & inv) const;
+    void drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
 
     Position getMeanLocation() const;

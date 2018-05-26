@@ -50,7 +50,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
-                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
+                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 15 * 24) || // unit is done upgrading.
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                           u_type == UnitCommandTypes::None ||
@@ -1054,7 +1054,7 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
         UnitType u_type = unit->getType();
-        cd_frames = Broodwar->getLatencyFrames();
+        //cd_frames = Broodwar->getLatencyFrames();
         //if (u_type == UnitTypes::Zerg_Drone) {
         //    cd_frames = 1;
         //}
@@ -1078,7 +1078,7 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     else if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
     }
-    
+
     //if (u_command == UnitCommandTypes::Attack_Move) {
     //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     //}

@@ -103,7 +103,7 @@ struct Inventory {
     // Updates the unwalkable portions of the map.
     void Inventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades.
-    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri);
+    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
     // Marks and smooths the edges of the map.
     void Inventory::updateSmoothPos();
@@ -142,7 +142,8 @@ struct Inventory {
 	// Updates map positions and removes all visible ones;
 	void Inventory::updateStartPositions(const Unit_Inventory &ei);
 
+
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateEnemyBasePosition(const Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri);
+    void updateEnemyBasePosition(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
 }; 

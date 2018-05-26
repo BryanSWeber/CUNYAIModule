@@ -18,7 +18,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
-                int dist_temp = inv.getDifferentialDistanceOutFromHome(friendly_inventory.getMeanBuildingLocation(), Position(p));
+                int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
 
                 bool safe_expo = checkSafeBuildLoc(Position(p), inventory, enemy_inventory, friendly_inventory, land_inventory);
 
@@ -125,7 +125,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isMineralField();
         }
         else {
-            mine_is_right_type = r->second.type_.isRefinery();
+            mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
         if (mine_is_right_type && r->second.number_of_miners_ <= low_drone) {
@@ -157,7 +157,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             }
 
         }
-        else if (closest && miner.bwapi_unit_->move(closest->pos_) /*&& checkSafeMineLoc(closest->pos_, ui, inventory)*/ ) {
+        else if (closest && (!closest->bwapi_unit_ || !closest->bwapi_unit_->exists()) && miner.bwapi_unit_->move(closest->pos_) /*&& checkSafeMineLoc(closest->pos_, ui, inventory)*/ ) {
             miner.startMine(*closest, land_inventory);
 
             if (building_unit) {
@@ -166,7 +166,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         }
     }
 
-
+    miner.updateStoredUnit(unit);
 } // closure worker mine
 
 void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
@@ -192,13 +192,14 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
             }
 
         }
-        else if (closest && miner.bwapi_unit_->move(closest->pos_) /*&& checkSafeMineLoc(closest->pos_, ui, inventory)*/ ) {
+        else if (closest && (!closest->bwapi_unit_ || !closest->bwapi_unit_->exists()) && miner.bwapi_unit_->move(closest->pos_) ) { // if there's a mine you can't gather from, doesn't exist/not visible..
             miner.startMine(*closest, land_inventory); // I think the problem is here. Starting to mine a location without a proper bwapi unit.
             if (building_unit) {
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
         }
     }
+    miner.updateStoredUnit(unit);
 }
 
 bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui)
@@ -209,7 +210,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.current_stock_value_ <= 8 && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && unit->getDistance(r->second.pos_) < 5000 ) {
+        if (r->second.max_stock_value_ <= 8 && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && unit->getDistance(r->second.pos_) < 5000 ) {
             return true;
         }
     } //find closest mine meeting this criteria.

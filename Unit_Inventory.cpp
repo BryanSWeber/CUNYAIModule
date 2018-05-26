@@ -114,39 +114,16 @@ void Unit_Inventory::purgeUnseenUnits()
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
-    if (iter != unit_inventory_.end()) {
-        Stored_Unit& miner = iter->second;
-        miner.stopMine(ri);
-    }
+    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
+    miner.stopMine(ri);
+
     if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build ) {
         res.removeReserveSystem(unit->getBuildType());
     }
     if (command.getTargetPosition() == Position(inv.next_expo_) ) {
         res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
-}
-
-// Decrements all resources worker was attached to.
-void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Inventory & ri)
-{
-    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
-    if (iter != unit_inventory_.end()) {
-        Stored_Unit& miner = iter->second;
-        miner.stopMine(ri);
-    }
-}
-
-//clears all reservations associated with that worker.
-void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & inv, Reservation & res)
-{
-    UnitCommand command = unit->getLastCommand();
-    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-        res.removeReserveSystem(unit->getBuildType());
-    }
-    if (command.getTargetPosition() == Position(inv.next_expo_)) {
-        res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
-    }
+    unit->stop();
 }
 
 void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
@@ -171,11 +148,14 @@ void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
     }
 }
 
-void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv) const
+void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const
 {
     for (auto u : unit_inventory_) {
         if (u.second.locked_mine_) {
             MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+        }
+        if (u.second.isAssignedClearing(ri)) {
+            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
         }
     }
 }
@@ -511,13 +491,13 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 
 //Decrements the number of miners on a resource.
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_ /*&& locked_mine_->exists()*/){
+	if (locked_mine_){
 		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
 		if (iter != ri.resource_inventory_.end()){
 			iter->second.number_of_miners_--;
 		}
-		locked_mine_ = nullptr;
 	}
+    locked_mine_ = nullptr;
 }
 
 //finds mine- Will return true something even if the mine DNE.
@@ -527,13 +507,46 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     return tenative_resource;
 }
 
-bool Stored_Unit::isClearing( Resource_Inventory &ri ) {
+bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
         if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
-            Stored_Resource* mine_of_choice = getMine(ri);
+            Stored_Resource* mine_of_choice = this->getMine(ri);
             return mine_of_choice->max_stock_value_ <= 8;
         }
     }
     return false;
 }
 
+bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
+    if (locked_mine_) {
+        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine(ri);
+            return mine_of_choice->max_stock_value_ >= 8;
+        }
+    }
+    return false;
+}
+
+// Warning- depends on unit being updated.
+bool Stored_Unit::isAssignedBuilding() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move) && time_since_last_command_ > 15 * 24;
+    return building_sent;
+}
+
+//if the miner is not mining his target. Target must be visible.
+bool Stored_Unit::isBrokenLock(){
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return  bwapi_unit_ && locked_mine_ && locked_mine_->exists() && (bwapi_unit_->getOrderTarget() && locked_mine_->getID() != bwapi_unit_->getOrderTarget()->getID() /*|| bwapi_unit_->getOrderTarget() == NULL*/);
+}
+
+//prototypeing
+bool Stored_Unit::isLongRangeLock() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return bwapi_unit_ && locked_mine_ && !locked_mine_->exists();
+}
+
+bool Stored_Unit::isMovingLock() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+   return bwapi_unit_ && locked_mine_ && locked_mine_->exists() && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+}

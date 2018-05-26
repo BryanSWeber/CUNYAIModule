@@ -325,17 +325,17 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
 
         if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 0 && buildorder.checkEmptyBuildOrder()) {
-            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber)); // force in a hydralisk den if they have Air.
+            buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in a hydralisk den if they have Air.
             Broodwar->sendText("Reactionary Evo Chamber");
             return is_building > 0;
         }
         else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) == 0 && buildorder.checkEmptyBuildOrder()) {
-            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den));
+            buildorder.addBuildOrderElement(UnitTypes::Zerg_Hydralisk_Den);
             Broodwar->sendText("Reactionary Hydra Den");
             return is_building > 0;
         }
         else if (Count_Units(UnitTypes::Zerg_Lair, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Lair, inv) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, inv) == 0 && buildorder.checkEmptyBuildOrder()) {
-            buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire));
+            buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire);
             Broodwar->sendText("Reactionary Spire");
             return is_building > 0;
         }
@@ -391,18 +391,18 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     is_building += Check_N_Grow(UnitTypes::Zerg_Drone, larva, false);
 
     //if ((would_force_lurkers || would_force_spire) && Count_Units(UnitTypes::Zerg_Lair, ui) == 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Extractor, ui) > 0 ) {
-    //    buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Lair)); // force lair if you need it and are in a position for it.
+    //    buildorder..addBuildOrderElement(UnitTypes::Zerg_Lair); // force lair if you need it and are in a position for it.
     //    Broodwar->sendText("Reactionary Lair, there's tech I want.");
     //    return is_building > 0;
     //} 
 
     if (u_relatively_weak_against_air && would_force_spire && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
-        buildorder.building_gene_.push_back(Build_Order_Object(UnitTypes::Zerg_Spire)); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
+        buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
         Broodwar->sendText("Reactionary Spire");
         return is_building > 0;
     }
     else if (enemy_mostly_ground && would_force_lurkers && buildorder.checkEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
-        buildorder.building_gene_.push_back(Build_Order_Object(TechTypes::Lurker_Aspect)); // force in a hydralisk den if they have Air.
+        buildorder.addBuildOrderElement(TechTypes::Lurker_Aspect); // force in a hydralisk den if they have Air.
         Broodwar->sendText("Reactionary Lurker Upgrade");
         return is_building > 0;
     }
@@ -566,7 +566,7 @@ void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
 }
 
 void Building_Gene::announceBuildingAttempt(UnitType ut) {
-    if (ut.isBuilding()) {
+    if (_ANALYSIS_MODE && ut.isBuilding()) {
         last_build_order = ut;
         Broodwar->sendText("Building a %s", last_build_order.c_str());
     }
@@ -589,6 +589,21 @@ bool Building_Gene::checkResearch_Desired(TechType research) {
 
 bool Building_Gene::checkEmptyBuildOrder() {
     return building_gene_.empty();
+}
+
+void Building_Gene::addBuildOrderElement(const UpgradeType & ups)
+{
+    building_gene_.push_back(Build_Order_Object(ups));
+}
+
+void Building_Gene::addBuildOrderElement(const TechType & research)
+{
+    building_gene_.push_back(Build_Order_Object(research));
+}
+
+void Building_Gene::addBuildOrderElement(const UnitType & ut)
+{
+    building_gene_.push_back(Build_Order_Object(ut));
 }
 
 void Building_Gene::getInitialBuildOrder(string s) {

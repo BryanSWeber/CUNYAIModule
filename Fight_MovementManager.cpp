@@ -15,7 +15,7 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             Position pos = unit->getPosition();
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             vector<int> useful_stocks = MeatAIModule::getUsefulStocks(ui, ei);
-            bool ready_to_fight = useful_stocks[1] > useful_stocks[2] || !potential_fears || !army_starved || unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit ;
+            bool ready_to_fight = /*useful_stocks[1] > useful_stocks[2] ||*/ !potential_fears || !army_starved ;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0,0);
             bool scouting_returned_nothing = !enemy_scouted && inv.start_positions_.empty();
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
@@ -35,8 +35,10 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
                     setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
                     setStutter(unit, 1);
                 }
-  
-                setSeperation(unit, pos, local_neighborhood);
+
+                int average_volume = ui.volume_ / ui.unit_inventory_.size();
+                Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, 32 + sqrt(average_volume));
+                setSeperation(unit, pos, neighbors);
 
 
                 if (potential_fears) {
@@ -197,9 +199,9 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
     int chargable_distance_net = MeatAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
     //int range = unit->isFlying() ? air_range : ground_range;
-    int range = MeatAIModule::getProperRange( e_unit.type_, Broodwar->enemy() );// will bug if multiple enemies. 
+    int range = ei.max_range_;
     Position pos = unit->getPosition();
-    Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
+    //Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
     //Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
     if (dist < range + chargable_distance_net * 24) { //  Run if you're a noncombat unit or army starved. 24x chargable distance for safety. Retreat function now accounts for walkability.
@@ -214,14 +216,15 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         // Seperate from enemy, aka kite:
 
-        Unit_Inventory e_neighbors = MeatAIModule::getUnitInventoryInRadius( ei, pos, 64 );
-        Unit_Inventory f_neighbors = MeatAIModule::getUnitInventoryInRadius( ui, pos, 64 );
+        Unit_Inventory e_neighbors = MeatAIModule::getUnitInventoryInRadius( ei, pos, max(MeatAIModule::getProperRange(unit), 32) );
+        e_neighbors.updateUnitInventorySummary();
 
-        if (MeatAIModule::getUsefulStocks(f_neighbors, e_neighbors)[2]) {
+        if (MeatAIModule::getThreateningStocks(unit, e_neighbors) > 0) {
             setSeperation(unit, pos, e_neighbors); // might return false positives.
             if (unit->isFlying()) {
                 setAttractionHome(unit, pos, ei, inventory); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
             }
+            //setStutter(unit, 1000);
         }
         else {
             setAttractionHome(unit, pos, ei, inventory);
@@ -232,7 +235,8 @@ void Boids::Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inv
 
         // Scourge need to seperate.
         if ( unit->getType() == UnitTypes::Zerg_Scourge ) {
-            setSeperation( unit, pos, f_neighbors );
+            Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, 32);
+            setSeperation( unit, pos, neighbors);
         } // closure: flyers
 
 
@@ -432,7 +436,7 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv
 void Boids::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
 
     bool enemy_found = false;
-    double distance_metric = 24 * MeatAIModule::getProperSpeed(unit);
+    double distance_metric = MeatAIModule::getProperSpeed(unit) * 24;
 
     if (!unit->isFlying()) {
 
@@ -491,12 +495,9 @@ void Boids::setAttractionHome(const Unit &unit, const Position &pos, const Unit_
 
 //Seperation from nearby units, search very local neighborhood of usually about 1-2 tiles.
 void Boids::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
-    UnitType type = unit->getType();
-    int largest_dim = max(type.height(), type.width());
-    Unit_Inventory neighbors = MeatAIModule::getUnitInventoryInRadius(ui, pos, 32 + largest_dim);
     int seperation_x = 0;
     int seperation_y = 0;
-    for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
+    for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
         seperation_x += u.second.pos_.x - pos.x;
         seperation_y += u.second.pos_.y - pos.y;
     }
