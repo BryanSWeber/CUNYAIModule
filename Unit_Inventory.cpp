@@ -110,7 +110,7 @@ void Unit_Inventory::purgeUnseenUnits()
 }
 
 
-// Decrements all resources worker was attached to, clears all reservations associated with that worker.
+// Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
@@ -124,6 +124,21 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
         res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
     unit->stop();
+}
+
+// Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
+void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
+{
+    UnitCommand command = unit->getLastCommand();
+    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
+    miner.stopMine(ri);
+
+    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+        res.removeReserveSystem(unit->getBuildType());
+    }
+    if (command.getTargetPosition() == Position(inv.next_expo_)) {
+        res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+    }
 }
 
 void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
@@ -151,10 +166,13 @@ void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
 void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const
 {
     for (auto u : unit_inventory_) {
-        if (u.second.locked_mine_) {
+        if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
+            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
+        } 
+        else if (u.second.isAssignedResource(ri)) {
             MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
         }
-        if (u.second.isAssignedClearing(ri)) {
+        else if (u.second.isAssignedClearing(ri)) {
             MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
         }
     }
@@ -466,6 +484,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
+    command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
 
     //Get unit's status. Precalculated, precached.
@@ -492,10 +511,9 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 //Decrements the number of miners on a resource.
 void Stored_Unit::stopMine(Resource_Inventory &ri){
 	if (locked_mine_){
-		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
-		if (iter != ri.resource_inventory_.end()){
-			iter->second.number_of_miners_--;
-		}
+        if (getMine(ri)) {
+            getMine(ri)->number_of_miners_--;
+        }
 	}
     locked_mine_ = nullptr;
 }
@@ -509,8 +527,7 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
 
 bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
-        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
-            Stored_Resource* mine_of_choice = this->getMine(ri);
+        if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
             return mine_of_choice->max_stock_value_ <= 8;
         }
     }
@@ -521,23 +538,45 @@ bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
     if (locked_mine_) {
         if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine(ri);
-            return mine_of_choice->max_stock_value_ >= 8;
+            return mine_of_choice->max_stock_value_ >= 8 && mine_of_choice->type_.isMineralField();
         }
     }
     return false;
 }
 
+bool Stored_Unit::isAssignedGas(Resource_Inventory &ri) {
+    if (locked_mine_) {
+        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine(ri);
+            return mine_of_choice->type_.isRefinery();
+        }
+    }
+    return false;
+}
+
+bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
+
+    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
+
+
+}
 // Warning- depends on unit being updated.
 bool Stored_Unit::isAssignedBuilding() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move) && time_since_last_command_ > 15 * 24;
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build ) && time_since_last_command_ < 15 * 24;
     return building_sent;
 }
 
-//if the miner is not mining his target. Target must be visible.
-bool Stored_Unit::isBrokenLock(){
+//if the miner is not doing any thing
+bool Stored_Unit::isNoLock(){
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  bwapi_unit_ && locked_mine_ && locked_mine_->exists() && (bwapi_unit_->getOrderTarget() && locked_mine_->getID() != bwapi_unit_->getOrderTarget()->getID() /*|| bwapi_unit_->getOrderTarget() == NULL*/);
+    return  bwapi_unit_ && !bwapi_unit_->getOrderTarget();
+}
+
+//if the miner is not mining his target. Target must be visible.
+bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && (bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24);
 }
 
 //prototypeing

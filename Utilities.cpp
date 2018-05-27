@@ -36,6 +36,10 @@ bool MeatAIModule::isInLine(const Unit &unit){
 	return passive;
 }
 
+bool MeatAIModule::isEmptyWorker(const Unit &unit) {
+    bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
+    return !laden_worker;
+}
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
 bool MeatAIModule::isIdleEmpty(const Unit &unit) {
 

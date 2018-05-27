@@ -389,7 +389,7 @@ void MeatAIModule::onFrame()
 
     //Unitset enemy_set = getEnemy_Set(enemy_inventory);
     enemy_inventory.updateUnitInventorySummary();
-    friendly_inventory.updateUnitInventorySummary();
+    //friendly_inventory.updateUnitInventorySummary(); Redundant with //updateUnitInventory.
     land_inventory.updateMiners();
     land_inventory.updateGasCollectors();
 
@@ -402,7 +402,7 @@ void MeatAIModule::onFrame()
         Print_Universal_Inventory(0, 50, inventory);
         Print_Upgrade_Inventory( 375, 80 );
         Print_Reservations( 250, 170, my_reservation );
-        if ( buildorder.checkEmptyBuildOrder() ) {
+        if ( buildorder.isEmptyBuildOrder() ) {
             Print_Unit_Inventory( 500, 170, enemy_inventory );
         }
         else {
@@ -449,11 +449,11 @@ void MeatAIModule::onFrame()
         }
 
         Broodwar->drawTextScreen( 250, 100, "Time to Completion: %d", my_reservation.building_timer_ ); //
-        Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.checkEmptyBuildOrder() ? "TRUE" : "FALSE" ); //
+        Broodwar->drawTextScreen( 250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE" ); //
         Broodwar->drawTextScreen( 250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_ );
         Broodwar->drawTextScreen( 250, 130, "Last Building: %s", buildorder.last_build_order.c_str() ); //
         Broodwar->drawTextScreen( 250, 140, "Next Expo Loc: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y ); //
-        if ( buildorder.checkEmptyBuildOrder() ) {
+        if ( buildorder.isEmptyBuildOrder() ) {
             Broodwar->drawTextScreen( 250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_ );
         }
         else {
@@ -855,19 +855,28 @@ void MeatAIModule::onFrame()
 
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
             if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
-                if (!IsCarryingGas(u) && !IsCarryingMinerals(u) && miner.isAssignedMining(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     inventory.getExpoPositions();
                     //friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                     Building_Begin(u, inventory, enemy_inventory, friendly_inventory);
                     if ( miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!
+                        miner.stopMine(land_inventory);
                         continue;
                     }
                 } // Close Build loop
 
+
+                if (miner.isAssignedBuilding() && TilePosition(miner.pos_) == inventory.next_expo_) {
+                    if (miner.bwapi_unit_->build(UnitTypes::Zerg_Hatchery, inventory.next_expo_)) {
+                        my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+                        continue;
+                    }
+                }
+
                //Workers need to clear empty patches.
                 bool time_to_start_clearing_a_path = inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory);
-                if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && !IsCarryingMinerals(u) && !IsCarryingGas(u)) {
+                if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && isEmptyWorker(u)) {
                     friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                     Worker_Clear(u, friendly_inventory);
                     if (miner.isAssignedClearing(land_inventory)) {
@@ -878,12 +887,12 @@ void MeatAIModule::onFrame()
 
                   // Lock all loose workers down. Maintain gas/mineral balance. 
                   //bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-                if ( !miner.isAssignedMining(land_inventory) || ((want_gas || too_much_gas) && inventory.last_gas_check_ < t_game - 5 * 24) && spamGuard(miner.bwapi_unit_, 94)) { //if this is your first worker of the frame consider resetting him.
-                    friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
+                if ( !miner.isAssignedResource(land_inventory) || ((want_gas || too_much_gas) && inventory.last_gas_check_ < t_game - 5 * 24) && spamGuard(miner.bwapi_unit_, 94) && isEmptyWorker(u) ) { //if this is your first worker of the frame consider resetting him.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     inventory.last_gas_check_ = t_game;
                     if (want_gas) {
                         Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory);
-                        if (miner.isAssignedMining(land_inventory)) {
+                        if (miner.isAssignedGas(land_inventory)) {
                             continue;
                         }
                         else { // do SOMETHING.
@@ -900,7 +909,7 @@ void MeatAIModule::onFrame()
                         }
                         else { // do SOMETHING.
                             Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory);
-                            if (miner.isAssignedMining(land_inventory)) {
+                            if (miner.isAssignedGas(land_inventory)) {
                                continue;
                             }
                         }
@@ -909,24 +918,24 @@ void MeatAIModule::onFrame()
             }
 
             // let's leave units in full-mine alone.
-            if ( (miner.bwapi_unit_->isCarryingMinerals() || miner.bwapi_unit_->isCarryingGas()) && miner.isAssignedMining(land_inventory) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
+            if ( !isEmptyWorker(u) && (miner.isAssignedResource(land_inventory) ) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
                 continue;
             }
 
             // Maintain the locks.
-            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedMining(land_inventory)) && miner.isBrokenLock() ) { //spamguard amount found by trial and error.
-                if (!miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5) ) { //spamguard amount found by trial and error.
+                if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
-            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedMining(land_inventory)) && miner.isLongRangeLock() ) { //spamguard amount found by trial and error.
+            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isLongRangeLock() ) { //spamguard amount found by trial and error.
                 if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
-            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedMining(land_inventory)) && miner.isMovingLock()) { //spamguard amount found by trial and error.
+            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isMovingLock()) { //spamguard amount found by trial and error.
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             }
@@ -1233,11 +1242,15 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
                 bool was_clearing = potential_miner->second.isAssignedClearing(land_inventory); // Was the mine being cleared with intent?
 
+                // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
                 //if (miner_unit) {
                 //    miner_unit->stop();
-                //} // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
+                //} 
+                
+                // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
+                //friendly_inventory.purgeWorkerRelations(potential_miner->first, land_inventory, inventory, my_reservation); // reset the worker
 
-                friendly_inventory.purgeWorkerRelations(potential_miner->first, land_inventory, inventory, my_reservation); // reset the worker
+                friendly_inventory.purgeWorkerRelationsNoStop(potential_miner->first, land_inventory, inventory, my_reservation); // reset the worker
                 
                 auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
                 if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {

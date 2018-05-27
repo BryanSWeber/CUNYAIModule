@@ -1624,6 +1624,31 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         //    updateMapVeinsOutFromMain(suspected_friendly_base);
         //}
 
+        //Unit_Inventory base_core; //get all the bases that might need a new creep colony.
+        //Position most_exposed_base = Position(0, 0);
+        //int distance_from_enemy = 9999999;
+        //for (const auto &u : ui.unit_inventory_) {
+        //    if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //    else if (u.second.type_ == UnitTypes::Zerg_Lair) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //    else if (u.second.type_ == UnitTypes::Zerg_Hive) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //}
+
+        //for (auto i : base_core.unit_inventory_) {
+        //    int temp_dist = getRadialDistanceOutFromEnemy(i.second.pos_);
+        //    if (getRadialDistanceOutFromEnemy(i.second.pos_) < distance_from_enemy ) {
+        //        distance_from_enemy = temp_dist;
+        //        most_exposed_base = i.second.pos_;
+        //    }
+        //}
+
+        //updateMapVeinsOutFromMain(most_exposed_base); // safe against 0,0 locations.
+
         veins_in_need_updating = false;
     }
 
