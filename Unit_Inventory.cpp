@@ -515,7 +515,7 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
             getMine(ri)->number_of_miners_--;
         }
 	}
-    locked_mine_ = nullptr;
+    locked_mine_ = NULL;
 }
 
 //finds mine- Will return true something even if the mine DNE.
@@ -576,7 +576,7 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && (bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24);
+    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && (bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24 );
 }
 
 //prototypeing

@@ -848,11 +848,6 @@ void MeatAIModule::onFrame()
             bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
             bool too_much_gas = 1 - inventory.getLn_Gas_Ratio() > delta;
 
-            if (Broodwar->getFrameCount() == 0) {
-                u->stop();
-                continue; // fixes the fact that drones auto-lock to something on game start. Now we don't triple-stack part of our initial drones.
-            }
-
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
             if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
@@ -887,7 +882,7 @@ void MeatAIModule::onFrame()
 
                   // Lock all loose workers down. Maintain gas/mineral balance. 
                   //bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
-                if ( !miner.isAssignedResource(land_inventory) || ((want_gas || too_much_gas) && inventory.last_gas_check_ < t_game - 5 * 24) && spamGuard(miner.bwapi_unit_, 94) && isEmptyWorker(u) ) { //if this is your first worker of the frame consider resetting him.
+                if ( !miner.isAssignedResource(land_inventory) || ((want_gas || too_much_gas) && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     inventory.last_gas_check_ = t_game;
                     if (want_gas) {
@@ -918,22 +913,26 @@ void MeatAIModule::onFrame()
             }
 
             // let's leave units in full-mine alone.
-            if ( !isEmptyWorker(u) && (miner.isAssignedResource(land_inventory) ) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
+            if ( !isEmptyWorker(u) && miner.isAssignedResource(land_inventory) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
                 continue;
             }
 
+            if ( !isEmptyWorker(u) && u->isIdle() && miner.command_.getType() == UnitCommandTypes::Attack_Unit ) {
+                friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+            }
+
             // Maintain the locks.
-            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5) ) { //spamguard amount found by trial and error.
+            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() ) ) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
-            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isLongRangeLock() ) { //spamguard amount found by trial and error.
+            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isLongRangeLock() ) { 
                 if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
-            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isMovingLock()) { //spamguard amount found by trial and error.
+            } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isMovingLock()) {
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }

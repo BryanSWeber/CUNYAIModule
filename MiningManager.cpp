@@ -230,7 +230,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && unit->getDistance(r->second.pos_) < 5000 ) {
+        if (r->second.max_stock_value_ <= 8 && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && inventory.getDifferentialDistanceOutFromHome(miner.pos_,r->second.pos_) < 100000 ) {
             return true;
         }
     } //find closest mine meeting this criteria.
