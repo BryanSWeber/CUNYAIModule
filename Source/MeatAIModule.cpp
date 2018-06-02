@@ -912,14 +912,16 @@ void MeatAIModule::onFrame()
                 }
             }
 
+            if (!isEmptyWorker(u) && u->isIdle() && miner.command_.getType() == UnitCommandTypes::Attack_Unit) {
+                friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+            }
+
             // let's leave units in full-mine alone.
             if ( !isEmptyWorker(u) && miner.isAssignedResource(land_inventory) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
                 continue;
             }
 
-            if ( !isEmptyWorker(u) && u->isIdle() && miner.command_.getType() == UnitCommandTypes::Attack_Unit ) {
-                friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
-            }
+
 
             // Maintain the locks.
             if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() ) ) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.

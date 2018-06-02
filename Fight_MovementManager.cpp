@@ -15,7 +15,7 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             Position pos = unit->getPosition();
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             vector<int> useful_stocks = MeatAIModule::getUsefulStocks(ui, ei);
-            bool ready_to_fight = /*useful_stocks[1] > useful_stocks[2] ||*/ !potential_fears || !army_starved ;
+            bool ready_to_fight = useful_stocks[1] > useful_stocks[2] || !potential_fears || !army_starved ;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0,0);
             bool scouting_returned_nothing = !enemy_scouted && inv.start_positions_.empty();
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
