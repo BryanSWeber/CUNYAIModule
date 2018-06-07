@@ -560,6 +560,7 @@ void MeatAIModule::onFrame()
                     Broodwar->drawTextMap( u->getPosition(), u->getLastCommand().getType().c_str() );
                 }
             }
+
         }
 
     }// close analysis mode
@@ -682,7 +683,6 @@ void MeatAIModule::onFrame()
                             grim_distance_trigger );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                         //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                         //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
-
 
                     bool force_retreat = 
                         ( targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
@@ -873,6 +873,7 @@ void MeatAIModule::onFrame()
                 bool time_to_start_clearing_a_path = inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory);
                 if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && isEmptyWorker(u)) {
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
+
                     Worker_Clear(u, friendly_inventory);
                     if (miner.isAssignedClearing(land_inventory)) {
                         inventory.updateWorkersClearing(friendly_inventory, land_inventory);
@@ -915,6 +916,7 @@ void MeatAIModule::onFrame()
             if (!isEmptyWorker(u) && u->isIdle() ) {
                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 miner.bwapi_unit_->returnCargo();
+
             }
 
             // let's leave units in full-mine alone.

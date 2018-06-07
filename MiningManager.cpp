@@ -134,6 +134,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
         if (mine_is_right_type && r->second.number_of_miners_ <= low_drone) {
             if (r->second.occupied_natural_ /*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
+
                 available_fields.addStored_Resource(r->second);
             }
             else {
@@ -157,9 +158,9 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         if ( closest ) {
             miner.startMine(*closest, land_inventory);
 
-            if (building_unit) {
-                my_reservation.removeReserveSystem(unit->getBuildType());
-            }
+        //    if (building_unit) {
+        //        my_reservation.removeReserveSystem(unit->getBuildType());
+        //    }
 
         }
 
