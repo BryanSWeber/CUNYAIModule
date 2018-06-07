@@ -32,6 +32,58 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
+void Unit_Inventory::updateUnitsControlledByOthers()
+{
+    for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
+        if ((*e).second.bwapi_unit_ && (*e).second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
+            (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+            (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+            (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
+            (*e).second.valid_pos_ = true;
+            //Broodwar->sendText( "Relocated a %s.", (*e).second.type_.c_str() );
+        }
+        else if (Broodwar->isVisible(TilePosition(e->second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
+
+            bool present = false;
+
+            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e->second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Addons convert to neutral if their main base disappears.
+            for (auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et) {
+                present = (*et)->getID() == e->second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
+                if (present) {
+                    (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
+                    (*e).second.type_ = (*e).second.bwapi_unit_->getType();
+                    (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
+                    (*e).second.valid_pos_ = true;
+                    break;
+                }
+            }
+            if ((!present || enemies_tile.empty()) && e->second.valid_pos_ && e->second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
+                if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
+                    e->second.valid_pos_ = false;
+                }
+                else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
+                    (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                    e->second.pos_ = potential_running_spot;
+                    e->second.valid_pos_ = true;
+                }
+                else {
+                    e->second.valid_pos_ = false;
+                }
+                //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
+            }
+            else {
+                e->second.valid_pos_ = false;
+            }
+        }
+
+        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || e->second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
+            e->second.valid_pos_ = false;
+        }
+
+    }
+}
+
 void Unit_Inventory::purgeBrokenUnits()
 {
     for (auto e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
@@ -58,34 +110,29 @@ void Unit_Inventory::purgeUnseenUnits()
 }
 
 
+// Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
-    if (iter != unit_inventory_.end()) {
-        Stored_Unit& miner = iter->second;
-        miner.stopMine(ri);
-    }
+    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
+    miner.stopMine(ri);
+
     if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build ) {
         res.removeReserveSystem(unit->getBuildType());
     }
     if (command.getTargetPosition() == Position(inv.next_expo_) ) {
         res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
+    unit->stop();
 }
 
-void Unit_Inventory::purgeWorkerMineRelations(const Unit & unit, Resource_Inventory & ri)
-{
-    map<Unit, Stored_Unit>::iterator iter = unit_inventory_.find(unit);
-    if (iter != unit_inventory_.end()) {
-        Stored_Unit& miner = iter->second;
-        miner.stopMine(ri);
-    }
-}
-
-void Unit_Inventory::purgeWorkerBuildRelations(const Unit & unit, Inventory & inv, Reservation & res)
+// Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
+void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
+    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
+    miner.stopMine(ri);
+
     if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
         res.removeReserveSystem(unit->getBuildType());
     }
@@ -116,11 +163,33 @@ void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
     }
 }
 
-void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv) const
+void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const
 {
     for (auto u : unit_inventory_) {
-        if (u.second.locked_mine_) {
+        if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
+            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
+        } 
+        else if (u.second.isAssignedResource(ri)) {
             MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+        }
+        else if (u.second.isAssignedClearing(ri)) {
+            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
+        }
+    }
+}
+
+void Unit_Inventory::drawAllLocations(const Inventory & inv) const
+{
+    if (_ANALYSIS_MODE) {
+        for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
+            if (MeatAIModule::isOnScreen(e->second.pos_, inv.screen_position_)) {
+                if (e->second.valid_pos_) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
+                }
+                else if (!e->second.valid_pos_) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
+                }
+            }
         }
     }
 }
@@ -239,23 +308,23 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      }
  }
 
- //for the army that can actually move.
- Position Unit_Inventory::getClosestMeanArmyLocation() const {
-     Position mean_pos = getMeanArmyLocation();
-     if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
-        Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
-         if (nearest_neighbor && nearest_neighbor->getPosition() ) {
-             Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
-             return out;
-         }
-         else {
-             return Position(0, 0);  // you might be dead at this point, fyi.
-         }
-     }
-     else {
-         return Position(0, 0);  // you might be dead at this point, fyi.
-     }
- }
+ //for the army that can actually move. Removed for usage of Broodwar->getclosest(), a very slow function.
+ //Position Unit_Inventory::getClosestMeanArmyLocation() const {
+ //    Position mean_pos = getMeanArmyLocation();
+ //    if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
+ //       Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
+ //        if (nearest_neighbor && nearest_neighbor->getPosition() ) {
+ //            Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
+ //            return out;
+ //        }
+ //        else {
+ //            return Position(0, 0);  // you might be dead at this point, fyi.
+ //        }
+ //    }
+ //    else {
+ //        return Position(0, 0);  // you might be dead at this point, fyi.
+ //    }
+ //}
 
 
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
@@ -300,6 +369,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int max_cooldown = 0;
     int ground_fodder = 0;
     int air_fodder = 0;
+    int resource_depots = 0;
 
     vector<UnitType> already_seen_types;
 
@@ -325,7 +395,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 cloaker_count   += cloaker * count_of_unit;
                 detector_count  += u_iter.second.type_.isDetector() * count_of_unit;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
-
+                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
@@ -370,6 +440,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	volume_ = volume;
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
+    resource_depot_count_ = resource_depots;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
@@ -395,7 +466,7 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    //stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
 
@@ -413,52 +484,110 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
+    command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
 
     //Get unit's status. Precalculated, precached.
-    int modified_supply = unit->getType().getRace() == Races::Zerg && unit->getType().isBuilding() ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().supplyRequired() + 2 : unit->getType().supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = unit->getType() == UnitTypes::Terran_Bunker ? unit->getType().mineralPrice() + 50 : unit->getType().mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = unit->getType().gasPrice();
+    int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+    modified_supply = type_ == UnitTypes::Terran_Bunker ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost = type_ == UnitTypes::Terran_Bunker ? type_.mineralPrice() + 50 : type_.mineralPrice(); // Assume bunkers are loaded.
+    int modified_gas_cost = type_.gasPrice();
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    if ( unit->getType().isTwoUnitsInOneEgg() ) {
-        stock_value_ = stock_value_ / 2;
-    }
+    //stock_value_ = stock_value_ / (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(unit->getType().maxHitPoints() + unit->getType().maxShields())) ; // Precalculated, precached.
+
+    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())) ; // Precalculated, precached.
 }
 
 
+//Increments the number of miners on a resource.
 void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
 	locked_mine_ = new_resource.bwapi_unit_;
 	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
+//Decrements the number of miners on a resource.
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_ /*&& locked_mine_->exists()*/){
-		map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
-		if (iter != ri.resource_inventory_.end()){
-			iter->second.number_of_miners_--;
-		}
-		locked_mine_ = nullptr;
+	if (locked_mine_){
+        if (getMine(ri)) {
+            getMine(ri)->number_of_miners_--;
+        }
 	}
+    locked_mine_ = NULL;
 }
 
+//finds mine- Will return true something even if the mine DNE.
 Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     Stored_Resource* tenative_resource = nullptr;
     tenative_resource = &ri.resource_inventory_.find( locked_mine_ )->second;
     return tenative_resource;
 }
 
-bool Stored_Unit::isClearing( Resource_Inventory &ri ) {
+//checks if mine started with less than 8 resource
+bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
-        map<Unit, Stored_Resource>::iterator iter = ri.resource_inventory_.find(locked_mine_);
-        if (iter != ri.resource_inventory_.end() && iter->second.current_stock_value_ <= 8) {
-            return true;
+        if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
+            return mine_of_choice->max_stock_value_ <= 8;
         }
     }
     return false;
 }
 
+//checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
+bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
+    if (locked_mine_) {
+        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine(ri);
+            return mine_of_choice->max_stock_value_ >= 8 && mine_of_choice->type_.isMineralField();
+        }
+    }
+    return false;
+}
+
+bool Stored_Unit::isAssignedGas(Resource_Inventory &ri) {
+    if (locked_mine_) {
+        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine(ri);
+            return mine_of_choice->type_.isRefinery();
+        }
+    }
+    return false;
+}
+
+bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
+
+    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
+
+
+}
+// Warning- depends on unit being updated.
+bool Stored_Unit::isAssignedBuilding() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build ) && time_since_last_command_ < 15 * 24;
+    return building_sent;
+}
+
+//if the miner is not doing any thing
+bool Stored_Unit::isNoLock(){
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return  bwapi_unit_ && !bwapi_unit_->getOrderTarget();
+}
+
+//if the miner is not mining his target. Target must be visible.
+bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && (bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24 );
+}
+
+//prototypeing
+bool Stored_Unit::isLongRangeLock() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return bwapi_unit_ && locked_mine_ && !locked_mine_->exists();
+}
+
+bool Stored_Unit::isMovingLock() {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+   return bwapi_unit_ && locked_mine_ && locked_mine_->exists() && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+}

@@ -36,6 +36,10 @@ bool MeatAIModule::isInLine(const Unit &unit){
 	return passive;
 }
 
+bool MeatAIModule::isEmptyWorker(const Unit &unit) {
+    bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
+    return !laden_worker;
+}
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
 bool MeatAIModule::isIdleEmpty(const Unit &unit) {
 
@@ -50,7 +54,7 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
                          (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
-                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24) || // unit is done upgrading.
+                         (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 15 * 24) || // unit is done upgrading.
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                           u_type == UnitCommandTypes::None ||
@@ -546,7 +550,7 @@ int MeatAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & ene
 int MeatAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int threatening_e;
-    threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  (1 - u->getType().isFlyer()) * enemy_loc.stock_ground_units_;
+    threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
     return threatening_e;
 }
 
@@ -1033,17 +1037,18 @@ bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos)
 bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool ready_to_move = true;
-    int cd_frames;
+    bool wait_for_cooldown = false;
+    int cd_frames = 0;
 
     if (cd_frames_chosen == 99) {
         cd_frames = 0;
     } 
     else { // if the person has selected some specific delay they are looking for, check that.
-        ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - max(cd_frames_chosen, Broodwar->getLatencyFrames() + 1);
+        ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames_chosen;
         return ready_to_move;
     }
 
-    bool unit_fighting = unit->isAttackFrame() || unit->isStartingAttack();
+    bool unit_fighting = /*unit->isAttackFrame() || */unit->isStartingAttack();
     if (unit_fighting) {
         ready_to_move = false;
         return ready_to_move;
@@ -1051,35 +1056,37 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     UnitCommandType u_command = unit->getLastCommand().getType();
 
-    if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
-        UnitType u_type = unit->getType();
-
-        if (u_type == UnitTypes::Zerg_Drone) {
-            cd_frames = 1;
-        }
-        else if (u_type == UnitTypes::Zerg_Zergling) {
-            cd_frames = 5;
-        }
-        else if (u_type == UnitTypes::Zerg_Hydralisk) {
-            cd_frames = 7;
-        }
-        else if (u_type == UnitTypes::Zerg_Lurker) {
-            cd_frames = 2;
-        }
-        else if (u_type == UnitTypes::Zerg_Mutalisk) {
-            cd_frames = 1;
-        }
-        else if (u_type == UnitTypes::Zerg_Ultralisk) {
-            cd_frames = 15;
-        }
-    }
-    else if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
+    //if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
+    //    UnitType u_type = unit->getType();
+    //    //cd_frames = Broodwar->getLatencyFrames();
+    //    //if (u_type == UnitTypes::Zerg_Drone) {
+    //    //    cd_frames = 1;
+    //    //}
+    //    //else if (u_type == UnitTypes::Zerg_Zergling) {
+    //    //    cd_frames = 5;
+    //    //}
+    //    //else if (u_type == UnitTypes::Zerg_Hydralisk) {
+    //    //    cd_frames = 7;
+    //    //}
+    //    //else if (u_type == UnitTypes::Zerg_Lurker) {
+    //    //    cd_frames = 2;
+    //    //}
+    //    //else if (u_type == UnitTypes::Zerg_Mutalisk) {
+    //    //    cd_frames = 1;
+    //    //}
+    //    //else if (u_type == UnitTypes::Zerg_Ultralisk) {
+    //    //    cd_frames = 15;
+    //    //}
+    //    //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
+    //}
+    //else 
+    if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
     }
-    
-    if (u_command == UnitCommandTypes::Attack_Move) {
-        cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
-    }
+
+    //if (u_command == UnitCommandTypes::Attack_Move) {
+    //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
+    //}
     //if (u_order == Orders::Move && ( (!unit->isMoving() && !unit->isAccelerating()) || unit->isBraking() ) ) {
     //    cd_frames = 7; // if it's not moving, accellerating or IS breaking.
     //}
@@ -1088,9 +1095,10 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     //    cd_frames = 12;
     //}
 
-    if (cd_frames < Broodwar->getLatencyFrames() ) {
-        cd_frames = Broodwar->getLatencyFrames();
-    }
+    //if (cd_frames < Broodwar->getLatencyFrames() ) {
+    //    cd_frames = Broodwar->getLatencyFrames();
+    //}
+
     ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames;
     return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
@@ -1483,6 +1491,12 @@ double MeatAIModule::getProperSpeed( const Unit u ) {
     else if (u_type == UnitTypes::Zerg_Ultralisk && owner->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
         base_speed *= 1.5;
     }
+    else if (u_type == UnitTypes::Protoss_Scout && owner->getUpgradeLevel(UpgradeTypes::Gravitic_Thrusters) > 0) {
+        base_speed *= 1.5;
+    }
+    else if (u_type == UnitTypes::Protoss_Zealot && owner->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0) {
+        base_speed *= 1.5;
+    }
 
     return base_speed;
 }
@@ -1502,37 +1516,33 @@ double MeatAIModule::getProperSpeed(const UnitType &type, const Player owner) {
     else if (type == UnitTypes::Zerg_Ultralisk && owner->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis) > 0) {
         base_speed *= 1.5;
     }
-
+    else if (type == UnitTypes::Protoss_Scout && owner->getUpgradeLevel(UpgradeTypes::Gravitic_Thrusters) > 0) {
+        base_speed *= 1.5;
+    }
+    else if (type == UnitTypes::Protoss_Zealot && owner->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0) {
+        base_speed *= 1.5;
+    }
     return base_speed;
 }
 
 int MeatAIModule::getProperRange(const Unit u) {
+
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
+
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
         base_range += 1 * 32;
     }
     else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
         base_range += 2 * 32;
     }
-    else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
-        base_range += 1 * 32;
+    else if (u_type == UnitTypes::Protoss_Reaver) {
+        base_range += 8 * 32;
     }
-    else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
-        base_range += 3 * 32;
-    }
-
-    return base_range;
-}
-
-int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
-    int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
-    if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
-        base_range += 1 * 32;
-    }
-    else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
-        base_range += 2 * 32;
+    else if (u_type == UnitTypes::Protoss_Carrier) {
+        base_range += 8 * 32;
     }
     else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
         base_range += 1 * 32;
@@ -1546,9 +1556,37 @@ int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
     return base_range;
 }
+
+int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
+    int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
+    if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
+        base_range += 2 * 32;
+    }
+    else if (u_type == UnitTypes::Protoss_Reaver) {
+        base_range += 8 * 32;
+    }
+    else if (u_type == UnitTypes::Protoss_Carrier) {
+        base_range += 8 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
+        base_range += 1 * 32;
+    }
+    else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
+        base_range += 3 * 32;
+    }
+    else if ( u_type == UnitTypes::Terran_Barracks ) {
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+    }
+
+    return base_range;
+}
+
 int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (int)MeatAIModule::getProperSpeed(u) * (UnitTypes::Zerg_Lurker != u->getType()) * ei_loc.max_cooldown_ + getProperRange(u);
+    return (int)( u->getType() != UnitTypes::Zerg_Lurker * (int)MeatAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + MeatAIModule::getProperRange(u) ); //lurkers have a proper speed of 0.
 }
 
 
@@ -1709,6 +1747,24 @@ bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
     return  safe_mine || desperate_for_minerals;
 }
 
+//Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units.
+bool MeatAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
+    return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
+}
+
+double MeatAIModule::bindBetween(double x, double lower_bound, double upper_bound) {
+    if (lower_bound >= upper_bound) {
+        throw std::invalid_argument("lower bound is greater than or equal to upper bound");
+    }
+    if (x > upper_bound) {
+        return upper_bound;
+    }
+    else if (x < lower_bound) {
+        return lower_bound;
+    }
+    return x;
+}
 //Zerg_Carapace = 3,
 //Zerg_Melee_Attacks = 10,
 //Zerg_Missile_Attacks = 11,

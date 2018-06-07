@@ -60,7 +60,9 @@ int Reservation::getExcessGas() {
 }
 
 bool Reservation::checkExcessIsGreaterThan(const UnitType &type) const {
-    return Broodwar->self()->gas() - gas_reserve_ > type.gasPrice() && Broodwar->self()->minerals() > type.mineralPrice() ;
+    bool okay_on_gas = Broodwar->self()->gas() - gas_reserve_ > type.gasPrice() || type.gasPrice() == 0;
+    bool okay_on_minerals = Broodwar->self()->minerals() > type.mineralPrice() || type.mineralPrice() == 0;
+    return okay_on_gas && okay_on_minerals;
 }
 
 bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {

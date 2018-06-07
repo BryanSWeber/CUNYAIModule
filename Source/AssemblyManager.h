@@ -85,7 +85,12 @@ struct Building_Gene {
     bool checkBuilding_Desired( UnitType ut ); 
     bool checkUpgrade_Desired( UpgradeType upgrade );
     bool checkResearch_Desired( TechType upgrade );
-    bool checkEmptyBuildOrder();
+    bool isEmptyBuildOrder();
+
+    void addBuildOrderElement(const UpgradeType &ups); // adds an element to the list.
+    void addBuildOrderElement(const TechType & research);// adds an element to the list.
+    void addBuildOrderElement(const UnitType &ut); // adds an element to the list.
+
     //bool checkExistsInBuild( UnitType unit );
 };
 

@@ -29,6 +29,9 @@ struct Inventory {
     int hatches_;
     int last_gas_check_;
     int my_portion_of_the_map_;
+    int estimated_enemy_workers_;
+    int map_x;
+    int map_y;
 
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;
@@ -52,12 +55,13 @@ struct Inventory {
 
     TilePosition next_expo_;
 	bool cleared_all_start_positions_;
-    bool workers_are_clearing_;
+    int workers_clearing_;
 
     bool unwalkable_needs_updating = false;
     bool smoothed_needs_updating = false;
     bool veins_need_updating = false;
     bool veins_out_need_updating = false;
+    bool veins_in_need_updating = false;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);
@@ -101,7 +105,7 @@ struct Inventory {
     // Updates the unwalkable portions of the map.
     void Inventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades.
-    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri);
+    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
     // Marks and smooths the edges of the map.
     void Inventory::updateSmoothPos();
@@ -130,11 +134,18 @@ struct Inventory {
 	void Inventory::getExpoPositions();
 	// Changes the next expo to X:
 	void Inventory::setNextExpo(const TilePosition tp);
+
+    //Visualizations
     void Inventory::drawExpoPositions() const;
+    void Inventory::drawBasePositions() const;
 
 	// Adds start positions to inventory object.
 	void Inventory::getStartPositions();
 	// Updates map positions and removes all visible ones;
 	void Inventory::updateStartPositions(const Unit_Inventory &ei);
+
+
+    // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
+    void updateEnemyBasePosition(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
 }; 

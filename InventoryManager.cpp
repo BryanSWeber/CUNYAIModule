@@ -461,7 +461,7 @@ void Inventory::updateMapVeins() {
 
     for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
-        for (vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) {
+        for (vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
             // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
             // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
             // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
@@ -470,7 +470,7 @@ void Inventory::updateMapVeins() {
             bool local_grid[3][3]; // WAY BETTER!
             int minitile_x = position_to_investigate->x;
             int minitile_y = position_to_investigate->y;
-            bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 <= map_x && minitile_y + 1 <= map_y;
+            bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 < map_x && minitile_y + 1 < map_y;
 
             local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
             local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
@@ -539,7 +539,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
  
-    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0 ) {
+    if (!map_veins_out_from_main_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 0 ) {
         return;
     }
     else {
@@ -773,7 +773,7 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     
     enemy_base_ = center;
 
-    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] != 0) {
+    if (!map_veins_out_from_enemy_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 1) {
         return;
     }
     else {
@@ -882,7 +882,7 @@ int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Posit
         WalkPosition wp_b = WalkPosition(B);
         int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
         int B = map_veins_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
-        if (A > 0 && B > 0) {
+        if (A > 1 && B > 1) {
             return abs(A - B);
         }
     }
@@ -895,7 +895,7 @@ int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
     if ( map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
         int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 0) {
+        if (A > 1) {
             return map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
@@ -911,7 +911,7 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
         WalkPosition wp_b = WalkPosition(B);
         int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
         int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
-        if (A > 0 && B > 0) {
+        if (A > 1 && B > 1) {
             return abs(A - B);
         }
     }
@@ -923,7 +923,7 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
     if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 0) {
+        if (A > 1) {
             return map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
@@ -1036,7 +1036,7 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 //        //}
 //    }
 //}
-void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) {
+void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
@@ -1085,6 +1085,30 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
             int min_x = e.second.pos_.x - e.second.type_.dimensionRight();
             int max_y = e.second.pos_.y + e.second.type_.dimensionUp();
             int min_y = e.second.pos_.y - e.second.type_.dimensionDown();
+
+            WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
+            WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
+
+            //respect map bounds please.
+            WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
+            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+
+            for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
+                for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
+                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                }
+            }
+        }
+    }
+
+    for (auto & n : ni.unit_inventory_) {
+        if (n.second.type_.isBuilding()) {
+
+            // mark the building's current position.
+            int max_x = n.second.pos_.x + n.second.type_.dimensionLeft();
+            int min_x = n.second.pos_.x - n.second.type_.dimensionRight();
+            int max_y = n.second.pos_.y + n.second.type_.dimensionUp();
+            int min_y = n.second.pos_.y - n.second.type_.dimensionDown();
 
             WalkPosition max_upper_left = WalkPosition(Position(min_x, min_y));
             WalkPosition max_lower_right = WalkPosition(Position(max_x, max_y));
@@ -1383,7 +1407,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
                          MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
-                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource.
+                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
 
                         int local_min = 0;
 
@@ -1438,17 +1462,16 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
 
 void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
 {
-    bool clearing_workers_found = false;
+    int clearing_workers_found = 0;
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
-            if ( w->second.isClearing(ri) ) {
-                clearing_workers_found = true;
-                break;
+            if ( w->second.isAssignedClearing(ri) ) {
+                clearing_workers_found ++;
             }
         }
     }
-    workers_are_clearing_ = clearing_workers_found;
+    workers_clearing_ = clearing_workers_found;
 }
 
 void Inventory::getExpoPositions() {
@@ -1515,9 +1538,129 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     if ( start_positions_.empty() ) {
         cleared_all_start_positions_ = true;
     }
-    else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
-        updateMapVeinsOutFromFoe(start_positions_[0]);
+    //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
+    //    updateMapVeinsOutFromFoe(start_positions_[0]);
+    //}
+}
+
+void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+
+    // Need to update map objects for every building!
+    bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
+    bool waited_a_second = Broodwar->getFrameCount() % (24 * 2) == 0; // technically more.
+
+    //every 10 sec check if we're sitting at our destination.
+    if (Broodwar->isVisible(TilePosition(enemy_base_)) && Broodwar->getFrameCount() % (24 * 10) == 0) { 
+        unwalkable_needs_updating = true;
     }
+
+    //If we need updating (from building destruction or any other source) - begin the cautious chain of potential updates.
+    if (unwalkable_needs_updating && !unit_calculation_frame && waited_a_second) {
+
+        getExpoPositions();
+        updateLiveUnwalkable(ui, ei, ri, ni);
+        unwalkable_needs_updating = false;
+        smoothed_needs_updating = true; // next step on ladder now.
+ 
+    }
+    else if (smoothed_needs_updating && !unit_calculation_frame) {
+
+        updateSmoothPos();
+        smoothed_needs_updating = false;
+        veins_need_updating = true;
+
+    }
+    else if (veins_need_updating && !unit_calculation_frame && waited_a_second) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
+
+        updateMapVeins();
+        veins_need_updating = false;
+        veins_out_need_updating = true;
+
+    }
+    else if (veins_out_need_updating && !unit_calculation_frame) {
+
+        Stored_Unit* center_building = MeatAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        Position suspected_enemy_base = Position(0, 0);
+
+        if (center_building && center_building->bwapi_unit_) {
+            suspected_enemy_base = Position(center_building->bwapi_unit_->getLeft(),center_building->bwapi_unit_->getTop()); // if we use the middle the unit will be disconnected from the rest of the map.
+        }
+
+        if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
+
+        }
+        else if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ && suspected_enemy_base != Position(0, 0)) {
+            updateMapVeinsOutFromFoe(suspected_enemy_base);
+        }
+        else if (ei.getMeanBuildingLocation() != Position(0, 0)) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+            updateMapVeinsOutFromFoe(ei.getMeanBuildingLocation());
+        }
+        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0)) { // maybe it's a base we havent' seen yet?
+            int attempts = 0;
+            while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < start_positions_.size()) {
+                std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
+                attempts++;
+            }
+            updateMapVeinsOutFromFoe(start_positions_[0]);
+
+        }
+        else if (!expo_positions_.empty() && expo_positions_[0] && expo_positions_[0] != TilePosition(0, 0)) { // maybe it's a base we havent' seen yet?
+            int attempts = 0;
+            while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < expo_positions_.size()) {
+                std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
+                attempts++;
+            }
+            updateMapVeinsOutFromFoe(Position(expo_positions_[0]));
+
+        }
+
+        veins_out_need_updating = false;
+        veins_in_need_updating = true;
+    }
+    else if (veins_in_need_updating && !unit_calculation_frame) {
+
+        //Stored_Unit* center_building = MeatAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        //Position suspected_friendly_base = Position(0, 0);
+
+        //if (center_building && center_building->bwapi_unit_) {
+        //    suspected_friendly_base = Position(center_building->bwapi_unit_->getLeft(), center_building->bwapi_unit_->getTop()); // if we use the middle the unit will be disconnected from the rest of the map.
+        //}
+
+        //if (suspected_friendly_base.isValid() && suspected_friendly_base == enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+
+        //}
+        //else if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+        //    updateMapVeinsOutFromMain(suspected_friendly_base);
+        //}
+
+        //Unit_Inventory base_core; //get all the bases that might need a new creep colony.
+        //Position most_exposed_base = Position(0, 0);
+        //int distance_from_enemy = 9999999;
+        //for (const auto &u : ui.unit_inventory_) {
+        //    if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //    else if (u.second.type_ == UnitTypes::Zerg_Lair) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //    else if (u.second.type_ == UnitTypes::Zerg_Hive) {
+        //        base_core.addStored_Unit(u.second.bwapi_unit_);
+        //    }
+        //}
+
+        //for (auto i : base_core.unit_inventory_) {
+        //    int temp_dist = getRadialDistanceOutFromEnemy(i.second.pos_);
+        //    if (getRadialDistanceOutFromEnemy(i.second.pos_) < distance_from_enemy ) {
+        //        distance_from_enemy = temp_dist;
+        //        most_exposed_base = i.second.pos_;
+        //    }
+        //}
+
+        //updateMapVeinsOutFromMain(most_exposed_base); // safe against 0,0 locations.
+
+        veins_in_need_updating = false;
+    }
+
 }
 
 void Inventory::setNextExpo( const TilePosition tp ) {
@@ -1526,18 +1669,29 @@ void Inventory::setNextExpo( const TilePosition tp ) {
 
 void Inventory::drawExpoPositions() const
 {
+    if (_ANALYSIS_MODE) {
+        for (auto &p : expo_positions_) {
+            Position lower_left = Position(p);
+            if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
+                lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+                lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+                Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+            }
+        }
 
-    for (auto &p : expo_positions_) {
-        Position lower_left = Position(p);
-        lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-        lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
-        Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
+        Position lower_left = Position(next_expo_);
+        if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
+            lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
+            lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+            Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
+        }
     }
-
-    Position lower_left = Position(next_expo_);
-    lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-    lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
-    Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
-
 }
 
+void Inventory::drawBasePositions() const
+{
+    if (_ANALYSIS_MODE) {
+        Broodwar->drawCircleMap(enemy_base_, 25, Colors::Red, true);
+        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+    }
+}
