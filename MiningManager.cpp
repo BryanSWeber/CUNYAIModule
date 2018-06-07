@@ -99,12 +99,15 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     bool mine_minerals = mine.isMineralField();
     bool mine_is_right_type = true;
 
+    // mineral patches can handle up to 2 miners, gas/refineries can handle up to 3.
     if ( mine_minerals ) {
         low_drone = 1;
     } else {
         low_drone = 2;
     }
 
+
+    // scrape over every resource to determine the lowest number of miners.
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 
         if (mine_minerals) {
@@ -114,7 +117,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone && r->second.occupied_natural_) {
+        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone && r->second.occupied_natural_) { //occupied natural -> resource is close to a base
             low_drone = r->second.number_of_miners_;
         }
 
@@ -130,15 +133,17 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         }
 
         if (mine_is_right_type && r->second.number_of_miners_ <= low_drone) {
-            if (r->second.occupied_natural_ /*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) {
+            if (r->second.occupied_natural_ /*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
+
                 available_fields.addStored_Resource(r->second);
             }
             else {
-                long_dist_fields.addStored_Resource(r->second);
+                long_dist_fields.addStored_Resource(r->second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
             }
         }
     } //find closest mine meeting this criteria.
 
+    // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
         Stored_Resource* closest = getClosestGroundStored(available_fields, inventory, miner.pos_);
         if ( closest && closest->bwapi_unit_ /*&& miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
@@ -147,30 +152,15 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
                 my_reservation.removeReserveSystem(unit->getBuildType());
             }
         }
-    } else if (!long_dist_fields.resource_inventory_.empty()) {
+    } else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
         Stored_Resource * closest = getClosestGroundStored(long_dist_fields, inventory, miner.pos_);
 
-        //if (closest && closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_)) {
-        //    miner.startMine(*closest, land_inventory);
-
-        //    if (building_unit) {
-        //        my_reservation.removeReserveSystem(unit->getBuildType());
-        //    }
-
-        //}
-        //else if (closest && (!closest->bwapi_unit_ || !closest->bwapi_unit_->exists()) && miner.bwapi_unit_->move(closest->pos_) /*&& checkSafeMineLoc(closest->pos_, ui, inventory)*/ ) {
-        //    miner.startMine(*closest, land_inventory);
-
-        //    if (building_unit) {
-        //        my_reservation.removeReserveSystem(unit->getBuildType());
-        //    }
-        //}
         if ( closest ) {
             miner.startMine(*closest, land_inventory);
 
-            if (building_unit) {
-                my_reservation.removeReserveSystem(unit->getBuildType());
-            }
+        //    if (building_unit) {
+        //        my_reservation.removeReserveSystem(unit->getBuildType());
+        //    }
 
         }
 
@@ -230,7 +220,7 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && inventory.getDifferentialDistanceOutFromHome(miner.pos_,r->second.pos_) < 100000 ) {
+        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && inventory.getRadialDistanceOutFromHome(r->second.pos_) < 100000 ) {
             return true;
         }
     } //find closest mine meeting this criteria.
