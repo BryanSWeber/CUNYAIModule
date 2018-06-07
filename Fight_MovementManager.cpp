@@ -13,14 +13,14 @@ using namespace std;
 void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
 
             Position pos = unit->getPosition();
-            bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             vector<int> useful_stocks = MeatAIModule::getUsefulStocks(ui, ei);
+            Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
+            UnitType u_type = unit->getType();
+            bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             bool ready_to_fight = useful_stocks[0] > useful_stocks[1] || !potential_fears || !army_starved ;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0,0);
             bool scouting_returned_nothing = !enemy_scouted && inv.start_positions_.empty();
-            Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
             bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
-            UnitType u_type = unit->getType();
 
             if (u_type != UnitTypes::Zerg_Overlord) {
                 // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
@@ -50,10 +50,11 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             }
             else { //If you are an overlord, follow an abbreviated version of this.
 
-                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
-
-                if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight /*|| army_starved*/)) { // Otherwise, return home.
+                if ( !ready_to_fight ) { // Otherwise, return home.
                     setAttractionHome(unit, pos, ei, inv);
+                }
+                else { 
+                    setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
                 }
                 //else if (!enemy_scouted && healthy && ready_to_fight) {
                 //    scoutEnemyBase(unit, pos, inv);
