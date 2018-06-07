@@ -77,7 +77,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
             }
         }
 
-        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser) { // Destroyed refineries revert to geyers, requiring the manual catch 
+        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || e->second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e->second.valid_pos_ = false;
         }
 
@@ -308,23 +308,23 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      }
  }
 
- //for the army that can actually move.
- Position Unit_Inventory::getClosestMeanArmyLocation() const {
-     Position mean_pos = getMeanArmyLocation();
-     if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
-        Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
-         if (nearest_neighbor && nearest_neighbor->getPosition() ) {
-             Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
-             return out;
-         }
-         else {
-             return Position(0, 0);  // you might be dead at this point, fyi.
-         }
-     }
-     else {
-         return Position(0, 0);  // you might be dead at this point, fyi.
-     }
- }
+ //for the army that can actually move. Removed for usage of Broodwar->getclosest(), a very slow function.
+ //Position Unit_Inventory::getClosestMeanArmyLocation() const {
+ //    Position mean_pos = getMeanArmyLocation();
+ //    if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
+ //       Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
+ //        if (nearest_neighbor && nearest_neighbor->getPosition() ) {
+ //            Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
+ //            return out;
+ //        }
+ //        else {
+ //            return Position(0, 0);  // you might be dead at this point, fyi.
+ //        }
+ //    }
+ //    else {
+ //        return Position(0, 0);  // you might be dead at this point, fyi.
+ //    }
+ //}
 
 
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
@@ -525,6 +525,7 @@ Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     return tenative_resource;
 }
 
+//checks if mine started with less than 8 resource
 bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     if ( locked_mine_ ) {
         if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
@@ -534,6 +535,7 @@ bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     return false;
 }
 
+//checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
 bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
     if (locked_mine_) {
         if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {

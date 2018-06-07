@@ -1595,13 +1595,22 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         else if (ei.getMeanBuildingLocation() != Position(0, 0)) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOutFromFoe(ei.getMeanBuildingLocation());
         }
+        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0)) { // maybe it's a base we havent' seen yet?
+            int attempts = 0;
+            while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < start_positions_.size()) {
+                std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
+                attempts++;
+            }
+            updateMapVeinsOutFromFoe(start_positions_[0]);
+
+        }
         else if (!expo_positions_.empty() && expo_positions_[0] && expo_positions_[0] != TilePosition(0, 0)) { // maybe it's a base we havent' seen yet?
             int attempts = 0;
             while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < expo_positions_.size()) {
                 std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
                 attempts++;
             }
-            updateMapVeinsOutFromFoe(Position(start_positions_[0]));
+            updateMapVeinsOutFromFoe(Position(expo_positions_[0]));
 
         }
 

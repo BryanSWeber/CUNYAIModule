@@ -15,7 +15,7 @@ void Boids::Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inv
             Position pos = unit->getPosition();
             bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
             vector<int> useful_stocks = MeatAIModule::getUsefulStocks(ui, ei);
-            bool ready_to_fight = useful_stocks[1] > useful_stocks[2] || !potential_fears || !army_starved ;
+            bool ready_to_fight = useful_stocks[0] > useful_stocks[1] || !potential_fears || !army_starved ;
             bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0,0);
             bool scouting_returned_nothing = !enemy_scouted && inv.start_positions_.empty();
             Unit_Inventory local_neighborhood = MeatAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
@@ -408,7 +408,7 @@ void Boids::setCentralize( const Position &pos, const Inventory &inventory ) {
 //Cohesion, all units tend to prefer to be together.
 void Boids::setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui ) {
 
-    const Position loc_center = ui.getClosestMeanArmyLocation();
+    const Position loc_center = ui.getMeanLocation();
     if ( loc_center != Position( 0, 0 ) ) {
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
@@ -545,7 +545,7 @@ void Boids::setObjectAvoid( const Unit &unit, const Position &pos, const Invento
                 double walkability_x = TilePosition( pos ).x + x;
                 double walkability_y = TilePosition( pos ).y + y;
                 if ( !(x == 0 && y == 0) ) {
-                    if ( walkability_x >= Broodwar->mapWidth() * 32 || walkability_y >= Broodwar->mapHeight() * 32 || // out of bounds by above map value.
+                    if ( pos.isValid() || // out of bounds by above map value.
                         walkability_x < 0 || walkability_y < 0 ||  // out of bounds below map,  0.
                         Broodwar->getGroundHeight( TilePosition( walkability_x, walkability_y ) ) != Broodwar->getGroundHeight( unit->getTilePosition() ) ||  //If a position is on a different level, it's essentially unwalkable.
                         !MeatAIModule::isClearRayTrace( pos, Position( walkability_x, walkability_y ), inventory ) ) { // or if the path to the target is relatively unwalkable.

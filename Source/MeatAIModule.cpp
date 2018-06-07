@@ -381,7 +381,7 @@ void MeatAIModule::onFrame()
     double army_derivative = CD.army_derivative;
     double tech_derivative = CD.tech_derivative;
 
-    if (_ANALYSIS_MODE && Broodwar->getFrameCount() % 24 == 0) {
+    if (_ANALYSIS_MODE && t_game % 24 == 0) {
         CD.printModelParameters();
     }
 
@@ -571,7 +571,7 @@ void MeatAIModule::onFrame()
     auto end_preamble = std::chrono::high_resolution_clock::now();
     preamble_time = end_preamble - start_preamble;
 
-    if (Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0) {
+    if (t_game % Broodwar->getLatencyFrames() != 0) {
         return;
     }
 
@@ -665,7 +665,7 @@ void MeatAIModule::onFrame()
                     //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
                     //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                     //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-
+                    bool grim_distance_trigger = (distance_to_foe < 32 && getProperRange(u) < 32);
                     bool neccessary_attack =
                         (targetable_stocks > 0 || threatening_stocks == 0) && (
                             helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
@@ -679,13 +679,13 @@ void MeatAIModule::onFrame()
                             threatening_stocks == 0 ||
                             (u_type == UnitTypes::Zerg_Scourge && distance_to_foe < enemy_loc.max_range_ + 2 * chargable_distance_net) || // the only sucide unit should not be prevented from suiciding.
                         //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                        (distance_to_foe < 32 && getProperRange(u) < 32) );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
+                            grim_distance_trigger );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                         //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                         //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 
 
                     bool force_retreat = 
-                        ( targetable_stocks == 0 && threatening_stocks > 0 ) ||
+                        ( targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         (u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0 ) ||
                         (u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_ )) || // run if you are flying (like a muta) and cannot be practical.
                         (e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
