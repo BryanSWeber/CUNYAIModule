@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "MeatAIModule.h"
+#include "CUNYAIModule.h"
 
 using namespace std;
 using namespace BWAPI;

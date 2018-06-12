@@ -1,12 +1,12 @@
 #pragma once
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
-bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv ) {
+bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv ) {
     if ( my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ) && 
         (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
 
@@ -86,7 +86,7 @@ bool MeatAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
 
   //Sends a Worker to gather resources from UNITTYPE (mineral or refinery). letabot has code on this. "AssignEvenSplit(Unit* unit)"
-void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inventory &ui) {
+void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inventory &ui) {
 
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
@@ -169,7 +169,7 @@ void MeatAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     miner.updateStoredUnit(unit);
 } // closure worker mine
 
-void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
+void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
@@ -212,7 +212,7 @@ void MeatAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     miner.updateStoredUnit(unit);
 }
 
-bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui)
+bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui)
 {
 
     bool already_assigned = false;
@@ -229,10 +229,10 @@ bool MeatAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 }
 
   //Returns True if there is an out for gas. Does not consider all possible gas outlets.
-bool MeatAIModule::Gas_Outlet() {
+bool CUNYAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( MeatAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) > 0 ) {
+    if ( CUNYAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) > 0 ) {
         outlet_avail = true;
     }
 

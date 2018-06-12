@@ -1,6 +1,6 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
-# include "Source\MeatAIModule.h"
+# include "Source\CUNYAIModule.h"
 # include "Source\GeneticHistoryManager.h"
 # include <fstream>
 # include <BWAPI.h>
@@ -337,10 +337,10 @@ GeneticHistory::GeneticHistory( string file ) {
 
                 delta_out   = 0.4;
                 gamma_out   = 0.4;
-                a_army_out = MeatAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-                a_econ_out = MeatAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
-                a_tech_out = MeatAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
-                r_out =      MeatAIModule::bindBetween(pow(r_win[parent_1], crossover)      * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
+                a_army_out = CUNYAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+                a_econ_out = CUNYAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
+                a_tech_out = CUNYAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
+                r_out =      CUNYAIModule::bindBetween(pow(r_win[parent_1], crossover)      * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
             }
         }
         else { 
@@ -357,12 +357,12 @@ GeneticHistory::GeneticHistory( string file ) {
                     parent_2 = parent_1;
                 }
 
-                delta_out = MeatAIModule::bindBetween(pow(delta_win[parent_1], crossover)* pow(delta_win[parent_2], (1 - crossover)), 0., 1.);
-                gamma_out = MeatAIModule::bindBetween(pow(gamma_win[parent_1], crossover) * pow(gamma_win[parent_2], (1 - crossover)), 0., 1.);
-                a_army_out = MeatAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-                a_econ_out = MeatAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
-                a_tech_out = MeatAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
-                r_out = MeatAIModule::bindBetween(pow(r_win[parent_1], crossover) * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
+                delta_out = CUNYAIModule::bindBetween(pow(delta_win[parent_1], crossover)* pow(delta_win[parent_2], (1 - crossover)), 0., 1.);
+                gamma_out = CUNYAIModule::bindBetween(pow(gamma_win[parent_1], crossover) * pow(gamma_win[parent_2], (1 - crossover)), 0., 1.);
+                a_army_out = CUNYAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+                a_econ_out = CUNYAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
+                a_tech_out = CUNYAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
+                r_out = CUNYAIModule::bindBetween(pow(r_win[parent_1], crossover) * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
             }
             else { // we must need diversity.  
                 // use the random values we have determined in the beginning and the random opening.
@@ -423,10 +423,10 @@ GeneticHistory::GeneticHistory( string file ) {
             // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
 
             //a_vis_out_mutate_; // currently does nothing, vision is an artifact atm.
-            a_army_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
-            a_econ_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
-            a_tech_out_mutate_ = mutation_0 == 2 ? MeatAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
-            r_out_mutate_ =      mutation_0 == 3 ? MeatAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
+            a_army_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
+            a_econ_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
+            a_tech_out_mutate_ = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+            r_out_mutate_ =      mutation_0 == 3 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
         }
         else {
@@ -464,12 +464,12 @@ GeneticHistory::GeneticHistory( string file ) {
             // Chance of mutation.
             if (dis(gen) > 0.95 || selected_win_count < 50 ) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
-                delta_out_mutate_ = mutation_0 == 0 ? MeatAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
-                gamma_out_mutate_ = mutation_0 == 1 ? MeatAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
-                a_army_out_mutate_ = mutation_0 == 2 ? MeatAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
-                a_econ_out_mutate_ = mutation_0 == 3 ? MeatAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
-                a_tech_out_mutate_ = mutation_0 == 4 ? MeatAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
-                r_out_mutate_ =      mutation_0 == 5 ? MeatAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
+                delta_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
+                gamma_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
+                a_army_out_mutate_ = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
+                a_econ_out_mutate_ = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
+                a_tech_out_mutate_ = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+                r_out_mutate_ =      mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
             }
             else {

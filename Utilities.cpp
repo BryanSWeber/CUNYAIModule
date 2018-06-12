@@ -1,12 +1,12 @@
 #pragma once
-# include "Source\MeatAIModule.h"
+# include "Source\CUNYAIModule.h"
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
 // Gets units last error and prints it directly onscreen.  From tutorial.
-void MeatAIModule::PrintError_Unit(const Unit &unit) {
+void CUNYAIModule::PrintError_Unit(const Unit &unit) {
     Position pos = unit->getPosition();
     Error lastErr = Broodwar->getLastError();
     Broodwar->registerEvent( [pos, lastErr]( Game* ) { Broodwar->drawTextMap( pos, "%c%s", Text::Red, lastErr.c_str() ); },   // action
@@ -15,7 +15,7 @@ void MeatAIModule::PrintError_Unit(const Unit &unit) {
 }
 
 // Identifies those moments where a worker is gathering and its unusual subcases.
-bool MeatAIModule::isActiveWorker(const Unit &unit){
+bool CUNYAIModule::isActiveWorker(const Unit &unit){
 	bool passive = //BWAPI::Orders::MoveToMinerals &&
 		unit->getOrder() == BWAPI::Orders::MoveToGas ||
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
@@ -28,7 +28,7 @@ bool MeatAIModule::isActiveWorker(const Unit &unit){
 	return passive;
 }
 
-bool MeatAIModule::isInLine(const Unit &unit){
+bool CUNYAIModule::isInLine(const Unit &unit){
 	bool passive = 
 		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
 		unit->getOrder() == BWAPI::Orders::WaitForGas ||
@@ -36,12 +36,12 @@ bool MeatAIModule::isInLine(const Unit &unit){
 	return passive;
 }
 
-bool MeatAIModule::isEmptyWorker(const Unit &unit) {
+bool CUNYAIModule::isEmptyWorker(const Unit &unit) {
     bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
     return !laden_worker;
 }
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
-bool MeatAIModule::isIdleEmpty(const Unit &unit) {
+bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
     bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
 
@@ -66,14 +66,14 @@ bool MeatAIModule::isIdleEmpty(const Unit &unit) {
 }
 
 // Did the unit fight in the last 5 seconds?
-bool MeatAIModule::isRecentCombatant(const Unit &unit) {
+bool CUNYAIModule::isRecentCombatant(const Unit &unit) {
 	bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
 	bool recent_order = unit->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
 	return fighting_now && recent_order;
 }
 
 // Checks if a unit is a combat unit.
-bool MeatAIModule::IsFightingUnit(const Unit &unit)
+bool CUNYAIModule::IsFightingUnit(const Unit &unit)
 {
     if ( !unit )
     {
@@ -103,7 +103,7 @@ bool MeatAIModule::IsFightingUnit(const Unit &unit)
 }
 
 // Checks if a stored unit is a combat unit.
-bool MeatAIModule::IsFightingUnit(const Stored_Unit &unit)
+bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
 {
     if (!unit.valid_pos_)
     {
@@ -133,7 +133,7 @@ bool MeatAIModule::IsFightingUnit(const Stored_Unit &unit)
 }
 
 // This function limits the drawing that needs to be done by the bot.
-void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
+void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
     if ( _ANALYSIS_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
@@ -141,7 +141,7 @@ void MeatAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
     }
 }
 
-void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
+void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
     if (_ANALYSIS_MODE && unit.valid_pos_) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
@@ -166,7 +166,7 @@ void MeatAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
     }
 }
 
-void MeatAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
+void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if (_ANALYSIS_MODE) {
         Position upper_left = resource.pos_;
         if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
@@ -191,7 +191,7 @@ void MeatAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
     }
 }
 
-void MeatAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
+void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
 {
     if (_ANALYSIS_MODE) {
         Position upper_left = unit.pos_;
@@ -217,7 +217,7 @@ void MeatAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 }
 
 // Outlines the case where UNIT cannot attack ENEMY type (air/ground), while ENEMY can attack UNIT.  Essentially bidirectional Can_Fight checks.
-bool MeatAIModule::Futile_Fight( Unit unit, Unit enemy ) {
+bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {
     bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
     bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
     
@@ -225,7 +225,7 @@ bool MeatAIModule::Futile_Fight( Unit unit, Unit enemy ) {
 }
 
 // Outlines the case where UNIT can attack ENEMY;
-bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
+bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
@@ -240,7 +240,7 @@ bool MeatAIModule::Can_Fight( Unit unit, Unit enemy ) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
+bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
@@ -255,7 +255,7 @@ bool MeatAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool MeatAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
+bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
@@ -270,7 +270,7 @@ bool MeatAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
+bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
@@ -284,7 +284,7 @@ bool MeatAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     }
 }
 
-bool MeatAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
+bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 {
     bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
     bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || unittype == UnitTypes::Protoss_Reaver;
@@ -295,7 +295,7 @@ bool MeatAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
-int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
+int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 {
     int count = 0;
 
@@ -315,7 +315,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 }
 
 // Overload. (Very slow, since it uses BWAPI Unitsets) Counts all units in a set of one type owned by player. Includes individual units in production. 
-int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
+int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 {
     int count = 0;
     for ( auto & unit : unit_set )
@@ -334,7 +334,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 }
 
 // Overload. Counts all units in a set of one type in the reservation system. Does not reserve larva units. 
-int MeatAIModule::Count_Units( const UnitType &type, const Reservation &res )
+int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 {
     int count = 0;
     map<UnitType, TilePosition>::const_iterator it = res.reservation_map_.find( type );
@@ -346,7 +346,7 @@ int MeatAIModule::Count_Units( const UnitType &type, const Reservation &res )
 }
 
 // Counts all units of one type in existance and owned by me. Counts units under construction.
-int MeatAIModule::Count_Units(const UnitType &type, const Inventory &inv)
+int CUNYAIModule::Count_Units(const UnitType &type, const Inventory &inv)
 {
     auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
     if (c_iter == inv.unit_type_.end()) {
@@ -359,7 +359,7 @@ int MeatAIModule::Count_Units(const UnitType &type, const Inventory &inv)
 
 }
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
-int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory &inv)
+int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory &inv)
 {
     auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
     if (c_iter == inv.unit_type_.end()) {
@@ -372,7 +372,7 @@ int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory 
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
-int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
+int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
 {
 	int count = 0;
 	for (const auto & unit : unit_set)
@@ -388,7 +388,7 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 	return count;
 }
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
-int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
+int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_inventory_)
@@ -408,7 +408,7 @@ int MeatAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production.  I have doubts about this function.
-int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
+int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_inventory_)
@@ -429,7 +429,7 @@ int MeatAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inven
 }
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
-int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
     int cost = building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * building.gasPrice() + UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
     int instances = Count_Units( building , ui );
     int total_stock = cost * instances;
@@ -437,7 +437,7 @@ int MeatAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventor
 }
 
 // evaluates the value of a stock of upgrades, in terms of pythagorian distance of min & gas & supply. Counts totals of stacked upgrades like melee/range/armor.
-int MeatAIModule::Stock_Ups( const UpgradeType &ups ) {
+int CUNYAIModule::Stock_Ups( const UpgradeType &ups ) {
     int lvl = Broodwar->self()->getUpgradeLevel( ups ) + (int)Broodwar->self()->isUpgrading( ups );
     int total_stock = 0;
     for ( int i = 1; i <= lvl; i++ ) {
@@ -447,7 +447,7 @@ int MeatAIModule::Stock_Ups( const UpgradeType &ups ) {
     return total_stock;
 }
 
-int MeatAIModule::Stock_Tech(const TechType &tech) {
+int CUNYAIModule::Stock_Tech(const TechType &tech) {
     bool lvl = Broodwar->self()->hasResearched(tech) + (int)Broodwar->self()->isResearching(tech);
     int total_stock = 0;
     if ( lvl ) {
@@ -457,7 +457,7 @@ int MeatAIModule::Stock_Tech(const TechType &tech) {
     return total_stock;
 }
 
-int MeatAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &ui) {
+int CUNYAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &ui) {
     int total_stock = 0;
 
     for ( auto & u : ui.unit_inventory_ ) {
@@ -470,10 +470,10 @@ int MeatAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &
 }
 
 // evaluates the value of a stock of combat units, for all unit types in a unit inventory. Does not count eggs.
-int MeatAIModule::Stock_Combat_Units( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Combat_Units( const Unit_Inventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
-    { // iterating through all enemy units we have available and MeatAI "knows" about. 
+    { // iterating through all enemy units we have available and CUNYAI "knows" about. 
         if ( ((UnitType)i).airWeapon() != WeaponTypes::None || ((UnitType)i).groundWeapon() != WeaponTypes::None || ((UnitType)i).maxEnergy() > 0 ) {
             total_stock += Stock_Units( ((UnitType)i), ui );
         }
@@ -482,10 +482,10 @@ int MeatAIModule::Stock_Combat_Units( const Unit_Inventory &ui ) {
 }
 
 // Overload. evaluates the value of a stock of units, for all unit types in a unit inventory
-int MeatAIModule::Stock_Units_ShootUp( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Units_ShootUp( const Unit_Inventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
-    { // iterating through all enemy units we have available and MeatAI "knows" about. 
+    { // iterating through all enemy units we have available and CUNYAI "knows" about. 
         if ( ((UnitType)i).airWeapon() != WeaponTypes::None ) {
             total_stock += Stock_Units( ((UnitType)i), ui );
         }
@@ -494,10 +494,10 @@ int MeatAIModule::Stock_Units_ShootUp( const Unit_Inventory &ui ) {
 }
 
 // Overload. evaluates the value of a stock of allied units, for all unit types in a unit inventory
-int MeatAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
-    { // iterating through all enemy units we have available and MeatAI "knows" about. 
+    { // iterating through all enemy units we have available and CUNYAI "knows" about. 
         if ( ((UnitType)i).groundWeapon() != WeaponTypes::None ) {
             total_stock += Stock_Units( ((UnitType)i), ui );
         }
@@ -506,7 +506,7 @@ int MeatAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 }
 
 // evaluates the value of a stock of unit, in terms of supply added.
-int MeatAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
+int CUNYAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
     int supply = unit.supplyProvided();
     int instances = Count_Units( unit, inv );
     int total_stock = supply * instances;
@@ -514,7 +514,7 @@ int MeatAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
 }
 
 // returns helpful_friendly and helpful_enemy units from respective inventories.
-vector<int> MeatAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
+vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
 {
     int helpful_e, helpful_u;
 
@@ -540,14 +540,14 @@ vector<int> MeatAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, con
         vector<int> return_vec = { helpful_u, helpful_e };
         return return_vec;
 }
-int MeatAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int targetable_e;
     targetable_e = (u->getType().airWeapon() != WeaponTypes::None) * (enemy_loc.stock_fliers_ + enemy_loc.stock_air_fodder_ ) + (u->getType().groundWeapon() != WeaponTypes::None) * (enemy_loc.stock_ground_units_ + enemy_loc.stock_ground_fodder_);
     return targetable_e;
 }
 
-int MeatAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int threatening_e;
     threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
@@ -555,7 +555,7 @@ int MeatAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & en
 }
 
 // Announces to player the name and type of all units in the unit inventory. Bland but practical.
-void MeatAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui ) {
+void CUNYAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui ) {
     int another_sort_of_unit = 0;
     for ( int i = 0; i != 229; i++ )
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -569,12 +569,12 @@ void MeatAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_
 }
 
 // Announces to player the name and type of all units in the unit inventory. Bland but practical.
-void MeatAIModule::Print_Universal_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
+void CUNYAIModule::Print_Universal_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
     int another_sort_of_unit = 0;
     for (auto i : inv.unit_type_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        int u_count = MeatAIModule::Count_Units(i, inv);
-        int u_incomplete_count = MeatAIModule::Count_Units_In_Progress(i, inv);
+        int u_count = CUNYAIModule::Count_Units(i, inv);
+        int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i, inv);
         if (u_count > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
             Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //
@@ -584,7 +584,7 @@ void MeatAIModule::Print_Universal_Inventory(const int &screen_x, const int &scr
 }
 
 // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-void MeatAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &screen_y, const Building_Gene &bo ) {
+void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &screen_y, const Building_Gene &bo ) {
     int another_sort_of_unit = 0;
     if ( !bo.building_gene_.empty() ) {
         for ( auto i : bo.building_gene_ ) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -605,7 +605,7 @@ void MeatAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &
 }
 
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-void MeatAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &screen_y ) {
+void CUNYAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &screen_y ) {
     int another_sort_of_upgrade = 0;
     for ( int i = 0; i != 62; i++ )
     { // iterating through all upgrades.
@@ -622,7 +622,7 @@ void MeatAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
 }
 
 // Announces to player the name and type of all buildings in the reservation system. Bland but practical.
-void MeatAIModule::Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res ) {
+void CUNYAIModule::Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res ) {
     int another_sort_of_unit = 0;
     for ( int i = 0; i != 229; i++ )
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -636,14 +636,14 @@ void MeatAIModule::Print_Reservations( const int &screen_x, const int &screen_y,
 }
 
 //Strips the RACE_ from the front of the unit type string.
-const char * MeatAIModule::noRaceName( const char *name ) { //From N00b
+const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
     for ( const char *c = name; *c; c++ )
         if ( *c == '_' ) return ++c;
     return name;
 }
 
 //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
-Unitset MeatAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unitset e_set;
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
         if ( (*e).second.pos_.getDistance( origin ) <= dist ) {
@@ -654,7 +654,7 @@ Unitset MeatAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
 }
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
+Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -673,7 +673,7 @@ Stored_Unit* MeatAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 }
 
 //Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
 	int temp_dist = 999999;
 	Stored_Unit* return_unit = nullptr;
@@ -694,7 +694,7 @@ Stored_Unit* MeatAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
 }
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
-Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
+Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
 	int min_dist = dist;
 	int temp_dist = 999999;
 	Stored_Resource* return_unit = nullptr;
@@ -713,7 +713,7 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Po
 }
 
 
-Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
@@ -731,7 +731,7 @@ Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri, In
     return return_unit;
 }
 // Allows type -specific- selection. 
-Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
@@ -751,7 +751,7 @@ Stored_Resource* MeatAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 }
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* MeatAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
+Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -772,7 +772,7 @@ Stored_Unit* MeatAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
 }
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
-Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
+Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
@@ -794,7 +794,7 @@ Stored_Resource* MeatAIModule::getClosestStored(Resource_Inventory &ri, const Un
 
 
 //Gets pointer to closest attackable unit from unit in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
-Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
+Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
     bool can_attack;
     int temp_dist = 999999;
@@ -802,7 +802,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
-            can_attack = MeatAIModule::Can_Fight(unit, e->second);
+            can_attack = CUNYAIModule::Can_Fight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
                 temp_dist = (int)e->second.pos_.getDistance(unit->getPosition());
                 if (temp_dist <= min_dist) {
@@ -817,7 +817,7 @@ Stored_Unit* MeatAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -841,7 +841,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -866,7 +866,7 @@ Stored_Unit* MeatAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     return return_unit;
 }
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Inventory &inv, const int &dist) {
+Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Inventory &inv, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     int temp_dist = 999999;
@@ -898,7 +898,7 @@ Stored_Unit* MeatAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory MeatAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+Unit_Inventory CUNYAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unit_Inventory ui_out;
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
         if ( (*e).second.pos_.getDistance( origin ) <= dist && e->second.valid_pos_) {
@@ -909,7 +909,7 @@ Unit_Inventory MeatAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui,
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
-Unit_Inventory MeatAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
+Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
 	Unit_Inventory ui_out;
 	for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
 		if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
@@ -920,7 +920,7 @@ Unit_Inventory MeatAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
+Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
 	Resource_Inventory ri_out;
 	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
 		if ((*r).second.pos_.getDistance(origin) <= dist) {
@@ -931,7 +931,7 @@ Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inv
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
-Unit_Inventory MeatAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
+Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
     Unit_Inventory ui_out;
     for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
         if (u->second.valid_pos_ && ( !(*u).second.bwapi_unit_->canMove() && !(*u).second.bwapi_unit_->isInWeaponRange(target) ) ) {
@@ -942,7 +942,7 @@ Unit_Inventory MeatAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-bool MeatAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
 
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
         if( (*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
@@ -955,7 +955,7 @@ bool MeatAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &
 }
 
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
-bool MeatAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
+bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
 
     for (auto & e : ui.unit_inventory_) {
         if (e.second.type_ == type) {
@@ -970,12 +970,12 @@ bool MeatAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-//bool MeatAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
+//bool CUNYAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
 //
 //    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
 //        if ((*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
 //            (*e).second.pos_.y < origin.y + dist && (*e).second.pos_.y > origin.y - dist &&
-//            MeatAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
+//            CUNYAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
 //            return true;
 //        }
 //    }
@@ -984,7 +984,7 @@ bool MeatAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 //}
 
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
-bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
+bool CUNYAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
 
     for ( auto & e : ui.unit_inventory_) {
         if ( e.second.type_.isBuilding() ) {
@@ -999,7 +999,7 @@ bool MeatAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Po
 }
 
 //Searches an inventory for a resource
-bool MeatAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, const Position &origin ) {
+bool CUNYAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, const Position &origin ) {
 
     for ( auto & e : ri.resource_inventory_ ) {
         if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
@@ -1012,7 +1012,7 @@ bool MeatAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, cons
 }
 
 //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied or nearly so. Checks retangles for performance reasons rather than radius.
-bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist ) {
+bool CUNYAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist ) {
 
         if ( unit->getType().isBuilding() ) {
             Position pos = unit->getPosition();
@@ -1027,14 +1027,14 @@ bool MeatAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &orig
     return false;
 }
 
-bool MeatAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
+bool CUNYAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
     bool inrange_x = screen_pos.x < pos.x && screen_pos.x + 640 > pos.x;
     bool inrange_y = screen_pos.y < pos.y && screen_pos.y + 480 > pos.y;
     return inrange_x && inrange_y;
 }
 
 //Returns TRUE if the unit is ready to move and false if the unit should be ignored for now.
-bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
+bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool ready_to_move = true;
     bool wait_for_cooldown = false;
@@ -1105,7 +1105,7 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 }
 
 //checks if there is a smooth path to target. in minitiles
-//bool MeatAIModule::isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv ) // see Brehsam's Algorithm
+//bool CUNYAIModule::isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv ) // see Brehsam's Algorithm
 //{
 //    int dx = abs( final.x - initial.x ) / 8;
 //    int dy = abs( final.y - initial.y ) / 8;
@@ -1140,7 +1140,7 @@ bool MeatAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 //} 
 
 //checks if there is a smooth path to target. in minitiles
-bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const Inventory &inv){ // see Brehsam's Algorithm for all 8 octants.
+bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const Inventory &inv){ // see Brehsam's Algorithm for all 8 octants.
 	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
 	WalkPosition final = WalkPosition(finalp);
 	WalkPosition initial = WalkPosition(initialp);
@@ -1251,7 +1251,7 @@ bool MeatAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 }
 
 //checks if there is a smooth path to target. in minitiles
-bool MeatAIModule::isMapClearRayTrace( const Position &initialp, const Position &finalp, const Inventory &inv ) { // see Brehsam's Algorithm for all 8 octants.
+bool CUNYAIModule::isMapClearRayTrace( const Position &initialp, const Position &finalp, const Inventory &inv ) { // see Brehsam's Algorithm for all 8 octants.
     int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
     WalkPosition final = WalkPosition( finalp );
     WalkPosition initial = WalkPosition( initialp );
@@ -1362,7 +1362,7 @@ bool MeatAIModule::isMapClearRayTrace( const Position &initialp, const Position 
 }
 
 //Counts the number of minitiles in a smooth path to target. in minitiles
-int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Position &finalp, const Inventory &inv ) // see Brehsam's Algorithm. Is likely bugged in current state.
+int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Position &finalp, const Inventory &inv ) // see Brehsam's Algorithm. Is likely bugged in current state.
 {
 	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
 	WalkPosition final = WalkPosition(finalp);
@@ -1474,7 +1474,7 @@ int MeatAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 }
 
 
-double MeatAIModule::getProperSpeed( const Unit u ) {
+double CUNYAIModule::getProperSpeed( const Unit u ) {
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
 
@@ -1501,7 +1501,7 @@ double MeatAIModule::getProperSpeed( const Unit u ) {
     return base_speed;
 }
 
-double MeatAIModule::getProperSpeed(const UnitType &type, const Player owner) {
+double CUNYAIModule::getProperSpeed(const UnitType &type, const Player owner) {
     double base_speed = type.topSpeed();
 
     if (type == UnitTypes::Zerg_Zergling && owner->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) > 0) {
@@ -1525,7 +1525,7 @@ double MeatAIModule::getProperSpeed(const UnitType &type, const Player owner) {
     return base_speed;
 }
 
-int MeatAIModule::getProperRange(const Unit u) {
+int CUNYAIModule::getProperRange(const Unit u) {
 
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
@@ -1557,7 +1557,7 @@ int MeatAIModule::getProperRange(const Unit u) {
     return base_range;
 }
 
-int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
+int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
         base_range += 1 * 32;
@@ -1584,14 +1584,14 @@ int MeatAIModule::getProperRange(const UnitType u_type, const Player owner) {
     return base_range;
 }
 
-int MeatAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
+int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (int)( u->getType() != UnitTypes::Zerg_Lurker * (int)MeatAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + MeatAIModule::getProperRange(u) ); //lurkers have a proper speed of 0.
+    return (int)( u->getType() != UnitTypes::Zerg_Lurker * (int)CUNYAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + CUNYAIModule::getProperRange(u) ); //lurkers have a proper speed of 0.
 }
 
 
 //finds nearest choke or best location within 100 minitiles.
-Position MeatAIModule::getNearestChoke( const Position &initial, const Position &final, const Inventory &inv ) {
+Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const Inventory &inv ) {
     WalkPosition e_position = WalkPosition( final );
     WalkPosition wk_postion = WalkPosition( initial );
     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
@@ -1712,12 +1712,12 @@ Position MeatAIModule::getNearestChoke( const Position &initial, const Position 
     return nearest_choke;
 }
 
-Position MeatAIModule::getUnit_Center(Unit unit){
+Position CUNYAIModule::getUnit_Center(Unit unit){
 	return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
 }
 
 // checks if a location is safe and doesn't block minerals.
-bool MeatAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
+bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
     Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
     //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
@@ -1740,7 +1740,7 @@ bool MeatAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, c
     return enemy_has_not_penetrated && (can_still_save || have_to_save) ;
 }
 
-bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
+bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
 
     bool desperate_for_minerals = inv.min_fields_ < 6;
     bool safe_mine = checkOccupiedArea(ui, pos,250);
@@ -1748,12 +1748,12 @@ bool MeatAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
 }
 
 //Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units.
-bool MeatAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+bool CUNYAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
     //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
     return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
 }
 
-double MeatAIModule::bindBetween(double x, double lower_bound, double upper_bound) {
+double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_bound) {
     if (lower_bound >= upper_bound) {
         throw std::invalid_argument("lower bound is greater than or equal to upper bound");
     }

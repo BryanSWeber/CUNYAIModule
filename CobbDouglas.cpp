@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 #include "Source\CobbDouglas.h"
 #include <iostream>
 #include <fstream>
@@ -117,8 +117,8 @@ void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_st
     //If optimally chose, the derivatives will all be equal.
 
     double K_over_L = (double)( e_army_stock + 1 ) / (double)(e_worker_stock + 1); // avoid NAN's
-    enemy_alpha_army = MeatAIModule::bindBetween( K_over_L / (double)( 1.0 + K_over_L) , 0.05, 0.95);
-    enemy_alpha_econ = MeatAIModule::bindBetween( 1 - enemy_alpha_army, 0.05, 0.95);
+    enemy_alpha_army = CUNYAIModule::bindBetween( K_over_L / (double)( 1.0 + K_over_L) , 0.05, 0.95);
+    enemy_alpha_econ = CUNYAIModule::bindBetween( 1 - enemy_alpha_army, 0.05, 0.95);
     //enemy_alpha_tech = max(min( T/K, 0.95), 0.05);
 
     //Shift alpha towards enemy choices.
@@ -142,7 +142,7 @@ void CobbDouglas::enemy_eval(int e_army_stock, bool army_possible, int e_tech_st
 };
 
 
-void CobbDouglas::printModelParameters() { // we have poorly named parameters, alpha army is in MeatAIModule as well.
+void CobbDouglas::printModelParameters() { // we have poorly named parameters, alpha army is in CUNYAIModule as well.
     std::ofstream GameParameters;
     GameParameters.open(".\\bwapi-data\\write\\GameParameters.txt", ios::app | ios::ate);
     if (GameParameters.is_open()) {

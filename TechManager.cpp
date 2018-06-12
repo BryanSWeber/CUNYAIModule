@@ -1,13 +1,13 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
-# include "Source\MeatAIModule.h"
+# include "Source\CUNYAIModule.h"
 # include "Source\InventoryManager.h"
 
 using namespace BWAPI;
 
 
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-bool MeatAIModule::Tech_Avail() {
+bool CUNYAIModule::Tech_Avail() {
 
     for ( auto & u : BWAPI::Broodwar->self()->getUnits() ) {
 
@@ -31,7 +31,7 @@ bool MeatAIModule::Tech_Avail() {
         }
         else if ( u->getType().isBuilding() && !u->isUpgrading() && !u->isMorphing() ){ // check idle buildings for potential upgrades.
             for ( int i = 0; i != 13; i++ )
-            { // iterating through the main upgrades we have available and MeatAI "knows" about. 
+            { // iterating through the main upgrades we have available and CUNYAI "knows" about. 
                 int known_ups[13] = { 3, 4, 10, 11, 12, 25, 26, 27, 28, 29, 30, 52, 53 }; // Identifies zerg upgrades of that we have initialized at this time. See UpgradeType definition for references, listed below for conveinence.
                 UpgradeType up_current = (UpgradeType) known_ups[i];
                 UpgradeType::set building_up_set = u->getType().upgradesWhat(); // does this idle building make that upgrade?
@@ -53,7 +53,7 @@ bool MeatAIModule::Tech_Avail() {
         } // if condition
         else if ( u->getType().isBuilding() && !u->isUpgrading() && !u->isMorphing() ) { // check idle buildings for potential upgrades.
             for ( int i = 0; i != 1; i++ )
-            { // iterating through the main researches we have available and MeatAI "knows" about. 
+            { // iterating through the main researches we have available and CUNYAI "knows" about. 
                 int known_techs[1] = { 32 }; // Identifies zerg upgrades of that we have initialized at this time. See UpgradeType definition for references, listed below for conveinence.
                 TechType tech_current = (TechType)known_techs[i];
                 TechType::set building_tech_set = u->getType().researchesWhat(); // does this idle building make that upgrade?
@@ -70,7 +70,7 @@ bool MeatAIModule::Tech_Avail() {
     return false;
 }
 // Tells a building to begin the next tech on our list.
-bool MeatAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv) {
+bool CUNYAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv) {
     int busy = 0;
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, inv ) == 0 && !army_starved));
 

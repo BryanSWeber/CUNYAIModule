@@ -1,7 +1,7 @@
 #include <BWAPI.h>
 #include <Windows.h>
 
-#include "MeatAIModule.h"
+#include "CUNYAIModule.h"
 
 
 extern "C" __declspec(dllexport) void gameInit(BWAPI::Game* game) { BWAPI::BroodwarPtr = game; }
@@ -19,5 +19,5 @@ BOOL APIENTRY DllMain( HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 extern "C" __declspec(dllexport) BWAPI::AIModule* newAIModule()
 {
-  return new MeatAIModule();
+  return new CUNYAIModule();
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 #include "Source\InventoryManager.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
@@ -87,8 +87,8 @@ void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
         UnitType u_type = u_iter.second.type_;
         bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
         if ( new_unit_type ) {
-            int found_units = MeatAIModule::Count_Units(u_type, ui);
-            int incomplete_units = MeatAIModule::Count_Units_In_Progress(u_type, ui);
+            int found_units = CUNYAIModule::Count_Units(u_type, ui);
+            int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, ui);
             already_seen.push_back(u_type);
             unit_count_temp.push_back(found_units);
             unit_incomplete_temp.push_back(incomplete_units);
@@ -104,7 +104,7 @@ void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 // Defines the (safe) log of our army stock.
 void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
 
-    double total = ui.stock_fighting_total_ /*- MeatAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
+    double total = ui.stock_fighting_total_ /*- CUNYAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
 
     if ( total <= 0 ) {
         total = 1;
@@ -121,13 +121,13 @@ void Inventory::updateLn_Tech_Stock( const Unit_Inventory &ui ) {
     for ( int i = 132; i != 143; i++ )
     { // iterating through all tech buildings. See enumeration of unittype for details.
         UnitType build_current = (UnitType)i;
-        total += MeatAIModule::Stock_Buildings( build_current, ui );
+        total += CUNYAIModule::Stock_Buildings( build_current, ui );
     }
 
     for ( int i = 0; i != 62; i++ )
     { // iterating through all upgrades.
         UpgradeType up_current = (UpgradeType)i;
-        total += MeatAIModule::Stock_Ups( up_current );
+        total += CUNYAIModule::Stock_Ups( up_current );
     }
 
     if ( total <= 0 ) {
@@ -165,7 +165,7 @@ void Inventory::updateLn_Supply_Remain() {
     for ( int i = 37; i != 48; i++ )
     { // iterating through all units.  (including buildings).
         UnitType u_current = (UnitType)i;
-        total += MeatAIModule::Stock_Supply( u_current, *this );
+        total += CUNYAIModule::Stock_Supply( u_current, *this );
     }
 
     total = total - Broodwar->self()->supplyUsed();
@@ -319,9 +319,9 @@ void Inventory::updateScreen_Position()
 
 // Updates the number of hatcheries (and decendent buildings).
 void Inventory::updateHatcheries() {
-    hatches_ = MeatAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
-        MeatAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
+    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
 }
 
 
@@ -956,10 +956,10 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 //                }
 //
 //                Position pos = Position( WalkPosition( minitile_x, minitile_y ) );
-//                if ( MeatAIModule::checkBuildingOccupiedArea( ui, pos ) || MeatAIModule::checkBuildingOccupiedArea( ei, pos ) || MeatAIModule::checkResourceOccupiedArea(ri,pos) ) {
+//                if ( CUNYAIModule::checkBuildingOccupiedArea( ui, pos ) || CUNYAIModule::checkBuildingOccupiedArea( ei, pos ) || CUNYAIModule::checkResourceOccupiedArea(ri,pos) ) {
 //                    map_veins_[minitile_x][minitile_y] = 1;
 //                }
-//                else /*if ( MeatAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {
+//                else /*if ( CUNYAIModule::checkUnitOccupiesArea( building, pos, area_modified ) )*/ {
 //                    map_veins_[minitile_x][minitile_y] = 0; // if it is nearby nuke it to 0 for recasting.
 //                }
 //            }
@@ -1404,10 +1404,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
-                        (MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
-                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
-                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
-                         MeatAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
+                        (CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
+                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
+                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
+                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
 
                         int local_min = 0;
 
@@ -1579,7 +1579,7 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
     }
     else if (veins_out_need_updating && !unit_calculation_frame) {
 
-        Stored_Unit* center_building = MeatAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         Position suspected_enemy_base = Position(0, 0);
 
         if (center_building && center_building->bwapi_unit_) {
@@ -1619,7 +1619,7 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
     }
     else if (veins_in_need_updating && !unit_calculation_frame) {
 
-        //Stored_Unit* center_building = MeatAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         //Position suspected_friendly_base = Position(0, 0);
 
         //if (center_building && center_building->bwapi_unit_) {
@@ -1672,7 +1672,7 @@ void Inventory::drawExpoPositions() const
     if (_ANALYSIS_MODE) {
         for (auto &p : expo_positions_) {
             Position lower_left = Position(p);
-            if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
+            if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
                 lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
                 lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
                 Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
@@ -1680,7 +1680,7 @@ void Inventory::drawExpoPositions() const
         }
 
         Position lower_left = Position(next_expo_);
-        if (MeatAIModule::isOnScreen(lower_left, screen_position_)) {
+        if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
             lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
             lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
             Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);

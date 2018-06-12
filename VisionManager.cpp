@@ -1,9 +1,9 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
-# include "Source\MeatAIModule.h"
+# include "Source\CUNYAIModule.h"
 # include <BWAPI.h>
 
-int MeatAIModule::Vision_Count() {
+int CUNYAIModule::Vision_Count() {
     int map_x = BWAPI::Broodwar->mapWidth();
     int map_y = BWAPI::Broodwar->mapHeight();
 

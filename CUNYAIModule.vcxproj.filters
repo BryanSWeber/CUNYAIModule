@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Source\Dll.cpp" />
-    <ClCompile Include="Source\MeatAIModule.cpp" />
     <ClCompile Include="Utilities.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -39,9 +38,9 @@
     <ClCompile Include="Reserve_Manager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Source\CUNYAIModule.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\MeatAIModule.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\InventoryManager.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
@@ -50,6 +49,7 @@
     <ClInclude Include="Source\Fight_MovementManager.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
+    <ClInclude Include="Source\CUNYAIModule.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

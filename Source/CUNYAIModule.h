@@ -21,7 +21,7 @@
 
 // Remember not to use "Broodwar" in any global class constructor!
 
-class MeatAIModule : public BWAPI::AIModule
+class CUNYAIModule : public BWAPI::AIModule
 {
 public:
   // Virtual functions for callbacks, leave these as they are.
@@ -209,7 +209,7 @@ public:
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
-	  static Resource_Inventory MeatAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
+	  static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
 	  //Overload. Searches for units of a specific type. 
 	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.

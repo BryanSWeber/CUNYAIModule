@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MeatAIModule.h"
+#include "CUNYAIModule.h"
 #include "CobbDouglas.h"
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
@@ -13,43 +13,14 @@
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
 
-// MeatAI V1.00. Current V goal-> defeat GARMBOT regularly.
-// build order selection
-// Transition to air?
-
-// reserve locations for buildings.
-// workers are pulled back to closest ? in the middle of a transfer.
-// geyser logic is a little wonky. Check fastest map for demonstration.
-// rearange units perpendicular to opponents for instant concaves.
-// units may die from burning down, extractors, or mutations. may cause confusion in inventory system.
-// add concept of base?
-// Marek Kadek, Opprimobot, Roman Denalis // can beat Lukas Mor
-// reduce switching to weak targets. very problematic in melee firefights.
-// build drones at hatch that HAS MINERALS AROUND IT FIRST.
-// rally buildings.
-// disable latency compensation? http://www.teamliquid.net/blogs/519872-towards-a-good-sc-bot-p56-latency
-
-//Quick fix problems.
-// overlords don't need to get directly on top of target. I thought I fixed it and it did not improve combat for anyone but terran? Test again?
-// overlord feeding.
-
-
-//Conceptual changes.
-// drone when enemy units are far away, troop when they are close? Marian devka aka killerbot.  
-// Unit composition switching. Killerbot. Antiga.
-// lurkers, guardians and remaining tech units.
-// put vision as part of knee-jerk responses?
-
-
-// Bugs and goals.
-// extractor trick.
+// CUNYAI V1.00
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
 
-void MeatAIModule::onStart()
+void CUNYAIModule::onStart()
 {
 
     // Hello World!
@@ -143,7 +114,7 @@ void MeatAIModule::onStart()
 
 }
 
-void MeatAIModule::onEnd( bool isWinner )
+void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
     if (_MOVE_OUTPUT_BACK_TO_READ || _SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
@@ -161,7 +132,7 @@ void MeatAIModule::onEnd( bool isWinner )
     }
 }
 
-void MeatAIModule::onFrame()
+void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
@@ -626,9 +597,9 @@ void MeatAIModule::onFrame()
                              //e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
                 int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
-                int chargable_distance_net = MeatAIModule::getChargableDistance(u, enemy_inventory) + MeatAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory); // how far can you get before he shoots?
+                int chargable_distance_net = CUNYAIModule::getChargableDistance(u, enemy_inventory) + CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory); // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
-                //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), MeatAIModule::getProperRange(u), (int)MeatAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
+                //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Boids boids;
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
@@ -653,7 +624,7 @@ void MeatAIModule::onFrame()
                 //int helpful_e = friend_loc.stock_fliers_ / (double)(friend_loc.stock_fighting_total_ + 1) * enemy_loc.stock_shoots_up_ + friend_loc.stock_ground_units_ / (double)(friend_loc.stock_fighting_total_ + 1)* enemy_loc.stock_shoots_down_; // permits a noncombat enemy to be seen as worthless, 0 stock.
                 //int helpful_u = enemy_loc.stock_fliers_ / (double)(enemy_loc.stock_fighting_total_ + 1) * friend_loc.stock_shoots_up_ + enemy_loc.stock_ground_units_ / (double)(enemy_loc.stock_fighting_total_ + 1)  * friend_loc.stock_shoots_down_;
 
-                vector<int> useful_stocks = MeatAIModule::getUsefulStocks(friend_loc, enemy_loc);
+                vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
                 int helpful_u = useful_stocks[0];
                 int helpful_e = useful_stocks[1]; // both forget value of psi units.
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
@@ -765,7 +736,7 @@ void MeatAIModule::onFrame()
                             }
                         }
 
-                        if (distance_to_foe < enemy_loc.max_range_ + 24 * MeatAIModule::getChargableDistance(u, enemy_inventory)) { // use same algo inside retreat script.
+                        if (distance_to_foe < enemy_loc.max_range_ + 24 * CUNYAIModule::getChargableDistance(u, enemy_inventory)) { // use same algo inside retreat script.
                             continue; //Do not give the unit to boids or any other algorithm if the enemy is nearby!
                         }
                     }
@@ -1069,7 +1040,7 @@ void MeatAIModule::onFrame()
 
 } // closure: Onframe
 
-void MeatAIModule::onSendText( std::string text )
+void CUNYAIModule::onSendText( std::string text )
 {
 
     // Send the text to the game if it is not being processed.
@@ -1080,20 +1051,20 @@ void MeatAIModule::onSendText( std::string text )
 
 }
 
-void MeatAIModule::onReceiveText( BWAPI::Player player, std::string text )
+void CUNYAIModule::onReceiveText( BWAPI::Player player, std::string text )
 {
     // Parse the received text
     Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
 }
 
-void MeatAIModule::onPlayerLeft( BWAPI::Player player )
+void CUNYAIModule::onPlayerLeft( BWAPI::Player player )
 {
     // Interact verbally with the other players in the game by
     // announcing that the other player has left.
     Broodwar->sendText( "That was a good game. I'll remember this! %s!", player->getName().c_str() );
 }
 
-void MeatAIModule::onNukeDetect( BWAPI::Position target )
+void CUNYAIModule::onNukeDetect( BWAPI::Position target )
 {
 
     // Check if the target is a valid position
@@ -1111,7 +1082,7 @@ Broodwar->sendText( "Where's the nuke?" );
     // You can also retrieve all the nuclear missile targets using Broodwar->getNukeDots()!
 }
 
-void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
+void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
@@ -1160,7 +1131,7 @@ void MeatAIModule::onUnitDiscover( BWAPI::Unit unit )
 
 }
 
-void MeatAIModule::onUnitEvade( BWAPI::Unit unit )
+void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
 {
     //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
     //                                                                //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
@@ -1175,7 +1146,7 @@ void MeatAIModule::onUnitEvade( BWAPI::Unit unit )
     //}
 }
 
-void MeatAIModule::onUnitShow( BWAPI::Unit unit )
+void CUNYAIModule::onUnitShow( BWAPI::Unit unit )
 {
     //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
     //    Stored_Unit eu = Stored_Unit( unit );
@@ -1190,13 +1161,13 @@ void MeatAIModule::onUnitShow( BWAPI::Unit unit )
     //}
 }
 
-void MeatAIModule::onUnitHide( BWAPI::Unit unit )
+void CUNYAIModule::onUnitHide( BWAPI::Unit unit )
 {
 
 
 }
 
-void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
+void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
@@ -1224,7 +1195,7 @@ void MeatAIModule::onUnitCreate( BWAPI::Unit unit )
 }
 
 
-void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0xf inside here!
+void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0xf inside here!
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
@@ -1273,7 +1244,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                 }
 
                 if ( was_clearing ) {
-                    MeatAIModule::Worker_Clear(miner_unit, friendly_inventory); // reassign clearing workers again.
+                    CUNYAIModule::Worker_Clear(miner_unit, friendly_inventory); // reassign clearing workers again.
                     if (potential_miner->second.isAssignedClearing(land_inventory)) {
                         inventory.updateWorkersClearing(friendly_inventory, land_inventory);
                     }
@@ -1321,7 +1292,7 @@ void MeatAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 }
 
-void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
+void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
@@ -1355,16 +1326,16 @@ void MeatAIModule::onUnitMorph( BWAPI::Unit unit )
 
 }
 
-void MeatAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.
+void CUNYAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.
 {
     onUnitDestroy(unit);
 }
 
-void MeatAIModule::onSaveGame( std::string gameName )
+void CUNYAIModule::onSaveGame( std::string gameName )
 {
     Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
 }
 
-void MeatAIModule::onUnitComplete( BWAPI::Unit unit )
+void CUNYAIModule::onUnitComplete( BWAPI::Unit unit )
 {
 }

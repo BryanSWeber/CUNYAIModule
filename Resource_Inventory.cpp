@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\InventoryManager.h"
@@ -107,10 +107,10 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                 r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
                 r->second.valid_pos_ = true;
                 r->second.type_ = r->second.bwapi_unit_->getType();
-                Unit_Inventory local_area = MeatAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320 );
-                r->second.occupied_natural_ = MeatAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - MeatAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
-                    MeatAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
-                    MeatAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
+                Unit_Inventory local_area = CUNYAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320 );
+                r->second.occupied_natural_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
+                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
+                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     Stored_Unit eu = Stored_Unit(r->first);
                     if (ei.unit_inventory_.insert({ r->first, eu }).second) {
@@ -135,7 +135,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
 void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
 {
     for (auto u : resource_inventory_) {
-        MeatAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);
+        CUNYAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);
     }
 
 }

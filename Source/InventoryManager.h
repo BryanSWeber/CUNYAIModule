@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "MeatAIModule.h"
+#include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
 

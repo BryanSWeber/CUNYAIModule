@@ -14,7 +14,7 @@
     <ProjectGuid>{2E63AE74-758A-4607-9DE4-D28E814A6E13}</ProjectGuid>
     <RootNamespace>ExampleAIModule</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>MeatAIModule</ProjectName>
+    <ProjectName>CUNYAIModule</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -97,6 +97,7 @@
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="Reserve_Manager.cpp" />
     <ClCompile Include="Resource_Inventory.cpp" />
+    <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Unit_Inventory.cpp" />
     <ClCompile Include="GeneticHistoryManager.cpp" />
     <ClCompile Include="InventoryManager.cpp" />
@@ -106,18 +107,17 @@
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="Fight_MovementManager.cpp" />
     <ClCompile Include="Source\Dll.cpp" />
-    <ClCompile Include="Source\MeatAIModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
+    <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Fight_MovementManager.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
     <ClInclude Include="Source\InventoryManager.h" />
-    <ClInclude Include="Source\MeatAIModule.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

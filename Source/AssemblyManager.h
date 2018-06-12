@@ -1,5 +1,5 @@
 #pragma once
-#include "MeatAIModule.h"
+#include "CUNYAIModule.h"
 #include "InventoryManager.h"
 
 using namespace BWAPI;

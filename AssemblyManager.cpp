@@ -1,5 +1,5 @@
 #pragma once
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 #include "Source\InventoryManager.h"
 #include "Source\AssemblyManager.h"
 #include <iterator>
@@ -9,7 +9,7 @@ using namespace Filter;
 using namespace std;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations.
-bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera)
+bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera)
 {
     if (my_reservation.checkAffordablePurchase(building) && (buildorder.checkBuilding_Desired(building) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
 
@@ -28,7 +28,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 
         if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
-            TilePosition buildPosition = MeatAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
                 buildorder.announceBuildingAttempt(building);
                 return true;
@@ -158,7 +158,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             //    }
             //}
 
-            TilePosition buildPosition = MeatAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                 buildorder.announceBuildingAttempt(building);
                 return true;
@@ -171,10 +171,10 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
 
-            Stored_Resource* closest_gas = MeatAIModule::getClosestGroundStored(land_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit->getPosition());
+            Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(land_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit->getPosition());
             if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
                 TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
-                //TilePosition buildPosition = MeatAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);
+                //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);
                 //TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64) ;
                 if ( BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
@@ -219,7 +219,7 @@ bool MeatAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 }
 
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-bool MeatAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
+bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
     if (unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
@@ -231,7 +231,7 @@ bool MeatAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
     return false;
 }
 
-bool MeatAIModule::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
+bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
     if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
@@ -244,7 +244,7 @@ bool MeatAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
 }
 
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-bool MeatAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
+bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
 {
     if (larva->canMorph(unittype) && my_reservation.checkAffordablePurchase(unittype) && (buildorder.checkBuilding_Desired(unittype) || (extra_critera && buildorder.isEmptyBuildOrder())))
     {
@@ -265,7 +265,7 @@ bool MeatAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
 }
 
 //Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
-bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
+bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
 {
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     int is_building = 0;
@@ -414,7 +414,7 @@ bool MeatAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 }
 
 //Creates a new building with DRONE. Incomplete.
-bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
+bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
     bool expansion_vital = inventory.min_fields_ < inventory.hatches_ * 8 ;
@@ -512,7 +512,7 @@ bool MeatAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     return buildings_started > 0;
 };
 
-TilePosition MeatAIModule::getBuildablePosition(TilePosition target_pos, UnitType build_type, int tile_grid_size ) {
+TilePosition CUNYAIModule::getBuildablePosition(TilePosition target_pos, UnitType build_type, int tile_grid_size ) {
 
     TilePosition canidate_return_position = TilePosition (0,0);
     int widest_dim_in_minitiles = 0.25 * max(build_type.height(), build_type.width()) + 8;

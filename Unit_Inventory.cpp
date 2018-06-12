@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h>
-#include "Source\MeatAIModule.h"
+#include "Source\CUNYAIModule.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\InventoryManager.h"
 #include "Source\Reservation_Manager.h"
@@ -145,21 +145,21 @@ void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        MeatAIModule::Diagnostic_Line(u.second.pos_, destination, inv.screen_position_, Colors::Green);
+        CUNYAIModule::Diagnostic_Line(u.second.pos_, destination, inv.screen_position_, Colors::Green);
     }
 }
 
 void Unit_Inventory::drawAllHitPoints(const Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
-        MeatAIModule::DiagnosticHitPoints(u.second, inv.screen_position_);
+        CUNYAIModule::DiagnosticHitPoints(u.second, inv.screen_position_);
     }
 
 }
 void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
-        MeatAIModule::DiagnosticSpamGuard(u.second, inv.screen_position_);
+        CUNYAIModule::DiagnosticSpamGuard(u.second, inv.screen_position_);
     }
 }
 
@@ -167,13 +167,13 @@ void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventor
 {
     for (auto u : unit_inventory_) {
         if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
-            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
+            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
         } 
         else if (u.second.isAssignedResource(ri)) {
-            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
         }
         else if (u.second.isAssignedClearing(ri)) {
-            MeatAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
+            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
         }
     }
 }
@@ -182,7 +182,7 @@ void Unit_Inventory::drawAllLocations(const Inventory & inv) const
 {
     if (_ANALYSIS_MODE) {
         for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
-            if (MeatAIModule::isOnScreen(e->second.pos_, inv.screen_position_)) {
+            if (CUNYAIModule::isOnScreen(e->second.pos_, inv.screen_position_)) {
                 if (e->second.valid_pos_) {
                     Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
                 }
@@ -377,15 +377,15 @@ void Unit_Inventory::updateUnitInventorySummary() {
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
             
             bool flying_unit = u_iter.second.type_.isFlyer();
-            int unit_value = MeatAIModule::Stock_Units(u_iter.second.type_, *this);
-            int count_of_unit = MeatAIModule::Count_Units(u_iter.second.type_, *this) ;
+            int unit_value = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
+            int count_of_unit = CUNYAIModule::Count_Units(u_iter.second.type_, *this) ;
 
-            if ( MeatAIModule::IsFightingUnit(u_iter.second) ) {
+            if ( CUNYAIModule::IsFightingUnit(u_iter.second) ) {
 
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_== UnitTypes::Terran_Bunker;
                 bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
-                int range_temp = (bool)(u_iter.second.bwapi_unit_) * MeatAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * MeatAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
+                int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
                 
                 fliers          += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
                 ground_unit     += !flying_unit * unit_value;
@@ -422,7 +422,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
         }
     } 
 
-	worker_count = MeatAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + MeatAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + MeatAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
+	worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
     stock_fliers_ = fliers;
     stock_ground_units_ = ground_unit;
