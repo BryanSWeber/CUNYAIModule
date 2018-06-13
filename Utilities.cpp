@@ -1586,7 +1586,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (int)( u->getType() != UnitTypes::Zerg_Lurker * (int)CUNYAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + CUNYAIModule::getProperRange(u) ); //lurkers have a proper speed of 0.
+    return (u->getType() != UnitTypes::Zerg_Lurker) * (int)CUNYAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + CUNYAIModule::getProperRange(u) ; //lurkers have a proper speed of 0.
 }
 
 

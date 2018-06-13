@@ -278,7 +278,7 @@ public:
 
       static double bindBetween(double x, double lower_bound, double upper_bound);
 
-        // Genetic History Functions
+      // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
       double Win_History(std::string file, int value);
 

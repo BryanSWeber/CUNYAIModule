@@ -1474,6 +1474,20 @@ void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory &
     workers_clearing_ = clearing_workers_found;
 }
 
+void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri)
+{
+    int long_distance_miners_found = 0;
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
+            if (w->second.isAssignedLongDistanceMining(ri)) {
+                long_distance_miners_found++;
+            }
+        }
+    }
+    workers_distance_mining_ = long_distance_miners_found ;
+}
+
 void Inventory::getExpoPositions() {
 
     expo_positions_.clear();

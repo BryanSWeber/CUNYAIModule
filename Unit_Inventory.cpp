@@ -535,6 +535,16 @@ bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
     return false;
 }
 
+//checks if mine started with less than 8 resource
+bool Stored_Unit::isAssignedLongDistanceMining(Resource_Inventory &ri) {
+    if (locked_mine_) {
+        if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
+            return mine_of_choice->max_stock_value_ >= 8 && !mine_of_choice->local_natural_;
+        }
+    }
+    return false;
+}
+
 //checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
 bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
     if (locked_mine_) {

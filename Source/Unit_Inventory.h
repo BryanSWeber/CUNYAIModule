@@ -43,6 +43,7 @@ struct Stored_Unit {
 	void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
     bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
+    bool isAssignedLongDistanceMining(Resource_Inventory & ri);
     bool isAssignedMining(Resource_Inventory & ri); // If the unit is assigned to mine a spot.
     bool isAssignedGas(Resource_Inventory & ri); // If the unit is assigned to mine gas.
     bool isAssignedResource(Resource_Inventory & ri);

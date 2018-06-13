@@ -9,8 +9,8 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Forces a unit to stutter in a boids manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Boids::Boids_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
+//Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
+void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
 
     Position pos = unit->getPosition();
     vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
@@ -42,7 +42,7 @@ void Boids::Boids_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inve
 
 
         if (potential_fears) {
-            //setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
+            setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
         }
         else {
             setCohesion(unit, pos, local_neighborhood);
@@ -90,7 +90,7 @@ void Boids::Boids_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inve
 };
 
 // This is basic combat logic for nonspellcasting units.
-void Boids::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
     Stored_Unit target;
@@ -193,138 +193,99 @@ void Boids::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const Uni
 }
 
 // Basic retreat logic, range = enemy range
-void Boids::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
-    int chargable_distance_net = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
+    int chargable_distance = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
                                                                                //int range = unit->isFlying() ? air_range : ground_range;
-    int range = ei.max_range_;
+    int e_range = ei.max_range_;
+    int f_range = ui.max_range_;
     Position pos = unit->getPosition();
     //Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
     //Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
-    if (dist < range + chargable_distance_net * 24) { //  Run if you're a noncombat unit or army starved. 24x chargable distance for safety. Retreat function now accounts for walkability.
+    //if (dist < e_range + chargable_distance_net ) { //  Run if you're a noncombat unit or army starved. Chargable distance for safety. Retreat function now accounts for walkability.
 
-        if (_ANALYSIS_MODE) {
-            Broodwar->drawCircleMap(e_unit.pos_, range, Colors::Red);
-            Broodwar->drawCircleMap(e_unit.pos_, chargable_distance_net * 24, Colors::Cyan);
-            Broodwar->drawCircleMap(e_unit.pos_, range + chargable_distance_net * 24, Colors::Green);
+    if (_ANALYSIS_MODE) {
+        Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
+        Broodwar->drawCircleMap(e_unit.pos_, chargable_distance , Colors::Cyan);
+        Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance , Colors::Green);
+    }
+    //initial retreat spot from enemy.
+    //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
+
+    // Seperate from enemy:
+    Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(64, e_range + chargable_distance ));
+    e_neighbors.updateUnitInventorySummary();
+    // e_range = e_neighbors.max_range_;
+
+    if (CUNYAIModule::getThreateningStocks(unit, e_neighbors) > 0) {
+        setSeperation(unit, pos, e_neighbors); // might return false positives.
+        if (unit->isFlying()) {
+            setAttractionHome(unit, pos, ei, inventory); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
         }
-        //initial retreat spot from enemy.
-        //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
+        //setStutter(unit, 1000);
+    }
+    else {
+        setAttractionHome(unit, pos, ei, inventory);
+    }
+    //setAlignment( unit, ui );
+    //setAlignment( unit, local_neighborhood);
+    //setCohesion( unit, pos, local_neighborhood);
 
-        // Seperate from enemy, aka kite:
+    if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
+        unit->unburrow();
+        return;
+    }
+    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
+        unit->burrow();
+        return;
+    }
 
-        Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(CUNYAIModule::getProperRange(unit), 32));
-        e_neighbors.updateUnitInventorySummary();
+    int vector_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
+    int vector_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
 
-        if (CUNYAIModule::getThreateningStocks(unit, e_neighbors) > 0) {
-            setSeperation(unit, pos, e_neighbors); // might return false positives.
-            if (unit->isFlying()) {
-                setAttractionHome(unit, pos, ei, inventory); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
-            }
-            //setStutter(unit, 1000);
-        }
-        else {
-            setAttractionHome(unit, pos, ei, inventory);
-        }
-        //setAlignment( unit, ui );
-        //setAlignment( unit, local_neighborhood);
-        //setCohesion( unit, pos, local_neighborhood);
+    //Make sure the end destination is one suitable for you.
+    Position retreat_spot = { (int)(pos.x + vector_x), (int)(pos.y + vector_y) }; //attract is zero when it's not set.
 
-        // Scourge need to seperate.
-        if (unit->getType() == UnitTypes::Zerg_Scourge) {
-            Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 32);
-            setSeperation(unit, pos, neighbors);
-        } // closure: flyers
+    bool clear_walkable = retreat_spot.isValid() &&
+        (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
+            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory)); //or does it cross an unwalkable position? Includes buildings.
+    bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
+    bool running_from_melee = 64 > CUNYAIModule::getProperRange(e_unit.bwapi_unit_);
+    bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance ;
 
+    if (retreat_spot && !unit->isBurrowed() && clear_walkable && (safe_walkable || running_from_melee) && !scourge_retreating) {
+        unit->move(retreat_spot); //run away.
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, inventory.screen_position_, Colors::Blue); // Centraliziation.
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, inventory.screen_position_, Colors::Purple); // Cohesion
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+    }
+    else { // if that spot will not work for you, then instead check along that vector.
 
-
-
-        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
-            unit->unburrow();
-            return;
-        }
-        else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
+        if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
             unit->burrow();
             return;
         }
-
-        int vector_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
-        int vector_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
-
-        int norm_x = cos(vector_x) * vector_x;
-        int norm_y = sin(vector_y) * vector_y;
-
-        //Make sure the end destination is one suitable for you.
-        Position retreat_spot = { (int)(pos.x + vector_x),
-            (int)(pos.y + vector_y) }; //attract is zero when it's not set.
-
-        bool walkable_plus = retreat_spot.isValid() &&
-            (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-                CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory)); //&& //or does it cross an unwalkable position? Includes buildings.
-
-        if (retreat_spot && !unit->isBurrowed() && walkable_plus) {
-            unit->move(retreat_spot); //run away.
-            order_sent = true;
+        else {
+            Tactical_Logic(unit, ei, ui, inventory);
+            return;
         }
-        else { // if that spot will not work for you, then instead check along that vector.
 
-            int velocity_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
-            int velocity_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
-            int x = 1;
-
-            Position potential_running_spot = retreat_spot;
-            while (!walkable_plus && x < 3) {
-                potential_running_spot = Position(retreat_spot.x + velocity_x * (3 - x) / (double)3, retreat_spot.y + velocity_y * (3 - x) / (double)3);
-                walkable_plus = potential_running_spot.isValid() &&
-                    (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-                        CUNYAIModule::isClearRayTrace(pos, potential_running_spot, inventory)); //&& //or does it cross an unwalkable position? 
-                                                                                                //CUNYAIModule::checkOccupiedArea(ui, potential_running_spot, 32))); // or does it end on a unit?
-                x++;
-            }
-            if (walkable_plus) {
-                unit->move(potential_running_spot); //identify vector between yourself and e.  go 350 pixels away in the quadrant furthest from them.
-                order_sent = true;
-            }
-            else {
-                if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
-                    unit->burrow();
-                    order_sent = true;
-                    return;
-                }
-                else {
-                    if (e_unit.bwapi_unit_) {
-                        unit->attack(e_unit.bwapi_unit_);
-                    }
-                    else {
-                        unit->attack(e_unit.pos_);
-                    }
-                    order_sent = true;
-                }
-            }
-        }
     }
-    //else if ((unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit) && CUNYAIModule::spamGuard(unit) ) {
-    //    unit->stop();
-    //}
 
-    if (order_sent) {
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, inventory.screen_position_, Colors::Blue); // Centraliziation.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, inventory.screen_position_, Colors::Purple); // Cohesion
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
-    }
+
 }
 
 
 //Brownian Stuttering, causes unit to move about randomly.
-void Boids::setStutter(const Unit &unit, const double &n) {
+void Mobility::setStutter(const Unit &unit, const double &n) {
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
@@ -335,7 +296,7 @@ void Boids::setStutter(const Unit &unit, const double &n) {
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
-void Boids::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
+void Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
     int temp_tot_x = 0;
     int temp_tot_y = 0;
     int speed = CUNYAIModule::getProperSpeed(unit->getType());
@@ -366,7 +327,7 @@ void Boids::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
     }
 }
 
-void Boids::setDirectRetreat(const Position &pos, const Position &e_pos, const UnitType &type) {
+void Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, const UnitType &type) {
     int dist_x = e_pos.x - pos.x;
     int dist_y = e_pos.y - pos.y;
     double theta = atan2(dist_y, dist_x); // att_y/att_x = tan (theta).
@@ -375,7 +336,7 @@ void Boids::setDirectRetreat(const Position &pos, const Position &e_pos, const U
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
-void Boids::setCentralize(const Position &pos, const Inventory &inventory) {
+void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
     double temp_centralization_dx_ = 0;
     double temp_centralization_dy_ = 0;
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -407,9 +368,9 @@ void Boids::setCentralize(const Position &pos, const Inventory &inventory) {
 }
 
 //Cohesion, all units tend to prefer to be together.
-void Boids::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+void Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
 
-    const Position loc_center = ui.getMeanLocation();
+    const Position loc_center = ui.getMeanArmyLocation();
     if (loc_center != Position(0, 0)) {
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
@@ -419,7 +380,7 @@ void Boids::setCohesion(const Unit &unit, const Position &pos, const Unit_Invent
     }
 }
 
-void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
+void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
     if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
         Position possible_base = inv.start_positions_[0];
         int dist = unit->getDistance(possible_base);
@@ -434,7 +395,7 @@ void Boids::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv
 }
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place. Only sees visible units.
-void Boids::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
+void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
 
     bool enemy_found = false;
     double distance_metric = CUNYAIModule::getProperSpeed(unit) * 24;
@@ -473,7 +434,7 @@ void Boids::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inven
 }
 
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
-void Boids::setAttractionHome(const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv) {
+void Mobility::setAttractionHome(const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv) {
     if (!ei.unit_inventory_.empty()) { // if there is an existant enemy.
         int distance_metric = CUNYAIModule::getProperSpeed(unit) * 24;
 
@@ -495,22 +456,34 @@ void Boids::setAttractionHome(const Unit &unit, const Position &pos, const Unit_
 
 
 //Seperation from nearby units, search very local neighborhood of usually about 1-2 tiles.
-void Boids::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
-        seperation_x += u.second.pos_.x - pos.x;
-        seperation_y += u.second.pos_.y - pos.y;
+        if (unit != u.first) {
+            seperation_x += u.second.pos_.x - pos.x;
+            seperation_y += u.second.pos_.y - pos.y;
+        }
     }
-    if (seperation_y != 0 || seperation_x != 0) {
-        double theta = atan2(seperation_y, seperation_x);
-        seperation_dx_ += cos(theta) * 32 * ui.unit_inventory_.size(); // run 1 tile away from everyone. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ += sin(theta) * 32 * ui.unit_inventory_.size();
-    }
+
+    int sgn_x = (seperation_x > 0) - (seperation_x < 0); //sign_x;
+    int sgn_y = (seperation_y > 0) - (seperation_y < 0); //sign_y;
+
+    seperation_x /= max((int) ui.unit_inventory_.size(), 1);
+    seperation_y /= max((int) ui.unit_inventory_.size(), 1);
+
+   seperation_dx_ = seperation_x;
+   seperation_dy_ = seperation_y;  // will be subtracted later because seperation is a repulsuion rather than a pull.
+
+    //if (seperation_y != 0 || seperation_x != 0) {
+    //    double theta = atan2(seperation_y, seperation_x);
+    //    seperation_dx_ += cos(theta) * 32 * (ui.unit_inventory_.size() - 1); // run 1 tile away from everyone. Should help avoid being stuck in those wonky spots.
+    //    seperation_dy_ += sin(theta) * 32 * (ui.unit_inventory_.size() - 1);
+    //}
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
-void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+void Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
     int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
@@ -536,7 +509,7 @@ void Boids::setSeperationScout(const Unit &unit, const Position &pos, const Unit
     }
 }
 
-void Boids::setObjectAvoid(const Unit &unit, const Position &pos, const Inventory &inventory) { // now defunct.
+void Mobility::setObjectAvoid(const Unit &unit, const Position &pos, const Inventory &inventory) { // now defunct.
 
     double temp_walkability_dx_ = 0;
     double temp_walkability_dy_ = 0;
@@ -572,7 +545,7 @@ void Boids::setObjectAvoid(const Unit &unit, const Position &pos, const Inventor
 
 
 // returns TRUE if the lurker needed fixing. For Attack.
-bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
+bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
     int dist_to_threat_or_target = unit->getDistance(position_of_target);
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
     bool burrow_condition = (/*(dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ <= ui.cloaker_count_ ) ||*/ dist_condition);
@@ -595,7 +568,7 @@ bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, con
     return false;
 }
 
-vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory &inv) const {
+vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Inventory &inv) const {
     vector<double> return_vector = { 0, 0 };
     int my_spot = inv.getRadialDistanceOutFromHome(pos);
     double temp_x = 0;
@@ -643,7 +616,7 @@ vector<double> Boids::getVectorTowardsHome(const Position &pos, const Inventory 
     return  return_vector;
 }
 
-vector<double> Boids::getVectorTowardsEnemy(const Position &pos, const Inventory &inv) const {
+vector<double> Mobility::getVectorTowardsEnemy(const Position &pos, const Inventory &inv) const {
     vector<double> return_vector = { 0, 0 };
     int my_spot = inv.getRadialDistanceOutFromEnemy(pos);
     double temp_x = 0;

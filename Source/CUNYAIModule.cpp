@@ -224,6 +224,7 @@ void CUNYAIModule::onFrame()
     inventory.updateMin_Possessed(land_inventory);
     inventory.updateHatcheries();  // macro variables, not every unit I have.
     inventory.updateWorkersClearing(friendly_inventory, land_inventory);
+    inventory.updateWorkersLongDistanceMining(friendly_inventory, land_inventory);
     inventory.my_portion_of_the_map_ = sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size();
     inventory.updateStartPositions(enemy_inventory);
     inventory.updateScreen_Position();
@@ -597,10 +598,12 @@ void CUNYAIModule::onFrame()
                              //e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
                 int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
-                int chargable_distance_net = CUNYAIModule::getChargableDistance(u, enemy_inventory) + CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory); // how far can you get before he shoots?
+                int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_inventory);
+                int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
+                int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
                 //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
-                Boids boids;
+                Mobility mobility;
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
@@ -636,7 +639,7 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-                    bool grim_distance_trigger = (distance_to_foe < 32 && getProperRange(u) < 32);
+                    bool grim_distance_trigger = (distance_to_foe < 32 + (u_type == UnitTypes::Zerg_Scourge  || u_type == UnitTypes::Zerg_Zergling) * chargable_distance_enemy && getProperRange(u) < 32);
                     bool neccessary_attack =
                         (targetable_stocks > 0 || threatening_stocks == 0) && (
                             helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
@@ -646,10 +649,9 @@ void CUNYAIModule::onFrame()
                                                                                                  //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
                             (Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
-                                                                                                                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
+                                //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                             threatening_stocks == 0 ||
-                            (u_type == UnitTypes::Zerg_Scourge && distance_to_foe < enemy_loc.max_range_ + 2 * chargable_distance_net) || // the only sucide unit should not be prevented from suiciding.
-                                                                                                                                          //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
+                               //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
                             grim_distance_trigger);// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
@@ -681,7 +683,7 @@ void CUNYAIModule::onFrame()
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                         }
 
-                        boids.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
 
 
                         if (_ANALYSIS_MODE) {
@@ -702,7 +704,7 @@ void CUNYAIModule::onFrame()
                         }
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u, 128);
                         if (closest) {
-                            boids.Retreat_Logic(u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
                         }
                         continue; // this unit is finished.
 
@@ -714,17 +716,17 @@ void CUNYAIModule::onFrame()
                             u->getHitPoints() / (double)(u_type.maxHitPoints() + u_type.maxShields()) >= e_closest->current_hp_ / (double)(e_closest->type_.maxHitPoints() + e_closest->type_.maxShields()) &&
                             u->getHitPoints() > (double)(u_type.maxHitPoints() + u_type.maxShields()) * 0.25) {
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
-                            boids.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                             continue; // this unit is finished.
                         }
                     }
                     else {
+                        if (distance_to_foe < chargable_distance_net) { // use same algo inside retreat script.
 
                         if (u_type.isWorker()) {
                             friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                         }
 
-                        boids.Retreat_Logic(u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White);
 
 
                         if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0, 0))) {
@@ -736,8 +738,8 @@ void CUNYAIModule::onFrame()
                             }
                         }
 
-                        if (distance_to_foe < enemy_loc.max_range_ + 24 * CUNYAIModule::getChargableDistance(u, enemy_inventory)) { // use same algo inside retreat script.
-                            continue; //Do not give the unit to boids or any other algorithm if the enemy is nearby!
+                            mobility.Retreat_Logic(u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White);
+                            continue; //Do not give the unit to Mobility or any other algorithm if the enemy is nearby!
                         }
                     }
                 }
@@ -746,7 +748,7 @@ void CUNYAIModule::onFrame()
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 
-        //Scouting/vision loop. Intially just brownian motion, now a fully implemented boids-type algorithm.
+        //Scouting/vision loop. Intially just brownian motion, now a fully implemented Mobility-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
 
         bool acceptable_ovi_scout = u_type != UnitTypes::Zerg_Overlord ||
@@ -754,9 +756,9 @@ void CUNYAIModule::onFrame()
             (u_type == UnitTypes::Zerg_Overlord && massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
 
         if ( spamGuard(u) /*&& acceptable_ovi_scout*/ && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() ) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
-            Boids boids;
+            Mobility mobility;
             bool potential_fears = !massive_army; // just a name change.
-            boids.Boids_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
+            mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
 

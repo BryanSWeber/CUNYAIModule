@@ -3,15 +3,15 @@
 #include "CUNYAIModule.h"
 
 //Movement and Combat Functions
-class Boids {
+class Mobility {
 
 public:
     // Basic retreat logic
     void Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color );
     // Tells the unit to fight. If it can attack both air and ground.
     void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Unit_Inventory &ui, const Inventory &inv, const Color & color );
-    //Forces a unit to flock in a (previously) boids manner. Will attack if it sees something.
-    void Boids_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved, const bool &potential_fears);
+    //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something.
+    void Mobility_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved, const bool &potential_fears);
 
     //Forces the closest Overlord or Zergling to lock itself onto a mineral patch so I can keep vision of it. Helps expos.
     //void Vision_Locking( const Unit &unit );
@@ -42,7 +42,7 @@ public:
     // 
     void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );
 
-    bool Boids::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
+    bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
     // gives a vector that has the direction on ground towards home.
     vector<double> getVectorTowardsHome(const Position & pos, const Inventory & inv) const;

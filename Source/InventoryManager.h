@@ -56,6 +56,7 @@ struct Inventory {
     TilePosition next_expo_;
 	bool cleared_all_start_positions_;
     int workers_clearing_;
+    int workers_distance_mining_;
 
     bool unwalkable_needs_updating = false;
     bool smoothed_needs_updating = false;
@@ -128,7 +129,8 @@ struct Inventory {
     int Inventory::getRadialDistanceOutFromHome(const Position A ) const;
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
-    void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri);
+    void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
+    void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
 	// updates the next target expo.
 	void Inventory::getExpoPositions();
