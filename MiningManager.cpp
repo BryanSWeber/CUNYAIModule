@@ -12,6 +12,8 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         int dist = 99999999;
 
+        inv.setNextExpo(TilePosition(0, 0));
+
         bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
@@ -36,7 +38,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             return false;
         }
 
-        if ( inv.next_expo_ )
+        if ( inv.next_expo_ && inv.next_expo_ != TilePosition(0, 0) )
         {
             //clear all obstructions, if any.
             Unit_Inventory obstructions = getUnitInventoryInRadius( friendly_inventory, Position( inv.next_expo_ ), 3 * 32 );

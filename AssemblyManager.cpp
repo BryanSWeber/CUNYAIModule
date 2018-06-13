@@ -417,7 +417,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
 bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     int buildings_started = 0;
-    bool expansion_vital = inventory.min_fields_ < inventory.hatches_ * 8 || inv.workers_distance_mining_ > 0;
+    bool expansion_vital = inventory.min_fields_ < inventory.hatches_ * 8 || inv.workers_distance_mining_ > 0.0625 * inv.min_workers_; // 1/16 workers LD mining is too much.
     bool expansion_meaningful = (Count_Units(UnitTypes::Zerg_Drone, inv) < 85 && (inventory.min_workers_ > inventory.min_fields_ * 2 || inventory.gas_workers_ > 2 * Count_Units(UnitTypes::Zerg_Extractor, inv))) || expansion_vital;
     bool larva_starved = Count_Units(UnitTypes::Zerg_Larva, inv) <= Count_Units(UnitTypes::Zerg_Hatchery, inv);
     bool upgrade_bool = (tech_starved || (Count_Units(UnitTypes::Zerg_Larva, inv) == 0 && !army_starved));
