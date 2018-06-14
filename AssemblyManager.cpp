@@ -275,7 +275,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     bool wasting_larva_soon = true;
 
     if (larva->getHatchery()) {
-        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 && larva->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
+        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
     }
 
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, inv) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, inv) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, inv) >= 85;

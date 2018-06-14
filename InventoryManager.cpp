@@ -584,61 +584,64 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
 
         int minitile_x_temp = minitile_x;
         int minitile_y_temp = minitile_y;
+        bool filled_a_square = false;
 
         while ( !fire_fill_queue.empty() ) { // this portion is a fire fill.
 
             minitile_x_temp = fire_fill_queue.begin()->x;
             minitile_y_temp = fire_fill_queue.begin()->y;
             fire_fill_queue.erase( fire_fill_queue.begin() );
+            filled_a_square = false;
 
             // north
             if (minitile_y_temp + 1 < map_y && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp + 1 });
             }
             // north east
             if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
             }
             // north west
             if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
             }
             //south
             if (0 < minitile_y_temp - 1  && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
             }
             //south east
             if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
             }
             //south west
             if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
             }
             // east
             if (minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp });
             }
             //west
             if (0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0) {
-                total_squares_filled++;
+                filled_a_square = true;
                 map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp });
             }
+            total_squares_filled += filled_a_square;
         }
         //for ( int i = 0; i < maxI; ) {
         //    if ( (0 < minitile_x) && (minitile_x < map_x) && (0 < minitile_y) && (minitile_y < map_y) ) { // if you are on the map, continue.
@@ -817,61 +820,65 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
 
     int minitile_x_temp = minitile_x;
     int minitile_y_temp = minitile_y;
+    bool filled_a_square = false;
 
     while ( !fire_fill_queue.empty() ) { // this portion is a fire fill.
 
         minitile_x_temp = fire_fill_queue.begin()->x;
         minitile_y_temp = fire_fill_queue.begin()->y;
         fire_fill_queue.erase( fire_fill_queue.begin() );
+        filled_a_square = false;
 
         // north
         if ( minitile_y_temp + 1 < map_y && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp , minitile_y_temp + 1 } );
         }
         // north east
         if ( minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp + 1 } );
         }
         // north west
         if ( minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp + 1 } );
         }
         //south
         if (0 < minitile_y_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] == 0) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
         }
         //south east
         if ( 0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp - 1 } );
         }
         //south west
         if ( 0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp - 1 } );
         }
         // east
         if ( minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp + 1, minitile_y_temp } );
         }
         //west
         if ( 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] == 0 ) {
-            total_squares_filled++;
+            filled_a_square = true;
             map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
+        total_squares_filled += filled_a_square;// less if's are better.
+
     }
 }
 
