@@ -147,7 +147,7 @@ void Inventory::updateLn_Worker_Stock() {
     updateGas_Workers();
     updateMin_Workers();
 
-    int workers = gas_workers_ + min_workers_;
+    int workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this); //gas_workers_ + min_workers_; // this is not needed if all workers are active.
 
     total = cost * workers;
 
