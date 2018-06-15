@@ -267,8 +267,10 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
 //Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
 bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
 {
-    //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+    // Am I bulding anything?
     int is_building = 0;
+
+    //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 
     //Econ Build/replenish loop. Will build workers if I have no spawning pool, or if there is a worker shortage.
     //bool early_game = Count_Units( UnitTypes::Zerg_Spawning_Pool, ui ) - Broodwar->self()->incompleteUnitCount( UnitTypes::Zerg_Spawning_Pool ) == 0 && inv.min_workers_ + inv.gas_workers_ <= 9;
@@ -328,16 +330,17 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
         is_building += Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         is_building += Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon) && is_building == 0 && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
 
+        //Evo chamber is required tech for spore colony
         if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 0 && buildorder.isEmptyBuildOrder()) {
             buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in a hydralisk den if they have Air.
             Broodwar->sendText("Reactionary Evo Chamber");
             return is_building > 0;
-        }
+        } // hydralisk den is required tech for hydras, a ground to air/ ground to ground unit.
         else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) == 0 && buildorder.isEmptyBuildOrder()) {
             buildorder.addBuildOrderElement(UnitTypes::Zerg_Hydralisk_Den);
             Broodwar->sendText("Reactionary Hydra Den");
             return is_building > 0;
-        }
+        }// spire requires LAIR. Spire allows mutalisks and scourge.   Greater spire allows devorers, but I do not have code to updrade to greater spire ATM.
         else if (Count_Units(UnitTypes::Zerg_Lair, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Lair, inv) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, inv) == 0 && buildorder.isEmptyBuildOrder()) {
             buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire);
             Broodwar->sendText("Reactionary Spire");
