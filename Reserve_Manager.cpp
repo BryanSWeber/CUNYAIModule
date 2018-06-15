@@ -37,7 +37,7 @@ void Reservation::removeReserveSystem(UnitType type) {
         min_reserve_ -= type.mineralPrice();
         gas_reserve_ -= type.gasPrice();
     }
-    else if (type != UnitTypes::None) {
+    else if (type != UnitTypes::None && _ANALYSIS_MODE) {
         Broodwar->sendText("We're trying to remove %s from the reservation queue but can't find it.", type.c_str());
     }
 };

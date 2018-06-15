@@ -124,6 +124,7 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
         res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
     unit->stop();
+    miner.time_since_last_purge_ = Broodwar->getFrameCount();
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
@@ -139,6 +140,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
     if (command.getTargetPosition() == Position(inv.next_expo_)) {
         res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
     }
+    miner.time_since_last_purge_ = Broodwar->getFrameCount();
 }
 
 void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
@@ -512,7 +514,7 @@ void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &r
 void Stored_Unit::stopMine(Resource_Inventory &ri){
 	if (locked_mine_){
         if (getMine(ri)) {
-            getMine(ri)->number_of_miners_--;
+            getMine(ri)->number_of_miners_ = max(getMine(ri)->number_of_miners_ - 1, 0);
         }
 	}
     locked_mine_ = NULL;
@@ -588,7 +590,8 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && (bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24 );
+    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && bwapi_unit_->getOrderTarget() && 
+        ( bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24 );
 }
 
 //prototypeing

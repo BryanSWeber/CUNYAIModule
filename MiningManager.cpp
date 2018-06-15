@@ -100,12 +100,13 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     int low_drone = 0;
     bool mine_minerals = mine.isMineralField();
     bool mine_is_right_type = true;
+    bool found_low_mine = false;
 
     // mineral patches can handle up to 2 miners, gas/refineries can handle up to 3.
     if ( mine_minerals ) {
-        low_drone = 1;
-    } else {
         low_drone = 2;
+    } else {
+        low_drone = 3;
     }
 
 
@@ -119,11 +120,15 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ <= low_drone && r->second.occupied_natural_) { //occupied natural -> resource is close to a base
+        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.occupied_natural_) { //occupied natural -> resource is close to a base
             low_drone = r->second.number_of_miners_;
+            found_low_mine = true;
         }
 
     } // find drone minima.
+
+    Broodwar->sendText("LOW DRONE COUNT : %d", low_drone);
+    Broodwar->sendText("Mine Minerals : %d", mine_minerals);
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 
@@ -135,8 +140,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         }
 
         if (mine_is_right_type && r->second.number_of_miners_ <= low_drone) {
-            if (r->second.occupied_natural_ /*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
-
+            if (r->second.occupied_natural_ && found_low_mine/*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r->second);
             }
             else {
@@ -160,9 +164,9 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         if ( closest ) {
             miner.startMine(*closest, land_inventory);
 
-        //    if (building_unit) {
-        //        my_reservation.removeReserveSystem(unit->getBuildType());
-        //    }
+            //if (building_unit) {
+            //    my_reservation.removeReserveSystem(unit->getBuildType());
+            //}
 
         }
 

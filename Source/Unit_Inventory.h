@@ -32,6 +32,7 @@ struct Stored_Unit {
     Order order_;
     UnitCommand command_;
     int time_since_last_command_; // note command != orders.
+    int time_since_last_purge_; //test
 
     //Unit Movement Information;
     Position attract_;
