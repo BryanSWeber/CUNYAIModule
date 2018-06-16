@@ -124,7 +124,7 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
         res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
     }
     unit->stop();
-    miner.time_since_last_purge_ = Broodwar->getFrameCount();
+    miner.time_of_last_purge_ = Broodwar->getFrameCount();
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
@@ -140,7 +140,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
     if (command.getTargetPosition() == Position(inv.next_expo_)) {
         res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
     }
-    miner.time_since_last_purge_ = Broodwar->getFrameCount();
+    miner.time_of_last_purge_ = Broodwar->getFrameCount();
 }
 
 void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
@@ -577,7 +577,7 @@ bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
 // Warning- depends on unit being updated.
 bool Stored_Unit::isAssignedBuilding() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build ) && time_since_last_command_ < 15 * 24;
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph ) && time_since_last_command_ < 15 * 24;
     return building_sent;
 }
 
@@ -591,7 +591,7 @@ bool Stored_Unit::isNoLock(){
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && bwapi_unit_->getOrderTarget() && 
-        ( bwapi_unit_->getOrderTarget()->getID() != this->getMine(ri)->bwapi_unit_->getID() || time_since_last_command_ > 15 * 24 );
+        ( bwapi_unit_->getOrderTarget() != this->getMine(ri)->bwapi_unit_ || time_since_last_command_ > 15 * 24 );
 }
 
 //prototypeing
