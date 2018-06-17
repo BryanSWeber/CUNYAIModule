@@ -99,10 +99,10 @@ void CUNYAIModule::onStart()
     inventory.updateUnit_Counts(friendly_inventory);
     inventory.updateBuildablePos();
     inventory.updateUnwalkable();
-    inventory.updateSmoothPos();
+    //inventory.updateSmoothPos();
     inventory.updateMapVeins();
     inventory.updateMapVeinsOutFromMain( Position(Broodwar->self()->getStartLocation()) );
-    inventory.updateMapChokes();
+    //inventory.updateMapChokes();
     inventory.updateBaseLoc( land_inventory );
     inventory.getStartPositions();
 

@@ -76,6 +76,9 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) {
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
+
+                        Broodwar->sendText("Dist frome enemy is: %d", new_dist);
+
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
                         Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 250);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, Position(central_base_new), 750);

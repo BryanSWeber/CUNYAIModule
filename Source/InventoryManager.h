@@ -9,6 +9,16 @@
 using namespace std;
 using namespace BWAPI;
 
+
+//Might benifit from seperatating maps entirely.
+//Several types of maps:
+// A)Buildable positions, basic map no dependencies.
+// B)Unwalkable barriers, basic map no dependencies.
+// Unwalkable barriers w buildings. Depends on unwalkable barriers.
+// Smoothed barriers, depends on unwalkable barriers.
+// map_veins_, depends on unwalkable barriers WITH buildings.
+// Map veins in and out from enemy - depends on Unwalkable barriers. Does not depend on buildings.
+
 struct Inventory {
     Inventory();
     Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri );
@@ -43,6 +53,7 @@ struct Inventory {
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_ ; // buildable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
+    vector< vector<int> > unwalkable_barriers_with_buldings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, 1+ if otherwise. Veins decend from a value of 300.
     vector< vector<int> > map_veins_out_from_main_; // distance from our own main.
@@ -105,19 +116,20 @@ struct Inventory {
     void Inventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
     void Inventory::updateUnwalkable();
-    // Updates unwalkable portions with existing blockades.
-    void Inventory::updateLiveUnwalkable(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    // Updates unwalkable portions with existing blockades. Currently flawed.
+    void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
-    // Marks and smooths the edges of the map.
+    // Marks and smooths the edges of the map. Dangerous- In progress.
     void Inventory::updateSmoothPos();
-    // Marks the main arteries of the map.
-    void Inventory::updateMapVeins();
+    // Marks the main arteries of the map. Requires updateunwalkablewithbuildings.
+    void Inventory::updateMapVeins(); 
+
 
     // Updates the visible map arteries. Only checks buildings.
     //void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
     //void Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
     // Updates the chokes on the map.
-    void Inventory::updateMapChokes(); //in progress
+    //void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
     void Inventory::updateMapVeinsOutFromMain( const Position center );
     // Updates veins going out of the enemy base for attacking ease.

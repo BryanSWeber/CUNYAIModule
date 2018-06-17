@@ -127,8 +127,10 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
     } // find drone minima.
 
-    Broodwar->sendText("LOW DRONE COUNT : %d", low_drone);
-    Broodwar->sendText("Mine Minerals : %d", mine_minerals);
+    //if (_ANALYSIS_MODE) {
+    //    Broodwar->sendText("LOW DRONE COUNT : %d", low_drone);
+    //    Broodwar->sendText("Mine Minerals : %d", mine_minerals);
+    //}
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 

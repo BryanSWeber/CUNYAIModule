@@ -31,17 +31,17 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     updateMin_Possessed( ri );
     updateHatcheries();
 
-    if ( smoothed_barriers_.size() == 0 ) {
+    //if ( smoothed_barriers_.size() == 0 ) {
 
-        updateSmoothPos();
-        int unwalkable_ct = 0;
-        for ( vector<int>::size_type i = 0; i != smoothed_barriers_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j != smoothed_barriers_[i].size(); ++j ) {
-                unwalkable_ct += smoothed_barriers_[i][j];
-            }
-        }
-        Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
-    }
+    //    updateSmoothPos();
+    //    int unwalkable_ct = 0;
+    //    for ( vector<int>::size_type i = 0; i != smoothed_barriers_.size(); ++i ) {
+    //        for ( vector<int>::size_type j = 0; j != smoothed_barriers_[i].size(); ++j ) {
+    //            unwalkable_ct += smoothed_barriers_[i][j];
+    //        }
+    //    }
+    //    Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
+    //}
 
     if ( unwalkable_barriers_.size() == 0 ) {
         updateUnwalkable();
@@ -357,6 +357,8 @@ void Inventory::updateUnwalkable() {
         }
         unwalkable_barriers_.push_back( temp );
     }
+    
+    unwalkable_barriers_with_buldings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
 void Inventory::updateSmoothPos() {
@@ -433,7 +435,7 @@ void Inventory::updateMapVeins() {
         vector<int> temp;
         temp.reserve(map_y);
         for (int y = 0; y < map_y; ++y) {
-            temp.push_back(unwalkable_barriers_[x][y] == 1 );  //Was that location unwalkable? 
+            temp.push_back(unwalkable_barriers_with_buldings_[x][y] == 1 );  //Was that location unwalkable or containing a building?? 
         }
         map_veins_.push_back(temp); // Map veins intially contains 0 for unblocked locations, and 1 for blocked locations.
     }
@@ -539,26 +541,26 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     WalkPosition startloc = WalkPosition( center );
  
-    if (!map_veins_out_from_main_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 0 ) {
+    if (!map_veins_out_from_main_.empty() && unwalkable_barriers_[startloc.x][startloc.y] > 0 ) {
         return;
     }
     else {
-        map_veins_out_from_main_.clear();
+        map_veins_out_from_main_ = unwalkable_barriers_;
     }
     // first, define matrixes to recieve the walkable locations for every minitile.
 
     home_base_ = center;
 
-    map_veins_out_from_main_.reserve(map_x);
-    for (int x = 0; x <= map_x; ++x) {
-        vector<int> temp;
-        temp.reserve(map_y);
-        for (int y = 0; y <= map_y; ++y) {
-            temp.push_back(smoothed_barriers_[x][y] > 0);  //Was that location smoothed out? will be greater than 0 if so.
-        }
-        map_veins_out_from_main_.push_back(temp);
-    }
-    //map_veins_out_from_main_ = unwalkable_barriers_;
+    //map_veins_out_from_main_.reserve(map_x);
+    //for (int x = 0; x <= map_x; ++x) {
+    //    vector<int> temp;
+    //    temp.reserve(map_y);
+    //    for (int y = 0; y <= map_y; ++y) {
+    //        temp.push_back(unwalkable_barriers_[x][y] > 0);  //Was that location unwalkable? will be greater than 0 if so.
+    //    }
+    //    map_veins_out_from_main_.push_back(temp);
+    //}
+    ////map_veins_out_from_main_ = unwalkable_barriers_;
 
     int minitile_x, minitile_y, distance_right_x, distance_below_y;
     minitile_x = startloc.x;
@@ -776,23 +778,23 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
     
     enemy_base_ = center;
 
-    if (!map_veins_out_from_enemy_.empty() && smoothed_barriers_[startloc.x][startloc.y] == 1) {
+    if (!map_veins_out_from_enemy_.empty() && unwalkable_barriers_[startloc.x][startloc.y] > 0) {
         return;
     }
     else {
-        map_veins_out_from_enemy_.clear();
+        map_veins_out_from_enemy_= unwalkable_barriers_;
     }
 
-    //// first, define matrixes to recieve the walkable locations for every minitile.
-    map_veins_out_from_enemy_.reserve(map_x);
-    for (int x = 0; x <= map_x; ++x) {
-        vector<int> temp;
-        temp.reserve(map_y);
-        for (int y = 0; y <= map_y; ++y) {
-            temp.push_back(smoothed_barriers_[x][y] > 0);  //Was that location smoothed out?
-        }
-        map_veins_out_from_enemy_.push_back(temp);
-    }
+    ////// first, define matrixes to recieve the walkable locations for every minitile.
+    //map_veins_out_from_enemy_.reserve(map_x);
+    //for (int x = 0; x <= map_x; ++x) {
+    //    vector<int> temp;
+    //    temp.reserve(map_y);
+    //    for (int y = 0; y <= map_y; ++y) {
+    //        temp.push_back(unwalkable_barriers_[x][y] > 0);  //Was that location unwalkable?
+    //    }
+    //    map_veins_out_from_enemy_.push_back(temp);
+    //}
 
     //map_veins_out_from_enemy_ = unwalkable_barriers_;
 
@@ -925,6 +927,7 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
 
     return 9999999;
 }
+
 int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
     if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
@@ -1043,22 +1046,16 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 //        //}
 //    }
 //}
-void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+
+
+// This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
+void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
-    for (int x = 0; x <= map_x; ++x) {
-        for (int y = 0; y <= map_y; ++y) {
-            if (!Broodwar->isWalkable(x, y)) {
-                unwalkable_barriers_[x][y] = 1;  //Was that location smoothed out?
-            }
-            else {
-                unwalkable_barriers_[x][y] = 0;  //Was that location smoothed out?
-            }
-        }
-    }
+    unwalkable_barriers_with_buldings_ = unwalkable_barriers_;
 
-    //mark all occupied areas.
+    //mark all occupied areas.  IAAUW
 
     for (auto & u : ui.unit_inventory_) {
         if (u.second.type_.isBuilding()) {
@@ -1074,11 +1071,11 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
 
             //respect map bounds please.
             WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+            WalkPosition upper_left_modified  = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1102,7 +1099,7 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1126,7 +1123,7 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1148,7 +1145,7 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
 
         for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
             for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                unwalkable_barriers_[minitile_x][minitile_y] = 1;
+                unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
             }
         }
 
@@ -1234,129 +1231,129 @@ void Inventory::updateLiveUnwalkable(const Unit_Inventory &ui, const Unit_Invent
 //    }
 //}
 
-void Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
-    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    int current_region_number = 1;
-    int count_of_adjacent_importent_points = 0;
-    int temp_x = 0;
-    int temp_y = 0;
-    int local_tiles[9];
-
-    // first, define matrixes to recieve the walkable locations for every minitile.
-    //map_chokes_.reserve(map_x);
-    //for (int x = 0; x <= map_x; ++x) {
-    //    vector<int> temp;
-    //    temp.reserve(map_y);
-    //    for (int y = 0; y <= map_y; ++y) {
-    //        temp.push_back(unwalkable_barriers_[x][y] > 0);  //Was that location smoothed out?
-    //    }
-    //    map_chokes_.push_back(temp);
-    //}
-
-    map_chokes_ = unwalkable_barriers_;
-
-    for (int temp_x = 1; temp_x < map_x; temp_x++) {
-          for (int temp_y = 1; temp_y < map_y; temp_y++) {
-            if (smoothed_barriers_[temp_x][temp_y] == 0 ) { // if it is walkable, consider it a canidate for a choke. Need a buffer around 0,0 and the edge
-                int observed_difference = 0;
-
-                local_tiles[0] = map_veins_out_from_main_[(temp_x - 1)][(temp_y - 1)];
-                local_tiles[1] = map_veins_out_from_main_[temp_x]      [(temp_y - 1)];
-                local_tiles[2] = map_veins_out_from_main_[(temp_x + 1)][(temp_y - 1)];
-
-                local_tiles[3] = map_veins_out_from_main_[(temp_x - 1)][temp_y];
-                local_tiles[4] = map_veins_out_from_main_[temp_x]      [temp_y]; // middle value, local_tiles[4], index starts at 0.
-                local_tiles[5] = map_veins_out_from_main_[(temp_x + 1)][temp_y];
-
-                local_tiles[6] = map_veins_out_from_main_[(temp_x - 1)][(temp_y + 1)];
-                local_tiles[7] = map_veins_out_from_main_[temp_x]      [(temp_y + 1)];
-                local_tiles[8] = map_veins_out_from_main_[(temp_x + 1)][(temp_y + 1)];
-
-                for (auto iterated_value : local_tiles) {
-                    if ( abs(iterated_value - local_tiles[4]) > observed_difference && iterated_value > 1) {
-                        observed_difference = abs(iterated_value - local_tiles[4]);
-                    }
-
-                }
-
-                if (observed_difference < local_tiles[4]) { // something.
-                    map_chokes_[temp_x][temp_y] = observed_difference;
-                }
-            }
-        }
-    }
-
-    //vector <WalkPosition> fire_fill_queue;
-
-    //fire_fill_queue.push_back(WalkPosition(this->home_base_));
-
-    //int minitile_x_temp = WalkPosition(this->home_base_).x;
-    //int minitile_y_temp = WalkPosition(this->home_base_).y;
-
-    //while (current_ceiling > 0) {
-    //    while (!fire_fill_queue.empty()) { // this portion is a fire fill.
-
-    //        minitile_x_temp = fire_fill_queue.begin()->x;
-    //        minitile_y_temp = fire_fill_queue.begin()->y;
-    //        fire_fill_queue.erase(fire_fill_queue.begin());
-
-    //        map_chokes_[minitile_x_temp][minitile_y_temp] = current_region_number;
-
-    //        // north
-    //        if (count_of_adjacent_importent_points < 5 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp++] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp++});
-    //        }
-    //        // north east
-    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp++][minitile_y_temp++] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp++ });
-    //        }
-    //        // north west
-    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
-
-    //        }
-    //        //south east
-    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp++][minitile_y_temp--] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp-- });
-    //        }
-    //        //south west
-    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
-
-    //        }
-    //        // east
-    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp++][minitile_y_temp] > current_ceiling) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp });
-    //        }
-    //        //west
-    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp] > 0) {
-    //            count_of_adjacent_importent_points++;
-    //            fire_fill_queue.push_back({ minitile_x_temp--, minitile_y_temp });
-    //        }
-
-    //        // Make a final decision about the point.
-    //        if (count_of_adjacent_importent_points >= 5 && map_veins_[minitile_x_temp][minitile_y_temp] > 0 ) {
-    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
-    //            count_of_adjacent_importent_points = 0;
-    //        }
-    //        else if( map_veins_[minitile_x_temp][minitile_y_temp] > 0 ){
-    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
-    //            count_of_adjacent_importent_points = 0;
-    //        }
-    //    }
-    //    current_ceiling--;
-    //    current_region_number++;
-    //}
-}
-
+//void Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+//    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+//    int current_region_number = 1;
+//    int count_of_adjacent_importent_points = 0;
+//    int temp_x = 0;
+//    int temp_y = 0;
+//    int local_tiles[9];
+//
+//    // first, define matrixes to recieve the walkable locations for every minitile.
+//    //map_chokes_.reserve(map_x);
+//    //for (int x = 0; x <= map_x; ++x) {
+//    //    vector<int> temp;
+//    //    temp.reserve(map_y);
+//    //    for (int y = 0; y <= map_y; ++y) {
+//    //        temp.push_back(unwalkable_barriers_[x][y] > 0);  //Was that location smoothed out?
+//    //    }
+//    //    map_chokes_.push_back(temp);
+//    //}
+//
+//    map_chokes_ = unwalkable_barriers_;
+//
+//    for (int temp_x = 1; temp_x < map_x; temp_x++) {
+//          for (int temp_y = 1; temp_y < map_y; temp_y++) {
+//            if (smoothed_barriers_[temp_x][temp_y] == 0 ) { // if it is walkable, consider it a canidate for a choke. Need a buffer around 0,0 and the edge
+//                int observed_difference = 0;
+//
+//                local_tiles[0] = map_veins_out_from_main_[(temp_x - 1)][(temp_y - 1)];
+//                local_tiles[1] = map_veins_out_from_main_[temp_x]      [(temp_y - 1)];
+//                local_tiles[2] = map_veins_out_from_main_[(temp_x + 1)][(temp_y - 1)];
+//
+//                local_tiles[3] = map_veins_out_from_main_[(temp_x - 1)][temp_y];
+//                local_tiles[4] = map_veins_out_from_main_[temp_x]      [temp_y]; // middle value, local_tiles[4], index starts at 0.
+//                local_tiles[5] = map_veins_out_from_main_[(temp_x + 1)][temp_y];
+//
+//                local_tiles[6] = map_veins_out_from_main_[(temp_x - 1)][(temp_y + 1)];
+//                local_tiles[7] = map_veins_out_from_main_[temp_x]      [(temp_y + 1)];
+//                local_tiles[8] = map_veins_out_from_main_[(temp_x + 1)][(temp_y + 1)];
+//
+//                for (auto iterated_value : local_tiles) {
+//                    if ( abs(iterated_value - local_tiles[4]) > observed_difference && iterated_value > 1) {
+//                        observed_difference = abs(iterated_value - local_tiles[4]);
+//                    }
+//
+//                }
+//
+//                if (observed_difference < local_tiles[4]) { // something.
+//                    map_chokes_[temp_x][temp_y] = observed_difference;
+//                }
+//            }
+//        }
+//    }
+//
+//    //vector <WalkPosition> fire_fill_queue;
+//
+//    //fire_fill_queue.push_back(WalkPosition(this->home_base_));
+//
+//    //int minitile_x_temp = WalkPosition(this->home_base_).x;
+//    //int minitile_y_temp = WalkPosition(this->home_base_).y;
+//
+//    //while (current_ceiling > 0) {
+//    //    while (!fire_fill_queue.empty()) { // this portion is a fire fill.
+//
+//    //        minitile_x_temp = fire_fill_queue.begin()->x;
+//    //        minitile_y_temp = fire_fill_queue.begin()->y;
+//    //        fire_fill_queue.erase(fire_fill_queue.begin());
+//
+//    //        map_chokes_[minitile_x_temp][minitile_y_temp] = current_region_number;
+//
+//    //        // north
+//    //        if (count_of_adjacent_importent_points < 5 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp][minitile_y_temp++] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp++});
+//    //        }
+//    //        // north east
+//    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp++][minitile_y_temp++] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp++ });
+//    //        }
+//    //        // north west
+//    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && minitile_y_temp + 1 < map_y && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+//
+//    //        }
+//    //        //south east
+//    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp++][minitile_y_temp--] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp-- });
+//    //        }
+//    //        //south west
+//    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && 0 < minitile_y_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp++] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp-- , minitile_y_temp++ });
+//
+//    //        }
+//    //        // east
+//    //        if (count_of_adjacent_importent_points < 5 && minitile_x_temp + 1 < map_x && map_veins_[minitile_x_temp++][minitile_y_temp] > current_ceiling) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp++ , minitile_y_temp });
+//    //        }
+//    //        //west
+//    //        if (count_of_adjacent_importent_points < 5 && 0 < minitile_x_temp - 1 && map_veins_[minitile_x_temp--][minitile_y_temp] > 0) {
+//    //            count_of_adjacent_importent_points++;
+//    //            fire_fill_queue.push_back({ minitile_x_temp--, minitile_y_temp });
+//    //        }
+//
+//    //        // Make a final decision about the point.
+//    //        if (count_of_adjacent_importent_points >= 5 && map_veins_[minitile_x_temp][minitile_y_temp] > 0 ) {
+//    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+//    //            count_of_adjacent_importent_points = 0;
+//    //        }
+//    //        else if( map_veins_[minitile_x_temp][minitile_y_temp] > 0 ){
+//    //            fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp });
+//    //            count_of_adjacent_importent_points = 0;
+//    //        }
+//    //    }
+//    //    current_ceiling--;
+//    //    current_region_number++;
+//    //}
+//}
+//
 
 
 
@@ -1579,14 +1576,15 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
     if (unwalkable_needs_updating && !unit_calculation_frame && waited_a_second) {
 
         getExpoPositions();
-        updateLiveUnwalkable(ui, ei, ri, ni);
+        //updateLiveUnwalkable(ui, ei, ri, ni);
+        updateUnwalkableWithBuildings(ui, ei, ri, ni);
         unwalkable_needs_updating = false;
         smoothed_needs_updating = true; // next step on ladder now.
  
     }
     else if (smoothed_needs_updating && !unit_calculation_frame) {
 
-        updateSmoothPos();
+        //updateSmoothPos();
         smoothed_needs_updating = false;
         veins_need_updating = true;
 
