@@ -153,29 +153,26 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
     // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
-        Stored_Resource* closest = getClosestGroundStored(available_fields, inventory, miner.pos_);
-        if ( closest && closest->bwapi_unit_ /*&& miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
-            miner.startMine(*closest, land_inventory);
-            if (building_unit) {
-                my_reservation.removeReserveSystem(unit->getBuildType());
-            }
-        }
-    } else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
-        Stored_Resource * closest = getClosestGroundStored(long_dist_fields, inventory, miner.pos_);
-
-        if ( closest ) {
-            miner.startMine(*closest, land_inventory);
-
-            //if (building_unit) {
-            //    my_reservation.removeReserveSystem(unit->getBuildType());
-            //}
-
-        }
-
+        attachToNearestMine(available_fields, inventory, miner);
+    } 
+    
+    if (!miner.isAssignedResource(available_fields) && !long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
+        attachToNearestMine(long_dist_fields, inventory, miner);
     }
 
     miner.updateStoredUnit(unit);
 } // closure worker mine
+
+//Ataches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
+void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Inventory &inv, Stored_Unit &miner) {
+    Stored_Resource* closest = getClosestGroundStored(ri, inventory, miner.pos_);
+    if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
+        miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some shadow value.
+        if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
+            my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+        }
+    }
+}
 
 void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
@@ -192,30 +189,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty()) {
-        Stored_Resource* closest = getClosestGroundStored(available_fields, inventory, miner.pos_);
-        //if ( closest && miner.bwapi_unit_->gather(closest->bwapi_unit_) ) {
-        //    miner.startMine(*closest, land_inventory);
-
-        //    if (building_unit) {
-        //        my_reservation.removeReserveSystem(unit->getBuildType());
-        //    }
-
-        //}
-        //else if (closest && (!closest->bwapi_unit_ || !closest->bwapi_unit_->exists()) && miner.bwapi_unit_->move(closest->pos_) ) { // if there's a mine you can't gather from, doesn't exist/not visible..
-        //    miner.startMine(*closest, land_inventory); // I think the problem is here. Starting to mine a location without a proper bwapi unit.
-        //    if (building_unit) {
-        //        my_reservation.removeReserveSystem(unit->getBuildType());
-        //    }
-        //}
-        if ( closest ) {
-            miner.startMine(*closest, land_inventory);
-
-            if (building_unit) {
-                my_reservation.removeReserveSystem(unit->getBuildType());
-            }
-
-        }
-
+        attachToNearestMine(available_fields, inventory, miner);
     }
     miner.updateStoredUnit(unit);
 }

@@ -863,7 +863,7 @@ void CUNYAIModule::onFrame()
                   // Lock all loose workers down. Maintain gas/mineral balance. 
                   //bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
                 bool worker_might_be_in_bad_task = (want_gas && miner.isAssignedMining(land_inventory)) || ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
-                if ( !miner.isAssignedResource(land_inventory) || ( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u) ) { //if this is your first worker of the frame consider resetting him.
+                if ( !miner.isAssignedResource(land_inventory) || (( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u)) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     inventory.last_gas_check_ = t_game;
                     if (want_gas) {

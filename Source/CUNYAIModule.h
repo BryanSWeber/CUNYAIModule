@@ -10,7 +10,7 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE true // Visualizations
+#define _ANALYSIS_MODE false // Visualizations
 #define _COBB_DOUGLASS_REVEALED false // The CD function specifically.
 #define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
@@ -119,6 +119,8 @@ public:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
       // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
+      // attaches the miner to the nearest mine in the inventory.
+      void attachToNearestMine(Resource_Inventory & ri, Inventory & inv, Stored_Unit & miner);
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
