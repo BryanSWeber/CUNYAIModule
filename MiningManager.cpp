@@ -94,6 +94,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     Resource_Inventory long_dist_fields;
 
     int low_drone = 0;
+    int max_drone = 3;
     bool mine_minerals = mine.isMineralField();
     bool mine_is_right_type = true;
     bool found_low_occupied_mine = false;
@@ -101,8 +102,10 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     // mineral patches can handle up to 2 miners, gas/refineries can handle up to 3.
     if ( mine_minerals ) {
         low_drone = 2;
+        max_drone = 2;
     } else {
         low_drone = 2; // note : Does not count worker IN extractor.
+        max_drone = 3;
     }
 
 
@@ -116,7 +119,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.occupied_natural_) { //occupied natural -> resource is close to a base
+        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.number_of_miners_ < max_drone && r->second.occupied_natural_) { //occupied natural -> resource is close to a base
             low_drone = r->second.number_of_miners_;
             found_low_occupied_mine = true;
         }
@@ -137,7 +140,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if (mine_is_right_type && r->second.number_of_miners_ <= low_drone) {
+        if (mine_is_right_type && r->second.number_of_miners_ <= low_drone && r->second.number_of_miners_ < max_drone) {
             if (r->second.occupied_natural_ && found_low_occupied_mine/*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r->second);
             }

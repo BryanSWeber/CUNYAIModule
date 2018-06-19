@@ -599,9 +599,8 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    Stored_Resource* targeted_mine = this->getMine(ri);
     return  //bwapi_unit_ && targeted_mine->bwapi_unit_ && bwapi_unit_->getOrderTarget() &&  // needs to not be nullptr, have a mine, and an order target. Otherwise, we have a broken lock.
-        ( bwapi_unit_->getOrderTarget() != targeted_mine->bwapi_unit_ ); // if its order target is not the mine, then we have a broken lock.
+        ( bwapi_unit_->getOrderTarget() != locked_mine_); // if its order target is not the mine, then we have a broken lock.
 }
 
 //prototypeing
