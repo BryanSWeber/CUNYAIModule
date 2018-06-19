@@ -213,6 +213,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
+    type_ = unit->getType();
     current_hp_ = unit->getHitPoints() + unit->getShields();
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
@@ -520,7 +521,7 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
             getMine(ri)->number_of_miners_ = max(getMine(ri)->number_of_miners_ - 1, 0);
         }
 	}
-    locked_mine_ = NULL;
+    locked_mine_ = nullptr;
 }
 
 //finds mine- Will return true something even if the mine DNE.
@@ -593,8 +594,9 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && bwapi_unit_->getOrderTarget() &&  // needs to not be nullptr, have a mine, and an order target. Otherwise, we have a broken lock.
-        ( bwapi_unit_->getOrderTarget() != this->getMine(ri)->bwapi_unit_ || time_since_last_command_ > 15 * 24 ); // if its order target is not the mine, then we have a broken lock.
+    Stored_Resource* targeted_mine = this->getMine(ri);
+    return  //bwapi_unit_ && targeted_mine->bwapi_unit_ && bwapi_unit_->getOrderTarget() &&  // needs to not be nullptr, have a mine, and an order target. Otherwise, we have a broken lock.
+        ( bwapi_unit_->getOrderTarget() != targeted_mine->bwapi_unit_ ); // if its order target is not the mine, then we have a broken lock.
 }
 
 //prototypeing

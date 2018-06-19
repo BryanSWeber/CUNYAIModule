@@ -1084,6 +1084,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 14;
     }
 
+    if (u_command == UnitCommandTypes::Morph) {
+        cd_frames = 14;
+    }
     //if (u_command == UnitCommandTypes::Attack_Move) {
     //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     //}

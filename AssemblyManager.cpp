@@ -267,7 +267,7 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
     return false;
 }
 
-//Creates a new unit. Reflects (poorly) upon enemy units in enemy_set. Incomplete.
+//Creates a new unit. Reflects upon enemy units in enemy_set. Could be improved..
 bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
 {
     // Am I bulding anything?
@@ -419,7 +419,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     return is_building > 0;
 }
 
-//Creates a new building with DRONE. Incomplete.
+//Creates a new building with DRONE. Does not create Lairs, Hives, or sunken/spores.
 bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     bool buildings_started = false;

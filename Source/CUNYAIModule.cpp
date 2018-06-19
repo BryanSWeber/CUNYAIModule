@@ -580,7 +580,10 @@ void CUNYAIModule::onFrame()
         if ( !has_built_this_frame && u_type == UnitTypes::Zerg_Larva || (u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack()) ) // A resource depot is a Command Center, Nexus, or Hatchery.
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            has_built_this_frame = Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+            morphing_unit.updateStoredUnit(u);
+            has_built_this_frame = true;
         }
         auto end_larva = std::chrono::high_resolution_clock::now();
 
@@ -881,7 +884,7 @@ void CUNYAIModule::onFrame()
                     else if (!want_gas || too_much_gas) {
                         Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory); //assign a worker (minerals)
                         if (miner.isAssignedMining(land_inventory)) {
-                            continue;
+                            //continue;
                         }
                         else { // do SOMETHING.
                             Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory); // assign a worker a mine (gas)
@@ -893,14 +896,21 @@ void CUNYAIModule::onFrame()
                 }
             }
 
+            // return minerals manually if you have them.
             if (!isEmptyWorker(u) && u->isIdle() ) {
                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 miner.bwapi_unit_->returnCargo();
                 continue;
             }
 
-            // let's leave units in full-mine alone.
-            if ( !isEmptyWorker(u) && miner.isAssignedResource(land_inventory) /*|| miner.bwapi_unit_->getOrderTarget() == NULL*/) {
+            // If idle get a job.
+            if ( u->isIdle() ) {
+                friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
+                Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory);
+            }
+
+            // let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
+            if ( !isEmptyWorker(u) && miner.isAssignedResource(land_inventory) ) {
                 continue;
             }
 
@@ -908,25 +918,29 @@ void CUNYAIModule::onFrame()
             //    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
             //}
 
-
+            //if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isBrokenLock(land_inventory) ){
+            //    Broodwar->sendText("Broken Mine!");
+            //    miner.bwapi_unit_->stop();
+            //    continue;
+            //}
+            
             // Maintain the locks by assigning the worker to their intended mine!
-            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() || ( u->isIdle() && miner.time_of_last_purge_ < Broodwar->getFrameCount() - 24 && miner.time_since_last_command_ > 24) ) ){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
+            if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() || ( u->isIdle() && miner.time_of_last_purge_ < Broodwar->getFrameCount() - 24 && miner.time_since_last_command_ > 24)) ){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
-                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isLongRangeLock() ) { 
                 if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
-                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isMovingLock()) {
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
-                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             }
-
 
         } // Close Worker management loop
         auto end_worker = std::chrono::high_resolution_clock::now();
@@ -1232,7 +1246,6 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
                 // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
                 friendly_inventory.purgeWorkerRelationsNoStop(miner_unit, land_inventory, inventory, my_reservation); // reset the worker
-
                 if ( was_clearing ) {
 
                     auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
@@ -1245,6 +1258,9 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                     if (potential_miner->second.isAssignedClearing(land_inventory)) {
                         inventory.updateWorkersClearing(friendly_inventory, land_inventory);
                     }
+                }
+                else {
+                    miner_unit->stop();
                 }
             }
         }
