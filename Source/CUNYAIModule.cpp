@@ -851,8 +851,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
-                    Building_Begin(u, inventory, enemy_inventory, friendly_inventory);
-                    if ( miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!
+                    if (Building_Begin(u, inventory, enemy_inventory, friendly_inventory) && miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
                     }
