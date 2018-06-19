@@ -591,8 +591,8 @@ void CUNYAIModule::onFrame()
             have_morphed_larva_this_frame = true;
         }
 
-        // Only morph one lurker this frame.
-        if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack()) 
+        // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
+        if (!have_morphed_lurker_this_frame && !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack())
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
             if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
