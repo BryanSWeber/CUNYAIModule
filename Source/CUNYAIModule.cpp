@@ -155,7 +155,8 @@ void CUNYAIModule::onFrame()
 
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
-    bool has_built_this_frame = false;
+    bool have_morphed_larva_this_frame = false;
+    bool have_morphed_lurker_this_frame = false;
 
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
@@ -575,15 +576,30 @@ void CUNYAIModule::onFrame()
         UnitType u_type = u->getType();
 
         // Finally make the unit do some stuff!
+
         // Unit creation & Hatchery management loop
         auto start_larva = std::chrono::high_resolution_clock::now();
-        if ( !has_built_this_frame && u_type == UnitTypes::Zerg_Larva || (u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack()) ) // A resource depot is a Command Center, Nexus, or Hatchery.
+
+        //Only morph one larva this frame.
+        if ( !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva ) 
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-            morphing_unit.updateStoredUnit(u);
-            has_built_this_frame = true;
+            if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                morphing_unit.updateStoredUnit(u);
+            }
+            have_morphed_larva_this_frame = true;
+        }
+
+        // Only morph one lurker this frame.
+        if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack()) 
+        {
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
+            if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                morphing_unit.updateStoredUnit(u);
+            }
+            have_morphed_lurker_this_frame = true;
         }
         auto end_larva = std::chrono::high_resolution_clock::now();
 
@@ -834,7 +850,6 @@ void CUNYAIModule::onFrame()
             if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
-                    inventory.getExpoPositions();
                     //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                     Building_Begin(u, inventory, enemy_inventory, friendly_inventory);
                     if ( miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!

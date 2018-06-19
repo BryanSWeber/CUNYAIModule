@@ -409,14 +409,12 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
     if (u_relatively_weak_against_air && would_force_spire && buildorder.isEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
         buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
         Broodwar->sendText("Reactionary Spire");
-        return is_building > 0;
     }
     else if (enemy_mostly_ground && would_force_lurkers && buildorder.isEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
         buildorder.addBuildOrderElement(TechTypes::Lurker_Aspect); // force in a hydralisk den if they have Air.
         Broodwar->sendText("Reactionary Lurker Upgrade");
-        return is_building > 0;
     }
-    return is_building > 0;
+    return is_building;
 }
 
 //Creates a new building with DRONE. Does not create Lairs, Hives, or sunken/spores.
@@ -515,7 +513,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
             Count_Units(UnitTypes::Zerg_Hive, inv) >= 0 &&
             inv.hatches_ > 3);
 
-    return buildings_started > 0;
+    return buildings_started;
 };
 
 TilePosition CUNYAIModule::getBuildablePosition(TilePosition target_pos, UnitType build_type, int tile_grid_size ) {

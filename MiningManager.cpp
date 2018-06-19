@@ -11,6 +11,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
 
         int dist = 99999999;
+        inv.getExpoPositions();
 
         inv.setNextExpo(TilePosition(0, 0));
 
@@ -22,7 +23,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
 
-                bool safe_expo = checkSafeBuildLoc(Position(p), inventory, enemy_inventory, friendly_inventory, land_inventory);
+                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_inventory, friendly_inventory, land_inventory);
 
                 bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
