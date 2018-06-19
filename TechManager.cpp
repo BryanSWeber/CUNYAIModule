@@ -105,8 +105,5 @@ bool CUNYAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui, const Inv
             building->getType() == UnitTypes::Zerg_Lair &&
             Count_Units(UnitTypes::Zerg_Hive, inv) == 0); //If you're tech-starved at this point, don't make random hives.
 
-
-
-    
     return busy;
 }

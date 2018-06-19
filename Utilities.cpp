@@ -141,6 +141,15 @@ void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
     }
 }
 
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
+    if (_ANALYSIS_MODE) {
+        if (isOnScreen(s_pos, screen_pos)) {
+            Broodwar->drawCircleMap(s_pos, 25, col, true);
+        }
+    }
+}
+
 void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
     if (_ANALYSIS_MODE && unit.valid_pos_) {
         Position upper_left = unit.pos_;
@@ -1102,7 +1111,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     //    cd_frames = Broodwar->getLatencyFrames();
     //}
 
-    ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames;
+    ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames;
     return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
 }

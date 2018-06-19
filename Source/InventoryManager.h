@@ -33,7 +33,7 @@ struct Inventory {
     double ln_gas_total_;
     double ln_min_total_;
 
-    int gas_workers_;
+    int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
     int min_workers_;
     int min_fields_;
     int hatches_;

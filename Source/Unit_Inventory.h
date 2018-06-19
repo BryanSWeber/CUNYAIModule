@@ -118,7 +118,7 @@ struct Unit_Inventory {
     void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
     void drawAllHitPoints(const Inventory & inv) const;
     void drawAllSpamGuards(const Inventory & inv) const;
-    void drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const;
+    void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
 
     Position getMeanLocation() const;

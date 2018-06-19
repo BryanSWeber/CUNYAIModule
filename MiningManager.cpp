@@ -11,14 +11,14 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
 
         int dist = 99999999;
-        inv.getExpoPositions();
-
-        inv.setNextExpo(TilePosition(0, 0));
+        inv.getExpoPositions(); // update the possible expo positions.
+        inv.setNextExpo(TilePosition(0, 0)); // if we find no replacement position, we will know this null postion is never a good build canidate.
 
         bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
 
+        // Let's build at the safest close canidate position.
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
@@ -36,18 +36,13 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             }
         }
         else {
-            return false;
+            return false;  // If there's nothing, give up.
         }
 
-        if ( inv.next_expo_ && inv.next_expo_ != TilePosition(0, 0) )
-        {
+        // If we found -something-
+        if ( inv.next_expo_ && inv.next_expo_ != TilePosition(0, 0) ) {
             //clear all obstructions, if any.
-            Unit_Inventory obstructions = getUnitInventoryInRadius( friendly_inventory, Position( inv.next_expo_ ), 3 * 32 );
-            for ( auto u = obstructions.unit_inventory_.begin(); u != obstructions.unit_inventory_.end() && !obstructions.unit_inventory_.empty(); u++ ) {
-                if ( u->second.type_ != UnitTypes::Zerg_Drone && u->second.bwapi_unit_ ) {
-                    u->second.bwapi_unit_->move( { Position( inv.next_expo_ ).x + (rand() % 200 - 100) * 4 * 32, Position( inv.next_expo_ ).y + (rand() % 200 - 100) * 4 * 32 } );
-                }
-            }
+            clearBuildingObstuctions(friendly_inventory, inv, unit);
 
             //Unit_Inventory hatch_builders = getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Drone, Position( inv.next_expo_ ), 99999 );
             //Stored_Unit *best_drone = getClosestStored( hatch_builders, Position( inv.next_expo_ ), 99999 );
@@ -67,9 +62,9 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             //}
             //else {      
 
-            if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-                my_reservation.removeReserveSystem( unit->getBuildType() );
-            }
+            //if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
+            //    my_reservation.removeReserveSystem( unit->getBuildType() );
+            //}
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );

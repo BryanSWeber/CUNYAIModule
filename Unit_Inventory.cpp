@@ -125,6 +125,7 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
     }
     unit->stop();
     miner.time_of_last_purge_ = Broodwar->getFrameCount();
+    miner.updateStoredUnit(unit);
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
@@ -141,6 +142,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
     }
     miner.time_of_last_purge_ = Broodwar->getFrameCount();
+    miner.updateStoredUnit(unit);
 }
 
 void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
@@ -165,20 +167,26 @@ void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
     }
 }
 
-void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventory &ri) const
+void Unit_Inventory::drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const
 {
     for (auto u : unit_inventory_) {
-        if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
-            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
-        } 
-        else if (u.second.isAssignedMining(ri)) {
-            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
-        }
-        else if (u.second.isAssignedGas(ri)) {
-            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Brown);
-        }
-        else if (u.second.isAssignedClearing(ri)) {
-            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
+        if (u.second.type_ == UnitTypes::Zerg_Drone) {
+            if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
+                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
+            }
+            else if (u.second.isAssignedMining(ri)) {
+                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+            }
+            else if (u.second.isAssignedGas(ri)) {
+                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Brown);
+            }
+            else if (u.second.isAssignedClearing(ri)) {
+                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
+            }
+
+            if (u.second.isAssignedBuilding()) {
+                CUNYAIModule::Diagnostic_Dot(u.second.pos_, inv.screen_position_, Colors::Purple);
+            }
         }
     }
 }
@@ -219,11 +227,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+    stock_value_ = Stored_Unit(type_).stock_value_;
 
-        if (type_ != unit->getType() ) {
-            type_ = unit->getType();
-            stock_value_ = Stored_Unit(type_).stock_value_;
-        }
 
 		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 }
@@ -602,10 +607,10 @@ bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
 //prototypeing
 bool Stored_Unit::isLongRangeLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return bwapi_unit_ && locked_mine_ && !locked_mine_->exists();
+    return bwapi_unit_ && locked_mine_ && !locked_mine_->isVisible();
 }
 
 bool Stored_Unit::isMovingLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-   return bwapi_unit_ && locked_mine_ && locked_mine_->exists() && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+   return this->isLongRangeLock() && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
 }
