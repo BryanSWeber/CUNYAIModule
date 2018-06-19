@@ -106,7 +106,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     if ( mine_minerals ) {
         low_drone = 2;
     } else {
-        low_drone = 3;
+        low_drone = 2; // note : Does not count worker IN extractor.
     }
 
 
@@ -114,7 +114,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 
         if (mine_minerals) {
-            mine_is_right_type = r->second.type_.isMineralField();
+            mine_is_right_type = r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
@@ -135,7 +135,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 
         if (mine_minerals) {
-            mine_is_right_type = r->second.type_.isMineralField();
+            mine_is_right_type = r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);

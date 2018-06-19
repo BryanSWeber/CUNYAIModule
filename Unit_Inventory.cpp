@@ -171,8 +171,11 @@ void Unit_Inventory::drawAllWorkerLocks(const Inventory & inv, Resource_Inventor
         if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
             CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::White);
         } 
-        else if (u.second.isAssignedResource(ri)) {
+        else if (u.second.isAssignedMining(ri)) {
             CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Green);
+        }
+        else if (u.second.isAssignedGas(ri)) {
+            CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Brown);
         }
         else if (u.second.isAssignedClearing(ri)) {
             CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
@@ -590,8 +593,8 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && bwapi_unit_->getOrderTarget() && 
-        ( bwapi_unit_->getOrderTarget() != this->getMine(ri)->bwapi_unit_ || time_since_last_command_ > 15 * 24 );
+    return  bwapi_unit_ && this->getMine(ri)->bwapi_unit_ && bwapi_unit_->getOrderTarget() &&  // needs to not be nullptr, have a mine, and an order target. Otherwise, we have a broken lock.
+        ( bwapi_unit_->getOrderTarget() != this->getMine(ri)->bwapi_unit_ || time_since_last_command_ > 15 * 24 ); // if its order target is not the mine, then we have a broken lock.
 }
 
 //prototypeing

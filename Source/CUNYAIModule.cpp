@@ -824,7 +824,7 @@ void CUNYAIModule::onFrame()
         auto start_worker = std::chrono::high_resolution_clock::now();
         if (u_type.isWorker()) {
 
-            bool want_gas = gas_starved && inventory.gas_workers_ < 3 * (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory));  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  Does not count worker IN extractor.
+            bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
             bool too_much_gas = 1 - inventory.getLn_Gas_Ratio() > delta;
 
             Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
@@ -832,7 +832,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     inventory.getExpoPositions();
-                    //friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                     Building_Begin(u, inventory, enemy_inventory, friendly_inventory);
                     if ( miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
@@ -841,6 +841,7 @@ void CUNYAIModule::onFrame()
                 } // Close Build loop
 
 
+                //Workers at their end build location should build there!
                 if (miner.isAssignedBuilding() && TilePosition(miner.pos_) == inventory.next_expo_) {
                     if (miner.bwapi_unit_->build(UnitTypes::Zerg_Hatchery, inventory.next_expo_)) {
                         my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
@@ -852,7 +853,6 @@ void CUNYAIModule::onFrame()
                 bool time_to_start_clearing_a_path = inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_inventory);
                 if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && isEmptyWorker(u)) {
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
-
                     Worker_Clear(u, friendly_inventory);
                     if (miner.isAssignedClearing(land_inventory)) {
                         inventory.updateWorkersClearing(friendly_inventory, land_inventory);
@@ -860,7 +860,7 @@ void CUNYAIModule::onFrame()
                     }
                 } // clear those empty mineral patches that block paths.
 
-                  // Lock all loose workers down. Maintain gas/mineral balance. 
+                  // Gives all loose workers a target mine. Maintains gas/mineral balance. 
                   //bool gas_flooded = Broodwar->self()->gas() * delta > Broodwar->self()->minerals(); // Consider you might have too much gas.
                 bool worker_might_be_in_bad_task = (want_gas && miner.isAssignedMining(land_inventory)) || ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
                 if ( !miner.isAssignedResource(land_inventory) || (( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u)) ) { //if this is your first worker of the frame consider resetting him.
@@ -909,20 +909,20 @@ void CUNYAIModule::onFrame()
             //}
 
 
-            // Maintain the locks.
+            // Maintain the locks by assigning the worker to their intended mine!
             if ( (miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() || ( u->isIdle() && miner.time_of_last_purge_ < Broodwar->getFrameCount() - 24 && miner.time_since_last_command_ > 24) ) ){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isLongRangeLock() ) { 
                 if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             } else if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isMovingLock()) {
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
-                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
+                    //friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 continue;
             }
