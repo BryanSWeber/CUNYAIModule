@@ -581,7 +581,7 @@ void CUNYAIModule::onFrame()
         auto start_larva = std::chrono::high_resolution_clock::now();
 
         //Only morph one larva this frame.
-        if ( !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva ) 
+        if ( !have_morphed_larva_this_frame && !have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Larva )
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
             if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
