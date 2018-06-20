@@ -229,8 +229,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     stock_value_ = Stored_Unit(type_).stock_value_;
 
-
-		current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
+    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 }
 
 //Removes units that have died
@@ -532,7 +531,9 @@ void Stored_Unit::stopMine(Resource_Inventory &ri){
 //finds mine- Will return true something even if the mine DNE.
 Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
     Stored_Resource* tenative_resource = nullptr;
-    tenative_resource = &ri.resource_inventory_.find( locked_mine_ )->second;
+    if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
+        tenative_resource = &ri.resource_inventory_.find(locked_mine_)->second;
+    }
     return tenative_resource;
 }
 
@@ -581,8 +582,8 @@ bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
 
     return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
 
-
 }
+
 // Warning- depends on unit being updated.
 bool Stored_Unit::isAssignedBuilding() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
@@ -604,12 +605,13 @@ bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
 }
 
 //prototypeing
-bool Stored_Unit::isLongRangeLock() {
+bool Stored_Unit::isLongRangeLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return bwapi_unit_ && locked_mine_ && !locked_mine_->isVisible();
+    Stored_Resource* target_mine = this->getMine(ri);
+    return bwapi_unit_ && target_mine && target_mine->pos_ && !Broodwar->isVisible(TilePosition(target_mine->pos_));
 }
 
-bool Stored_Unit::isMovingLock() {
+bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-   return this->isLongRangeLock() && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+   return this->isLongRangeLock(ri) && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
 }

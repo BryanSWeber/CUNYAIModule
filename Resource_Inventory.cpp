@@ -119,19 +119,36 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                     }
                 }
             } else {
-//                Unitset resource_tile = Broodwar->getUnitsOnTile(resource_pos, IsMineralField || IsResourceContainer || IsRefinery);  // Confirm it is present.
-//                if (resource_tile.empty()) {
                     r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
                     erasure_sentinel = true;
-//                }
             }
         }
         if (!erasure_sentinel) {
             r++;
         }
     }
+    countViableMines();
 }
 
+
+// scrape over every resource to determine the lowest number of miners.
+void Resource_Inventory::countViableMines() {
+    local_mineral_patches_ = 0;
+    local_refineries_ = 0;
+    local_miners_ = 0;
+    local_gas_collectors_ = 0;
+
+    for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
+        if (r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8) {
+            local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            local_miners_ += r->second.number_of_miners_;
+        }
+        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_)) {
+            local_refineries_++;
+            local_miners_ += r->second.number_of_miners_;
+        }
+    } // find drone minima.
+}
 void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
 {
     for (auto u : resource_inventory_) {

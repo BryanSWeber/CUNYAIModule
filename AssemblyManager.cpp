@@ -8,7 +8,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations.
+//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Should always follow up with an update of the unit or else it will be spammed.
 bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera)
 {
     if (my_reservation.checkAffordablePurchase(building) && (buildorder.checkBuilding_Desired(building) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
@@ -20,8 +20,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_inventory, friendly_inventory, land_inventory) &&
-            (unit->getType().isBuilding() || hatch_nearby ) ){
+        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_inventory, friendly_inventory, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){
                 if (unit->morph(building)) {
                     buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                     return true;
@@ -79,7 +78,9 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
 
-                        Broodwar->sendText("Dist frome enemy is: %d", new_dist);
+                        if (_ANALYSIS_MODE) {
+                            Broodwar->sendText("Dist frome enemy is: %d", new_dist);
+                        }
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
                         Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 250);

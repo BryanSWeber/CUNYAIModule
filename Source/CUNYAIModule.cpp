@@ -848,7 +848,7 @@ void CUNYAIModule::onFrame()
 
             bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
             bool too_much_gas = 1 - inventory.getLn_Gas_Ratio() > delta;
-            bool no_recent_worker_alteration = miner.time_of_last_purge_ < Broodwar->getFrameCount() - 24 && miner.time_since_last_command_ > 24;
+            bool no_recent_worker_alteration = miner.time_of_last_purge_ < Broodwar->getFrameCount() - 12 && miner.time_since_last_command_ > 12;
 
             if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
@@ -883,18 +883,43 @@ void CUNYAIModule::onFrame()
                 } // clear those empty mineral patches that block paths.
 
                 // Gives all loose workers a target mine. Maintains gas/mineral balance. 
-                bool worker_might_be_in_bad_task = (want_gas && miner.isAssignedMining(land_inventory)) || ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
+                land_inventory.countViableMines();
+                bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_;
+                bool worker_might_be_in_bad_task = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas) || ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
+
                 if ( (!miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding()) || (( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u)) ) { //if this is your first worker of the frame consider resetting him.
+                    bool was_gas = miner.isAssignedGas(land_inventory);
+                    bool was_mineral = miner.isAssignedResource(land_inventory);
+                    Unit old_mineral_patch = nullptr;
+                    if (was_mineral) {
+                        old_mineral_patch = miner.locked_mine_;
+                    }
+
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     inventory.last_gas_check_ = t_game;
-                    if (want_gas && !miner.isAssignedGas(land_inventory)) { // don't reassign from gas into gas.
-                        Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory); // assign a worker a mine (gas)
+                    if (want_gas && !was_gas && could_use_another_gas) { // don't reassign from gas into gas.
+                        Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
                         if (miner.isAssignedGas(land_inventory)) {
                             continue;
                         }
-
+                        else if (old_mineral_patch) {
+                            miner.startMine(land_inventory.resource_inventory_.find(old_mineral_patch)->second, land_inventory); // go back to your old job.
+                            miner.updateStoredUnit(u);
+                            continue;
+                        }
+                        else { // default to gathering minerals.
+                            Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory); //assign a worker (minerals)
+                            if (miner.isAssignedMining(land_inventory)) {
+                                continue;
+                            }
+                        }
                     }
-                    else if ((!want_gas || too_much_gas) && !miner.isAssignedMining(land_inventory) ) { // don't reassign from mineral into mineral.
+                    else if (old_mineral_patch) {
+                        miner.startMine(land_inventory.resource_inventory_.find(old_mineral_patch)->second, land_inventory); // go back to your old job.
+                        miner.updateStoredUnit(u);
+                        continue;
+                    }
+                    else { // default to gathering minerals.
                         Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory); //assign a worker (minerals)
                         if (miner.isAssignedMining(land_inventory)) {
                             continue;
@@ -912,7 +937,7 @@ void CUNYAIModule::onFrame()
             }
 
             // If idle get a job.
-            if ( u->isIdle() ) {
+            if ( u->isIdle() && no_recent_worker_alteration) {
                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                 Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory);
                 miner.updateStoredUnit(u);
@@ -935,23 +960,25 @@ void CUNYAIModule::onFrame()
             
             // Maintain the locks by assigning the worker to their intended mine!
             bool worker_has_lockable_task = miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory);
-            if (worker_has_lockable_task && (miner.isBrokenLock(land_inventory) || t_game < 5 + Broodwar->getLatencyFrames() || (u->isIdle() && no_recent_worker_alteration) )){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
+            if (worker_has_lockable_task && ((miner.isBrokenLock(land_inventory) && miner.time_since_last_command_ > 12) || t_game < 5 + Broodwar->getLatencyFrames() || (u->isIdle() && no_recent_worker_alteration) )){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 miner.updateStoredUnit(u);
-                //continue;
-            } else if (worker_has_lockable_task && miner.isLongRangeLock() ) {
+                continue;
+            } else if (worker_has_lockable_task && miner.isLongRangeLock(land_inventory) ) {
                 if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
-                //continue;
+                miner.updateStoredUnit(u);
+                continue;
             } 
-            else if (worker_has_lockable_task && miner.isMovingLock()) {
+            else if (worker_has_lockable_task && miner.isMovingLock(land_inventory)) {
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
-                //continue;
+                miner.updateStoredUnit(u);
+                continue;
             }
 
         } // Close Worker management loop
@@ -979,12 +1006,16 @@ void CUNYAIModule::onFrame()
         if ( u_type == UnitTypes::Zerg_Creep_Colony ) {
             if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
                 Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                morphing_unit.updateStoredUnit(u);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                 mutating_creep_this_frame = true;
             }
             else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
                 Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                morphing_unit.updateStoredUnit(u);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                 mutating_creep_this_frame = true;
@@ -1007,12 +1038,16 @@ void CUNYAIModule::onFrame()
                     if (can_sunken && can_spore) {
                         if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
                             Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+                            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                            morphing_unit.updateStoredUnit(u);
                             mutating_creep_colony_position = u->getPosition();
                             mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                             mutating_creep_this_frame = true;
                         }
                         else {
                             Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                            morphing_unit.updateStoredUnit(u);
                             mutating_creep_colony_position = u->getPosition();
                             mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                             mutating_creep_this_frame = true;
@@ -1020,6 +1055,8 @@ void CUNYAIModule::onFrame()
                     } // build one of the two colonies based on the presence of closest units.
                     else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
                         Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+                        Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
+                        morphing_unit.updateStoredUnit(u);
                         mutating_creep_colony_position = u->getPosition();
                         mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                         mutating_creep_this_frame = true;
