@@ -1057,7 +1057,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         return ready_to_move;
     }
 
-    bool unit_fighting = /*unit->isAttackFrame() || */unit->isStartingAttack();
+    bool unit_fighting = unit->isStartingAttack();
     if (unit_fighting) {
         ready_to_move = false;
         return ready_to_move;

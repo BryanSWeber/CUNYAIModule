@@ -25,6 +25,7 @@ Unit_Inventory CUNYAIModule::neutral_inventory;
 Unit_Inventory CUNYAIModule::enemy_inventory;
 Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
+Inventory CUNYAIModule::inventory;
 
 void CUNYAIModule::onStart()
 {
@@ -587,31 +588,37 @@ void CUNYAIModule::onFrame()
         // Unit creation & Hatchery management loop
         auto start_unit_morphs = std::chrono::high_resolution_clock::now();
 
-        //Only morph one larva this frame.
-        if ( !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
-        {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-            have_morphed_larva_this_frame = true;
-            continue;
-        }
+        if (last_frame_of_unit_morph_command < t_game - 12) {
 
-        // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-        if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) )
-        {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-            have_morphed_lurker_this_frame = true;
-            continue;
-        }
+            //Only morph one larva this frame.
+            if (!have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva)
+            {
+                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
+                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+                have_morphed_larva_this_frame = true;
+                last_frame_of_unit_morph_command = t_game;
+                continue;
+            }
 
-        // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-        if (!have_morphed_muta_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire,inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, inventory) > 0)
-        {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-            have_morphed_muta_this_frame = true;
-            continue;
+            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
+            if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
+            {
+                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+                have_morphed_lurker_this_frame = true;
+                last_frame_of_unit_morph_command = t_game;
+                continue;
+            }
+
+            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
+            if (!have_morphed_muta_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, inventory) > 0)
+            {
+                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+                have_morphed_muta_this_frame = true;
+                last_frame_of_unit_morph_command = t_game;
+                continue;
+            }
         }
 
         auto end_unit_morphs = std::chrono::high_resolution_clock::now();
@@ -1265,7 +1272,7 @@ void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
     }
 
     if (unit->getType().isWorker()) {
-        friendly_inventory.purgeWorkerRelations(unit, land_inventory, inventory, my_reservation);
+        friendly_inventory.purgeWorkerRelationsNoStop(unit, land_inventory, inventory, my_reservation);
     }
 }
 

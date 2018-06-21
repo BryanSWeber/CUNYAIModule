@@ -71,9 +71,8 @@ public:
     static Unit_Inventory neutral_inventory; // neutral units.
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
+    static Inventory inventory;  // macro variables, not every unit I have.
 
-
-    Inventory inventory;  // macro variables, not every unit I have.
     Building_Gene buildorder; //
     Reservation my_reservation; 
 
@@ -95,8 +94,7 @@ public:
     Race starting_enemy_race;
 
   int t_build;
-
-// Personally made functions:
+  int last_frame_of_unit_morph_command = 0;
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
