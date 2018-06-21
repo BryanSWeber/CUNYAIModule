@@ -5,7 +5,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations.
+//Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv ) {
     if ( my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ) && 
         (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
@@ -68,10 +68,14 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+                morphing_unit.updateStoredUnit(unit);
                 return true;
             }
-            if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
+            else if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 unit->move( Position( inv.next_expo_ ) );
+                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+                morphing_unit.updateStoredUnit(unit);
                 Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }

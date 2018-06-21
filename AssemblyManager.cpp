@@ -8,8 +8,8 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Should always follow up with an update of the unit or else it will be spammed.
-bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera)
+//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
+bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Unit_Inventory &ui, const bool &extra_critera)
 {
     if (my_reservation.checkAffordablePurchase(building) && (buildorder.checkBuilding_Desired(building) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         Position unit_pos = unit->getPosition();
@@ -23,6 +23,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_inventory, friendly_inventory, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){
                 if (unit->morph(building)) {
                     buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
+                    Stored_Unit& morphing_unit = ui.unit_inventory_.find(unit)->second;
+                    morphing_unit.updateStoredUnit(unit);
                     return true;
                 }
         }
@@ -167,6 +169,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                 buildorder.announceBuildingAttempt(building);
+                Stored_Unit& morphing_unit = ui.unit_inventory_.find(unit)->second;
+                morphing_unit.updateStoredUnit(unit);
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
@@ -224,12 +228,14 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
     return false;
 }
 
-//Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
+//Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates friendly_inventory.
 bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
     if (unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
             buildorder.updateRemainingBuildOrder(ups);
+            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+            morphing_unit.updateStoredUnit(unit);
             Broodwar->sendText("Upgrading %s.", ups.c_str());
             return true;
         }
@@ -237,11 +243,14 @@ bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
     return false;
 }
 
+//Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates friendly_inventory.
 bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
     if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             buildorder.updateRemainingBuildOrder(tech);
+            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+            morphing_unit.updateStoredUnit(unit);
             Broodwar->sendText("Researching %s.", tech.c_str());
             return true;
         }
@@ -249,7 +258,7 @@ bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
     return false;
 }
 
-//Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
+//Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.  Updates friendly_inventory.
 bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
 {
     if (larva->canMorph(unittype) && my_reservation.checkAffordablePurchase(unittype) && (buildorder.checkBuilding_Desired(unittype) || (extra_critera && buildorder.isEmptyBuildOrder())))
@@ -257,7 +266,8 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
 
         if (larva->morph(unittype)) {
             buildorder.updateRemainingBuildOrder(unittype); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
-
+            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(larva)->second;
+            morphing_unit.updateStoredUnit(larva);
             if (unittype.isTwoUnitsInOneEgg()) {
                 buildorder.updateRemainingBuildOrder(unittype); // Shouldn't be a problem if unit isn't in buildorder. Makes it negative, build order preference checks for >0.
             }
@@ -270,8 +280,8 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
     return false;
 }
 
-//Creates a new unit. Reflects upon enemy units in enemy_set. Could be improved in terms of overall logic. Now needs to be split into hydra morphs and larva morphs.
-bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei)
+//Creates a new unit. Reflects upon enemy units in enemy_set. Could be improved in terms of overall logic. Now needs to be split into hydra morphs and larva morphs. Now updates the unit_inventory.
+bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_Inventory &ui, const Unit_Inventory &ei)
 {
     // Am I bulding anything?
     bool is_building = false;
@@ -419,12 +429,16 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, const
             Broodwar->sendText("Reactionary Lurker Upgrade");
         }
     }
+
+    Stored_Unit& morphing_unit = ui.unit_inventory_.find(larva)->second;
+    morphing_unit.updateStoredUnit(larva);
+
     return is_building;
 }
 
 
 //Creates a new building with DRONE. Does not create Lairs, Hives, or sunken/spores.
-bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, const Unit_Inventory &u_inv) {
+bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     bool buildings_started = false;
     bool expansion_vital = inventory.min_fields_ < inventory.hatches_ * 5 || inv.workers_distance_mining_ > 0.0625 * inv.min_workers_; // 1/16 workers LD mining is too much.
@@ -518,6 +532,9 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
             Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) == 0 &&
             Count_Units(UnitTypes::Zerg_Hive, inv) >= 0 &&
             inv.hatches_ > 3);
+
+        Stored_Unit& morphing_unit = u_inv.unit_inventory_.find(drone)->second;
+        morphing_unit.updateStoredUnit(drone);
 
     return buildings_started;
 };

@@ -584,10 +584,7 @@ void CUNYAIModule::onFrame()
         if ( !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                morphing_unit.updateStoredUnit(u);
-            }
+            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
             have_morphed_larva_this_frame = true;
             continue;
         }
@@ -595,11 +592,8 @@ void CUNYAIModule::onFrame()
         // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
         if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) )
         {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                morphing_unit.updateStoredUnit(u);
-            }
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
             have_morphed_lurker_this_frame = true;
             continue;
         }
@@ -1006,16 +1000,12 @@ void CUNYAIModule::onFrame()
         if ( u_type == UnitTypes::Zerg_Creep_Colony ) {
             if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
                 Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                morphing_unit.updateStoredUnit(u);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                 mutating_creep_this_frame = true;
             }
             else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
                 Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                morphing_unit.updateStoredUnit(u);
                 mutating_creep_colony_position = u->getPosition();
                 mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                 mutating_creep_this_frame = true;
@@ -1038,16 +1028,12 @@ void CUNYAIModule::onFrame()
                     if (can_sunken && can_spore) {
                         if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
                             Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                            morphing_unit.updateStoredUnit(u);
                             mutating_creep_colony_position = u->getPosition();
                             mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
                             mutating_creep_this_frame = true;
                         }
                         else {
                             Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                            Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                            morphing_unit.updateStoredUnit(u);
                             mutating_creep_colony_position = u->getPosition();
                             mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                             mutating_creep_this_frame = true;
@@ -1055,8 +1041,6 @@ void CUNYAIModule::onFrame()
                     } // build one of the two colonies based on the presence of closest units.
                     else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
                         Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                        Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(u)->second;
-                        morphing_unit.updateStoredUnit(u);
                         mutating_creep_colony_position = u->getPosition();
                         mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
                         mutating_creep_this_frame = true;

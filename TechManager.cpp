@@ -69,8 +69,8 @@ bool CUNYAIModule::Tech_Avail() {
 
     return false;
 }
-// Tells a building to begin the next tech on our list.
-bool CUNYAIModule::Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv) {
+// Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
+bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv) {
     bool busy = false;
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, inv ) == 0 && !army_starved));
 

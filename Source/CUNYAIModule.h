@@ -66,11 +66,11 @@ public:
   double alpha_econ_temp;
 
  //Game should begin some universally declared inventories.
-    Unit_Inventory enemy_inventory; // enemy units.
-    Unit_Inventory friendly_inventory; // friendly units.
-    Unit_Inventory neutral_inventory; // neutral units.
-    Unit_Inventory dead_enemy_inventory; // dead units.
-	Resource_Inventory land_inventory; // resources.
+    static Unit_Inventory enemy_inventory; // enemy units.
+    static Unit_Inventory friendly_inventory; // friendly units.
+    static Unit_Inventory neutral_inventory; // neutral units.
+    static Unit_Inventory dead_enemy_inventory; // dead units.
+	static Resource_Inventory land_inventory; // resources.
 
 
     Inventory inventory;  // macro variables, not every unit I have.
@@ -100,7 +100,7 @@ public:
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
-      bool Check_N_Build( const UnitType &building, const Unit &unit, const Unit_Inventory &ui, const bool &extra_critera );
+      bool Check_N_Build( const UnitType &building, const Unit &unit, Unit_Inventory &ui, const bool &extra_critera );
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -108,9 +108,9 @@ public:
       // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
       bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
       // Morphs units "Reactively". Incomplete.
-      bool Reactive_Build( const Unit &larva, const Inventory &inv, const Unit_Inventory &fi, const Unit_Inventory &ei );
+      bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
-      bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, const Unit_Inventory & u_inv);
+      bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);
       // Returns a tile that is suitable for building.
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
@@ -294,6 +294,6 @@ public:
   // Tech Functions
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
       bool Tech_Avail();
-      // Returns next upgrade to get. Also manages morph.
-      bool Tech_Begin(Unit building, const Unit_Inventory &ui, const Inventory &inv);
+      // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
+      bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
 };
