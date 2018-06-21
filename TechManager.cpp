@@ -17,7 +17,8 @@ bool CUNYAIModule::Tech_Avail() {
                     (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den, inventory) == 0)||
                     (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) == 0) ||
                     (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest, inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) > 0 ) || // I have hardcoded spire before queens nest.
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, inventory) == 0);
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Greater_Spire) && Count_Units(BWAPI::UnitTypes::Zerg_Greater_Spire, inventory) == 0);
             if ( long_condition ) {
                 return true;
             }
@@ -105,5 +106,10 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
             building->getType() == UnitTypes::Zerg_Lair &&
             Count_Units(UnitTypes::Zerg_Hive, inv) == 0); //If you're tech-starved at this point, don't make random hives.
 
+   busy = Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, ui, !busy && upgrade_bool &&
+       inventory.hatches_ > 3 &&
+       Count_Units(UnitTypes::Zerg_Hive, inv) >= 0 &&
+       building->getType() == UnitTypes::Zerg_Spire &&
+       Count_Units(UnitTypes::Zerg_Greater_Spire, inv) == 0); //If you're tech-starved at this point, don't make random hives.
     return busy;
 }

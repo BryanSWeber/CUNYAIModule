@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CUNYAIModule.h"
+#include "Unit_Inventory.h"
 
 //Movement and Combat Functions
 class Mobility {

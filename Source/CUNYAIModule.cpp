@@ -19,6 +19,12 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
+//Declare universally shared inventories.
+Unit_Inventory CUNYAIModule::friendly_inventory;
+Unit_Inventory CUNYAIModule::neutral_inventory;
+Unit_Inventory CUNYAIModule::enemy_inventory;
+Unit_Inventory CUNYAIModule::dead_enemy_inventory;
+Resource_Inventory CUNYAIModule::land_inventory;
 
 void CUNYAIModule::onStart()
 {
@@ -157,6 +163,7 @@ void CUNYAIModule::onFrame()
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
     bool have_morphed_larva_this_frame = false;
     bool have_morphed_lurker_this_frame = false;
+    bool have_morphed_muta_this_frame = false;
 
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
@@ -578,7 +585,7 @@ void CUNYAIModule::onFrame()
         // Finally make the unit do some stuff!
 
         // Unit creation & Hatchery management loop
-        auto start_larva = std::chrono::high_resolution_clock::now();
+        auto start_unit_morphs = std::chrono::high_resolution_clock::now();
 
         //Only morph one larva this frame.
         if ( !have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
@@ -597,7 +604,17 @@ void CUNYAIModule::onFrame()
             have_morphed_lurker_this_frame = true;
             continue;
         }
-        auto end_larva = std::chrono::high_resolution_clock::now();
+
+        // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
+        if (!have_morphed_muta_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire,inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, inventory) > 0)
+        {
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+            Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
+            have_morphed_muta_this_frame = true;
+            continue;
+        }
+
+        auto end_unit_morphs = std::chrono::high_resolution_clock::now();
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -1057,7 +1074,7 @@ void CUNYAIModule::onFrame()
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
 
-        larva_time += end_larva - start_larva;
+        larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
         scout_time += end_scout - start_scout;
         combat_time += end_combat - start_combat;

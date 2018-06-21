@@ -2,6 +2,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\InventoryManager.h"
 #include "Source\AssemblyManager.h"
+#include "Source\Unit_Inventory.h"
 #include <iterator>
 
 using namespace BWAPI;
@@ -280,7 +281,7 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
     return false;
 }
 
-//Creates a new unit. Reflects upon enemy units in enemy_set. Could be improved in terms of overall logic. Now needs to be split into hydra morphs and larva morphs. Now updates the unit_inventory.
+//Creates a new unit. Reflects upon enemy units in enemy_set. Could be improved in terms of overall logic. Now needs to be split into hydra, muta morphs and larva morphs. Now updates the unit_inventory.
 bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_Inventory &ui, const Unit_Inventory &ei)
 {
     // Am I bulding anything?
@@ -290,6 +291,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
     UnitType u_type = larva->getType();
     bool is_larva = u_type == UnitTypes::Zerg_Larva; 
     bool is_hydra = u_type == UnitTypes::Zerg_Hydralisk;
+    bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
 
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 
@@ -303,7 +305,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, inv) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, inv) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, inv) >= 85;
     bool drone_conditional = econ_starved || tech_starved; // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
-    bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < inv.hatches_;
+    bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) || Count_Units(UnitTypes::Zerg_Greater_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < inv.hatches_;
 
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, inv) == 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
@@ -348,6 +350,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     //Army build/replenish.  Cycle through military units available.
     if ( u_relatively_weak_against_air && ei.stock_fliers_ > 0 ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
+        if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Greater_Spire, inv) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Scourge, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && Count_Units(UnitTypes::Zerg_Scourge, inv) < 5); // hard cap on scourges, they build 2 at a time. May (still) overbuild within a single frame.
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
@@ -402,11 +405,14 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
         }
     }
     else if ( e_relatively_weak_against_air ) {
+        if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Greater_Spire, inv) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice()  && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice() ); // if you are floating minerals relative to gas, feel free to buy some lings.
     }
 
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, false); // catchall ground units, in case you have a BO that needs to be done.
+    if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, false); // catchall ground units, in case you have a BO that needs to be done.
+    if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, false); // catchall ground units, in case you have a BO that needs to be done.
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, false);
     if (is_hydra && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Lurker, larva, false);
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, false);
@@ -437,7 +443,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 }
 
 
-//Creates a new building with DRONE. Does not create Lairs, Hives, or sunken/spores.
+//Creates a new building with DRONE. Does not create units that morph from other buildings: Lairs, Hives, Greater Spires, or sunken/spores.
 bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv, Unit_Inventory &u_inv) {
     // will send it to do the LAST thing on this list that it can build.
     bool buildings_started = false;
