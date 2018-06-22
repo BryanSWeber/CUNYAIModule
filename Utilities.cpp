@@ -1093,7 +1093,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 14;
     }
 
-    if (u_command == UnitCommandTypes::Morph) {
+    if (u_command == UnitCommandTypes::Morph || u_command == UnitCommandTypes::Build) {
         cd_frames = 14;
     }
     //if (u_command == UnitCommandTypes::Attack_Move) {

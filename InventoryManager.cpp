@@ -430,15 +430,7 @@ void Inventory::updateMapVeins() {
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     map_veins_.clear();
-    map_veins_.reserve(map_x);
-    for (int x = 0; x < map_x; ++x) {
-        vector<int> temp;
-        temp.reserve(map_y);
-        for (int y = 0; y < map_y; ++y) {
-            temp.push_back(unwalkable_barriers_with_buldings_[x][y] == 1 );  //Was that location unwalkable or containing a building?? 
-        }
-        map_veins_.push_back(temp); // Map veins intially contains 0 for unblocked locations, and 1 for blocked locations.
-    }
+    map_veins_ = unwalkable_barriers_with_buldings_;
 
     vector<WalkPosition> needs_filling;
     for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
@@ -927,7 +919,19 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
 
     return 9999999;
 }
-
+bool Inventory::checkViableGroundPath(const Position A, const Position B) const
+{
+    if (map_veins_out_from_main_.size() > 0 && A.isValid() && B.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        WalkPosition wp_b = WalkPosition(B);
+        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
+        if (A > 1 && B > 1) {
+            return true;
+        }
+    }
+return false;
+}
 int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
     if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
@@ -1579,13 +1583,6 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         //updateLiveUnwalkable(ui, ei, ri, ni);
         updateUnwalkableWithBuildings(ui, ei, ri, ni);
         unwalkable_needs_updating = false;
-        smoothed_needs_updating = true; // next step on ladder now.
- 
-    }
-    else if (smoothed_needs_updating && !unit_calculation_frame) {
-
-        //updateSmoothPos();
-        smoothed_needs_updating = false;
         veins_need_updating = true;
 
     }
@@ -1614,7 +1611,7 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         else if (ei.getMeanBuildingLocation() != Position(0, 0)) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOutFromFoe(ei.getMeanBuildingLocation());
         }
-        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0)) { // maybe it's a base we havent' seen yet?
+        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0) && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
             int attempts = 0;
             while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < start_positions_.size()) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
@@ -1623,14 +1620,22 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
             updateMapVeinsOutFromFoe(start_positions_[0]);
 
         }
-        else if (!expo_positions_.empty() && expo_positions_[0] && expo_positions_[0] != TilePosition(0, 0)) { // maybe it's a base we havent' seen yet?
-            int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < expo_positions_.size()) {
-                std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
-                attempts++;
-            }
-            updateMapVeinsOutFromFoe(Position(expo_positions_[0]));
+        else if (!expo_positions_.empty()) { // maybe it's a base we havent' seen yet?
+            int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
 
+            while (Broodwar->isVisible(TilePosition(enemy_base_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) {
+                random_index = rand() % expo_positions_.size();
+                if (Broodwar->isVisible(expo_positions_[random_index])) {
+                    expo_positions_.erase(expo_positions_.begin()+random_index);
+                }
+            }
+
+            if (!expo_positions_.empty()) {
+                updateMapVeinsOutFromFoe(Position(expo_positions_[random_index]));
+            }
+            else {
+                checked_all_expo_positions_ = true;
+            }
         }
 
         veins_out_need_updating = false;

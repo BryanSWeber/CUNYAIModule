@@ -66,11 +66,11 @@ struct Inventory {
 
     TilePosition next_expo_;
 	bool cleared_all_start_positions_;
+    bool checked_all_expo_positions_ = false;
     int workers_clearing_;
     int workers_distance_mining_;
 
     bool unwalkable_needs_updating = false;
-    bool smoothed_needs_updating = false;
     bool veins_need_updating = false;
     bool veins_out_need_updating = false;
     bool veins_in_need_updating = false;
@@ -139,6 +139,7 @@ struct Inventory {
     int Inventory::getRadialDistanceOutFromEnemy(const Position A ) const;
     int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B ) const;
     int Inventory::getRadialDistanceOutFromHome(const Position A ) const;
+    bool Inventory::checkViableGroundPath(const Position A, const Position B) const;
     // Marks and scores base locations.
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.

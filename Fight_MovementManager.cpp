@@ -19,21 +19,21 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = useful_stocks[0] * 0.95 > useful_stocks[1] || !potential_fears || !army_starved;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
-    bool scouting_returned_nothing = !enemy_scouted && inv.start_positions_.empty();
+    bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
 
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && (ready_to_fight && (!inv.start_positions_.empty() || enemy_scouted))) {
+        if (healthy && (ready_to_fight)  && !scouting_returned_nothing) {
             setAttractionEnemy(unit, pos, ei, inv, potential_fears);
             //scoutEnemyBase(unit, pos, inventory); 
         }
-        else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight /*|| army_starved*/)) { // Otherwise, return home.
+        else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight )) { // Otherwise, return home.
             setAttractionHome(unit, pos, ei, inv);
         }
         else if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
-            setStutter(unit, 1);
+            //setStutter(unit, 1);
         }
 
         int average_volume = ui.volume_ / ui.unit_inventory_.size();

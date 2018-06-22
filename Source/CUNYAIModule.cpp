@@ -162,9 +162,9 @@ void CUNYAIModule::onFrame()
 
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
-    bool have_morphed_larva_this_frame = false;
-    bool have_morphed_lurker_this_frame = false;
-    bool have_morphed_muta_this_frame = false;
+    bool attempted_morph_larva_this_frame = false;
+    bool attempted_morph_lurker_this_frame = false;
+    bool attempted_morph_guardian_this_frame = false;
 
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
@@ -503,16 +503,16 @@ void CUNYAIModule::onFrame()
             //} // Pretty to look at!
 
 
-            for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
-                for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
-                    if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 && inventory.map_veins_out_from_main_[i][j] > 1 ) { 
-                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                            Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
-                            //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-                        }
-                    }
-                }
-            } // Pretty to look at!
+            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
+            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
+            //        if (/*inventory.map_veins_out_from_main_[i][j] % 100 == 0 &&*/ inventory.map_veins_out_from_main_[i][j] <= 1 ) { 
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
+            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_enemy_.size(); ++i) {
             //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_enemy_[i].size(); ++j) {
@@ -591,32 +591,35 @@ void CUNYAIModule::onFrame()
         if (last_frame_of_unit_morph_command < t_game - 12) {
 
             //Only morph one larva this frame.
-            if (!have_morphed_larva_this_frame && u_type == UnitTypes::Zerg_Larva)
+            if (!attempted_morph_larva_this_frame && u_type == UnitTypes::Zerg_Larva)
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-                have_morphed_larva_this_frame = true;
-                last_frame_of_unit_morph_command = t_game;
+                attempted_morph_larva_this_frame = true;
+                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                    last_frame_of_unit_morph_command = t_game;
+                }
                 continue;
             }
 
             // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-            if (!have_morphed_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
+            if (!attempted_morph_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-                have_morphed_lurker_this_frame = true;
-                last_frame_of_unit_morph_command = t_game;
+                attempted_morph_lurker_this_frame = true;
+                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                    last_frame_of_unit_morph_command = t_game;
+                }
                 continue;
             }
 
             // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-            if (!have_morphed_muta_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, inventory) > 0)
+            if (!attempted_morph_guardian_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, inventory) > 0)
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-                Reactive_Build(u, inventory, friendly_inventory, enemy_inventory);
-                have_morphed_muta_this_frame = true;
-                last_frame_of_unit_morph_command = t_game;
+                attempted_morph_guardian_this_frame = true;
+                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                    last_frame_of_unit_morph_command = t_game;
+                }
                 continue;
             }
         }
@@ -625,7 +628,7 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord))
+        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 999999);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
@@ -1399,7 +1402,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        //inventory.unwalkable_needs_updating = true;
+        inventory.unwalkable_needs_updating = true;
         my_reservation.removeReserveSystem( unit->getType() );
     }
 
