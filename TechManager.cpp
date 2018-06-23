@@ -76,7 +76,7 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, inv ) == 0 && !army_starved));
 
     // Structural changes to units.
-    if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) > 0 );
+   if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) > 0 );
    if(!busy) busy = Check_N_Research( TechTypes::Lurker_Aspect, building, upgrade_bool && (Count_Units( UnitTypes::Zerg_Lair, inv ) > 0 || Count_Units( UnitTypes::Zerg_Hive, inv ) > 0) && Count_Units( UnitTypes::Zerg_Hydralisk_Den, inv ) > 0 );
    if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Grooved_Spines, building, upgrade_bool && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
    if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Muscular_Augments, building, upgrade_bool && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 ) );
@@ -111,5 +111,6 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
        Count_Units(UnitTypes::Zerg_Hive, inv) >= 0 &&
        building->getType() == UnitTypes::Zerg_Spire &&
        Count_Units(UnitTypes::Zerg_Greater_Spire, inv) == 0); //If you're tech-starved at this point, don't make random hives.
+
     return busy;
 }

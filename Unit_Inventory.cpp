@@ -584,7 +584,7 @@ bool Stored_Unit::isAssignedGas(Resource_Inventory &ri) {
 
 bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
 
-    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
+    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri) ;
 
 }
 
@@ -604,18 +604,24 @@ bool Stored_Unit::isNoLock(){
 //if the miner is not mining his target. Target must be visible.
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    return  //bwapi_unit_ && targeted_mine->bwapi_unit_ && bwapi_unit_->getOrderTarget() &&  // needs to not be nullptr, have a mine, and an order target. Otherwise, we have a broken lock.
-        ( bwapi_unit_->getOrderTarget() != locked_mine_); // if its order target is not the mine, then we have a broken lock.
+    Stored_Resource* target_mine = this->getMine(ri); // target mine must be visible to be broken. Otherwise it is a long range lock.
+    return  !isLongRangeLock(ri) && !isLocallyLocked(ri); // Or its order target is not the mine, then we have a broken lock.
+}
+
+bool Stored_Unit::isLocallyLocked(Resource_Inventory &ri) {
+    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
+    return  locked_mine_ && bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget() == locked_mine_; // Everything must be visible and properly assigned.
 }
 
 //prototypeing
 bool Stored_Unit::isLongRangeLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     Stored_Resource* target_mine = this->getMine(ri);
-    return bwapi_unit_ && target_mine && target_mine->pos_ && !Broodwar->isVisible(TilePosition(target_mine->pos_));
+    return bwapi_unit_ && target_mine && target_mine->pos_ && !Broodwar->isVisible(TilePosition(target_mine->pos_)) && bwapi_unit_->getOrder() == Orders::Move;
 }
 
 bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-   return this->isLongRangeLock(ri) && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+    Stored_Resource* target_mine = this->getMine(ri);
+    return this->isLongRangeLock(ri) && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
 }

@@ -50,6 +50,7 @@ struct Stored_Unit {
     bool isAssignedResource(Resource_Inventory & ri);
     bool isAssignedBuilding(); // If the unit is assigned to build something.
     bool isBrokenLock(Resource_Inventory & ri); // If the unit has been distracted somehow.
+    bool isLocallyLocked(Resource_Inventory & ri); // If the unit is properly attached.
     bool isNoLock(); // If the unit has no target. May be broken.
     bool isLongRangeLock(Resource_Inventory & ri); // if the unit cannot see its target.
     bool isMovingLock(Resource_Inventory & ri); // if the unit is moving towards its target not gathering.

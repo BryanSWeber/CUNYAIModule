@@ -119,8 +119,12 @@ public:
       bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
       // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
-      // attaches the miner to the nearest mine in the inventory.
+      // attaches the miner to the nearest mine in the inventory, and updates the stored_unit.
       void attachToNearestMine(Resource_Inventory & ri, Inventory & inv, Stored_Unit & miner);
+      // attaches the miner to the particular mine and updates the stored unit.
+      void attachToParticularMine(Stored_Resource & mine, Resource_Inventory & ri, Stored_Unit & miner);
+      // attaches the miner to the particular mine and updates the stored unit.
+      void attachToParticularMine(Unit & mine, Resource_Inventory & ri, Stored_Unit & miner);
       // Clears nearly-empty minerals.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);

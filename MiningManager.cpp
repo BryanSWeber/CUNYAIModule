@@ -145,7 +145,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         }
 
         if (mine_is_right_type && r->second.number_of_miners_ <= low_drone && r->second.number_of_miners_ < max_drone && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
-            if (r->second.occupied_natural_ && found_low_occupied_mine/*&& checkSafeBuildLoc(r->second.pos_, inventory, enemy_inventory, friendly_inventory, land_inventory)*/) { //if it has a closeby base, we want to prioritize those resources first.
+            if (r->second.occupied_natural_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r->second);
             }
             else {
@@ -175,6 +175,19 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Inventory &inv, S
             my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
         }
     }
+    miner.updateStoredUnit(miner.bwapi_unit_);
+}
+
+void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner) {
+    miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second, ri); // go back to your old job.
+    if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
+        my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+    }
+    miner.updateStoredUnit(miner.bwapi_unit_);
+}
+void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, Stored_Unit &miner) {
+    miner.startMine(ri.resource_inventory_.find(mine)->second, ri); // go back to your old job.
+    miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
 void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )

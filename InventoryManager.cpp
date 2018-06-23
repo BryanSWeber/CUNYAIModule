@@ -228,7 +228,7 @@ double Inventory::getLn_Supply_Ratio() {
         return ln_supply_remain_ / ln_supply_total_;
     }
     else {
-        return 99999;
+        return 0;
     } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. Just in case- Define as ~~infty, not 0.
 };
 
