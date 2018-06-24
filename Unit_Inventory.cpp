@@ -184,7 +184,7 @@ void Unit_Inventory::drawAllWorkerTasks(const Inventory & inv, Resource_Inventor
                 CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), inv.screen_position_, Colors::Blue);
             }
 
-            if (u.second.isAssignedBuilding()) {
+            if (u.second.isAssignedBuilding(ri)) {
                 CUNYAIModule::Diagnostic_Dot(u.second.pos_, inv.screen_position_, Colors::Purple);
             }
         }
@@ -409,7 +409,6 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 cloaker_count   += cloaker * count_of_unit;
                 detector_count  += u_iter.second.type_.isDetector() * count_of_unit;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
-                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
@@ -419,7 +418,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 already_seen_types.push_back( u_iter.second.type_ );
             }
             else {
-
+                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
                 air_fodder += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
                 ground_fodder += !flying_unit * unit_value;
             
@@ -584,14 +583,15 @@ bool Stored_Unit::isAssignedGas(Resource_Inventory &ri) {
 
 bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
 
-    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri) ;
+    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
 
 }
 
 // Warning- depends on unit being updated.
-bool Stored_Unit::isAssignedBuilding() {
+bool Stored_Unit::isAssignedBuilding(Resource_Inventory  &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph ) && time_since_last_command_ < 15 * 24;
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph ) && time_since_last_command_ < 15 * 24 && !isAssignedResource(ri);
+
     return building_sent;
 }
 
@@ -605,7 +605,7 @@ bool Stored_Unit::isNoLock(){
 bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     Stored_Resource* target_mine = this->getMine(ri); // target mine must be visible to be broken. Otherwise it is a long range lock.
-    return  !isLongRangeLock(ri) && !isLocallyLocked(ri); // Or its order target is not the mine, then we have a broken lock.
+    return !(isLongRangeLock(ri) || isLocallyLocked(ri)); // Or its order target is not the mine, then we have a broken lock.
 }
 
 bool Stored_Unit::isLocallyLocked(Resource_Inventory &ri) {
@@ -617,11 +617,12 @@ bool Stored_Unit::isLocallyLocked(Resource_Inventory &ri) {
 bool Stored_Unit::isLongRangeLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     Stored_Resource* target_mine = this->getMine(ri);
-    return bwapi_unit_ && target_mine && target_mine->pos_ && !Broodwar->isVisible(TilePosition(target_mine->pos_)) && bwapi_unit_->getOrder() == Orders::Move;
+    return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
 }
 
 bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     Stored_Resource* target_mine = this->getMine(ri);
-    return this->isLongRangeLock(ri) && bwapi_unit_->getOrderTargetPosition() == locked_mine_->getPosition() && bwapi_unit_->getOrder() == Orders::Move;
+    bool contents_of_long_range_lock_without_visiblity = bwapi_unit_ && target_mine && target_mine->pos_;
+    return  contents_of_long_range_lock_without_visiblity && Broodwar->isVisible(TilePosition(target_mine->pos_));
 }

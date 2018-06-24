@@ -47,8 +47,8 @@ struct Stored_Unit {
     bool isAssignedLongDistanceMining(Resource_Inventory & ri);
     bool isAssignedMining(Resource_Inventory & ri); // If the unit is assigned to mine a spot.
     bool isAssignedGas(Resource_Inventory & ri); // If the unit is assigned to mine gas.
-    bool isAssignedResource(Resource_Inventory & ri);
-    bool isAssignedBuilding(); // If the unit is assigned to build something.
+    bool isAssignedResource(Resource_Inventory  &ri);
+    bool isAssignedBuilding(Resource_Inventory  &ri); // If the unit is assigned to build something.
     bool isBrokenLock(Resource_Inventory & ri); // If the unit has been distracted somehow.
     bool isLocallyLocked(Resource_Inventory & ri); // If the unit is properly attached.
     bool isNoLock(); // If the unit has no target. May be broken.

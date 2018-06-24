@@ -102,13 +102,13 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
 
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Hive, building, ui, upgrade_bool &&
             inventory.hatches_ > 2 &&
-            Count_Units(UnitTypes::Zerg_Queens_Nest, inv) >= 0 &&
+            Count_Units(UnitTypes::Zerg_Queens_Nest, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Queens_Nest, inv) > 0 &&
             building->getType() == UnitTypes::Zerg_Lair &&
             Count_Units(UnitTypes::Zerg_Hive, inv) == 0); //If you're tech-starved at this point, don't make random hives.
 
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, ui, upgrade_bool &&
        inventory.hatches_ > 3 &&
-       Count_Units(UnitTypes::Zerg_Hive, inv) >= 0 &&
+       Count_Units(UnitTypes::Zerg_Hive, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Hive, inv) > 0 &&
        building->getType() == UnitTypes::Zerg_Spire &&
        Count_Units(UnitTypes::Zerg_Greater_Spire, inv) == 0); //If you're tech-starved at this point, don't make random hives.
 

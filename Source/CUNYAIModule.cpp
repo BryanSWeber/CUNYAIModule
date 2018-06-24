@@ -883,7 +883,7 @@ void CUNYAIModule::onFrame()
                 old_mineral_patch = miner.locked_mine_;
             }
 
-            if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
+            if ( !isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_) ) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
 
                 // Each mineral-related subtask does the following:
                 // Checks if it is doing a task of lower priority.
@@ -893,31 +893,28 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame ) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() -  15 * 24 && !build_check_this_frame ) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     Building_Begin(u, inventory, enemy_inventory, friendly_inventory); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
-                    if (miner.isAssignedBuilding() ) { //Don't purge the building relations here - we just established them!
+                    if (miner.isAssignedBuilding(land_inventory) ) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
                     }
                     else if (old_mineral_patch){
                         attachToParticularMine(old_mineral_patch, land_inventory, miner); // go back to your old job. Updated unit.
-                        continue;
+                        //continue;
                     }
                 } // Close Build loop
 
-
                 //Workers at their end build location should build there!
-                if (miner.isAssignedBuilding() && TilePosition(miner.pos_) == inventory.next_expo_ && my_reservation.reservation_map_.at(miner.bwapi_unit_->getBuildType())) {
+                if (miner.isAssignedBuilding(land_inventory) && TilePosition(miner.pos_) == inventory.next_expo_ && my_reservation.reservation_map_.at(miner.bwapi_unit_->getBuildType())) {
                     clearBuildingObstuctions(friendly_inventory, inventory, miner.bwapi_unit_);
                     if (miner.bwapi_unit_->build(UnitTypes::Zerg_Hatchery, inventory.next_expo_)) {
                         my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
                     }
                     continue;
                 }
-
-
 
                //MINERAL RELATED TASKS
                //Workers need to clear empty patches.
@@ -927,11 +924,11 @@ void CUNYAIModule::onFrame()
                     Worker_Clear(u, friendly_inventory);
                     if (miner.isAssignedClearing(land_inventory)) {
                         inventory.updateWorkersClearing(friendly_inventory, land_inventory);
-                        continue;
+                        //continue;
                     }
                     else if (old_mineral_patch) {
                         attachToParticularMine(old_mineral_patch, land_inventory, miner); // go back to your old job. Updated unit.
-                        continue;
+                        //continue;
                     }
                 } // clear those empty mineral patches that block paths.
 
@@ -940,34 +937,34 @@ void CUNYAIModule::onFrame()
                 bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_;
                 bool worker_might_be_in_bad_task = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas) || ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory)) || was_long_mine;
 
-                if ( (!miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding()) || (( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24) && isEmptyWorker(u)) ) { //if this is your first worker of the frame consider resetting him.
+                if ( (!miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory)) || ( worker_might_be_in_bad_task && inventory.last_gas_check_ < t_game - 5 * 24 && isEmptyWorker(u)) ) { //if this is your first worker of the frame consider resetting him.
 
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     inventory.last_gas_check_ = t_game;
                     if (want_gas && !was_gas && could_use_another_gas) { // don't reassign from gas into gas.
                         Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_inventory); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
                         if (miner.isAssignedGas(land_inventory)) {
-                            continue;
+                            //continue;
                         }
                         else if (old_mineral_patch) {
                             attachToParticularMine(old_mineral_patch, land_inventory, miner); // go back to your old job. Updated unit.
-                            continue;
+                            //continue;
                         }
                         else { // default to gathering minerals.
                             Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory); //assign a worker (minerals)
                             if (miner.isAssignedMining(land_inventory)) {
-                                continue;
+                                //continue;
                             }
                         }
                     }
                     else if (old_mineral_patch && !was_gas) { // If gas was something to avoid, don't go back onto it.
                         attachToParticularMine(old_mineral_patch, land_inventory, miner); // go back to your old job. Updated unit.
-                        continue;
+                        //continue;
                     }
                     else { // default to gathering minerals.
                         Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_inventory); //assign a worker (minerals)
                         if (miner.isAssignedMining(land_inventory)) {
-                            continue;
+                            //continue;
                         }
                     }
                 }
@@ -983,7 +980,7 @@ void CUNYAIModule::onFrame()
                 else {
                     miner.updateStoredUnit(u);
                 }
-                continue;
+                //continue;
             }
 
             // If idle get a job.
@@ -996,8 +993,8 @@ void CUNYAIModule::onFrame()
                 miner.updateStoredUnit(u);
             }
 
-            // let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
-            if ( !isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !u->isIdle()) {
+            //// let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
+            if (miner.isAssignedResource(land_inventory) && !isEmptyWorker(u) && !u->isIdle()) {
                 continue;
             }
 
@@ -1013,6 +1010,11 @@ void CUNYAIModule::onFrame()
             
             // Maintain the locks by assigning the worker to their intended mine!
             bool worker_has_lockable_task = miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory);
+
+            if (worker_has_lockable_task && !isEmptyWorker(u) && !u->isIdle()) {
+                continue;
+            } 
+
             if (worker_has_lockable_task && ((miner.isBrokenLock(land_inventory) && miner.time_since_last_command_ > 12) || t_game < 5 + Broodwar->getLatencyFrames() || (u->isIdle() && no_recent_worker_alteration) )){ //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if ( !miner.bwapi_unit_->gather(miner.locked_mine_) ) { // reassign him back to work.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
@@ -1025,7 +1027,8 @@ void CUNYAIModule::onFrame()
                 }
                 miner.updateStoredUnit(u);
                 continue;
-            } 
+            }
+
             //else if (worker_has_lockable_task && miner.isMovingLock(land_inventory)) {
             //    if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
             //        friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
@@ -1042,15 +1045,11 @@ void CUNYAIModule::onFrame()
 
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
 
-        if ( isIdleEmpty( u ) && !u->canAttack() && u_type != UnitTypes::Zerg_Larva && unconsidered_unit_type && spamGuard(u) &&
+        if ( isIdleEmpty( u ) && !u->canAttack() && u_type != UnitTypes::Zerg_Larva && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph()) ) { // this will need to be revaluated once I buy units that cost gas.
 
-            if (Tech_Begin(u, friendly_inventory, inventory)) {
-                if (u_type.isWorker()) {
-                    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
-                }
-                types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
-            }
+            Tech_Begin(u, friendly_inventory, inventory);
+            types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }
         auto end_upgrade = std::chrono::high_resolution_clock::now();
@@ -1058,61 +1057,61 @@ void CUNYAIModule::onFrame()
         //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
-        if ( u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u) ) {
-            if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
-                Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                mutating_creep_colony_position = u->getPosition();
-                mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                mutating_creep_this_frame = true;
-            }
-            else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
-                Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                mutating_creep_colony_position = u->getPosition();
-                mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                mutating_creep_this_frame = true;
-            }
-            else if (!mutating_creep_this_frame){
-                Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), inventory.my_portion_of_the_map_);
-                local_e.updateUnitInventorySummary();
-                bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, inventory) > 0;
-                bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0;
-                bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
-                bool want_static_d = (army_starved || local_e.stock_fighting_total_ > 0) && (can_sunken || can_spore);
-                bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory) && local_e.stock_fliers_ > 0; // div by zero concern. Derivative of the above equation 
-                if (need_static_d || want_static_d) {
-                    //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
-                    bool cloak_nearby = local_e.cloaker_count_ > 0;
-                    bool local_air_problem = local_e.stock_fliers_ > 0;
-                    bool global_air_problem = u_relatively_weak_against_air;
-                    if (can_sunken && can_spore) {
-                        if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
-                            Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                            mutating_creep_colony_position = u->getPosition();
-                            mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                            mutating_creep_this_frame = true;
-                        }
-                        else {
-                            Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                            mutating_creep_colony_position = u->getPosition();
-                            mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                            mutating_creep_this_frame = true;
-                        }
-                    } // build one of the two colonies based on the presence of closest units.
-                    else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
-                        Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                        mutating_creep_colony_position = u->getPosition();
-                        mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                        mutating_creep_this_frame = true;
+        //if ( u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u) ) {
+        //    if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony ) {
+        //        Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+        //        mutating_creep_colony_position = u->getPosition();
+        //        mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
+        //        mutating_creep_this_frame = true;
+        //    }
+        //    else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
+        //        Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+        //        mutating_creep_colony_position = u->getPosition();
+        //        mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
+        //        mutating_creep_this_frame = true;
+        //    }
+        //    else if (!mutating_creep_this_frame){
+        //        Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), inventory.my_portion_of_the_map_);
+        //        local_e.updateUnitInventorySummary();
+        //        bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, inventory) > 0;
+        //        bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0;
+        //        bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
+        //        bool want_static_d = (army_starved || local_e.stock_fighting_total_ > 0) && (can_sunken || can_spore);
+        //        bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory) && local_e.stock_fliers_ > 0; // div by zero concern. Derivative of the above equation 
+        //        if (need_static_d || want_static_d) {
+        //            //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
+        //            bool cloak_nearby = local_e.cloaker_count_ > 0;
+        //            bool local_air_problem = local_e.stock_fliers_ > 0;
+        //            bool global_air_problem = u_relatively_weak_against_air;
+        //            if (can_sunken && can_spore) {
+        //                if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
+        //                    Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
+        //                    mutating_creep_colony_position = u->getPosition();
+        //                    mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
+        //                    mutating_creep_this_frame = true;
+        //                }
+        //                else {
+        //                    Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+        //                    mutating_creep_colony_position = u->getPosition();
+        //                    mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
+        //                    mutating_creep_this_frame = true;
+        //                }
+        //            } // build one of the two colonies based on the presence of closest units.
+        //            else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
+        //                Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
+        //                mutating_creep_colony_position = u->getPosition();
+        //                mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
+        //                mutating_creep_this_frame = true;
 
-                    } // build sunkens if you only have that
-                    else if (can_spore && !can_sunken) {
-                        mutating_creep_colony_position = u->getPosition();
-                        mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                        mutating_creep_this_frame = true;
-                    } // build spores if you only have that.
-                } // closure: Creep colony loop
-            }
-        }
+        //            } // build sunkens if you only have that
+        //            else if (can_spore && !can_sunken) {
+        //                mutating_creep_colony_position = u->getPosition();
+        //                mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
+        //                mutating_creep_this_frame = true;
+        //            } // build spores if you only have that.
+        //        } // closure: Creep colony loop
+        //    }
+        //}
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
 

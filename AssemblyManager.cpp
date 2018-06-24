@@ -30,7 +30,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 }
         }
 
-        if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
+        if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery && building != UnitTypes::Zerg_Greater_Spire)
         {
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
