@@ -131,7 +131,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
 }
 
 
-// scrape over every resource to determine the lowest number of miners.
+// scrape over every resource to determine the lowest number of miners. Only looks at COMPLETED mines.
 void Resource_Inventory::countViableMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
@@ -143,7 +143,7 @@ void Resource_Inventory::countViableMines() {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
         }
-        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_)) {
+        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
             local_refineries_++;
             local_miners_ += r->second.number_of_miners_;
         }
