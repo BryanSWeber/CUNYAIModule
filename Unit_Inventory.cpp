@@ -280,6 +280,33 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      }
  }
 
+// In progress
+ Position Unit_Inventory::getStrongestLocation() const {
+     int x_sum = 0;
+     int y_sum = 0;
+     int count = 0;
+     int standard_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+     for (const auto &u : this->unit_inventory_) {
+         if (CUNYAIModule::IsFightingUnit(u.second) && u.second.valid_pos_) {
+             int remaining_stock = u.second.current_stock_value_;
+                 while (remaining_stock > 0) {
+                     x_sum += u.second.pos_.x;
+                     y_sum += u.second.pos_.y;
+                     count++;
+                     remaining_stock -= standard_value;
+                 }
+         }
+     }
+     if (count > 0) {
+         Position out = { x_sum / count, y_sum / count };
+         return out;
+     }
+     else {
+         return Position(0, 0); // you're dead at this point, fyi.
+     }
+ }
+
+
  Position Unit_Inventory::getMeanCombatLocation() const {
      int x_sum = 0;
      int y_sum = 0;

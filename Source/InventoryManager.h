@@ -45,6 +45,7 @@ struct Inventory {
 
 	vector<Position> start_positions_;
 	vector<TilePosition> expo_positions_;
+    vector<TilePosition> expo_positions_complete_;
     Position enemy_base_;
     Position home_base_;
     vector< UnitType > unit_type_;
@@ -144,6 +145,10 @@ struct Inventory {
     void Inventory::updateBaseLoc( const Resource_Inventory &ri );
     void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
     void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
+
+    // Returns the position of the weakest base.
+
+    Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
 
 	// updates the next target expo.
 	void Inventory::getExpoPositions();

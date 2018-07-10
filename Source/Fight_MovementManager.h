@@ -51,6 +51,7 @@ public:
     vector<double> getVectorTowardsEnemy(const Position & pos, const Inventory & inv) const;
 
 private:
+    int distance_metric = 0;
     double x_stutter_ = 0;
     double y_stutter_ = 0;
     double attune_dx_ = 0;

@@ -182,9 +182,9 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
 
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(land_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit_pos);
             if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
-                TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
+                //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);
-                //TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64) ;
+                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 64) ;
                 if ( BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;

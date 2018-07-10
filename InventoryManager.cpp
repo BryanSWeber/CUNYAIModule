@@ -872,7 +872,6 @@ void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progres
             fire_fill_queue.push_back( { minitile_x_temp - 1, minitile_y_temp } );
         }
         total_squares_filled += filled_a_square;// less if's are better.
-
     }
 }
 
@@ -1496,6 +1495,27 @@ void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_In
     workers_distance_mining_ = long_distance_miners_found ;
 }
 
+Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
+{
+    Position weakest_base = Positions::Origin;
+    int stock_current_best = 0;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+        ei_loc.updateUnitInventorySummary();
+        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+            stock_current_best = ei_loc.stock_fighting_total_;
+            weakest_base = Position(expo);
+        }
+    }
+
+    if (weakest_base == Positions::Origin) {
+        weakest_base = start_positions_[1];
+    }
+
+    return weakest_base;
+}
+
 void Inventory::getExpoPositions() {
 
     expo_positions_.clear();
@@ -1508,34 +1528,64 @@ void Inventory::getExpoPositions() {
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
 
-    for ( vector<int>::size_type x = 0; x != map_x; ++x ) {
-        for ( vector<int>::size_type y = 0; y != map_y; ++y ) {
-            if ( base_values_[x][y] > 1 ) { // only consider the decent locations please.
+    // if we haven't checked before, start from the beginning.
+    if ( expo_positions_complete_.empty() ) {
+        for (vector<int>::size_type x = 0; x != map_x; ++x) {
+            for (vector<int>::size_type y = 0; y != map_y; ++y) {
+                if (base_values_[x][y] > 1) { // only consider the decent locations please.
 
-                local_maximum = true;
+                    local_maximum = true;
 
-                TilePosition canidate_spot = TilePosition( x + 2, y + 1 ); // from the true center of the object.
-                //int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
-                //int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
+                    //TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
+                    //int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
+                    //int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
 
-                for ( int i = -12; i <= 12; i++ ) {
-                    for ( int j = -12; j <= 12; j++ ) {
-                        bool safety_check = x + i < map_x && x - i > 0 && y + j < map_y && y - j > 0;
-                        if ( safety_check && base_values_[x][y] < base_values_[x + i][y + j] ) {
-                            local_maximum = false;
-                            break;
+                    for (int i = -12; i <= 12; i++) {
+                        for (int j = -12; j <= 12; j++) {
+                            bool safety_check = TilePosition(x + i, y + j).isValid() ; //valid tile position
+                            if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]) {
+                                local_maximum = false;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if ( local_maximum ) {
-                    expo_positions_.push_back( { static_cast<int>(x), static_cast<int>(y) } );
+                    if (local_maximum) {
+                        expo_positions_.push_back({ static_cast<int>(x), static_cast<int>(y) });
+                    }
                 }
+            } // closure y
+        } // closure x
+    }
+    else { // only check potentially relevant locations.
+        for (TilePosition canidate_spot : expo_positions_complete_) {
+            local_maximum = true;
 
+            int x = canidate_spot.x;
+            int y = canidate_spot.y;
+            
+            for (int i = -12; i <= 12; i++) {
+                for (int j = -12; j <= 12; j++) {
+                    bool safety_check = TilePosition(x + i, y + j).isValid(); //valid tile position
+                    if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]) {
+                        local_maximum = false;
+                        break;
+                    }
+                }
             }
 
-        } // closure y
-    } // closure x
+            if (local_maximum) {
+                expo_positions_.push_back(canidate_spot);
+            }
+        }
+    
+    }
+
+
+    expo_positions_complete_.insert(expo_positions_complete_.end(), expo_positions_.begin(), expo_positions_.end());
+
+    sort(expo_positions_complete_.begin(), expo_positions_complete_.end());
+    expo_positions_complete_.erase(unique(expo_positions_complete_.begin(), expo_positions_complete_.end()), expo_positions_complete_.end()); // any postion that didn't fit has been mined out now.
 }
 
 void Inventory::getStartPositions() {
@@ -1569,7 +1619,7 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    bool waited_a_second = Broodwar->getFrameCount() % (24 * 2) == 0; // technically more.
+    bool waited_a_second = Broodwar->getFrameCount() % (rand() % 240 + 1) == 0; // technically more. Randomized between 1 and 240 frames
 
     //every 10 sec check if we're sitting at our destination.
     if (Broodwar->isVisible(TilePosition(enemy_base_)) && Broodwar->getFrameCount() % (24 * 10) == 0) { 
@@ -1593,14 +1643,13 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         veins_out_need_updating = true;
 
     }
-    else if (veins_out_need_updating && !unit_calculation_frame) {
+    else if (veins_out_need_updating && !unit_calculation_frame && waited_a_second) {
 
-        Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        Position suspected_enemy_base = Position(0, 0);
-
-        if (center_building && center_building->bwapi_unit_) {
-            suspected_enemy_base = Position(center_building->bwapi_unit_->getLeft(),center_building->bwapi_unit_->getTop()); // if we use the middle the unit will be disconnected from the rest of the map.
-        }
+        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        Position suspected_enemy_base = getWeakestBase(ei);//Positions::Origin;
+        //if (center_building) {
+        //    suspected_enemy_base = CUNYAIModule::getClosestExpo(*this, center_building->pos_, 999999);
+        //}
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
 
@@ -1641,46 +1690,21 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         veins_out_need_updating = false;
         veins_in_need_updating = true;
     }
-    else if (veins_in_need_updating && !unit_calculation_frame) {
+    else if (veins_in_need_updating && !unit_calculation_frame && waited_a_second) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        //Position suspected_friendly_base = Position(0, 0);
+        Position suspected_friendly_base = Positions::Origin;
 
-        //if (center_building && center_building->bwapi_unit_) {
-        //    suspected_friendly_base = Position(center_building->bwapi_unit_->getLeft(), center_building->bwapi_unit_->getTop()); // if we use the middle the unit will be disconnected from the rest of the map.
+        //if (center_building) {
+            suspected_friendly_base = CUNYAIModule::getClosestExpo(*this, ui.getMeanBuildingLocation(), 999999);
         //}
 
-        //if (suspected_friendly_base.isValid() && suspected_friendly_base == enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+        if (suspected_friendly_base.isValid() && suspected_friendly_base == enemy_base_ && suspected_friendly_base != Position(0, 0)) {
 
-        //}
-        //else if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
-        //    updateMapVeinsOutFromMain(suspected_friendly_base);
-        //}
-
-        //Unit_Inventory base_core; //get all the bases that might need a new creep colony.
-        //Position most_exposed_base = Position(0, 0);
-        //int distance_from_enemy = 9999999;
-        //for (const auto &u : ui.unit_inventory_) {
-        //    if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
-        //        base_core.addStored_Unit(u.second.bwapi_unit_);
-        //    }
-        //    else if (u.second.type_ == UnitTypes::Zerg_Lair) {
-        //        base_core.addStored_Unit(u.second.bwapi_unit_);
-        //    }
-        //    else if (u.second.type_ == UnitTypes::Zerg_Hive) {
-        //        base_core.addStored_Unit(u.second.bwapi_unit_);
-        //    }
-        //}
-
-        //for (auto i : base_core.unit_inventory_) {
-        //    int temp_dist = getRadialDistanceOutFromEnemy(i.second.pos_);
-        //    if (getRadialDistanceOutFromEnemy(i.second.pos_) < distance_from_enemy ) {
-        //        distance_from_enemy = temp_dist;
-        //        most_exposed_base = i.second.pos_;
-        //    }
-        //}
-
-        //updateMapVeinsOutFromMain(most_exposed_base); // safe against 0,0 locations.
+        }
+        else if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+            updateMapVeinsOutFromMain(suspected_friendly_base);
+        }
 
         veins_in_need_updating = false;
     }

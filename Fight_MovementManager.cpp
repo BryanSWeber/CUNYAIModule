@@ -11,7 +11,7 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
-
+    distance_metric = CUNYAIModule::getProperSpeed(unit) * 12;
     Position pos = unit->getPosition();
     vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
@@ -205,6 +205,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_I
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
+    distance_metric = CUNYAIModule::getProperSpeed(unit) * 12;
     int chargable_distance = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
                                                                                //int range = unit->isFlying() ? air_range : ground_range;
     int e_range = ei.max_range_;
@@ -410,7 +411,6 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
 
     bool enemy_found = false;
-    double distance_metric = CUNYAIModule::getProperSpeed(unit) * 24;
 
     if (!unit->isFlying()) {
 
@@ -448,7 +448,6 @@ void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_In
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
 void Mobility::setAttractionHome(const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv) {
     if (!ei.unit_inventory_.empty()) { // if there is an existant enemy.
-        int distance_metric = CUNYAIModule::getProperSpeed(unit) * 24;
 
         if (!inv.map_veins_out_from_main_.empty() && !unit->isFlying()) {
             WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -481,8 +480,11 @@ void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_I
     int sgn_x = (seperation_x > 0) - (seperation_x < 0); //sign_x;
     int sgn_y = (seperation_y > 0) - (seperation_y < 0); //sign_y;
 
-    seperation_x /= max((int) ui.unit_inventory_.size(), 1);
-    seperation_y /= max((int) ui.unit_inventory_.size(), 1);
+   // seperation_x /= max((int) ui.unit_inventory_.size(), 1);
+   // seperation_y /= max((int) ui.unit_inventory_.size(), 1);
+   
+    seperation_x = min(seperation_x, distance_metric * 3/4 );
+    seperation_y = min(seperation_y, distance_metric * 3/4 );
 
    seperation_dx_ = seperation_x;
    seperation_dy_ = seperation_y;  // will be subtracted later because seperation is a repulsuion rather than a pull.

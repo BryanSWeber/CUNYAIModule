@@ -480,33 +480,33 @@ void CUNYAIModule::onFrame()
             }
 
 
-            //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-            //        if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-            //            }
-            //        }
-            //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-            //            }
-            //        }
-            //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
+            for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
+                    if ( inventory.map_veins_[i][j] > 175 ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                        }
+                    }
+                    else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+                        }
+                    }
+                    else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                        }
+                    }
+                }
+            } // Pretty to look at!
 
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
             //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
-            //        if (/*inventory.map_veins_out_from_main_[i][j] % 100 == 0 &&*/ inventory.map_veins_out_from_main_[i][j] <= 1 ) { 
+            //        if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 /*&& inventory.map_veins_out_from_main_[i][j] <= 1*/ ) { 
             //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
             //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
             //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
@@ -626,6 +626,63 @@ void CUNYAIModule::onFrame()
         }
 
         auto end_unit_morphs = std::chrono::high_resolution_clock::now();
+
+
+        // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.  Should happen before combat script or else the units will be 'continued' past;
+        auto start_detector = std::chrono::high_resolution_clock::now();
+        Position c; // holder for cloaked unit position.
+        bool call_detector = false;
+        if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_inventory, u->getPosition(), u_type.sightRange())) {
+            Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), u_type.sightRange());
+            for (auto e = e_neighbors.unit_inventory_.begin(); e != e_neighbors.unit_inventory_.end() && !e_neighbors.unit_inventory_.empty(); e++) {
+                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
+                    c = (*e).second.pos_; // then we may to send in some vision.
+                    call_detector = true;
+                    break;
+                } //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
+            }
+            if (call_detector) {
+                int dist = 999999;
+                int dist_temp = 0;
+                bool detector_found = false;
+                Stored_Unit detector_of_choice;
+                for (auto d : friendly_inventory.unit_inventory_) {
+                    if (d.second.type_ == UnitTypes::Zerg_Overlord &&
+                        d.second.bwapi_unit_ &&
+                        !d.second.bwapi_unit_->isUnderAttack() &&
+                        d.second.current_hp_ > 0.25 * d.second.type_.maxHitPoints()) { // overlords don't have shields.
+                        dist_temp = d.second.bwapi_unit_->getDistance(c);
+                        if (dist_temp < dist) {
+                            dist = dist_temp;
+                            detector_of_choice = d.second;
+                            detector_found = true;
+                        }
+                    }
+                }
+                if (detector_found /*&& spamGuard(detector_of_choice)*/) {
+                    double theta = atan2(c.y - detector_of_choice.pos_.y, c.x - detector_of_choice.pos_.x);
+                    Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * detector_of_choice.type_.sightRange() * 0.75, c.y + sin(theta) * detector_of_choice.type_.sightRange() * 0.75);
+                    if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
+                        detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
+                        if (_ANALYSIS_MODE) {
+                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
+                        }
+                        detector_of_choice.updateStoredUnit(detector_of_choice.bwapi_unit_);
+                    }
+                    else {
+                        detector_of_choice.bwapi_unit_->move(c);
+                        if (_ANALYSIS_MODE) {
+                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
+                            Diagnostic_Line(detector_of_choice.pos_, inventory.screen_position_, c, Colors::Cyan);
+                        }
+                        detector_of_choice.updateStoredUnit(detector_of_choice.bwapi_unit_);
+                    }
+
+                }
+            }
+        }
+        auto end_detector = std::chrono::high_resolution_clock::now();
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -807,64 +864,6 @@ void CUNYAIModule::onFrame()
             mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
-
-        // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.
-        auto start_detector = std::chrono::high_resolution_clock::now();
-        Position c; // holder for cloaked unit position.
-        bool call_detector = false;
-        if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_inventory, u->getPosition(), u_type.sightRange())) {
-            Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), u_type.sightRange());
-            for (auto e = e_neighbors.unit_inventory_.begin(); e != e_neighbors.unit_inventory_.end() && !e_neighbors.unit_inventory_.empty(); e++) {
-                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
-                    c = (*e).second.pos_; // then we may to send in some vision.
-                    //Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, c, e->second.type_.sightRange()); // we check this cloaker has any friendly units nearby.
-                    //if (!friend_loc.unit_inventory_.empty() && friend_loc.detector_count_ == 0) {
-                    call_detector = true;
-                    break;
-                } //some units, DT, Observers, are not cloakable. They are cloaked though. Recall burrow and cloak are different.
-            }
-            if (call_detector) {
-                int dist = 999999;
-                int dist_temp = 0;
-                bool detector_found = false;
-                Unit detector_of_choice;
-                for (auto d : friendly_inventory.unit_inventory_) {
-                    if (d.second.type_ == UnitTypes::Zerg_Overlord &&
-                        d.second.bwapi_unit_ &&
-                        !d.second.bwapi_unit_->isUnderAttack() &&
-                        d.second.current_hp_ > 0.25 * d.second.type_.maxHitPoints()) { // overlords don't have shields.
-                        dist_temp = d.second.bwapi_unit_->getDistance(c);
-                        if (dist_temp < dist) {
-                            dist = dist_temp;
-                            detector_of_choice = d.second.bwapi_unit_;
-                            detector_found = true;
-                        }
-                    }
-                }
-                if (detector_found /*&& spamGuard(detector_of_choice)*/) {
-                    Position detector_pos = detector_of_choice->getPosition();
-                    double theta = atan2(c.y - detector_pos.y, c.x - detector_pos.x);
-                    Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * SightRange(detector_of_choice) * 0.75, c.y + sin(theta) * SightRange(detector_of_choice)) * 0.75;
-                    if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
-                        detector_of_choice->move(closest_loc_to_c_that_gives_vision);
-                        if (_ANALYSIS_MODE) {
-                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice->getPosition(), closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
-                        }
-                    }
-                    else {
-                        detector_of_choice->move(c);
-                        if (_ANALYSIS_MODE) {
-                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice->getPosition(), inventory.screen_position_, c, Colors::Cyan);
-                        }
-                    }
-
-                }
-            }
-        }
-        auto end_detector = std::chrono::high_resolution_clock::now();
-        detector_time += end_detector - start_detector;
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
@@ -1111,6 +1110,7 @@ void CUNYAIModule::onFrame()
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
 
+        detector_time += end_detector - start_detector;
         larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
         scout_time += end_scout - start_scout;

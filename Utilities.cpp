@@ -780,6 +780,25 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
     return return_unit;
 }
 
+//Gets position of closest expo to position. Checks range. Careful about visiblity.
+Position CUNYAIModule::getClosestExpo(const Inventory &inv, const Position &origin, const int &dist = 999999) {
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Position return_pos = Positions::Origin;
+
+    for (auto expo = inv.expo_positions_complete_.begin(); expo != inv.expo_positions_complete_.end() && !inv.expo_positions_complete_.empty(); expo++) {
+        Position expo_pos = Position(*expo);
+        temp_dist = expo_pos.getDistance(origin);
+        if (temp_dist <= min_dist && expo_pos.isValid() ) {
+            min_dist = temp_dist;
+            return_pos = expo_pos;
+        }
+    }
+    
+
+    return return_pos;
+}
+
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
@@ -1096,6 +1115,11 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     if (u_command == UnitCommandTypes::Morph || u_command == UnitCommandTypes::Build) {
         cd_frames = 24;
     }
+
+    if (u_command == UnitCommandTypes::Move) {
+        cd_frames = 5;
+    }
+
     //if (u_command == UnitCommandTypes::Attack_Move) {
     //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     //}
