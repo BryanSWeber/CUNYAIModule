@@ -77,6 +77,8 @@ void Unit_Inventory::updateUnitsControlledByOthers()
             }
         }
 
+        (*e).second.circumference_remaining_ = (*e).second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
+
         if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || e->second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e->second.valid_pos_ = false;
         }
@@ -225,6 +227,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     if (type_ != unit->getType()) {
         Broodwar->drawCircleMap(pos_, 25, Colors::Red, true); // diagnostic for flickering unit.
     }
+
     type_ = unit->getType();
     current_hp_ = unit->getHitPoints() + unit->getShields();
     velocity_x_ = unit->getVelocityX();
@@ -232,6 +235,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     order_ = unit->getOrder();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     stock_value_ = Stored_Unit(type_).stock_value_;
+    circumference_remaining_ = circumference_;
 
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 }
@@ -499,6 +503,8 @@ Stored_Unit::Stored_Unit() = default;
 Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     valid_pos_ = false;
     type_ = unittype;
+    circumference_ = unittype.height() * 2 + unittype.width() * 2;
+    circumference_remaining_ = circumference_;
 
     //Get unit's status. Precalculated, precached.
     int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
@@ -530,6 +536,8 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+    circumference_ = type_.height() * 2 + type_.width() * 2;
+    circumference_remaining_ = circumference_;
 
     //Needed for FAP.
     // FAP::makeUnit()

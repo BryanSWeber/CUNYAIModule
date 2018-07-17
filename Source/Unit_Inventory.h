@@ -79,6 +79,8 @@ struct Stored_Unit {
 
     int velocity_x_;
     int velocity_y_;
+    int circumference_;
+    int circumference_remaining_;
 
     Unit bwapi_unit_;
 

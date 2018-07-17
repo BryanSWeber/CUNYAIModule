@@ -95,10 +95,12 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 };
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
-    Stored_Unit target;
+    bool melee = CUNYAIModule::getProperRange(unit) < 32;
+    int widest_dim = max(u_type.height(), u_type.width());
+    Stored_Unit* target;
     int priority = 0;
     //bool u_flyer = unit->isFlying();
     int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
@@ -118,8 +120,8 @@ void Mobility::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const 
         if (e->second.valid_pos_) {
             UnitType e_type = e->second.type_;
             int e_priority = 0;
-
-            if (CUNYAIModule::Can_Fight(unit, e->second)) { // if we can fight this enemy 
+            bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim);
+            if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround) { // if we can fight this enemy 
                 int dist_to_enemy = unit->getDistance(e->second.pos_);
 
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
@@ -164,41 +166,42 @@ void Mobility::Tactical_Logic(const Unit &unit, const Unit_Inventory &ei, const 
                     target_sentinel = true;
                     priority = e_priority;
                     max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
-                    target = e->second;
+                    target = &e->second;
                 }
                 else if (dist_to_enemy < max_dist_no_priority && target_sentinel == false) {
                     target_sentinel_poor_target_atk = true;
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
-                    target = e->second;
+                    target = &e->second;
                 }
             }
         }
     }
 
-    if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target.pos_)) {
-        if (target.bwapi_unit_ && target.bwapi_unit_->exists()) {
-            if (adjust_lurker_burrow(unit, ui, ei, target.pos_)) {
+    if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_)) {
+        if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
+            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
                 //
             }
             else {
-                unit->attack(target.bwapi_unit_);
-                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target.pos_, inv.screen_position_, color);
+                unit->attack(target->bwapi_unit_);
+                if (melee) target->circumference_remaining_ -= widest_dim;
+                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
         }
-        else if (target.valid_pos_) {
-            if (adjust_lurker_burrow(unit, ui, ei, target.pos_)) {
+        else if (target->valid_pos_) {
+            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
                 //
             }
             else {
-                unit->attack(target.pos_);
-                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target.pos_, inv.screen_position_, color);
+                unit->attack(target->pos_);
+                if (melee) target->circumference_remaining_ -= widest_dim;
+                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
         }
     }
     Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     morphing_unit.updateStoredUnit(unit);
 }
-
 // Basic retreat logic, range = enemy range
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
 
