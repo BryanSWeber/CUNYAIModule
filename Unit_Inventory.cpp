@@ -5,7 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\InventoryManager.h"
 #include "Source\Reservation_Manager.h"
-
+#include "Source\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
 //Unit_Inventory functions.
 //Creates an instance of the unit inventory class.
@@ -453,12 +453,12 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
 
-			Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
-            if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
-                if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
-                    high_ground += u_iter.second.current_stock_value_;
-                }
-            }
+			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
+   //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
+   //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
+   //                 high_ground += u_iter.second.current_stock_value_;
+   //             }
+   //         }
         }
     } 
 
@@ -519,13 +519,32 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     pos_ = unit->getPosition();
     type_ = unit->getType();
     build_type_ = unit->getBuildType();
-    current_hp_ = unit->getHitPoints() + unit->getShields();
+    shields_ = unit->getShields();
+    health_ = unit->getHitPoints();
+    current_hp_ = shields_ + health_;
 	locked_mine_ = nullptr;
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+
+    //Needed for FAP.
+    // FAP::makeUnit()
+    //  .setUnitType(BWAPI::UnitTypes::Terran_Bunker)= type_
+    //  .setPosition({ 0, 0 })= pos_
+        is_flying_ = unit->isFlying();
+        elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
+    //.setScore(5) = stock_value_ // not quite but ok. Unused by FAP anyway.
+    // .setAttackerCount(1) // how full are bunkers and carriers?
+    //.setArmorUpgrades(0)
+    //.setAttackUpgrades(0)
+    //.setShieldUpgrades(0)
+    //.setSpeedUpgrade(false)
+    //.setAttackSpeedUpgrade(false)
+    // .setRangeUpgrade(false)
+        cd_remaining_ = unit->getAirWeaponCooldown();
+        stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
     int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
@@ -537,8 +556,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
     //stock_value_ = stock_value_ / (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
-
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())) ; // Precalculated, precached.
+    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
 
 
@@ -652,4 +670,38 @@ bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
     Stored_Resource* target_mine = this->getMine(ri);
     bool contents_of_long_range_lock_without_visiblity = bwapi_unit_ && target_mine && target_mine->pos_;
     return  contents_of_long_range_lock_without_visiblity && Broodwar->isVisible(TilePosition(target_mine->pos_));
+}
+
+auto Stored_Unit::convertToFAP() {
+    return FAP::makeUnit()
+        .setUnitType(type_)
+        .setPosition(pos_)
+        .setHealth(health_)
+        .setShields(shields_)
+        .setFlying(is_flying_)
+        .setElevation(elevation_)
+        .setScore(current_stock_value_)
+        .setAttackerCount(2)
+        .setArmorUpgrades(0) // ignored for now
+        .setAttackUpgrades(0) // ignored for now
+        .setShieldUpgrades(0) // ignored for now
+        .setSpeedUpgrade(false) // ignored for now
+        .setAttackSpeedUpgrade(false) // ignored for now
+        .setAttackCooldownRemaining(cd_remaining_)
+        .setStimmed(stimmed_)
+        .setRangeUpgrade(false) // ignored for now
+        ;
+}
+
+
+void Unit_Inventory::addToFriendlyFAP() {
+    for (auto u : unit_inventory_) {
+        CUNYAIModule::fap.addUnitPlayer1(u.second.convertToFAP());
+    }
+}
+
+void Unit_Inventory::addToEnemyFAP() {
+    for (auto u : unit_inventory_) {
+        CUNYAIModule::fap.addUnitPlayer2(u.second.convertToFAP());
+    }
 }

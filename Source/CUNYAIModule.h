@@ -7,11 +7,12 @@
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"
+#include "FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
-#define _COBB_DOUGLASS_REVEALED false // The CD function specifically. Requires visualizations.
+#define _RESIGN_MODE false // must be off for proper game close in SC-docker
+#define _ANALYSIS_MODE true // Visualizations
+#define _COBB_DOUGLASS_REVEALED true // The CD function specifically. Requires visualizations.
 #define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 #define _SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
@@ -72,6 +73,7 @@ public:
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
+    static FAP::FastAPproximation fap; // attempting to integrate FAP.
 
     Building_Gene buildorder; //
     Reservation my_reservation; 

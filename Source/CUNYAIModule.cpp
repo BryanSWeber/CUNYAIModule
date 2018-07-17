@@ -8,8 +8,10 @@
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
+#include "FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iostream> 
 #include <fstream> // for file read/writing
+#include <numeric> // std::accumulate
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
 
@@ -26,6 +28,7 @@ Unit_Inventory CUNYAIModule::enemy_inventory;
 Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
 Inventory CUNYAIModule::inventory;
+FAP::FastAPproximation CUNYAIModule::fap;
 
 void CUNYAIModule::onStart()
 {
@@ -166,11 +169,15 @@ void CUNYAIModule::onFrame()
     bool attempted_morph_lurker_this_frame = false;
     bool attempted_morph_guardian_this_frame = false;
 
+    // Clear FAP
+    fap.clear();
+
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
     enemy_inventory.purgeBrokenUnits();
     enemy_inventory.drawAllHitPoints(inventory);
     enemy_inventory.drawAllLocations(inventory);
+    enemy_inventory.addToEnemyFAP();
 
     //Update neutral units
     neutral_inventory.updateUnitsControlledByOthers();
@@ -192,6 +199,11 @@ void CUNYAIModule::onFrame()
     friendly_inventory.drawAllHitPoints(inventory);
     friendly_inventory.drawAllSpamGuards(inventory);
     friendly_inventory.drawAllWorkerTasks(inventory, land_inventory);
+    friendly_inventory.addToFriendlyFAP();
+
+    fap.simulate(); // 96 frames of simulation for us.
+    int friendly_fap_score = std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
+    int enemy_fap_score = std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
@@ -237,7 +249,6 @@ void CUNYAIModule::onFrame()
     inventory.my_portion_of_the_map_ = sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size();
     inventory.updateStartPositions(enemy_inventory);
     inventory.updateScreen_Position();
-
 
     if (t_game == 0) {
         //update local resources
@@ -377,6 +388,7 @@ void CUNYAIModule::onFrame()
 
     inventory.est_enemy_stock_ = (int)enemy_inventory.stock_fighting_total_; // just a raw count of their stuff.
 
+    
     // Display the game status indicators at the top of the screen	
     if (_ANALYSIS_MODE) {
 
@@ -442,8 +454,9 @@ void CUNYAIModule::onFrame()
             Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
         }
 
-        //vision belongs here.
+        Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
 
+        //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_);
         Broodwar->drawTextScreen(375, 30, "Army Stock: %d", (int)exp(inventory.ln_army_stock_)); //
         Broodwar->drawTextScreen(375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio());
@@ -480,28 +493,28 @@ void CUNYAIModule::onFrame()
             }
 
 
-            for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-                for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-                    if ( inventory.map_veins_[i][j] > 175 ) {
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-                        }
-                    }
-                    else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-                        }
-                    }
-                    else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-                        }
-                    }
-                }
-            } // Pretty to look at!
+            //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
+            //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
+            //        if ( inventory.map_veins_[i][j] > 175 ) {
+            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+            //            }
+            //        }
+            //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+            //            }
+            //        }
+            //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+            //            }
+            //        }
+            //    }
+            //} // Pretty to look at!
 
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
@@ -733,7 +746,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                if (e_closest->valid_pos_ /*&& distance_to_foe < search_radius*/) {  // Must have a valid postion on record to attack.
+                if (e_closest->valid_pos_ && distance_to_foe < search_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
