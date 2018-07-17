@@ -10,8 +10,8 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
-#define _COBB_DOUGLASS_REVEALED false // The CD function specifically. Requires visualizations.
+#define _ANALYSIS_MODE true // Visualizations
+#define _COBB_DOUGLASS_REVEALED true // The CD function specifically. Requires visualizations.
 #define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 #define _SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
@@ -109,7 +109,7 @@ public:
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       // Builds the next building you can afford.  Incomplete.
       bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);
-      // Returns a tile that is suitable for building.
+      // Returns a tile that is suitable for building. Cannot use for extractors, they are "too close" to the geyser.
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Inventory & inv, const Unit &exception_unit);

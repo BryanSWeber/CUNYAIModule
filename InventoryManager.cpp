@@ -6,6 +6,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
+#include <set>
 
 using namespace std;
 
@@ -1436,7 +1437,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
                                                  min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
                                                  min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
-                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
+                                                 j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
 
                             if ( long_condition <= 5 * 32 ) {
                                 //residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
@@ -1581,11 +1582,14 @@ void Inventory::getExpoPositions() {
     
     }
 
-
     expo_positions_complete_.insert(expo_positions_complete_.end(), expo_positions_.begin(), expo_positions_.end());
 
-    sort(expo_positions_complete_.begin(), expo_positions_complete_.end());
-    expo_positions_complete_.erase(unique(expo_positions_complete_.begin(), expo_positions_complete_.end()), expo_positions_complete_.end()); // any postion that didn't fit has been mined out now.
+    //From SO, quick conversion into set.
+    set<TilePosition> s;
+    unsigned size = expo_positions_complete_.size();
+    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_complete_[i]);
+    expo_positions_complete_.assign(s.begin(), s.end());
+
 }
 
 void Inventory::getStartPositions() {
