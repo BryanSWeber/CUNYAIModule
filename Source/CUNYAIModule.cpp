@@ -504,16 +504,16 @@ void CUNYAIModule::onFrame()
             //} // Pretty to look at!
 
 
-            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
-            //        if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 /*&& inventory.map_veins_out_from_main_[i][j] <= 1*/ ) { 
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
-            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
+            for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
+                for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
+                    if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 /*&& inventory.map_veins_out_from_main_[i][j] <= 1*/ ) { 
+                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                            Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
+                            //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+                        }
+                    }
+                }
+            } // Pretty to look at!
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_enemy_.size(); ++i) {
             //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_enemy_[i].size(); ++j) {

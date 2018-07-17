@@ -10,7 +10,7 @@ public:
     // Basic retreat logic
     void Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color );
     // Tells the unit to fight. If it can attack both air and ground.
-    void Tactical_Logic( const Unit & unit, const Unit_Inventory & ei, const Unit_Inventory &ui, const Inventory &inv, const Color & color );
+    void Tactical_Logic( const Unit & unit, Unit_Inventory & ei, const Unit_Inventory &ui, const Inventory &inv, const Color & color );
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something.
     void Mobility_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inventory, const bool &army_starved, const bool &potential_fears);
 
