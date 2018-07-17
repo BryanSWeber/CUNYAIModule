@@ -1503,8 +1503,11 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), 500);
         ei_loc.updateUnitInventorySummary();
-        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+        ei_tiny.updateUnitInventorySummary();
+
+        if (ei_loc.stock_fighting_total_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
             stock_current_best = ei_loc.stock_fighting_total_;
             weakest_base = Position(expo);
         }

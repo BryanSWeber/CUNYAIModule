@@ -446,8 +446,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
             }
             else {
                 resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
-                air_fodder += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
-                ground_fodder += !flying_unit * unit_value;
+                air_fodder += flying_unit * unit_value * count_of_unit; // add the value of that type of unit to the flier stock.
+                ground_fodder += !flying_unit * unit_value * count_of_unit;
             
             }
 
