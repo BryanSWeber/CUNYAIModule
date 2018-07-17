@@ -747,7 +747,9 @@ void CUNYAIModule::onFrame()
                 int helpful_e = useful_stocks[1]; // both forget value of psi units.
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
-                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_);
+
+                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_; // fixed division by crossmultiplying.
+
                 if (e_closest->valid_pos_ && distance_to_foe < search_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );

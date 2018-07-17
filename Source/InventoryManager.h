@@ -146,11 +146,12 @@ struct Inventory {
     void Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
     void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
-                                                                                                   // Returns the position of the weakest base.
-
+    // Returns the position of the weakest base.
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
     Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
+    // Returns the Position of a base under attack.
+    Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
 
     // updates the next target expo.
     void Inventory::getExpoPositions();

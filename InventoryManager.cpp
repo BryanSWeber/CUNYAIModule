@@ -1535,6 +1535,27 @@ Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
     return strongest_base;
 }
 
+Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
+{
+    Position attacked_base = Positions::Origin;
+    int current_anticipated_stock_lost = 0;
+    int temp_stock_lost = 0;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ / 2);
+        ei_loc.updateUnitInventorySummary();
+        ui_tiny.updateUnitInventorySummary();
+        temp_stock_lost = ui_tiny.stock_ground_fodder_ + (ei_loc.stock_fighting_total_ - ui_tiny.stock_fighting_total_);
+        if ( temp_stock_lost > current_anticipated_stock_lost ) { // if they have fodder (buildings) and it is weaker, target that place!
+            current_anticipated_stock_lost = temp_stock_lost;
+            attacked_base = Position(expo);
+        }
+    }
+
+    return attacked_base;
+}
+
 void Inventory::getExpoPositions() {
 
     expo_positions_.clear();
@@ -1671,10 +1692,14 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
     else if (frames_since_enemy_base > 24 * 10) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        Position suspected_enemy_base = getWeakestBase(ei);//Positions::Origin;
-                                                           //if (center_building) {
-                                                           //    suspected_enemy_base = CUNYAIModule::getClosestExpo(*this, center_building->pos_, 999999);
-                                                           //}
+        
+        // Defend if you have to.
+        //Position defendable_home_base = getAttackedBase(ei, ui);
+        //if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
+        //    updateMapVeinsOutFromFoe(defendable_home_base);
+        //}
+
+        Position suspected_enemy_base = getWeakestBase(ei);
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
 
