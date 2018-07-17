@@ -5,6 +5,7 @@
 #include "Resource_Inventory.h"
 #include "InventoryManager.h"
 #include "Reservation_Manager.h"
+#include "FAP\include\FAP.hpp"
 
 using namespace std;
 using namespace BWAPI;
@@ -20,7 +21,9 @@ struct Stored_Unit {
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( const Unit &unit );
     Stored_Unit();
-	void updateStoredUnit(const Unit &unit);
+    auto convertToFAP();
+
+    void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
     UnitType type_;
@@ -39,7 +42,14 @@ struct Stored_Unit {
     Position seperation_;
     Position retreat_;
     Position cohesion_;
+    unsigned int health_;
+    unsigned int shields_;
+    unsigned int is_flying_;
+    unsigned int elevation_;
+    unsigned int cd_remaining_;
+    bool stimmed_;
 
+    //Needed commands for workers.
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
@@ -54,7 +64,6 @@ struct Stored_Unit {
     bool isNoLock(); // If the unit has no target. May be broken.
     bool isLongRangeLock(Resource_Inventory & ri); // if the unit cannot see its target.
     bool isMovingLock(Resource_Inventory & ri); // if the unit is moving towards its target not gathering.
-	//void addMine(Stored_Resource mine);
 
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
@@ -104,7 +113,7 @@ struct Unit_Inventory {
 
 	std::map <Unit, Stored_Unit> unit_inventory_;
 
-    // Updates the count of  units.
+    // Updates the count of units.
     void addStored_Unit( const Unit &unit );
     void addStored_Unit( const Stored_Unit &stored_unit );
 
@@ -125,6 +134,9 @@ struct Unit_Inventory {
     void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
 
+    void addToFriendlyFAP(); // adds entire inventory to the friendly side of the FAP army.
+    void addToEnemyFAP(); // adds entire inventory to the friendly side of the FAP army.
+
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
     Position getStrongestLocation() const; //in progress
@@ -135,7 +147,6 @@ struct Unit_Inventory {
     void stopMine(Unit u, Resource_Inventory & ri);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
-
 };
 
 

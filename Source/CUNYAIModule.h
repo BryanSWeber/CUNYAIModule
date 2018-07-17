@@ -7,7 +7,9 @@
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"
+#include "FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
+
 
 #define _RESIGN_MODE true // must be off for proper game close in SC-docker
 #define _ANALYSIS_MODE true // Visualizations
@@ -72,6 +74,7 @@ public:
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
+    static FAP::FastAPproximation fap; // attempting to integrate FAP.
 
     Building_Gene buildorder; //
     Reservation my_reservation; 
