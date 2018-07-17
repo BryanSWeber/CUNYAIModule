@@ -23,6 +23,8 @@ struct Stored_Unit {
     Stored_Unit();
     auto convertToFAP();
 
+    void updateFAPvalue(FAP::FAPUnit fap_unit); //updates a single unit's fap forecast when given the fap unit.
+
     void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
@@ -72,6 +74,7 @@ struct Stored_Unit {
     // evaluates the value of a stock of specific unit, in terms of pythagorian distance of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
+    int future_fap_value_; // only taken from fap.
     bool hasTarget_;
 
     int velocity_x_;
@@ -107,6 +110,7 @@ struct Unit_Inventory {
     int detector_count_;
     int cloaker_count_;
     int resource_depot_count_;
+    int future_fap_stock_;
 
 	std::map <Unit, Stored_Unit> unit_inventory_;
 
@@ -133,6 +137,8 @@ struct Unit_Inventory {
 
     void addToFriendlyFAP(); // adds entire inventory to the friendly side of the FAP army.
     void addToEnemyFAP(); // adds entire inventory to the friendly side of the FAP army.
+    void copyFAPResult(FAP::FAPUnit & fap, Stored_Unit & unit);
+    void pullFromFAP(vector<FAP::FAPUnit> FAPPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

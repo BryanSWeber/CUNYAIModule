@@ -411,6 +411,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int ground_fodder = 0;
     int air_fodder = 0;
     int resource_depots = 0;
+    int future_fap_stock = 0;
 
     vector<UnitType> already_seen_types;
 
@@ -452,7 +453,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
             }
 
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
-
+            future_fap_stock += u_iter.second.future_fap_value_;
 			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
    //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
    //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
@@ -481,6 +482,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
     resource_depot_count_ = resource_depots;
+    future_fap_stock_ = future_fap_stock;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
@@ -680,7 +682,7 @@ auto Stored_Unit::convertToFAP() {
         .setShields(shields_)
         .setFlying(is_flying_)
         .setElevation(elevation_)
-        .setScore(current_stock_value_)
+        .setScore(stock_value_)
         .setAttackerCount(2)
         .setArmorUpgrades(0) // ignored for now
         .setAttackUpgrades(0) // ignored for now
@@ -691,6 +693,11 @@ auto Stored_Unit::convertToFAP() {
         .setStimmed(stimmed_)
         .setRangeUpgrade(false) // ignored for now
         ;
+}
+
+void Stored_Unit::updateFAPvalue(FAP::FAPUnit fap_unit)
+{
+    future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
 }
 
 
@@ -705,3 +712,29 @@ void Unit_Inventory::addToEnemyFAP() {
         CUNYAIModule::fap.addUnitPlayer2(u.second.convertToFAP());
     }
 }
+
+//This call seems very inelgant. Check if it can be made better.
+void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> FAPunits)
+{
+    //std::transform(unit_inventory_.begin(), unit_inventory_.end(), FAPunits.begin(), unit_inventory_.begin(), [](std::pair<BWAPI::Unit, Stored_Unit> bunch, FAP::FAPUnit f_unit) { bunch.second.updateFAPvalue(f_unit); return bunch; });
+    size_t i = 0;
+    for (auto u : unit_inventory_) {
+        u.second.updateFAPvalue(FAPunits[i]); //depends on the arrays being parallel.
+        i++;
+    }
+}
+
+////This call seems very inelgant. Check if it can be made better.
+//void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> FAPunits)
+//{
+//    vector<Stored_Unit> s;
+//    for (auto u : unit_inventory_) {
+//        s.push_back(u.second);
+//    }
+//
+//    std::transform(s.begin(), s.end(), FAPunits.begin(), s.begin(), [](Stored_Unit s_u, FAP::FAPUnit fap_unit) {s_u.future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields)); });
+//
+//    for (auto iter_s : s) {
+//        unit_inventory_.at(iter_s.bwapi_unit_).future_fap_value_ = iter_s.future_fap_value_;
+//    }
+//}

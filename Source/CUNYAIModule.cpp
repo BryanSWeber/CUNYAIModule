@@ -204,6 +204,8 @@ void CUNYAIModule::onFrame()
     fap.simulate(); // 96 frames of simulation for us.
     int friendly_fap_score = std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
     int enemy_fap_score = std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
+    friendly_inventory.pullFromFAP(*fap.getState().first);
+    enemy_inventory.pullFromFAP(*fap.getState().second);
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
@@ -745,7 +747,7 @@ void CUNYAIModule::onFrame()
                 int helpful_e = useful_stocks[1]; // both forget value of psi units.
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
-
+                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_);
                 if (e_closest->valid_pos_ && distance_to_foe < search_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
@@ -754,32 +756,34 @@ void CUNYAIModule::onFrame()
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     bool grim_distance_trigger = (distance_to_foe < 32 + (u_type == UnitTypes::Zerg_Scourge || u_type == UnitTypes::Zerg_Zergling) * chargable_distance_enemy && getProperRange(u) < 32);
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || threatening_stocks == 0) && (
-                            helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
+                        (targetable_stocks > 0 || threatening_stocks == 0 || !we_take_a_fap_beating) && (
+                            //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             massive_army || army_derivative == 0 ||
                             inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
-                                                                                                 //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
-                                                                                                 //!army_starved || // fight your army is appropriately sized.
+                            //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
+                            //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
-                            (Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
+                            //(Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                            threatening_stocks == 0 ||
+                            //threatening_stocks == 0 ||
                             //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
+                            !we_take_a_fap_beating ||
                             grim_distance_trigger);// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 
 
                     bool force_retreat =
-                        (targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
-                        (u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
-                        (u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
-                        (e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
-                                                                                              //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
-                        (!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
+                        we_take_a_fap_beating ||
+                        //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
+                        //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
+                        //(u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
+                        //(e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
+                        //                                                                      //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
+                        //(!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-                        (u_type == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
+                        //(u_type == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                         (u_type == UnitTypes::Zerg_Drone /*&& (!army_starved || u->getHitPoints() < 0.50 *  u_type.maxHitPoints()*/); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
