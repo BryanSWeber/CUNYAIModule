@@ -449,19 +449,19 @@ void Unit_Inventory::updateUnitInventorySummary() {
             }
             else {
                 resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
-                air_fodder += flying_unit * unit_value * count_of_unit; // add the value of that type of unit to the flier stock.
-                ground_fodder += !flying_unit * unit_value * count_of_unit;
+                air_fodder += flying_unit * unit_value ; // add the value of that type of unit to the flier stock.
+                ground_fodder += !flying_unit * unit_value ;
             
             }
 
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
 
-			Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
-            if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
-                if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
-                    high_ground += u_iter.second.current_stock_value_;
-                }
-            }
+			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
+   //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
+   //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
+   //                 high_ground += u_iter.second.current_stock_value_;
+   //             }
+   //         }
         }
     } 
 
