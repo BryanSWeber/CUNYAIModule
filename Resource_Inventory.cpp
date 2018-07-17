@@ -115,7 +115,6 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                     Stored_Unit eu = Stored_Unit(r->first);
                     if (ei.unit_inventory_.insert({ r->first, eu }).second) {
                         Broodwar->sendText("Huh, a geyser IS an enemy. Even the map is against me now...");
-                        inv.unwalkable_needs_updating = true;
                     }
                 }
             } else {

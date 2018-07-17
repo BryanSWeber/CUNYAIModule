@@ -71,10 +71,10 @@ struct Inventory {
     int workers_clearing_;
     int workers_distance_mining_;
 
-    bool unwalkable_needs_updating = false;
-    bool veins_need_updating = false;
-    bool veins_out_need_updating = false;
-    bool veins_in_need_updating = false;
+    int frames_since_unwalkable = 0;
+    int frames_since_map_veins = 0;
+    int frames_since_home_base = 0;
+    int frames_since_enemy_base = 0;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);
@@ -149,6 +149,8 @@ struct Inventory {
     // Returns the position of the weakest base.
 
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
+    // Returns the Position of the strongest base.
+    Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
 
 	// updates the next target expo.
 	void Inventory::getExpoPositions();
