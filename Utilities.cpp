@@ -788,7 +788,7 @@ Position CUNYAIModule::getClosestExpo(const Inventory &inv, const Position &orig
 
     for (auto expo = inv.expo_positions_complete_.begin(); expo != inv.expo_positions_complete_.end() && !inv.expo_positions_complete_.empty(); expo++) {
         Position expo_pos = Position(*expo);
-        temp_dist = expo_pos.getDistance(origin);
+        temp_dist = inv.getDifferentialDistanceOutFromHome(expo_pos, return_pos);
         if (temp_dist <= min_dist && expo_pos.isValid() ) {
             min_dist = temp_dist;
             return_pos = expo_pos;
@@ -1764,22 +1764,33 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, c
     bool enemy_has_not_penetrated = true;
     bool can_still_save = true;
     bool have_to_save = false;
+    bool it_is_home_ = true;
 
-    if ( e_loc.stock_fighting_total_ > 0 && e_closest ) {
-        radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
-        radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
-        enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = inv.min_fields_ <= 12 || inv.getRadialDistanceOutFromHome(pos) < 20000 || inv.hatches_ == 1;
+
+    if (e_loc.stock_fighting_total_ > 0 && e_closest) {
+        if (e_loc.stock_fighting_total_ > 0 && e_closest) {
+            radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
+            radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
+            radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
+            radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
+            enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
+            enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
+            it_is_home_ = inv.home_base_.getDistance(pos) < 96;
+            can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
+            can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
+            have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 20000 || inv.hatches_ == 1;
+        }
     }
 
-    return enemy_has_not_penetrated && (can_still_save || have_to_save) ;
+
+    return it_is_home_ || (enemy_has_not_penetrated && (can_still_save || have_to_save));
 }
+
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
 
     bool desperate_for_minerals = inv.min_fields_ < 6;
-    bool safe_mine = checkOccupiedArea(ui, pos,250);
+    bool safe_mine = checkOccupiedArea(ui, pos, 250);
     return  safe_mine || desperate_for_minerals;
 }
 
