@@ -1245,12 +1245,10 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         ru->max_stock_value_ = ru->current_stock_value_; // its value is what it has now, since it was somehow missing at game start. Must be passed by refrence or it will be forgotten.
         land_inventory.addStored_Resource(*ru);
         //inventory.updateBaseLoc(land_inventory); // this line breaks the expos? How? Is this even plausible?
-        inventory.unwalkable_needs_updating = true;
     }
 
     //update maps, requires up-to date enemy inventories.
     if ( unit->getType().isBuilding() ) {
-        inventory.unwalkable_needs_updating = true;
         //if (unit->getPlayer() == Broodwar->enemy()) {
         //    //update maps, requires up-to date enemy inventories.
         //    inventory.veins_out_need_updating = true;
@@ -1399,7 +1397,6 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if (unit->getType().isBuilding()) {
-        inventory.unwalkable_needs_updating = true;
     }
 
     if (unit->getPlayer() == Broodwar->self()) {
@@ -1448,7 +1445,6 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        inventory.unwalkable_needs_updating = true;
         my_reservation.removeReserveSystem( unit->getType() );
     }
 

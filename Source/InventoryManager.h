@@ -21,7 +21,7 @@ using namespace BWAPI;
 
 struct Inventory {
     Inventory();
-    Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri );
+    Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
 
     Position screen_position_;
     double ln_army_stock_;
@@ -43,8 +43,8 @@ struct Inventory {
     int map_x;
     int map_y;
 
-	vector<Position> start_positions_;
-	vector<TilePosition> expo_positions_;
+    vector<Position> start_positions_;
+    vector<TilePosition> expo_positions_;
     vector<TilePosition> expo_positions_complete_;
     Position enemy_base_;
     Position home_base_;
@@ -52,7 +52,7 @@ struct Inventory {
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
-    vector< vector<bool> > buildable_positions_ ; // buildable = 1, otherwise 0.
+    vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_with_buldings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
@@ -66,22 +66,22 @@ struct Inventory {
     int est_enemy_stock_;
 
     TilePosition next_expo_;
-	bool cleared_all_start_positions_;
+    bool cleared_all_start_positions_;
     bool checked_all_expo_positions_ = false;
     int workers_clearing_;
     int workers_distance_mining_;
 
-    bool unwalkable_needs_updating = false;
-    bool veins_need_updating = false;
-    bool veins_out_need_updating = false;
-    bool veins_in_need_updating = false;
+    int frames_since_unwalkable = 0;
+    int frames_since_map_veins = 0;
+    int frames_since_home_base = 0;
+    int frames_since_enemy_base = 0;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);
     // Updates the (safe) log of net investment in technology.
-    void updateLn_Tech_Stock( const Unit_Inventory &ui );
+    void updateLn_Tech_Stock(const Unit_Inventory &ui);
     // Updates the (safe) log of our army stock.
-    void updateLn_Army_Stock( const Unit_Inventory &ui );
+    void updateLn_Army_Stock(const Unit_Inventory &ui);
     // Updates the (safe) log of our worker stock.
     void updateLn_Worker_Stock();
 
@@ -123,7 +123,7 @@ struct Inventory {
     // Marks and smooths the edges of the map. Dangerous- In progress.
     void Inventory::updateSmoothPos();
     // Marks the main arteries of the map. Requires updateunwalkablewithbuildings.
-    void Inventory::updateMapVeins(); 
+    void Inventory::updateMapVeins();
 
 
     // Updates the visible map arteries. Only checks buildings.
@@ -132,40 +132,42 @@ struct Inventory {
     // Updates the chokes on the map.
     //void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
-    void Inventory::updateMapVeinsOutFromMain( const Position center );
+    void Inventory::updateMapVeinsOutFromMain(const Position center);
     // Updates veins going out of the enemy base for attacking ease.
-    void Inventory::updateMapVeinsOutFromFoe( const Position center );
+    void Inventory::updateMapVeinsOutFromFoe(const Position center);
     // Gets distance using
-    int Inventory::getDifferentialDistanceOutFromEnemy( const Position A, const Position B ) const;
-    int Inventory::getRadialDistanceOutFromEnemy(const Position A ) const;
-    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B ) const;
-    int Inventory::getRadialDistanceOutFromHome(const Position A ) const;
+    int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
+    int Inventory::getRadialDistanceOutFromEnemy(const Position A) const;
+    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
+    int Inventory::getRadialDistanceOutFromHome(const Position A) const;
     bool Inventory::checkViableGroundPath(const Position A, const Position B) const;
     // Marks and scores base locations.
-    void Inventory::updateBaseLoc( const Resource_Inventory &ri );
-    void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
+    void Inventory::updateBaseLoc(const Resource_Inventory &ri);
+    void Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
     void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
-    // Returns the position of the weakest base.
+                                                                                                   // Returns the position of the weakest base.
 
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
+    // Returns the Position of the strongest base.
+    Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
 
-	// updates the next target expo.
-	void Inventory::getExpoPositions();
-	// Changes the next expo to X:
-	void Inventory::setNextExpo(const TilePosition tp);
+    // updates the next target expo.
+    void Inventory::getExpoPositions();
+    // Changes the next expo to X:
+    void Inventory::setNextExpo(const TilePosition tp);
 
     //Visualizations
     void Inventory::drawExpoPositions() const;
     void Inventory::drawBasePositions() const;
 
-	// Adds start positions to inventory object.
-	void Inventory::getStartPositions();
-	// Updates map positions and removes all visible ones;
-	void Inventory::updateStartPositions(const Unit_Inventory &ei);
+    // Adds start positions to inventory object.
+    void Inventory::getStartPositions();
+    // Updates map positions and removes all visible ones;
+    void Inventory::updateStartPositions(const Unit_Inventory &ei);
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateEnemyBasePosition(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
-}; 
+};

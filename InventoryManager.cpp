@@ -1503,20 +1503,36 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), 500);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_/2);
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
-        if (ei_loc.stock_fighting_total_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+        if (ei_loc.stock_fighting_total_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
             stock_current_best = ei_loc.stock_fighting_total_;
             weakest_base = Position(expo);
         }
     }
 
-    if (weakest_base == Positions::Origin) {
-        weakest_base = start_positions_[1];
-    }
-
     return weakest_base;
+}
+
+Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
+{
+    Position strongest_base = Positions::Origin;
+    int stock_current_best = 0;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ / 2);
+        ei_loc.updateUnitInventorySummary();
+        ei_tiny.updateUnitInventorySummary();
+
+        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+            stock_current_best = ei_loc.stock_fighting_total_;
+            strongest_base = Position(expo);
+        }
+    }
+    
+    return strongest_base;
 }
 
 void Inventory::getExpoPositions() {
@@ -1619,41 +1635,46 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    bool waited_a_second = Broodwar->getFrameCount() % (rand() % 240 + 1) == 0; // technically more. Randomized between 1 and 240 frames
+    int frames_this_cycle = Broodwar->getFrameCount() % (24 * 4); // technically more. 
+
+                                                                  // every frame this is incremented.
+    frames_since_enemy_base++;
+    frames_since_home_base++;
+    frames_since_map_veins++;
+    frames_since_unwalkable++;
 
     //every 10 sec check if we're sitting at our destination.
-    if (Broodwar->isVisible(TilePosition(enemy_base_)) && Broodwar->getFrameCount() % (24 * 10) == 0) { 
-        unwalkable_needs_updating = true;
-    }
+    //if (Broodwar->isVisible(TilePosition(enemy_base_)) && Broodwar->getFrameCount() % (24 * 5) == 0) { 
+    //    fram = true;
+    //}
+    if (unit_calculation_frame) return;
 
     //If we need updating (from building destruction or any other source) - begin the cautious chain of potential updates.
-    if (unwalkable_needs_updating && !unit_calculation_frame && waited_a_second) {
+    if (frames_since_unwalkable > 24 * 30) {
 
         getExpoPositions();
-        //updateLiveUnwalkable(ui, ei, ri, ni);
         updateUnwalkableWithBuildings(ui, ei, ri, ni);
-        unwalkable_needs_updating = false;
-        veins_need_updating = true;
+        frames_since_unwalkable = 0;
 
     }
-    else if (veins_need_updating && !unit_calculation_frame && waited_a_second) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
+    else if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
 
         updateMapVeins();
-        veins_need_updating = false;
-        veins_out_need_updating = true;
+        frames_since_map_veins = 0;
+
 
     }
-    else if (veins_out_need_updating && !unit_calculation_frame && waited_a_second) {
+    else if (frames_since_enemy_base > 24 * 10) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         Position suspected_enemy_base = getWeakestBase(ei);//Positions::Origin;
-        //if (center_building) {
-        //    suspected_enemy_base = CUNYAIModule::getClosestExpo(*this, center_building->pos_, 999999);
-        //}
+                                                           //if (center_building) {
+                                                           //    suspected_enemy_base = CUNYAIModule::getClosestExpo(*this, center_building->pos_, 999999);
+                                                           //}
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
 
@@ -1679,7 +1700,7 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
             while (Broodwar->isVisible(TilePosition(enemy_base_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) {
                 random_index = rand() % expo_positions_.size();
                 if (Broodwar->isVisible(expo_positions_[random_index])) {
-                    expo_positions_.erase(expo_positions_.begin()+random_index);
+                    expo_positions_.erase(expo_positions_.begin() + random_index);
                 }
             }
 
@@ -1690,18 +1711,15 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
                 checked_all_expo_positions_ = true;
             }
         }
+        frames_since_enemy_base = 0;
 
-        veins_out_need_updating = false;
-        veins_in_need_updating = true;
     }
-    else if (veins_in_need_updating && !unit_calculation_frame && waited_a_second) {
+    else if (frames_since_home_base > 24 * 30) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         Position suspected_friendly_base = Positions::Origin;
 
-        //if (center_building) {
-            suspected_friendly_base = CUNYAIModule::getClosestExpo(*this, ui.getMeanBuildingLocation(), 999999);
-        //}
+        suspected_friendly_base = getWeakestBase(ui);
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base == enemy_base_ && suspected_friendly_base != Position(0, 0)) {
 
@@ -1709,11 +1727,11 @@ void Inventory::updateEnemyBasePosition( Unit_Inventory &ui, Unit_Inventory &ei,
         else if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
             updateMapVeinsOutFromMain(suspected_friendly_base);
         }
-
-        veins_in_need_updating = false;
+        frames_since_home_base = 0;
     }
 
 }
+
 
 void Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
