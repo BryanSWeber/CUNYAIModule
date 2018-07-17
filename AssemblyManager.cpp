@@ -183,8 +183,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(land_inventory, UnitTypes::Resource_Vespene_Geyser, inventory, unit_pos);
             if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
-                //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);
-                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5) ;
+                //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
+                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if ( BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;
@@ -552,6 +552,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     return buildings_started;
 };
 
+// Cannot use for extractors, they are "too close" to the geyser.
 TilePosition CUNYAIModule::getBuildablePosition( const TilePosition target_pos, const UnitType build_type, const int tile_grid_size ) {
 
     TilePosition canidate_return_position = TilePosition (0,0);

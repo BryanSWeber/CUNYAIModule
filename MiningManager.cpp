@@ -28,7 +28,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
-                bool expansion_is_home = Position(p) == inv.home_base_;
+                bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 96;
                 if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );

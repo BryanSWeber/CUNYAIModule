@@ -6,6 +6,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
+#include <set>
 
 using namespace std;
 
@@ -1502,8 +1503,10 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), 500);
         ei_loc.updateUnitInventorySummary();
-        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+        ei_tiny.updateUnitInventorySummary();
+        if (ei_loc.stock_fighting_total_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
             stock_current_best = ei_loc.stock_fighting_total_;
             weakest_base = Position(expo);
         }
@@ -1582,10 +1585,11 @@ void Inventory::getExpoPositions() {
     }
 
 
-    expo_positions_complete_.insert(expo_positions_complete_.end(), expo_positions_.begin(), expo_positions_.end());
-
-    sort(expo_positions_complete_.begin(), expo_positions_complete_.end());
-    expo_positions_complete_.erase(unique(expo_positions_complete_.begin(), expo_positions_complete_.end()), expo_positions_complete_.end()); // any postion that didn't fit has been mined out now.
+    //From SO, quick conversion into set.
+    set<TilePosition> s;
+    unsigned size = expo_positions_complete_.size();
+    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_complete_[i]);
+    expo_positions_complete_.assign(s.begin(), s.end());
 }
 
 void Inventory::getStartPositions() {
