@@ -6,6 +6,7 @@
 #include "Source\InventoryManager.h"
 #include "Source\Reservation_Manager.h"
 #include "Source\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include <random> // C++ base random is low quality.
 
 //Unit_Inventory functions.
 //Creates an instance of the unit inventory class.
@@ -503,8 +504,17 @@ Stored_Unit::Stored_Unit() = default;
 Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     valid_pos_ = false;
     type_ = unittype;
-    circumference_ = unittype.height() * 2 + unittype.width() * 2;
+    build_type_ = UnitTypes::None;
+    shields_ = unittype.maxShields();
+    health_ = unittype.maxHitPoints();
+    current_hp_ = shields_ + health_;
+    locked_mine_ = nullptr;
+    circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
+    is_flying_ = unittype.isFlyer();
+    elevation_ = 0; //inaccurate and will need to be fixed.
+    cd_remaining_ = 0;
+    stimmed_ = false;
 
     //Get unit's status. Precalculated, precached.
     int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
@@ -703,6 +713,31 @@ auto Stored_Unit::convertToFAP() {
         ;
 }
 
+auto Stored_Unit::convertToRandomFAP() {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_);    // default values for output.
+    int rand_x = dis(generator);
+    int rand_y = dis(generator);
+    return FAP::makeUnit()
+        .setUnitType(type_)
+        .setPosition(Position(rand_x, rand_y))
+        .setHealth(health_)
+        .setShields(shields_)
+        .setFlying(is_flying_)
+        .setElevation(elevation_)
+        .setScore(stock_value_)
+        .setAttackerCount(2)
+        .setArmorUpgrades(0) // ignored for now
+        .setAttackUpgrades(0) // ignored for now
+        .setShieldUpgrades(0) // ignored for now
+        .setSpeedUpgrade(false) // ignored for now
+        .setAttackSpeedUpgrade(false) // ignored for now
+        .setAttackCooldownRemaining(cd_remaining_)
+        .setStimmed(stimmed_)
+        .setRangeUpgrade(false) // ignored for now
+        ;
+}
+
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
@@ -721,14 +756,31 @@ void Unit_Inventory::addToEnemyFAP() {
     }
 }
 
+void Unit_Inventory::addToFriendlyBuildFAP() {
+    for (auto u : unit_inventory_) {
+        CUNYAIModule::buildfap.addUnitPlayer1(u.second.convertToRandomFAP());
+    }
+}
+
+void Unit_Inventory::addToEnemyBuildFAP() {
+    for (auto u : unit_inventory_) {
+        CUNYAIModule::buildfap.addUnitPlayer2(u.second.convertToRandomFAP());
+    }
+}
+
 //This call seems very inelgant. Check if it can be made better.
-void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> FAPunits)
+void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> & FAPunits)
 {
-    //std::transform(unit_inventory_.begin(), unit_inventory_.end(), FAPunits.begin(), unit_inventory_.begin(), [](std::pair<BWAPI::Unit, Stored_Unit> bunch, FAP::FAPUnit f_unit) { bunch.second.updateFAPvalue(f_unit); return bunch; });
+    //std::transform(unit_inventory_.begin(), unit_inventory_.end(), FAPunits.begin(), unit_inventory_.begin(), [](std::pair<BWAPI::Unit, Stored_Unit> &bunch, const FAP::FAPUnit &f_unit) { bunch.second.updateFAPvalue(f_unit); return bunch; });
     size_t i = 0;
     for (auto u : unit_inventory_) {
-        u.second.updateFAPvalue(FAPunits[i]); //depends on the arrays being parallel.
-        i++;
+        if (u.second.type_ == FAPunits[i].unitType) {
+            u.second.updateFAPvalue(FAPunits[i]); //depends on the arrays being parallel. They are not. This is a hackney solution until Hannes updates the feature, which appears to be... nearly immediately.
+            i++;
+        }
+        else {
+            u.second.future_fap_value_ = 0;
+        }
     }
 }
 

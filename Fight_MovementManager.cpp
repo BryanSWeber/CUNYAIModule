@@ -275,7 +275,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_I
     bool running_from_melee = 64 > CUNYAIModule::getProperRange(e_unit.bwapi_unit_);
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance ;
 
-    if (retreat_spot && !unit->isBurrowed() && clear_walkable && (safe_walkable || running_from_melee) && !scourge_retreating) {
+    if (retreat_spot && !unit->isBurrowed() && clear_walkable /*&& (safe_walkable || running_from_melee)*/ && !scourge_retreating) {
         unit->move(retreat_spot); //run away.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
@@ -371,7 +371,7 @@ void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
                 centralize_y < map_dim.y &&
                 centralize_x > 0 &&
                 centralize_y > 0 &&
-                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] || inventory.map_veins_[centralize_x][centralize_y] > 40))
+                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] || inventory.map_veins_[centralize_x][centralize_y] > 20))
             {
                 double theta = atan2(y, x);
                 temp_centralization_dx_ += cos(theta);

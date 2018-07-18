@@ -21,7 +21,8 @@ struct Stored_Unit {
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( const Unit &unit );
     Stored_Unit();
-    auto convertToFAP();
+    auto convertToFAP(); // puts stored unit into the fap type.
+    auto convertToRandomFAP(); // puts the stored unit into the fap type... at a random subsection of the map.
 
     void updateFAPvalue(FAP::FAPUnit fap_unit); //updates a single unit's fap forecast when given the fap unit.
 
@@ -139,8 +140,10 @@ struct Unit_Inventory {
 
     void addToFriendlyFAP(); // adds entire inventory to the friendly side of the FAP army.
     void addToEnemyFAP(); // adds entire inventory to the friendly side of the FAP army.
-    void copyFAPResult(FAP::FAPUnit & fap, Stored_Unit & unit);
-    void pullFromFAP(vector<FAP::FAPUnit> FAPPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+
+    void addToFriendlyBuildFAP(); // adds to the building combat simulator.
+    void addToEnemyBuildFAP(); // adds to the building combat simulator.
+    void pullFromFAP(vector<FAP::FAPUnit> &FAPPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

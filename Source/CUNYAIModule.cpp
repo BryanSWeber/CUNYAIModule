@@ -29,6 +29,7 @@ Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
 Inventory CUNYAIModule::inventory;
 FAP::FastAPproximation CUNYAIModule::fap;
+FAP::FastAPproximation CUNYAIModule::buildfap;
 
 void CUNYAIModule::onStart()
 {
@@ -171,6 +172,7 @@ void CUNYAIModule::onFrame()
 
     // Clear FAP
     fap.clear();
+    buildfap.clear();
 
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
@@ -178,6 +180,7 @@ void CUNYAIModule::onFrame()
     enemy_inventory.drawAllHitPoints(inventory);
     enemy_inventory.drawAllLocations(inventory);
     enemy_inventory.addToEnemyFAP();
+    enemy_inventory.addToEnemyBuildFAP();
 
     //Update neutral units
     neutral_inventory.updateUnitsControlledByOthers();
@@ -200,12 +203,15 @@ void CUNYAIModule::onFrame()
     friendly_inventory.drawAllSpamGuards(inventory);
     friendly_inventory.drawAllWorkerTasks(inventory, land_inventory);
     friendly_inventory.addToFriendlyFAP();
+    friendly_inventory.addToFriendlyBuildFAP();
 
+    // Let us estimate FAP values.
     fap.simulate(); // 96 frames of simulation for us.
     int friendly_fap_score = std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
     int enemy_fap_score = std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
     friendly_inventory.pullFromFAP(*fap.getState().first);
     enemy_inventory.pullFromFAP(*fap.getState().second);
+
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);

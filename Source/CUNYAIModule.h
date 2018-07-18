@@ -73,7 +73,8 @@ public:
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
-    static FAP::FastAPproximation fap; // attempting to integrate FAP.
+    static FAP::FastAPproximation fap; // integrating FAP into combat.
+    static FAP::FastAPproximation buildfap; // attempting to integrate FAP into building decisions.
 
     Building_Gene buildorder; //
     Reservation my_reservation; 
@@ -109,12 +110,15 @@ public:
       bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
+      bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, Unit_Inventory & ui, const Unit_Inventory & ei); // attempts to do so via a series of FAP simulations.
+
       // Builds the next building you can afford.  Incomplete.
       bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);
       // Returns a tile that is suitable for building.
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Inventory & inv, const Unit &exception_unit);
+
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:

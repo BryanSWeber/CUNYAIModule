@@ -1694,10 +1694,12 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         
         // Defend if you have to.
-        //Position defendable_home_base = getAttackedBase(ei, ui);
-        //if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
-        //    updateMapVeinsOutFromFoe(defendable_home_base);
-        //}
+        Position defendable_home_base = getAttackedBase(ei, ui);
+        if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
+            updateMapVeinsOutFromFoe(defendable_home_base);
+            frames_since_enemy_base = 0;
+            return;
+        }
 
         Position suspected_enemy_base = getWeakestBase(ei);
 
