@@ -592,7 +592,7 @@ void CUNYAIModule::clearBuildingObstuctions(const Unit_Inventory &ui, Inventory 
     }
 }
 
-bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, Unit_Inventory &ui, const Unit_Inventory &ei) {
+bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei) { 
 
     //Am I sending this command to a larva or a hydra?
     UnitType u_type = larva->getType();
@@ -601,6 +601,7 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, Un
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
     bool wasting_larva_soon = true;
+    int best_sim_score = INT_MIN;
 
     if (is_larva && larva->getHatchery()) {
         wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
@@ -616,45 +617,48 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, Un
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
+    auto ei_copy = ei; // passing by value will be insufficient here since the functions modify by reference.
+    ei_copy.addToEnemyBuildFAP();
     auto buildfap_stored = buildfap; // store this for replacements
-    auto friendly_inventory_clone = ui;
-    auto enemy_inventory_clone = ei;
-    enemy_inventory_clone.addToEnemyBuildFAP();
 
-    vector<pair<UnitType, int>> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 } };
+    map<UnitType, int> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN } };
+
     if ( is_larva ) {
         for (auto potential_type : larva_combat_types) {
             if (larva->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
                 Stored_Unit su = Stored_Unit(potential_type.first);
                 //buildfap.addUnitPlayer1(su.convertToRandomFAP());  // can't add directly for some reason. Auto type?
-                friendly_inventory_clone.addStored_Unit(su);
-                if (potential_type.first.isTwoUnitsInOneEgg()) {
-                    friendly_inventory_clone.addStored_Unit(su);
+                auto ui_copy = ui;
+                int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffortPurchase(potential_type.first), Count_Units(UnitTypes::Zerg_Larva, inv));
+                for (auto i = 1; i <= times_we_can_make_purchase; i++) {
+                    ui_copy.addStored_Unit(su);
+                    if (potential_type.first.isTwoUnitsInOneEgg()) ui_copy.addStored_Unit(su);
                 }
-                friendly_inventory_clone.addToFriendlyBuildFAP();
+
+                ui_copy.addToFriendlyBuildFAP();
                 buildfap.simulate(); // 96 frames of simulation for us.
-                friendly_inventory_clone.pullFromFAP(*buildfap.getState().first);
-                enemy_inventory_clone.pullFromFAP(*buildfap.getState().second);
-                potential_type.second = friendly_inventory_clone.future_fap_stock_ - enemy_inventory_clone.future_fap_stock_;
-                Broodwar->sendText("Best_sim_score is: %d", potential_type.second);
+                ui_copy.pullFromFAP(*buildfap.getState().first);
+                ei_copy.pullFromFAP(*buildfap.getState().second);
+                larva_combat_types.find(potential_type.first)->second = ui.future_fap_stock_ - ei.future_fap_stock_;
+                //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+                buildfap = buildfap_stored;
             }
-            buildfap = buildfap_stored;
         }
     }
 
-    int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
     for (auto potential_type : larva_combat_types) {
         if (potential_type.second > best_sim_score) {
             best_sim_score = potential_type.second;
             build_type = potential_type.first;
+            //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
         }
     }
 
-    if (is_larva && !is_building) is_building = Check_N_Grow(build_type, larva, false); // catchall ground units, in case you have a BO that needs to be done.
-
-    Broodwar->sendText("Best_sim_score is: %d", best_sim_score);
-
+    if (is_larva && !is_building) is_building = Check_N_Grow(build_type, larva, true); // catchall ground units, in case you have a BO that needs to be done.
+    if (is_building) {
+        Broodwar->sendText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
+    }
     //if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, false); 
     //if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, false); 
 

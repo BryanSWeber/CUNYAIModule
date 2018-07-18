@@ -30,6 +30,7 @@ struct Reservation {
     bool Reservation::checkExcessIsGreaterThan(const TechType & type) const;
 
     bool Reservation::checkAffordablePurchase( const UnitType type );
+    int Reservation::countTimesWeCanAffortPurchase(const UnitType type);
     bool Reservation::checkAffordablePurchase( const TechType type );
     bool Reservation::checkAffordablePurchase( const UpgradeType type );
 

@@ -1547,7 +1547,7 @@ Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Invent
         ei_loc.updateUnitInventorySummary();
         ui_tiny.updateUnitInventorySummary();
         temp_stock_lost = ui_tiny.stock_ground_fodder_ + (ei_loc.stock_fighting_total_ - ui_tiny.stock_fighting_total_);
-        if ( temp_stock_lost > current_anticipated_stock_lost ) { // if they have fodder (buildings) and it is weaker, target that place!
+        if ( temp_stock_lost > current_anticipated_stock_lost && ui_tiny.stock_ground_fodder_ > 0 && ei_loc.stock_fighting_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
             current_anticipated_stock_lost = temp_stock_lost;
             attacked_base = Position(expo);
         }

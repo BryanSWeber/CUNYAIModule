@@ -75,6 +75,18 @@ bool Reservation::checkAffordablePurchase( const UnitType type ) { // make a tem
     return affordable && open_reservation;
 }
 
+int Reservation::countTimesWeCanAffortPurchase(const UnitType type) {
+    bool affordable = true;
+    int i = 0;
+    bool open_reservation = reservation_map_.empty() || reservation_map_.find(type) == reservation_map_.end();
+
+    while (affordable) {
+        affordable = Broodwar->self()->minerals() - i * type.mineralPrice() >= min_reserve_ && Broodwar->self()->gas() - i * type.gasPrice() >= gas_reserve_;
+        if(affordable) i++;
+    }
+    return affordable && open_reservation;
+}
+
 bool Reservation::checkAffordablePurchase( const TechType type ) {
     return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
 }
