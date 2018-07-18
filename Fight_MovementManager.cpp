@@ -42,12 +42,12 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         setSeperation(unit, pos, neighbors);
         setCentralize(pos, inv);
 
-        if (potential_fears) {
-            setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
-        }
-        else {
+        //if (potential_fears) {
+        //    setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
+        //}
+        //else {
             setCohesion(unit, pos, local_neighborhood);
-        }
+        //}
     }
     else { //If you are an overlord, follow an abbreviated version of this.
 
@@ -371,7 +371,7 @@ void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
                 centralize_y < map_dim.y &&
                 centralize_x > 0 &&
                 centralize_y > 0 &&
-                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] || inventory.map_veins_[centralize_x][centralize_y] > 20))
+                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
             {
                 double theta = atan2(y, x);
                 temp_centralization_dx_ += cos(theta);
@@ -609,7 +609,7 @@ vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Invento
             {
                 theta = atan2(y, x);
 
-                if (inv.map_veins_out_from_main_[centralize_x][centralize_y] > 1 &&
+                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
                     inv.map_veins_out_from_main_[centralize_x][centralize_y] < my_spot) // go directly to my base.
                 {
                     temp_x += cos(theta);
@@ -656,7 +656,7 @@ vector<double> Mobility::getVectorTowardsEnemy(const Position &pos, const Invent
             {
                 theta = atan2(y, x);
 
-                if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] > 1 &&
+                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
                     inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly to their base.
                 {
                     temp_x += cos(theta);
