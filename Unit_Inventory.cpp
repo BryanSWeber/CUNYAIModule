@@ -524,7 +524,7 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    //stock_value_ = stock_value_ / (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    stock_value_ /= (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
 
@@ -574,7 +574,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    //stock_value_ = stock_value_ / (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
@@ -693,7 +693,8 @@ bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
 }
 
 auto Stored_Unit::convertToFAP() {
-    return FAP::makeUnit()
+    return FAP::makeUnit<Stored_Unit*>()
+        .setData(this)
         .setUnitType(type_)
         .setPosition(pos_)
         .setHealth(health_)
@@ -718,7 +719,8 @@ auto Stored_Unit::convertToRandomFAP() {
     std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_);    // default values for output.
     int rand_x = dis(generator);
     int rand_y = dis(generator);
-    return FAP::makeUnit()
+    return FAP::makeUnit<Stored_Unit*>() // don't care about type.
+        .setData(this)
         .setUnitType(type_)
         .setPosition(Position(rand_x, rand_y))
         .setHealth(health_)
@@ -738,7 +740,7 @@ auto Stored_Unit::convertToRandomFAP() {
         ;
 }
 
-void Stored_Unit::updateFAPvalue(FAP::FAPUnit fap_unit)
+void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
 }
@@ -769,19 +771,17 @@ void Unit_Inventory::addToEnemyBuildFAP() {
 }
 
 //This call seems very inelgant. Check if it can be made better.
-void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> & FAPunits)
+void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
 {
     //std::transform(unit_inventory_.begin(), unit_inventory_.end(), FAPunits.begin(), unit_inventory_.begin(), [](std::pair<BWAPI::Unit, Stored_Unit> &bunch, const FAP::FAPUnit &f_unit) { bunch.second.updateFAPvalue(f_unit); return bunch; });
-    size_t i = 0;
     for (auto u : unit_inventory_) {
-        if (u.second.type_ == FAPunits[i].unitType) {
-            u.second.updateFAPvalue(FAPunits[i]); //depends on the arrays being parallel. They are not. This is a hackney solution until Hannes updates the feature, which appears to be... nearly immediately.
-            i++;
-        }
-        else {
-            u.second.future_fap_value_ = 0;
-        }
+        auto found_fap_unit = std::find_if(fap_vector.begin(), fap_vector.end(), [&fv = u](const FAP::FAPUnit<Stored_Unit*> fap_input) -> bool { return fv.second.checkMatchingFAP(fap_input); });
+        u.second.future_fap_value_ = (found_fap_unit != fap_vector.end()) * found_fap_unit->score; // replace with 0 when not found, with score otherwise.
     }
+}
+
+bool Stored_Unit::checkMatchingFAP( const FAP::FAPUnit<Stored_Unit*> &FAPunit) {
+    return this == FAPunit.data;
 }
 
 ////This call seems very inelgant. Check if it can be made better.

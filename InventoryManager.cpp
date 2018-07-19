@@ -1542,7 +1542,7 @@ Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Invent
     int temp_stock_lost = 0;
 
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
         Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ / 2);
         ei_loc.updateUnitInventorySummary();
         ui_tiny.updateUnitInventorySummary();

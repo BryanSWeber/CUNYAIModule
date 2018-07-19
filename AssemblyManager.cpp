@@ -10,7 +10,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-extern FAP::FastAPproximation buildfap;
+extern FAP::FastAPproximation<Stored_Unit*> buildfap;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Unit_Inventory &ui, const bool &extra_critera)

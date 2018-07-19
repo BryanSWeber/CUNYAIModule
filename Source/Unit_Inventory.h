@@ -24,7 +24,7 @@ struct Stored_Unit {
     auto convertToFAP(); // puts stored unit into the fap type.
     auto convertToRandomFAP(); // puts the stored unit into the fap type... at a random subsection of the map.
 
-    void updateFAPvalue(FAP::FAPUnit fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
 
     void updateStoredUnit(const Unit &unit);
 
@@ -77,6 +77,7 @@ struct Stored_Unit {
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
     bool hasTarget_;
+    bool checkMatchingFAP(const FAP::FAPUnit<Stored_Unit*>& FAPunit); // checks if this FAPunit matches the stored unit we have here.
 
     int velocity_x_;
     int velocity_y_;
@@ -143,7 +144,8 @@ struct Unit_Inventory {
 
     void addToFriendlyBuildFAP(); // adds to the building combat simulator.
     void addToEnemyBuildFAP(); // adds to the building combat simulator.
-    void pullFromFAP(vector<FAP::FAPUnit> &FAPPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

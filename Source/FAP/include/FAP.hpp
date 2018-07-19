@@ -5,36 +5,39 @@
 #include <vector>
 
 namespace FAP {
-  Unit <> inline makeUnit() {
-    return Unit<>{};
+  template<typename T = std::tuple<>>
+  auto makeUnit() {
+    Unit<UnitValues{}, T> v;
+    return v;
   }
 
+  template<typename UnitExtension = std::tuple<>>
   struct FastAPproximation {
     /**
      * \brief Adds the unit to the simulator for player 1
      * \param fu The FAPUnit to add
      */
     template<UnitValues uv>
-    void addUnitPlayer1(Unit<uv> &&fu);
+    [[deprecated]] void addUnitPlayer1(Unit<uv, UnitExtension> &&fu);
 
     /**
      * \brief Adds the unit to the simulator for player 1, only if it is a combat unit
      * \param fu The FAPUnit to add
      */
     template<UnitValues uv>
-    void addIfCombatUnitPlayer1(Unit<uv> &&fu);
+    void addIfCombatUnitPlayer1(Unit<uv, UnitExtension> &&fu);
     /**
      * \brief Adds the unit to the simulator for player 2
      * \param fu The FAPUnit to add
      */
     template<UnitValues uv>
-    void addUnitPlayer2(Unit<uv> &&fu);
+    [[deprecated]] void addUnitPlayer2(Unit<uv, UnitExtension> &&fu);
     /**
      * \brief Adds the unit to the simulator for player 2, only if it is a combat unit
      * \param fu The FAPUnit to add
      */
     template<UnitValues uv>
-    void addIfCombatUnitPlayer2(Unit<uv> &&fu);
+    void addIfCombatUnitPlayer2(Unit<uv, UnitExtension> &&fu);
 
     /**
      * \brief Starts the simulation. You can run this function multiple times. Feel free to run once, get the state and keep running.
@@ -46,7 +49,7 @@ namespace FAP {
      * \brief Gets the internal state of the simulator. You can use this to get any info about the unit participating in the simulation or edit the state.
      * \return Returns a pair of pointers, where each pointer points to a vector containing that player's units.
      */
-    std::pair<std::vector<FAPUnit> *, std::vector<FAPUnit> *> getState();
+    std::pair<std::vector<FAPUnit<UnitExtension>> *, std::vector<FAPUnit<UnitExtension>> *> getState();
 
     /**
      * \brief Clears the simulation. All units are removed for both players. Equivalent to reconstructing.
@@ -54,17 +57,17 @@ namespace FAP {
     void clear();
 
   private:
-    std::vector<FAPUnit> player1, player2;
+    std::vector<FAPUnit<UnitExtension>> player1, player2;
 
     bool didSomething = false;
-    static void dealDamage(FAPUnit &u, int damage, BWAPI::DamageType damageType);
-    static int distSquared(FAPUnit const &u1, const FAPUnit &u2);
+    static void dealDamage(FAPUnit<UnitExtension> &fu, int damage, BWAPI::DamageType damageType);
+    static int distSquared(FAPUnit<UnitExtension> const &u1, const FAPUnit<UnitExtension> &u2);
     static bool isSuicideUnit(BWAPI::UnitType ut);
-    void unitsim(FAPUnit &u, std::vector<FAPUnit> &enemyUnits);
-    static void medicsim(FAPUnit &u, std::vector<FAPUnit> &friendlyUnits);
-    bool suicideSim(FAPUnit &u, std::vector<FAPUnit> &enemyUnits);
+    void unitsim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &enemyUnits);
+    static void medicsim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &friendlyUnits);
+    bool suicideSim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &enemyUnits);
     void isimulate();
-    static void unitDeath(FAPUnit &&u, std::vector<FAPUnit> &itsFriendlies);
+    static void unitDeath(FAPUnit<UnitExtension> &&fu, std::vector<FAPUnit<UnitExtension>> &itsFriendlies);
 
     static auto max(int a, int b) {
       int vars[2] = { a, b };
@@ -76,7 +79,7 @@ namespace FAP {
       return vars[a < b];
     }
 
-    static bool isCombatUnit(FAPUnit &u) {
+    static bool isCombatUnit(FAPUnit<UnitExtension> &u) {
       return (u.unitType != BWAPI::UnitTypes::Protoss_Interceptor) &
         (static_cast<bool>(u.airDamage) | static_cast<bool>(u.groundDamage) | static_cast<bool>(u.unitType == BWAPI::UnitTypes::Terran_Medic));
     }
@@ -117,34 +120,40 @@ namespace FAP {
     static_assert(Unit<uv>::hasFlag(UnitValues::stimmed));
     static_assert(Unit<uv>::hasFlag(UnitValues::rangeUpgrade));
     static_assert(Unit<uv>::hasFlag(UnitValues::attackerCount));
+    static_assert(Unit<uv>::hasFlag(UnitValues::data));
     return true;
   }
 
+  template<typename UnitExtension>
   template<UnitValues uv>
-  void FastAPproximation::addUnitPlayer1(Unit<uv> &&fu) {
+  void FastAPproximation<UnitExtension>::addUnitPlayer1(Unit<uv, UnitExtension> &&fu) {
     static_assert(AssertValidUnit<uv>());
     player1.emplace_back(fu.unit);
   }
 
+  template<typename UnitExtension>
   template<UnitValues uv>
-  void FastAPproximation::addIfCombatUnitPlayer1(Unit<uv> &&fu) {
+  void FastAPproximation<UnitExtension>::addIfCombatUnitPlayer1(Unit<uv, UnitExtension> &&fu) {
     if (isCombatUnit(fu))
       addUnitPlayer1(fu);
   }
 
-  template <UnitValues uv>
-  void FastAPproximation::addUnitPlayer2(Unit<uv> &&fu) {
+  template<typename UnitExtension>
+  template<UnitValues uv>
+  void FastAPproximation<UnitExtension>::addUnitPlayer2(Unit<uv, UnitExtension> &&fu) {
     static_assert(AssertValidUnit<uv>());
     player2.emplace_back(fu.unit);
   }
 
+  template<typename UnitExtension>
   template<UnitValues uv>
-  void FastAPproximation::addIfCombatUnitPlayer2(Unit<uv> &&fu) {
+  void FastAPproximation<UnitExtension>::addIfCombatUnitPlayer2(Unit<uv, UnitExtension> &&fu) {
     if (isCombatUnit(fu))
       addUnitPlayer2(fu);
   }
 
-  inline void FastAPproximation::simulate(int nFrames) {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::simulate(int nFrames) {
     while (nFrames--) {
       if (player1.empty() || player2.empty())
         break;
@@ -158,15 +167,18 @@ namespace FAP {
     }
   }
 
-  inline std::pair<std::vector<FAPUnit> *, std::vector<FAPUnit> *> FastAPproximation::getState() {
+  template<typename UnitExtension>
+  std::pair<std::vector<FAPUnit<UnitExtension>> *, std::vector<FAPUnit<UnitExtension>> *> FastAPproximation<UnitExtension>::getState() {
     return { &player1, &player2 };
   }
 
-  inline void FastAPproximation::clear() {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::clear() {
     player1.clear(), player2.clear();
   }
 
-  inline void FastAPproximation::dealDamage(FAPUnit &fu, int damage, BWAPI::DamageType const damageType) {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::dealDamage(FAPUnit<UnitExtension> &fu, int damage, BWAPI::DamageType const damageType) {
     damage <<= 8;
     auto const remainingShields = fu.shields - damage + (fu.shieldArmor << 8);
     if (remainingShields > 0) {
@@ -199,18 +211,21 @@ namespace FAP {
     fu.health -= max(128, damage);
   }
 
-  int inline FastAPproximation::distSquared(const FAPUnit &u1, const FAPUnit &u2) {
+  template<typename UnitExtension>
+  int FastAPproximation<UnitExtension>::distSquared(const FAPUnit<UnitExtension> &u1, const FAPUnit<UnitExtension> &u2) {
     return (u1.x - u2.x) * (u1.x - u2.x) + (u1.y - u2.y) * (u1.y - u2.y);
   }
 
-  bool inline FastAPproximation::isSuicideUnit(BWAPI::UnitType const ut) {
+  template<typename UnitExtension>
+  bool FastAPproximation<UnitExtension>::isSuicideUnit(BWAPI::UnitType const ut) {
     return (ut == BWAPI::UnitTypes::Zerg_Scourge ||
       ut == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine ||
       ut == BWAPI::UnitTypes::Zerg_Infested_Terran ||
       ut == BWAPI::UnitTypes::Protoss_Scarab);
   }
 
-  void inline FastAPproximation::unitsim(FAPUnit &fu, std::vector<FAPUnit> &enemyUnits) {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::unitsim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &enemyUnits) {
     if (fu.attackCooldownRemaining) {
       didSomething = true;
       return;
@@ -283,7 +298,8 @@ namespace FAP {
     }
   }
 
-  void inline FastAPproximation::medicsim(FAPUnit &fu, std::vector<FAPUnit> &friendlyUnits) {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::medicsim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &friendlyUnits) {
     auto closestHealable = friendlyUnits.end();
     int closestDist;
 
@@ -310,7 +326,8 @@ namespace FAP {
     }
   }
 
-  bool inline FastAPproximation::suicideSim(FAPUnit &fu, std::vector<FAPUnit> &enemyUnits) {
+  template<typename UnitExtension>
+  bool FastAPproximation<UnitExtension>::suicideSim(FAPUnit<UnitExtension> &fu, std::vector<FAPUnit<UnitExtension>> &enemyUnits) {
     auto closestEnemy = enemyUnits.end();
     int closestDistSquared;
 
@@ -366,7 +383,8 @@ namespace FAP {
     return false;
   }
 
-  void inline FastAPproximation::isimulate() {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::isimulate() {
     const auto simUnit = [this](auto &unit, auto &friendly, auto &enemy) {
       if (isSuicideUnit(unit->unitType)) {
         auto const unitDied = suicideSim(*unit, enemy);
@@ -391,7 +409,7 @@ namespace FAP {
       simUnit(fu, player2, player1);
     }
 
-    const auto updateUnit = [](FAPUnit &fu) {
+    const auto updateUnit = [](FAPUnit<UnitExtension> &fu) {
       if (fu.attackCooldownRemaining)
         --fu.attackCooldownRemaining;
       if (fu.didHealThisFrame)
@@ -418,8 +436,9 @@ namespace FAP {
       updateUnit(fu);
   }
 
-  void inline FastAPproximation::unitDeath(FAPUnit &&fu, std::vector<FAPUnit> &itsFriendlies) {
-    if (fu.unitType == BWAPI::UnitTypes::Terran_Bunker) {
+  template<typename UnitExtension>
+  void FastAPproximation<UnitExtension>::unitDeath(FAPUnit<UnitExtension> &&fu, std::vector<FAPUnit<UnitExtension>> &itsFriendlies) {
+    if (fu.unitType == BWAPI::UnitTypes::Terran_Bunker && fu.numAttackers) {
       fu.unitType = BWAPI::UnitTypes::Terran_Marine;
 
       auto squaredRange = [](int tiles) constexpr {
@@ -430,10 +449,14 @@ namespace FAP {
       // No range upgrade
       case squaredRange(5):
         fu.groundMaxRangeSquared = squaredRange(4);
+        break;
       // Range upgrade
       case squaredRange(6):
         fu.groundMaxRangeSquared = squaredRange(5);
+        break;
       }
+
+      fu.airMaxRangeSquared = fu.groundMaxRangeSquared;
 
       // @TODO: I guess I need to ask the bot here, I'll make some interface for that
       fu.armor = 0;
@@ -443,9 +466,9 @@ namespace FAP {
       fu.groundCooldown *= 4;
       fu.airCooldown *= 4;
 
-      for (unsigned i = 0; i < 3; ++i)
-        itsFriendlies.push_back(reinterpret_cast<FAPUnit&>(fu));
-      itsFriendlies.emplace_back(std::forward<FAPUnit>(fu));
+      for (int i = 0; i < fu.numAttackers - 1; ++i)
+        itsFriendlies.push_back(reinterpret_cast<FAPUnit<UnitExtension>&>(fu));
+      itsFriendlies.emplace_back(std::forward<FAPUnit<UnitExtension>>(fu));
     }
   }
 

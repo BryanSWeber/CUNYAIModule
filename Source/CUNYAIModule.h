@@ -73,8 +73,8 @@ public:
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
-    static FAP::FastAPproximation fap; // integrating FAP into combat.
-    static FAP::FastAPproximation buildfap; // attempting to integrate FAP into building decisions.
+    static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
+    static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
 
     Building_Gene buildorder; //
     Reservation my_reservation; 

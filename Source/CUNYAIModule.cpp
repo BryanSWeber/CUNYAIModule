@@ -28,8 +28,8 @@ Unit_Inventory CUNYAIModule::enemy_inventory;
 Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
 Inventory CUNYAIModule::inventory;
-FAP::FastAPproximation CUNYAIModule::fap;
-FAP::FastAPproximation CUNYAIModule::buildfap;
+FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::fap;
+FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
 
 void CUNYAIModule::onStart()
 {
@@ -754,9 +754,10 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                //bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_; // fixed division by crossmultiplying.
+                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_ &&
+                    (friend_loc.stock_total_ - friend_loc.future_fap_stock_) > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_); // fixed division by crossmultiplying.
                 //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
-                bool we_take_a_fap_beating = false;
+                //bool we_take_a_fap_beating = false;
 
                 if (e_closest->valid_pos_ && distance_to_foe < search_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );

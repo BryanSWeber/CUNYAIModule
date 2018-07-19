@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <cstdint>
 
 #include "BWAPI.h"
@@ -40,8 +41,10 @@ namespace FAP {
     stimmed                 = 1ull << 30,
     rangeUpgrade            = 1ull << 31,
     attackerCount           = 1ull << 32,
+    data                    = 1ull << 33,
   };
 
+  template<typename UnitExtension = std::tuple<>>
   struct FAPUnit {
     int x, y;
 
@@ -76,11 +79,16 @@ namespace FAP {
     bool didHealThisFrame = false;
     int score;
 
+    int numAttackers;
     int attackCooldownRemaining;
+
+    UnitExtension data;
   };
 
-  template<UnitValues values = UnitValues{} >
+  template<UnitValues values = UnitValues{}, typename UnitExtension = std::tuple<>>
   struct Unit {
+    constexpr Unit() = default;
+
     auto constexpr setPosition(BWAPI::Position pos) && {
       return std::move(*this).setX(pos.x).setY(pos.y);
     }
@@ -127,7 +135,7 @@ namespace FAP {
     }
 
     auto constexpr setShieldUpgrades(int shieldUpgrades) && {
-      unit.shieldArmor += shieldUpgrades;
+      unit.shieldArmor = shieldUpgrades;
       return std::move(*this).template addFlag<UnitValues::shieldUpgrades>();
     }
 
@@ -328,6 +336,12 @@ namespace FAP {
       return std::move(*this).template addFlag<UnitValues::attackCooldownRemaining>();
     }
 
+    template<typename T = UnitExtension>
+    auto constexpr setData(T &&val) {
+      unit.data = val;
+      return std::move(*this).template addFlag<UnitValues::data>();
+    }
+
     auto constexpr setRangeUpgrade(bool rangeUpgraded) && {
       static_assert(hasFlag(UnitValues::groundMaxRange) && hasFlag(UnitValues::airMaxRange) &&
                     hasFlag(UnitValues::unitType), "Set type and max range before setting range upgrade level");
@@ -368,6 +382,7 @@ namespace FAP {
     // If the unit is a carrier (interceptor count) or bunker (marine count)
     auto constexpr setAttackerCount(int numAttackers) && {
       static_assert(hasFlag(UnitValues::unitType) && hasFlag(UnitValues::groundDamage) && hasFlag(UnitValues::airDamage), "Set unit type and damage before setting number of attackers");
+      unit.numAttackers = numAttackers;
       if (numAttackers) {
         if (unit.unitType == BWAPI::UnitTypes::Protoss_Carrier) {
           unit.groundDamage = unit.airDamage = BWAPI::UnitTypes::Protoss_Interceptor.groundWeapon().damageAmount();
@@ -390,20 +405,20 @@ namespace FAP {
     }
 
   private:
-    friend Unit<> makeUnit();
-    template<UnitValues otherValues>
+    constexpr Unit(FAPUnit<UnitExtension> &&u) : unit{ u } { }
+    template<UnitValues otherValues, typename Extension>
     friend struct Unit;
+    template<typename Extension>
     friend struct FastAPproximation;
     template<UnitValues uv>
     friend constexpr bool AssertValidUnit();
-    constexpr Unit(FAPUnit u = {}) : unit{ u } { }
-    FAPUnit unit;
+    FAPUnit<UnitExtension> unit;
 
     template<UnitValues bitToSet>
     auto addFlag() && {
       auto constexpr newTag = static_cast<UnitValues>(static_cast<TagRepr>(values) | static_cast<TagRepr>(bitToSet));
       static_assert(static_cast<TagRepr>(newTag) != static_cast<TagRepr>(values), "Value already set!");
-      return Unit<newTag>{std::move(unit)};
+      return Unit<newTag, UnitExtension>{std::move(unit)};
     }
 
     static bool constexpr hasFlag(UnitValues flag) {
