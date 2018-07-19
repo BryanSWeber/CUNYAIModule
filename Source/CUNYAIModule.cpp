@@ -501,28 +501,28 @@ void CUNYAIModule::onFrame()
             }
 
 
-            //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-            //        if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-            //            }
-            //        }
-            //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-            //            }
-            //        }
-            //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
+            for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
+                for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
+                    if ( inventory.map_veins_[i][j] > 175 ) {
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                        }
+                    }
+                    else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+                        }
+                    }
+                    else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+                        if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+                            //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                            Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                        }
+                    }
+                }
+            } // Pretty to look at!
 
 
             //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
@@ -617,7 +617,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 attempted_morph_larva_this_frame = true;
-                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -628,7 +628,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
                 attempted_morph_lurker_this_frame = true;
-                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -639,7 +639,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
                 attempted_morph_guardian_this_frame = true;
-                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -754,7 +754,9 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_; // fixed division by crossmultiplying.
+                //bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_; // fixed division by crossmultiplying.
+                //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
+                bool we_take_a_fap_beating = false;
 
                 if (e_closest->valid_pos_ && distance_to_foe < search_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
@@ -962,7 +964,7 @@ void CUNYAIModule::onFrame()
                 bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_ && want_gas;
                 bool worker_bad_gas = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas);
                 bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
-                bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory);
+                bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
                 // If we need gas, get gas!
                 if (could_use_another_gas && ( unassigned_worker || (worker_bad_gas && inventory.last_gas_check_ < t_game - 5 * 24 && isEmptyWorker(u))) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);

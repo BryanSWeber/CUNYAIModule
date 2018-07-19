@@ -111,6 +111,7 @@ public:
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
+      bool findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv); //Compares a set of units via FAP simulations.
 
       // Builds the next building you can afford.  Incomplete.
       bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);

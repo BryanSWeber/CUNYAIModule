@@ -75,7 +75,7 @@ bool Reservation::checkAffordablePurchase( const UnitType type ) { // make a tem
     return affordable && open_reservation;
 }
 
-int Reservation::countTimesWeCanAffortPurchase(const UnitType type) {
+int Reservation::countTimesWeCanAffordPurchase(const UnitType type) {
     bool affordable = true;
     int i = 0;
     bool open_reservation = reservation_map_.empty() || reservation_map_.find(type) == reservation_map_.end();

@@ -592,10 +592,10 @@ void CUNYAIModule::clearBuildingObstuctions(const Unit_Inventory &ui, Inventory 
     }
 }
 
-bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei) { 
+bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei) { 
 
     //Am I sending this command to a larva or a hydra?
-    UnitType u_type = larva->getType();
+    UnitType u_type = morph_canidate->getType();
     bool is_larva = u_type == UnitTypes::Zerg_Larva;
     bool is_hydra = u_type == UnitTypes::Zerg_Hydralisk;
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
@@ -603,51 +603,67 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, co
     bool wasting_larva_soon = true;
     int best_sim_score = INT_MIN;
 
-    if (is_larva && larva->getHatchery()) {
-        wasting_larva_soon = larva->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
+    if (is_larva && morph_canidate->getHatchery()) {
+        wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
     }
 
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, inv) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, inv) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, inv) >= 85;
     bool drone_conditional = econ_starved || tech_starved; // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
 
     //Supply blocked protection 
-    if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved);
+    if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Overlord, morph_canidate, supply_starved);
     // Eco building.
-    if (is_larva && !is_building) is_building = Check_N_Grow(larva->getType().getRace().getWorker(), larva, (drone_conditional || wasting_larva_soon) && !enough_drones);
+    if (is_larva && !is_building) is_building = Check_N_Grow(morph_canidate->getType().getRace().getWorker(), morph_canidate, (drone_conditional || wasting_larva_soon) && !enough_drones);
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
+    map<UnitType, int> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } , { UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN } };
+    map<UnitType, int> hydra_combat_types = { { UnitTypes::Zerg_Lurker, INT_MIN } };
+    map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } };
+
+    if (is_larva) {
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, larva_combat_types, ei, ui, inv);
+    }
+    else if (is_hydra) {
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, hydra_combat_types, ei, ui, inv);
+    }
+    else if (is_muta) {
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, muta_combat_types, ei, ui, inv);
+    }
+
+    return is_building;
+}
+
+bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv) {
+    bool building_optimal_unit = false;
+    auto buildfap_stored = buildfap;
+    int best_sim_score = INT_MIN;
     auto ei_copy = ei; // passing by value will be insufficient here since the functions modify by reference.
     ei_copy.addToEnemyBuildFAP();
-    auto buildfap_stored = buildfap; // store this for replacements
 
-    map<UnitType, int> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN } };
+    for (auto potential_type : combat_types) {
+        if (morph_canidate->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
+            Stored_Unit su = Stored_Unit(potential_type.first);
+            //buildfap.addUnitPlayer1(su.convertToRandomFAP());  // can't add directly for some reason. Auto type?
+            auto ui_copy = ui;
+            //int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffordPurchase(potential_type.first), Count_Units(morph_canidate->getType(), inv));
+            //for (auto i = 1; i <= times_we_can_make_purchase; i++) {
+                ui_copy.addStored_Unit(su);
+                if (potential_type.first.isTwoUnitsInOneEgg()) ui_copy.addStored_Unit(su);
+            //}
 
-    if ( is_larva ) {
-        for (auto potential_type : larva_combat_types) {
-            if (larva->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
-                Stored_Unit su = Stored_Unit(potential_type.first);
-                //buildfap.addUnitPlayer1(su.convertToRandomFAP());  // can't add directly for some reason. Auto type?
-                auto ui_copy = ui;
-                int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffortPurchase(potential_type.first), Count_Units(UnitTypes::Zerg_Larva, inv));
-                for (auto i = 1; i <= times_we_can_make_purchase; i++) {
-                    ui_copy.addStored_Unit(su);
-                    if (potential_type.first.isTwoUnitsInOneEgg()) ui_copy.addStored_Unit(su);
-                }
-
-                ui_copy.addToFriendlyBuildFAP();
-                buildfap.simulate(); // 96 frames of simulation for us.
-                ui_copy.pullFromFAP(*buildfap.getState().first);
-                ei_copy.pullFromFAP(*buildfap.getState().second);
-                larva_combat_types.find(potential_type.first)->second = ui.future_fap_stock_ - ei.future_fap_stock_;
-                //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
-                buildfap = buildfap_stored;
-            }
+            ui_copy.addToFriendlyBuildFAP();
+            buildfap.simulate(-1); // a complete simulation for us.
+            ui_copy.pullFromFAP(*buildfap.getState().first);
+            ei_copy.pullFromFAP(*buildfap.getState().second);
+            combat_types.find(potential_type.first)->second = ui.future_fap_stock_ - ei.future_fap_stock_;
+            //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+            buildfap = buildfap_stored;
         }
     }
 
     UnitType build_type = UnitTypes::None;
-    for (auto potential_type : larva_combat_types) {
+    for (auto potential_type : combat_types) {
         if (potential_type.second > best_sim_score) {
             best_sim_score = potential_type.second;
             build_type = potential_type.first;
@@ -655,17 +671,12 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &larva, const Inventory &inv, co
         }
     }
 
-    if (is_larva && !is_building) is_building = Check_N_Grow(build_type, larva, true); // catchall ground units, in case you have a BO that needs to be done.
-    if (is_building) {
+    if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
+    if (building_optimal_unit) {
         Broodwar->sendText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
     }
-    //if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, false); 
-    //if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, false); 
-
-    //if (is_hydra && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Lurker, larva, false);
-
-    return is_building;
 }
+
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getUnit() == u->getType()) {
