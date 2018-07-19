@@ -754,8 +754,12 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_ &&
-                    (friend_loc.stock_total_ - friend_loc.future_fap_stock_) > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_); // fixed division by crossmultiplying.
+                bool unit_likes_forecast = friend_loc.unit_inventory_.at(u).future_fap_value_ >= friend_loc.unit_inventory_.at(u).weighted_future_fap_value_;
+
+                bool we_take_a_fap_beating = (friend_loc.stock_total_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_ && // fixed division by crossmultiplying.
+                    (friend_loc.stock_total_ - friend_loc.future_fap_stock_) > (enemy_loc.stock_total_ - enemy_loc.future_fap_stock_) &&
+                    !unit_likes_forecast;
+
                 //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
 
@@ -767,7 +771,7 @@ void CUNYAIModule::onFrame()
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     bool grim_distance_trigger = (distance_to_foe < 32 + (u_type == UnitTypes::Zerg_Scourge || u_type == UnitTypes::Zerg_Zergling) * chargable_distance_enemy && getProperRange(u) < 32);
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || threatening_stocks == 0 || !we_take_a_fap_beating) && (
+                        (targetable_stocks > 0 || threatening_stocks == 0 || !we_take_a_fap_beating ) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             massive_army || army_derivative == 0 ||
                             inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
@@ -778,14 +782,16 @@ void CUNYAIModule::onFrame()
                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                             //threatening_stocks == 0 ||
                             //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                            !we_take_a_fap_beating ||
-                            grim_distance_trigger);// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
+                            !we_take_a_fap_beating //||
+                            //grim_distance_trigger
+                            );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 
 
                     bool force_retreat =
                         we_take_a_fap_beating ||
+                        //!unit_likes_forecast ||
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
                         //(u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
@@ -854,8 +860,6 @@ void CUNYAIModule::onFrame()
                             if (u_type.isWorker()) {
                                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                             }
-
-
 
                             if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0, 0))) {
                                 if (u_type == UnitTypes::Zerg_Overlord) {

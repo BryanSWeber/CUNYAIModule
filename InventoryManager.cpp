@@ -1546,7 +1546,7 @@ Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Invent
         Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ / 2);
         ei_loc.updateUnitInventorySummary();
         ui_tiny.updateUnitInventorySummary();
-        temp_stock_lost = ui_tiny.stock_ground_fodder_ + (ei_loc.stock_fighting_total_ - ui_tiny.stock_fighting_total_);
+        temp_stock_lost = ei_loc.stock_fighting_total_ - ui_tiny.stock_fighting_total_;
         if ( temp_stock_lost > current_anticipated_stock_lost && ui_tiny.stock_ground_fodder_ > 0 && ei_loc.stock_fighting_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
             current_anticipated_stock_lost = temp_stock_lost;
             attacked_base = Position(expo);

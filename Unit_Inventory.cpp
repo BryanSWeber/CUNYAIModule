@@ -743,6 +743,8 @@ auto Stored_Unit::convertToRandomFAP() {
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
+    if (!weighted_future_fap_value_) weighted_future_fap_value_ = stock_value_;
+    weighted_future_fap_value_ = (weighted_future_fap_value_* 95/(double)96) + 1/(double)96 * future_fap_value_;
 }
 
 
