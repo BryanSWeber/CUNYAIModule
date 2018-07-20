@@ -4,7 +4,7 @@
 # include "Source\Fight_MovementManager.h"
 # include <random> // C++ base random is low quality.
 
-#define DISTANCE_METRIC CUNYAIModule::getProperSpeed(unit) * 8;
+#define DISTANCE_METRIC (int)CUNYAIModule::getProperSpeed(unit) * 8;
 
 using namespace BWAPI;
 using namespace Filter;

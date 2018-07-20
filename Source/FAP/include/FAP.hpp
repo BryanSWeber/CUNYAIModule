@@ -110,7 +110,6 @@ namespace FAP {
     static_assert(Unit<uv>::hasFlag(UnitValues::unitType));
     static_assert(Unit<uv>::hasFlag(UnitValues::unitSize));
     static_assert(Unit<uv>::hasFlag(UnitValues::isOrganic));
-    static_assert(Unit<uv>::hasFlag(UnitValues::score));
     static_assert(Unit<uv>::hasFlag(UnitValues::armorUpgrades));
     static_assert(Unit<uv>::hasFlag(UnitValues::attackUpgrades));
     static_assert(Unit<uv>::hasFlag(UnitValues::shieldUpgrades));
@@ -287,7 +286,7 @@ namespace FAP {
 
       didSomething = true;
     }
-    else if (closestEnemy != enemyUnits.end() && closestDistSquared > fu.speedSquared) {
+    else if (closestEnemy != enemyUnits.end() && closestDistSquared > fu.speedSquared && fu.speed >= 1.0f) {
       auto const dx = closestEnemy->x - fu.x;
       auto const dy = closestEnemy->y - fu.y;
 

@@ -170,17 +170,11 @@ void CUNYAIModule::onFrame()
     bool attempted_morph_lurker_this_frame = false;
     bool attempted_morph_guardian_this_frame = false;
 
-    // Clear FAP
-    fap.clear();
-    buildfap.clear();
-
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
     enemy_inventory.purgeBrokenUnits();
     enemy_inventory.drawAllHitPoints(inventory);
     enemy_inventory.drawAllLocations(inventory);
-    enemy_inventory.addToEnemyFAP();
-    enemy_inventory.addToEnemyBuildFAP();
 
     //Update neutral units
     neutral_inventory.updateUnitsControlledByOthers();
@@ -202,13 +196,19 @@ void CUNYAIModule::onFrame()
     friendly_inventory.drawAllHitPoints(inventory);
     friendly_inventory.drawAllSpamGuards(inventory);
     friendly_inventory.drawAllWorkerTasks(inventory, land_inventory);
-    friendly_inventory.addToFriendlyFAP();
-    friendly_inventory.addToFriendlyBuildFAP();
+
+    // Update FAPS with units.
+    fap.clear();
+    buildfap.clear();
+    enemy_inventory.addToEnemyFAP(fap);
+    enemy_inventory.addToEnemyBuildFAP(buildfap);
+    friendly_inventory.addToFriendlyFAP(fap);
+    friendly_inventory.addToFriendlyBuildFAP(buildfap);
 
     // Let us estimate FAP values.
     fap.simulate(); // 96 frames of simulation for us.
-    int friendly_fap_score = std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
-    int enemy_fap_score = std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto unit) { return currentScore + unit.score; });
+    int friendly_fap_score = getFAPScore(fap, true);
+    int enemy_fap_score = getFAPScore(fap, false);
     friendly_inventory.pullFromFAP(*fap.getState().first);
     enemy_inventory.pullFromFAP(*fap.getState().second);
 
@@ -254,7 +254,7 @@ void CUNYAIModule::onFrame()
     inventory.updateHatcheries();  // macro variables, not every unit I have.
     inventory.updateWorkersClearing(friendly_inventory, land_inventory);
     inventory.updateWorkersLongDistanceMining(friendly_inventory, land_inventory);
-    inventory.my_portion_of_the_map_ = sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size();
+    inventory.my_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size());
     inventory.updateStartPositions(enemy_inventory);
     inventory.updateScreen_Position();
 

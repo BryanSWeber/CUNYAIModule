@@ -636,29 +636,28 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
 
 bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv) {
     bool building_optimal_unit = false;
-    auto buildfap_stored = buildfap;
+    auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
-    auto ei_copy = ei; // passing by value will be insufficient here since the functions modify by reference.
-    ei_copy.addToEnemyBuildFAP();
+    Unit_Inventory friendly_units_under_consideration;
 
+
+    //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto potential_type : combat_types) {
         if (morph_canidate->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
+            buildfap_temp = buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
-            //buildfap.addUnitPlayer1(su.convertToRandomFAP());  // can't add directly for some reason. Auto type?
-            auto ui_copy = ui;
             //int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffordPurchase(potential_type.first), Count_Units(morph_canidate->getType(), inv));
             //for (auto i = 1; i <= times_we_can_make_purchase; i++) {
-                ui_copy.addStored_Unit(su);
-                if (potential_type.first.isTwoUnitsInOneEgg()) ui_copy.addStored_Unit(su);
+            // enemy units do not change.
+            Unit_Inventory friendly_units_under_consideration;
+            friendly_units_under_consideration.addStored_Unit(su);
+                if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             //}
 
-            ui_copy.addToFriendlyBuildFAP();
-            buildfap.simulate(-1); // a complete simulation for us.
-            ui_copy.pullFromFAP(*buildfap.getState().first);
-            ei_copy.pullFromFAP(*buildfap.getState().second);
-            combat_types.find(potential_type.first)->second = ui.future_fap_stock_ - ei.future_fap_stock_;
+            friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+            buildfap_temp.simulate(-1); // a complete simulation for us.
+            combat_types.find(potential_type.first)->second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
-            buildfap = buildfap_stored;
         }
     }
 
@@ -675,6 +674,7 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
     if (building_optimal_unit) {
         Broodwar->sendText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
     }
+    return false;
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {

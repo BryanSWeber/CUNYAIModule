@@ -8,8 +8,8 @@
 using namespace std;
 using namespace BWAPI;
 
-class Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
-class Inventory;
+struct Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
+struct Inventory;
 
 struct Stored_Resource{
 

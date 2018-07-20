@@ -1,5 +1,6 @@
 #pragma once
 # include "Source\CUNYAIModule.h"
+#include <numeric> // std::accumulate
 
 using namespace BWAPI;
 using namespace Filter;
@@ -166,7 +167,7 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields()) ;
+            lower_right.x = (int)( upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
             lower_right.y = upper_left.y + 10;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
@@ -191,7 +192,7 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
             //Overlay the appropriate blue above it.
             lower_right = upper_left;
-            lower_right.x = upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_;
+            lower_right.x = (int)( upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_);
             lower_right.y = upper_left.y + 10;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Cyan, true);
 
@@ -217,7 +218,7 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 
             //Overlay the appropriate grey above it.
             lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 );
+            lower_right.x = (int)(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 ));
             lower_right.y = upper_left.y + 10;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
 
@@ -670,7 +671,7 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            temp_dist = (*e).second.pos_.getDistance( origin );
+            temp_dist = (int)(*e).second.pos_.getDistance( origin );
             if ( temp_dist <= min_dist && e->second.valid_pos_ ) {
                 min_dist = temp_dist;
                 return_unit = &(e->second);
@@ -690,7 +691,7 @@ Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
 	if (!ui.unit_inventory_.empty()) {
 		for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
 			if (e->second.type_ == u_type && e->second.valid_pos_ ){
-				temp_dist = (*e).second.pos_.getDistance(origin);
+				temp_dist = (int)(*e).second.pos_.getDistance(origin);
 				if (temp_dist <= min_dist) {
 					min_dist = temp_dist;
 					return_unit = &(e->second);
@@ -710,7 +711,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 
 	if (!ri.resource_inventory_.empty()) {
 		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-			temp_dist = (*r).second.pos_.getDistance(origin);
+			temp_dist = (int)(*r).second.pos_.getDistance(origin);
 			if (temp_dist <= min_dist ) {
 				min_dist = temp_dist;
 				return_unit = &(r->second);
@@ -1824,4 +1825,10 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Chitinous_Plating = 52,
 //Anabolic_Synthesis = 53,
 
+int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
+    if (friendly_player) {
+        return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+    }
+    return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+}
 

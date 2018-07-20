@@ -291,6 +291,8 @@ public:
       static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
 
       static double bindBetween(double x, double lower_bound, double upper_bound);
+      // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
+      int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
 
       // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 

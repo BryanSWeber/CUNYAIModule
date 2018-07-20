@@ -31,17 +31,16 @@ namespace FAP {
     unitType                = 1ull << 20,
     unitSize                = 1ull << 21,
     isOrganic               = 1ull << 22,
-    score                   = 1ull << 23,
-    armorUpgrades           = 1ull << 24,
-    attackUpgrades          = 1ull << 25,
-    shieldUpgrades          = 1ull << 26,
-    speedUpgrade            = 1ull << 27,
-    attackCooldownRemaining = 1ull << 28,
-    attackSpeedUpgrade      = 1ull << 29,
-    stimmed                 = 1ull << 30,
-    rangeUpgrade            = 1ull << 31,
-    attackerCount           = 1ull << 32,
-    data                    = 1ull << 33,
+    armorUpgrades           = 1ull << 23,
+    attackUpgrades          = 1ull << 24,
+    shieldUpgrades          = 1ull << 25,
+    speedUpgrade            = 1ull << 26,
+    attackCooldownRemaining = 1ull << 27,
+    attackSpeedUpgrade      = 1ull << 28,
+    stimmed                 = 1ull << 29,
+    rangeUpgrade            = 1ull << 30,
+    attackerCount           = 1ull << 31,
+    data                    = 1ull << 32,
   };
 
   template<typename UnitExtension = std::tuple<>>
@@ -77,7 +76,6 @@ namespace FAP {
     BWAPI::UnitSizeType unitSize;
     bool isOrganic;
     bool didHealThisFrame = false;
-    int score;
 
     int numAttackers;
     int attackCooldownRemaining;
@@ -311,11 +309,6 @@ namespace FAP {
     auto constexpr setOnlyUnitType(BWAPI::UnitType type) && {
       unit.unitType = type;
       return std::move(*this).template addFlag<UnitValues::unitType>();
-    }
-
-    auto constexpr setScore(int score) && {
-      unit.score = score;
-      return std::move(*this).template addFlag<UnitValues::score>();
     }
 
     auto constexpr setUnitType(BWAPI::UnitType type) && {

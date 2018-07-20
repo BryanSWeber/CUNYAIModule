@@ -11,8 +11,8 @@ using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-class Inventory;
-class Reservation;
+struct Inventory;
+struct Reservation;
 
 struct Stored_Unit {
 
@@ -22,7 +22,7 @@ struct Stored_Unit {
     Stored_Unit( const Unit &unit );
     Stored_Unit();
     auto convertToFAP(); // puts stored unit into the fap type.
-    auto convertToRandomFAP(); // puts the stored unit into the fap type... at a random subsection of the map.
+    auto convertToFAPPosition(const Position &chosen_pos); // puts the stored unit into the fap type... at a specific position
 
     void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
 
@@ -140,11 +140,10 @@ struct Unit_Inventory {
     void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
 
-    void addToFriendlyFAP(); // adds entire inventory to the friendly side of the FAP army.
-    void addToEnemyFAP(); // adds entire inventory to the friendly side of the FAP army.
-
-    void addToFriendlyBuildFAP(); // adds to the building combat simulator.
-    void addToEnemyBuildFAP(); // adds to the building combat simulator.
+    void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the friendly side of the FAP army.
+    void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the enemy side of the FAP army.
+    void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building combat simulator, friendly side.
+    void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building  combat simulator, enemy sdie.
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
 

@@ -35,53 +35,53 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
 
 void Unit_Inventory::updateUnitsControlledByOthers()
 {
-    for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
-        if ((*e).second.bwapi_unit_ && (*e).second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
-            (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
-            (*e).second.type_ = (*e).second.bwapi_unit_->getType();
-            (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
-            (*e).second.valid_pos_ = true;
-            //Broodwar->sendText( "Relocated a %s.", (*e).second.type_.c_str() );
+    for (auto &e: unit_inventory_) {
+        if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
+            e.second.pos_ = e.second.bwapi_unit_->getPosition();
+            e.second.type_ = e.second.bwapi_unit_->getType();
+            e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
+            e.second.valid_pos_ = true;
+            //Broodwar->sendText( "Relocated a %s.", e.second.type_.c_str() );
         }
-        else if (Broodwar->isVisible(TilePosition(e->second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
+        else if (Broodwar->isVisible(TilePosition(e.second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
 
             bool present = false;
 
-            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e->second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Addons convert to neutral if their main base disappears.
-            for (auto et = enemies_tile.begin(); et != enemies_tile.end(); ++et) {
-                present = (*et)->getID() == e->second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
+            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Addons convert to neutral if their main base disappears.
+            for (auto &et : enemies_tile ) {
+                present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
                 if (present) {
-                    (*e).second.pos_ = (*e).second.bwapi_unit_->getPosition();
-                    (*e).second.type_ = (*e).second.bwapi_unit_->getType();
-                    (*e).second.current_hp_ = (*e).second.bwapi_unit_->getHitPoints() + (*e).second.bwapi_unit_->getShields();
-                    (*e).second.valid_pos_ = true;
+                    e.second.pos_ = e.second.bwapi_unit_->getPosition();
+                    e.second.type_ = e.second.bwapi_unit_->getType();
+                    e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
+                    e.second.valid_pos_ = true;
                     break;
                 }
             }
-            if ((!present || enemies_tile.empty()) && e->second.valid_pos_ && e->second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
-                Position potential_running_spot = Position(e->second.pos_.x + e->second.velocity_x_, e->second.pos_.y + e->second.velocity_y_);
+            if ((!present || enemies_tile.empty()) && e.second.valid_pos_ && e.second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+                Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
                 if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
-                    e->second.valid_pos_ = false;
+                    e.second.valid_pos_ = false;
                 }
                 else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
-                    (e->second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
-                    e->second.pos_ = potential_running_spot;
-                    e->second.valid_pos_ = true;
+                    (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                    e.second.pos_ = potential_running_spot;
+                    e.second.valid_pos_ = true;
                 }
                 else {
-                    e->second.valid_pos_ = false;
+                    e.second.valid_pos_ = false;
                 }
                 //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
             }
             else {
-                e->second.valid_pos_ = false;
+                e.second.valid_pos_ = false;
             }
         }
 
-        (*e).second.circumference_remaining_ = (*e).second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
+        e.second.circumference_remaining_ = e.second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
 
-        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || e->second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
-            e->second.valid_pos_ = false;
+        if (e.second.type_ == UnitTypes::Resource_Vespene_Geyser || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
+            e.second.valid_pos_ = false;
         }
 
     }
@@ -89,7 +89,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
 
 void Unit_Inventory::purgeBrokenUnits()
 {
-    for (auto e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+    for (auto &e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
         if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
             e->second.type_ == UnitTypes::None) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
             e = this->unit_inventory_.erase(e); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
@@ -102,7 +102,7 @@ void Unit_Inventory::purgeBrokenUnits()
 
 void Unit_Inventory::purgeUnseenUnits()
 {
-    for (auto f = this->unit_inventory_.begin(); f != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+    for (auto &f = this->unit_inventory_.begin(); f != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
         if (!f->second.bwapi_unit_ || !f->second.bwapi_unit_->exists()) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
             f = this->unit_inventory_.erase(f); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
         }
@@ -231,8 +231,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 
     type_ = unit->getType();
     current_hp_ = unit->getHitPoints() + unit->getShields();
-    velocity_x_ = unit->getVelocityX();
-    velocity_y_ = unit->getVelocityY();
+    velocity_x_ = (int)unit->getVelocityX();
+    velocity_y_ = (int)unit->getVelocityY();
     order_ = unit->getOrder();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     stock_value_ = Stored_Unit(type_).stock_value_;
@@ -576,7 +576,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
     stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
+    current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
 
 
@@ -701,7 +701,6 @@ auto Stored_Unit::convertToFAP() {
         .setShields(shields_)
         .setFlying(is_flying_)
         .setElevation(elevation_)
-        .setScore(stock_value_)
         .setAttackerCount(2)
         .setArmorUpgrades(0) // ignored for now
         .setAttackUpgrades(0) // ignored for now
@@ -714,20 +713,15 @@ auto Stored_Unit::convertToFAP() {
         ;
 }
 
-auto Stored_Unit::convertToRandomFAP() {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_);    // default values for output.
-    int rand_x = dis(generator);
-    int rand_y = dis(generator);
+auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos) {
     return FAP::makeUnit<Stored_Unit*>() // don't care about type.
         .setData(this)
         .setUnitType(type_)
-        .setPosition(Position(rand_x, rand_y))
+        .setPosition(chosen_pos)
         .setHealth(health_)
         .setShields(shields_)
         .setFlying(is_flying_)
         .setElevation(elevation_)
-        .setScore(stock_value_)
         .setAttackerCount(2)
         .setArmorUpgrades(0) // ignored for now
         .setAttackUpgrades(0) // ignored for now
@@ -742,61 +736,57 @@ auto Stored_Unit::convertToRandomFAP() {
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
-    future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
+    future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
+    double weight_for_moving_average = 95 / (double)96;
     if (!weighted_future_fap_value_) weighted_future_fap_value_ = stock_value_;
-    weighted_future_fap_value_ = (weighted_future_fap_value_* 95/(double)96) + 1/(double)96 * future_fap_value_;
+    weighted_future_fap_value_ = (weight_for_moving_average * weighted_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
 }
 
 
-void Unit_Inventory::addToFriendlyFAP() {
-    for (auto u : unit_inventory_) {
-        CUNYAIModule::fap.addUnitPlayer1(u.second.convertToFAP());
+void Unit_Inventory::addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {
+    for (auto &u : unit_inventory_) {
+        fap_object.addUnitPlayer1(u.second.convertToFAP());
     }
 }
 
-void Unit_Inventory::addToEnemyFAP() {
-    for (auto u : unit_inventory_) {
-        CUNYAIModule::fap.addUnitPlayer2(u.second.convertToFAP());
+void Unit_Inventory::addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {
+    for (auto &u : unit_inventory_) {
+        fap_object.addUnitPlayer2(u.second.convertToFAP());
     }
 }
 
-void Unit_Inventory::addToFriendlyBuildFAP() {
-    for (auto u : unit_inventory_) {
-        CUNYAIModule::buildfap.addUnitPlayer1(u.second.convertToRandomFAP());
+void Unit_Inventory::addToFriendlyBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object) {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_/2);    // default values for output.
+    for (auto &u : unit_inventory_) {
+        int rand_x = dis(generator);
+        int rand_y = dis(generator);
+        if(CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(Position(rand_x, rand_y)));
     }
 }
 
-void Unit_Inventory::addToEnemyBuildFAP() {
-    for (auto u : unit_inventory_) {
-        CUNYAIModule::buildfap.addUnitPlayer2(u.second.convertToRandomFAP());
+void Unit_Inventory::addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    std::uniform_int_distribution<int> dis(CUNYAIModule::inventory.my_portion_of_the_map_/2, CUNYAIModule::inventory.my_portion_of_the_map_);    // default values for output.
+    for (auto &u : unit_inventory_) {
+        int rand_x = dis(generator);
+        int rand_y = dis(generator);
+        if (CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(Position(rand_x, rand_y)));
     }
 }
 
 //This call seems very inelgant. Check if it can be made better.
 void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
 {
-    //std::transform(unit_inventory_.begin(), unit_inventory_.end(), FAPunits.begin(), unit_inventory_.begin(), [](std::pair<BWAPI::Unit, Stored_Unit> &bunch, const FAP::FAPUnit &f_unit) { bunch.second.updateFAPvalue(f_unit); return bunch; });
-    for (auto u : unit_inventory_) {
-        auto found_fap_unit = std::find_if(fap_vector.begin(), fap_vector.end(), [&fv = u](const FAP::FAPUnit<Stored_Unit*> fap_input) -> bool { return fv.second.checkMatchingFAP(fap_input); });
-        u.second.future_fap_value_ = (found_fap_unit != fap_vector.end()) * found_fap_unit->score; // replace with 0 when not found, with score otherwise.
+    for (auto &fu : fap_vector) {
+        if ( fu.data ) {
+            fu.data->updateFAPvalue(fu);
+        }
     }
+
 }
 
 bool Stored_Unit::checkMatchingFAP( const FAP::FAPUnit<Stored_Unit*> &FAPunit) {
     return this == FAPunit.data;
 }
 
-////This call seems very inelgant. Check if it can be made better.
-//void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit> FAPunits)
-//{
-//    vector<Stored_Unit> s;
-//    for (auto u : unit_inventory_) {
-//        s.push_back(u.second);
-//    }
-//
-//    std::transform(s.begin(), s.end(), FAPunits.begin(), s.begin(), [](Stored_Unit s_u, FAP::FAPUnit fap_unit) {s_u.future_fap_value_ = (int)(fap_unit.score * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields)); });
-//
-//    for (auto iter_s : s) {
-//        unit_inventory_.at(iter_s.bwapi_unit_).future_fap_value_ = iter_s.future_fap_value_;
-//    }
-//}
