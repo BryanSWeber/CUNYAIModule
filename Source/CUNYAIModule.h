@@ -132,7 +132,7 @@ public:
       void attachToParticularMine(Stored_Resource & mine, Resource_Inventory & ri, Stored_Unit & miner);
       // attaches the miner to the particular mine and updates the stored unit.
       void attachToParticularMine(Unit & mine, Resource_Inventory & ri, Stored_Unit & miner);
-      // Clears nearly-empty minerals.
+      // Clears nearly-empty minerals. Check if area is threatened before clearing.
       void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
       bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
       // Checks if there is a way to spend gas.

@@ -718,7 +718,7 @@ void CUNYAIModule::onFrame()
                              //e_closest->pos_.x += e_closest->bwapi_unit_->getVelocityX();
                              //e_closest->pos_.y += e_closest->bwapi_unit_->getVelocityY();  //short run position forecast.
 
-                int distance_to_foe = e_closest->pos_.getDistance(u->getPosition());
+                int distance_to_foe = (int)e_closest->pos_.getDistance(u->getPosition());
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_inventory);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
