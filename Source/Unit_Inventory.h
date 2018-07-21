@@ -116,6 +116,7 @@ struct Unit_Inventory {
     int cloaker_count_;
     int resource_depot_count_;
     int future_fap_stock_;
+    int moving_average_fap_stock_;
 
 	std::map <Unit, Stored_Unit> unit_inventory_;
 

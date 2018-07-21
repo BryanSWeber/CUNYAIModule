@@ -417,7 +417,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int air_fodder = 0;
     int resource_depots = 0;
     int future_fap_stock = 0;
-
+    int moving_average_fap_stock = 0;
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
@@ -459,6 +459,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
             future_fap_stock += u_iter.second.future_fap_value_;
+            moving_average_fap_stock += u_iter.second.future_fap_value_;
 			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
    //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
    //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
@@ -488,6 +489,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     cloaker_count_ = cloaker_count;
     resource_depot_count_ = resource_depots;
     future_fap_stock_ = future_fap_stock;
+    moving_average_fap_stock_ = moving_average_fap_stock_;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
