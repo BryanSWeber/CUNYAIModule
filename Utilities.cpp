@@ -999,18 +999,18 @@ bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-bool CUNYAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
-
-    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
-        if (e->second.pos_.x < origin.x + dist && e->second.pos_.x > origin.x - dist &&
-            e->second.pos_.y < origin.y + dist && e->second.pos_.y > origin.y - dist &&
-            CUNYAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
+//bool CUNYAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
+//
+//    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+//        if (e->second.pos_.x < origin.x + dist && e->second.pos_.x > origin.x - dist &&
+//            e->second.pos_.y < origin.y + dist && e->second.pos_.y > origin.y - dist &&
+//            CUNYAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
+//            return true;
+//        }
+//    }
+//
+//    return false;
+//}
 
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
 bool CUNYAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {

@@ -200,7 +200,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && checkThreatenedArea(enemy_inventory, miner.type_, r->second.pos_,250) ) {
+        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && inventory.home_base_.getDistance(r->second.pos_)<-inventory.my_portion_of_the_map_ ) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
