@@ -418,14 +418,19 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int resource_depots = 0;
     int future_fap_stock = 0;
     int moving_average_fap_stock = 0;
+    int stock_full_health = 0;
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
+
+        future_fap_stock += u_iter.second.future_fap_value_;
+        moving_average_fap_stock += u_iter.second.future_fap_value_;
+
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
             
             bool flying_unit = u_iter.second.type_.isFlyer();
-            int unit_value = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
-            int count_of_unit = CUNYAIModule::Count_Units(u_iter.second.type_, *this) ;
+            int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
+            int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this) ;
 
             if ( CUNYAIModule::IsFightingUnit(u_iter.second) ) {
 
@@ -434,13 +439,13 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
                 int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
                 
-                fliers          += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
-                ground_unit     += !flying_unit * unit_value;
-                shoots_up       += up_gun * unit_value;
-                shoots_down     += down_gun * unit_value;
-                shoots_both     += (up_gun && down_gun) * unit_value;
-                cloaker_count   += cloaker * count_of_unit;
-                detector_count  += u_iter.second.type_.isDetector() * count_of_unit;
+                fliers          += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                ground_unit     += !flying_unit * unit_value_for_all_of_type;
+                shoots_up       += up_gun * unit_value_for_all_of_type;
+                shoots_down     += down_gun * unit_value_for_all_of_type;
+                shoots_both     += (up_gun && down_gun) * unit_value_for_all_of_type;
+                cloaker_count   += cloaker * count_of_unit_type;
+                detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
@@ -451,15 +456,13 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 already_seen_types.push_back( u_iter.second.type_ );
             }
             else {
-                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit;
-                air_fodder += flying_unit * unit_value; // add the value of that type of unit to the flier stock.
-                ground_fodder += !flying_unit * unit_value;
+                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
+                air_fodder += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                ground_fodder += !flying_unit * unit_value_for_all_of_type;
             
             }
-
-            volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit;
-            future_fap_stock += u_iter.second.future_fap_value_;
-            moving_average_fap_stock += u_iter.second.future_fap_value_;
+            stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
+            volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
 			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
    //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
    //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
@@ -490,6 +493,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     resource_depot_count_ = resource_depots;
     future_fap_stock_ = future_fap_stock;
     moving_average_fap_stock_ = moving_average_fap_stock_;
+    stock_full_health_ = stock_full_health;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {

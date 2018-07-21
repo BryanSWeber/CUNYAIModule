@@ -54,9 +54,9 @@ struct Inventory {
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
-    vector< vector<int> > unwalkable_barriers_with_buldings_; // unwalkable = 1, otherwise 0.
+    vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
-    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, 1+ if otherwise. Veins decend from a value of 300.
+    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
     vector< vector<int> > map_veins_out_from_main_; // distance from our own main.
     vector< vector<int> > map_veins_out_from_enemy_; // distance from enemy base.
     vector< vector<int> > base_values_;
@@ -122,9 +122,11 @@ struct Inventory {
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
     void Inventory::updateSmoothPos();
-    // Marks the main arteries of the map. Requires updateunwalkablewithbuildings.
+    // Marks the distance from each obstacle. Requires updateunwalkablewithbuildings. //[Old usage:]Marks the main arteries of the map. 
     void Inventory::updateMapVeins();
 
+    // simply gets the map value at a particular position.
+    static int getMapValue(const Position &pos, const vector<vector<int>> &map);
 
     // Updates the visible map arteries. Only checks buildings.
     //void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );

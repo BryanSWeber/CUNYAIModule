@@ -18,7 +18,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
     UnitType u_type = unit->getType();
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = useful_stocks[0] * 0.95 > useful_stocks[1] || !potential_fears || !army_starved;
+    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_ || !potential_fears || !army_starved;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
@@ -204,12 +204,12 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     morphing_unit.updateStoredUnit(unit);
 }
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
-    distance_metric = DISTANCE_METRIC;
+    distance_metric = 3*DISTANCE_METRIC; // retreating must be done very fast.
     int chargable_distance = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
                                                                                //int range = unit->isFlying() ? air_range : ground_range;
     int e_range = ei.max_range_;
@@ -247,7 +247,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_I
     //setAlignment( unit, ui );
     //setAlignment( unit, local_neighborhood);
     //setCohesion( unit, pos, local_neighborhood);
-    setCentralize(pos, inventory);
+    //setCentralize(pos, inventory); // causes problems with kiting.
 
     if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
         unit->unburrow();
@@ -270,12 +270,17 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_I
 
     bool clear_walkable = retreat_spot.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory)); //or does it cross an unwalkable position? Includes buildings.
+            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
-    bool running_from_melee = 64 > CUNYAIModule::getProperRange(e_unit.bwapi_unit_);
-    bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance ;
+    bool kiting = 64 > CUNYAIModule::getProperRange(e_unit.bwapi_unit_) && CUNYAIModule::getProperRange(unit) > 64 && dist < 64  // only kite if he's in range,
+        && Inventory::getMapValue(pos, inventory.map_veins_) > 8  //only kite in open areas.
+        && retreat_spot.getDistance(e_unit.pos_) > 32; // only kite if it bothers to help your distance
+    //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance;
+    bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
+    bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
+    bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
 
-    if (retreat_spot && !unit->isBurrowed() && clear_walkable /*&& (safe_walkable || running_from_melee)*/ && !scourge_retreating) {
+    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable && !scourge_retreating*/) {
         unit->move(retreat_spot); //run away.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
@@ -286,19 +291,19 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_I
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
             return;
     }
-    //else { // if that spot will not work for you, then instead check along that vector.
+    else { // if that spot will not work for you, prep to die.
 
-    //    if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
-    //        unit->burrow();
-    //        Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-    //        morphing_unit.updateStoredUnit(unit);
-    //        return;
-    //    }
-    //    else {
-    //        Tactical_Logic(unit, ei, ui, inventory);
-    //        return;
-    //    }
-    //}
+        if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
+            unit->burrow();
+            Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+            morphing_unit.updateStoredUnit(unit);
+            return;
+        }
+        else { // if your death is immenent fight back.
+            Tactical_Logic(unit, ei, ui, inventory);
+            return;
+        }
+    }
 
 
 }
@@ -542,7 +547,7 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &pos, const Inven
                     if (pos.isValid() || // out of bounds by above map value.
                         walkability_x < 0 || walkability_y < 0 ||  // out of bounds below map,  0.
                         Broodwar->getGroundHeight(TilePosition(walkability_x, walkability_y)) != Broodwar->getGroundHeight(unit->getTilePosition()) ||  //If a position is on a different level, it's essentially unwalkable.
-                        !CUNYAIModule::isClearRayTrace(pos, Position(walkability_x, walkability_y), inventory)) { // or if the path to the target is relatively unwalkable.
+                        !CUNYAIModule::isClearRayTrace(pos, Position(walkability_x, walkability_y), inventory.unwalkable_barriers_with_buildings_, 1)) { // or if the path to the target is relatively unwalkable.
                                                                                                                   //!Broodwar->getUnitsOnTile( walkability_x / 32, walkability_y / 32, !IsFlying ).empty() ) { // or if the position is occupied.
                         double theta = atan2(y, x);
                         temp_walkability_dx_ += cos(theta);

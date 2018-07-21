@@ -359,7 +359,7 @@ void Inventory::updateUnwalkable() {
         unwalkable_barriers_.push_back( temp );
     }
     
-    unwalkable_barriers_with_buldings_ = unwalkable_barriers_; // preparing for the dependencies.
+    unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
 void Inventory::updateSmoothPos() {
@@ -431,7 +431,7 @@ void Inventory::updateMapVeins() {
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     map_veins_.clear();
-    map_veins_ = unwalkable_barriers_with_buldings_;
+    map_veins_ = unwalkable_barriers_with_buildings_;
 
     vector<WalkPosition> needs_filling;
     for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
@@ -527,6 +527,12 @@ void Inventory::updateMapVeins() {
 
     }
 
+}
+
+int Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
+{
+    WalkPosition startloc = WalkPosition(pos);
+    return map[startloc.x][startloc.y];
 }
 
 void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress.
@@ -1058,7 +1064,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
-    unwalkable_barriers_with_buldings_ = unwalkable_barriers_;
+    unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
 
     //mark all occupied areas.  IAAUW
 
@@ -1080,7 +1086,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1104,7 +1110,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1128,7 +1134,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                    unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
+                    unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
                 }
             }
         }
@@ -1150,7 +1156,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
         for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
             for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
-                unwalkable_barriers_with_buldings_[minitile_x][minitile_y] = 1;
+                unwalkable_barriers_with_buildings_[minitile_x][minitile_y] = 1;
             }
         }
 
@@ -1413,10 +1419,10 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
                         p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
                         Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
-                        (CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), *this) ||
-                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), *this) ||
-                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), *this) ||
-                         CUNYAIModule::isMapClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), *this) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
+                        (CUNYAIModule::isClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
+                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
+                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
+                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), this->unwalkable_barriers_, 1) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
 
                         int local_min = 0;
 

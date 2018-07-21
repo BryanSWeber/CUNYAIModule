@@ -1176,8 +1176,8 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 //    return true;
 //} 
 
-//checks if there is a smooth path to target. in minitiles
-bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const Inventory &inv){ // see Brehsam's Algorithm for all 8 octants.
+//checks if there is a smooth path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
+bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold){ // see Brehsam's Algorithm for all 8 octants.
 	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
 	WalkPosition final = WalkPosition(finalp);
 	WalkPosition initial = WalkPosition(initialp);
@@ -1207,7 +1207,7 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 		}
 
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
-		if ( safety_check && inv.map_veins_[x][y] == 1) {
+		if ( safety_check && target_map[x][y] >= threshold) {
 			return false;
 		}
 
@@ -1232,7 +1232,7 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 			}
 
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.map_veins_[x][y] == 1) {
+			if (safety_check && target_map[x][y] >= threshold) {
 				return false;
 			}
 		}
@@ -1252,7 +1252,7 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 			ye = initial.y;
 		}
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.map_veins_[x][y] == 1) {
+		if (safety_check && target_map[x][y] >= threshold) {
 			return false;
 		}
 
@@ -1276,7 +1276,7 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 				py = py + 2 * (dx1 - dy1);
 			}
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.map_veins_[x][y] == 1) {
+			if (safety_check && target_map[x][y] >= threshold) {
 				return false;
 			}
 
@@ -1284,117 +1284,6 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 	}
 
 	return true;
-
-}
-
-//checks if there is a smooth path to target. in minitiles
-bool CUNYAIModule::isMapClearRayTrace( const Position &initialp, const Position &finalp, const Inventory &inv ) { // see Brehsam's Algorithm for all 8 octants.
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
-    WalkPosition final = WalkPosition( finalp );
-    WalkPosition initial = WalkPosition( initialp );
-
-    dx = (final.x - initial.x);
-    dy = (final.y - initial.y);
-    dx1 = abs( dx );
-    dy1 = abs( dy );
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
-    map_x = Broodwar->mapWidth() * 4;
-    map_y = Broodwar->mapHeight() * 4;
-
-    if ( dy1 <= dx1 )
-    {
-        if ( dx >= 0 )
-        {
-            x = initial.x;
-            y = initial.y;
-            xe = final.x;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            xe = initial.x;
-        }
-
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-        if ( safety_check && inv.unwalkable_barriers_[x][y] == 1 ) {
-            return false;
-        }
-
-        for ( int i = 0; x<xe; i++ )
-        {
-            x = x + 1;
-            if ( px<0 )
-            {
-                px = px + 2 * dy1;
-            }
-            else
-            {
-                if ( (dx<0 && dy<0) || (dx>0 && dy>0) )
-                {
-                    y++;
-                }
-                else
-                {
-                    y--;
-                }
-                px = px + 2 * (dy1 - dx1);
-            }
-
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if ( safety_check && inv.unwalkable_barriers_[x][y] == 1 ) {
-                return false;
-            }
-        }
-    }
-    else
-    {
-        if ( dy >= 0 )
-        {
-            x = initial.x;
-            y = initial.y;
-            ye = final.y;
-        }
-        else
-        {
-            x = final.x;
-            y = final.y;
-            ye = initial.y;
-        }
-        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-        if ( safety_check && inv.unwalkable_barriers_[x][y] == 1 ) {
-            return false;
-        }
-
-        for ( int i = 0; y<ye; i++ )
-        {
-            y = y + 1;
-            if ( py <= 0 )
-            {
-                py = py + 2 * dx1;
-            }
-            else
-            {
-                if ( (dx<0 && dy<0) || (dx>0 && dy>0) )
-                {
-                    x++;
-                }
-                else
-                {
-                    x--;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
-            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-            if ( safety_check && inv.unwalkable_barriers_[x][y] == 1 ) {
-                return false;
-            }
-
-        }
-    }
-
-    return true;
 
 }
 

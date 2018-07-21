@@ -791,7 +791,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!they_take_a_fap_beating && !unit_death_in_1_second) ||
+                        (!they_take_a_fap_beating) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -839,7 +839,7 @@ void CUNYAIModule::onFrame()
                         }
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
                         }
                         continue; // this unit is finished.
 
@@ -874,7 +874,7 @@ void CUNYAIModule::onFrame()
                                 }
                             }
 
-                            mobility.Retreat_Logic(u, *e_closest, enemy_inventory, friendly_inventory, inventory, Colors::White);
+                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_inventory, friendly_inventory, inventory, Colors::White);
                             continue; //Do not give the unit to Mobility or any other algorithm if the enemy is nearby!
                         }
                     }
