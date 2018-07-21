@@ -1,6 +1,7 @@
 #pragma once
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
+#include "Utilities.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -1719,5 +1720,11 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
         return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
     }
     return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+}
+
+bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+    return  (ui.moving_average_fap_stock_ - ui.future_fap_stock_) * ei.stock_total_ < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) * ui.stock_total_ || // Proportional win. fixed division by crossmultiplying.
+        (ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_);// || //Win by damage.
+        //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

@@ -756,9 +756,7 @@ void CUNYAIModule::onFrame()
 
                 bool unit_death_in_1_second = friend_loc.unit_inventory_.at(u).weighted_future_fap_value_ <= friend_loc.unit_inventory_.at(u).stock_value_ * 0.33333;
 
-                bool they_take_a_fap_beating = (friend_loc.moving_average_fap_stock_ - friend_loc.future_fap_stock_) * enemy_loc.stock_total_ < (enemy_loc.moving_average_fap_stock_ - enemy_loc.future_fap_stock_) * friend_loc.stock_total_ || // Proportional win. fixed division by crossmultiplying.
-                                               (friend_loc.moving_average_fap_stock_ - friend_loc.future_fap_stock_) < (enemy_loc.moving_average_fap_stock_ - enemy_loc.future_fap_stock_) || //Win by damage.
-                                               friend_loc.moving_average_fap_stock_ > enemy_loc.moving_average_fap_stock_; //Antipcipated victory.
+                bool they_take_a_fap_beating = checkSuperiorFAPForecast(friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;

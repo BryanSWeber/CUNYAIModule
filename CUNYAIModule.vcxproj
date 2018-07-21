@@ -119,6 +119,7 @@
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
     <ClInclude Include="Source\InventoryManager.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,7 +18,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
     UnitType u_type = unit->getType();
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_ || !potential_fears || !army_starved;
+    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears || !army_starved;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);

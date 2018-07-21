@@ -50,6 +50,7 @@
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

@@ -148,7 +148,6 @@ struct Unit_Inventory {
     void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building  combat simulator, enemy sdie.
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
-
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
     Position getStrongestLocation() const; //in progress
