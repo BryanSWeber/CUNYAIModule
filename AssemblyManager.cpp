@@ -642,7 +642,7 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
 
 
     //add friendly units under consideration to FAP in loop, resetting each time.
-    for (auto potential_type : combat_types) {
+    for (auto &potential_type : combat_types) {
         if (morph_canidate->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
             buildfap_temp = buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
@@ -656,7 +656,7 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
 
             friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
             buildfap_temp.simulate(-1); // a complete simulation for us.
-            combat_types.find(potential_type.first)->second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+            potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
         }
     }

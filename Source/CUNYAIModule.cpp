@@ -617,7 +617,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 attempted_morph_larva_this_frame = true;
-                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
