@@ -78,7 +78,6 @@ struct Stored_Unit {
     int future_fap_value_; // only taken from fap.
     int weighted_average_future_fap_value_; // A moving average of FAP values.
     bool hasTarget_;
-    bool checkMatchingFAP(const FAP::FAPUnit<Stored_Unit*>& FAPunit); // checks if this FAPunit matches the stored unit we have here.
 
     int velocity_x_;
     int velocity_y_;

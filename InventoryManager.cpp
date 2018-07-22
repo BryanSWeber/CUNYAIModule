@@ -1510,7 +1510,7 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_/2);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
         if (ei_loc.moving_average_fap_stock_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
@@ -1529,7 +1529,7 @@ Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ / 2);
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
 
@@ -1544,20 +1544,38 @@ Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
 
 Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
 {
+    // Attempt 1.
+    //Position attacked_base = Positions::Origin;
+    //int largest_current_conflict = 0;
+    //int temp_worst_base = 0;
+
+    //for (auto expo : expo_positions_complete_) {
+    //    Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+    //    Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+    //    Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui_loc, Position(expo), my_portion_of_the_map_ / 2);
+    //    ei_loc.updateUnitInventorySummary();
+    //    ui_loc.updateUnitInventorySummary();
+    //    ui_tiny.updateUnitInventorySummary();
+    //    temp_worst_base = ei_loc.moving_average_fap_stock_ - ui_loc.moving_average_fap_stock_ ; //total future losses at base.
+    //    if ( temp_worst_base > largest_current_conflict && ui_tiny.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
+    //        largest_current_conflict = temp_worst_base;
+    //        attacked_base = Position(expo);
+    //    }
+    //}
+
+    //return attacked_base;
+
     Position attacked_base = Positions::Origin;
-    int largest_current_conflict = 0;
-    int temp_worst_base = 0;
+    int dist_to_enemy_centroid = 0;
+    int dist_to_enemy_centroid_temp = 0;
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui_loc, Position(expo), my_portion_of_the_map_ / 2);
-        ei_loc.updateUnitInventorySummary();
-        ui_loc.updateUnitInventorySummary();
-        ui_tiny.updateUnitInventorySummary();
-        temp_worst_base = ei_loc.moving_average_fap_stock_ - ui_loc.moving_average_fap_stock_ ; //total future losses at base.
-        if ( temp_worst_base > largest_current_conflict && ui_tiny.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
-            largest_current_conflict = temp_worst_base;
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size() );
+        Stored_Unit* median_unit = CUNYAIModule::getClosestStored(ei_loc,ei_loc.getMeanArmyLocation(), my_portion_of_the_map_);
+        dist_to_enemy_centroid_temp = median_unit->pos_.getDistance(Position(expo));
+        if (dist_to_enemy_centroid_temp > dist_to_enemy_centroid && ui_loc.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
+            dist_to_enemy_centroid = dist_to_enemy_centroid_temp;
             attacked_base = Position(expo);
         }
     }

@@ -335,6 +335,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     bool u_relatively_weak_against_air = checkWeakAgainstAir(ui, ei); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
     bool e_relatively_weak_against_air = checkWeakAgainstAir(ei, ui); // div by zero concern. Derivative of the above equation.
+    //if (Inventory::getMapValue(inv.enemy_base_, inv.map_veins_out_from_main_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
     // Do required build first.
     if (!buildorder.isEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {

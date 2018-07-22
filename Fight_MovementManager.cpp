@@ -19,6 +19,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     UnitType u_type = unit->getType();
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears/* || !army_starved*/;
+    //Broodwar->sendText("ready_to_fight = %s", ready_to_fight ? "True" : "False");
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
@@ -208,7 +209,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     morphing_unit.updateStoredUnit(unit);
 }
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -223,20 +224,16 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
     //Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
-    //if (dist < e_range + chargable_distance_net ) { //  Run if you're a noncombat unit or army starved. Chargable distance for safety. Retreat function now accounts for walkability.
 
     if (_ANALYSIS_MODE) {
         Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
         Broodwar->drawCircleMap(e_unit.pos_, chargable_distance , Colors::Cyan);
         Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance , Colors::Green);
     }
-    //initial retreat spot from enemy.
-    //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
     // Seperate from enemy:
     Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(64, e_range + chargable_distance ));
     e_neighbors.updateUnitInventorySummary();
-    // e_range = e_neighbors.max_range_;
 
     if (CUNYAIModule::getThreateningStocks(unit, e_neighbors) > 0) {
         setSeperation(unit, pos, e_neighbors); // might return false positives.
@@ -252,6 +249,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //setAlignment( unit, local_neighborhood);
     //setCohesion( unit, pos, local_neighborhood);
     //setCentralize(pos, inventory); // causes problems with kiting.
+    //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
     if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
         unit->unburrow();
@@ -283,15 +281,15 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
             CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
-    bool kiting = 64 > CUNYAIModule::getProperRange(e_unit.bwapi_unit_) && CUNYAIModule::getProperRange(unit) > 64 && dist < 64  // only kite if he's in range,
-        && Inventory::getMapValue(pos, inventory.map_veins_) > 8  //only kite in open areas.
-        && retreat_spot.getDistance(e_unit.pos_) > 32; // only kite if it bothers to help your distance
-    //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance;
+    bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
+    bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
+
+    bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
     bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_average_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
     bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
 
-    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable && !scourge_retreating*/) {
+    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable*/ && !scourge_retreating) {
         unit->move(retreat_spot); //run away.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
@@ -311,7 +309,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             return;
         }
         else { // if your death is immenent fight back.
-            Tactical_Logic(unit, ei, ui, inventory);
+            Tactical_Logic(unit, e_squad, u_squad, inventory);
             return;
         }
     }

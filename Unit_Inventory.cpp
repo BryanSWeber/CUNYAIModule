@@ -492,7 +492,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     cloaker_count_ = cloaker_count;
     resource_depot_count_ = resource_depots;
     future_fap_stock_ = future_fap_stock;
-    moving_average_fap_stock_ = moving_average_fap_stock_;
+    moving_average_fap_stock_ = moving_average_fap_stock;
     stock_full_health_ = stock_full_health;
 }
 
@@ -792,7 +792,4 @@ void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
 
 }
 
-bool Stored_Unit::checkMatchingFAP( const FAP::FAPUnit<Stored_Unit*> &FAPunit) {
-    return this == FAPunit.data;
-}
 
