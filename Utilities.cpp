@@ -1288,8 +1288,8 @@ bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &fin
 
 }
 
-//Counts the number of minitiles in a smooth path to target. in minitiles
-int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Position &finalp, const Inventory &inv ) // see Brehsam's Algorithm. Is likely bugged in current state.
+//Counts the number of minitiles in a path to target. in minitiles
+int CUNYAIModule::getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold) // see Brehsam's Algorithm. Is likely bugged in current state.
 {
 	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
 	WalkPosition final = WalkPosition(finalp);
@@ -1321,7 +1321,7 @@ int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 		}
 
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.map_veins_[x][y] == 1) {
+		if (safety_check && target_map[x][y] >= 1) {
 			squares_counted++;
 		}
 
@@ -1346,7 +1346,7 @@ int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 			}
 
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && inv.map_veins_[x][y] == 1) {
+			if (safety_check && target_map[x][y] >= 1) {
 				squares_counted++;
 			}
 		}
@@ -1366,7 +1366,7 @@ int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 			ye = initial.y;
 		}
 		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && inv.map_veins_[x][y] == 1) {
+		if (safety_check && target_map[x][y] >= 1) {
 			squares_counted++;
 		}
 
@@ -1390,7 +1390,7 @@ int CUNYAIModule::getClearRayTraceSquares( const Position &initialp, const Posit
 				py = py + 2 * (dx1 - dy1);
 			}
 			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if ( safety_check && inv.map_veins_[x][y] == 1) {
+			if ( safety_check && target_map[x][y] >= 1) {
 				squares_counted++;
 			}
 
@@ -1724,7 +1724,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
     return  (ui.moving_average_fap_stock_ - ui.future_fap_stock_) * ei.moving_average_fap_stock_ < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) * ui.moving_average_fap_stock_ || // Proportional win. fixed division by crossmultiplying.
-        (ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_);// || //Win by damage.
-        //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+        //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
+        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

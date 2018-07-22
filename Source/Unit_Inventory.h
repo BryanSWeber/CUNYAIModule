@@ -76,7 +76,7 @@ struct Stored_Unit {
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
-    int weighted_future_fap_value_; // A moving average of FAP values.
+    int weighted_average_future_fap_value_; // A moving average of FAP values.
     bool hasTarget_;
     bool checkMatchingFAP(const FAP::FAPUnit<Stored_Unit*>& FAPunit); // checks if this FAPunit matches the stored unit we have here.
 
@@ -158,6 +158,8 @@ struct Unit_Inventory {
     void stopMine(Unit u, Resource_Inventory & ri);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
+    Unit_Inventory(Unit_Inventory const &) = default;
+
 };
 
 

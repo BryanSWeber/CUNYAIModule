@@ -424,7 +424,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
 
         future_fap_stock += u_iter.second.future_fap_value_;
-        moving_average_fap_stock += u_iter.second.future_fap_value_;
+        moving_average_fap_stock += u_iter.second.weighted_average_future_fap_value_;
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
             
@@ -744,8 +744,8 @@ void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
     double weight_for_moving_average = 95 / (double)96;
-    if (!weighted_future_fap_value_) weighted_future_fap_value_ = stock_value_;
-    weighted_future_fap_value_ = (weight_for_moving_average * weighted_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
+    if (!weighted_average_future_fap_value_) weighted_average_future_fap_value_ = stock_value_;
+    weighted_average_future_fap_value_ = (weight_for_moving_average * weighted_average_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
 }
 
 

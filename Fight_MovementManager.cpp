@@ -18,21 +18,22 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
     UnitType u_type = unit->getType();
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears || !army_starved;
+    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears/* || !army_starved*/;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
 
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && (ready_to_fight)  && !scouting_returned_nothing) {
+        if (healthy && ready_to_fight ) {
             setAttractionEnemy(unit, pos, ei, inv, potential_fears);
             //scoutEnemyBase(unit, pos, inventory); 
         }
-        else if (enemy_scouted && !in_my_base && (!healthy || !ready_to_fight )) { // Otherwise, return home.
+        else { // Otherwise, return home.
             setAttractionHome(unit, pos, ei, inv);
         }
-        else if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
+        
+        if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
             //setStutter(unit, 1);
         }
@@ -62,14 +63,17 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         //}
     }
 
+    //Avoidance vector:
+    int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
+    int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
+    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x), (int)(pos.y + avoidance_vector_y) };
+    setObjectAvoid(unit, pos, avoidance_pos, inv);
 
     //Move to the final position.
     int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-
-    Position brownian_pos = { (int)(pos.x + vector_x),
-        (int)(pos.y + vector_y) };
-
+    Position brownian_pos = { (int)(pos.x + vector_x), (int)(pos.y + vector_y) };
+    
     if (brownian_pos != pos) {
 
         // lurkers should move when we need them to scout.
@@ -255,13 +259,20 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         morphing_unit.updateStoredUnit(unit);
         return;
     }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
-        unit->burrow();
-        Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-        morphing_unit.updateStoredUnit(unit);
-        return;
-    }
+    //else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
+    //    unit->burrow();
+    //    Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+    //    morphing_unit.updateStoredUnit(unit);
+    //    return;
+    //}
 
+    //Avoidance vector:
+    int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
+    int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
+    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x), (int)(pos.y + avoidance_vector_y) };
+    setObjectAvoid(unit, pos, avoidance_pos, inventory);
+
+    //final vector
     int vector_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
     int vector_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
 
@@ -276,7 +287,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         && Inventory::getMapValue(pos, inventory.map_veins_) > 8  //only kite in open areas.
         && retreat_spot.getDistance(e_unit.pos_) > 32; // only kite if it bothers to help your distance
     //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range + chargable_distance;
-    bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
+    bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_average_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
     bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
 
@@ -534,36 +545,46 @@ void Mobility::setSeperationScout(const Unit &unit, const Position &pos, const U
     }
 }
 
-void Mobility::setObjectAvoid(const Unit &unit, const Position &pos, const Inventory &inventory) { // now defunct.
+void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory) { 
+        double temp_walkability_dx_ = 0;
+        double temp_walkability_dy_ = 0;
+        double theta = 0;
+        WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+        Position avoidance_pos = {future_pos.x - current_pos.x, future_pos.y - current_pos.y};
+        vector<Position> trial_positions = { current_pos, future_pos, avoidance_pos };
 
-    double temp_walkability_dx_ = 0;
-    double temp_walkability_dy_ = 0;
-    if (!unit->isFlying()) {
-        for (int x = -10; x <= 10; ++x) {
-            for (int y = -10; y <= 10; ++y) {
-                double walkability_x = TilePosition(pos).x + x;
-                double walkability_y = TilePosition(pos).y + y;
-                if (!(x == 0 && y == 0)) {
-                    if (pos.isValid() || // out of bounds by above map value.
-                        walkability_x < 0 || walkability_y < 0 ||  // out of bounds below map,  0.
-                        Broodwar->getGroundHeight(TilePosition(walkability_x, walkability_y)) != Broodwar->getGroundHeight(unit->getTilePosition()) ||  //If a position is on a different level, it's essentially unwalkable.
-                        !CUNYAIModule::isClearRayTrace(pos, Position(walkability_x, walkability_y), inventory.unwalkable_barriers_with_buildings_, 1)) { // or if the path to the target is relatively unwalkable.
-                                                                                                                  //!Broodwar->getUnitsOnTile( walkability_x / 32, walkability_y / 32, !IsFlying ).empty() ) { // or if the position is occupied.
-                        double theta = atan2(y, x);
-                        temp_walkability_dx_ += cos(theta);
-                        temp_walkability_dy_ += sin(theta);
+        if (!unit->isFlying()) {
+            for (auto pos : trial_positions) {
+                for (int x = -5; x <= 5; ++x) {
+                    for (int y = -5; y <= 5; ++y) {
+                        double centralize_x = WalkPosition(future_pos).x + x;
+                        double centralize_y = WalkPosition(future_pos).y + y;
+                        if (!(x == 0 && y == 0) &&
+                            centralize_x < map_dim.x &&
+                            centralize_y < map_dim.y &&
+                            centralize_x > 0 &&
+                            centralize_y > 0 &&
+                            centralize_y > 0) // Is the spot acceptable?
+                        {
+                            theta = atan2(y, x);
+
+                            if (inventory.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                            {
+                                x > y ? temp_walkability_dx_ -= cos(theta) : temp_walkability_dy_ -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                            }
+                        }
                     }
+                }
+
+                if (temp_walkability_dx_ != 0 && temp_walkability_dy_ != 0) {
+                    double theta = atan2(temp_walkability_dy_, temp_walkability_dx_);
+                    walkability_dx_ += cos(theta) * distance_metric * 0.25;
+                    walkability_dy_ += sin(theta) * distance_metric * 0.25;
+                    break;
                 }
             }
         }
-    }
-    if (temp_walkability_dx_ != 0 && temp_walkability_dy_ != 0) {
-        double theta = atan2(temp_walkability_dy_, temp_walkability_dx_);
-        double temp_dist = abs(temp_walkability_dx_ * 8) + abs(temp_walkability_dy_ * 8); // we should move away based on the number of tiles rejecting us.
-        double tilt = rng_direction_ * 0.25 * 3.1415; // random number -1..1 times 0.75 * pi, should rotate it 45 degrees to the left or right of its original target. 
-        walkability_dx_ = cos(theta + tilt) * temp_dist * 0.25;
-        walkability_dy_ = sin(theta + tilt) * temp_dist * 0.25;
-    }
+
 }
 
 

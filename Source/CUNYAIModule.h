@@ -11,8 +11,8 @@
 #include <chrono> // for in-game frame clock.
 
 #define _RESIGN_MODE false // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
-#define _COBB_DOUGLASS_REVEALED false // The CD function specifically. Requires visualizations.
+#define _ANALYSIS_MODE true // Visualizations
+#define _COBB_DOUGLASS_REVEALED true // The CD function specifically. Requires visualizations.
 #define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 #define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 #define _SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
@@ -177,12 +177,12 @@ public:
       static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
       static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
 
-      //checks if there is a smooth path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
+      //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
       static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
       // Same but only checks the map itself.
       //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const Inventory & inv );
-      //counts the number of tiles in a smooth path to target. in minitiles
-      static int getClearRayTraceSquares( const Position & initial, const Position & final, const Inventory & inv );
+      //counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
+      static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
       //gets the nearest choke by simple counting along in the direction of the final unit.
       static Position getNearestChoke( const Position & initial, const Position &final, const Inventory & inv );
 

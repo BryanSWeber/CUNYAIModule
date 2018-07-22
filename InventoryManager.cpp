@@ -1513,8 +1513,8 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
         Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_/2);
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
-        if (ei_loc.stock_fighting_total_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
-            stock_current_best = ei_loc.stock_fighting_total_;
+        if (ei_loc.moving_average_fap_stock_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+            stock_current_best = ei_loc.moving_average_fap_stock_;
             weakest_base = Position(expo);
         }
     }
@@ -1545,17 +1545,19 @@ Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
 Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
 {
     Position attacked_base = Positions::Origin;
-    int current_anticipated_stock_lost = 0;
+    int largest_current_conflict = 0;
     int temp_worst_base = 0;
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ / 2);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui_loc, Position(expo), my_portion_of_the_map_ / 2);
         ei_loc.updateUnitInventorySummary();
+        ui_loc.updateUnitInventorySummary();
         ui_tiny.updateUnitInventorySummary();
-        temp_worst_base = ei_loc.stock_fighting_total_ - ui_tiny.stock_fighting_total_;
-        if (temp_worst_base > current_anticipated_stock_lost && ui_tiny.stock_ground_fodder_ > 0 && ei_loc.stock_fighting_total_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
-            current_anticipated_stock_lost = temp_worst_base;
+        temp_worst_base = ei_loc.moving_average_fap_stock_ - ui_loc.moving_average_fap_stock_ ; //total future losses at base.
+        if ( temp_worst_base > largest_current_conflict && ui_tiny.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
+            largest_current_conflict = temp_worst_base;
             attacked_base = Position(expo);
         }
     }
@@ -1699,17 +1701,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
     else if (frames_since_enemy_base > 24 * 10) {
         checked_all_expo_positions_ = false;
 
-        
-        // Defend if you have to.
-        //Position defendable_home_base = getAttackedBase(ei, ui);
-        //if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
-        //    updateMapVeinsOutFromFoe(defendable_home_base);
-        //    frames_since_enemy_base = 0;
-        //    return;
-        //}
-
-        // otherwise, attack.
-        Position suspected_enemy_base = getWeakestBase(ei);
+        Position suspected_enemy_base = getAttackedBase(ui, ei);
         Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
@@ -1751,13 +1743,13 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        // Defend if you have to.
-        //Position defendable_home_base = getAttackedBase(ei, ui);
-        //if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
-        //    updateMapVeinsOutFromFoe(defendable_home_base);
-        //    frames_since_enemy_base = 0;
-        //    return;
-        //}
+        // Defend if there is a fight.
+        Position defendable_home_base = getAttackedBase(ei, ui);
+        if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
+            updateMapVeinsOutFromMain(defendable_home_base);
+            frames_since_home_base = 0;
+            return;
+        }
 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;

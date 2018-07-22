@@ -754,7 +754,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_1_second = friend_loc.unit_inventory_.at(u).weighted_future_fap_value_ <= friend_loc.unit_inventory_.at(u).stock_value_ * 0.33333;
+                bool unit_death_in_1_second = friend_loc.unit_inventory_.at(u).weighted_average_future_fap_value_ <= friend_loc.unit_inventory_.at(u).stock_value_ * 0.33333;
 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast(friend_loc, enemy_loc);
 

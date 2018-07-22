@@ -41,7 +41,7 @@ public:
     void setSeperationScout(const Unit & unit, const Position & pos, const Unit_Inventory & ui);
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     // 
-    void setObjectAvoid( const Unit &unit, const Position &pos, const Inventory &inventory );
+    void setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory);
 
     bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
