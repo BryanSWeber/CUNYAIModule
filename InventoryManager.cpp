@@ -1725,8 +1725,14 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
     if (frames_since_enemy_base > 24 * 10) {
         checked_all_expo_positions_ = false;
 
-        Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        Position suspected_enemy_base = Positions::Origin;
 
+        suspected_enemy_base = getWeakestBase(ei); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ && suspected_enemy_base != Position(0, 0)) {
+            updateMapVeinsOutFromFoe(suspected_enemy_base);
+        }
+
+        Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOutFromFoe(center_building->pos_);
         }
@@ -1766,7 +1772,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
 
         suspected_friendly_base = getAttackedBase(ei,ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+        if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base != Position(0, 0)) {
             updateMapVeinsOutFromMain(suspected_friendly_base);
         }
         frames_since_home_base = 0;

@@ -225,10 +225,6 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
 
-    if (type_ != unit->getType()) {
-        Broodwar->drawCircleMap(pos_, 25, Colors::Red, true); // diagnostic for flickering unit.
-    }
-
     type_ = unit->getType();
     current_hp_ = unit->getHitPoints() + unit->getShields();
     velocity_x_ = (int)unit->getVelocityX();

@@ -739,21 +739,9 @@ void CUNYAIModule::onFrame()
                 //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_inventory, u);
                 Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
-                //Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
-
-                //enemy_loc.updateUnitInventorySummary();
-                //friend_loc.updateUnitInventorySummary(); /// need to update if we do not + the two inventories.
-
-                //int e_count = enemy_loc.unit_inventory_.size();
-
-                //int helpless_e = u->isFlying() ? enemy_loc.stock_fighting_total_ - enemy_loc.stock_shoots_up_ : enemy_loc.stock_fighting_total_ - enemy_loc.stock_shoots_down_;
-                //int helpful_e = u->isFlying() ? enemy_loc.stock_shoots_up_ : enemy_loc.stock_shoots_down_; // both forget value of psi units.
-                //int helpful_e = friend_loc.stock_fliers_ / (double)(friend_loc.stock_fighting_total_ + 1) * enemy_loc.stock_shoots_up_ + friend_loc.stock_ground_units_ / (double)(friend_loc.stock_fighting_total_ + 1)* enemy_loc.stock_shoots_down_; // permits a noncombat enemy to be seen as worthless, 0 stock.
-                //int helpful_u = enemy_loc.stock_fliers_ / (double)(enemy_loc.stock_fighting_total_ + 1) * friend_loc.stock_shoots_up_ + enemy_loc.stock_ground_units_ / (double)(enemy_loc.stock_fighting_total_ + 1)  * friend_loc.stock_shoots_down_;
-
-                vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
-                int helpful_u = useful_stocks[0];
-                int helpful_e = useful_stocks[1]; // both forget value of psi units.
+                //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
+                //int helpful_u = useful_stocks[0];
+                //int helpful_e = useful_stocks[1]; // both forget value of psi units.
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
@@ -813,6 +801,13 @@ void CUNYAIModule::onFrame()
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
+
+                    if (_ANALYSIS_MODE) {
+                        if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
+                            Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d-%d", friend_loc.moving_average_fap_stock_, enemy_loc.moving_average_fap_stock_);
+                        }
+                    }
+
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
 
                         if (u_type.isWorker()) {
@@ -821,16 +816,6 @@ void CUNYAIModule::onFrame()
 
                         mobility.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
 
-
-                        if (_ANALYSIS_MODE) {
-                            if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
-                                Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d", helpful_u);
-                            }
-                            Position mean_loc = enemy_loc.getMeanLocation();
-                            if (isOnScreen(mean_loc, inventory.screen_position_)) {
-                                Broodwar->drawTextMap(mean_loc.x, mean_loc.y, "%d", helpful_e);
-                            }
-                        }
                         continue; // this unit is finished.
 
                     }
@@ -857,7 +842,7 @@ void CUNYAIModule::onFrame()
                         }
                     }
                     else {
-                        if (distance_to_foe < chargable_distance_net) { // use same algo inside retreat script.
+                        //if (distance_to_foe < chargable_distance_net) { // use same algo inside retreat script.
 
                             if (u_type.isWorker()) {
                                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
@@ -877,7 +862,7 @@ void CUNYAIModule::onFrame()
 
                             mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, inventory, Colors::White);
                             continue; //Do not give the unit to Mobility or any other algorithm if the enemy is nearby!
-                        }
+                        //}
                     }
                 }
             } // close local examination.
@@ -894,8 +879,7 @@ void CUNYAIModule::onFrame()
 
         if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
             Mobility mobility;
-            bool potential_fears = !massive_army; // just a name change.
-            mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);
+            mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
         } // If it is a combat unit, then use it to attack the enemy.
         auto end_scout = std::chrono::high_resolution_clock::now();
 

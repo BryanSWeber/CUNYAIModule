@@ -83,7 +83,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
 
                         if (_ANALYSIS_MODE) {
-                            Broodwar->sendText("Dist frome enemy is: %d", new_dist);
+                            Broodwar->sendText("Dist from enemy is: %d", new_dist);
                         }
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);

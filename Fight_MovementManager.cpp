@@ -13,7 +13,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
+void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv) {
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
     double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
@@ -21,7 +21,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears/* || !army_starved*/;
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
@@ -29,9 +29,8 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && ready_to_fight ) {
-            setAttractionEnemy(unit, pos, ei, inv, potential_fears);
+            setAttractionEnemy(unit, pos, ei, inv);
             normalization = pos.getDistance(inv.enemy_base_) / (double)inv.my_portion_of_the_map_;
-            //scoutEnemyBase(unit, pos, inventory); 
         }
         else { // Otherwise, return home.
             setAttractionHome(unit, pos, ei, inv);
@@ -39,19 +38,13 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
-            //setStutter(unit, 1);
         }
 
         int average_side = ui.unit_inventory_.find(unit)->second.circumference_/4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
         setSeperation(unit, pos, neighbors);
+        setCohesion(unit, pos, local_neighborhood);
 
-        //if (potential_fears) {
-        //    setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
-        //}
-        //else {
-            setCohesion(unit, pos, local_neighborhood);
-        //}
     }
     else { //If you are an overlord, follow an abbreviated version of this.
 
@@ -61,9 +54,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         else {
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
         }
-        //else if (!enemy_scouted && healthy && ready_to_fight) {
-        //    scoutEnemyBase(unit, pos, inv);
-        //}
+
     }
 
     //Avoidance vector:
@@ -88,15 +79,16 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         }
 
         unit->move(brownian_pos);
+
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_ * normalization)        , (int)(pos.y + y_stutter_ * normalization) }, inv.screen_position_, Colors::Black);//Stutter
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_ * normalization)        , (int)(pos.y + attune_dy_ * normalization) }, inv.screen_position_, Colors::Green);//Alignment
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_ * normalization), (int)(pos.y + centralization_dy_ * normalization) }, inv.screen_position_, Colors::Blue); // Centraliziation.
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_ * normalization)      , (int)(pos.y + cohesion_dy_ * normalization) }, inv.screen_position_, Colors::Purple); // Cohesion
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_ * normalization)       , (int)(pos.y + attract_dy_ * normalization) }, inv.screen_position_, Colors::Red); //Attraction towards attackable enemies.
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_ * normalization)    , (int)(pos.y - seperation_dy_ * normalization) }, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_ * normalization)   , (int)(pos.y - walkability_dy_ * normalization) }, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
     }
 
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_ * normalization)        , (int)(pos.y + y_stutter_ * normalization) }, inv.screen_position_, Colors::Black);//Stutter
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_ * normalization)        , (int)(pos.y + attune_dy_ * normalization) }, inv.screen_position_, Colors::Green);//Alignment
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_ * normalization), (int)(pos.y + centralization_dy_ * normalization) }, inv.screen_position_, Colors::Blue); // Centraliziation.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_ * normalization)      , (int)(pos.y + cohesion_dy_ * normalization) }, inv.screen_position_, Colors::Purple); // Cohesion
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_ * normalization)       , (int)(pos.y + attract_dy_ * normalization) }, inv.screen_position_, Colors::Red); //Attraction towards attackable enemies.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_ * normalization)    , (int)(pos.y - seperation_dy_ * normalization) }, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_ * normalization)   , (int)(pos.y - walkability_dy_ * normalization) }, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
 
     Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     morphing_unit.updateStoredUnit(unit);
@@ -119,7 +111,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
     int max_dist = (ei.max_range_ + chargeable_dist);
     int max_chargable_dist = max_dist / (double)limit_units_diving;
-    int max_dist_no_priority = 9999999;
+    int max_dist_no_priority = INT_MAX;
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     Unit last_target = unit->getLastCommand().getTarget();
@@ -181,6 +173,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
                     target = &e->second;
                 }
+
             }
         }
     }
@@ -229,8 +222,8 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     if (_ANALYSIS_MODE) {
         Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
-        Broodwar->drawCircleMap(e_unit.pos_, chargable_distance , Colors::Cyan);
-        Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance , Colors::Green);
+        Broodwar->drawCircleMap(e_unit.pos_, chargable_distance, Colors::Cyan);
+        Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance, Colors::Green);
     }
 
     // Seperate from enemy:
@@ -253,12 +246,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //setCentralize(pos, inventory); // causes problems with kiting.
     //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
-    if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
-        unit->unburrow();
-        Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-        morphing_unit.updateStoredUnit(unit);
-        return;
-    }
+    //if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
+    //    unit->unburrow();
+    //    //Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+    //    //morphing_unit.updateStoredUnit(unit);
+    //    return;
+    //}
     //else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
     //    unit->burrow();
     //    Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
@@ -292,8 +285,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;
 
-    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight ) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable*/ && !scourge_retreating) {
-        unit->move(retreat_spot); //run away.
+    if (retreat_spot && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight) || kiting || never_suicide) && clear_walkable  /*|| safe_walkable*/ && !scourge_retreating) {
+        if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
+            unit->unburrow();
+        }
+        else {
+            unit->move(retreat_spot); //run away.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, inventory.screen_position_, Colors::Blue); // Centraliziation.
@@ -301,20 +298,21 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
-            return;
+        }
+        return;
     }
     else { // if that spot will not work for you, prep to die.
 
-        if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
-            unit->burrow();
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-            morphing_unit.updateStoredUnit(unit);
-            return;
-        }
-        else { // if your death is immenent fight back.
-            Tactical_Logic(unit, e_squad, u_squad, inventory);
-            return;
-        }
+        //if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
+        //    unit->burrow();
+        //    Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+        //    morphing_unit.updateStoredUnit(unit);
+        //    return;
+        //}
+        //else { // if your death is immenent fight back.
+        Tactical_Logic(unit, e_squad, u_squad, inventory);
+        return;
+        //}
     }
 
 
@@ -411,8 +409,8 @@ void Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inv
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        cohesion_dx_ = cos(theta) * 0.05 * unit->getDistance(loc_center);
-        cohesion_dy_ = sin(theta) * 0.05 * unit->getDistance(loc_center);
+        cohesion_dx_ = cos(theta) * 0.75 * unit->getDistance(loc_center);
+        cohesion_dy_ = sin(theta) * 0.75 * unit->getDistance(loc_center);
     }
 }
 
@@ -431,7 +429,7 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 }
 
 //Attraction, pull towards enemy units that we can attack. Requires some macro variables to be in place. Only sees visible units.
-void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
+void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv) {
 
     bool enemy_found = false;
     if (!unit->isFlying()) {
@@ -598,21 +596,22 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
 bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
     int dist_to_threat_or_target = unit->getDistance(position_of_target);
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
-    bool burrow_condition = (/*(dist_to_threat_or_target < ei.max_range_ && ei.detector_count_ <= ui.cloaker_count_ ) ||*/ dist_condition);
 
-    if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && burrow_condition) {
-        unit->burrow();
-        return true;
-    }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !burrow_condition) {
-        unit->unburrow();
-        return true;
-    }
-    else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && !burrow_condition) {
-        double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
-        Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * unit->getType().groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * unit->getType().groundWeapon().maxRange() * 0.75);
-        unit->move(closest_loc_to_permit_attacking);
-        return true;
+    if (unit->getType() == UnitTypes::Zerg_Lurker) {
+        if ( !unit->isBurrowed() && dist_condition) {
+            unit->burrow();
+            return true;
+        }
+        else if ( unit->isBurrowed() && !dist_condition) {
+            unit->unburrow();
+            return true;
+        }
+        else if ( !unit->isBurrowed() && !dist_condition) {
+            double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
+            Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75);
+            unit->move(closest_loc_to_permit_attacking);
+            return true;
+        }
     }
 
     return false;
