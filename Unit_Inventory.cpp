@@ -37,20 +37,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
 {
     for (auto &e: unit_inventory_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
-            e.second.valid_pos_ = true;
-            e.second.pos_ = e.second.bwapi_unit_->getPosition();
-            e.second.build_type_ = e.second.bwapi_unit_->getBuildType();
-
-            e.second.type_ = e.second.bwapi_unit_->getType();
-            e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
-            e.second.velocity_x_ = (int)e.second.bwapi_unit_->getVelocityX();
-            e.second.velocity_y_ = (int)e.second.bwapi_unit_->getVelocityY();
-            //e.second.order_ = e.second.bwapi_unit_->getOrder();
-            //e.second.time_since_last_command_ = Broodwar->getFrameCount() - e.second.bwapi_unit_->getLastCommandFrame();
-            e.second.stock_value_ = Stored_Unit(e.second.type_).stock_value_;
-            e.second.circumference_remaining_ = (1 - e.second.bwapi_unit_->isUnderAttack()) * e.second.circumference_ + e.second.bwapi_unit_->isUnderAttack() * e.second.circumference_remaining_; // update circumfrence if it's not being attacked.
-
-            e.second.current_stock_value_ = (int)(e.second.stock_value_ * (double)e.second.current_hp_ / (double)(e.second.type_.maxHitPoints() + e.second.type_.maxShields())); // Precalculated, precached.
+            e.second.updateStoredUnit(e.second.bwapi_unit_);
         }
         else if (Broodwar->isVisible(TilePosition(e.second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
 
@@ -60,19 +47,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
             for (auto &et : enemies_tile ) {
                 present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
                 if (present) {
-                    e.second.valid_pos_ = true;
-                    e.second.pos_ = e.second.bwapi_unit_->getPosition();
-                    e.second.build_type_ = e.second.bwapi_unit_->getBuildType();
-
-                    e.second.type_ = e.second.bwapi_unit_->getType();
-                    e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
-                    e.second.velocity_x_ = (int)e.second.bwapi_unit_->getVelocityX();
-                    e.second.velocity_y_ = (int)e.second.bwapi_unit_->getVelocityY();
-                    //e.second.order_ = e.second.bwapi_unit_->getOrder();
-                    //e.second.time_since_last_command_ = Broodwar->getFrameCount() - e.second.bwapi_unit_->getLastCommandFrame();
-                    e.second.stock_value_ = Stored_Unit(e.second.type_).stock_value_;
-                    e.second.circumference_remaining_ = e.second.circumference_;
-                    e.second.current_stock_value_ = (int)(e.second.stock_value_ * (double)e.second.current_hp_ / (double)(e.second.type_.maxHitPoints() + e.second.type_.maxShields())); // Precalculated, precached.
+                    e.second.updateStoredUnit(et);
                     break;
                 }
             }
@@ -246,6 +221,19 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     stock_value_ = Stored_Unit(type_).stock_value_;
     circumference_remaining_ = circumference_;
+
+    elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
+    cd_remaining_ = unit->getAirWeaponCooldown(); // both cooldowns are identical.
+    stimmed_ = unit->isStimmed();
+
+    int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+    modified_supply = type_ == UnitTypes::Terran_Bunker ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost = type_ == UnitTypes::Terran_Bunker ? type_.mineralPrice() + 50 : type_.mineralPrice(); // Assume bunkers are loaded.
+    int modified_gas_cost = type_.gasPrice();
+
+    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
+
+    stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 }
