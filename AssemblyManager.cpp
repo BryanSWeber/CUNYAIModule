@@ -619,8 +619,8 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
 
     //Let us simulate some combat.
     map<UnitType, int> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } , { UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN } };
-    map<UnitType, int> hydra_combat_types = { { UnitTypes::Zerg_Lurker, INT_MIN } };
-    map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } };
+    map<UnitType, int> hydra_combat_types = { { UnitTypes::Zerg_Hydralisk, INT_MIN } , { UnitTypes::Zerg_Lurker, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
+    map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Mutalisk, INT_MIN } , { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
 
     if (is_larva) {
         is_building = CUNYAIModule::findOptimalUnit(morph_canidate, larva_combat_types, ei, ui, inv);

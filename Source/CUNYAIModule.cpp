@@ -758,7 +758,7 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-                    bool grim_distance_trigger = (distance_to_foe < 32 + (u_type == UnitTypes::Zerg_Scourge || u_type == UnitTypes::Zerg_Zergling) * chargable_distance_enemy && getProperRange(u) < 32);
+                    //bool grim_distance_trigger = (distance_to_foe < 32 + (u_type == UnitTypes::Zerg_Scourge || u_type == UnitTypes::Zerg_Zergling) * chargable_distance_enemy && getProperRange(u) < 32);
                     bool neccessary_attack =
                         (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating || unit_death_in_1_second ) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
@@ -1334,8 +1334,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
             enemy_inventory.unit_inventory_.erase( unit );
             dead_enemy_inventory.addStored_Unit(unit);
-            inventory.estimated_enemy_workers_--;
-            //Broodwar->sendText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+            if(found_ptr->second.type_.isWorker()) inventory.estimated_enemy_workers_--;
+            //Broodwar->sendText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else {
             //Broodwar->sendText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
