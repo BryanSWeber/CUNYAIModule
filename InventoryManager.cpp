@@ -1567,26 +1567,26 @@ Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Invent
 }
 
 ////Gets Position of base with the most attackers outside of it.
-//Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const
-//{
-//    Position attacked_base = Positions::Origin;
-//    int largest_current_conflict = 0;
-//    int temp_worst_base = 0;
-//
-//    for (auto expo : expo_positions_complete_) {
-//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-//        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
-//        ei_loc.updateUnitInventorySummary();
-//        ui_loc.updateUnitInventorySummary();
-//        temp_worst_base = ei_loc.is_shooting_; //total future losses at base.
-//        if (temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0) { // you've got to have a building in that area.
-//            largest_current_conflict = temp_worst_base;
-//            attacked_base = Position(expo);
-//        }
-//    }
-//
-//    return attacked_base;
-//}
+Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const
+{
+    Position attacked_base = Positions::Origin;
+    int largest_current_conflict = 0;
+    int temp_worst_base = 0;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
+        ei_loc.updateUnitInventorySummary();
+        ui_loc.updateUnitInventorySummary();
+        temp_worst_base = ei_loc.is_shooting_ + 10 * ui_loc.is_shooting_; //total future losses at base.
+        if (temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0) { // you've got to have a building in that area.
+            largest_current_conflict = temp_worst_base;
+            attacked_base = Position(expo);
+        }
+    }
+
+    return attacked_base;
+}
 
 void Inventory::getExpoPositions() {
 
@@ -1771,6 +1771,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         Position suspected_friendly_base = Positions::Origin;
 
         suspected_friendly_base = getAttackedBase(ei,ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        //suspected_friendly_base = getBaseWithMostAttackers(ei,ui);
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base != Position(0, 0)) {
             updateMapVeinsOutFromMain(suspected_friendly_base);

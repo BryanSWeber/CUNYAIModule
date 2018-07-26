@@ -37,24 +37,42 @@ void Unit_Inventory::updateUnitsControlledByOthers()
 {
     for (auto &e: unit_inventory_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
+            e.second.valid_pos_ = true;
             e.second.pos_ = e.second.bwapi_unit_->getPosition();
+            e.second.build_type_ = e.second.bwapi_unit_->getBuildType();
+
             e.second.type_ = e.second.bwapi_unit_->getType();
             e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
-            e.second.valid_pos_ = true;
-            //Broodwar->sendText( "Relocated a %s.", e.second.type_.c_str() );
+            e.second.velocity_x_ = (int)e.second.bwapi_unit_->getVelocityX();
+            e.second.velocity_y_ = (int)e.second.bwapi_unit_->getVelocityY();
+            //e.second.order_ = e.second.bwapi_unit_->getOrder();
+            //e.second.time_since_last_command_ = Broodwar->getFrameCount() - e.second.bwapi_unit_->getLastCommandFrame();
+            e.second.stock_value_ = Stored_Unit(e.second.type_).stock_value_;
+            e.second.circumference_remaining_ = (1 - e.second.bwapi_unit_->isUnderAttack()) * e.second.circumference_ + e.second.bwapi_unit_->isUnderAttack() * e.second.circumference_remaining_; // update circumfrence if it's not being attacked.
+
+            e.second.current_stock_value_ = (int)(e.second.stock_value_ * (double)e.second.current_hp_ / (double)(e.second.type_.maxHitPoints() + e.second.type_.maxShields())); // Precalculated, precached.
         }
         else if (Broodwar->isVisible(TilePosition(e.second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
 
             bool present = false;
 
-            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Addons convert to neutral if their main base disappears.
+            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Main use: Addons convert to neutral if their main base disappears, extractors.
             for (auto &et : enemies_tile ) {
                 present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
                 if (present) {
+                    e.second.valid_pos_ = true;
                     e.second.pos_ = e.second.bwapi_unit_->getPosition();
+                    e.second.build_type_ = e.second.bwapi_unit_->getBuildType();
+
                     e.second.type_ = e.second.bwapi_unit_->getType();
                     e.second.current_hp_ = e.second.bwapi_unit_->getHitPoints() + e.second.bwapi_unit_->getShields();
-                    e.second.valid_pos_ = true;
+                    e.second.velocity_x_ = (int)e.second.bwapi_unit_->getVelocityX();
+                    e.second.velocity_y_ = (int)e.second.bwapi_unit_->getVelocityY();
+                    //e.second.order_ = e.second.bwapi_unit_->getOrder();
+                    //e.second.time_since_last_command_ = Broodwar->getFrameCount() - e.second.bwapi_unit_->getLastCommandFrame();
+                    e.second.stock_value_ = Stored_Unit(e.second.type_).stock_value_;
+                    e.second.circumference_remaining_ = e.second.circumference_;
+                    e.second.current_stock_value_ = (int)(e.second.stock_value_ * (double)e.second.current_hp_ / (double)(e.second.type_.maxHitPoints() + e.second.type_.maxShields())); // Precalculated, precached.
                     break;
                 }
             }
@@ -68,10 +86,6 @@ void Unit_Inventory::updateUnitsControlledByOthers()
                     e.second.pos_ = potential_running_spot;
                     e.second.valid_pos_ = true;
                 }
-                else {
-                    e.second.valid_pos_ = false;
-                }
-                //Broodwar->sendText( "Lost track of a %s.", e->second.type_.c_str() );
             }
             else {
                 e.second.valid_pos_ = false;
@@ -83,7 +97,6 @@ void Unit_Inventory::updateUnitsControlledByOthers()
         if (e.second.type_ == UnitTypes::Resource_Vespene_Geyser || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
         }
-
     }
 }
 

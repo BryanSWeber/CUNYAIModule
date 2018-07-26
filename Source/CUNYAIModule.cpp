@@ -463,7 +463,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_inventory.moving_average_fap_stock_, enemy_inventory.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_inventory.moving_average_fap_stock_, enemy_inventory.moving_average_fap_stock_); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_);
