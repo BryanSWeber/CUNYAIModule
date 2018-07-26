@@ -419,19 +419,20 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int future_fap_stock = 0;
     int moving_average_fap_stock = 0;
     int stock_full_health = 0;
+    int is_shooting = 0;
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
 
         future_fap_stock += u_iter.second.future_fap_value_;
         moving_average_fap_stock += u_iter.second.weighted_average_future_fap_value_;
+        is_shooting += u_iter.second.cd_remaining_ > 0; //
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
             
             bool flying_unit = u_iter.second.type_.isFlyer();
             int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
             int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this) ;
-
             if ( CUNYAIModule::IsFightingUnit(u_iter.second) ) {
 
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_== UnitTypes::Terran_Bunker;
@@ -494,6 +495,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     future_fap_stock_ = future_fap_stock;
     moving_average_fap_stock_ = moving_average_fap_stock;
     stock_full_health_ = stock_full_health;
+    is_shooting_ = is_shooting;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
@@ -533,7 +535,6 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     stock_value_ /= (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
-
 };
 // We must be able to create Stored_Unit objects as well.
 Stored_Unit::Stored_Unit( const Unit &unit ) {
@@ -581,6 +582,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
     stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    weighted_average_future_fap_value_ = stock_value_;
 
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
@@ -744,7 +746,6 @@ void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
     double weight_for_moving_average = 95 / (double)96;
-    if (!weighted_average_future_fap_value_) weighted_average_future_fap_value_ = stock_value_;
     weighted_average_future_fap_value_ = (weight_for_moving_average * weighted_average_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
 }
 

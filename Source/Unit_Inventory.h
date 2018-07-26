@@ -117,7 +117,7 @@ struct Unit_Inventory {
     int resource_depot_count_;
     int future_fap_stock_;
     int moving_average_fap_stock_;
-
+    int is_shooting_;
 	std::map <Unit, Stored_Unit> unit_inventory_;
 
     // Updates the count of units.

@@ -3,8 +3,10 @@
 # include "Source\CUNYAIModule.h"
 # include "Source\Fight_MovementManager.h"
 # include <random> // C++ base random is low quality.
+# include <numeric>
 
-#define DISTANCE_METRIC (int)CUNYAIModule::getProperSpeed(unit) * 8;
+
+#define DISTANCE_METRIC (int)CUNYAIModule::getProperSpeed(unit) * 24;
 
 using namespace BWAPI;
 using namespace Filter;
@@ -12,14 +14,14 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv, const bool &army_starved, const bool &potential_fears) {
-    distance_metric = DISTANCE_METRIC;
     Position pos = unit->getPosition();
-    vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
+    distance_metric = DISTANCE_METRIC;
+    double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
     UnitType u_type = unit->getType();
+
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = /*useful_stocks[0] * 0.95 > useful_stocks[1] ||*/ CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears/* || !army_starved*/;
-    //Broodwar->sendText("ready_to_fight = %s", ready_to_fight ? "True" : "False");
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei) || !potential_fears/* || !army_starved*/;
     bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
@@ -28,6 +30,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && ready_to_fight ) {
             setAttractionEnemy(unit, pos, ei, inv, potential_fears);
+            normalization = pos.getDistance(inv.enemy_base_) / (double)inv.my_portion_of_the_map_;
             //scoutEnemyBase(unit, pos, inventory); 
         }
         else { // Otherwise, return home.
@@ -40,9 +43,8 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         }
 
         int average_side = ui.unit_inventory_.find(unit)->second.circumference_/4;
-        Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side);
+        Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
         setSeperation(unit, pos, neighbors);
-        setCentralize(pos, inv);
 
         //if (potential_fears) {
         //    setCohesion(unit, pos, ui); // results in units getting stuck mid-map.
@@ -67,13 +69,13 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     //Avoidance vector:
     int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x), (int)(pos.y + avoidance_vector_y) };
+    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x * normalization), (int)(pos.y + avoidance_vector_y * normalization) };
     setObjectAvoid(unit, pos, avoidance_pos, inv);
 
     //Move to the final position.
     int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-    Position brownian_pos = { (int)(pos.x + vector_x), (int)(pos.y + vector_y) };
+    Position brownian_pos = { (int)(pos.x + vector_x * normalization), (int)(pos.y + vector_y * normalization) };
     
     if (brownian_pos != pos) {
 
@@ -88,13 +90,13 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         unit->move(brownian_pos);
     }
 
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_)        , (int)(pos.y + y_stutter_) }, inv.screen_position_, Colors::Black);//Stutter
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inv.screen_position_, Colors::Green);//Alignment
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, inv.screen_position_, Colors::Blue); // Centraliziation.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, inv.screen_position_, Colors::Purple); // Cohesion
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, inv.screen_position_, Colors::Red); //Attraction towards attackable enemies.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_ * normalization)        , (int)(pos.y + y_stutter_ * normalization) }, inv.screen_position_, Colors::Black);//Stutter
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_ * normalization)        , (int)(pos.y + attune_dy_ * normalization) }, inv.screen_position_, Colors::Green);//Alignment
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_ * normalization), (int)(pos.y + centralization_dy_ * normalization) }, inv.screen_position_, Colors::Blue); // Centraliziation.
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_ * normalization)      , (int)(pos.y + cohesion_dy_ * normalization) }, inv.screen_position_, Colors::Purple); // Cohesion
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_ * normalization)       , (int)(pos.y + attract_dy_ * normalization) }, inv.screen_position_, Colors::Red); //Attraction towards attackable enemies.
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_ * normalization)    , (int)(pos.y - seperation_dy_ * normalization) }, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+    CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_ * normalization)   , (int)(pos.y - walkability_dy_ * normalization) }, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
 
     Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     morphing_unit.updateStoredUnit(unit);
@@ -214,7 +216,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
-    distance_metric = 3*DISTANCE_METRIC; // retreating must be done very fast.
+    distance_metric = DISTANCE_METRIC; // retreating must be done very fast.
     int chargable_distance = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
                                                                                //int range = unit->isFlying() ? air_range : ground_range;
     int e_range = ei.max_range_;
@@ -232,11 +234,11 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     }
 
     // Seperate from enemy:
-    Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(64, e_range + chargable_distance ));
-    e_neighbors.updateUnitInventorySummary();
+    //Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(64, e_range + chargable_distance ));
+    //e_neighbors.updateUnitInventorySummary();
 
-    if (CUNYAIModule::getThreateningStocks(unit, e_neighbors) > 0) {
-        setSeperation(unit, pos, e_neighbors); // might return false positives.
+    if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
+        setSeperation(unit, pos, e_squad); // might return false positives.
         if (unit->isFlying()) {
             setAttractionHome(unit, pos, ei, inventory); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
         }
@@ -288,8 +290,9 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_average_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
     bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
+    bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;
 
-    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable*/ && !scourge_retreating) {
+    if (retreat_spot && !unit->isBurrowed() && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight ) || kiting || never_suicide ) && clear_walkable  /*|| safe_walkable*/ && !scourge_retreating) {
         unit->move(retreat_spot); //run away.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
@@ -370,35 +373,35 @@ void Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, cons
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
-void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
-    double temp_centralization_dx_ = 0;
-    double temp_centralization_dy_ = 0;
-    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int x = -5; x <= 5; ++x) {
-        for (int y = -5; y <= 5; ++y) {
-            int mini_x = WalkPosition(pos).x;
-            int mini_y = WalkPosition(pos).y;
-            double centralize_x = mini_x + x;
-            double centralize_y = mini_y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < map_dim.x &&
-                centralize_y < map_dim.y &&
-                centralize_x > 0 &&
-                centralize_y > 0 &&
-                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
-            {
-                double theta = atan2(y, x);
-                temp_centralization_dx_ += cos(theta);
-                temp_centralization_dy_ += sin(theta);
-            }
-        }
-    }
-    if (temp_centralization_dx_ != 0 && temp_centralization_dy_ != 0) {
-        double theta = atan2(temp_centralization_dy_, temp_centralization_dx_);
-        centralization_dx_ = cos(theta) * distance_metric * 0.125;
-        centralization_dy_ = sin(theta) * distance_metric * 0.125;
-    }
-}
+//void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
+//    double temp_centralization_dx_ = 0;
+//    double temp_centralization_dy_ = 0;
+//    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+//    for (int x = -5; x <= 5; ++x) {
+//        for (int y = -5; y <= 5; ++y) {
+//            int mini_x = WalkPosition(pos).x;
+//            int mini_y = WalkPosition(pos).y;
+//            double centralize_x = mini_x + x;
+//            double centralize_y = mini_y + y;
+//            if (!(x == 0 && y == 0) &&
+//                centralize_x < map_dim.x &&
+//                centralize_y < map_dim.y &&
+//                centralize_x > 0 &&
+//                centralize_y > 0 &&
+//                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
+//            {
+//                double theta = atan2(y, x);
+//                temp_centralization_dx_ += cos(theta);
+//                temp_centralization_dy_ += sin(theta);
+//            }
+//        }
+//    }
+//    if (temp_centralization_dx_ != 0 && temp_centralization_dy_ != 0) {
+//        double theta = atan2(temp_centralization_dy_, temp_centralization_dx_);
+//        centralization_dx_ = cos(theta) * distance_metric * 0.125;
+//        centralization_dy_ = sin(theta) * distance_metric * 0.125;
+//    }
+//}
 
 //Cohesion, all units tend to prefer to be together.
 void Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
@@ -431,7 +434,6 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_Inventory &ei, const Inventory &inv, const bool &potential_fears) {
 
     bool enemy_found = false;
-
     if (!unit->isFlying()) {
 
         vector<double> direction = getVectorTowardsEnemy(unit->getPosition(), inv);
@@ -511,8 +513,8 @@ void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_I
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_dx_ += cos(theta) * distance_metric / 4; // run 1 tile away from everyone. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ += sin(theta) * distance_metric / 4;
+        seperation_dx_ += cos(theta) * distance_metric * 0.75; // run away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_dy_ += sin(theta) * distance_metric * 0.75;
     }
 }
 
@@ -550,6 +552,10 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
         WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
         Position avoidance_pos = {future_pos.x - current_pos.x, future_pos.y - current_pos.y};
         vector<Position> trial_positions = { current_pos, future_pos, avoidance_pos };
+        
+        int all_xs = 0;
+        int all_ys = 0;
+        int count_of_unwalkable_tiles = 0;
 
         if (!unit->isFlying()) {
             for (auto pos : trial_positions) {
@@ -564,18 +570,20 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
                             centralize_y > 0 &&
                             centralize_y > 0) // Is the spot acceptable?
                         {
-                            theta = atan2(y, x);
 
-                            if (inventory.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                            if (inventory.map_veins_[centralize_x][centralize_y] <= 1) // repulse from unwalkable.
                             {
-                                x > y ? temp_walkability_dx_ -= cos(theta) : temp_walkability_dy_ -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                                all_xs += centralize_x;
+                                all_ys += centralize_y;
+                                count_of_unwalkable_tiles++;
                             }
                         }
                     }
                 }
+                if (count_of_unwalkable_tiles > 0) {
+                    Position centroid_avoid = Position(all_xs / count_of_unwalkable_tiles, all_ys / count_of_unwalkable_tiles);
 
-                if (temp_walkability_dx_ != 0 && temp_walkability_dy_ != 0) {
-                    double theta = atan2(temp_walkability_dy_, temp_walkability_dx_);
+                    double theta = atan2(future_pos.x - centroid_avoid.x, future_pos.y - centroid_avoid.y);
                     walkability_dx_ += cos(theta) * distance_metric * 0.25;
                     walkability_dy_ += sin(theta) * distance_metric * 0.25;
                     break;
@@ -639,12 +647,12 @@ vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Invento
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
-                {
-                    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
-                                                                         //adj_x -= cos(theta);
-                                                                         //adj_y -= sin(theta);
-                }
+                //else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                //{
+                //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                //                                                         //adj_x -= cos(theta);
+                //                                                         //adj_y -= sin(theta);
+                //}
             }
         }
     }
@@ -686,12 +694,12 @@ vector<double> Mobility::getVectorTowardsEnemy(const Position &pos, const Invent
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
-                {
-                    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
-                                                                         //adj_x -= cos(theta);
-                                                                         //adj_y -= sin(theta);
-                }
+                //else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                //{
+                //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
+                //                                                         //adj_x -= cos(theta);
+                //                                                         //adj_y -= sin(theta);
+                //}
             }
         }
     }

@@ -708,6 +708,8 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
+        bool foe_within_radius = false;
+
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 999999);
@@ -761,8 +763,8 @@ void CUNYAIModule::onFrame()
 
                 //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
-
-                if (e_closest->valid_pos_ /*&& distance_to_foe < search_radius*/) {  // Must have a valid postion on record to attack.
+                foe_within_radius = distance_to_foe < search_radius;
+                if (e_closest->valid_pos_ && foe_within_radius) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
@@ -890,7 +892,7 @@ void CUNYAIModule::onFrame()
             (u_type == UnitTypes::Zerg_Overlord && enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) ||
             (u_type == UnitTypes::Zerg_Overlord && massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
 
-        if (spamGuard(u) /*&& acceptable_ovi_scout*/ && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
+        if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
             Mobility mobility;
             bool potential_fears = !massive_army; // just a name change.
             mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory, army_starved, potential_fears);

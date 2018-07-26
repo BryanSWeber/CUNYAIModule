@@ -152,8 +152,9 @@ struct Inventory {
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
     Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
-    // Returns the Position of a base under attack.
+    // Returns the Position of a base with heavies
     Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
+    Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
 
     // updates the next target expo.
     void Inventory::getExpoPositions();

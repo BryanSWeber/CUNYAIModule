@@ -208,7 +208,7 @@ public:
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
-      static Position getClosestExpo(const Inventory & inv, const Position & origin, const int & dist);
+      static Position getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.

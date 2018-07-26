@@ -741,6 +741,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, In
 
     return return_unit;
 }
+
 // Allows type -specific- selection. 
 Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
     int min_dist = 999999;
@@ -782,24 +783,38 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
     return return_unit;
 }
 
-//Gets position of closest expo to position. Checks range. Careful about visiblity.
-Position CUNYAIModule::getClosestExpo(const Inventory &inv, const Position &origin, const int &dist = 999999) {
-    int min_dist = dist;
-    int temp_dist = 999999;
-    Position return_pos = Positions::Origin;
-
-    for (auto expo = inv.expo_positions_complete_.begin(); expo != inv.expo_positions_complete_.end() && !inv.expo_positions_complete_.empty(); expo++) {
-        Position expo_pos = Position(*expo);
-        temp_dist = inv.getDifferentialDistanceOutFromHome(expo_pos, return_pos);
-        if (temp_dist <= min_dist && expo_pos.isValid() ) {
-            min_dist = temp_dist;
-            return_pos = expo_pos;
-        }
-    }
-    
-
-    return return_pos;
-}
+//Gets position of closest occupied expo to position. Checks range. Careful about visiblity.
+//Position CUNYAIModule::getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist) {
+//    //int min_dist = dist;
+//    //int temp_dist = 999999;
+//    //Position return_pos = Positions::Origin;
+//    //vector<Position> hatchery_positions;
+//
+//    ////get all the hatcheries (of any type.).
+//    //for (auto & potential_hatchery : ui.unit_inventory_) {
+//    //    if (potential_hatchery.second.type_.isResourceDepot()) hatchery_positions.push_back(potential_hatchery.second.pos_);
+//    //}
+//
+//    //for (auto & expo = inv.expo_positions_complete_.begin(); expo != inv.expo_positions_complete_.end() && !inv.expo_positions_complete_.empty(); expo++) {
+//    //    Position expo_pos = Position(*expo);
+//    //    temp_dist = expo_pos.getDistance(return_pos);
+//    //    
+//    //    bool occupied_expo = false;
+//    //    //If it is occupied, we can count it.
+//    //    for (auto potential_occupant : hatchery_positions) {
+//    //        occupied_expo = potential_occupant.getDistance(expo_pos) < 500;
+//    //        if (occupied_expo) break;
+//    //    }
+//
+//    //    if (temp_dist <= min_dist && expo_pos.isValid() && occupied_expo) {
+//    //        min_dist = temp_dist;
+//    //        return_pos = expo_pos;
+//    //    }
+//    //}
+//    //
+//
+//    //return return_pos;
+//}
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const UnitType &r_type, const Position &origin, const int &dist = 999999) {
@@ -1723,7 +1738,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
-    return  (ui.moving_average_fap_stock_ - ui.future_fap_stock_) * ei.moving_average_fap_stock_ < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) * ui.moving_average_fap_stock_ || // Proportional win. fixed division by crossmultiplying.
+    return  (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ || // Proportional win. fixed division by crossmultiplying.
         //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
         ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }

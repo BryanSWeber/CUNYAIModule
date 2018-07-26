@@ -1542,46 +1542,51 @@ Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
     return strongest_base;
 }
 
+//Gets position of base nearby greatest imbalance of combat units.
 Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
 {
-    // Attempt 1.
-    //Position attacked_base = Positions::Origin;
-    //int largest_current_conflict = 0;
-    //int temp_worst_base = 0;
-
-    //for (auto expo : expo_positions_complete_) {
-    //    Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-    //    Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
-    //    Unit_Inventory ui_tiny = CUNYAIModule::getUnitInventoryInRadius(ui_loc, Position(expo), my_portion_of_the_map_ / 2);
-    //    ei_loc.updateUnitInventorySummary();
-    //    ui_loc.updateUnitInventorySummary();
-    //    ui_tiny.updateUnitInventorySummary();
-    //    temp_worst_base = ei_loc.moving_average_fap_stock_ - ui_loc.moving_average_fap_stock_ ; //total future losses at base.
-    //    if ( temp_worst_base > largest_current_conflict && ui_tiny.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
-    //        largest_current_conflict = temp_worst_base;
-    //        attacked_base = Position(expo);
-    //    }
-    //}
-
-    //return attacked_base;
-
+    //// Attempt 1.
     Position attacked_base = Positions::Origin;
-    int dist_to_enemy_centroid = 0;
-    int dist_to_enemy_centroid_temp = 0;
+    int largest_current_conflict = 0;
+    int temp_worst_base = 0;
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size() );
-        Stored_Unit* median_unit = CUNYAIModule::getClosestStored(ei_loc,ei_loc.getMeanArmyLocation(), my_portion_of_the_map_);
-        dist_to_enemy_centroid_temp = median_unit->pos_.getDistance(Position(expo));
-        if (dist_to_enemy_centroid_temp > dist_to_enemy_centroid && ui_loc.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
-            dist_to_enemy_centroid = dist_to_enemy_centroid_temp;
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
+        ei_loc.updateUnitInventorySummary();
+        ui_loc.updateUnitInventorySummary();
+        temp_worst_base = ei_loc.stock_fighting_total_ - ui_loc.stock_fighting_total_; //total future losses at base.
+        if ( temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
+            largest_current_conflict = temp_worst_base;
             attacked_base = Position(expo);
         }
     }
 
     return attacked_base;
+
 }
+
+////Gets Position of base with the most attackers outside of it.
+//Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const
+//{
+//    Position attacked_base = Positions::Origin;
+//    int largest_current_conflict = 0;
+//    int temp_worst_base = 0;
+//
+//    for (auto expo : expo_positions_complete_) {
+//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+//        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
+//        ei_loc.updateUnitInventorySummary();
+//        ui_loc.updateUnitInventorySummary();
+//        temp_worst_base = ei_loc.is_shooting_; //total future losses at base.
+//        if (temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0) { // you've got to have a building in that area.
+//            largest_current_conflict = temp_worst_base;
+//            attacked_base = Position(expo);
+//        }
+//    }
+//
+//    return attacked_base;
+//}
 
 void Inventory::getExpoPositions() {
 
@@ -1651,8 +1656,8 @@ void Inventory::getExpoPositions() {
 
     //From SO, quick conversion into set.
     set<TilePosition> s;
-    unsigned size = expo_positions_complete_.size();
-    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_complete_[i]);
+    unsigned size = expo_positions_.size();
+    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_[i]);
     expo_positions_complete_.assign(s.begin(), s.end());
 }
 
@@ -1709,26 +1714,20 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         frames_since_unwalkable = 0;
 
     }
-    else if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
+    
+    if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
 
         updateMapVeins();
         frames_since_map_veins = 0;
 
-
     }
-    else if (frames_since_enemy_base > 24 * 10) {
+    
+    if (frames_since_enemy_base > 24 * 10) {
         checked_all_expo_positions_ = false;
 
-        Position suspected_enemy_base = getAttackedBase(ui, ei);
         Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        if (suspected_enemy_base.isValid() && suspected_enemy_base == enemy_base_ && suspected_enemy_base != Position(0, 0)) {
-
-        }
-        else if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ && suspected_enemy_base != Position(0, 0)) {
-            updateMapVeinsOutFromFoe(suspected_enemy_base);
-        }
-        else if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+        if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOutFromFoe(center_building->pos_);
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0) && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
@@ -1743,7 +1742,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
             checked_all_expo_positions_ = true;
 
-            while (Broodwar->isVisible(TilePosition(enemy_base_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
                 random_index = rand() % expo_positions_.size();
                 if (Broodwar->isVisible(expo_positions_[random_index])) {
                     expo_positions_.erase(expo_positions_.begin() + random_index);
@@ -1757,27 +1756,17 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         frames_since_enemy_base = 0;
 
     }
-    else if (frames_since_home_base > 24 * 30) {
+    
+    if (frames_since_home_base > 24 * 10) {
 
-        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ui.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-
-        // Defend if there is a fight.
-        Position defendable_home_base = getAttackedBase(ei, ui);
-        if (defendable_home_base.isValid() && defendable_home_base != enemy_base_ && defendable_home_base != Position(0, 0)) {
-            updateMapVeinsOutFromMain(defendable_home_base);
-            frames_since_home_base = 0;
-            return;
-        }
+        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
-        suspected_friendly_base = getWeakestBase(ui);
+        suspected_friendly_base = getAttackedBase(ei,ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        if (suspected_friendly_base.isValid() && suspected_friendly_base == enemy_base_ && suspected_friendly_base != Position(0, 0)) {
-
-        }
-        else if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
+        if (suspected_friendly_base.isValid() && suspected_friendly_base != enemy_base_ && suspected_friendly_base != Position(0, 0)) {
             updateMapVeinsOutFromMain(suspected_friendly_base);
         }
         frames_since_home_base = 0;
@@ -1793,7 +1782,7 @@ void Inventory::setNextExpo( const TilePosition tp ) {
 void Inventory::drawExpoPositions() const
 {
     if (_ANALYSIS_MODE) {
-        for (auto &p : expo_positions_) {
+        for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
                 lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
