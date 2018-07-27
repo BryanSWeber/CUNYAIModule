@@ -177,8 +177,8 @@ void CUNYAIModule::onFrame()
     enemy_inventory.drawAllLocations(inventory);
 
     //Update neutral units
-    neutral_inventory.updateUnitsControlledByOthers();
-    neutral_inventory.purgeBrokenUnits();
+    neutral_inventory.updateUnitsControlledByOthers(true);
+    neutral_inventory.purgeBrokenUnits(true);
     neutral_inventory.drawAllHitPoints(inventory);
     neutral_inventory.drawAllLocations(inventory);
 
@@ -211,7 +211,6 @@ void CUNYAIModule::onFrame()
     int enemy_fap_score = getFAPScore(fap, false);
     friendly_inventory.pullFromFAP(*fap.getState().first);
     enemy_inventory.pullFromFAP(*fap.getState().second);
-
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
@@ -745,7 +744,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_1_second = friend_loc.unit_inventory_.at(u).weighted_average_future_fap_value_ <= friend_loc.unit_inventory_.at(u).stock_value_ * 0.33333;
+                bool unit_death_in_1_second = !Stored_Unit::unitAliveinFuture(friend_loc.unit_inventory_.at(u),48);
 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast(friend_loc, enemy_loc);
 

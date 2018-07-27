@@ -1,4 +1,5 @@
 #pragma once
+#define _MOVING_AVERAGE_DURATION 96 // set MA duration, usually 96 frames
 
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
@@ -33,7 +34,7 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitsControlledByOthers()
+void Unit_Inventory::updateUnitsControlledByOthers(bool drop_geysers)
 {
     for (auto &e: unit_inventory_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
@@ -51,7 +52,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
                     break;
                 }
             }
-            if ((!present || enemies_tile.empty()) && e.second.valid_pos_ && e.second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+            if (!present && e.second.valid_pos_ && e.second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
                 Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
                 if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
                     e.second.valid_pos_ = false;
@@ -60,25 +61,27 @@ void Unit_Inventory::updateUnitsControlledByOthers()
                     (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
                     e.second.pos_ = potential_running_spot;
                     e.second.valid_pos_ = true;
+                    present = true;
                 }
             }
-            else {
+
+            if(!present) {
                 e.second.valid_pos_ = false;
             }
         }
 
         e.second.circumference_remaining_ = e.second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
 
-        if (e.second.type_ == UnitTypes::Resource_Vespene_Geyser || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
+        if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser && drop_geysers) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
         }
     }
 }
 
-void Unit_Inventory::purgeBrokenUnits()
+void Unit_Inventory::purgeBrokenUnits(bool drop_geysers)
 {
     for (auto &e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
-        if (e->second.type_ == UnitTypes::Resource_Vespene_Geyser || // Destroyed refineries revert to geyers, requiring the manual catc.
+        if ((e->second.type_ == UnitTypes::Resource_Vespene_Geyser && drop_geysers) || // Destroyed refineries revert to geyers, requiring the manual catc.
             e->second.type_ == UnitTypes::None) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
             e = this->unit_inventory_.erase(e); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
         }
@@ -742,10 +745,13 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos) {
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
     future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
-    double weight_for_moving_average = 95 / (double)96;
+    double weight_for_moving_average = (_MOVING_AVERAGE_DURATION -1) / (double)_MOVING_AVERAGE_DURATION;
     weighted_average_future_fap_value_ = (weight_for_moving_average * weighted_average_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
 }
 
+bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
+    return unit.weighted_average_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
+}
 
 void Unit_Inventory::addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {
     for (auto &u : unit_inventory_) {

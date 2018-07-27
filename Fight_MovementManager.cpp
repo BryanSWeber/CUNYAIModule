@@ -280,7 +280,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
-    bool unit_death_in_1_second = ui.unit_inventory_.at(unit).weighted_average_future_fap_value_ <= ui.unit_inventory_.at(unit).stock_value_ * 0.33333;
+    bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit),48);
     bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;

@@ -26,6 +26,8 @@ struct Stored_Unit {
 
     void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
 
+    static bool unitAliveinFuture(const Stored_Unit &unit, const int & number_of_frames_in_future); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+
     void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
@@ -130,8 +132,8 @@ struct Unit_Inventory {
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
 	void updateUnitInventory(const Unitset &unit_set);
-    void updateUnitsControlledByOthers();
-    void purgeBrokenUnits();
+    void updateUnitsControlledByOthers(bool drop_geysers = false);
+    void purgeBrokenUnits(bool drop_geysers = false);
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Inventory & inv, Reservation & res);
