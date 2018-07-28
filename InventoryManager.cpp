@@ -1698,15 +1698,21 @@ void Inventory::writeMapVeins(const vector< vector<int> > mapVeins, const Positi
     ss << center;
     string base = ss.str();
 
+    //Flatten map before writing it.
+    vector<int> holding_vector;
+    for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
+        for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
+            holding_vector.push_back(mapVeins[i][j]);
+
     int number;
     ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newVeins)
     {
         ofstream veins;
         veins.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
-        for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
-            for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
-                veins << mapVeins[i][j] << endl;
+        //faster write of whole vector.
+        for (std::vector<int>::const_iterator i = holding_vector.begin(); i != holding_vector.end(); ++i)
+            std::cout << *i << endl;
         veins.close();
     }
     newVeins.close();

@@ -33,8 +33,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 }
         } else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery && building != UnitTypes::Zerg_Greater_Spire)
         {
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
-            if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 24);
+            if (my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby && unit->build(building, buildPosition) ) {
                 buildorder.announceBuildingAttempt(building);
                 return true;
             }
@@ -130,45 +130,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 }
             }
 
-            //if (final_creep_colony_spot == TilePosition(0, 0)) {// if we have NOT identified the enemy's base, build at the spot furthest from our center..
-            //    if (central_base == TilePosition(0, 0)) {
-            //        int old_dist = 0;
-
-            //        for (auto base = base_core.begin(); base != base_core.end(); ++base) {
-
-            //            TilePosition central_base_new = TilePosition((*base)->getPosition());
-            //            int new_dist = inventory.getRadialDistanceOutFromHome((*base)->getPosition());
-
-            //            if (new_dist >= old_dist) {
-            //                central_base = central_base_new;
-            //                old_dist = new_dist;
-            //            }
-            //        }
-            //    } //confirm we have identified a base around which to build.
-
-            //    int chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(central_base));
-            //    for (int x = -5; x <= 5; ++x) {
-            //        for (int y = -5; y <= 5; ++y) {
-            //            double centralize_x = central_base.x + x;
-            //            double centralize_y = central_base.y + y;
-            //            if (!(x == 0 && y == 0) &&
-            //                centralize_x < Broodwar->mapWidth() &&
-            //                centralize_y < Broodwar->mapHeight() &&
-            //                centralize_x > 0 &&
-            //                centralize_y > 0 &&
-            //                getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty() &&
-            //                Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-            //                inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > 20 && // don't wall off please. wide berth around blue veins
-            //                inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y))) >= chosen_base_distance) // Count all points further from home than we are.
-            //            {
-            //                final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
-            //                chosen_base_distance = inventory.getRadialDistanceOutFromHome(Position(TilePosition((int)centralize_x, (int)centralize_y)));
-            //            }
-            //        }
-            //    }
-            //}
-
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 12);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = ui.unit_inventory_.find(unit)->second;
@@ -560,7 +522,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
 TilePosition CUNYAIModule::getBuildablePosition( const TilePosition target_pos, const UnitType build_type, const int tile_grid_size ) {
 
     TilePosition canidate_return_position = TilePosition (0,0);
-    int widest_dim_in_minitiles = 0.25 * max(build_type.height(), build_type.width()) + 8;
+    int widest_dim_in_minitiles = 4 * max(build_type.tileHeight(), build_type.tileWidth());
     for (int x = -tile_grid_size; x <= tile_grid_size; ++x) {
         for (int y = -tile_grid_size; y <= tile_grid_size; ++y) {
             int centralize_x = target_pos.x + x;
