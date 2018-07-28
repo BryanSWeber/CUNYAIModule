@@ -271,7 +271,7 @@ void CUNYAIModule::onFrame()
         inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    inventory.updateEnemyBasePosition(friendly_inventory, enemy_inventory, land_inventory, neutral_inventory);
+    inventory.updateBasePositions(friendly_inventory, enemy_inventory, land_inventory, neutral_inventory);
     inventory.drawExpoPositions();
     inventory.drawBasePositions();
 
@@ -429,29 +429,28 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", Gas_Outlet() ? "TRUE" : "FALSE");  //
 
-        if (_COBB_DOUGLASS_REVEALED) {
-            Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", CD.getlny()); //
-            Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", CD.getlnY()); //
-        }
+
+        Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", CD.getlny()); //
+        Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", CD.getlnY()); //
+
         Broodwar->drawTextScreen(125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60); //
         Broodwar->drawTextScreen(125, 110, "Win Rate: %1.2f", win_rate); //
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
 
-        if (_COBB_DOUGLASS_REVEALED) {
-            Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", CD.econ_derivative);  //
-            Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", CD.army_derivative); //
-            Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", CD.tech_derivative); //
-            Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); // 
-            Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100);  // As %s
-            Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100); //
-            Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-            Broodwar->drawTextScreen(250, 70, "Enemy Worker Est: %d ", inventory.estimated_enemy_workers_); // No longer a % with capital-augmenting technology.
+        Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", CD.econ_derivative);  //
+        Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", CD.army_derivative); //
+        Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", CD.tech_derivative); //
+        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); // 
+        Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", CD.alpha_econ * 100);  // As %s
+        Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100); //
+        Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100); // No longer a % with capital-augmenting technology.
+        Broodwar->drawTextScreen(250, 70, "Enemy Worker Est: %d ", inventory.estimated_enemy_workers_); // No longer a % with capital-augmenting technology.
 
-            Broodwar->drawTextScreen(250, 80, "Delta_gas: %4.2f", delta); //
-            Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
-        }
+        Broodwar->drawTextScreen(250, 80, "Delta_gas: %4.2f", delta); //
+        Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
+        
 
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //

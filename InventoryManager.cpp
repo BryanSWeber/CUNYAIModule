@@ -7,6 +7,7 @@
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
 #include <fstream>
+#include <ostream>
 #include <set>
 
 using namespace std;
@@ -1459,7 +1460,7 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
@@ -1469,6 +1470,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
     frames_since_enemy_base++;
     frames_since_home_base++;
     frames_since_map_veins++;
+    frames_since_safe_base++;
     frames_since_unwalkable++;
 
     //every 10 sec check if we're sitting at our destination.
@@ -1550,6 +1552,22 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         frames_since_home_base = 0;
     }
 
+    if (frames_since_safe_base > 24 * 10) {
+
+        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+
+        //otherwise go to your weakest base.
+        Position suspected_safe_base = Positions::Origin;
+
+        suspected_safe_base = getStrongestBase(ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+                                                           //suspected_friendly_base = getBaseWithMostAttackers(ei,ui);
+
+        if (suspected_safe_base.isValid() && suspected_safe_base != home_base_ && suspected_safe_base != Position(0, 0)) {
+            updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);
+        }
+
+        frames_since_safe_base = 0;
+    }
 }
 
 
@@ -1583,6 +1601,8 @@ void Inventory::drawBasePositions() const
     if (_ANALYSIS_MODE) {
         Broodwar->drawCircleMap(enemy_base_, 25, Colors::Red, true);
         Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+        Broodwar->drawCircleMap(safe_base_, 25, Colors::Blue, true);
+
     }
 }
 
@@ -1598,6 +1618,13 @@ void Inventory::writeMap(const vector< vector<int> > &mapin, const Position &cen
         for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
             holding_vector.push_back(mapin[i][j]);
 
+    std::ostringstream merged_holding_vector;
+    // Convert all but the last element to avoid a trailing ","
+    std::copy(holding_vector.begin(), holding_vector.end() - 1,
+        std::ostream_iterator<int>(merged_holding_vector, "\n"));
+    // Now add the last element with no delimiter
+    merged_holding_vector << holding_vector.back();
+
     int number;
     ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newMap)
@@ -1605,8 +1632,8 @@ void Inventory::writeMap(const vector< vector<int> > &mapin, const Position &cen
         ofstream map;
         map.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
         //faster write of whole vector.
-        for (std::vector<int>::const_iterator i = holding_vector.begin(); i != holding_vector.end(); ++i)
-            map << *i << endl;
+        map << merged_holding_vector.str() << endl;
+
         map.close();
     }
     newMap.close();
@@ -1617,13 +1644,13 @@ void Inventory::readMap( vector< vector<int> > &mapin, const Position &center)
 {
     std::stringstream ss;
     ss << center;
+    int number;
     string base = ss.str();
     mapin.clear();
-    int number;
+
     ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (newMap)
     {
-        //newVeins.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
         for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
         {
             mapin.push_back(std::vector<int>());

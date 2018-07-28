@@ -32,7 +32,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
             setAttraction(unit, pos, inv, inv.map_out_from_enemy_);
             normalization = pos.getDistance(inv.enemy_base_) / (double)inv.my_portion_of_the_map_;
         }
-        else { // Otherwise, return home.
+        else { // Otherwise, return to home.
             setAttraction(unit, pos, inv, inv.map_out_from_home_);
         }
         
@@ -48,8 +48,8 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     }
     else { //If you are an overlord, follow an abbreviated version of this.
 
-        if (!ready_to_fight) { // Otherwise, return home.
-            setAttraction(unit, pos, inv, inv.map_out_from_home_); 
+        if (!ready_to_fight) { // Otherwise, return to safety.
+            setAttraction(unit, pos, inv, inv.map_out_from_safety_); 
         }
         else {
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
@@ -233,12 +233,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         if (unit->isFlying()) {
-            setAttraction(unit, pos,inventory, inventory.map_out_from_home_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+            setAttraction(unit, pos, inventory, inventory.map_out_from_safety_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
         }
         //setStutter(unit, 1000);
     }
     else {
-        setAttraction(unit, pos, inventory, inventory.map_out_from_home_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        setAttraction(unit, pos, inventory, inventory.map_out_from_safety_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
     //setAlignment( unit, ui );
     //setAlignment( unit, local_neighborhood);
@@ -603,7 +603,7 @@ vector<double> Mobility::getVectorTowardsMap(const Position &pos, const Inventor
                 theta = atan2(y, x);
 
                 if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-                    inv.map_out_from_home_[centralize_x][centralize_y] < my_spot) // go directly to my base.
+                    map[centralize_x][centralize_y] < my_spot) // go directly to my base.
                 {
                     temp_x += cos(theta);
                     temp_y += sin(theta);

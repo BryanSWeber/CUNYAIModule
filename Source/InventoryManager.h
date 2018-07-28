@@ -48,9 +48,12 @@ struct Inventory {
     vector<TilePosition> expo_positions_complete_;
     Position enemy_base_;
     Position home_base_;
+    Position safe_base_;
+
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
+
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
@@ -59,6 +62,7 @@ struct Inventory {
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
     vector< vector<int> > map_out_from_home_; // distance from our own main.
     vector< vector<int> > map_out_from_enemy_; // distance from enemy base.
+    vector< vector<int> > map_out_from_safety_; // distance from enemy base.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -74,6 +78,7 @@ struct Inventory {
     int frames_since_unwalkable = 0;
     int frames_since_map_veins = 0;
     int frames_since_home_base = 0;
+    int frames_since_safe_base = 0;
     int frames_since_enemy_base = 0;
 
     // Counts my units so I don't have to do this for each unit onframe.
@@ -177,6 +182,6 @@ struct Inventory {
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateEnemyBasePosition(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
 };
