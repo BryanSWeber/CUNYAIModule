@@ -50,7 +50,7 @@ struct Stored_Unit {
     Position cohesion_;
     unsigned int health_;
     unsigned int shields_;
-    unsigned int is_flying_;
+    bool is_flying_;
     unsigned int elevation_;
     unsigned int cd_remaining_;
     bool stimmed_;
