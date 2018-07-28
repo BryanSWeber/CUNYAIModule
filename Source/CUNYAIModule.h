@@ -309,4 +309,5 @@ public:
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
       bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
+      void printUnitInventory(Unit_Inventory inventory); //prints aribtrary UI to file.
 };

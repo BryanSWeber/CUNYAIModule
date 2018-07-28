@@ -8,6 +8,7 @@
 #include "Source\Reservation_Manager.h"
 #include "Source\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.
+#include <fstream>
 
 //Unit_Inventory functions.
 //Creates an instance of the unit inventory class.
@@ -744,9 +745,21 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos) {
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
-    future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
-    double weight_for_moving_average = (_MOVING_AVERAGE_DURATION -1) / (double)_MOVING_AVERAGE_DURATION;
-    weighted_average_future_fap_value_ = (weight_for_moving_average * weighted_average_future_fap_value_) + (1-weight_for_moving_average) * future_fap_value_;
+    double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
+
+    fap_unit.data->future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
+    fap_unit.data->weighted_average_future_fap_value_ = (double)(weight * fap_unit.data->weighted_average_future_fap_value_) + (double)(1 - weight) * fap_unit.data->future_fap_value_;
+    fap_unit.data->updated_fap_this_frame_ = true;
+
+}
+
+void Stored_Unit::updateFAPvalueDead()
+{
+    double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
+
+    future_fap_value_ = 0;
+    weighted_average_future_fap_value_ = (double)(weight * weighted_average_future_fap_value_) + (1 - weight) * 0;
+    updated_fap_this_frame_ = true;
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
@@ -788,12 +801,30 @@ void Unit_Inventory::addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fa
 //This call seems very inelgant. Check if it can be made better.
 void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
 {
+    for (auto &u : unit_inventory_) {
+        u.second.updated_fap_this_frame_ = false;
+    }
+
     for (auto &fu : fap_vector) {
         if ( fu.data ) {
-            fu.data->updateFAPvalue(fu);
+            Stored_Unit::updateFAPvalue(fu);
         }
+    }
+
+    for (auto &u : unit_inventory_) {
+        if (!u.second.updated_fap_this_frame_) { u.second.updateFAPvalueDead(); }
     }
 
 }
 
 
+
+void CUNYAIModule::printUnitInventory(Unit_Inventory inventory)
+{
+    ofstream output; // Prints to brood war file while in the WRITE file.
+    if (Broodwar->getFrameCount() % (24 * 30) == 0) {
+        output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
+        output << "Friendly " << inventory.cloaker_count_ << "," << inventory.detector_count_ << ',' << inventory.max_cooldown_ << ',' << inventory.max_range_ << ',' << inventory.resource_depot_count_ << ',' << inventory.stock_air_fodder_ << ',' << inventory.stock_both_up_and_down_ << ',' << inventory.stock_fighting_total_ << ',' << inventory.stock_fliers_ << ',' << inventory.stock_ground_fodder_ << ',' << inventory.stock_ground_units_ << ',' << inventory.stock_high_ground_ << ',' << inventory.stock_shoots_down_ << ',' << inventory.stock_shoots_up_ << ',' << inventory.stock_total_ << endl;
+        output.close();
+    }
+}

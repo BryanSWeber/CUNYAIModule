@@ -165,6 +165,9 @@ struct Inventory {
     void Inventory::drawExpoPositions() const;
     void Inventory::drawBasePositions() const;
 
+    void Inventory::writeMapVeins(const vector< vector<int> > mapVeins, const Position &center); // write one of the map objects have created, centered around the passed position.
+    void Inventory::readMapVeins(vector< vector<int> > &mapVeins, const Position &center); // read one of the map objects we have created, centered around the passed position.
+
     // Adds start positions to inventory object.
     void Inventory::getStartPositions();
     // Updates map positions and removes all visible ones;

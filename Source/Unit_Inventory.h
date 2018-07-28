@@ -24,7 +24,8 @@ struct Stored_Unit {
     auto convertToFAP(); // puts stored unit into the fap type.
     auto convertToFAPPosition(const Position &chosen_pos); // puts the stored unit into the fap type... at a specific position
 
-    void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
 
     static bool unitAliveinFuture(const Stored_Unit &unit, const int & number_of_frames_in_future); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
 
@@ -53,6 +54,7 @@ struct Stored_Unit {
     unsigned int elevation_;
     unsigned int cd_remaining_;
     bool stimmed_;
+    bool updated_fap_this_frame_;
 
     //Needed commands for workers.
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
