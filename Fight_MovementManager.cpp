@@ -434,7 +434,7 @@ void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_In
     bool enemy_found = false;
     if (!unit->isFlying()) {
 
-        vector<double> direction = getVectorTowardsEnemy(unit->getPosition(), inv);
+        vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, inv.map_out_from_enemy_);
         attract_dx_ = direction[0] * distance_metric;
         attract_dy_ = direction[1] * distance_metric;
         return;
@@ -471,7 +471,7 @@ void Mobility::setAttractionHome(const Unit &unit, const Position &pos, const Un
 
         if (!inv.map_out_from_home_.empty() && !unit->isFlying()) {
             WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-            vector<double> direction = getVectorTowardsHome(unit->getPosition(), inv);
+            vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, inv.map_out_from_home_);
             attract_dx_ = direction[0] * distance_metric;
             attract_dy_ = direction[1] * distance_metric;
         }
@@ -617,9 +617,9 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
     return false;
 }
 
-vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Inventory &inv) const {
+vector<double> Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
     vector<double> return_vector = { 0, 0 };
-    int my_spot = inv.getRadialDistanceOutFromHome(pos);
+    int my_spot = inv.getMapValue(pos, map);
     double temp_x = 0;
     double temp_y = 0;
     double adj_x = 0;
@@ -646,59 +646,6 @@ vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Invento
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                //else if (inv.map_out_from_home_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
-                //{
-                //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
-                //                                                         //adj_x -= cos(theta);
-                //                                                         //adj_y -= sin(theta);
-                //}
-            }
-        }
-    }
-
-    if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y + adj_y, temp_x + adj_x);
-        return_vector[0] = cos(theta);
-        return_vector[1] = sin(theta);
-    }
-
-    return  return_vector;
-}
-
-vector<double> Mobility::getVectorTowardsEnemy(const Position &pos, const Inventory &inv) const {
-    vector<double> return_vector = { 0, 0 };
-    int my_spot = inv.getRadialDistanceOutFromEnemy(pos);
-    double temp_x = 0;
-    double temp_y = 0;
-    double theta = 0;
-    double adj_x = 0;
-    double adj_y = 0;
-
-    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int x = -5; x <= 5; ++x) {
-        for (int y = -5; y <= 5; ++y) {
-            double centralize_x = WalkPosition(pos).x + x;
-            double centralize_y = WalkPosition(pos).y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < map_dim.x &&
-                centralize_y < map_dim.y &&
-                centralize_x > 0 &&
-                centralize_y > 0) // Is the spot acceptable?
-            {
-                theta = atan2(y, x);
-
-                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-                    inv.map_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly to their base.
-                {
-                    temp_x += cos(theta);
-                    temp_y += sin(theta);
-                }
-                //else if (inv.map_out_from_enemy_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
-                //{
-                //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
-                //                                                         //adj_x -= cos(theta);
-                //                                                         //adj_y -= sin(theta);
-                //}
             }
         }
     }

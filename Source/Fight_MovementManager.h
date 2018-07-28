@@ -45,10 +45,9 @@ public:
 
     bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
-    // gives a vector that has the direction on ground towards home.
-    vector<double> getVectorTowardsHome(const Position & pos, const Inventory & inv) const;
-    // gives a vector that has the direction on ground towards enemy.
-    vector<double> getVectorTowardsEnemy(const Position & pos, const Inventory & inv) const;
+    // gives a vector that has the direction towards center on (map).
+    vector<double> getVectorTowardsMap(const Position & pos, const Inventory & inv, const vector<vector<int>>& map) const;
+
 
 private:
     int distance_metric = 0;
