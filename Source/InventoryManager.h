@@ -138,11 +138,8 @@ struct Inventory {
     //void Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
     // Updates the chokes on the map.
     //void Inventory::updateMapChokes(); //in progress
-    // Updates veins going out of the main base for attacking ease.
-    //void Inventory::updateMapVeinsOutFromMain(const Position center);
-    // Updates veins going out of the enemy base for attacking ease.
-    //void Inventory::updateMapVeinsOutFromFoe(const Position center);
-    void Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map);
+    // Updates the spiral counting out from the new_center. Replaces old (map), prints.
+    void Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
 
     // Gets distance using
     int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;

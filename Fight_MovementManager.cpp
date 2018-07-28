@@ -29,11 +29,11 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && ready_to_fight ) {
-            setAttraction(unit, pos, inv, inv.map_out_from_enemy_);
+            setAttraction(unit, pos, inv, inv.map_out_from_enemy_, inv.enemy_base_);
             normalization = pos.getDistance(inv.enemy_base_) / (double)inv.my_portion_of_the_map_;
         }
         else { // Otherwise, return to home.
-            setAttraction(unit, pos, inv, inv.map_out_from_home_);
+            setAttraction(unit, pos, inv, inv.map_out_from_home_, inv.home_base_);
         }
         
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
@@ -49,7 +49,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     else { //If you are an overlord, follow an abbreviated version of this.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
-            setAttraction(unit, pos, inv, inv.map_out_from_safety_); 
+            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); 
         }
         else {
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
@@ -233,12 +233,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         if (unit->isFlying()) {
-            setAttraction(unit, pos, inventory, inventory.map_out_from_safety_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+            setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
         }
         //setStutter(unit, 1000);
     }
     else {
-        setAttraction(unit, pos, inventory, inventory.map_out_from_safety_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
     //setAlignment( unit, ui );
     //setAlignment( unit, local_neighborhood);
@@ -430,7 +430,7 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 
 
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
-void Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map) {
+void Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
 
         if (!map.empty() && !unit->isFlying()) {
             WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -439,8 +439,8 @@ void Mobility::setAttraction(const Unit &unit, const Position &pos, const Invent
             attract_dy_ = direction[1] * distance_metric;
         }
         else {
-            int dist_x = inv.home_base_.x - pos.x;
-            int dist_y = inv.home_base_.y - pos.y;
+            int dist_x = map_center.x - pos.x;
+            int dist_y = map_center.y - pos.y;
             double theta = atan2(dist_y, dist_x);
             attract_dx_ = cos(theta) * distance_metric; // run to (map)!
             attract_dy_ = sin(theta) * distance_metric;

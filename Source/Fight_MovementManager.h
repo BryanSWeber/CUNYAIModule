@@ -30,7 +30,7 @@ public:
     // Causes a unit to be pulled towards others of their kind.
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
-    void setAttraction(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map);
+    void setAttraction(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
     // causes a unit to move directly towards the enemy base.
     void scoutEnemyBase(const Unit & unit, const Position & pos, Inventory & inv);
     // causes a unit to seperate itself from others.
