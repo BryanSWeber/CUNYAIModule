@@ -112,7 +112,7 @@ void CUNYAIModule::onStart()
     inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
     inventory.updateMapVeins();
-    inventory.updateMapVeinsOutFromMain( Position(Broodwar->self()->getStartLocation()) );
+    inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()), inventory.home_base_, inventory.map_out_from_home_ );
     //inventory.updateMapChokes();
     inventory.updateBaseLoc( land_inventory );
     inventory.getStartPositions();
@@ -263,7 +263,7 @@ void CUNYAIModule::onFrame()
 
     if (t_game == 0) {
         //update local resources
-        inventory.updateMapVeinsOutFromFoe(inventory.start_positions_[0]);
+        inventory.updateMapVeinsOut( inventory.start_positions_[0], inventory.enemy_base_, inventory.map_out_from_enemy_);
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
@@ -529,22 +529,22 @@ void CUNYAIModule::onFrame()
             } // Pretty to look at!
 
 
-            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_main_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_main_[i].size(); ++j) {
-            //        if (inventory.map_veins_out_from_main_[i][j] % 100 == 0 /*&& inventory.map_veins_out_from_main_[i][j] <= 1*/ ) { 
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_main_[i][j] );
-            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
+            for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
+                for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
+                    if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
+                        if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                            Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
+                            //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+                        }
+                    }
+                }
+            } // Pretty to look at!
 
-            //for (vector<int>::size_type i = 0; i < inventory.map_veins_out_from_enemy_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.map_veins_out_from_enemy_[i].size(); ++j) {
-            //        if (inventory.map_veins_out_from_enemy_[i][j] % 100 == 0 && inventory.map_veins_out_from_enemy_[i][j] > 1) {
+            //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_.size(); ++i) {
+            //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_[i].size(); ++j) {
+            //        if (inventory.map_out_from_enemy_[i][j] % 100 == 0 && inventory.map_out_from_enemy_[i][j] > 1) {
             //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_out_from_enemy_[i][j]);
+            //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_[i][j]);
             //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
             //            }
             //        }

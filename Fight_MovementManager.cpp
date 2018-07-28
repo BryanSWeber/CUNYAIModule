@@ -469,7 +469,7 @@ void Mobility::setAttractionEnemy(const Unit &unit, const Position &pos, Unit_In
 void Mobility::setAttractionHome(const Unit &unit, const Position &pos, const Unit_Inventory &ei, const Inventory &inv) {
     if (!ei.unit_inventory_.empty()) { // if there is an existant enemy.
 
-        if (!inv.map_veins_out_from_main_.empty() && !unit->isFlying()) {
+        if (!inv.map_out_from_home_.empty() && !unit->isFlying()) {
             WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
             vector<double> direction = getVectorTowardsHome(unit->getPosition(), inv);
             attract_dx_ = direction[0] * distance_metric;
@@ -641,12 +641,12 @@ vector<double> Mobility::getVectorTowardsHome(const Position &pos, const Invento
                 theta = atan2(y, x);
 
                 if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-                    inv.map_veins_out_from_main_[centralize_x][centralize_y] < my_spot) // go directly to my base.
+                    inv.map_out_from_home_[centralize_x][centralize_y] < my_spot) // go directly to my base.
                 {
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                //else if (inv.map_veins_out_from_main_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                //else if (inv.map_out_from_home_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
                 //{
                 //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
                 //                                                         //adj_x -= cos(theta);
@@ -688,12 +688,12 @@ vector<double> Mobility::getVectorTowardsEnemy(const Position &pos, const Invent
                 theta = atan2(y, x);
 
                 if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-                    inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly to their base.
+                    inv.map_out_from_enemy_[centralize_x][centralize_y] < my_spot) // go directly to their base.
                 {
                     temp_x += cos(theta);
                     temp_y += sin(theta);
                 }
-                //else if (inv.map_veins_out_from_enemy_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
+                //else if (inv.map_out_from_enemy_[centralize_x][centralize_y] < 1) // repulse from unwalkable.
                 //{
                 //    x > y ? temp_x -= cos(theta) : temp_y -= sin(theta); // make the smallest most direct avoidence of this obstacle.
                 //                                                         //adj_x -= cos(theta);

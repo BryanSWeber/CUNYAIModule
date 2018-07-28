@@ -548,24 +548,24 @@ int Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
     return map[startloc.x][startloc.y];
 }
 
-void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress.
+void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map) { //in progress.
 
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 
-    if (home_base_ == center) return;
+    if (WalkPosition(oldCenter) == WalkPosition(newCenter)) return;
 
-    home_base_ = center;
-    WalkPosition startloc = WalkPosition(center);
+    oldCenter = newCenter; // Must update old center manually.
+    WalkPosition startloc = WalkPosition(newCenter);
     std::stringstream ss;
-    ss << home_base_;
+    ss << newCenter;
     string base = ss.str();
 
     ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newVeins)         //The file does not exist, we need to write it.
     {
 
-        map_veins_out_from_main_ = unwalkable_barriers_;
+        map = unwalkable_barriers_;
 
         int minitile_x, minitile_y, distance_right_x, distance_below_y;
         minitile_x = startloc.x;
@@ -580,7 +580,7 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
 
         //begin with a fire fill.
         total_squares_filled++;
-        map_veins_out_from_main_[minitile_x][minitile_y] = total_squares_filled;
+        map[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back({ minitile_x, minitile_y });
 
         int minitile_x_temp = minitile_x;
@@ -595,178 +595,72 @@ void Inventory::updateMapVeinsOutFromMain(const Position center) { //in progress
             filled_a_square = false;
 
             // north
-            if (minitile_y_temp + 1 < map_y && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] == 0) {
+            if (minitile_y_temp + 1 < map_y && map[minitile_x_temp][minitile_y_temp + 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+                map[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp + 1 });
             }
             // north east
-            if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
+            if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+                map[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
             }
             // north west
-            if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
+            if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+                map[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
             }
             //south
-            if (0 < minitile_y_temp - 1 && map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] == 0) {
+            if (0 < minitile_y_temp - 1 && map[minitile_x_temp][minitile_y_temp - 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
+                map[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
             }
             //south east
-            if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
+            if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+                map[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
             }
             //south west
-            if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
+            if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+                map[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
             }
             // east
-            if (minitile_x_temp + 1 < map_x && map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] == 0) {
+            if (minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+                map[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp });
             }
             //west
-            if (0 < minitile_x_temp - 1 && map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] == 0) {
+            if (0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp] == 0) {
                 filled_a_square = true;
-                map_veins_out_from_main_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+                map[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
                 fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp });
             }
             total_squares_filled += filled_a_square;
         }
 
-        writeMapVeins(map_veins_out_from_main_, center);
+        writeMap(map, newCenter);
     }
     else
     {
-        readMapVeins(map_veins_out_from_main_, center);
-    }
-    newVeins.close();
-}
-
-void Inventory::updateMapVeinsOutFromFoe( const Position center ) { //in progress.
-
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    if (enemy_base_ == center) return;
-
-    enemy_base_ = center;
-    WalkPosition startloc = WalkPosition(center);
-    std::stringstream ss;
-    ss << enemy_base_;
-    string base = ss.str();
-
-    ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (!newVeins)         //The file does not exist, we need to write it.
-    {
-
-        map_veins_out_from_enemy_ = unwalkable_barriers_;
-
-        int minitile_x, minitile_y, distance_right_x, distance_below_y;
-        minitile_x = startloc.x;
-        minitile_y = startloc.y;
-        distance_right_x = max(map_x - minitile_x, map_x);
-        distance_below_y = max(map_y - minitile_y, map_y);
-        int t = std::max(map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y);
-        //int maxI = t*t; // total number of spiral steps we have to make.
-        int total_squares_filled = 0;
-
-        vector <WalkPosition> fire_fill_queue;
-
-        //begin with a fire fill.
-        total_squares_filled++;
-        map_veins_out_from_enemy_[minitile_x][minitile_y] = total_squares_filled;
-        fire_fill_queue.push_back({ minitile_x, minitile_y });
-
-        int minitile_x_temp = minitile_x;
-        int minitile_y_temp = minitile_y;
-        bool filled_a_square = false;
-
-        while (!fire_fill_queue.empty()) { // this portion is a fire fill.
-
-            minitile_x_temp = fire_fill_queue.begin()->x;
-            minitile_y_temp = fire_fill_queue.begin()->y;
-            fire_fill_queue.erase(fire_fill_queue.begin());
-            filled_a_square = false;
-
-            // north
-            if (minitile_y_temp + 1 < map_y && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp + 1 });
-            }
-            // north east
-            if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
-            }
-            // north west
-            if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
-            }
-            //south
-            if (0 < minitile_y_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
-            }
-            //south east
-            if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
-            }
-            //south west
-            if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
-            }
-            // east
-            if (minitile_x_temp + 1 < map_x && map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp });
-            }
-            //west
-            if (0 < minitile_x_temp - 1 && map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] == 0) {
-                filled_a_square = true;
-                map_veins_out_from_enemy_[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp });
-            }
-            total_squares_filled += filled_a_square;
-        }
-
-        writeMapVeins(map_veins_out_from_enemy_, center);
-    }
-    else
-    {
-        readMapVeins(map_veins_out_from_enemy_, center);
+        readMap(map, newCenter);
     }
     newVeins.close();
 }
 
 int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
 {
-    if (map_veins_out_from_enemy_.size() > 0 && A.isValid() && B.isValid()) {
+    if (map_out_from_enemy_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         WalkPosition wp_b = WalkPosition(B);
-        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_veins_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
+        int A = map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
             return abs(A - B);
         }
@@ -777,11 +671,11 @@ int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Posit
 
 int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
 {
-    if ( map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
+    if ( map_out_from_enemy_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
-        int A = map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int A = map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map_veins_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
 
@@ -791,11 +685,11 @@ int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
 
 int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
 {
-    if ( map_veins_out_from_main_.size() > 0 && A.isValid() && B.isValid() ) {
+    if ( map_out_from_home_.size() > 0 && A.isValid() && B.isValid() ) {
         WalkPosition wp_a = WalkPosition(A);
         WalkPosition wp_b = WalkPosition(B);
-        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
+        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_out_from_home_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
             return abs(A - B);
         }
@@ -805,11 +699,11 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
 }
 bool Inventory::checkViableGroundPath(const Position A, const Position B) const
 {
-    if (map_veins_out_from_main_.size() > 0 && A.isValid() && B.isValid()) {
+    if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         WalkPosition wp_b = WalkPosition(B);
-        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_veins_out_from_main_[(size_t)wp_b.x][(size_t)wp_b.y];
+        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_out_from_home_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
             return true;
         }
@@ -818,11 +712,11 @@ return false;
 }
 int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
-    if (map_veins_out_from_enemy_.size() > 0 && A.isValid()) {
+    if (map_out_from_enemy_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
-        int A = map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map_veins_out_from_main_[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
 
@@ -1147,17 +1041,17 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 //            if (smoothed_barriers_[temp_x][temp_y] == 0 ) { // if it is walkable, consider it a canidate for a choke. Need a buffer around 0,0 and the edge
 //                int observed_difference = 0;
 //
-//                local_tiles[0] = map_veins_out_from_main_[(temp_x - 1)][(temp_y - 1)];
-//                local_tiles[1] = map_veins_out_from_main_[temp_x]      [(temp_y - 1)];
-//                local_tiles[2] = map_veins_out_from_main_[(temp_x + 1)][(temp_y - 1)];
+//                local_tiles[0] = map_out_from_home_[(temp_x - 1)][(temp_y - 1)];
+//                local_tiles[1] = map_out_from_home_[temp_x]      [(temp_y - 1)];
+//                local_tiles[2] = map_out_from_home_[(temp_x + 1)][(temp_y - 1)];
 //
-//                local_tiles[3] = map_veins_out_from_main_[(temp_x - 1)][temp_y];
-//                local_tiles[4] = map_veins_out_from_main_[temp_x]      [temp_y]; // middle value, local_tiles[4], index starts at 0.
-//                local_tiles[5] = map_veins_out_from_main_[(temp_x + 1)][temp_y];
+//                local_tiles[3] = map_out_from_home_[(temp_x - 1)][temp_y];
+//                local_tiles[4] = map_out_from_home_[temp_x]      [temp_y]; // middle value, local_tiles[4], index starts at 0.
+//                local_tiles[5] = map_out_from_home_[(temp_x + 1)][temp_y];
 //
-//                local_tiles[6] = map_veins_out_from_main_[(temp_x - 1)][(temp_y + 1)];
-//                local_tiles[7] = map_veins_out_from_main_[temp_x]      [(temp_y + 1)];
-//                local_tiles[8] = map_veins_out_from_main_[(temp_x + 1)][(temp_y + 1)];
+//                local_tiles[6] = map_out_from_home_[(temp_x - 1)][(temp_y + 1)];
+//                local_tiles[7] = map_out_from_home_[temp_x]      [(temp_y + 1)];
+//                local_tiles[8] = map_out_from_home_[(temp_x + 1)][(temp_y + 1)];
 //
 //                for (auto iterated_value : local_tiles) {
 //                    if ( abs(iterated_value - local_tiles[4]) > observed_difference && iterated_value > 1) {
@@ -1606,12 +1500,12 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
 
         suspected_enemy_base = getWeakestBase(ei); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ && suspected_enemy_base != Position(0, 0)) {
-            updateMapVeinsOutFromFoe(suspected_enemy_base);
+            updateMapVeinsOut(suspected_enemy_base, enemy_base_, map_out_from_enemy_);
         }
 
         Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
         if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
-            updateMapVeinsOutFromFoe(center_building->pos_);
+            updateMapVeinsOut( center_building->pos_, enemy_base_, map_out_from_enemy_);
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0) && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
             int attempts = 0;
@@ -1619,7 +1513,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
-            updateMapVeinsOutFromFoe(start_positions_[0]);
+            updateMapVeinsOut( start_positions_[0], enemy_base_, map_out_from_enemy_);
         }
         else if (!expo_positions_.empty()) { // maybe it's a base we havent' seen yet?
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
@@ -1633,7 +1527,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
             }
 
             if (!expo_positions_.empty()) {
-                updateMapVeinsOutFromFoe(Position(expo_positions_[random_index]));
+                updateMapVeinsOut(Position(expo_positions_[random_index]), enemy_base_, map_out_from_enemy_);
             }
         }
         frames_since_enemy_base = 0;
@@ -1651,7 +1545,7 @@ void Inventory::updateEnemyBasePosition(Unit_Inventory &ui, Unit_Inventory &ei, 
         //suspected_friendly_base = getBaseWithMostAttackers(ei,ui);
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base != Position(0, 0)) {
-            updateMapVeinsOutFromMain(suspected_friendly_base);
+            updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
         }
         frames_since_home_base = 0;
     }
@@ -1692,7 +1586,7 @@ void Inventory::drawBasePositions() const
     }
 }
 
-void Inventory::writeMapVeins(const vector< vector<int> > mapVeins, const Position &center)
+void Inventory::writeMap(const vector< vector<int> > &mapin, const Position &center)
 {
     std::stringstream ss;
     ss << center;
@@ -1702,42 +1596,42 @@ void Inventory::writeMapVeins(const vector< vector<int> > mapVeins, const Positi
     vector<int> holding_vector;
     for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
         for (int j = 0; j < Broodwar->mapHeight() * 4; j++)
-            holding_vector.push_back(mapVeins[i][j]);
+            holding_vector.push_back(mapin[i][j]);
 
     int number;
-    ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (!newVeins)
+    ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+    if (!newMap)
     {
-        ofstream veins;
-        veins.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
+        ofstream map;
+        map.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
         //faster write of whole vector.
         for (std::vector<int>::const_iterator i = holding_vector.begin(); i != holding_vector.end(); ++i)
-            std::cout << *i << endl;
-        veins.close();
+            map << *i << endl;
+        map.close();
     }
-    newVeins.close();
+    newMap.close();
 }
 
-void Inventory::readMapVeins( vector< vector<int> > &mapVeins, const Position &center)
+void Inventory::readMap( vector< vector<int> > &mapin, const Position &center)
 
 {
     std::stringstream ss;
     ss << center;
     string base = ss.str();
-    mapVeins.clear();
+    mapin.clear();
     int number;
-    ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (newVeins)
+    ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+    if (newMap)
     {
         //newVeins.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
         for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
         {
-            mapVeins.push_back(std::vector<int>());
+            mapin.push_back(std::vector<int>());
             for (int j = 0; j < Broodwar->mapHeight() * 4; j++) {
-                newVeins >> number;
-                mapVeins[i].push_back(number);
+                newMap >> number;
+                mapin[i].push_back(number);
             }
         }
     }
-    newVeins.close();
+    newMap.close();
 }

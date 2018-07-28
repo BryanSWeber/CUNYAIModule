@@ -57,8 +57,8 @@ struct Inventory {
     vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
-    vector< vector<int> > map_veins_out_from_main_; // distance from our own main.
-    vector< vector<int> > map_veins_out_from_enemy_; // distance from enemy base.
+    vector< vector<int> > map_out_from_home_; // distance from our own main.
+    vector< vector<int> > map_out_from_enemy_; // distance from enemy base.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -134,9 +134,11 @@ struct Inventory {
     // Updates the chokes on the map.
     //void Inventory::updateMapChokes(); //in progress
     // Updates veins going out of the main base for attacking ease.
-    void Inventory::updateMapVeinsOutFromMain(const Position center);
+    //void Inventory::updateMapVeinsOutFromMain(const Position center);
     // Updates veins going out of the enemy base for attacking ease.
-    void Inventory::updateMapVeinsOutFromFoe(const Position center);
+    //void Inventory::updateMapVeinsOutFromFoe(const Position center);
+    void Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map);
+
     // Gets distance using
     int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
     int Inventory::getRadialDistanceOutFromEnemy(const Position A) const;
@@ -165,8 +167,8 @@ struct Inventory {
     void Inventory::drawExpoPositions() const;
     void Inventory::drawBasePositions() const;
 
-    void Inventory::writeMapVeins(const vector< vector<int> > mapVeins, const Position &center); // write one of the map objects have created, centered around the passed position.
-    void Inventory::readMapVeins(vector< vector<int> > &mapVeins, const Position &center); // read one of the map objects we have created, centered around the passed position.
+    void Inventory::writeMap(const vector< vector<int> > &mapin, const Position &center); // write one of the map objects have created, centered around the passed position.
+    void Inventory::readMap(vector< vector<int> > &mapin, const Position &center); // read one of the map objects we have created, centered around the passed position.
 
     // Adds start positions to inventory object.
     void Inventory::getStartPositions();
