@@ -35,7 +35,7 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitsControlledByOthers(bool drop_geysers)
+void Unit_Inventory::updateUnitsControlledByOthers()
 {
     for (auto &e: unit_inventory_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
@@ -73,16 +73,16 @@ void Unit_Inventory::updateUnitsControlledByOthers(bool drop_geysers)
 
         e.second.circumference_remaining_ = e.second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
 
-        if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser && drop_geysers) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
+        if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
         }
     }
 }
 
-void Unit_Inventory::purgeBrokenUnits(bool drop_geysers)
+void Unit_Inventory::purgeBrokenUnits()
 {
     for (auto &e = this->unit_inventory_.begin(); e != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
-        if ((e->second.type_ == UnitTypes::Resource_Vespene_Geyser && drop_geysers) || // Destroyed refineries revert to geyers, requiring the manual catc.
+        if ((e->second.type_ == UnitTypes::Resource_Vespene_Geyser) || // Destroyed refineries revert to geyers, requiring the manual catc.
             e->second.type_ == UnitTypes::None) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
             e = this->unit_inventory_.erase(e); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
         }
