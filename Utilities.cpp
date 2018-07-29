@@ -177,6 +177,31 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
     }
 }
 
+void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
+    if (_ANALYSIS_MODE && unit.valid_pos_) {
+        Position upper_left = unit.pos_;
+        if (isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
+            // Draw the red background.
+            upper_left.y = upper_left.y + unit.type_.dimensionUp();
+            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.y = upper_left.y + 10;
+
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
+
+            //Overlay the appropriate green above it.
+            lower_right = upper_left;
+            lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
+            lower_right.y = upper_left.y + 10;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
+
+            //Overlay the 10hp rectangles over it.
+        }
+    }
+}
+
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if (_ANALYSIS_MODE) {
         Position upper_left = resource.pos_;
@@ -723,6 +748,23 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 	return return_unit;
 }
 
+Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, Inventory &inv, const Position &origin) {
+    int min_dist = 999999;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+            temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            if (temp_dist <= min_dist) {
+                min_dist = temp_dist;
+                return_unit = &(u->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
 
 Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
     int min_dist = 999999;

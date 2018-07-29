@@ -80,7 +80,7 @@ struct Stored_Unit {
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
-    int weighted_average_future_fap_value_; // A moving average of FAP values.
+    int ma_future_fap_value_; // A moving average of FAP values.
     bool hasTarget_;
 
     int velocity_x_;
@@ -141,6 +141,7 @@ struct Unit_Inventory {
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Inventory & inv, Reservation & res);
     void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
     void drawAllHitPoints(const Inventory & inv) const;
+    void drawAllMAFAPaverages(const Inventory & inv) const;
     void drawAllSpamGuards(const Inventory & inv) const;
     void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
@@ -150,6 +151,11 @@ struct Unit_Inventory {
     void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building combat simulator, friendly side.
     void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building  combat simulator, enemy sdie.
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+
+    // Pass pointers
+    Stored_Unit* getStoredUnit(const Unit &unit);
+    // Passing values for const-safety.
+    Stored_Unit getStoredUnitValue(const Unit & unit) const;
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;

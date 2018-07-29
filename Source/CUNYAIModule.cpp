@@ -197,7 +197,7 @@ void CUNYAIModule::onFrame()
     friendly_inventory.updateUnitInventorySummary();
 
     //friendly_inventory.drawAllVelocities(inventory);
-    friendly_inventory.drawAllHitPoints(inventory);
+    //friendly_inventory.drawAllHitPoints(inventory);
     friendly_inventory.drawAllSpamGuards(inventory);
     friendly_inventory.drawAllWorkerTasks(inventory, land_inventory);
 
@@ -208,9 +208,10 @@ void CUNYAIModule::onFrame()
     enemy_inventory.addToEnemyBuildFAP(buildfap);
     friendly_inventory.addToFriendlyFAP(fap);
     friendly_inventory.addToFriendlyBuildFAP(buildfap);
+    friendly_inventory.drawAllMAFAPaverages(inventory);
 
     // Let us estimate FAP values.
-    fap.simulate(); // 96 frames of simulation for us.
+    fap.simulate(1); // 96 frames of simulation for us.
     int friendly_fap_score = getFAPScore(fap, true);
     int enemy_fap_score = getFAPScore(fap, false);
     friendly_inventory.pullFromFAP(*fap.getState().first);
@@ -888,7 +889,7 @@ void CUNYAIModule::onFrame()
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
         if (u_type.isWorker()) {
-            Stored_Unit& miner = friendly_inventory.unit_inventory_.find(u)->second;
+            Stored_Unit& miner = *friendly_inventory.getStoredUnit(u);
 
             bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, inventory)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
             bool too_much_gas = 1 - inventory.getLn_Gas_Ratio() > delta;
@@ -1332,11 +1333,11 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
-        if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
+        auto found_ptr = enemy_inventory.getStoredUnit(unit);
+        if ( found_ptr ) {
             enemy_inventory.unit_inventory_.erase( unit );
             dead_enemy_inventory.addStored_Unit(unit);
-            if(found_ptr->second.type_.isWorker()) inventory.estimated_enemy_workers_--;
+            if(found_ptr->type_.isWorker()) inventory.estimated_enemy_workers_--;
             //Broodwar->sendText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else {
@@ -1389,8 +1390,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if ( unit->getPlayer()->isNeutral() && !IsMineralField(unit) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        auto found_ptr = neutral_inventory.unit_inventory_.find(unit);
-        if (found_ptr != neutral_inventory.unit_inventory_.end()) {
+        auto found_ptr = neutral_inventory.getStoredUnit(unit);
+        if (found_ptr) {
             neutral_inventory.unit_inventory_.erase(unit);
             //Broodwar->sendText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }

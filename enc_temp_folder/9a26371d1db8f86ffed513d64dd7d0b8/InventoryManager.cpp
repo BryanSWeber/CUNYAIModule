@@ -458,7 +458,7 @@ void Inventory::updateMapVeins() {
 
     for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
-        for ( vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
+        for (vector<WalkPosition>::iterator& position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
             // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
             // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
             // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.

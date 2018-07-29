@@ -25,8 +25,9 @@ Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
 
 void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     for (const auto & u : unit_set) {
-        if (unit_inventory_.find(u) != unit_inventory_.end()) {
-            unit_inventory_.find(u)->second.updateStoredUnit(u); // explicitly does not change locked mineral.
+        Stored_Unit* found_unit = getStoredUnit(u);
+        if (found_unit) {
+            found_unit->updateStoredUnit(u); // explicitly does not change locked mineral.
         }
         else {
             unit_inventory_.insert({ u, Stored_Unit(u) });
@@ -62,12 +63,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
                     (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
                     e.second.pos_ = potential_running_spot;
                     e.second.valid_pos_ = true;
-                    present = true;
                 }
-            }
-
-            if(!present) {
-                e.second.valid_pos_ = false;
             }
         }
 
@@ -155,6 +151,14 @@ void Unit_Inventory::drawAllHitPoints(const Inventory &inv) const
     }
 
 }
+void Unit_Inventory::drawAllMAFAPaverages(const Inventory &inv) const
+{
+    for (auto u : unit_inventory_) {
+        CUNYAIModule::DiagnosticFAP(u.second, inv.screen_position_);
+    }
+
+}
+
 void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
@@ -216,30 +220,29 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
-
-    type_ = unit->getType();
     current_hp_ = unit->getHitPoints() + unit->getShields();
     velocity_x_ = (int)unit->getVelocityX();
     velocity_y_ = (int)unit->getVelocityY();
     order_ = unit->getOrder();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
-    stock_value_ = Stored_Unit(type_).stock_value_;
-    circumference_remaining_ = circumference_;
-
-    elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
     cd_remaining_ = unit->getAirWeaponCooldown(); // both cooldowns are identical.
     stimmed_ = unit->isStimmed();
+    elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
 
-    int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = type_ == UnitTypes::Terran_Bunker ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = type_ == UnitTypes::Terran_Bunker ? type_.mineralPrice() + 50 : type_.mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = type_.gasPrice();
-
-    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
-
-    stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
-
-    current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
+    if (type_ != unit->getType()) {
+        type_ = unit->getType();
+        stock_value_ = Stored_Unit(type_).stock_value_; // longer but prevents retyping.
+        circumference_ = type_.height() * 2 + type_.width() * 2;
+        circumference_remaining_ = circumference_;
+        current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
+        ma_future_fap_value_ = stock_value_;
+    }
+    else {
+        double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
+        circumference_remaining_ = circumference_;
+        current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
+        ma_future_fap_value_ = (double)(1 - weight) * ma_future_fap_value_ + weight * future_fap_value_;
+    }
 }
 
 //Removes units that have died
@@ -426,7 +429,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
 
         future_fap_stock += u_iter.second.future_fap_value_;
-        moving_average_fap_stock += u_iter.second.weighted_average_future_fap_value_;
+        moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
         is_shooting += u_iter.second.cd_remaining_ > 0; //
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
@@ -537,6 +540,7 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
 
     current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
 };
+
 // We must be able to create Stored_Unit objects as well.
 Stored_Unit::Stored_Unit( const Unit &unit ) {
     valid_pos_ = true;
@@ -558,33 +562,15 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     circumference_remaining_ = circumference_;
 
     //Needed for FAP.
-    // FAP::makeUnit()
-    //  .setUnitType(BWAPI::UnitTypes::Terran_Bunker)= type_
-    //  .setPosition({ 0, 0 })= pos_
         is_flying_ = unit->isFlying();
         elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
-    //.setScore(5) = stock_value_ // not quite but ok. Unused by FAP anyway.
-    // .setAttackerCount(1) // how full are bunkers and carriers?
-    //.setArmorUpgrades(0)
-    //.setAttackUpgrades(0)
-    //.setShieldUpgrades(0)
-    //.setSpeedUpgrade(false)
-    //.setAttackSpeedUpgrade(false)
-    // .setRangeUpgrade(false)
         cd_remaining_ = unit->getAirWeaponCooldown();
         stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
-    int modified_supply = type_.getRace() == Races::Zerg && type_.isBuilding() ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = type_ == UnitTypes::Terran_Bunker ? type_.supplyRequired() + 2 : type_.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = type_ == UnitTypes::Terran_Bunker ? type_.mineralPrice() + 50 : type_.mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = type_.gasPrice();
-
-    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
-
-    stock_value_ /= (1 + type_.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
-    weighted_average_future_fap_value_ = stock_value_;
-
+        Stored_Unit(type_).stock_value_; //prevents retyping.
+    ma_future_fap_value_ = stock_value_;
+    future_fap_value_ = stock_value_;
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
 
@@ -745,25 +731,18 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos) {
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
-    double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
-
     fap_unit.data->future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
-    fap_unit.data->weighted_average_future_fap_value_ = (double)(weight * fap_unit.data->weighted_average_future_fap_value_) + (double)(1 - weight) * fap_unit.data->future_fap_value_;
     fap_unit.data->updated_fap_this_frame_ = true;
-
 }
 
 void Stored_Unit::updateFAPvalueDead()
 {
-    double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
-
     future_fap_value_ = 0;
-    weighted_average_future_fap_value_ = (double)(weight * weighted_average_future_fap_value_) + (1 - weight) * 0;
     updated_fap_this_frame_ = true;
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.weighted_average_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
+    return unit.ma_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
 }
 
 void Unit_Inventory::addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {
@@ -817,6 +796,18 @@ void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
 
 }
 
+Stored_Unit* Unit_Inventory::getStoredUnit(const Unit & unit)
+{
+    auto& find_result = unit_inventory_.find(unit);
+    if (find_result != unit_inventory_.end()) return &find_result->second;
+    else return nullptr;
+}
+Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
+{
+    auto& find_result = unit_inventory_.find(unit);
+    if (find_result != unit_inventory_.end()) return find_result->second;
+    else return nullptr;
+}
 
 
 void CUNYAIModule::printUnitInventory(Unit_Inventory inventory)

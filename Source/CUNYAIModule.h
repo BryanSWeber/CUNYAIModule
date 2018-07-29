@@ -156,6 +156,7 @@ public:
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
       static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
 
@@ -203,6 +204,7 @@ public:
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
+      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, Inventory & inv, const Position & origin);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
