@@ -220,27 +220,34 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
-    current_hp_ = unit->getHitPoints() + unit->getShields();
-    velocity_x_ = (int)unit->getVelocityX();
-    velocity_y_ = (int)unit->getVelocityY();
+    shields_ = unit->getShields();
+    health_ = unit->getHitPoints();
+    current_hp_ = shields_ + health_;
+    velocity_x_ = unit->getVelocityX();
+    velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
+    command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
-    cd_remaining_ = unit->getAirWeaponCooldown(); // both cooldowns are identical.
-    stimmed_ = unit->isStimmed();
+
+    //Needed for FAP.
+    is_flying_ = unit->isFlying();
     elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
+    cd_remaining_ = unit->getAirWeaponCooldown();
+    stimmed_ = unit->isStimmed();
 
     if (type_ != unit->getType()) {
         type_ = unit->getType();
         stock_value_ = Stored_Unit(type_).stock_value_; // longer but prevents retyping.
         circumference_ = type_.height() * 2 + type_.width() * 2;
         circumference_remaining_ = circumference_;
-        current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
+        future_fap_value_ = stock_value_;
+        current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
         ma_future_fap_value_ = stock_value_;
     }
     else {
         double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
         circumference_remaining_ = circumference_;
-        current_stock_value_ = (int)(stock_value_ * (double)current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
+        current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
         ma_future_fap_value_ = (double)(1 - weight) * ma_future_fap_value_ + weight * future_fap_value_;
     }
 }
@@ -529,16 +536,16 @@ Stored_Unit::Stored_Unit( const UnitType &unittype ) {
     stimmed_ = false;
 
     //Get unit's status. Precalculated, precached.
-    int modified_supply =unittype.getRace() == Races::Zerg &&unittype.isBuilding() ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply =unittype == UnitTypes::Terran_Bunker ?unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost =unittype == UnitTypes::Terran_Bunker ?unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
+    int modified_supply = unittype.getRace() == Races::Zerg && unittype.isBuilding() ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+    modified_supply = unittype == UnitTypes::Terran_Bunker ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
+    int modified_min_cost = unittype == UnitTypes::Terran_Bunker ? unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
     int modified_gas_cost = unittype.gasPrice();
 
     stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
 
-    stock_value_ /= (1 + unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    stock_value_ /= (1 + (int)unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
-    current_stock_value_ = (int)(stock_value_); // Precalculated, precached.
+    current_stock_value_ = stock_value_; // Precalculated, precached.
 };
 
 // We must be able to create Stored_Unit objects as well.
@@ -568,7 +575,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
-        Stored_Unit(type_).stock_value_; //prevents retyping.
+    stock_value_ = Stored_Unit(type_).stock_value_; //prevents retyping.
     ma_future_fap_value_ = stock_value_;
     future_fap_value_ = stock_value_;
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
