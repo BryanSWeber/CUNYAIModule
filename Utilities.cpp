@@ -162,14 +162,14 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 
             Position lower_right = upper_left;
             lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, false);
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
             lower_right.x = (int)( upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
             //Overlay the 10hp rectangles over it.
@@ -187,15 +187,15 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 
             Position lower_right = upper_left;
             lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, false);
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
             lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
-            lower_right.y = upper_left.y + 10;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
+            lower_right.y = upper_left.y + 5;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, true);
 
             //Overlay the 10hp rectangles over it.
         }
@@ -212,15 +212,15 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
             Position lower_right = upper_left;
             lower_right.x = upper_left.x + resource.type_.width();
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, false);
 
             //Overlay the appropriate blue above it.
             lower_right = upper_left;
             lower_right.x = (int)( upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_);
-            lower_right.y = upper_left.y + 10;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Cyan, true);
+            lower_right.y = upper_left.y + 5;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
 
             //Overlay the 10hp rectangles over it.
         }
@@ -238,14 +238,14 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 
             Position lower_right = upper_left;
             lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, false);
 
             //Overlay the appropriate grey above it.
             lower_right = upper_left;
             lower_right.x = (int)(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 ));
-            lower_right.y = upper_left.y + 10;
+            lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
 
         }
