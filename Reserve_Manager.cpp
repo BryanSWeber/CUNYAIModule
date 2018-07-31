@@ -37,8 +37,8 @@ void Reservation::removeReserveSystem(UnitType type) {
         min_reserve_ -= type.mineralPrice();
         gas_reserve_ -= type.gasPrice();
     }
-    else if (type != UnitTypes::None && _ANALYSIS_MODE) {
-        Broodwar->sendText("We're trying to remove %s from the reservation queue but can't find it.", type.c_str());
+    else if (type != UnitTypes::None ) {
+        CUNYAIModule::DiagnosticText("We're trying to remove %s from the reservation queue but can't find it.", type.c_str());
     }
 };
 
@@ -69,7 +69,7 @@ bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
     return Broodwar->self()->gas() - gas_reserve_ > type.gasPrice() && Broodwar->self()->minerals() > type.mineralPrice();
 }
 
-bool Reservation::checkAffordablePurchase( const UnitType type ) { // make a template?
+bool Reservation::checkAffordablePurchase( const UnitType type ) { 
     bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
     bool open_reservation = reservation_map_.empty() || reservation_map_.find(type)==reservation_map_.end();
     return affordable && open_reservation;
@@ -113,7 +113,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             ++res_it;
         }
         else {
-            Broodwar->sendText( "No evidience a worker is building the reserved %s. Freeing up the funds.", res_it->first.c_str() );
+            CUNYAIModule::DiagnosticText( "No evidience a worker is building the reserved %s. Freeing up the funds.", res_it->first.c_str() );
             UnitType remove_me = res_it->first;
             res_it++;
             removeReserveSystem( remove_me );  // contains an erase.
@@ -126,7 +126,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
     }
 
     if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
-        Broodwar->sendText( "...We're stuck, aren't we? Have a friendly nudge." );
+        CUNYAIModule::DiagnosticText( "...We're stuck, aren't we? Have a friendly nudge." , "");
         reservation_map_.clear();
         min_reserve_ = 0;
         gas_reserve_ = 0;

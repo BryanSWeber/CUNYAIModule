@@ -128,7 +128,7 @@ void CUNYAIModule::onStart()
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
-    if (_MOVE_OUTPUT_BACK_TO_READ || _SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
+    if (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
         rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file. 
     }
 
@@ -138,7 +138,7 @@ void CUNYAIModule::onEnd( bool isWinner )
     output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << adaptation_rate << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
-    if (_MOVE_OUTPUT_BACK_TO_READ) {
+    if (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
 }
@@ -303,7 +303,7 @@ void CUNYAIModule::onFrame()
         bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor, inventory) == 0;
         if (need_gas_now && no_extractor) {
             buildorder.clearRemainingBuildOrder();
-            Broodwar->sendText("Uh oh, something's went wrong with building an extractor!");
+            CUNYAIModule::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
         }
     }
 
@@ -343,7 +343,7 @@ void CUNYAIModule::onFrame()
 
     CobbDouglas CD = CobbDouglas(alpha_army_temp, exp(inventory.ln_army_stock_), army_possible, alpha_tech_temp, exp(inventory.ln_tech_stock_), tech_possible, alpha_econ_temp, exp(inventory.ln_worker_stock_), econ_possible);
 
-    if (_TIT_FOR_TAT_ENGAGED) {
+    if (TIT_FOR_TAT_ENGAGED) {
 
         int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
 
@@ -368,13 +368,13 @@ void CUNYAIModule::onFrame()
             alpha_army_temp = CD.alpha_army;
             alpha_econ_temp = CD.alpha_econ;
             alpha_tech_temp = CD.alpha_tech;
-            //Broodwar->sendText("Matching expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
+            //CUNYAIModule::DiagnosticText("Matching expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
         }
         else if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ == 0) {
             alpha_army_temp = alpha_army;
             alpha_econ_temp = alpha_econ;
             alpha_tech_temp = alpha_tech;
-            //Broodwar->sendText("Reseting expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
+            //CUNYAIModule::DiagnosticText("Reseting expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
         }
     }
 
@@ -386,7 +386,7 @@ void CUNYAIModule::onFrame()
     double army_derivative = CD.army_derivative;
     double tech_derivative = CD.tech_derivative;
 
-    if (_ANALYSIS_MODE && t_game % 24 == 0) {
+    if (ANALYSIS_MODE && t_game % 24 == 0) {
         CD.printModelParameters();
     }
 
@@ -402,7 +402,7 @@ void CUNYAIModule::onFrame()
 
     
     // Display the game status indicators at the top of the screen	
-    if (_ANALYSIS_MODE) {
+    if (ANALYSIS_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_inventory );
         Print_Universal_Inventory(0, 50, inventory);
@@ -495,7 +495,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 140, upgrade_string);
         Broodwar->drawTextScreen(500, 150, creep_colony_string);
 
-        if (_ANALYSIS_MODE) {
+        if (ANALYSIS_MODE) {
             for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
                 if (isOnScreen(p->second.pos_, inventory.screen_position_)) {
                     Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
@@ -689,7 +689,7 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * detector_of_choice.type_.sightRange() * 0.75, c.y + sin(theta) * detector_of_choice.type_.sightRange() * 0.75);
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        if (_ANALYSIS_MODE) {
+                        if (ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
                         }
@@ -697,7 +697,7 @@ void CUNYAIModule::onFrame()
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        if (_ANALYSIS_MODE) {
+                        if (ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, inventory.screen_position_, c, Colors::Cyan);
                         }
@@ -729,7 +729,7 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
-                //Broodwar->sendText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
+                //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Mobility mobility;
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
@@ -805,7 +805,7 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
 
-                    if (_ANALYSIS_MODE) {
+                    if (ANALYSIS_MODE) {
                         if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
                             Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d-%d", friend_loc.moving_average_fap_stock_, enemy_loc.moving_average_fap_stock_);
                         }
@@ -857,9 +857,7 @@ void CUNYAIModule::onFrame()
                                 }
                                 else {
                                     buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
-                                    if (_ANALYSIS_MODE) {
-                                        Broodwar->sendText("Clearing Build Order, board state is dangerous.");
-                                    }
+                                    CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                                 }
                             }
 
@@ -1018,7 +1016,7 @@ void CUNYAIModule::onFrame()
             //}
 
             //if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isBrokenLock(land_inventory) ){
-            //    Broodwar->sendText("Broken Mine!");
+            //    CUNYAIModule::DiagnosticText("Broken Mine!");
             //    miner.bwapi_unit_->stop();
             //    continue;
             //}
@@ -1154,11 +1152,11 @@ void CUNYAIModule::onFrame()
     if (total_frame_time.count() > 10000) {
         long_delay += 1;
     }
-    if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0) /* enemy_inventory.stock_fighting_total_> friendly_inventory.stock_fighting_total_ * 2*/ && _RESIGN_MODE) //if game times out or lags out, end game with resignation.
+    if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0) /* enemy_inventory.stock_fighting_total_> friendly_inventory.stock_fighting_total_ * 2*/ && RESIGN_MODE) //if game times out or lags out, end game with resignation.
     {
         Broodwar->leaveGame();
     }
-    if (_ANALYSIS_MODE) {
+    if (ANALYSIS_MODE) {
         int n;
         n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
         n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
@@ -1222,14 +1220,14 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
     }
 
     if ( unit->getPlayer()->isEnemy( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
-                                                                                             //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+                                                                                             //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit eu = Stored_Unit( unit );
 
         if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-                                                                               //Broodwar->sendText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+                                                                               //CUNYAIModule::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else { // the insertion must have failed
-               //Broodwar->sendText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
+               //CUNYAIModule::DiagnosticText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
@@ -1238,7 +1236,7 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
     }
 
     if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.
-                                                                                 //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+                                                                                 //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit nu = Stored_Unit(unit);
         neutral_inventory.addStored_Unit(nu);
 
@@ -1265,14 +1263,14 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
 void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
 {
     //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
-    //                                                                //Broodwar->sendText( "I just gained vision of a %s", unit->getType().c_str() );
+    //                                                                //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
     //    Stored_Unit eu = Stored_Unit( unit );
 
     //    if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-    //        Broodwar->sendText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //        CUNYAIModule::DiagnosticText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
     //    }
     //    else { // the insertion must have failed
-    //        Broodwar->sendText( "Insertion of %s failed.", eu.type_.c_str() );
+    //        CUNYAIModule::DiagnosticText( "Insertion of %s failed.", eu.type_.c_str() );
     //    }
     //}
 }
@@ -1284,10 +1282,10 @@ void CUNYAIModule::onUnitShow( BWAPI::Unit unit )
     //    auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
     //    if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
     //        enemy_inventory.unit_inventory_.erase( unit );
-    //        Broodwar->sendText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //        CUNYAIModule::DiagnosticText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
     //    }
     //    else {
-    //        Broodwar->sendText( "Discovered a %s.", unit->getType().c_str() );
+    //        CUNYAIModule::DiagnosticText( "Discovered a %s.", unit->getType().c_str() );
     //    }
     //}
 }
@@ -1312,7 +1310,7 @@ void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
             int seconds = Broodwar->getFrameCount() / 24;
             int minutes = seconds / 60;
             seconds %= 60;
-            Broodwar->sendText( "%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
+            CUNYAIModule::DiagnosticText( "%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
         }
     }
 
@@ -1338,10 +1336,10 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             enemy_inventory.unit_inventory_.erase( unit );
             dead_enemy_inventory.addStored_Unit(unit);
             if(found_ptr->type_.isWorker()) inventory.estimated_enemy_workers_--;
-            //Broodwar->sendText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else {
-            //Broodwar->sendText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
         }
     }
 
@@ -1376,9 +1374,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             }
         }
 
-        if (_ANALYSIS_MODE) {
-            Broodwar->sendText("A mine is dead!");
-        }
+        CUNYAIModule::DiagnosticText("A mine is dead!");
+
 
         // clear it just in case. 
         auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
@@ -1393,10 +1390,10 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         auto found_ptr = neutral_inventory.getStoredUnit(unit);
         if (found_ptr) {
             neutral_inventory.unit_inventory_.erase(unit);
-            //Broodwar->sendText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
         }
         else {
-            //Broodwar->sendText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
         }
     }
 

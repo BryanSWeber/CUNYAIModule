@@ -10,13 +10,13 @@
 #include "FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
-#define _RESIGN_MODE true // must be off for proper game close in SC-docker
-#define _ANALYSIS_MODE false // Visualizations
-#define _TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
-#define _MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
-#define _SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
-#define _LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-#define _TIT_FOR_TAT_ENGAGED true // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
+#define RESIGN_MODE true // must be off for proper game close in SC-docker
+#define ANALYSIS_MODE false // Visualizations
+#define TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
+#define MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
+#define SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
+#define LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
+#define TIT_FOR_TAT_ENGAGED true // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
 
 
 // Remember not to use "Broodwar" in any global class constructor!
@@ -159,7 +159,13 @@ public:
       static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
-
+      //Sends a diagnostic text message, accepts another argument..
+      template<typename ...Ts>
+      static void DiagnosticText(char const *fmt, Ts && ... vals) {
+          if (ANALYSIS_MODE) {
+              Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
+          }
+      }
       // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
       static bool Futile_Fight( Unit unit, Unit enemy );
       // Outlines the case where you can attack their type (air/ground/cloaked)
@@ -209,7 +215,7 @@ public:
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
-      static Position getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
+      //static Position getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -230,7 +236,7 @@ public:
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static bool checkOccupiedArea(const Unit_Inventory & ui, const UnitType type, const Position & origin);
-      static bool checkThreatenedArea(const Unit_Inventory & ui, const UnitType & type, const Position & origin, const int & dist);
+      //static bool checkThreatenedArea(const Unit_Inventory & ui, const UnitType & type, const Position & origin, const int & dist);
       //Searches an inventory for buildings. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkBuildingOccupiedArea( const Unit_Inventory & ui, const Position & origin);
       //Searches an inventory for resources. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
@@ -299,7 +305,7 @@ public:
 
       // Genetic History Functions
       //gathers win history. Imposes genetic learning algorithm, matched on race. 
-      double Win_History(std::string file, int value);
+      //double Win_History(std::string file, int value);
 
   // Vision Functions
       // returns number of visible tiles.
@@ -310,5 +316,7 @@ public:
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
       bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
-      void printUnitInventory(Unit_Inventory inventory); //prints aribtrary UI to file.
+      void printUnitInventory(Unit_Inventory inventory);
+      //prints aribtrary UI to file.
+
 };

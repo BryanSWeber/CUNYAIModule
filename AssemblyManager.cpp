@@ -39,7 +39,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
-                Broodwar->sendText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
+                CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
                 buildorder.updateRemainingBuildOrder(building); // skips the building.
             }
         }
@@ -82,8 +82,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
 
-                        if (_ANALYSIS_MODE) {
-                            Broodwar->sendText("Dist from enemy is: %d", new_dist);
+                        if (ANALYSIS_MODE) {
+                            CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
                         }
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
@@ -138,7 +138,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
-                Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                 //buildorder.updateRemainingBuildOrder(building); // skips the building.
                 buildorder.clearRemainingBuildOrder();
             }
@@ -159,7 +159,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 //    return true;
                 //} //extractors must have buildings nearby or we shouldn't build them.
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) && buildorder.checkBuilding_Desired(building)) {
-                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                     //buildorder.updateRemainingBuildOrder(building); // skips the building.
                     buildorder.clearRemainingBuildOrder();
                 }
@@ -181,7 +181,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                     return true;
                 }
                 else if (buildorder.checkBuilding_Desired(building)) {
-                    Broodwar->sendText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                     //buildorder.updateRemainingBuildOrder(building); // skips the building.
                     buildorder.clearRemainingBuildOrder();
                 }
@@ -199,7 +199,7 @@ bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
             buildorder.updateRemainingBuildOrder(ups);
             Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
             morphing_unit.updateStoredUnit(unit);
-            Broodwar->sendText("Upgrading %s.", ups.c_str());
+            CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
         }
     }
@@ -214,7 +214,7 @@ bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
             buildorder.updateRemainingBuildOrder(tech);
             Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
             morphing_unit.updateStoredUnit(unit);
-            Broodwar->sendText("Researching %s.", tech.c_str());
+            CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());
             return true;
         }
     }
@@ -321,17 +321,17 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
             //Evo chamber is required tech for spore colony
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 0 && buildorder.isEmptyBuildOrder()) {
                 buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in a hydralisk den if they have Air.
-                Broodwar->sendText("Reactionary Evo Chamber");
+                CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
                 return is_building = true;
             } // hydralisk den is required tech for hydras, a ground to air/ ground to ground unit.
             else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) == 0 && buildorder.isEmptyBuildOrder()) {
                 buildorder.addBuildOrderElement(UnitTypes::Zerg_Hydralisk_Den);
-                Broodwar->sendText("Reactionary Hydra Den");
+                CUNYAIModule::DiagnosticText("Reactionary Hydra Den");
                 return is_building = true;
             }// spire requires LAIR. Spire allows mutalisks and scourge.   Greater spire allows devorers, but I do not have code to updrade to greater spire ATM.
             else if (Count_Units(UnitTypes::Zerg_Lair, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Lair, inv) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, inv) == 0 && buildorder.isEmptyBuildOrder()) {
                 buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire);
-                Broodwar->sendText("Reactionary Spire");
+                CUNYAIModule::DiagnosticText("Reactionary Spire");
                 return is_building = true;
             }
         }
@@ -392,19 +392,19 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     //if ((would_force_lurkers || would_force_spire) && Count_Units(UnitTypes::Zerg_Lair, ui) == 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Extractor, ui) > 0 ) {
     //    buildorder..addBuildOrderElement(UnitTypes::Zerg_Lair); // force lair if you need it and are in a position for it.
-    //    Broodwar->sendText("Reactionary Lair, there's tech I want.");
+    //    CUNYAIModule::DiagnosticText("Reactionary Lair, there's tech I want.");
     //    return is_building > 0;
     //} 
 
     if (is_larva && !is_building) {
         if (u_relatively_weak_against_air && would_force_spire && buildorder.isEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 && one_tech_per_base) {
             buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire); // force in a Spire if they have no AA. Note that there is no one-base muta build on TL. So let's keep this restriction of 1 tech per base.
-            Broodwar->sendText("Reactionary Spire");
+            CUNYAIModule::DiagnosticText("Reactionary Spire");
             return is_building = true;
         }
         else if (enemy_mostly_ground && would_force_lurkers && buildorder.isEmptyBuildOrder() && Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0) {
             buildorder.addBuildOrderElement(TechTypes::Lurker_Aspect); // force in a hydralisk den if they have Air.
-            Broodwar->sendText("Reactionary Lurker Upgrade");
+            CUNYAIModule::DiagnosticText("Reactionary Lurker Upgrade");
             return is_building = true;
         }
     }
@@ -620,7 +620,7 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
             friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
             buildfap_temp.simulate(-1); // a complete simulation for us.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
-            //Broodwar->sendText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+            //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
         }
     }
 
@@ -629,13 +629,13 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
         if (potential_type.second > best_sim_score) {
             best_sim_score = potential_type.second;
             build_type = potential_type.first;
-            //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
         }
     }
 
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit) {
-        Broodwar->sendText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
+        CUNYAIModule::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
     }
     return false;
 }
@@ -673,9 +673,9 @@ void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
 }
 
 void Building_Gene::announceBuildingAttempt(UnitType ut) {
-    if (_ANALYSIS_MODE && ut.isBuilding()) {
+    if (ANALYSIS_MODE && ut.isBuilding()) {
         last_build_order = ut;
-        Broodwar->sendText("Building a %s", last_build_order.c_str());
+        CUNYAIModule::DiagnosticText("Building a %s", last_build_order.c_str());
     }
 }
 

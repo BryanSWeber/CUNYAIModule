@@ -50,13 +50,13 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             //if ( best_drone && best_drone->bwapi_unit_ ) {
             //    if ( best_drone->bwapi_unit_->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
             //        buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
-            //        Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
+            //        CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
             //        return true;
             //    }
             //    else if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
             //        best_drone->bwapi_unit_->move( Position( inv.next_expo_ ) );
             //        buildorder.active_builders_ = true;
-            //        Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
+            //        CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
             //        return true;
             //    }
             //}
@@ -67,7 +67,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             //}
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
-                Broodwar->sendText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
+                CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                 Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
                 morphing_unit.updateStoredUnit(unit);
                 return true;
@@ -76,7 +76,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 unit->move( Position( inv.next_expo_ ) );
                 Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
                 morphing_unit.updateStoredUnit(unit);
-                Broodwar->sendText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
+                CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
             }
             //}
@@ -130,10 +130,9 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
     } // find drone minima.
 
-    //if (_ANALYSIS_MODE) {
-    //    Broodwar->sendText("LOW DRONE COUNT : %d", low_drone);
-    //    Broodwar->sendText("Mine Minerals : %d", mine_minerals);
-    //}
+    //    CUNYAIModule::DiagnosticText("LOW DRONE COUNT : %d", low_drone);
+    //    CUNYAIModule::DiagnosticText("Mine Minerals : %d", mine_minerals);
+
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
 

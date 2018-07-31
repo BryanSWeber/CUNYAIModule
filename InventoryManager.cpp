@@ -59,7 +59,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
                 buildable_ct += buildable_positions_[i][j];
             }
         }
-        Broodwar->sendText( "There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct );
+        CUNYAIModule::DiagnosticText( "There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct );
     }
 
     if ( map_veins_.size() == 0 ) {
@@ -72,7 +72,7 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
                 }
             }
         }
-        Broodwar->sendText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
+        CUNYAIModule::DiagnosticText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
     }
 
     if ( start_positions_.empty() && !cleared_all_start_positions_) {
@@ -1580,7 +1580,7 @@ void Inventory::setNextExpo( const TilePosition tp ) {
 
 void Inventory::drawExpoPositions() const
 {
-    if (_ANALYSIS_MODE) {
+    if (ANALYSIS_MODE) {
         for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
@@ -1601,7 +1601,7 @@ void Inventory::drawExpoPositions() const
 
 void Inventory::drawBasePositions() const
 {
-    if (_ANALYSIS_MODE) {
+    if (ANALYSIS_MODE) {
         Broodwar->drawCircleMap(enemy_base_, 25, Colors::Red, true);
         Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);

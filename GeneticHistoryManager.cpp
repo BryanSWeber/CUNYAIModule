@@ -36,7 +36,7 @@ GeneticHistory::GeneticHistory( string file ) {
     //No longer used.
     double a_vis_out = dis(gen);
 
-    if (_TRAINING_AGAINST_BASE_AI) {
+    if (TRAINING_AGAINST_BASE_AI) {
     
         delta_out = 0.4;
         gamma_out = 0.4; // Artifically chosen
@@ -71,7 +71,7 @@ GeneticHistory::GeneticHistory( string file ) {
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
     };
 
-    if (_TRAINING_AGAINST_BASE_AI) {
+    if (TRAINING_AGAINST_BASE_AI) {
         build_order_list = { "drone drone drone drone drone overlord drone drone drone hatch pool drone drone" };
     }
 
@@ -322,7 +322,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-        if ( _TRAINING_AGAINST_BASE_AI ) {
+        if ( TRAINING_AGAINST_BASE_AI ) {
 
             //set size of starting population.
             if ( selected_win_count >= 50) {
@@ -331,7 +331,7 @@ GeneticHistory::GeneticHistory( string file ) {
                     parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
                 }
 
-                if (!_LEARNING_MODE) {
+                if (!LEARNING_MODE) {
                     parent_2 = parent_1;
                 }
 
@@ -353,7 +353,7 @@ GeneticHistory::GeneticHistory( string file ) {
                     parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
                 }
 
-                if (!_LEARNING_MODE) {
+                if (!LEARNING_MODE) {
                     parent_2 = parent_1;
                 }
 
@@ -408,7 +408,7 @@ GeneticHistory::GeneticHistory( string file ) {
 
     }
 
-    if (_TRAINING_AGAINST_BASE_AI) {
+    if (TRAINING_AGAINST_BASE_AI) {
         //From genetic history, random parent for each gene. Mutate the genome
         std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 3);
         std::normal_distribution<double> normal_mutation_size(0, 0.05);
