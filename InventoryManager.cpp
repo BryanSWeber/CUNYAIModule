@@ -331,8 +331,6 @@ void Inventory::updateHatcheries() {
 //In Tiles?
 void Inventory::updateBuildablePos()
 {
-    //Buildable_positions_ = std::vector< std::vector<bool> >( BWAPI::Broodwar->mapWidth()/8, std::vector<bool>( BWAPI::Broodwar->mapHeight()/8, false ) );
-
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
     buildable_positions_.reserve(map_x);
@@ -1547,13 +1545,10 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
     if (frames_since_home_base > 24 * 6) {
 
-        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
         suspected_friendly_base = getAttackedBase(ei,ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        //suspected_friendly_base = getBaseWithMostAttackers(ei,ui);
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base != Position(0, 0)) {
             updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
@@ -1563,13 +1558,10 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
     if (frames_since_safe_base > 24 * 8) {
 
-        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-
         //otherwise go to your weakest base.
         Position suspected_safe_base = Positions::Origin;
 
         suspected_safe_base = getStrongestBase(ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-                                                           //suspected_friendly_base = getBaseWithMostAttackers(ei,ui);
 
         if (suspected_safe_base.isValid() && suspected_safe_base != home_base_ && suspected_safe_base != Position(0, 0)) {
             updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);

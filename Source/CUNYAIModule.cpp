@@ -875,10 +875,6 @@ void CUNYAIModule::onFrame()
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented Mobility-type algorithm.
         auto start_scout = std::chrono::high_resolution_clock::now();
 
-        bool acceptable_ovi_scout = u_type != UnitTypes::Zerg_Overlord ||
-            (u_type == UnitTypes::Zerg_Overlord && enemy_inventory.stock_shoots_up_ == 0 && enemy_inventory.cloaker_count_ == 0 && Broodwar->enemy()->getRace() != Races::Terran) ||
-            (u_type == UnitTypes::Zerg_Overlord && massive_army && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) > 0);
-
         if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
             Mobility mobility;
             mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
@@ -954,7 +950,7 @@ void CUNYAIModule::onFrame()
 
                 //Shall we assign them to gas?
                 land_inventory.countViableMines();
-                bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_ && want_gas;
+                bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_ && land_inventory.local_refineries_ > 0 && want_gas;
                 bool worker_bad_gas = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas);
                 bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
                 bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
@@ -1011,16 +1007,6 @@ void CUNYAIModule::onFrame()
             if (miner.isAssignedResource(land_inventory) && !isEmptyWorker(u) && !u->isIdle()) {
                 continue;
             }
-
-            //if (u->isIdle() && t_game > 25 && miner.time_of_last_purge_ < t_game - 24) {
-            //    friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
-            //}
-
-            //if ((miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory)) && miner.isBrokenLock(land_inventory) ){
-            //    CUNYAIModule::DiagnosticText("Broken Mine!");
-            //    miner.bwapi_unit_->stop();
-            //    continue;
-            //}
 
             // Maintain the locks by assigning the worker to their intended mine!
             bool worker_has_lockable_task = miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory);
