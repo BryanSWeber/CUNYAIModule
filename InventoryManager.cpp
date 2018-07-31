@@ -1507,7 +1507,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        Stored_Unit* center_building = CUNYAIModule::getClosestStored(ei, ui.getMeanLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
+        Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
         if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOut( center_building->pos_, enemy_base_, map_out_from_enemy_, false);

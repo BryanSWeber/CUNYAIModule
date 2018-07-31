@@ -146,6 +146,8 @@ struct Unit_Inventory {
     void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Inventory &inv) const;
 
+    bool squadAliveinFuture(const int & number_of_frames_in_future) const;
+
     void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the friendly side of the FAP army.
     void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the enemy side of the FAP army.
     void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building combat simulator, friendly side.

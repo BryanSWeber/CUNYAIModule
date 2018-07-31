@@ -435,8 +435,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
 
-        future_fap_stock += u_iter.second.future_fap_value_;
-        moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
+        future_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.future_fap_value_;
+        moving_average_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.ma_future_fap_value_;
         is_shooting += u_iter.second.cd_remaining_ > 0; //
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
@@ -750,6 +750,10 @@ void Stored_Unit::updateFAPvalueDead()
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
     return unit.ma_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
+}
+
+bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) const{
+    return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
 }
 
 void Unit_Inventory::addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object) {

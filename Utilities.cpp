@@ -748,7 +748,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 	return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, Inventory &inv, const Position &origin) {
+Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Inventory &inv) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -756,7 +756,7 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, Inventory 
     if (!ui.unit_inventory_.empty()) {
         for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
             temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist) {
+            if (temp_dist <= min_dist  && !u->second.is_flying_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
             }
@@ -1780,7 +1780,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
-    return  //(ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ || // Proportional win. fixed division by crossmultiplying.
+    return  (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ || // Proportional win. fixed division by crossmultiplying.
         //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
         ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }

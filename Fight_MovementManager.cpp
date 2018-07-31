@@ -13,7 +13,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv) {
+void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Inventory &inv) {
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
     double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
@@ -95,7 +95,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 };
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
@@ -107,14 +107,14 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
     int helpful_u = useful_stocks[0];
     int helpful_e = useful_stocks[1]; // both forget value of psi units.
-    int max_dist = (ei.max_range_ + chargeable_dist);
     int max_dist_no_priority = INT_MAX;
+    int max_dist = passed_distance; // copy, to be modified later.
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
-    double max_chargable_dist = max_dist / (double)limit_units_diving;
+    double max_diveable_dist = passed_distance / (double)limit_units_diving;
 
     for (auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e) {
         if (e->second.valid_pos_) {
@@ -133,7 +133,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
                 bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
-                if (critical_target && dist_to_enemy <= max_chargable_dist && !lurkers_diving) {
+                if (critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
@@ -168,7 +168,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
                     max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
                     target = &e->second;
                 }
-                else if (dist_to_enemy < max_dist_no_priority && target_sentinel == false) {
+                else if (e_priority >= priority && e_priority < 3 && dist_to_enemy < max_dist_no_priority && target_sentinel == false) {
                     target_sentinel_poor_target_atk = true;
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
                     target = &e->second;
@@ -178,16 +178,20 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
         }
     }
 
-    if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) && ( target->elevation_ == ui.getStoredUnitValue(unit).elevation_ || ui.getStoredUnitValue(unit).is_flying_ || !melee) ){
+    bool attack_order_issued = false;
+    //bool target_is_on_wrong_plane = target && target->bwapi_unit_ && target->elevation_ != ui.getStoredUnitValue(unit).elevation_ && melee && !ui.getStoredUnitValue(unit).is_flying_; // keeps crashing from nullptr target.
+
+    if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) ){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
             if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
                 //
             }
             else {
                 unit->attack(target->bwapi_unit_);
-                if (melee) target->circumference_remaining_ -= widest_dim;
+                //if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
+            attack_order_issued = true;
         }
         else if (target->valid_pos_) {
             if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
@@ -195,13 +199,18 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
             }
             else {
                 unit->attack(target->pos_);
-                if (melee) target->circumference_remaining_ -= widest_dim;
+                //if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
+            attack_order_issued = true;
         }
     }
+
     Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
+
+    if(!attack_order_issued) Mobility_Movement(unit, ui, ei, inv);
+
 }
 // Basic retreat logic, range = enemy range
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
@@ -246,19 +255,6 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //setCentralize(pos, inventory); // causes problems with kiting.
     //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
-    //if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
-    //    unit->unburrow();
-    //    //Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-    //    //morphing_unit.updateStoredUnit(unit);
-    //    return;
-    //}
-    //else if (unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed() && ei.stock_ground_units_ > 0 && ei.detector_count_ == 0) {
-    //    unit->burrow();
-    //    Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-    //    morphing_unit.updateStoredUnit(unit);
-    //    return;
-    //}
-
     //Avoidance vector:
     int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
@@ -281,11 +277,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
     bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit),48);
-    bool squad_death_in_1_second = u_squad.moving_average_fap_stock_ <= u_squad.stock_full_health_ * 0.33333;
+    bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;
+    bool was_under_attack = unit->isUnderAttack();
 
-    if (retreat_spot && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight) || kiting || never_suicide) && clear_walkable && !scourge_retreating) {
+    if (retreat_spot && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight /*&& was_under_attack*/) || kiting || never_suicide) /*&& clear_walkable*/ && !scourge_retreating) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }
@@ -302,17 +299,9 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         return;
     }
     else { // if that spot will not work for you, prep to die.
-
-        //if ( unit->getType() == UnitTypes::Zerg_Lurker && !unit->isBurrowed()) {
-        //    unit->burrow();
-        //    Stored_Unit& morphing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
-        //    morphing_unit.updateStoredUnit(unit);
-        //    return;
-        //}
-        //else { // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, inventory);
+        // if your death is immenent fight back.
+        Tactical_Logic(unit, e_squad, u_squad, 250, inventory);
         return;
-        //}
     }
 
 

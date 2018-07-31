@@ -197,7 +197,7 @@ void CUNYAIModule::onFrame()
     friendly_inventory.updateUnitInventorySummary();
 
     //friendly_inventory.drawAllVelocities(inventory);
-    //friendly_inventory.drawAllHitPoints(inventory);
+    friendly_inventory.drawAllHitPoints(inventory);
     friendly_inventory.drawAllSpamGuards(inventory);
     friendly_inventory.drawAllWorkerTasks(inventory, land_inventory);
 
@@ -208,10 +208,10 @@ void CUNYAIModule::onFrame()
     enemy_inventory.addToEnemyBuildFAP(buildfap);
     friendly_inventory.addToFriendlyFAP(fap);
     friendly_inventory.addToFriendlyBuildFAP(buildfap);
-    friendly_inventory.drawAllMAFAPaverages(inventory);
+    //friendly_inventory.drawAllMAFAPaverages(inventory);
 
     // Let us estimate FAP values.
-    fap.simulate(1); // 96 frames of simulation for us.
+    fap.simulate(); // 96 frames of simulation for us.
     int friendly_fap_score = getFAPScore(fap, true);
     int enemy_fap_score = getFAPScore(fap, false);
     friendly_inventory.pullFromFAP(*fap.getState().first);
@@ -817,7 +817,7 @@ void CUNYAIModule::onFrame()
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
                         }
 
-                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
 
                         continue; // this unit is finished.
 
@@ -840,7 +840,7 @@ void CUNYAIModule::onFrame()
                             u->getHitPoints() / (double)(u_type.maxHitPoints() + u_type.maxShields()) >= e_closest->current_hp_ / (double)(e_closest->type_.maxHitPoints() + e_closest->type_.maxShields()) &&
                             u->getHitPoints() > (double)(u_type.maxHitPoints() + u_type.maxShields()) * 0.25) {
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
-                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                             continue; // this unit is finished.
                         }
                     }
