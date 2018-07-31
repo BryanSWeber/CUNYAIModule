@@ -74,7 +74,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
             }
 
             // Let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
-            if (inventory.map_out_from_enemy_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
+            if (inventory.map_out_from_enemy_ground_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
                 if (central_base == TilePosition(0, 0)) {
                     int old_dist = 9999999;
 
@@ -297,7 +297,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     bool u_relatively_weak_against_air = checkWeakAgainstAir(ui, ei); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
     bool e_relatively_weak_against_air = checkWeakAgainstAir(ei, ui); // div by zero concern. Derivative of the above equation.
-    //if (Inventory::getMapValue(inv.enemy_base_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
+    //if (Inventory::getMapValue(inv.enemy_base_ground_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
     // Do required build first.
     if (!buildorder.isEmptyBuildOrder() && buildorder.building_gene_.front().getUnit() != UnitTypes::None) {

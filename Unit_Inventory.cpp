@@ -296,6 +296,25 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      }
  }
 
+ Position Unit_Inventory::getMeanAirLocation() const {
+     int x_sum = 0;
+     int y_sum = 0;
+     int count = 0;
+     for (const auto &u : this->unit_inventory_) {
+         if (u.second.is_flying_ && u.second.valid_pos_) {
+             x_sum += u.second.pos_.x;
+             y_sum += u.second.pos_.y;
+             count++;
+         }
+     }
+     if (count > 0) {
+         Position out = { x_sum / count, y_sum / count };
+         return out;
+     }
+     else {
+         return Position(0, 0); // you're dead at this point, fyi.
+     }
+ }
 // In progress
  Position Unit_Inventory::getStrongestLocation() const {
      int x_sum = 0;

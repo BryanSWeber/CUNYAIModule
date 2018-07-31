@@ -10,22 +10,13 @@
 #include "FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
-//#define RESIGN_MODE true // must be off for proper game close in SC-docker
-//#define ANALYSIS_MODE false // Visualizations
-//#define TRAINING_AGAINST_BASE_AI false // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
-//#define MOVE_OUTPUT_BACK_TO_READ false // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
-//#define SSCAIT_OR_DOCKER true // should be ON for SC-docker, ON for SSCAIT.
-//#define LEARNING_MODE true //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-//#define TIT_FOR_TAT_ENGAGED true // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
-
 constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = false; // Visualizations
+constexpr bool ANALYSIS_MODE = true; // Visualizations
 constexpr bool TRAINING_AGAINST_BASE_AI = false; // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
-
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -219,6 +210,7 @@ public:
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
 	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Inventory &inv);
+      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Inventory & inv);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);

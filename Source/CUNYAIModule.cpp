@@ -128,7 +128,7 @@ void CUNYAIModule::onStart()
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
-    if (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
+    if constexpr (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
         rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file. 
     }
 
@@ -138,7 +138,7 @@ void CUNYAIModule::onEnd( bool isWinner )
     output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << adaptation_rate << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
-    if (MOVE_OUTPUT_BACK_TO_READ) {
+    if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
 }
@@ -264,7 +264,7 @@ void CUNYAIModule::onFrame()
 
     if (t_game == 0) {
         //update local resources
-        inventory.updateMapVeinsOut( inventory.start_positions_[0], inventory.enemy_base_, inventory.map_out_from_enemy_);
+        inventory.updateMapVeinsOut( inventory.start_positions_[0], inventory.enemy_base_ground_, inventory.map_out_from_enemy_ground_);
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
@@ -343,7 +343,7 @@ void CUNYAIModule::onFrame()
 
     CobbDouglas CD = CobbDouglas(alpha_army_temp, exp(inventory.ln_army_stock_), army_possible, alpha_tech_temp, exp(inventory.ln_tech_stock_), tech_possible, alpha_econ_temp, exp(inventory.ln_worker_stock_), econ_possible);
 
-    if (TIT_FOR_TAT_ENGAGED) {
+    if constexpr (TIT_FOR_TAT_ENGAGED) {
 
         int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
 
@@ -386,8 +386,10 @@ void CUNYAIModule::onFrame()
     double army_derivative = CD.army_derivative;
     double tech_derivative = CD.tech_derivative;
 
-    if (ANALYSIS_MODE && t_game % 24 == 0) {
-        CD.printModelParameters();
+    if constexpr (ANALYSIS_MODE) {
+        if (t_game % 24 == 0) {
+            CD.printModelParameters();
+        }
     }
 
     bool massive_army = (army_derivative != 0 && friendly_inventory.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) >= enemy_inventory.stock_fighting_total_ * 3);
@@ -402,7 +404,7 @@ void CUNYAIModule::onFrame()
 
     
     // Display the game status indicators at the top of the screen	
-    if (ANALYSIS_MODE) {
+    if constexpr(ANALYSIS_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_inventory );
         Print_Universal_Inventory(0, 50, inventory);
@@ -451,7 +453,7 @@ void CUNYAIModule::onFrame()
 
         Broodwar->drawTextScreen(250, 80, "Delta_gas: %4.2f", delta); //
         Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
-        
+
 
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
@@ -495,80 +497,79 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 140, upgrade_string);
         Broodwar->drawTextScreen(500, 150, creep_colony_string);
 
-        if (ANALYSIS_MODE) {
-            for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-                if (isOnScreen(p->second.pos_, inventory.screen_position_)) {
-                    Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-                    Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-                    Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-                }
+        for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
+            if (isOnScreen(p->second.pos_, inventory.screen_position_)) {
+                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
             }
-
-
-            //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-            //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-            //        if ( inventory.map_veins_[i][j] > 175 ) {
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-            //            }
-            //        }
-            //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-            //            }
-            //        }
-            //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-            //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
-            //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-            //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
-
-
-            //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
-            //        if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
-            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
-
-            //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_[i].size(); ++j) {
-            //        if (inventory.map_out_from_enemy_[i][j] % 100 == 0 && inventory.map_out_from_enemy_[i][j] > 1) {
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_[i][j]);
-            //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
-
-            //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
-            //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
-            //        if ( inventory.smoothed_barriers_[i][j] > 0) {
-            //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-            //                //Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j]);
-            //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-            //            }
-            //        }
-            //    }
-            //} // Pretty to look at!
-
-            for (auto &u : Broodwar->self()->getUnits()) {
-                if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move /*&& u_type != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit*/) {
-                    Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
-                }
-            }
-
         }
+
+
+        //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
+        //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
+        //        if ( inventory.map_veins_[i][j] > 175 ) {
+        //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+        //            }
+        //        }
+        //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+        //            }
+        //        }
+        //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen( { (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+
+
+        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
+        //        if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
+        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+
+        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
+        //        if (inventory.map_out_from_enemy_ground_[i][j] % 100 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
+        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+
+        //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
+        //        if ( inventory.smoothed_barriers_[i][j] > 0) {
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                //Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j]);
+        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+
+        for (auto &u : Broodwar->self()->getUnits()) {
+            if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move /*&& u_type != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit*/) {
+                Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
+            }
+        }
+
+
 
     }// close analysis mode
 
@@ -689,7 +690,7 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * detector_of_choice.type_.sightRange() * 0.75, c.y + sin(theta) * detector_of_choice.type_.sightRange() * 0.75);
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        if (ANALYSIS_MODE) {
+                        if constexpr (ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
                         }
@@ -697,7 +698,7 @@ void CUNYAIModule::onFrame()
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        if (ANALYSIS_MODE) {
+                        if constexpr (ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, inventory.screen_position_, c, Colors::Cyan);
                         }
@@ -805,7 +806,7 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
 
-                    if (ANALYSIS_MODE) {
+                    if constexpr (ANALYSIS_MODE) {
                         if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
                             Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d-%d", friend_loc.moving_average_fap_stock_, enemy_loc.moving_average_fap_stock_);
                         }
@@ -1152,23 +1153,24 @@ void CUNYAIModule::onFrame()
     if (total_frame_time.count() > 10000) {
         long_delay += 1;
     }
-    if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0) /* enemy_inventory.stock_fighting_total_> friendly_inventory.stock_fighting_total_ * 2*/ && RESIGN_MODE) //if game times out or lags out, end game with resignation.
-    {
-        Broodwar->leaveGame();
+    if constexpr (RESIGN_MODE) {
+        if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_inventory) == 0)) //if game times out or lags out, end game with resignation.
+        {
+            Broodwar->leaveGame();
+        }
+        if constexpr (ANALYSIS_MODE) {
+            int n;
+            n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+            n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+            n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+            n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+            n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+            n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+            n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+            n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+            n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
+        }
     }
-    if (ANALYSIS_MODE) {
-        int n;
-        n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-        n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-        n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-        n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-        n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-        n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-        n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-        n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-    }
-
 } // closure: Onframe
 
 void CUNYAIModule::onSendText( std::string text )

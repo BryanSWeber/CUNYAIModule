@@ -46,7 +46,8 @@ struct Inventory {
     vector<Position> start_positions_;
     vector<TilePosition> expo_positions_;
     vector<TilePosition> expo_positions_complete_;
-    Position enemy_base_;
+    Position enemy_base_ground_;
+    Position enemy_base_air_;
     Position home_base_;
     Position safe_base_;
 
@@ -61,7 +62,8 @@ struct Inventory {
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
     vector< vector<int> > map_out_from_home_; // distance from our own main.
-    vector< vector<int> > map_out_from_enemy_; // distance from enemy base.
+    vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base.
+    vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base.
     vector< vector<int> > map_out_from_safety_; // distance from enemy base.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
@@ -79,7 +81,8 @@ struct Inventory {
     int frames_since_map_veins = 0;
     int frames_since_home_base = 0;
     int frames_since_safe_base = 0;
-    int frames_since_enemy_base = 0;
+    int frames_since_enemy_base_ground_ = 0;
+    int frames_since_enemy_base_air_ = 0;
 
     // Counts my units so I don't have to do this for each unit onframe.
     void updateUnit_Counts(const Unit_Inventory & ui);

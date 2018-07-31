@@ -29,8 +29,9 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && ready_to_fight ) {
-            setAttraction(unit, pos, inv, inv.map_out_from_enemy_, inv.enemy_base_);
-            normalization = pos.getDistance(inv.enemy_base_) / (double)inv.my_portion_of_the_map_;
+            if(u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+            else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
+            normalization = pos.getDistance(inv.enemy_base_ground_) / (double)inv.my_portion_of_the_map_;
         }
         else { // Otherwise, return to home.
             setAttraction(unit, pos, inv, inv.map_out_from_home_, inv.home_base_);

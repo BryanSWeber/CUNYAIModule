@@ -161,6 +161,7 @@ struct Unit_Inventory {
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
+    Position getMeanAirLocation() const;
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;

@@ -657,11 +657,11 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
 
 int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
 {
-    if (map_out_from_enemy_.size() > 0 && A.isValid() && B.isValid()) {
+    if (map_out_from_enemy_ground_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         WalkPosition wp_b = WalkPosition(B);
-        int A = map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_out_from_enemy_[(size_t)wp_b.x][(size_t)wp_b.y];
+        int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int B = map_out_from_enemy_ground_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
             return abs(A - B);
         }
@@ -672,11 +672,11 @@ int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Posit
 
 int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
 {
-    if ( map_out_from_enemy_.size() > 0 && A.isValid()) {
+    if ( map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
-        int A = map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+        int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map_out_from_enemy_[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
 
@@ -713,7 +713,7 @@ return false;
 }
 int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
-    if (map_out_from_enemy_.size() > 0 && A.isValid()) {
+    if (map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
@@ -1455,7 +1455,7 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     if ( start_positions_.empty() ) {
         cleared_all_start_positions_ = true;
     }
-    //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ != start_positions_[0]){ // should start precaching the mean building location.
+    //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ground_ != start_positions_[0]){ // should start precaching the mean building location.
     //    updateMapVeinsOutFromFoe(start_positions_[0]);
     //}
 }
@@ -1467,14 +1467,15 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
     int frames_this_cycle = Broodwar->getFrameCount() % (24 * 4); // technically more. 
 
                                                                   // every frame this is incremented.
-    frames_since_enemy_base++;
+    frames_since_enemy_base_ground_++;
+    frames_since_enemy_base_air_++;
     frames_since_home_base++;
     frames_since_map_veins++;
     frames_since_safe_base++;
     frames_since_unwalkable++;
 
     //every 10 sec check if we're sitting at our destination.
-    //if (Broodwar->isVisible(TilePosition(enemy_base_)) && Broodwar->getFrameCount() % (24 * 5) == 0) { 
+    //if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && Broodwar->getFrameCount() % (24 * 5) == 0) { 
     //    fram = true;
     //}
     if (unit_calculation_frame) return;
@@ -1495,36 +1496,27 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
     }
     
-    if (frames_since_enemy_base > 24 * 10) {
+    if (frames_since_enemy_base_ground_ > 24 * 2) {
         checked_all_expo_positions_ = false;
-
-        //Position suspected_enemy_base = Positions::Origin;
-
-        //suspected_enemy_base = getWeakestBase(ei); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        //if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ && suspected_enemy_base != Position(0, 0)) {
-        //    updateMapVeinsOut(suspected_enemy_base, enemy_base_, map_out_from_enemy_);
-        //}
-
-        //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ei, ei.getMeanBuildingLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
         if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
-            updateMapVeinsOut( center_building->pos_, enemy_base_, map_out_from_enemy_, false);
+            updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false);
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0) && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
             int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_)) && attempts < start_positions_.size()) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < start_positions_.size()) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
-            updateMapVeinsOut( start_positions_[0], enemy_base_, map_out_from_enemy_);
+            updateMapVeinsOut( start_positions_[0], enemy_base_ground_, map_out_from_enemy_ground_);
         }
         else if (!expo_positions_.empty()) { // maybe it's a base we havent' seen yet?
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
             checked_all_expo_positions_ = true;
 
-            while (Broodwar->isVisible(TilePosition(enemy_base_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
                 random_index = rand() % expo_positions_.size();
                 if (Broodwar->isVisible(expo_positions_[random_index])) {
                     expo_positions_.erase(expo_positions_.begin() + random_index);
@@ -1532,14 +1524,28 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             }
 
             if (!expo_positions_.empty()) {
-                updateMapVeinsOut(Position(expo_positions_[random_index]), enemy_base_, map_out_from_enemy_);
+                updateMapVeinsOut(Position(expo_positions_[random_index]), enemy_base_ground_, map_out_from_enemy_ground_);
             }
         }
-        frames_since_enemy_base = 0;
+        frames_since_enemy_base_ground_ = 0;
 
     }
     
-    if (frames_since_home_base > 24 * 10) {
+    if (frames_since_enemy_base_air_ > 24 * 4) {
+    
+        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
+
+        if (ei.getMeanBuildingLocation() != Position(0, 0) && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+            updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
+        }
+        else {
+            enemy_base_air_ = enemy_base_ground_;
+            map_out_from_enemy_air_ = map_out_from_enemy_ground_;
+        }
+        frames_since_enemy_base_air_ = 0;
+    }
+
+    if (frames_since_home_base > 24 * 6) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
@@ -1555,7 +1561,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         frames_since_home_base = 0;
     }
 
-    if (frames_since_safe_base > 24 * 10) {
+    if (frames_since_safe_base > 24 * 8) {
 
         //Stored_Unit* center_building = CUNYAIModule::getClosestStoredBuilding(ui, ei.getMeanArmyLocation(), 999999); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
@@ -1580,7 +1586,7 @@ void Inventory::setNextExpo( const TilePosition tp ) {
 
 void Inventory::drawExpoPositions() const
 {
-    if (ANALYSIS_MODE) {
+    if constexpr (ANALYSIS_MODE) {
         for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
@@ -1601,9 +1607,13 @@ void Inventory::drawExpoPositions() const
 
 void Inventory::drawBasePositions() const
 {
-    if (ANALYSIS_MODE) {
-        Broodwar->drawCircleMap(enemy_base_, 25, Colors::Red, true);
+    if constexpr (ANALYSIS_MODE) {
+        Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
         Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+
+        Broodwar->drawCircleMap(enemy_base_air_, 30, Colors::Orange, true);
+        Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, false);
+
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
         Broodwar->drawCircleMap(safe_base_, 30, Colors::Blue, false);
     }
