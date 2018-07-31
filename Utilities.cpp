@@ -2,6 +2,7 @@
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
 #include "Utilities.h"
+#include <fstream>
 
 using namespace BWAPI;
 using namespace Filter;
@@ -251,7 +252,38 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
         }
     }
 }
+void CUNYAIModule::writeUnitInventory(const Unit_Inventory inventory, const string label)
+{
+    if constexpr(ANALYSIS_MODE) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        if (Broodwar->getFrameCount() % (24 * 30) == 0) {
+            string smashed_unit_types = "";
+            string smashed_unit_positions = "";
+            string place;
+            string type;
 
+            for (auto u : inventory.unit_inventory_) {
+
+                std::stringstream place_translator;
+                place_translator << u.second.pos_;
+                string place = place_translator.str();
+
+                std::stringstream type_translator;
+                type_translator << u.second.type_.c_str();
+                string type = type_translator.str();
+
+                smashed_unit_types += type + ", ";
+                smashed_unit_positions += place + ", ";
+            }
+
+            output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
+
+            output << label << "Unit Types" << smashed_unit_types << endl;
+            output << label << "Positions" << smashed_unit_positions << endl;
+            output.close();
+        }
+    }
+}
 
 // Outlines the case where UNIT cannot attack ENEMY type (air/ground), while ENEMY can attack UNIT.  Essentially bidirectional Can_Fight checks.
 bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {

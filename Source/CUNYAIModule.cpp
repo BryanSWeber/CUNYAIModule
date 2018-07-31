@@ -217,6 +217,9 @@ void CUNYAIModule::onFrame()
     friendly_inventory.pullFromFAP(*fap.getState().first);
     enemy_inventory.pullFromFAP(*fap.getState().second);
 
+    writeUnitInventory(friendly_inventory, "friendly");
+    writeUnitInventory(friendly_inventory, "enemy");
+
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
     land_inventory.drawMineralRemaining(inventory);
