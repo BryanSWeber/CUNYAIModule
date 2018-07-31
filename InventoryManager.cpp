@@ -1484,17 +1484,17 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         getExpoPositions();
         updateUnwalkableWithBuildings(ui, ei, ri, ni);
         frames_since_unwalkable = 0;
-
+        return;
     }
     
     if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
 
         updateMapVeins();
         frames_since_map_veins = 0;
-
+        return;
     }
     
-    if (frames_since_enemy_base_ground_ > 24 * 2) {
+    if (frames_since_enemy_base_ground_ > 24 * 10) {
         checked_all_expo_positions_ = false;
 
         Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
@@ -1526,10 +1526,10 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             }
         }
         frames_since_enemy_base_ground_ = 0;
-
+        return;
     }
     
-    if (frames_since_enemy_base_air_ > 24 * 4) {
+    if (frames_since_enemy_base_air_ > 24 * 5) {
     
         Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
@@ -1541,9 +1541,11 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             map_out_from_enemy_air_ = map_out_from_enemy_ground_;
         }
         frames_since_enemy_base_air_ = 0;
+        return;
+
     }
 
-    if (frames_since_home_base > 24 * 6) {
+    if (frames_since_home_base > 24 * 10) {
 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
@@ -1554,9 +1556,10 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
         }
         frames_since_home_base = 0;
+        return;
     }
 
-    if (frames_since_safe_base > 24 * 8) {
+    if (frames_since_safe_base > 24 * 10) {
 
         //otherwise go to your weakest base.
         Position suspected_safe_base = Positions::Origin;
@@ -1568,6 +1571,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         }
 
         frames_since_safe_base = 0;
+        return;
     }
 }
 
@@ -1601,10 +1605,11 @@ void Inventory::drawBasePositions() const
 {
     if constexpr (ANALYSIS_MODE) {
         Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
-        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
 
-        Broodwar->drawCircleMap(enemy_base_air_, 30, Colors::Orange, true);
-        Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, false);
+        Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
+        Broodwar->drawCircleMap(enemy_base_air_, 30, Colors::Orange, false);
+
+        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
 
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
         Broodwar->drawCircleMap(safe_base_, 30, Colors::Blue, false);
