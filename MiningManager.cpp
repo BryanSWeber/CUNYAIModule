@@ -28,7 +28,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
-                bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 96;
+                bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 32;
                 if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );
@@ -43,28 +43,6 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         if ( inv.next_expo_ && inv.next_expo_ != TilePosition(0, 0) ) {
             //clear all obstructions, if any.
             clearBuildingObstuctions(friendly_inventory, inv, unit);
-
-            //Unit_Inventory hatch_builders = getUnitInventoryInRadius( friendly_inventory, UnitTypes::Zerg_Drone, Position( inv.next_expo_ ), 99999 );
-            //Stored_Unit *best_drone = getClosestStored( hatch_builders, Position( inv.next_expo_ ), 99999 );
-
-            //if ( best_drone && best_drone->bwapi_unit_ ) {
-            //    if ( best_drone->bwapi_unit_->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) ) {
-            //        buildorder.setBuilding_Complete( UnitTypes::Zerg_Hatchery );
-            //        CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
-            //        return true;
-            //    }
-            //    else if ( !Broodwar->isExplored( inv.next_expo_ ) ) {
-            //        best_drone->bwapi_unit_->move( Position( inv.next_expo_ ) );
-            //        buildorder.active_builders_ = true;
-            //        CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
-            //        return true;
-            //    }
-            //}
-            //else {      
-
-            //if ( unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position( inventory.next_expo_ ) ) {
-            //    my_reservation.removeReserveSystem( unit->getBuildType() );
-            //}
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
