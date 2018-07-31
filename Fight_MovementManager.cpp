@@ -230,7 +230,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
 
-    if (ANALYSIS_MODE) {
+    if constexpr (ANALYSIS_MODE) {
         Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
         Broodwar->drawCircleMap(e_unit.pos_, chargable_distance, Colors::Cyan);
         Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance, Colors::Green);

@@ -161,7 +161,7 @@ public:
       //Sends a diagnostic text message, accepts another argument..
       template<typename ...Ts>
       static void DiagnosticText(char const *fmt, Ts && ... vals) {
-          if (ANALYSIS_MODE) {
+          if constexpr (ANALYSIS_MODE) {
               Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
           }
       }

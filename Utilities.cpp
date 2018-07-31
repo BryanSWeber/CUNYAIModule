@@ -136,7 +136,7 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
 
 // This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
-    if ( ANALYSIS_MODE ) {
+    if constexpr ( ANALYSIS_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
         }
@@ -145,7 +145,7 @@ void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
 
 // This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
-    if (ANALYSIS_MODE) {
+    if constexpr (ANALYSIS_MODE) {
         if (isOnScreen(s_pos, screen_pos)) {
             Broodwar->drawCircleMap(s_pos, 25, col, true);
         }
@@ -153,9 +153,9 @@ void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_
 }
 
 void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
-    if (ANALYSIS_MODE && unit.valid_pos_) {
+    if constexpr (ANALYSIS_MODE) {
         Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
@@ -178,9 +178,9 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 }
 
 void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
-    if (ANALYSIS_MODE && unit.valid_pos_) {
+    if constexpr (ANALYSIS_MODE ) {
         Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();

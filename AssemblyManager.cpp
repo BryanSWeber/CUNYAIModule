@@ -673,7 +673,7 @@ void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
 }
 
 void Building_Gene::announceBuildingAttempt(UnitType ut) {
-    if (ANALYSIS_MODE && ut.isBuilding()) {
+    if ( ut.isBuilding() ) {
         last_build_order = ut;
         CUNYAIModule::DiagnosticText("Building a %s", last_build_order.c_str());
     }
