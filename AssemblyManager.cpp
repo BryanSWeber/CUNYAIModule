@@ -82,9 +82,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
 
-                        if (ANALYSIS_MODE) {
-                            CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
-                        }
+                        CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
                         Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 250);

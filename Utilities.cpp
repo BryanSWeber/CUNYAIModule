@@ -203,7 +203,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 }
 
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
-    if (ANALYSIS_MODE) {
+    if constexpr (ANALYSIS_MODE) {
         Position upper_left = resource.pos_;
         if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
             // Draw the orange background.
@@ -229,7 +229,7 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
 void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
 {
-    if (ANALYSIS_MODE) {
+    if constexpr(ANALYSIS_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24 ) {
             // Draw the black background.
