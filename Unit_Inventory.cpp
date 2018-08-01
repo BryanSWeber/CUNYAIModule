@@ -838,14 +838,3 @@ Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
     if (find_result != unit_inventory_.end()) return find_result->second;
     else return nullptr;
 }
-
-
-void CUNYAIModule::printUnitInventory(Unit_Inventory inventory)
-{
-    ofstream output; // Prints to brood war file while in the WRITE file.
-    if (Broodwar->getFrameCount() % (24 * 30) == 0) {
-        output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
-        output << "Friendly " << inventory.cloaker_count_ << "," << inventory.detector_count_ << ',' << inventory.max_cooldown_ << ',' << inventory.max_range_ << ',' << inventory.resource_depot_count_ << ',' << inventory.stock_air_fodder_ << ',' << inventory.stock_both_up_and_down_ << ',' << inventory.stock_fighting_total_ << ',' << inventory.stock_fliers_ << ',' << inventory.stock_ground_fodder_ << ',' << inventory.stock_ground_units_ << ',' << inventory.stock_high_ground_ << ',' << inventory.stock_shoots_down_ << ',' << inventory.stock_shoots_up_ << ',' << inventory.stock_total_ << endl;
-        output.close();
-    }
-}

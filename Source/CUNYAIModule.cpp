@@ -1062,7 +1062,7 @@ void CUNYAIModule::onFrame()
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
         if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
-                   buildStaticDefence(u, inventory); // checks globally but not bad, info is mostly already there.
+                   buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
         }// closure: Creep colony loop
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();

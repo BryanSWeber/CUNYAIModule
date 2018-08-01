@@ -1793,11 +1793,11 @@ bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
     return  safe_mine || desperate_for_minerals;
 }
 
-//Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units.
-bool CUNYAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
-    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
-    return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
-}
+//Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units. Now defunct, replaced by build FAP evaluations
+//bool CUNYAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+//    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
+//    return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
+//}
 
 double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_bound) {
     if (lower_bound >= upper_bound) {

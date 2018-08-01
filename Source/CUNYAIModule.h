@@ -10,8 +10,8 @@
 #include "FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
-constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Visualizations, printing records, etc.
+constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
+constexpr bool ANALYSIS_MODE = false; // Visualizations, printing records, etc.
 constexpr bool TRAINING_AGAINST_BASE_AI = false; // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
@@ -109,8 +109,9 @@ public:
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
-      bool buildStaticDefence(const Unit & morph_canidate, const Inventory & inv);
-      bool findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Inventory &inv); //Compares a set of units via FAP simulations.
+      bool buildStaticDefence(const Unit & morph_canidate);
+      UnitType returnOptimalUnit(map<UnitType, int>& combat_types); // returns an optimal unit type from set.
+      bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
 
       // Builds the next building you can afford.  Incomplete.
       bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);
@@ -159,7 +160,8 @@ public:
       static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
-      static void writeUnitInventory(const Unit_Inventory inventory, const string label);
+      static void writeUnitInventory(const Unit_Inventory inventory, const string label);   //writes aribtrary UI to file.
+
 
       //Sends a diagnostic text message, accepts another argument..
       template<typename ...Ts>
@@ -319,7 +321,5 @@ public:
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
       bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
-      void printUnitInventory(Unit_Inventory inventory);
-      //prints aribtrary UI to file.
 
 };

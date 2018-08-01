@@ -48,8 +48,9 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
             Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
             TilePosition central_base = TilePosition(0, 0);
             TilePosition final_creep_colony_spot = TilePosition(0, 0);
-            bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
 
+            map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+            bool u_relatively_weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
 
             //get all the bases that might need a new creep colony.
             for (const auto &u : ui.unit_inventory_) {
@@ -248,7 +249,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
 
     //Am I sending this command to a larva or a hydra?
     UnitType u_type = larva->getType();
-    bool is_larva = u_type == UnitTypes::Zerg_Larva; 
+    bool is_larva = u_type == UnitTypes::Zerg_Larva;
     bool is_hydra = u_type == UnitTypes::Zerg_Hydralisk;
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
 
@@ -292,9 +293,11 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
         Stored_Unit(UnitTypes::Zerg_Spire).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Spire, ui) +
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
+    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
 
-    bool u_relatively_weak_against_air = checkWeakAgainstAir(ui, ei); // div by zero concern. Derivative of the above equation and inverted (ie. which will decrease my weakness faster?)
-    bool e_relatively_weak_against_air = checkWeakAgainstAir(ei, ui); // div by zero concern. Derivative of the above equation.
+    bool u_relatively_weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
+    bool e_relatively_weak_against_air = returnOptimalUnit(air_test_2) == UnitTypes::Zerg_Mutalisk; // ad hoc at the moment.
     //if (Inventory::getMapValue(inv.enemy_base_ground_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
     // Do required build first.
@@ -429,7 +432,10 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
     bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), inv.my_portion_of_the_map_);
-    bool weak_against_air = checkWeakAgainstAir(u_inv, e_inv);
+
+    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+    bool weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
+
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
 
@@ -584,24 +590,24 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
     map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Mutalisk, INT_MIN } , { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
 
     if (is_larva) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, larva_combat_types, inv);
+        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, larva_combat_types);
     }
     else if (is_hydra) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, hydra_combat_types, inv);
+        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, hydra_combat_types);
     }
     else if (is_muta) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, muta_combat_types, inv);
+        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, muta_combat_types);
     }
 
     return is_building;
 }
 
-bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate, const Inventory &inv) {
+bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
     map<UnitType, int> morphable_combat_types = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    return CUNYAIModule::findOptimalUnit(morph_canidate, morphable_combat_types, inv);
+    return CUNYAIModule::buildOptimalUnit(morph_canidate, morphable_combat_types);
 }
 
-bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Inventory &inv) {
+bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
     bool building_optimal_unit = false;
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
@@ -642,6 +648,44 @@ bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int
         CUNYAIModule::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
     }
     return false;
+}
+
+UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
+    bool building_optimal_unit = false;
+    auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
+    int best_sim_score = INT_MIN;
+    Unit_Inventory friendly_units_under_consideration;
+
+
+    //add friendly units under consideration to FAP in loop, resetting each time.
+    for (auto &potential_type : combat_types) {
+            buildfap_temp = buildfap; // restore the buildfap temp.
+            Stored_Unit su = Stored_Unit(potential_type.first);
+            //int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffordPurchase(potential_type.first), Count_Units(morph_canidate->getType(), inv));
+            //for (auto i = 1; i <= times_we_can_make_purchase; i++) {
+            // enemy units do not change.
+            Unit_Inventory friendly_units_under_consideration;
+            friendly_units_under_consideration.addStored_Unit(su);
+            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+                                                                                                                  //}
+
+            friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+            buildfap_temp.simulate(-1); // a complete simulation for us.
+            potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+            //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+    }
+
+    UnitType build_type = UnitTypes::None;
+    for (auto potential_type : combat_types) {
+        if (potential_type.second > best_sim_score) {
+            best_sim_score = potential_type.second;
+            build_type = potential_type.first;
+            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        }
+    }
+
+    return build_type;
+
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
