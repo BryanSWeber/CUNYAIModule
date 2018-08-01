@@ -7,7 +7,7 @@
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"
-#include "FAP\include\FAP.hpp"
+#include "FAP\FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker

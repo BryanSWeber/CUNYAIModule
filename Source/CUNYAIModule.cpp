@@ -8,7 +8,7 @@
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
-#include "FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iostream> 
 #include <fstream> // for file read/writing
 #include <numeric> // std::accumulate

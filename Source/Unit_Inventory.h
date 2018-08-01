@@ -5,7 +5,7 @@
 #include "Resource_Inventory.h"
 #include "InventoryManager.h"
 #include "Reservation_Manager.h"
-#include "FAP\include\FAP.hpp"
+#include "FAP\FAP\include\FAP.hpp"
 
 using namespace std;
 using namespace BWAPI;
