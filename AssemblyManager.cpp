@@ -451,7 +451,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Stock_Buildings(UnitTypes::Zerg_Hive, u_inv);
 
     //Macro-related Buildings.
-    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || e_inv.stock_fighting_total_< friendly_inventory.stock_fighting_total_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_inventory.moving_average_fap_stock_<= friendly_inventory.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
 
@@ -460,7 +460,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
     //Combat Buildings
-    if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.stock_fighting_total_ > u_loc.stock_fighting_total_ || e_loc.stock_fliers_ > e_loc.stock_shoots_up_) &&  // army starved or under attack. ? And?
+    if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, friendly_inventory, (army_starved || e_loc.moving_average_fap_stock_ >= u_loc.moving_average_fap_stock_) &&  // army starved or under attack. ? And?
         Count_Units(UnitTypes::Zerg_Creep_Colony, inv) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         !buildings_started &&
@@ -489,6 +489,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
             Count_Units(UnitTypes::Zerg_Lair, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 &&
             Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) > 0 &&
             inv.hatches_ > 1);
+
         // >2 bases
         if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, friendly_inventory, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 1 &&
