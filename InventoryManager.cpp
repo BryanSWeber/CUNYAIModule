@@ -576,8 +576,9 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
         int total_squares_filled = 0;
 
         vector <WalkPosition> fire_fill_queue;
+        vector <WalkPosition> fire_fill_queue_holder;
 
-        //begin with a fire fill.
+        //begin with a flood fill.
         total_squares_filled++;
         map[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back({ minitile_x, minitile_y });
@@ -586,62 +587,69 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
         int minitile_y_temp = minitile_y;
         bool filled_a_square = false;
 
-        while (!fire_fill_queue.empty()) { // this portion is a fire fill.
+        while (!fire_fill_queue.empty() || !fire_fill_queue_holder.empty()) {
 
-            minitile_x_temp = fire_fill_queue.begin()->x;
-            minitile_y_temp = fire_fill_queue.begin()->y;
-            fire_fill_queue.erase(fire_fill_queue.begin());
             filled_a_square = false;
 
-            // north
-            if (minitile_y_temp + 1 < map_y && map[minitile_x_temp][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp , minitile_y_temp + 1 });
-            }
-            // north east
-            if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
-            }
-            // north west
-            if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
-            }
-            //south
-            if (0 < minitile_y_temp - 1 && map[minitile_x_temp][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp, minitile_y_temp - 1 });
-            }
-            //south east
-            if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
-            }
-            //south west
-            if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
-            }
-            // east
-            if (minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp + 1, minitile_y_temp });
-            }
-            //west
-            if (0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp] == 0) {
-                filled_a_square = true;
-                map[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
-                fire_fill_queue.push_back({ minitile_x_temp - 1, minitile_y_temp });
+            while (!fire_fill_queue.empty()) { // this portion is now a flood fill, iteratively filling from its interior. Seems to be very close to fastest reasonable implementation.
+
+                minitile_x_temp = fire_fill_queue.begin()->x;
+                minitile_y_temp = fire_fill_queue.begin()->y;
+                fire_fill_queue.erase(fire_fill_queue.begin());
+
+                // north
+                if (minitile_y_temp + 1 < map_y && map[minitile_x_temp][minitile_y_temp + 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp , minitile_y_temp + 1 });
+                }
+                // north east
+                if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
+                }
+                // north west
+                if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
+                }
+                //south
+                if (0 < minitile_y_temp - 1 && map[minitile_x_temp][minitile_y_temp - 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp, minitile_y_temp - 1 });
+                }
+                //south east
+                if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
+                }
+                //south west
+                if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
+                }
+                // east
+                if (minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp });
+                }
+                //west
+                if (0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp] == 0) {
+                    filled_a_square = true;
+                    map[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp });
+                }
             }
             total_squares_filled += filled_a_square;
+            fire_fill_queue.clear();
+            fire_fill_queue.swap(fire_fill_queue_holder);
+            fire_fill_queue_holder.clear();
         }
 
         if(print) writeMap(map, newCenter);
