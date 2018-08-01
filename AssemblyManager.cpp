@@ -583,19 +583,24 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
     map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Mutalisk, INT_MIN } , { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
 
     if (is_larva) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, larva_combat_types, ei, ui, inv);
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, larva_combat_types, inv);
     }
     else if (is_hydra) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, hydra_combat_types, ei, ui, inv);
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, hydra_combat_types, inv);
     }
     else if (is_muta) {
-        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, muta_combat_types, ei, ui, inv);
+        is_building = CUNYAIModule::findOptimalUnit(morph_canidate, muta_combat_types, inv);
     }
 
     return is_building;
 }
 
-bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Unit_Inventory &ei, const Unit_Inventory &ui, const Inventory &inv) {
+bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate, const Inventory &inv) {
+    map<UnitType, int> morphable_combat_types = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+    return CUNYAIModule::findOptimalUnit(morph_canidate, morphable_combat_types, inv);
+}
+
+bool CUNYAIModule::findOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types, const Inventory &inv) {
     bool building_optimal_unit = false;
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;

@@ -797,7 +797,7 @@ void CUNYAIModule::onFrame()
                         //(!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-                        //(u_type == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
+                        (u_type == UnitTypes::Zerg_Overlord && (u->isUnderAttack() || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
                         (u_type == UnitTypes::Zerg_Drone /*&& (!army_starved || u->getHitPoints() < 0.50 *  u_type.maxHitPoints()*/); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
@@ -1062,59 +1062,7 @@ void CUNYAIModule::onFrame()
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
         if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
-            if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Sunken_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Sunken_Colony) {
-                Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                mutating_creep_colony_position = u->getPosition();
-                mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                mutating_creep_this_frame = true;
-            }
-            else if (u->getDistance(mutating_creep_colony_position) < UnitTypes::Zerg_Spore_Colony.sightRange() && mutating_creep_colony_type == UnitTypes::Zerg_Spore_Colony) {
-                Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                mutating_creep_colony_position = u->getPosition();
-                mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                mutating_creep_this_frame = true;
-            }
-            else if (!mutating_creep_this_frame) {
-                Unit_Inventory local_e = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), inventory.my_portion_of_the_map_);
-                local_e.updateUnitInventorySummary();
-                bool can_sunken = Count_Units(UnitTypes::Zerg_Spawning_Pool, inventory) > 0;
-                bool can_spore = Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0;
-                bool need_static_d = buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony);
-                bool want_static_d = (army_starved || local_e.stock_fighting_total_ > 0) && (can_sunken || can_spore);
-                bool u_relatively_weak_against_air = checkWeakAgainstAir(friendly_inventory, enemy_inventory) && local_e.stock_fliers_ > 0; // div by zero concern. Derivative of the above equation 
-                if (need_static_d || want_static_d) {
-                    //Unit_Inventory incoming_e_threat = getUnitInventoryInRadius( enemy_inventory, u->getPosition(), ( sqrt( pow( map_x , 2 ) + pow( map_y , 2 ) ) * 32 ) / Broodwar->getStartLocations().size() ); 
-                    bool cloak_nearby = local_e.cloaker_count_ > 0;
-                    bool local_air_problem = local_e.stock_fliers_ > 0;
-                    bool global_air_problem = u_relatively_weak_against_air;
-                    if (can_sunken && can_spore) {
-                        if (local_air_problem || global_air_problem || cloak_nearby) { // if they have a flyer (that can attack), get spores.
-                            Check_N_Build(UnitTypes::Zerg_Spore_Colony, u, friendly_inventory, true);
-                            mutating_creep_colony_position = u->getPosition();
-                            mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                            mutating_creep_this_frame = true;
-                        }
-                        else {
-                            Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                            mutating_creep_colony_position = u->getPosition();
-                            mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                            mutating_creep_this_frame = true;
-                        }
-                    } // build one of the two colonies based on the presence of closest units.
-                    else if (can_sunken && !can_spore && !local_air_problem && !global_air_problem && !cloak_nearby) {
-                        Check_N_Build(UnitTypes::Zerg_Sunken_Colony, u, friendly_inventory, true);
-                        mutating_creep_colony_position = u->getPosition();
-                        mutating_creep_colony_type = UnitTypes::Zerg_Sunken_Colony;
-                        mutating_creep_this_frame = true;
-
-                    } // build sunkens if you only have that
-                    else if (can_spore && !can_sunken) {
-                        mutating_creep_colony_position = u->getPosition();
-                        mutating_creep_colony_type = UnitTypes::Zerg_Spore_Colony;
-                        mutating_creep_this_frame = true;
-                    } // build spores if you only have that.
-                }
-            }
+                   buildStaticDefence(u, inventory); // checks globally but not bad, info is mostly already there.
         }// closure: Creep colony loop
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
