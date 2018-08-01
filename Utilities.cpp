@@ -789,7 +789,7 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
     if (!ui.unit_inventory_.empty()) {
         for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
             temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist  && !u->second.is_flying_) {
+            if (temp_dist <= min_dist  && !u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
             }
@@ -807,7 +807,7 @@ Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Positio
     if (!ui.unit_inventory_.empty()) {
         for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
             temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
-            if (temp_dist <= min_dist && u->second.is_flying_) {
+            if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
             }

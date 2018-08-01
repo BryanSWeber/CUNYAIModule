@@ -329,8 +329,6 @@ void Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
     if (!ui.unit_inventory_.empty()) {
         for (auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i) {
             if (i->second.type_ != UnitTypes::Zerg_Drone && i->second.type_ != UnitTypes::Zerg_Overlord && i->second.type_ != UnitTypes::Buildings) {
-                //temp_tot_x += cos(i->second.bwapi_unit_->getAngle()); //get the horiz element.
-                //temp_tot_y += sin(i->second.bwapi_unit_->getAngle()); // get the vertical element. Averaging angles was trickier than I thought. 
                 temp_tot_x += i->second.bwapi_unit_->getVelocityX(); //get the horiz element.
                 temp_tot_y += i->second.bwapi_unit_->getVelocityY(); // get the vertical element. Averaging angles was trickier than I thought. 
 
@@ -340,8 +338,6 @@ void Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
         //double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
 
         if (flock_count > 1) {
-            //attune_dx_ = ( ( temp_tot_x - cos(unit->getAngle()) ) / (flock_count - 1) + cos(unit->getAngle()) ) * speed * 6;
-            //attune_dy_ = ( ( temp_tot_y - sin(unit->getAngle()) ) / (flock_count - 1) + sin(unit->getAngle()) ) * speed * 6 ; // think the velocity is per frame, I'd prefer it per second so its scale is sensical.
             attune_dx_ = ((temp_tot_x - unit->getVelocityX()) / (flock_count - 1)) + unit->getVelocityX();
             attune_dy_ = ((temp_tot_y - unit->getVelocityY()) / (flock_count - 1)) + unit->getVelocityY(); // think the velocity is per frame, I'd prefer it per second so its scale is 
         }
