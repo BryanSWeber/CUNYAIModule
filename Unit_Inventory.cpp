@@ -462,7 +462,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
             
             bool flying_unit = u_iter.second.type_.isFlyer();
             int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
-            int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this) ;
+            int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
+
             if ( CUNYAIModule::IsFightingUnit(u_iter.second) ) {
 
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_== UnitTypes::Terran_Bunker;
