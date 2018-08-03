@@ -704,6 +704,7 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
 
     return 9999999;
 }
+
 bool Inventory::checkViableGroundPath(const Position A, const Position B) const
 {
     if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {

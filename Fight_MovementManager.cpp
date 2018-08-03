@@ -267,7 +267,6 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool clear_walkable = retreat_spot.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
             CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
-    //bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
@@ -275,7 +274,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit),48);
     bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
-    bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;
+    bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
     if (retreat_spot && ( ( !unit_death_in_1_second && !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
