@@ -93,6 +93,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
     Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
+    changing_unit.phase_ = "Pathing";
 };
 
 // This is basic combat logic for nonspellcasting units.
@@ -209,9 +210,9 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 
     Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
+    changing_unit.phase_ = "Attacking";
 
     if(!attack_order_issued) Mobility_Movement(unit, ui, ei, inv);
-
 }
 // Basic retreat logic, range = enemy range
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
@@ -243,9 +244,9 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         if (unit->isFlying()) {
-            setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+            setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // Attracts air units straight home without conflict.
+            //setStutter(unit, 1000);
         }
-        //setStutter(unit, 1000);
     }
     else {
         setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
@@ -297,14 +298,14 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
-        return;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+        changing_unit.updateStoredUnit(unit);
+        changing_unit.phase_ = "Retreating";
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
         Tactical_Logic(unit, e_squad, u_squad, 250, inventory);
-        return;
     }
-
 
 }
 

@@ -160,8 +160,9 @@ public:
       static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
       static void writeUnitInventory(const Unit_Inventory inventory, const string label);   //writes aribtrary UI to file.
-
 
       //Sends a diagnostic text message, accepts another argument..
       template<typename ...Ts>
@@ -213,13 +214,13 @@ public:
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
 	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
-	  static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Inventory &inv);
       static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Inventory & inv);
+      static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
+      static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
       static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
-      static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
       //static Position getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
@@ -307,10 +308,6 @@ public:
       int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
-
-      // Genetic History Functions
-      //gathers win history. Imposes genetic learning algorithm, matched on race. 
-      //double Win_History(std::string file, int value);
 
   // Vision Functions
       // returns number of visible tiles.

@@ -56,6 +56,8 @@ struct Stored_Unit {
     bool stimmed_;
     bool updated_fap_this_frame_;
 
+    string phase_ = "None";
+
     //Needed commands for workers.
 	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
 	void stopMine(Resource_Inventory &ri);

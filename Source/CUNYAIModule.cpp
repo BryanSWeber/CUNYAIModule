@@ -533,16 +533,16 @@ void CUNYAIModule::onFrame()
         //} // Pretty to look at!
 
 
-        for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
-            for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
-                if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
-                    if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                        Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
-                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-                    }
-                }
-            }
-        } // Pretty to look at!
+        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
+        //        if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
+        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
@@ -566,12 +566,15 @@ void CUNYAIModule::onFrame()
         //    }
         //} // Pretty to look at!
 
-        for (auto &u : Broodwar->self()->getUnits()) {
-            if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move /*&& u_type != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit*/) {
-                Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
-            }
-        }
+        //for (auto &u : Broodwar->self()->getUnits()) {
+        //    if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move /*&& u_type != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit*/) {
+        //        Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
+        //    }
+        //}
 
+        for (auto & j : friendly_inventory.unit_inventory_) {
+            CUNYAIModule::DiagnosticPhase(j.second,inventory.screen_position_);
+        }
 
 
     }// close analysis mode
@@ -732,7 +735,7 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_inventory);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
-                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128);
+                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128 );
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Mobility mobility;
 
@@ -797,8 +800,8 @@ void CUNYAIModule::onFrame()
                         //(!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-                        (u_type == UnitTypes::Zerg_Overlord && ( (friend_loc.stock_fliers_ == 0 && enemy_loc.stock_shoots_up_ > 0) || (supply_starved && enemy_loc.stock_shoots_up_ > 0))) || //overlords should be cowardly not suicidal.
-                        (u_type == UnitTypes::Zerg_Drone /*&& (!army_starved || u->getHitPoints() < 0.50 *  u_type.maxHitPoints()*/); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
+                        (u_type == UnitTypes::Zerg_Overlord && unit_death_in_1_second || //overlords should be cowardly not suicidal.
+                        (u_type == UnitTypes::Zerg_Drone && unit_death_in_1_second)); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
                     bool drone_problem = u_type == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;

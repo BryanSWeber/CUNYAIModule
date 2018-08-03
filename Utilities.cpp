@@ -252,6 +252,25 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
         }
     }
 }
+void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
+{
+    if constexpr(ANALYSIS_MODE) {
+        Position upper_left = unit.pos_;
+        if (isOnScreen(upper_left, screen_pos)) {
+            Broodwar->drawTextMap(unit.pos_, unit.order_.c_str());
+        }
+    }
+}
+void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
+{
+    if constexpr(ANALYSIS_MODE) {
+        Position upper_left = unit.pos_;
+        if (isOnScreen(upper_left, screen_pos)) {
+            Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );
+        }
+    }
+}
+
 void CUNYAIModule::writeUnitInventory(const Unit_Inventory inventory, const string label)
 {
     if constexpr(ANALYSIS_MODE) {
