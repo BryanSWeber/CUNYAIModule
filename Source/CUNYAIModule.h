@@ -111,6 +111,7 @@ public:
       bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
       UnitType returnOptimalUnit(map<UnitType, int>& combat_types); // returns an optimal unit type from set.
+      bool returnFlyerPreferred(); // returns a preference for flying/nonflying versions of several units, IE are they weak to air.
       bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
 
       // Builds the next building you can afford.  Incomplete.

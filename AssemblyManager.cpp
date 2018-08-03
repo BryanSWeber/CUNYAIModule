@@ -294,10 +294,11 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
+    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
 
     bool u_relatively_weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
-    bool e_relatively_weak_against_air = returnOptimalUnit(air_test_2) == UnitTypes::Zerg_Mutalisk; // ad hoc at the moment.
+    bool e_relatively_weak_against_air = returnOptimalUnit(air_test_2) == UnitTypes::Zerg_Mutalisk;
+        // bool e_relatively_weak_against_air = returnFlyerPreferred(); // ad hoc at the moment. Seems to work but takes me in a bad direction, the anti-air path is not properly developed and falls through often.
     //if (Inventory::getMapValue(inv.enemy_base_ground_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
     // Do required build first.
@@ -378,8 +379,22 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
     }
     else if ( e_relatively_weak_against_air ) {
         if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Greater_Spire, inv) > 0);
-        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
-        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice()  && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice() ); // if you are floating minerals relative to gas, feel free to buy some lings.
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Extractor, inv) == 0 || (my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice() && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice()) ); // if you are floating minerals relative to gas, feel free to buy some lings.
+
+        if (is_larva && !is_building) {
+            //Evo chamber is required tech for spore colony
+            if (Count_Units(UnitTypes::Zerg_Lair, inv) == 0 && Count_Units(UnitTypes::Zerg_Extractor, inv) > 0 && one_tech_per_base && buildorder.isEmptyBuildOrder()) {
+                buildorder.addBuildOrderElement(UnitTypes::Zerg_Lair); // force in a hydralisk den if they have Air.
+                CUNYAIModule::DiagnosticText("Reactionary Lair");
+                return is_building = true;
+            } // spire requires LAIR. Spire allows mutalisks and scourge.   Greater spire allows devorers, but I do not have code to updrade to greater spire ATM.
+            else if (Count_Units(UnitTypes::Zerg_Lair, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Lair, inv) > 0 && Count_Units(UnitTypes::Zerg_Extractor, inv) > 0 && one_tech_per_base && Count_Units(UnitTypes::Zerg_Spire, inv) == 0 && buildorder.isEmptyBuildOrder()) {
+                buildorder.addBuildOrderElement(UnitTypes::Zerg_Spire);
+                CUNYAIModule::DiagnosticText("Reactionary Spire");
+                return is_building = true;
+            }
+        }
     }
 
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, false); // catchall ground units, in case you have a BO that needs to be done.
@@ -683,6 +698,70 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
 
     return build_type;
 
+}
+
+bool CUNYAIModule::returnFlyerPreferred() {
+    map<UnitType, int> combat_types{ { UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN } };
+    bool building_optimal_unit = false;
+    auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
+    int best_sim_score = INT_MIN;
+    Unit_Inventory friendly_units_under_consideration;
+    bool flying_check = true;
+    bool beat_flying_unit = false;
+
+    //add friendly units under consideration to FAP in loop, resetting each time. Try flying first.
+    for (auto &potential_type : combat_types) {
+        buildfap_temp = buildfap; // restore the buildfap temp.
+        Stored_Unit su = Stored_Unit(potential_type.first);
+        su.is_flying_ = flying_check;
+        // enemy units do not change.
+        Unit_Inventory friendly_units_under_consideration;
+        friendly_units_under_consideration.addStored_Unit(su);
+        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+
+        friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+        buildfap_temp.simulate(240); // a deep but limited simulation for us. 10 seconds.
+        potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+        //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+    }
+
+    UnitType build_type = UnitTypes::None;
+    for (auto potential_type : combat_types) {
+        if (potential_type.second > best_sim_score) {
+            best_sim_score = potential_type.second;
+            build_type = potential_type.first;
+            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        }
+    }
+
+    //Now let's compare against ground units of the exact same type.
+    flying_check = false;
+    for (auto &potential_type : combat_types) {
+        buildfap_temp = buildfap; // restore the buildfap temp.
+        Stored_Unit su = Stored_Unit(potential_type.first);
+        su.is_flying_ = flying_check;
+        // enemy units do not change.
+        Unit_Inventory friendly_units_under_consideration;
+        friendly_units_under_consideration.addStored_Unit(su);
+        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+
+        friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+        buildfap_temp.simulate(240); // a deep but limited simulation for us. 10 seconds.
+        potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+        //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+    }
+
+    build_type = UnitTypes::None;
+    for (auto potential_type : combat_types) {
+        if (potential_type.second > best_sim_score) {
+            best_sim_score = potential_type.second;
+            build_type = potential_type.first;
+            return false;
+            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        }
+    }
+
+    return true;
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
