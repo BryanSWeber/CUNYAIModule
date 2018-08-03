@@ -6,7 +6,7 @@
 # include <numeric>
 
 
-#define DISTANCE_METRIC (int)CUNYAIModule::getProperSpeed(unit) * 24;
+#define DISTANCE_METRIC (int)(CUNYAIModule::getProperSpeed(unit) * 24);
 
 using namespace BWAPI;
 using namespace Filter;
@@ -95,7 +95,6 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     changing_unit.updateStoredUnit(unit);
     changing_unit.phase_ = "Pathing";
 };
-
 // This is basic combat logic for nonspellcasting units.
 void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Inventory &inv, const Color &color = Colors::White)
 {
@@ -215,42 +214,37 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     if(!attack_order_issued) Mobility_Movement(unit, ui, ei, inv);
 }
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, Inventory &inventory, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Inventory &inventory, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
     //int ground_range = e_unit.type_.groundWeapon().maxRange();
     distance_metric = DISTANCE_METRIC; // retreating must be done very fast.
-    int chargable_distance = CUNYAIModule::getChargableDistance(unit, ei); // seems to have been abandoned in favor of the spamguard as the main time unit.
-                                                                               //int range = unit->isFlying() ? air_range : ground_range;
+   
     int e_range = ei.max_range_;
     int f_range = ui.max_range_;
 
     Position pos = unit->getPosition();
-    //Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 1250);
-    //Position e_mean = ei.getMeanArmyLocation();
     bool order_sent = false;
 
     if constexpr (ANALYSIS_MODE) {
         Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
-        Broodwar->drawCircleMap(e_unit.pos_, chargable_distance, Colors::Cyan);
-        Broodwar->drawCircleMap(e_unit.pos_, e_range + chargable_distance, Colors::Green);
+        Broodwar->drawCircleMap(e_unit.pos_, passed_distance, Colors::Green);
     }
 
-    // Seperate from enemy:
-    //Unit_Inventory e_neighbors = CUNYAIModule::getUnitInventoryInRadius(ei, pos, max(64, e_range + chargable_distance ));
-    //e_neighbors.updateUnitInventorySummary();
+    setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_);
 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         if (unit->isFlying()) {
             setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // Attracts air units straight home without conflict.
-            //setStutter(unit, 1000);
+            //setStutter(unit, 10);
         }
     }
     else {
         setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
+
     //setAlignment( unit, ui );
     //setAlignment( unit, local_neighborhood);
     //setCohesion( unit, pos, local_neighborhood);
@@ -264,8 +258,8 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     setObjectAvoid(unit, pos, avoidance_pos, inventory);
 
     //final vector
-    int vector_x = attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
-    int vector_y = attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
+    int vector_x = x_stutter_ + attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
+    int vector_y = y_stutter_ + attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
 
     //Make sure the end destination is one suitable for you.
     Position retreat_spot = { (int)(pos.x + vector_x), (int)(pos.y + vector_y) }; //attract is zero when it's not set.
@@ -273,7 +267,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool clear_walkable = retreat_spot.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
             CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
-    bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
+    //bool safe_walkable = e_range < retreat_spot.getDistance(e_unit.pos_) || unit->isFlying();
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
@@ -282,9 +276,8 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64;
-    bool was_under_attack = unit->isUnderAttack();
 
-    if (retreat_spot && ((!unit_death_in_1_second && !squad_death_in_1_second && melee_fight /*&& was_under_attack*/) || kiting || never_suicide) /*&& clear_walkable*/ && !scourge_retreating) {
+    if (retreat_spot && ( ( !unit_death_in_1_second && !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }
@@ -419,18 +412,18 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 //Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
 void Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
 
-        if (!map.empty() && !unit->isFlying()) {
-            WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-            vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-            attract_dx_ = direction[0] * distance_metric;
-            attract_dy_ = direction[1] * distance_metric;
-        }
-        else {
+        if (map.empty() || unit->isFlying()) {
             int dist_x = map_center.x - pos.x;
             int dist_y = map_center.y - pos.y;
             double theta = atan2(dist_y, dist_x);
             attract_dx_ = cos(theta) * distance_metric; // run to (map)!
             attract_dy_ = sin(theta) * distance_metric;
+        }
+        else {
+            WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+            vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+            attract_dx_ = direction[0] * distance_metric;
+            attract_dy_ = direction[1] * distance_metric;
         }
 }
 

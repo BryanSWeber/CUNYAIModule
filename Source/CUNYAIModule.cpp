@@ -722,7 +722,7 @@ void CUNYAIModule::onFrame()
 
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
-            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 999999);
+            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 3200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 256);
             }
@@ -835,7 +835,7 @@ void CUNYAIModule::onFrame()
                         }
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, search_radius, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
                         }
                         continue; // this unit is finished.
 
@@ -852,8 +852,6 @@ void CUNYAIModule::onFrame()
                         }
                     }
                     else {
-                        //if (distance_to_foe < chargable_distance_net) { // use same algo inside retreat script.
-
                             if (u_type.isWorker()) {
                                 friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                             }
@@ -868,9 +866,8 @@ void CUNYAIModule::onFrame()
                                 }
                             }
 
-                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, inventory, Colors::White);
+                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, search_radius, inventory, Colors::White);
                             continue; //Do not give the unit to Mobility or any other algorithm if the enemy is nearby!
-                        //}
                     }
                 }
             } // close local examination.
