@@ -1580,8 +1580,12 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
         suspected_safe_base = getStrongestBase(ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        if (suspected_safe_base.isValid() && suspected_safe_base != home_base_ && suspected_safe_base !=  Positions::Origin) {
+        if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);
+        }
+        else {
+            safe_base_ = home_base_;
+            map_out_from_safety_ = map_out_from_home_;
         }
 
         frames_since_safe_base = 0;
