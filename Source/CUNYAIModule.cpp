@@ -695,7 +695,7 @@ void CUNYAIModule::onFrame()
                 if (detector_found /*&& spamGuard(detector_of_choice)*/) {
                     double theta = atan2(c.y - detector_of_choice.pos_.y, c.x - detector_of_choice.pos_.x);
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * detector_of_choice.type_.sightRange() * 0.75, c.y + sin(theta) * detector_of_choice.type_.sightRange() * 0.75);
-                    if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Position(0, 0)) {
+                    if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
                         if constexpr (ANALYSIS_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
@@ -723,6 +723,8 @@ void CUNYAIModule::onFrame()
 
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
+            Mobility mobility;
+
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 3200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 256);
@@ -736,7 +738,6 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
                 int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 256 );
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
-                Mobility mobility;
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
@@ -760,7 +761,7 @@ void CUNYAIModule::onFrame()
                 //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
                 foe_within_radius = distance_to_foe < search_radius;
-                if (e_closest->valid_pos_ && foe_within_radius) {  // Must have a valid postion on record to attack.
+                if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
@@ -825,7 +826,7 @@ void CUNYAIModule::onFrame()
                     }
                     else if (drone_problem) {
                         if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, friend_loc) <= enemy_loc.worker_count_ &&
-                            friend_loc.getMeanBuildingLocation() != Position(0, 0) &&
+                            friend_loc.getMeanBuildingLocation() != Positions::Origin &&
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_1_second){
                             friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
@@ -833,7 +834,7 @@ void CUNYAIModule::onFrame()
                         }
                     }
                     else {
-                            if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Position(0, 0))) {
+                            if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Positions::Origin)) {
                                 if (u_type == UnitTypes::Zerg_Overlord) {
                                     //see unit destruction case. We will replace this overlord, likely a foolish scout.
                                 }
@@ -853,19 +854,23 @@ void CUNYAIModule::onFrame()
 
                     continue; // this unit is finished.
                 }
-            } // close local examination.
 
+            } // close local examination.
+            
+            if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
+                mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
+            }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 
         //Scouting/vision loop. Intially just brownian motion, now a fully implemented Mobility-type algorithm.
-        auto start_scout = std::chrono::high_resolution_clock::now();
+        //auto start_scout = std::chrono::high_resolution_clock::now();
 
-        if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
-            Mobility mobility;
-            mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
-        } // If it is a combat unit, then use it to attack the enemy.
-        auto end_scout = std::chrono::high_resolution_clock::now();
+        //if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
+        //    Mobility mobility;
+        //    mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
+        //} // If it is a combat unit, then use it to attack the enemy.
+        //auto end_scout = std::chrono::high_resolution_clock::now();
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
@@ -1053,7 +1058,7 @@ void CUNYAIModule::onFrame()
         detector_time += end_detector - start_detector;
         larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
-        scout_time += end_scout - start_scout;
+        //scout_time += end_scout - start_scout;
         combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
         creepcolony_time += end_creepcolony - start_creepcolony;

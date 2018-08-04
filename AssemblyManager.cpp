@@ -46,8 +46,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
         else if (unit_can_build_intended_target && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 
             Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
-            TilePosition central_base = TilePosition(0, 0);
-            TilePosition final_creep_colony_spot = TilePosition(0, 0);
+            TilePosition central_base = TilePositions::Origin;
+            TilePosition final_creep_colony_spot = TilePositions::Origin;
 
             map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
             bool u_relatively_weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
@@ -76,7 +76,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
 
             // Let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
             if (inventory.map_out_from_enemy_ground_.size() != 0 && inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
-                if (central_base == TilePosition(0, 0)) {
+                if (central_base == TilePositions::Origin) {
                     int old_dist = 9999999;
 
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) {

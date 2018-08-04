@@ -1508,10 +1508,10 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
         Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
-        if (ei.getMeanBuildingLocation() != Position(0, 0) && center_building && center_building->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+        if (ei.getMeanBuildingLocation() != Positions::Origin && center_building && center_building->pos_ && center_building->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false);
         }
-        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Position(0, 0) && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
+        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
             int attempts = 0;
             while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < start_positions_.size()) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
@@ -1542,7 +1542,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
     
         Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
-        if (ei.getMeanBuildingLocation() != Position(0, 0) && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+        if (ei.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
         }
         else {
@@ -1559,9 +1559,14 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
-        suspected_friendly_base = getAttackedBase(ei,ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        if (ei.stock_fighting_total_ > 0) {
+            suspected_friendly_base = getAttackedBase(ei, ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        }
+        else {
+            suspected_friendly_base = getStrongestBase(ui);
+        }
 
-        if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base != Position(0, 0)) {
+        if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
         }
         frames_since_home_base = 0;
@@ -1575,7 +1580,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
         suspected_safe_base = getStrongestBase(ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
-        if (suspected_safe_base.isValid() && suspected_safe_base != home_base_ && suspected_safe_base != Position(0, 0)) {
+        if (suspected_safe_base.isValid() && suspected_safe_base != home_base_ && suspected_safe_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);
         }
 

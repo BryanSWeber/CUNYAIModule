@@ -25,9 +25,9 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Position(0, 0);
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
-    bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Position(0, 0);
+    bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Positions::Origin;
 
     if (u_type != UnitTypes::Zerg_Overlord) {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
@@ -389,7 +389,7 @@ void Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, cons
 void Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
 
     const Position loc_center = ui.getMeanArmyLocation();
-    if (loc_center != Position(0, 0)) {
+    if (loc_center != Positions::Origin) {
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
@@ -583,8 +583,9 @@ vector<double> Mobility::getVectorTowardsMap(const Position &pos, const Inventor
 
     double theta = 0;
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int x = -5; x <= 5; ++x) {
-        for (int y = -5; y <= 5; ++y) {
+    for (int x = -3; x <= 3; ++x) {
+        for (int y = -3; y <= 3; ++y) {
+            if (x != 3 && y != 3 && x != -3 && y != -3) continue;
             double centralize_x = WalkPosition(pos).x + x;
             double centralize_y = WalkPosition(pos).y + y;
             if (!(x == 0 && y == 0) &&

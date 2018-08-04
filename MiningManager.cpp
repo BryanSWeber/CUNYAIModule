@@ -12,7 +12,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
 
         int dist = 99999999;
         inv.getExpoPositions(); // update the possible expo positions.
-        inv.setNextExpo(TilePosition(0, 0)); // if we find no replacement position, we will know this null postion is never a good build canidate.
+        inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
 
         bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
             getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
@@ -40,7 +40,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         }
 
         // If we found -something-
-        if ( inv.next_expo_ && inv.next_expo_ != TilePosition(0, 0) ) {
+        if ( inv.next_expo_ && inv.next_expo_ != TilePositions::Origin ) {
             //clear all obstructions, if any.
             clearBuildingObstuctions(friendly_inventory, inv, unit);
 

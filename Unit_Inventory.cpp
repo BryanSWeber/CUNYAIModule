@@ -312,7 +312,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          return out;
      }
      else {
-         return Position(0, 0); // you're dead at this point, fyi.
+         return Positions::Origin; // you're dead at this point, fyi.
      }
  }
 // In progress
@@ -337,7 +337,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          return out;
      }
      else {
-         return Position(0, 0); // you're dead at this point, fyi.
+         return Positions::Origin; // you're dead at this point, fyi.
      }
  }
 
@@ -380,7 +380,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          return out;
      }
      else {
-         return Position(0, 0);  // you might be dead at this point, fyi.
+         return Positions::Origin;  // you might be dead at this point, fyi.
      }
  }
 
@@ -394,11 +394,11 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  //            return out;
  //        }
  //        else {
- //            return Position(0, 0);  // you might be dead at this point, fyi.
+ //            return Positions::Origin;  // you might be dead at this point, fyi.
  //        }
  //    }
  //    else {
- //        return Position(0, 0);  // you might be dead at this point, fyi.
+ //        return Positions::Origin;  // you might be dead at this point, fyi.
  //    }
  //}
 

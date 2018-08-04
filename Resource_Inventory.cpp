@@ -56,7 +56,7 @@ Position Resource_Inventory::getMeanLocation() const {
 	int x_sum = 0;
 	int y_sum = 0;
 	int count = 0;
-	Position out = Position(0, 0);
+	Position out =  Positions::Origin;
 	for (const auto &u : this->resource_inventory_) {
 		x_sum += u.second.pos_.x;
 		y_sum += u.second.pos_.y;
