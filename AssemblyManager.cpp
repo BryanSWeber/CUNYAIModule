@@ -632,7 +632,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     // drop all units types I cannot assemble at this time.
     auto pt_type = combat_types.begin();
     while (pt_type != combat_types.end()) {
-        bool can_make = (morph_canidate->canMorph(pt_type->first) && my_reservation.checkAffordablePurchase(pt_type->first) && (buildorder.checkBuilding_Desired(pt_type->first) || buildorder.isEmptyBuildOrder());
+        bool can_make = morph_canidate->canMorph(pt_type->first) && my_reservation.checkAffordablePurchase(pt_type->first) && (buildorder.checkBuilding_Desired(pt_type->first) || buildorder.isEmptyBuildOrder());
 
         if (can_make) {
             pt_type++;
@@ -658,14 +658,14 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
     bool building_optimal_unit = false;
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
-    Unit_Inventory friendly_units_under_consideration;
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
             buildfap_temp = buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
             // enemy units do not change.
-            Unit_Inventory friendly_units_under_consideration;
+            Unit_Inventory friendly_units_under_consideration; // new every time.
+            //add unit we are interested in to the inventory:
             friendly_units_under_consideration.addStored_Unit(su);
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
 
