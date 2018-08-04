@@ -294,11 +294,11 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
         Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
         Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
+    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
 
     bool u_relatively_weak_against_air = returnOptimalUnit(air_test_1) == UnitTypes::Zerg_Spore_Colony;
-    bool e_relatively_weak_against_air = returnOptimalUnit(air_test_2) == UnitTypes::Zerg_Mutalisk;
-        // bool e_relatively_weak_against_air = returnFlyerPreferred(); // ad hoc at the moment. Seems to work but takes me in a bad direction, the anti-air path is not properly developed and falls through often.
+    bool e_relatively_weak_against_air = returnOptimalUnit(air_test_2) == UnitTypes::Zerg_Guardian;
+    // bool e_relatively_weak_against_air = returnFlyerPreferred(); // ad hoc at the moment. Seems to work but takes me in a bad direction, the anti-air path is not properly developed and falls through often.
     //if (Inventory::getMapValue(inv.enemy_base_ground_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
     // Do required build first.

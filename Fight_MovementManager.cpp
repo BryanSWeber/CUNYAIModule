@@ -17,7 +17,10 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
     double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
-    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, unit->getPosition(), 250);
+    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
+    local_neighborhood.updateUnitInventorySummary();
+    Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
@@ -53,7 +56,12 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
             setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); 
         }
         else {
-            setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            if (e_neighborhood.stock_shoots_up_ == 0) {
+                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            } 
+            else {
+                setSeperationScout(unit, pos, e_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            }
         }
 
     }
@@ -271,12 +279,11 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
-    bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit),48);
     bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
-    if (retreat_spot && ( ( !unit_death_in_1_second && !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
+    if (retreat_spot && ( ( !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }

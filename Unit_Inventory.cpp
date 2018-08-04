@@ -54,7 +54,7 @@ void Unit_Inventory::updateUnitsControlledByOthers()
                     break;
                 }
             }
-            if (!present && e.second.valid_pos_ && e.second.type_.canMove()) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+            if (!present && e.second.valid_pos_) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
                 Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
                 if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
                     e.second.valid_pos_ = false;
