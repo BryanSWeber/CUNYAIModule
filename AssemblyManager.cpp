@@ -627,39 +627,28 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
     Unit_Inventory friendly_units_under_consideration;
-
-
-    //add friendly units under consideration to FAP in loop, resetting each time.
-    for (auto &potential_type : combat_types) {
-        if (morph_canidate->canMorph(potential_type.first) && my_reservation.checkAffordablePurchase(potential_type.first) && (buildorder.checkBuilding_Desired(potential_type.first) || buildorder.isEmptyBuildOrder())) {
-            buildfap_temp = buildfap; // restore the buildfap temp.
-            Stored_Unit su = Stored_Unit(potential_type.first);
-            //int times_we_can_make_purchase = min(my_reservation.countTimesWeCanAffordPurchase(potential_type.first), Count_Units(morph_canidate->getType(), inv));
-            //for (auto i = 1; i <= times_we_can_make_purchase; i++) {
-            // enemy units do not change.
-            Unit_Inventory friendly_units_under_consideration;
-            friendly_units_under_consideration.addStored_Unit(su);
-                if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-            //}
-
-            friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
-            buildfap_temp.simulate(-1); // a complete simulation for us.
-            potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
-            //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
-        }
-    }
-
     UnitType build_type = UnitTypes::None;
-    for (auto potential_type : combat_types) {
-        if (potential_type.second > best_sim_score) {
-            best_sim_score = potential_type.second;
-            build_type = potential_type.first;
-            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+
+    // drop all units types I cannot assemble at this time.
+    auto pt_type = combat_types.begin();
+    while (pt_type != combat_types.end()) {
+        bool can_make = (morph_canidate->canMorph(pt_type->first) && my_reservation.checkAffordablePurchase(pt_type->first) && (buildorder.checkBuilding_Desired(pt_type->first) || buildorder.isEmptyBuildOrder());
+
+        if (can_make) {
+            pt_type++;
+        }
+        else {
+            combat_types.erase(pt_type++);
         }
     }
 
+    // Find the best of them.
+    build_type = returnOptimalUnit(combat_types);
+
+    // Build it.
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit) {
+        return true;
         CUNYAIModule::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
     }
     return false;
@@ -670,7 +659,6 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
     Unit_Inventory friendly_units_under_consideration;
-
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {

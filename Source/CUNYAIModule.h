@@ -319,5 +319,12 @@ public:
       bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
       bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
-
+  //Suprisingly missing functions:
+      template< typename ContainerT, typename PredicateT >
+      void erase_if(ContainerT& items, const PredicateT& predicate) {
+          for (auto it = items.begin(); it != items.end(); ) {
+              if (predicate(*it)) it = items.erase(it);
+              else ++it;
+          }
+      };
 };
