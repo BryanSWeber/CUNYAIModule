@@ -734,7 +734,7 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_inventory);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
-                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 128 );
+                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 256 );
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
                 Mobility mobility;
 
@@ -848,7 +848,7 @@ void CUNYAIModule::onFrame()
                     // workers tasks should be reset.
 
                     if (u_type.isWorker()) {
-                        friendly_inventory.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
+                        friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     }
 
                     continue; // this unit is finished.

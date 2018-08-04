@@ -1522,8 +1522,8 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         else if (!expo_positions_complete_.empty()) { // maybe it's a base we havent' seen yet?
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
             checked_all_expo_positions_ = true;
-
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && !expo_positions_complete_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
+            expo_positions_ = expo_positions_complete_;
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
                 random_index = rand() % expo_positions_.size();
                 if (Broodwar->isVisible(expo_positions_[random_index])) {
                     expo_positions_.erase(expo_positions_.begin() + random_index);

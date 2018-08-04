@@ -239,8 +239,6 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         Broodwar->drawCircleMap(e_unit.pos_, passed_distance, Colors::Green);
     }
 
-    setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_);
-
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         //if (unit->isFlying()) {
@@ -278,11 +276,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
+    bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 48);
     bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
-    if (retreat_spot && ( ( !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
+    if (retreat_spot && ( ( /*!unit_death_in_1_second &&*/ !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }
@@ -302,7 +301,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, 250, inventory);
+        Tactical_Logic(unit, e_squad, u_squad, passed_distance, inventory);
     }
 
 }
@@ -538,9 +537,9 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
                     double vector_push_y = min_max_minitiles[1].y - min_max_minitiles[0].y;
 
                     double theta = atan2(future_pos.x, future_pos.y);
-                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                    walkability_dx_ += cos(theta) * vector_push_x * 4; //distance_metric * (3 - when_did_we_stop) / trial_positions.size();
-                    walkability_dy_ += sin(theta) * vector_push_y * 4; //distance_metric * (3 - when_did_we_stop) / trial_positions.size();
+                    int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
+                    walkability_dx_ += cos(theta) * vector_push_x * 4 * (3 - when_did_we_stop) / trial_positions.size();
+                    walkability_dy_ += sin(theta) * vector_push_y * 4 * (3 - when_did_we_stop) / trial_positions.size();
                     return;
                 }
             }

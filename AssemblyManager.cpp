@@ -380,7 +380,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
     else if ( e_relatively_weak_against_air ) {
         if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Greater_Spire, inv) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Spire, inv) > 0);
-        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Spire, inv) == 0 || (my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice() && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice()) ); // if you are floating minerals relative to gas, feel free to buy some lings.
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, (army_starved || wasting_larva_soon) && (Count_Units(UnitTypes::Zerg_Spire, inv) == 0 || (my_reservation.getExcessMineral() > UnitTypes::Zerg_Mutalisk.mineralPrice() && my_reservation.getExcessMineral() - my_reservation.getExcessGas() > UnitTypes::Zerg_Zergling.mineralPrice()) ) ); // if you are floating minerals relative to gas, feel free to buy some lings.
 
         if (is_larva && !is_building) {
             //Evo chamber is required tech for spore colony
@@ -658,6 +658,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
     bool building_optimal_unit = false;
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
+    UnitType build_type = UnitTypes::None;
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
@@ -675,7 +676,6 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
             //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
     }
 
-    UnitType build_type = UnitTypes::None;
     for (auto potential_type : combat_types) {
         if (potential_type.second > best_sim_score) {
             best_sim_score = potential_type.second;
