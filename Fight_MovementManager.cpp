@@ -45,7 +45,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
         int average_side = ui.unit_inventory_.find(unit)->second.circumference_/4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
-        setSeperation(unit, pos, neighbors);
+        if(u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
         setCohesion(unit, pos, local_neighborhood);
 
     }
@@ -273,7 +273,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
             CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-    bool kiting = cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
+    bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
     bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
     bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 48);
@@ -281,7 +281,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
-    if (retreat_spot && ( ( /*!unit_death_in_1_second &&*/ !squad_death_in_1_second && melee_fight ) || kiting || never_suicide) && !scourge_retreating) {
+    if ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && !clear_walkable && melee_fight)) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }

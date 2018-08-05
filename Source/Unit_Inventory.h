@@ -153,6 +153,8 @@ struct Unit_Inventory {
     void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the friendly side of the FAP army.
     void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the enemy side of the FAP army.
     void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building combat simulator, friendly side.
+    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, bool friendly); // adds to buildFAP
+    static Position positionBuildFap(bool friendly);
     void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building  combat simulator, enemy sdie.
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 

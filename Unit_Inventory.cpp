@@ -788,6 +788,22 @@ void Unit_Inventory::addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_obj
     }
 }
 
+void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, bool friendly) {
+    for (auto &u : unit_inventory_) {
+        if (CUNYAIModule::IsFightingUnit(u.second) && friendly) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos));
+        if (CUNYAIModule::IsFightingUnit(u.second) && !friendly) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(pos));
+    }
+}
+
+Position Unit_Inventory::positionBuildFap(bool friendly) {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    int half_map = CUNYAIModule::inventory.my_portion_of_the_map_ / 2;
+    std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
+    int rand_x = dis(generator);
+    int rand_y = dis(generator);
+    return Position(rand_x, rand_y);
+}
+
 void Unit_Inventory::addToFriendlyBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object) {
     std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
     std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_/2);    // default values for output.

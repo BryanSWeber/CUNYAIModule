@@ -297,8 +297,8 @@ void CUNYAIModule::writeUnitInventory(const Unit_Inventory inventory, const stri
 
             output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
 
-            output << label << "Unit Types" << smashed_unit_types << endl;
-            output << label << "Positions" << smashed_unit_positions << endl;
+            output << label << "Frame Count" << Broodwar->getFrameCount() << "Unit Types" << smashed_unit_types << endl;
+            output << label << "Frame Count" << Broodwar->getFrameCount() << "Positions" << smashed_unit_positions << endl;
             output.close();
         }
     }

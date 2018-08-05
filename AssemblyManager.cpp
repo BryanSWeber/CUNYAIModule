@@ -659,6 +659,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
+    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
@@ -666,12 +667,10 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
             Stored_Unit su = Stored_Unit(potential_type.first);
             // enemy units do not change.
             Unit_Inventory friendly_units_under_consideration; // new every time.
-            //add unit we are interested in to the inventory:
-            friendly_units_under_consideration.addStored_Unit(su);
+            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-
-            friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
-            buildfap_temp.simulate(240); // a deep but limited simulation for us.
+            friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true);
+            buildfap_temp.simulate(); // a deep but limited simulation for us.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
     }
@@ -696,6 +695,7 @@ bool CUNYAIModule::returnFlyerPreferred() {
     Unit_Inventory friendly_units_under_consideration;
     bool flying_check = true;
     bool beat_flying_unit = false;
+    Position comparision_spot = Unit_Inventory::positionBuildFap(true); // all compared units should begin in the exact same position.
 
     //add friendly units under consideration to FAP in loop, resetting each time. Try flying first.
     for (auto &potential_type : combat_types) {
@@ -707,7 +707,7 @@ bool CUNYAIModule::returnFlyerPreferred() {
         friendly_units_under_consideration.addStored_Unit(su);
         if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
 
-        friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+        friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true);
         buildfap_temp.simulate(240); // a deep but limited simulation for us. 10 seconds.
         potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
         //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
@@ -732,8 +732,7 @@ bool CUNYAIModule::returnFlyerPreferred() {
         Unit_Inventory friendly_units_under_consideration;
         friendly_units_under_consideration.addStored_Unit(su);
         if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-
-        friendly_units_under_consideration.addToFriendlyBuildFAP(buildfap_temp);
+        friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true);
         buildfap_temp.simulate(240); // a deep but limited simulation for us. 10 seconds.
         potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
         //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
