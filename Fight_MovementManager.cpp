@@ -69,7 +69,11 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
     Position avoidance_pos = { (int)(pos.x + avoidance_vector_x ), (int)(pos.y + avoidance_vector_y ) };
-    setObjectAvoid(unit, pos, avoidance_pos, inv);
+
+    //Which way should we avoid objects?
+    if (healthy && ready_to_fight && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_air_);
+    else if (healthy && ready_to_fight) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_ground_);
+    else setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_home_);
 
     //Move to the final position.
     int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
@@ -88,13 +92,21 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
         unit->move(brownian_pos);
 
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + x_stutter_ )        , (int)(pos.y + y_stutter_ ) }, inv.screen_position_, Colors::Black);//Stutter
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_ )        , (int)(pos.y + attune_dy_ ) }, inv.screen_position_, Colors::Green);//Alignment
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_ ), (int)(pos.y + centralization_dy_ ) }, inv.screen_position_, Colors::Blue); // Centraliziation.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_ )      , (int)(pos.y + cohesion_dy_ ) }, inv.screen_position_, Colors::Purple); // Cohesion
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_ )       , (int)(pos.y + attract_dy_ ) }, inv.screen_position_, Colors::Red); //Attraction towards attackable enemies.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_ )    , (int)(pos.y - seperation_dy_ ) }, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_ )   , (int)(pos.y - walkability_dy_ ) }, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different regions. May tilt to become parallel with obstructions to get around them.
+        Position retreat_pos = Position(retreat_dx_, retreat_dy_);
+        Position attune_pos = Position(attune_dx_, attune_dy_);
+        Position centralize_pos = Position(centralization_dx_, centralization_dy_);
+        Position cohesion_pos = Position(cohesion_dx_, cohesion_dy_);
+        Position attract_pos = Position(attract_dx_, attract_dy_);
+        Position seperate_pos = Position(seperation_dx_, seperation_dy_);
+        Position walkablity_pos = Position(walkability_dx_, walkability_dy_);
+
+        CUNYAIModule::Diagnostic_Line(pos, pos + retreat_pos, inv.screen_position_, Colors::White);//Run directly away
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos, pos + retreat_pos + attune_pos, inv.screen_position_, Colors::Red);//Alignment
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos, pos + retreat_pos + attune_pos + centralize_pos, inv.screen_position_, Colors::Blue); // Centraliziation.
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, inv.screen_position_, Colors::Purple); // Cohesion
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos - walkablity_pos, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
     }
 
 
@@ -196,7 +208,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
             }
             else {
                 unit->attack(target->bwapi_unit_);
-                //if (melee) target->circumference_remaining_ -= widest_dim;
+                if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
             attack_order_issued = true;
@@ -207,7 +219,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
             }
             else {
                 unit->attack(target->pos_);
-                //if (melee) target->circumference_remaining_ -= widest_dim;
+                if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
             attack_order_issued = true;
@@ -241,10 +253,8 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
-        //if (unit->isFlying()) {
-        //    setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // Attracts air units straight home without conflict.
-        //    //setStutter(unit, 10);
-        //}
+        if (e_unit.is_flying_) setRepulsion(unit, pos, inventory, inventory.map_out_from_enemy_air_, inventory.enemy_base_air_);
+        else setRepulsion(unit, pos, inventory, inventory.map_out_from_enemy_ground_, inventory.enemy_base_ground_);
     }
     else {
         setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
@@ -260,7 +270,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
     int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
     Position avoidance_pos = { (int)(pos.x + avoidance_vector_x), (int)(pos.y + avoidance_vector_y) };
-    setObjectAvoid(unit, pos, avoidance_pos, inventory);
+    setObjectAvoid(unit, pos, avoidance_pos, inventory, inventory.map_out_from_safety_);
 
     //final vector
     int vector_x = x_stutter_ + attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
@@ -287,13 +297,21 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         }
         else {
             unit->move(retreat_spot); //run away.
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + retreat_dx_)       , (int)(pos.y + retreat_dy_) }, inventory.screen_position_, Colors::White);//Run directly away
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attune_dx_)        , (int)(pos.y + attune_dy_) }, inventory.screen_position_, Colors::Red);//Alignment
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + centralization_dx_), (int)(pos.y + centralization_dy_) }, inventory.screen_position_, Colors::Blue); // Centraliziation.
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + cohesion_dx_)      , (int)(pos.y + cohesion_dy_) }, inventory.screen_position_, Colors::Purple); // Cohesion
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x + attract_dx_)       , (int)(pos.y + attract_dy_) }, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - seperation_dx_)    , (int)(pos.y - seperation_dy_) }, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-            CUNYAIModule::Diagnostic_Line(unit->getPosition(), { (int)(pos.x - walkability_dx_)   , (int)(pos.y - walkability_dy_) }, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+            Position retreat_pos = Position(retreat_dx_, retreat_dy_);
+            Position attune_pos = Position(attune_dx_, attune_dy_);
+            Position centralize_pos = Position(centralization_dx_, centralization_dy_);
+            Position cohesion_pos = Position(cohesion_dx_, cohesion_dy_);
+            Position attract_pos = Position(attract_dx_, attract_dy_);
+            Position seperate_pos = Position(seperation_dx_, seperation_dy_);
+            Position walkablity_pos = Position(walkability_dx_, walkability_dy_);
+
+            CUNYAIModule::Diagnostic_Line(pos, pos+retreat_pos, inventory.screen_position_, Colors::White);//Run directly away
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos, pos + retreat_pos + attune_pos, inventory.screen_position_, Colors::Red);//Alignment
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos, pos + retreat_pos + attune_pos + centralize_pos, inventory.screen_position_, Colors::Blue); // Centraliziation.
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, inventory.screen_position_, Colors::Purple); // Cohesion
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos - walkablity_pos, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
         Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
         changing_unit.updateStoredUnit(unit);
@@ -413,7 +431,7 @@ void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &
 }
 
 
-//Attraction, pull towards homes that we can attack. Requires some macro variables to be in place.
+//Attraction, pull towards map center.
 void Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
 
         if (map.empty() || unit->isFlying()) {
@@ -431,6 +449,23 @@ void Mobility::setAttraction(const Unit &unit, const Position &pos, const Invent
         }
 }
 
+//Repulsion, pull away from map center. Literally just a negative of the previous.
+void Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+
+    if (map.empty() || unit->isFlying()) {
+        int dist_x = map_center.x - pos.x;
+        int dist_y = map_center.y - pos.y;
+        double theta = atan2(dist_y, dist_x);
+        attract_dx_ = -cos(theta) * distance_metric; // run to (map)!
+        attract_dy_ = -sin(theta) * distance_metric;
+    }
+    else {
+        WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+        vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+        attract_dx_ = -direction[0] * distance_metric;
+        attract_dy_ = -direction[1] * distance_metric;
+    }
+}
 
 //Seperation from nearby units, search very local neighborhood of usually about 1-2 tiles.
 void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
@@ -489,24 +524,24 @@ void Mobility::setSeperationScout(const Unit &unit, const Position &pos, const U
     }
 }
 
-void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory) { 
+void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
         double temp_walkability_dx_ = 0;
         double temp_walkability_dy_ = 0;
         double theta = 0;
         WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-        Position avoidance_pos = { 2 * future_pos.x - current_pos.x, 2 * future_pos.y - current_pos.y};
-        vector<Position> trial_positions = { current_pos, future_pos, avoidance_pos };
+        //Position avoidance_pos = { 2 * future_pos.x - current_pos.x, 2 * future_pos.y - current_pos.y};
+        vector<Position> trial_positions = { current_pos, future_pos };
 
-        int count_of_unwalkable_tiles = 0;
-        int min_tile = INT_MAX;
-        int max_tile = INT_MIN;
-        int temp_int = 0;
+        bool unwalkable_tiles = false;
+        pair<int, int> min_tile = { INT_MAX, 0 }; // Thie stile is the LEAST walkable.
+        pair<int, int> max_tile = { INT_MIN, 0 }; //this tile is the MOST walkable.
+        pair<int,int> temp_int = {0,0};
         vector<WalkPosition> min_max_minitiles = { WalkPosition(future_pos), WalkPosition(future_pos) };
 
         if (!unit->isFlying()) {
             for (auto considered_pos : trial_positions) {
-                for (int x = -5; x <= 5; ++x) {
-                    for (int y = -5; y <= 5; ++y) {
+                for (int x = -8; x <= 8; ++x) {
+                    for (int y = -8; y <= 8; ++y) {
                         double centralize_x = WalkPosition(considered_pos).x + x;
                         double centralize_y = WalkPosition(considered_pos).y + y;
                         if (!(x == 0 && y == 0) &&
@@ -516,30 +551,30 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
                             centralize_y > 0 &&
                             centralize_y > 0) // Is the spot acceptable?
                         {
-                            temp_int = inventory.map_veins_[centralize_x][centralize_y];
-                            if (temp_int <= 1) // repulse from unwalkable.
+                            temp_int = { inventory.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
+                            if (temp_int.first <= 1 && !unwalkable_tiles) // repulse from unwalkable.
                             {
-                                count_of_unwalkable_tiles++;
+                                unwalkable_tiles = true;
                             }
-                            if (temp_int < min_tile) {
+                            if (temp_int.first < min_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
                                 min_tile = temp_int;
                                 min_max_minitiles[0] = WalkPosition(centralize_x, centralize_y);
                             }
-                            if (temp_int > max_tile) {
+                            if (temp_int.first > max_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
                                 max_tile = temp_int;
                                 min_max_minitiles[1] = WalkPosition(centralize_x, centralize_y);
                             }
                         }
                     }
                 }
-                if (count_of_unwalkable_tiles > 0) {
-                    double vector_push_x = min_max_minitiles[1].x - min_max_minitiles[0].x;
-                    double vector_push_y = min_max_minitiles[1].y - min_max_minitiles[0].y;
+                if (unwalkable_tiles) {
+                    double vector_push_x = min_max_minitiles[0].x - min_max_minitiles[1].x;
+                    double vector_push_y = min_max_minitiles[0].y - min_max_minitiles[1].y;
 
                     double theta = atan2(future_pos.x, future_pos.y);
-                    int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                    walkability_dx_ += cos(theta) * vector_push_x * 4 * (3 - when_did_we_stop) / trial_positions.size();
-                    walkability_dy_ += sin(theta) * vector_push_y * 4 * (3 - when_did_we_stop) / trial_positions.size();
+                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
+                    walkability_dx_ += cos(theta) * vector_push_x * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/;
+                    walkability_dy_ += sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/;
                     return;
                 }
             }
