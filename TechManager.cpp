@@ -74,25 +74,41 @@ bool CUNYAIModule::Tech_Avail() {
 bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv) {
     bool busy = false;
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, inv ) == 0 && !army_starved));
+    bool have_declared_lurkers = BWAPI::Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+    bool have_declared_mutas = Count_Units(UnitTypes::Zerg_Spire, inv) > 0;
+    bool have_declared_a_major_unit_type = have_declared_lurkers || have_declared_mutas;
+    bool have_hive = Count_Units(UnitTypes::Zerg_Hive, inv) > 0;
+    bool maxed_melee = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Melee_Attacks) == 3;
+    bool maxed_range = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Missile_Attacks) == 3;
+    bool maxed_armor = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3;
 
-    // Structural changes to units.
-   if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) > 0 );
-   if(!busy) busy = Check_N_Research( TechTypes::Lurker_Aspect, building, upgrade_bool && (Count_Units( UnitTypes::Zerg_Lair, inv ) > 0 || Count_Units( UnitTypes::Zerg_Hive, inv ) > 0) && Count_Units( UnitTypes::Zerg_Hydralisk_Den, inv ) > 0 );
-   if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Grooved_Spines, building, upgrade_bool && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
-   if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Muscular_Augments, building, upgrade_bool && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3 ) );
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && (Count_Units(UnitTypes::Zerg_Lair, inv) > 0 || Count_Units(UnitTypes::Zerg_Hive, inv) > 0));
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Adrenal_Glands, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Hive, inv) > 0);
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Anabolic_Synthesis, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0);
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Chitinous_Plating, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0);
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Antennae, building, (tech_starved || Count_Units(UnitTypes::Zerg_Larva, inv) == 0 && !army_starved) && (Count_Units(UnitTypes::Zerg_Lair, inv) > 0 || Count_Units(UnitTypes::Zerg_Hive, inv) > 0)); //don't need lair if we have a hive. This upgrade is terrible, thus last.
+    bool more_hydras_than_lings = Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory);
+    bool more_flyers_than_ground = ui.stock_fliers_ > ui.stock_ground_units_;
+
+    // Major Upgrades:
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory) > 0);
+    if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (Count_Units(UnitTypes::Zerg_Lair, inv) > 0 || Count_Units(UnitTypes::Zerg_Hive, inv) > 0) && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
+
+    //Midgame/situational upgrades.
+    if (!have_declared_a_major_unit_type || have_hive || buildorder.checkUpgrade_Desired(UpgradeTypes::Muscular_Augments) || buildorder.checkUpgrade_Desired(UpgradeTypes::Grooved_Spines)) {
+        if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Muscular_Augments, building, upgrade_bool && more_hydras_than_lings || maxed_melee || maxed_range);
+        if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Grooved_Spines, building, upgrade_bool && more_hydras_than_lings || maxed_melee || maxed_range);
+    }
+
+    //Super game upgrades.
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Adrenal_Glands, building, upgrade_bool);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Anabolic_Synthesis, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Chitinous_Plating, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) > 0);
+
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && have_declared_a_major_unit_type && (Count_Units(UnitTypes::Zerg_Lair, inv) > 0 || Count_Units(UnitTypes::Zerg_Hive, inv) > 0));
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Antennae, building, tech_starved && have_hive); //This upgrade is terrible, thus last.
 
     // Unit buffs
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Carapace, building, upgrade_bool);
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Melee_Attacks, building, upgrade_bool && (Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory) > Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) || BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Missile_Attacks) == 3));
-   if(!busy) busy = Check_N_Upgrade( UpgradeTypes::Zerg_Missile_Attacks, building, upgrade_bool && (Stock_Units( UnitTypes::Zerg_Hydralisk, friendly_inventory ) > Stock_Units( UnitTypes::Zerg_Zergling, friendly_inventory ) || BWAPI::Broodwar->self()->getUpgradeLevel( UpgradeTypes::Zerg_Melee_Attacks ) == 3) );
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3));
-   if(!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (ui.stock_fliers_ > ui.stock_ground_units_ || BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3));
-
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Carapace, building, upgrade_bool);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Melee_Attacks, building, upgrade_bool && !more_hydras_than_lings  || maxed_range);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Missile_Attacks, building, upgrade_bool && more_hydras_than_lings || maxed_melee);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (more_flyers_than_ground || maxed_armor));
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (more_flyers_than_ground || maxed_armor));
 
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Lair, building, ui, upgrade_bool &&
             inventory.hatches_ > 1 &&

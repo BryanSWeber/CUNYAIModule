@@ -31,6 +31,8 @@ public:
     void setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
     void setAttraction(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
+    // causes a unit to be pushed away from (map) center.
+    void setRepulsion(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map, const Position & map_center);
     // causes a unit to move directly towards the enemy base.
     void scoutEnemyBase(const Unit & unit, const Position & pos, Inventory & inv);
     // causes a unit to seperate itself from others.
@@ -39,9 +41,8 @@ public:
     void setSeperationScout(const Unit & unit, const Position & pos, const Unit_Inventory & ui);
     //void setUnwalkability( const Unit &unit, const Position &pos, const Inventory &inventory );
     // Causes a unit to avoid units in its distant future, near future, and immediate position.
-    void setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory);
-
-    bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
+    void setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map);
+    bool adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
     // gives a vector that has the direction towards center on (map).
     vector<double> getVectorTowardsMap(const Position & pos, const Inventory & inv, const vector<vector<int>>& map) const;

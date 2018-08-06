@@ -1520,6 +1520,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             updateMapVeinsOut( start_positions_[0], enemy_base_ground_, map_out_from_enemy_ground_);
         }
         else if (!expo_positions_complete_.empty()) { // maybe it's a base we havent' seen yet?
+            expo_positions_ = expo_positions_complete_;
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
             checked_all_expo_positions_ = true;
             expo_positions_ = expo_positions_complete_;

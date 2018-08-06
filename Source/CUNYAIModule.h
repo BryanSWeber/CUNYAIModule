@@ -327,4 +327,13 @@ public:
               else ++it;
           }
       };
+
+     friend Position operator+(const Position &A, const Position &B)
+     {
+         return Position(A.x + B.x, A.y + B.y);
+     }
+     friend Position operator-(const Position &A, const Position &B)
+     {
+         return Position(A.x - B.x, A.y - B.y);
+     }
 };
