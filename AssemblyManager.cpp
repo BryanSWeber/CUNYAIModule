@@ -149,7 +149,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-                if ( BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
+                if ( BWAPI::Broodwar->isVisible(buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && unit->build(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;
                 } //extractors must have buildings nearby or we shouldn't build them.
@@ -175,7 +175,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                     Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
                     Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
 
-                if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby) {
+                if ( hatch_nearby && my_reservation.addReserveSystem(building, buildPosition) && unit->build(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
                     return true;
                 }

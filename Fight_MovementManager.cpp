@@ -291,7 +291,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
-    if ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && clear_walkable && melee_fight)) {
+    if ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && clear_walkable && melee_fight) ) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }
