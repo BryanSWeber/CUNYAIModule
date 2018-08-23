@@ -5,6 +5,7 @@
 #include "InventoryManager.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
+#include "Research_Inventory.h"
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
@@ -27,6 +28,7 @@ Unit_Inventory CUNYAIModule::neutral_inventory;
 Unit_Inventory CUNYAIModule::enemy_inventory;
 Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
+Research_Inventory CUNYAIModule::research_inventory;
 Inventory CUNYAIModule::inventory;
 FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::fap;
 FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
@@ -169,6 +171,11 @@ void CUNYAIModule::onFrame()
     bool attempted_morph_larva_this_frame = false;
     bool attempted_morph_lurker_this_frame = false;
     bool attempted_morph_guardian_this_frame = false;
+
+    // Update research_inventory for enemy.
+    research_inventory.updateUpgradeTypes(Broodwar->enemy());
+    research_inventory.updateTechTypes(Broodwar->enemy());
+    research_inventory.updateResearchStock();
 
     //Update enemy units
     enemy_inventory.updateUnitsControlledByOthers();
@@ -454,11 +461,8 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CD.alpha_army * 100); //
         Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CD.alpha_tech * 100); // No longer a % with capital-augmenting technology.
         Broodwar->drawTextScreen(250, 70, "Enemy Worker Est: %d ", inventory.estimated_enemy_workers_); // No longer a % with capital-augmenting technology.
-
         Broodwar->drawTextScreen(250, 80, "Delta_gas: %4.2f", delta); //
         Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
-
-
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
         Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
@@ -480,6 +484,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio());
         Broodwar->drawTextScreen(375, 50, "Vision (Pct.): %4.2f", inventory.vision_tile_count_ / (double)map_area);  //
         Broodwar->drawTextScreen(375, 60, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
+        Broodwar->drawTextScreen(375, 70, "Enemy Research Stock(Est.): %d", research_inventory.research_stock_);
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -491,7 +496,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  // 
         Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
 
-        Broodwar->drawTextScreen(500, 70, delay_string); // Flickers. Annoying.
+        Broodwar->drawTextScreen(500, 70, delay_string);
         Broodwar->drawTextScreen(500, 80, preamble_string);
         Broodwar->drawTextScreen(500, 90, larva_string);
         Broodwar->drawTextScreen(500, 100, worker_string);

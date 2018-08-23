@@ -5,8 +5,10 @@
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
+#include "Research_Inventory.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"
+#include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp"
 #include <chrono> // for in-game frame clock.
 
@@ -70,6 +72,7 @@ public:
     static Unit_Inventory neutral_inventory; // neutral units.
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
+    static Research_Inventory research_inventory; //Enemy upgrades.
     static Inventory inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
