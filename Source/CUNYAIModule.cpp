@@ -23,12 +23,14 @@ using namespace Filter;
 using namespace std;
 
 //Declare universally shared inventories.
+Player_Model CUNYAIModule::enemy_player_model;
+CobbDouglas CUNYAIModule::CD;
 Unit_Inventory CUNYAIModule::friendly_inventory;
 Unit_Inventory CUNYAIModule::neutral_inventory;
-Unit_Inventory CUNYAIModule::enemy_inventory;
+//Unit_Inventory CUNYAIModule::enemy_inventory;
 Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
-Research_Inventory CUNYAIModule::research_inventory;
+//Research_Inventory CUNYAIModule::research_inventory;
 Inventory CUNYAIModule::inventory;
 FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::fap;
 FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
@@ -93,15 +95,14 @@ void CUNYAIModule::onStart()
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
 
                                             //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
-    alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
-    alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
-    alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+    CD.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
+    CD.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
+    CD.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
     adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
 
-    alpha_army_temp = alpha_army; // temp, will be overridden as we meet our enemy and scout.
-    alpha_econ_temp = alpha_econ;
-    alpha_tech_temp = alpha_tech;
+    alpha_army_original = CD.alpha_army; // temp, will be overridden as we meet our enemy and scout.
+    alpha_econ_original = CD.alpha_econ;
+    alpha_tech_original = CD.alpha_tech;
 
     win_rate = (1 - gene_history.loss_rate_);
 
@@ -137,7 +138,7 @@ void CUNYAIModule::onEnd( bool isWinner )
     ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << "," << gamma << ',' << alpha_army << ',' << alpha_econ << ',' << alpha_tech << ',' << adaptation_rate << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
+    output << delta << "," << gamma << ',' << CD.alpha_army << ',' << CD.alpha_econ << ',' << CD.alpha_tech << ',' << adaptation_rate << ',' << Broodwar->enemy()->getRace().c_str() << "," << isWinner << ',' << short_delay << ',' << med_delay << ',' << long_delay << ',' << opponent_name << ',' << Broodwar->mapFileName().c_str() << ',' << buildorder.initial_building_gene_ << endl;
     output.close();
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
@@ -172,17 +173,10 @@ void CUNYAIModule::onFrame()
     bool attempted_morph_lurker_this_frame = false;
     bool attempted_morph_guardian_this_frame = false;
 
-    // Update research_inventory for enemy.
-    research_inventory.updateUpgradeTypes(Broodwar->enemy());
-    research_inventory.updateTechTypes(Broodwar->enemy());
-    research_inventory.updateResearchStock();
-
-    //Update enemy units
-    enemy_inventory.updateUnitsControlledByOthers();
-    enemy_inventory.purgeBrokenUnits();
-    enemy_inventory.updateUnitInventorySummary();
-    enemy_inventory.drawAllHitPoints(inventory);
-    enemy_inventory.drawAllLocations(inventory);
+    // Update enemy player model. Draw all associated units.
+    enemy_player_model.updateOnFrame(Broodwar->enemy());
+    enemy_player_model.units_.drawAllHitPoints(inventory);
+    enemy_player_model.units_.drawAllLocations(inventory);
 
     //Update neutral units
     neutral_inventory.updateUnitsControlledByOthers();
@@ -211,8 +205,8 @@ void CUNYAIModule::onFrame()
     // Update FAPS with units.
     fap.clear();
     buildfap.clear();
-    enemy_inventory.addToEnemyFAP(fap);
-    enemy_inventory.addToEnemyBuildFAP(buildfap);
+    enemy_player_model.units_.addToEnemyFAP(fap);
+    enemy_player_model.units_.addToEnemyBuildFAP(buildfap);
     friendly_inventory.addToFriendlyFAP(fap);
     friendly_inventory.addToFriendlyBuildFAP(buildfap);
     //friendly_inventory.drawAllMAFAPaverages(inventory);
@@ -222,13 +216,13 @@ void CUNYAIModule::onFrame()
     int friendly_fap_score = getFAPScore(fap, true);
     int enemy_fap_score = getFAPScore(fap, false);
     friendly_inventory.pullFromFAP(*fap.getState().first);
-    enemy_inventory.pullFromFAP(*fap.getState().second);
+    enemy_player_model.units_.pullFromFAP(*fap.getState().second);
 
     writeUnitInventory(friendly_inventory, "friendly");
     writeUnitInventory(friendly_inventory, "enemy");
 
     //Update posessed minerals. Erase those that are mined out.
-    land_inventory.updateResourceInventory(friendly_inventory, enemy_inventory, inventory);
+    land_inventory.updateResourceInventory(friendly_inventory, enemy_player_model.units_, inventory);
     land_inventory.drawMineralRemaining(inventory);
 
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
@@ -239,10 +233,9 @@ void CUNYAIModule::onFrame()
         gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
 
         //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-        alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
-        alpha_vis = gene_history.a_vis_out_mutate_; // vision starved parameter. Note the very large scale for vision, vision comes in groups of thousands. Since this is not scale free, the delta must be larger or else it will always be considered irrelevant. Currently defunct.
-        alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
-        alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+        CD.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
+        CD.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
+        CD.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
         adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
         win_rate = (1 - gene_history.loss_rate_);
         Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
@@ -269,7 +262,7 @@ void CUNYAIModule::onFrame()
     inventory.updateWorkersClearing(friendly_inventory, land_inventory);
     inventory.updateWorkersLongDistanceMining(friendly_inventory, land_inventory);
     inventory.my_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size());
-    inventory.updateStartPositions(enemy_inventory);
+    inventory.updateStartPositions(enemy_player_model.units_);
     inventory.updateScreen_Position();
 
     if (t_game == 0) {
@@ -282,7 +275,7 @@ void CUNYAIModule::onFrame()
         inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    inventory.updateBasePositions(friendly_inventory, enemy_inventory, land_inventory, neutral_inventory);
+    inventory.updateBasePositions(friendly_inventory, enemy_player_model.units_, land_inventory, neutral_inventory);
     inventory.drawExpoPositions();
     inventory.drawBasePositions();
 
@@ -344,7 +337,7 @@ void CUNYAIModule::onFrame()
     bool not_enough_workers = Count_Units(UnitTypes::Zerg_Drone, inventory) < 85;
     bool econ_possible = not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
     //bool vision_possible = true; // no vision cutoff ATM.
-    bool army_possible = ((Broodwar->self()->supplyUsed() < 400 && exp(inventory.ln_army_stock_) / exp(inventory.ln_worker_stock_) < 5 * alpha_army_temp / alpha_econ_temp)) ||
+    bool army_possible = ((Broodwar->self()->supplyUsed() < 400 && exp(inventory.ln_army_stock_) / exp(inventory.ln_worker_stock_) < 5 * CD.alpha_army / CD.alpha_tech)) ||
         Count_Units(UnitTypes::Zerg_Spawning_Pool, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool, inventory)
         + Count_Units(UnitTypes::Zerg_Hydralisk_Den, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den, inventory)
         + Count_Units(UnitTypes::Zerg_Spire, inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Spire, inventory)
@@ -352,39 +345,19 @@ void CUNYAIModule::onFrame()
     bool tech_possible = Tech_Avail(); // if you have no tech available, you cannot be tech starved.
                                        //Feed alpha values and cuttoff calculations into Cobb Douglas.
 
-    CobbDouglas CD = CobbDouglas(alpha_army_temp, exp(inventory.ln_army_stock_), army_possible, alpha_tech_temp, exp(inventory.ln_tech_stock_), tech_possible, alpha_econ_temp, exp(inventory.ln_worker_stock_), econ_possible);
+    CD.evaluateCD(exp(inventory.ln_army_stock_), army_possible, exp(inventory.ln_tech_stock_), tech_possible, exp(inventory.ln_worker_stock_), econ_possible);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
 
-        int dead_worker_count = dead_enemy_inventory.unit_inventory_.empty() ? 0 : dead_enemy_inventory.worker_count_;
-
-        if (Broodwar->getFrameCount() == 0) {
-            inventory.estimated_enemy_workers_ = 4;
-        }
-        else {
-            //inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
-            inventory.estimated_enemy_workers_ += max(enemy_inventory.resource_depot_count_, 1) * 1 / (double)UnitTypes::Zerg_Drone.buildTime();
-            inventory.estimated_enemy_workers_ = min(inventory.estimated_enemy_workers_, 85); // there exists a maximum reasonable number of workers.
-        }
-        //int approx_worker_count = exp( r * Broodwar->getFrameCount()) - dead_worker_count; //assumes continuous worker building since frame 1 and a 10 min max.
-
-        int est_worker_count = min(max(enemy_inventory.worker_count_, inventory.estimated_enemy_workers_), 85);
-
-
         //Update existing CD functions to more closely mirror opponent. Do every 15 sec or so.
-        if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ > 0) {
-            int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-            int e_worker_stock = est_worker_count * worker_value;
-            CD.enemy_eval(enemy_inventory.stock_fighting_total_, army_possible, 1, tech_possible, e_worker_stock, econ_possible, adaptation_rate);
-            alpha_army_temp = CD.alpha_army;
-            alpha_econ_temp = CD.alpha_econ;
-            alpha_tech_temp = CD.alpha_tech;
+        if (Broodwar->elapsedTime() % 15 == 0 && enemy_player_model.units_.stock_fighting_total_ > 0) {
+            CD.enemy_mimic(enemy_player_model, army_possible, tech_possible, econ_possible, adaptation_rate);
             //CUNYAIModule::DiagnosticText("Matching expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
         }
-        else if (Broodwar->elapsedTime() % 15 == 0 && enemy_inventory.stock_fighting_total_ == 0) {
-            alpha_army_temp = alpha_army;
-            alpha_econ_temp = alpha_econ;
-            alpha_tech_temp = alpha_tech;
+        else if (Broodwar->elapsedTime() % 15 == 0 && enemy_player_model.units_.stock_fighting_total_ == 0) {
+            CD.alpha_army = alpha_army_original;
+            CD.alpha_econ = alpha_econ_original;
+            CD.alpha_tech = alpha_tech_original;
             //CUNYAIModule::DiagnosticText("Reseting expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
         }
     }
@@ -403,15 +376,15 @@ void CUNYAIModule::onFrame()
         }
     }
 
-    bool massive_army = army_derivative == 0 || (friendly_inventory.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) >= enemy_inventory.stock_fighting_total_ * 3);
+    bool massive_army = army_derivative == 0 || (friendly_inventory.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_inventory) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_inventory) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
-    //Unitset enemy_set = getEnemy_Set(enemy_inventory);
-    enemy_inventory.updateUnitInventorySummary();
+    //Unitset enemy_set = getEnemy_Set(enemy_player_model.units_);
+    enemy_player_model.units_.updateUnitInventorySummary();
     //friendly_inventory.updateUnitInventorySummary(); Redundant with //updateUnitInventory.
     land_inventory.updateMiners();
     land_inventory.updateGasCollectors();
 
-    inventory.est_enemy_stock_ = (int)enemy_inventory.stock_fighting_total_; // just a raw count of their stuff.
+    inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
     
     // Display the game status indicators at the top of the screen	
@@ -422,7 +395,7 @@ void CUNYAIModule::onFrame()
         Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 170, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
-            Print_Unit_Inventory(500, 170, enemy_inventory);
+            Print_Unit_Inventory(500, 170, enemy_player_model.units_);
         }
         else {
             Print_Build_Order_Remaining(500, 170, buildorder);
@@ -476,7 +449,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_inventory.moving_average_fap_stock_, enemy_inventory.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_inventory.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_);
@@ -484,7 +457,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio());
         Broodwar->drawTextScreen(375, 50, "Vision (Pct.): %4.2f", inventory.vision_tile_count_ / (double)map_area);  //
         Broodwar->drawTextScreen(375, 60, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
-        Broodwar->drawTextScreen(375, 70, "Enemy Research Stock(Est.): %d", research_inventory.research_stock_);
+        Broodwar->drawTextScreen(375, 70, "Enemy Research Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -634,7 +607,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 attempted_morph_larva_this_frame = true;
-                if (Reactive_Build(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_Build(u, inventory, friendly_inventory, enemy_player_model.units_)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -645,7 +618,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
                 attempted_morph_lurker_this_frame = true;
-                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_player_model.units_)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -656,7 +629,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
                 attempted_morph_guardian_this_frame = true;
-                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_inventory)) {
+                if (Reactive_BuildFAP(u, inventory, friendly_inventory, enemy_player_model.units_)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -670,8 +643,8 @@ void CUNYAIModule::onFrame()
         auto start_detector = std::chrono::high_resolution_clock::now();
         Position c; // holder for cloaked unit position.
         bool call_detector = false;
-        if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_inventory, u->getPosition(), u_type.sightRange())) {
-            Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), u_type.sightRange());
+        if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_player_model.units_, u->getPosition(), u_type.sightRange())) {
+            Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), u_type.sightRange());
             for (auto e = e_neighbors.unit_inventory_.begin(); e != e_neighbors.unit_inventory_.end() && !e_neighbors.unit_inventory_.empty(); e++) {
                 if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
                     c = (*e).second.pos_; // then we may to send in some vision.
@@ -730,23 +703,23 @@ void CUNYAIModule::onFrame()
         {
             Mobility mobility;
 
-            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 3200);
+            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 3200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
-                e_closest = getClosestThreatOrTargetStored(enemy_inventory, u, 256);
+                e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
 
             if (e_closest) { // if there are bad guys, search for friends within that area. 
 
                 int distance_to_foe = (int)e_closest->pos_.getDistance(u->getPosition());
-                int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_inventory);
+                int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_inventory);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
-                int search_radius = max(max(chargable_distance_net + 64, enemy_inventory.max_range_ + 64), 256 );
-                //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_inventory.max_cooldown_, chargable_distance_net);
+                int search_radius = max(max(chargable_distance_net + 64, enemy_player_model.units_.max_range_ + 64), 256 );
+                //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
 
-                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_inventory, e_closest->pos_, distance_to_foe + search_radius);
-                Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_inventory, u->getPosition(), distance_to_foe + search_radius);
-                //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_inventory, u);
+                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
+                //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
                 Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
                 Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_inventory, e_closest->pos_, distance_to_foe + search_radius);
@@ -763,7 +736,7 @@ void CUNYAIModule::onFrame()
                 bool unit_death_in_1_second = !Stored_Unit::unitAliveinFuture(friend_loc.unit_inventory_.at(u),48);
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast(friend_loc, enemy_loc);
 
-                //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_inventory.stock_total_ > (enemy_inventory.stock_total_ - enemy_inventory.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
+                //bool we_take_a_fap_beating = (friendly_inventory.stock_total_ - friendly_inventory.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_inventory.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
 
                 foe_within_radius = distance_to_foe < search_radius;
@@ -828,7 +801,7 @@ void CUNYAIModule::onFrame()
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_inventory, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, search_radius, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_inventory, search_radius, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
                         }
 
                     }
@@ -851,7 +824,7 @@ void CUNYAIModule::onFrame()
                                     CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                                 }
                             }
-                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_inventory, friendly_inventory, search_radius, inventory, Colors::White);
+                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_inventory, search_radius, inventory, Colors::White);
                     }
 
                     // workers tasks should be reset.
@@ -866,7 +839,7 @@ void CUNYAIModule::onFrame()
             } // close local examination.
             
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
-                mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
+                mobility.Mobility_Movement(u, friendly_inventory, enemy_player_model.units_, inventory);
             }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
@@ -876,7 +849,7 @@ void CUNYAIModule::onFrame()
 
         //if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
         //    Mobility mobility;
-        //    mobility.Mobility_Movement(u, friendly_inventory, enemy_inventory, inventory);
+        //    mobility.Mobility_Movement(u, friendly_inventory, enemy_player_model.units_, inventory);
         //} // If it is a combat unit, then use it to attack the enemy.
         //auto end_scout = std::chrono::high_resolution_clock::now();
 
@@ -911,7 +884,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     friendly_inventory.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    Building_Begin(u, inventory, enemy_inventory, friendly_inventory); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    Building_Begin(u, inventory, enemy_player_model.units_, friendly_inventory); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
@@ -1157,11 +1130,11 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
                                                                                              //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit eu = Stored_Unit( unit );
 
-        if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-                                                                               //CUNYAIModule::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+        if ( enemy_player_model.units_.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+                                                                               //CUNYAIModule::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else { // the insertion must have failed
-               //CUNYAIModule::DiagnosticText( "%s is already at address %p.", eu.type_.c_str(), enemy_inventory.unit_inventory_.find( unit ) ) ;
+               //CUNYAIModule::DiagnosticText( "%s is already at address %p.", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.find( unit ) ) ;
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
@@ -1200,8 +1173,8 @@ void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
     //                                                                //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
     //    Stored_Unit eu = Stored_Unit( unit );
 
-    //    if ( enemy_inventory.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
-    //        CUNYAIModule::DiagnosticText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //    if ( enemy_player_model.units_.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+    //        CUNYAIModule::DiagnosticText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
     //    }
     //    else { // the insertion must have failed
     //        CUNYAIModule::DiagnosticText( "Insertion of %s failed.", eu.type_.c_str() );
@@ -1213,10 +1186,10 @@ void CUNYAIModule::onUnitShow( BWAPI::Unit unit )
 {
     //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
     //    Stored_Unit eu = Stored_Unit( unit );
-    //    auto found_ptr = enemy_inventory.unit_inventory_.find( unit );
-    //    if ( found_ptr != enemy_inventory.unit_inventory_.end() ) {
-    //        enemy_inventory.unit_inventory_.erase( unit );
-    //        CUNYAIModule::DiagnosticText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+    //    auto found_ptr = enemy_player_model.units_.unit_inventory_.find( unit );
+    //    if ( found_ptr != enemy_player_model.units_.unit_inventory_.end() ) {
+    //        enemy_player_model.units_.unit_inventory_.erase( unit );
+    //        CUNYAIModule::DiagnosticText( "Redscovered a %s, hidden unit inventory is now %d.", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
     //    }
     //    else {
     //        CUNYAIModule::DiagnosticText( "Discovered a %s.", unit->getType().c_str() );
@@ -1265,15 +1238,15 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        auto found_ptr = enemy_inventory.getStoredUnit(unit);
+        auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
         if ( found_ptr ) {
-            enemy_inventory.unit_inventory_.erase( unit );
+            enemy_player_model.units_.unit_inventory_.erase( unit );
             dead_enemy_inventory.addStored_Unit(unit);
             if(found_ptr->type_.isWorker()) inventory.estimated_enemy_workers_--;
-            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {
-            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
     }
 
@@ -1324,10 +1297,10 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         auto found_ptr = neutral_inventory.getStoredUnit(unit);
         if (found_ptr) {
             neutral_inventory.unit_inventory_.erase(unit);
-            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {
-            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_inventory.unit_inventory_.size() );
+            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
     }
 

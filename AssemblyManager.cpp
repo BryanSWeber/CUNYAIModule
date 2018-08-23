@@ -24,7 +24,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
         bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_inventory, friendly_inventory, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){
+        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_player_model.units_, friendly_inventory, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){
                 if (unit->morph(building)) {
                     buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                     Stored_Unit& morphing_unit = ui.unit_inventory_.find(unit)->second;
@@ -66,7 +66,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
             }
 
             // If you need a spore, any old place will do for now.
-            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_inventory.stock_fliers_ > 0 ) {
+            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_player_model.units_.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit_pos, 500);
                 Stored_Unit *close_hatch = getClosestStored(hacheries, unit_pos, 500);
                 if (close_hatch) {
@@ -85,8 +85,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
 
                         CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
-                        Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 750);
-                        Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_inventory, Position(central_base_new), 250);
+                        Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
+                        Unit_Inventory e_too_close = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 250);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_inventory, Position(central_base_new), 750);
                         int closest_enemy = 0;
                         int closest_hatch = 0;
@@ -95,7 +95,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                             enemy_nearby = e_loc.stock_fighting_total_ > friend_loc.stock_fighting_total_;
                         }
 
-                        if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_inventory, friendly_inventory, land_inventory) ) {
+                        if ( (new_dist <= old_dist || enemy_nearby) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_player_model.units_, friendly_inventory, land_inventory) ) {
                             central_base = central_base_new;
                             old_dist = new_dist;
                             if (enemy_nearby) { 
@@ -167,7 +167,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
         }
         else if (unit_can_build_intended_target && building == UnitTypes::Zerg_Hatchery) {
 
-            if (unit_can_build_intended_target && checkSafeBuildLoc(unit_pos, inventory, enemy_inventory, friendly_inventory, land_inventory) ) {
+            if (unit_can_build_intended_target && checkSafeBuildLoc(unit_pos, inventory, enemy_player_model.units_, friendly_inventory, land_inventory) ) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64);
 
                 local_area = getUnitInventoryInRadius(ui, Position(buildPosition), 250);
@@ -446,7 +446,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
-    bool nearby_enemy = checkOccupiedArea(enemy_inventory,drone->getPosition(), inv.my_portion_of_the_map_);
+    bool nearby_enemy = checkOccupiedArea(enemy_player_model.units_,drone->getPosition(), inv.my_portion_of_the_map_);
 
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
     map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
@@ -475,7 +475,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     //    Stock_Buildings(UnitTypes::Zerg_Hive, u_inv);
 
     //Macro-related Buildings.
-    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_inventory.moving_average_fap_stock_<= friendly_inventory.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_inventory.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, friendly_inventory, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
 

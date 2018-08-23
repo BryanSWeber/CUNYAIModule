@@ -42,6 +42,9 @@
     <ClCompile Include="Research_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="PlayerModelManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -55,6 +58,7 @@
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Source\Research_Inventory.h" />
+    <ClInclude Include="Source\PlayerModelManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

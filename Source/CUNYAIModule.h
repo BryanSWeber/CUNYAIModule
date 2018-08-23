@@ -47,13 +47,9 @@ public:
 
 
 // Status of AI
-  double alpha_army; // for troop levels.
     bool army_starved; 
-  double alpha_vis; // for vision levels.
     bool vision_starved;
-  double alpha_econ; // for econ levels.
     bool econ_starved; 
-  double alpha_tech; // for tech levels.
     bool tech_starved;
   double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
     bool supply_starved;
@@ -62,17 +58,19 @@ public:
   double adaptation_rate; //Adaptation rate to opponent.
     double win_rate; //fairly straighforward.
 
-  double alpha_army_temp;
-  double alpha_tech_temp;
-  double alpha_econ_temp;
+  double alpha_army_original;
+  double alpha_tech_original;
+  double alpha_econ_original;
 
  //Game should begin some universally declared inventories.
-    static Unit_Inventory enemy_inventory; // enemy units.
+    //static Unit_Inventory enemy_inventory; // enemy units.
+    //static Research_Inventory research_inventory; //Enemy upgrades.
+    static Player_Model enemy_player_model;
+    static CobbDouglas CD; // our personal model.
     static Unit_Inventory friendly_inventory; // friendly units.
     static Unit_Inventory neutral_inventory; // neutral units.
     static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
-    static Research_Inventory research_inventory; //Enemy upgrades.
     static Inventory inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.

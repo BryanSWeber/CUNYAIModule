@@ -14,16 +14,16 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         inv.getExpoPositions(); // update the possible expo positions.
         inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
 
-        bool safe_worker = enemy_inventory.unit_inventory_.empty() ||
-            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
-            getClosestThreatOrTargetStored( enemy_inventory, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
+        bool safe_worker = enemy_player_model.units_.unit_inventory_.empty() ||
+            getClosestThreatOrTargetStored( enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
+            getClosestThreatOrTargetStored( enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
 
         // Let's build at the safest close canidate position.
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
 
-                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_inventory, friendly_inventory, land_inventory);
+                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_player_model.units_, friendly_inventory, land_inventory);
 
                 bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
                                     getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
@@ -196,7 +196,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_inventory, r->second.pos_, 250) && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_, 250) && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.
