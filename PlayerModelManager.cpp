@@ -8,17 +8,17 @@
 using namespace std;
 using namespace BWAPI;
 
-void Player_Model::updateOnFrame(const Player &enemy_player)
+void Player_Model::updateOnFrame(const Player & enemy_player)
 {
-    //Update Researches
-    researches_.updateUpgradeTypes(enemy_player);
-    researches_.updateTechTypes(enemy_player);
-    researches_.updateResearchStock();
+
 
     //Update Enemy Units
     units_.updateUnitsControlledByOthers();
     units_.purgeBrokenUnits();
     units_.updateUnitInventorySummary();
+
+    //Update Researches
+    researches_.updateResearch(enemy_player, units_);
 
     evaluateWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
@@ -28,7 +28,6 @@ void Player_Model::updateOnFrame(const Player &enemy_player)
 };
 
 void Player_Model::evaluateWorkerCount() {
-    int dead_worker_count = casualties_.unit_inventory_.empty() ? 0 : casualties_.worker_count_;
 
     if (Broodwar->getFrameCount() == 0) {
         estimated_workers_ = 4;

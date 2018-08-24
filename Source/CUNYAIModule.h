@@ -203,7 +203,8 @@ public:
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
-      void Print_Universal_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
+      void Print_Cached_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
+      void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
       // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.

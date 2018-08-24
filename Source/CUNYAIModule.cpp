@@ -391,11 +391,12 @@ void CUNYAIModule::onFrame()
     if constexpr(ANALYSIS_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_inventory );
-        Print_Universal_Inventory(0, 50, inventory);
+        Print_Cached_Inventory(0, 50, inventory);
         Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 170, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
-            Print_Unit_Inventory(500, 170, enemy_player_model.units_);
+            //Print_Unit_Inventory(500, 170, enemy_player_model.units_);
+            Print_Research_Inventory(500, 170, enemy_player_model.researches_);
         }
         else {
             Print_Build_Order_Remaining(500, 170, buildorder);
@@ -1237,12 +1238,12 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
-    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
+    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
         auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
         if ( found_ptr ) {
             enemy_player_model.units_.unit_inventory_.erase( unit );
-            dead_enemy_inventory.addStored_Unit(unit);
-            if(found_ptr->type_.isWorker()) inventory.estimated_enemy_workers_--;
+            enemy_player_model.casualties_.addStored_Unit(unit);
+            if(found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {

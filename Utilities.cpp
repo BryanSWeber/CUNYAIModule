@@ -643,53 +643,89 @@ int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & en
     return threatening_e;
 }
 
-// Announces to player the name and type of all units in the unit inventory. Bland but practical.
+// Announces to player the name and count of all units in the unit inventory. Bland but practical.
 void CUNYAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui ) {
-    int another_sort_of_unit = 0;
+    int another_row_of_printing = 0;
     for ( int i = 0; i != 229; i++ )
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         int u_count = Count_Units( ((UnitType)i), ui );
         if ( u_count > 0 ) {
             Broodwar->drawTextScreen( screen_x, screen_y, "Inventoried Units:" );  //
-            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10 , "%s: %d", noRaceName( ((UnitType)i).c_str()), u_count );  //
-            another_sort_of_unit++;
+            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10 , "%s: %d", noRaceName( ((UnitType)i).c_str()), u_count );  //
+            another_row_of_printing++;
         }
     }
 }
 
-// Announces to player the name and type of all units in the unit inventory. Bland but practical.
-void CUNYAIModule::Print_Universal_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
-    int another_sort_of_unit = 0;
+// Announces to player the name and count of all units in the unit inventory. Bland but practical.
+void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
+    int another_row_of_printing = 0;
     for (auto i : inv.unit_type_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         int u_count = CUNYAIModule::Count_Units(i, inv);
         int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i, inv);
         if (u_count > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //
-            another_sort_of_unit++;
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //
+            another_row_of_printing++;
+        }
+    }
+}
+
+// Announces to player the name and count of all units in the research inventory. Bland but practical.
+void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
+    int another_row_of_printing_ups = 1;
+
+    for (auto r:ri.upgrades_)
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        if (r.second > 0) {
+            Broodwar->drawTextScreen(screen_x, screen_y, "Upgrades:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "%s: %d", r.first.c_str(), r.second);  //
+            another_row_of_printing_ups++;
+        }
+    }
+
+    int another_row_of_printing_research = another_row_of_printing_ups + 1;
+
+    for (auto r : ri.tech_)
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        if (r.second > 0) {
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "Tech:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "%s", r.first.c_str());  //
+            another_row_of_printing_research++;
+        }
+    }
+
+    int another_row_of_printing_buildings = another_row_of_printing_research + 1;
+
+    for (auto r : ri.buildings_)
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        if (r.second > 0) {
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_buildings * 10, "%s: %d", r.first.c_str(), r.second);  //
+            another_row_of_printing_buildings++;
         }
     }
 }
 
 // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
 void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &screen_y, const Building_Gene &bo ) {
-    int another_sort_of_unit = 0;
+    int another_row_of_printing = 0;
     if ( !bo.building_gene_.empty() ) {
         for ( auto i : bo.building_gene_ ) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
             Broodwar->drawTextScreen( screen_x, screen_y, "Build Order:" );  //
             if ( i.getUnit() != UnitTypes::None ) {
-                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s", noRaceName( i.getUnit().c_str() ) );  //
+                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", noRaceName( i.getUnit().c_str() ) );  //
             }
             else if ( i.getUpgrade() != UpgradeTypes::None ) {
-                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s", i.getUpgrade().c_str() );  //
+                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getUpgrade().c_str() );  //
             }
-            another_sort_of_unit++;
+            another_row_of_printing++;
         }
     }
     else {
         Broodwar->drawTextScreen( screen_x, screen_y, "Build Order:" );  //
-        Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10, "Build Order Empty");  //
+        Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "Build Order Empty");  //
     }
 }
 
@@ -712,14 +748,14 @@ void CUNYAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
 
 // Announces to player the name and type of all buildings in the reservation system. Bland but practical.
 void CUNYAIModule::Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res ) {
-    int another_sort_of_unit = 0;
+    int another_row_of_printing = 0;
     for ( int i = 0; i != 229; i++ )
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         int u_count = Count_Units( ((UnitType)i), res );
         if ( u_count > 0 ) {
             Broodwar->drawTextScreen( screen_x, screen_y, "Reserved Buildings:" );  //
-            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", noRaceName( ((UnitType)i).c_str() ), u_count );  //
-            another_sort_of_unit++;
+            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d", noRaceName( ((UnitType)i).c_str() ), u_count );  //
+            another_row_of_printing++;
         }
     }
 }
