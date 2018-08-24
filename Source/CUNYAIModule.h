@@ -63,13 +63,10 @@ public:
   double alpha_econ_original;
 
  //Game should begin some universally declared inventories.
-    //static Unit_Inventory enemy_inventory; // enemy units.
-    //static Research_Inventory research_inventory; //Enemy upgrades.
     static Player_Model enemy_player_model;
+    static Player_Model neutral_player_model;
     static CobbDouglas CD; // our personal model.
     static Unit_Inventory friendly_inventory; // friendly units.
-    static Unit_Inventory neutral_inventory; // neutral units.
-    static Unit_Inventory dead_enemy_inventory; // dead units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
@@ -203,6 +200,7 @@ public:
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
+      void Print_Test_Case(const int & screen_x, const int & screen_y);
       void Print_Cached_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
       void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.

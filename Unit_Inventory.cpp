@@ -36,9 +36,9 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitsControlledByOthers()
+void Unit_Inventory::updateUnitsControlledBy(const Player &player)
 {
-    for (auto &e: unit_inventory_) {
+    for (auto &e : unit_inventory_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
             e.second.updateStoredUnit(e.second.bwapi_unit_);
         }
@@ -46,10 +46,10 @@ void Unit_Inventory::updateUnitsControlledByOthers()
 
             bool present = false;
 
-            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_), IsEnemy || IsNeutral);  // Confirm it is present.  Main use: Addons convert to neutral if their main base disappears, extractors.
-            for (auto &et : enemies_tile ) {
+            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_));  // Confirm it is present.  Main use: Addons convert to neutral if their main base disappears, extractors.
+            for (auto &et : enemies_tile) {
                 present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
-                if (present) {
+                if (present && et->getPlayer() == player) {
                     e.second.updateStoredUnit(et);
                     break;
                 }

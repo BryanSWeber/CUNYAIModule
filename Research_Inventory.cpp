@@ -37,16 +37,20 @@ void Research_Inventory::updateResearchBuildings(const Unit_Inventory &ei) {
 
     unit_types.insert(temp_unit_types.begin(), temp_unit_types.end());
 
-    for (auto u : unit_types) { // for any unit that is needed in the construction of the units above.
-        for (auto i : u.requiredUnits()) {
-            temp_unit_types.insert(i.first);
+    int n = 0;
+    while (n < 4) {
+        temp_unit_types.clear();
+        for (auto u : unit_types) { // for any unit that is needed in the construction of the units above.
+            for (auto i : u.requiredUnits()) {
+                temp_unit_types.insert(i.first);
+            }
         }
+        unit_types.insert(temp_unit_types.begin(), temp_unit_types.end()); // this could be repeated with some clever stop condition. Or just crudely repeated a few times.
+        n++;
     }
 
-    unit_types.insert(temp_unit_types.begin(), temp_unit_types.end()); // this could be repeated with some clever stop condition.
-
     for (auto u : unit_types) {
-        if ( u.isBuilding() && !u.isResourceDepot() && u != UnitTypes::None ) buildings_[u] = 1; // If a required building does not directly construct X, it is a tech requirement.        
+        if (u.isBuilding() && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u != UnitTypes::Zerg_Hatchery ) buildings_[u] = 1; // If a required 
     }
 
     for (auto i : upgrades_) {

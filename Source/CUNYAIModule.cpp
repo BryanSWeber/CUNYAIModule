@@ -24,11 +24,10 @@ using namespace std;
 
 //Declare universally shared inventories.
 Player_Model CUNYAIModule::enemy_player_model;
+Player_Model CUNYAIModule::neutral_player_model;
 CobbDouglas CUNYAIModule::CD;
 Unit_Inventory CUNYAIModule::friendly_inventory;
-Unit_Inventory CUNYAIModule::neutral_inventory;
 //Unit_Inventory CUNYAIModule::enemy_inventory;
-Unit_Inventory CUNYAIModule::dead_enemy_inventory;
 Resource_Inventory CUNYAIModule::land_inventory;
 //Research_Inventory CUNYAIModule::research_inventory;
 Inventory CUNYAIModule::inventory;
@@ -179,11 +178,13 @@ void CUNYAIModule::onFrame()
     enemy_player_model.units_.drawAllLocations(inventory);
 
     //Update neutral units
-    neutral_inventory.updateUnitsControlledByOthers();
-    neutral_inventory.purgeBrokenUnits();
-    neutral_inventory.updateUnitInventorySummary();
-    neutral_inventory.drawAllHitPoints(inventory);
-    neutral_inventory.drawAllLocations(inventory);
+    Player* neutral_player;
+    for (auto p : Broodwar->getPlayers()) {
+        if (p->isNeutral()) neutral_player = &p;
+    }
+    neutral_player_model.updateOnFrame(*neutral_player);
+    neutral_player_model.units_.drawAllHitPoints(inventory);
+    neutral_player_model.units_.drawAllLocations(inventory);
 
     //Update friendly unit inventory.
     if (friendly_inventory.unit_inventory_.size() == 0) {
@@ -275,7 +276,7 @@ void CUNYAIModule::onFrame()
         inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    inventory.updateBasePositions(friendly_inventory, enemy_player_model.units_, land_inventory, neutral_inventory);
+    inventory.updateBasePositions(friendly_inventory, enemy_player_model.units_, land_inventory, neutral_player_model.units_);
     inventory.drawExpoPositions();
     inventory.drawBasePositions();
 
@@ -392,6 +393,7 @@ void CUNYAIModule::onFrame()
 
         //Print_Unit_Inventory( 0, 50, friendly_inventory );
         Print_Cached_Inventory(0, 50, inventory);
+        //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 170, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
@@ -1146,7 +1148,7 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
     if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.
                                                                                  //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit nu = Stored_Unit(unit);
-        neutral_inventory.addStored_Unit(nu);
+        neutral_player_model.units_.addStored_Unit(nu);
 
     }
 
@@ -1295,9 +1297,9 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if ( unit->getPlayer()->isNeutral() && !IsMineralField(unit) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
-        auto found_ptr = neutral_inventory.getStoredUnit(unit);
+        auto found_ptr = neutral_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
-            neutral_inventory.unit_inventory_.erase(unit);
+            neutral_player_model.units_.unit_inventory_.erase(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {

@@ -11,9 +11,8 @@ using namespace BWAPI;
 void Player_Model::updateOnFrame(const Player & enemy_player)
 {
 
-
     //Update Enemy Units
-    units_.updateUnitsControlledByOthers();
+    units_.updateUnitsControlledBy(enemy_player);
     units_.purgeBrokenUnits();
     units_.updateUnitInventorySummary();
 

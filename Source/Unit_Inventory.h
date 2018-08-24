@@ -136,7 +136,7 @@ struct Unit_Inventory {
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
 	void updateUnitInventory(const Unitset &unit_set);
-    void updateUnitsControlledByOthers();
+    void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);

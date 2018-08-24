@@ -656,7 +656,18 @@ void CUNYAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_
         }
     }
 }
-
+// Prints some test onscreen in the given location.
+void CUNYAIModule::Print_Test_Case(const int &screen_x, const int &screen_y) {
+    int another_row_of_printing = 0;
+    for (int i = 0; i != 229; i++)
+    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+        if (((UnitType)i).isBuilding() && (!((UnitType)i).upgradesWhat().empty() || !((UnitType)i).researchesWhat().empty()) && ((UnitType)i) != UnitTypes::Zerg_Hatchery ) {
+            Broodwar->drawTextScreen(screen_x, screen_y, "Confirmed Hits:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", noRaceName(((UnitType)i).c_str()));  //
+            another_row_of_printing++;
+        }
+    }
+}
 // Announces to player the name and count of all units in the unit inventory. Bland but practical.
 void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
     int another_row_of_printing = 0;

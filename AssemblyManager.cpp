@@ -322,7 +322,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
         if (is_larva && !is_building) {
             //Evo chamber is required tech for spore colony
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inv) == 0 && buildorder.isEmptyBuildOrder()) {
-                buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in a hydralisk den if they have Air.
+                buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
                 CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
                 return is_building = true;
             } // hydralisk den is required tech for hydras, a ground to air/ ground to ground unit.
