@@ -728,7 +728,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     return false;
 }
 
-UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
+UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const Research_Inventory &ri) {
     bool building_optimal_unit = false;
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
@@ -743,7 +743,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types) {
             Unit_Inventory friendly_units_under_consideration; // new every time.
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-            friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true);
+            friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true, ri);
             buildfap_temp.simulate(); // a deep but limited simulation for us.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());

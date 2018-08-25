@@ -63,6 +63,7 @@ public:
   double alpha_econ_original;
 
  //Game should begin some universally declared inventories.
+    static Player_Model friendly_player_model;
     static Player_Model enemy_player_model;
     static Player_Model neutral_player_model;
     static CobbDouglas CD; // our personal model.
@@ -108,8 +109,7 @@ public:
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
-      UnitType returnOptimalUnit(map<UnitType, int>& combat_types); // returns an optimal unit type from set.
-      bool returnFlyerPreferred(); // returns a preference for flying/nonflying versions of several units, IE are they weak to air.
+      UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
       bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
 
       // Builds the next building you can afford.  Incomplete.

@@ -23,6 +23,7 @@ using namespace Filter;
 using namespace std;
 
 //Declare universally shared inventories.
+Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
 Player_Model CUNYAIModule::neutral_player_model;
 CobbDouglas CUNYAIModule::CD;
@@ -206,8 +207,8 @@ void CUNYAIModule::onFrame()
     // Update FAPS with units.
     fap.clear();
     buildfap.clear();
-    enemy_player_model.units_.addToEnemyFAP(fap);
-    enemy_player_model.units_.addToEnemyBuildFAP(buildfap);
+    enemy_player_model.units_.addToEnemyFAP(fap, enemy_player_model.researches_);
+    enemy_player_model.units_.addToEnemyBuildFAP(buildfap, enemy_player_model.researches_);
     friendly_inventory.addToFriendlyFAP(fap);
     friendly_inventory.addToFriendlyBuildFAP(buildfap);
     //friendly_inventory.drawAllMAFAPaverages(inventory);

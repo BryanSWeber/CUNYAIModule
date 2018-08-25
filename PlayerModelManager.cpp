@@ -38,4 +38,4 @@ void Player_Model::evaluateWorkerCount() {
     }
     int est_worker_count = min(max(units_.worker_count_, estimated_workers_), 85);
 
-};
+}

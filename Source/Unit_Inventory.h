@@ -5,6 +5,7 @@
 #include "Resource_Inventory.h"
 #include "InventoryManager.h"
 #include "Reservation_Manager.h"
+#include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
 
 using namespace std;
@@ -21,8 +22,8 @@ struct Stored_Unit {
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit( const Unit &unit );
     Stored_Unit();
-    auto convertToFAP(); // puts stored unit into the fap type.
-    auto convertToFAPPosition(const Position &chosen_pos); // puts the stored unit into the fap type... at a specific position
+    auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
+    auto convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri); // puts the stored unit into the fap type... at a specific position
 
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
@@ -150,12 +151,14 @@ struct Unit_Inventory {
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
-    void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the friendly side of the FAP army.
-    void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds entire inventory to the enemy side of the FAP army.
-    void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building combat simulator, friendly side.
-    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, bool friendly); // adds to buildFAP
+    void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds entire inventory to the friendly side of the FAP army.
+    void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds entire inventory to the enemy side of the FAP army.
+
+    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
+    void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds to the building combat simulator, friendly side.
+    void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds to the building  combat simulator, enemy sdie.
     static Position positionBuildFap(bool friendly);
-    void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object); // adds to the building  combat simulator, enemy sdie.
+
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     // Pass pointers

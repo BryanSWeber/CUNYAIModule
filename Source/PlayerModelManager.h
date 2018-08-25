@@ -21,6 +21,5 @@ struct Player_Model {
 
     void updateOnFrame(const Player &enemy_player);
     void evaluateWorkerCount();
-
 };
 
