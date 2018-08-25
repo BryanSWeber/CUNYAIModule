@@ -28,8 +28,11 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 {
     //Update Enemy Units
-    units_.updateUnitInventory(Broodwar->self()->getUnits());
+    //Update friendly unit inventory.
+    if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
+    else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
+    units_.purgeUnseenUnits(); //Critical for self!
     units_.updateUnitInventorySummary();
 
     //Update Researches

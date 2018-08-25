@@ -202,14 +202,6 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllHitPoints(inventory);
     neutral_player_model.units_.drawAllLocations(inventory);
 
-    //Update friendly unit inventory.
-    if (friendly_player_model.units_.unit_inventory_.size() == 0) {
-        friendly_player_model.units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
-    }
-    else {
-        friendly_player_model.units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
-    }
-
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player. 
 
     //friendly_player_model.units_.drawAllVelocities(inventory);
@@ -1222,6 +1214,19 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             enemy_player_model.units_.unit_inventory_.erase( unit );
             enemy_player_model.casualties_.addStored_Unit(unit);
             if(found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
+            //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
+        }
+        else {
+            //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
+        }
+    }
+
+    if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
+        auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
+        if (found_ptr) {
+            enemy_player_model.units_.unit_inventory_.erase(unit);
+            enemy_player_model.casualties_.addStored_Unit(unit);
+            if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {
