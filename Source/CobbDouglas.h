@@ -13,7 +13,7 @@ struct CobbDouglas
 {
     CobbDouglas() {}; // default constructor.
 
-    void evaluateCD(double army_ct, bool army_possible, double tech_ct, bool tech_possible, double wk_ct, bool econ_possible );
+    void evaluateCD(double army_ct, double tech_ct, double wk_ct);
 
     double alpha_army;
     double alpha_tech;
@@ -37,10 +37,16 @@ struct CobbDouglas
     bool tech_starved();
 
     void estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
-    void enemy_mimic(const Player_Model &enemy, const bool army_possible, const bool tech_possible, const bool econ_possible, const double adaptation_rate);
+    void enemy_mimic(const Player_Model &enemy, const double adaptation_rate);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
     void printModelParameters();
+
+    //Discontinuities -Cutoff if critically full, or suddenly progress towards one macro goal or another is impossible, or if their army is critically larger than ours.
+    bool evalArmyPossible();
+    bool evalEconPossible();
+    bool evalTechPossible();
+    
 };
 
 

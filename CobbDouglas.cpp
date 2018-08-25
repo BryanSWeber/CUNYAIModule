@@ -12,9 +12,8 @@ using namespace std;
 struct Player_Model;
 
 //complete but long creator method. Normalizes to 1 automatically.
-void CobbDouglas::evaluateCD(double army_stk, bool army_possible, double tech_stk, bool tech_possible, double wk_stk, bool econ_possible )
+void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk )
 {
-
     // CD takes the form Y= (A*labor)^alpha_l * capital^(alpha_k). I assume A is a technology augmenting only capital, and takes the form tech^(alpha_t). I can still normalize the sum of alpha_l and alpha_k to 1. 
     double a_tot = alpha_econ + alpha_army;
     alpha_econ = alpha_econ / a_tot;
@@ -24,6 +23,10 @@ void CobbDouglas::evaluateCD(double army_stk, bool army_possible, double tech_st
     worker_stock = wk_stk;
     army_stock = army_stk;
     tech_stock = tech_stk;
+
+    bool army_possible = evalArmyPossible();
+    bool econ_possible = evalEconPossible();
+    bool tech_possible = evalTechPossible();
 
     econ_derivative = alpha_econ *                                                           pow(tech_stock, alpha_tech * alpha_army) * pow(army_stock/worker_stock, alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
     army_derivative = alpha_army *              pow(worker_stock / army_stock, alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
@@ -109,13 +112,17 @@ void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_st
 }
 
 //Sets enemy utility function parameters based on known information.
-void CobbDouglas::enemy_mimic(const Player_Model & enemy, const bool army_possible, const bool tech_possible, const bool econ_possible, const double adaptation_rate) {
+void CobbDouglas::enemy_mimic(const Player_Model & enemy, const double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
 
     //Shift alpha towards enemy choices.
     alpha_army += adaptation_rate * (enemy.spending_model_.alpha_army - alpha_army);
     alpha_econ += adaptation_rate * (enemy.spending_model_.alpha_econ - alpha_econ);
     alpha_tech += adaptation_rate * (enemy.spending_model_.alpha_tech - alpha_tech);
+
+    bool army_possible = evalArmyPossible();
+    bool econ_possible = evalEconPossible();
+    bool tech_possible = evalTechPossible();
 
     if (isnan(alpha_army))  alpha_army = 0; 
     if (isnan(alpha_econ))  alpha_econ = 0; 
@@ -144,4 +151,27 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
     else {
         Broodwar->sendText("Failed to find GameParameters.txt");
     }
+}
+
+bool CobbDouglas::evalArmyPossible()
+{
+
+   return ((Broodwar->self()->supplyUsed() < 400 && exp(CUNYAIModule::inventory.ln_army_stock_) / exp(CUNYAIModule::inventory.ln_worker_stock_) < 5 * alpha_army / alpha_tech)) ||
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::inventory)
+        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::inventory)
+        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire, CUNYAIModule::inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire, CUNYAIModule::inventory)
+        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::inventory) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
+}
+
+bool CobbDouglas::evalEconPossible()
+{
+    bool not_enough_miners = (CUNYAIModule::inventory.min_workers_ <= CUNYAIModule::inventory.min_fields_ * 2);
+    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, CUNYAIModule::inventory) < 85;
+    return not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+                                                                  //bool vision_possible = true; // no vision cutoff ATM.
+}
+
+bool CobbDouglas::evalTechPossible()
+{
+    return CUNYAIModule::Tech_Avail(); // if you have no tech available, you cannot be tech starved.
 }

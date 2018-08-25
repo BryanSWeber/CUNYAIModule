@@ -19,7 +19,9 @@ struct Player_Model {
     CobbDouglas spending_model_;
     //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
 
-    void updateOnFrame(const Player &enemy_player);
+    void updateOtherOnFrame(const Player &other_player);
+    void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
+
 };
 

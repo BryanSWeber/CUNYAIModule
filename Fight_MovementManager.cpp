@@ -85,7 +85,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
             unit->unburrow();
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
             changing_unit.updateStoredUnit(unit);
             return;
         }
@@ -110,7 +110,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     }
 
 
-    Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+    Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
     changing_unit.phase_ = "Pathing";
 };
@@ -226,7 +226,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
         }
     }
 
-    Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+    Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
     changing_unit.phase_ = "Attacking";
 
@@ -313,7 +313,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos - walkablity_pos, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_inventory.unit_inventory_.find(unit)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
         changing_unit.updateStoredUnit(unit);
         changing_unit.phase_ = "Retreating";
     }

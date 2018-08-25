@@ -47,27 +47,24 @@ public:
 
 
 // Status of AI
-    bool army_starved; 
-    bool vision_starved;
-    bool econ_starved; 
-    bool tech_starved;
   double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
     bool supply_starved;
   double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
     bool gas_starved;
-  double adaptation_rate; //Adaptation rate to opponent.
     double win_rate; //fairly straighforward.
 
-  double alpha_army_original;
-  double alpha_tech_original;
-  double alpha_econ_original;
+  static bool army_starved;
+  static bool econ_starved;
+  static bool tech_starved;
+  static double adaptation_rate; //Adaptation rate to opponent.
+  static double alpha_army_original;
+  static double alpha_tech_original;
+  static double alpha_econ_original;
 
  //Game should begin some universally declared inventories.
     static Player_Model friendly_player_model;
     static Player_Model enemy_player_model;
     static Player_Model neutral_player_model;
-    static CobbDouglas CD; // our personal model.
-    static Unit_Inventory friendly_inventory; // friendly units.
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
@@ -316,7 +313,7 @@ public:
 
   // Tech Functions
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-      bool Tech_Avail();
+      static bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
       bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
   //Suprisingly missing functions:

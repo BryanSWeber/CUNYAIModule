@@ -23,11 +23,11 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
             for ( auto &p : inv.expo_positions_ ) {
                 int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
 
-                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_player_model.units_, friendly_inventory, land_inventory);
+                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_player_model.units_, friendly_player_model.units_, land_inventory);
 
-                bool occupied_expo =getClosestStored( friendly_inventory, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
-                                    getClosestStored( friendly_inventory, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
-                                    getClosestStored( friendly_inventory, UnitTypes::Zerg_Hive, Position( p ), 500 );
+                bool occupied_expo =getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
+                                    getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
+                                    getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Hive, Position( p ), 500 );
                 bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 32;
                 if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
                     dist = dist_temp;
@@ -42,17 +42,17 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
         // If we found -something-
         if ( inv.next_expo_ && inv.next_expo_ != TilePositions::Origin ) {
             //clear all obstructions, if any.
-            clearBuildingObstuctions(friendly_inventory, inv, unit);
+            clearBuildingObstuctions(friendly_player_model.units_, inv, unit);
 
             if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+                Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
                 morphing_unit.updateStoredUnit(unit);
                 return true;
             }
             else if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
                 unit->move( Position( inv.next_expo_ ) );
-                Stored_Unit& morphing_unit = friendly_inventory.unit_inventory_.find(unit)->second;
+                Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
                 morphing_unit.updateStoredUnit(unit);
                 CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
@@ -219,9 +219,9 @@ bool CUNYAIModule::Gas_Outlet() {
         outlet_avail = true;
     } // turns off gas interest when larve are 0.
 
-      //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_inventory) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Spire, friendly_inventory ) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_inventory ) > 0;
+      //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_player_model.units_) > 0 ||
+      //		Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
+      //		Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
       //if ( long_condition ) {
       //    outlet_avail = true;
       //} 

@@ -43,8 +43,8 @@ bool CUNYAIModule::Tech_Avail() {
 					bool hydra_upgrade = up_current == UpgradeTypes::Zerg_Missile_Attacks || up_current == UpgradeTypes::Grooved_Spines || up_current == UpgradeTypes::Muscular_Augments;
 					bool ling_upgrade = up_current == UpgradeTypes::Zerg_Melee_Attacks || up_current == UpgradeTypes::Metabolic_Boost;
 
-					bool upgrade_conditionals = ( hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory)) ||
-						(ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory));
+					bool upgrade_conditionals = ( hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
+						(ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_));
 
 					if (upgrade_incomplete && upgrade_conditionals) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do. We do not require air upgrades at this time, but they could still plausibly occur.
                         return true;
@@ -82,11 +82,11 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
     bool maxed_range = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Missile_Attacks) == 3;
     bool maxed_armor = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3;
 
-    bool more_hydras_than_lings = Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_inventory) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory);
+    bool more_hydras_than_lings = Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_);
     bool more_flyers_than_ground = ui.stock_fliers_ > ui.stock_ground_units_;
 
     // Major Upgrades:
-    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units(UnitTypes::Zerg_Zergling, friendly_inventory) > 0);
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Metabolic_Boost, building, upgrade_bool && Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_) > 0);
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (Count_Units(UnitTypes::Zerg_Lair, inv) > 0 || Count_Units(UnitTypes::Zerg_Hive, inv) > 0) && Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) > 0);
 
     //Midgame/situational upgrades.
