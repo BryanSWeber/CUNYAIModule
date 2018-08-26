@@ -29,8 +29,8 @@ struct CobbDouglas
 
     double getPriority();
 
-    double getlny();
-    double getlnY();
+    double getlny() const;
+    double getlnY() const;
 
     bool army_starved();
     bool econ_starved();

@@ -41,7 +41,7 @@ double CobbDouglas::getPriority() {
 }
 
 // Protected from failure in divide by 0 case.
-double CobbDouglas::getlny()
+double CobbDouglas::getlny() const
 {
     double ln_y = 0;
     try {
@@ -55,7 +55,7 @@ double CobbDouglas::getlny()
 
 }
 // Protected from failure in divide by 0 case.
-double CobbDouglas::getlnY()
+double CobbDouglas::getlnY() const
 {
     double ln_Y = 0;
     try {

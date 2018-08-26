@@ -225,8 +225,8 @@ void CUNYAIModule::onFrame()
     friendly_player_model.units_.pullFromFAP(*fap.getState().first);
     enemy_player_model.units_.pullFromFAP(*fap.getState().second);
 
-    writeUnitInventory(friendly_player_model.units_, "friendly");
-    writeUnitInventory(enemy_player_model.units_, "enemy");
+    writePlayerModel(friendly_player_model, "friendly");
+    writePlayerModel(enemy_player_model, "enemy");
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, inventory);
@@ -1208,12 +1208,11 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
-    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
-        auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
-        if ( found_ptr ) {
-            enemy_player_model.units_.unit_inventory_.erase( unit );
-            enemy_player_model.casualties_.addStored_Unit(unit);
-            if(found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
+    if (unit->getPlayer() == Broodwar->self()) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
+        auto found_ptr = friendly_player_model.units_.getStoredUnit(unit);
+        if (found_ptr) {
+            friendly_player_model.units_.unit_inventory_.erase(unit);
+            friendly_player_model.casualties_.addStored_Unit(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {
@@ -1221,12 +1220,12 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         }
     }
 
-    if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
+    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
         auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
-        if (found_ptr) {
-            enemy_player_model.units_.unit_inventory_.erase(unit);
+        if ( found_ptr ) {
+            enemy_player_model.units_.unit_inventory_.erase( unit );
             enemy_player_model.casualties_.addStored_Unit(unit);
-            if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
+            if(found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {

@@ -10,6 +10,7 @@ using namespace BWAPI;
 
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
+    bwapi_player_ = other_player;
     //Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();
@@ -27,6 +28,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 
 void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 {
+    bwapi_player_ = Broodwar->self();
     //Update Enemy Units
     //Update friendly unit inventory.
     if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 

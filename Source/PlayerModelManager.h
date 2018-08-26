@@ -11,6 +11,7 @@ using namespace BWAPI;
 struct Player_Model {
     Player_Model() {}; // need a constructor method.
 
+    Player bwapi_player_; // this is a pointer, explicitly.
     int estimated_workers_ = 0;
 
     Unit_Inventory units_;

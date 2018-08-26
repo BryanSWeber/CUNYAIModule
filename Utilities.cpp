@@ -271,35 +271,129 @@ void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & scre
     }
 }
 
-void CUNYAIModule::writeUnitInventory(const Unit_Inventory inventory, const string label)
+void CUNYAIModule::writePlayerModel(const Player_Model &player, const string label)
 {
     if constexpr(ANALYSIS_MODE) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        if (Broodwar->getFrameCount() % (24 * 30) == 0) {
+        if (Broodwar->getFrameCount() % 96 == 0) {
+            //living
             string smashed_unit_types = "";
             string smashed_unit_positions = "";
+            string smashed_unit_stock_value = "";
+            string smashed_unit_valid_positions = "";
             string place;
             string type;
+            string stock_value;
+            string valid_pos;
+            //dead
+            string smashed_dead_unit_types = "";
+            string smashed_dead_unit_positions = "";
+            string smashed_dead_unit_stock_value = "";
+            string smashed_dead_unit_valid_positions = "";
+            string dead_place;
+            string dead_type;
+            string dead_stock_value;
+            string dead_valid_pos;
+            //science
+            string smashed_upgrade_types = "";
+            string smashed_tech_types = "";
+            string up_type;
+            string tech_type;
 
-            for (auto u : inventory.unit_inventory_) {
+            //living units - position, type, stock value.
+            for (auto u : player.units_.unit_inventory_) {
 
                 std::stringstream place_translator;
                 place_translator << u.second.pos_;
-                string place = place_translator.str();
+                place = place_translator.str();
+                smashed_unit_positions += place + ", ";
 
                 std::stringstream type_translator;
                 type_translator << u.second.type_.c_str();
-                string type = type_translator.str();
-
+                type = type_translator.str();
                 smashed_unit_types += type + ", ";
-                smashed_unit_positions += place + ", ";
+
+                std::stringstream stock_value_translator;
+                stock_value_translator << u.second.stock_value_;
+                stock_value = stock_value_translator.str();
+                smashed_unit_stock_value += stock_value + ", ";
+
+                std::stringstream valid_pos_translator;
+                valid_pos_translator << u.second.stock_value_;
+                valid_pos = valid_pos_translator.str();
+                smashed_unit_valid_positions += valid_pos + ", ";
             }
+
+
+            //dead units - position, type, stock value.
+            for (auto u : player.casualties_.unit_inventory_) {
+
+                std::stringstream dead_place_translator;
+                dead_place_translator << u.second.pos_;
+                dead_place = dead_place_translator.str();
+                smashed_dead_unit_positions += dead_place + ", ";
+
+                std::stringstream dead_type_translator;
+                dead_type_translator << u.second.type_.c_str();
+                dead_type = dead_type_translator.str();
+                smashed_dead_unit_types += dead_type + ", ";
+
+                std::stringstream dead_stock_value_translator;
+                dead_stock_value_translator << u.second.stock_value_;
+                dead_stock_value = dead_stock_value_translator.str();
+                smashed_dead_unit_stock_value += dead_stock_value + ", "; // might not be relevant.
+
+                std::stringstream dead_valid_pos_translator;
+                dead_valid_pos_translator << u.second.stock_value_;
+                dead_valid_pos = dead_valid_pos_translator.str();
+                smashed_dead_unit_valid_positions += dead_valid_pos + ", "; // might not be relevant.
+
+            }
+
+            //science
+            //upgrades
+            for (auto u : player.researches_.upgrades_) {
+
+                std::stringstream type_translator;
+                type_translator << u.first.c_str();
+                up_type = type_translator.str();
+                smashed_upgrade_types += up_type + ", ";
+            }
+            //tech types
+            for (auto u : player.researches_.tech_) {
+
+                std::stringstream type_translator;
+                type_translator << u.first.c_str();
+                tech_type = type_translator.str();
+                smashed_upgrade_types += tech_type + ", ";
+            }
+
 
             output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
 
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Types " << smashed_unit_types << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Positions " << smashed_unit_positions << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Positions " << smashed_unit_positions << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Stock Value " << smashed_unit_stock_value << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Valid Positions " << smashed_unit_valid_positions << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Unit Types " << smashed_dead_unit_types << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Positions " << smashed_dead_unit_positions << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Stock Value " << smashed_dead_unit_stock_value << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Valid Positions " << smashed_dead_unit_valid_positions << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Upgrade Types " << smashed_upgrade_types << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Tech Types " << smashed_upgrade_types << endl;
+
+            if (player.bwapi_player_) {
+                output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;
+                output << label << " Frame Count " << Broodwar->getFrameCount() << " Kill Score " << player.bwapi_player_->getKillScore() << endl;
+                output << label << " Frame Count " << Broodwar->getFrameCount() << " Building Score " << player.bwapi_player_->getBuildingScore() << endl;
+            }
+
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Labor " << player.spending_model_.worker_stock << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " (K)Capital " << player.spending_model_.army_stock << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Technology " << player.spending_model_.tech_stock << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
+
+
             output.close();
         }
     }

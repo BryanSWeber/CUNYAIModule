@@ -158,7 +158,7 @@ public:
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
-      static void writeUnitInventory(const Unit_Inventory inventory, const string label);   //writes aribtrary UI to file.
+      static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
       //Sends a diagnostic text message, accepts another argument..
       template<typename ...Ts>
