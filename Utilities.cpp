@@ -281,10 +281,12 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             string smashed_unit_positions = "";
             string smashed_unit_stock_value = "";
             string smashed_unit_valid_positions = "";
+            string smashed_unit_phase = "";
             string place;
             string type;
             string stock_value;
             string valid_pos;
+            string last_phase;
             //dead
             string smashed_dead_unit_types = "";
             string smashed_dead_unit_positions = "";
@@ -322,6 +324,8 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 valid_pos_translator << u.second.stock_value_;
                 valid_pos = valid_pos_translator.str();
                 smashed_unit_valid_positions += valid_pos + ", ";
+
+                smashed_unit_phase += u.second.phase_ + ", ";
             }
 
 
@@ -357,7 +361,9 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 std::stringstream type_translator;
                 type_translator << u.first.c_str();
                 up_type = type_translator.str();
-                smashed_upgrade_types += up_type + ", ";
+                if (u.second > 0) {
+                    smashed_upgrade_types += up_type + ", ";
+                }
             }
             //tech types
             for (auto u : player.researches_.tech_) {
@@ -365,7 +371,9 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 std::stringstream type_translator;
                 type_translator << u.first.c_str();
                 tech_type = type_translator.str();
-                smashed_upgrade_types += tech_type + ", ";
+                if (u.second) {
+                    smashed_tech_types += tech_type + ", ";
+                }
             }
 
 
@@ -375,6 +383,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Positions " << smashed_unit_positions << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Stock Value " << smashed_unit_stock_value << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Valid Positions " << smashed_unit_valid_positions << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Phase " << smashed_unit_phase << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Unit Types " << smashed_dead_unit_types << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Positions " << smashed_dead_unit_positions << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Stock Value " << smashed_dead_unit_stock_value << endl;

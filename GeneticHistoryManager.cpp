@@ -305,7 +305,7 @@ GeneticHistory::GeneticHistory( string file ) {
             games_since_last_win++;
         }
 
-        if (selected_win_count >= 50) { // stop once we have 50 games in the parantage.
+        if (selected_win_count >= 10) { // stop once we have 50 games in the parantage.
             break;
         }
     } //or widest hunt possible.
@@ -462,7 +462,7 @@ GeneticHistory::GeneticHistory( string file ) {
             double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
             // Chance of mutation.
-            if (dis(gen) > 0.95 || selected_win_count < 50 ) {
+            if (dis(gen) > 0.95 || selected_win_count < 10 ) {
                 // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
                 delta_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
                 gamma_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
