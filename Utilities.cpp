@@ -321,8 +321,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 smashed_unit_stock_value += stock_value + ", ";
 
                 std::stringstream valid_pos_translator;
-                valid_pos_translator << u.second.stock_value_;
-                valid_pos = valid_pos_translator.str();
+                valid_pos = u.second.valid_pos_ ? "True" : "False";
                 smashed_unit_valid_positions += valid_pos + ", ";
 
                 smashed_unit_phase += u.second.phase_ + ", ";
@@ -348,8 +347,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 smashed_dead_unit_stock_value += dead_stock_value + ", "; // might not be relevant.
 
                 std::stringstream dead_valid_pos_translator;
-                dead_valid_pos_translator << u.second.stock_value_;
-                dead_valid_pos = dead_valid_pos_translator.str();
+                dead_valid_pos = u.second.valid_pos_ ? "True" : "False";
                 smashed_dead_unit_valid_positions += dead_valid_pos + ", "; // might not be relevant.
 
             }
