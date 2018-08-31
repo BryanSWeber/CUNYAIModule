@@ -66,9 +66,8 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     }
 
     //Avoidance vector:
-    int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
-    int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x ), (int)(pos.y + avoidance_vector_y ) };
+    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_;
+    Position avoidance_pos = pos + avoidance_vector;
 
     //Which way should we avoid objects?
     if (healthy && ready_to_fight && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_air_);
@@ -76,11 +75,11 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     else setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_home_);
 
     //Move to the final position.
-    int vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
-    int vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-    Position brownian_pos = { (int)(pos.x + vector_x ), (int)(pos.y + vector_y ) };
+    Position vector_avoided = avoidance_vector + retreat_vector_;
+    //Make sure the end destination is one suitable for you.
+    Position final_pos = pos + avoidance_vector; //attract is zero when it's not set.
     
-    if (brownian_pos != pos) {
+    if (final_pos != pos) {
 
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
@@ -90,23 +89,29 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
             return;
         }
 
-        unit->move(brownian_pos);
+        unit->move(final_pos);
+        Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
+        Position last_out2 = Positions::Origin;
 
-        Position retreat_pos = Position(retreat_dx_, retreat_dy_);
-        Position attune_pos = Position(attune_dx_, attune_dy_);
-        Position centralize_pos = Position(centralization_dx_, centralization_dy_);
-        Position cohesion_pos = Position(cohesion_dx_, cohesion_dy_);
-        Position attract_pos = Position(attract_dx_, attract_dy_);
-        Position seperate_pos = Position(seperation_dx_, seperation_dy_);
-        Position walkablity_pos = Position(walkability_dx_, walkability_dy_);
+        //#include <iostream>
+        //using namespace std;
+        //int sample_fun(int X, int Y) { return X + Y; };
+        //int main()
+        //{
+        //    cout << "Hello World";
+        //    int Z = 4;
+        //    int out = sample_fun(Z, Z += 1);
+        //    cout << " We got:";
+        //    cout << out;
+        //}
 
-        CUNYAIModule::Diagnostic_Line(pos, pos + retreat_pos, inv.screen_position_, Colors::White);//Run directly away
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos, pos + retreat_pos + attune_pos, inv.screen_position_, Colors::Red);//Alignment
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos, pos + retreat_pos + attune_pos + centralize_pos, inv.screen_position_, Colors::Blue); // Centraliziation.
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, inv.screen_position_, Colors::Purple); // Cohesion
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos - walkablity_pos, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+        CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_ - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
     }
 
 
@@ -233,7 +238,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     if(!attack_order_issued) Mobility_Movement(unit, ui, ei, inv);
 }
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Inventory &inventory, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Inventory &inv, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -253,35 +258,32 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
-        if (e_unit.is_flying_) setRepulsion(unit, pos, inventory, inventory.map_out_from_enemy_air_, inventory.enemy_base_air_);
-        else setRepulsion(unit, pos, inventory, inventory.map_out_from_enemy_ground_, inventory.enemy_base_ground_);
+        if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+        else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
     }
-    else {
-        setAttraction(unit, pos, inventory, inventory.map_out_from_safety_, inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
-    }
+
+    setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+
 
     //setAlignment( unit, ui );
     //setAlignment( unit, local_neighborhood);
     //setCohesion( unit, pos, local_neighborhood);
-    //setCentralize(pos, inventory); // causes problems with kiting.
+    //setCentralize(pos, inv); // causes problems with kiting.
     //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
     //Avoidance vector:
-    int avoidance_vector_x = x_stutter_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + attract_dx_ + centralization_dx_;
-    int avoidance_vector_y = y_stutter_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + attract_dy_ + centralization_dy_;
-    Position avoidance_pos = { (int)(pos.x + avoidance_vector_x), (int)(pos.y + avoidance_vector_y) };
-    setObjectAvoid(unit, pos, avoidance_pos, inventory, inventory.map_out_from_safety_);
+    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_;
+    Position avoidance_pos = pos + avoidance_vector;
+    setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_safety_);
 
     //final vector
-    int vector_x = x_stutter_ + attract_dx_ + cohesion_dx_ - seperation_dx_ + attune_dx_ - walkability_dx_ + centralization_dx_ + retreat_dx_;
-    int vector_y = y_stutter_ + attract_dy_ + cohesion_dy_ - seperation_dy_ + attune_dy_ - walkability_dy_ + centralization_dy_ + retreat_dy_;
-
+    Position vector_avoided = avoidance_vector + retreat_vector_;
     //Make sure the end destination is one suitable for you.
-    Position retreat_spot = { (int)(pos.x + vector_x), (int)(pos.y + vector_y) }; //attract is zero when it's not set.
+    Position retreat_spot = pos + avoidance_vector; //attract is zero when it's not set.
 
     bool clear_walkable = retreat_spot.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
+            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inv.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
@@ -297,21 +299,28 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         }
         else {
             unit->move(retreat_spot); //run away.
-            Position retreat_pos = Position(retreat_dx_, retreat_dy_);
-            Position attune_pos = Position(attune_dx_, attune_dy_);
-            Position centralize_pos = Position(centralization_dx_, centralization_dy_);
-            Position cohesion_pos = Position(cohesion_dx_, cohesion_dy_);
-            Position attract_pos = Position(attract_dx_, attract_dy_);
-            Position seperate_pos = Position(seperation_dx_, seperation_dy_);
-            Position walkablity_pos = Position(walkability_dx_, walkability_dy_);
+            Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
+            Position last_out2 = Positions::Origin;
 
-            CUNYAIModule::Diagnostic_Line(pos, pos+retreat_pos, inventory.screen_position_, Colors::White);//Run directly away
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos, pos + retreat_pos + attune_pos, inventory.screen_position_, Colors::Red);//Alignment
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos, pos + retreat_pos + attune_pos + centralize_pos, inventory.screen_position_, Colors::Blue); // Centraliziation.
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, inventory.screen_position_, Colors::Purple); // Cohesion
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-            CUNYAIModule::Diagnostic_Line(pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos, pos + retreat_pos + attune_pos + centralize_pos + cohesion_pos + attract_pos - seperate_pos - walkablity_pos, inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+            //#include <iostream>
+            //using namespace std;
+            //int sample_fun(int X, int Y) { return X + Y; };
+            //int main()
+            //{
+            //    cout << "Hello World";
+            //    int Z = 4;
+            //    int out = sample_fun(Z, Z += 1);
+            //    cout << " We got:";
+            //    cout << out;
+            //}
+
+            CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
+            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
+            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_ - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
         changing_unit.updateStoredUnit(unit);
@@ -319,25 +328,26 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, passed_distance, inventory);
+        Tactical_Logic(unit, e_squad, u_squad, passed_distance, inv);
     }
 
 }
 
 
 //Brownian Stuttering, causes unit to move about randomly.
-void Mobility::setStutter(const Unit &unit, const double &n) {
+Position Mobility::setStutter(const Unit &unit, const double &n) {
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(-1, 1);
 
-    x_stutter_ = n * dis(gen) * 32;
-    y_stutter_ = n * dis(gen) * 32; // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
+    // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
+
+    return stutter_vector_ = Position(n * dis(gen) * 32, n * dis(gen) * 32);
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
-void Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
+Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
     int temp_tot_x = 0;
     int temp_tot_y = 0;
     int speed = CUNYAIModule::getProperSpeed(unit->getType());
@@ -354,22 +364,19 @@ void Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
         //double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
 
         if (flock_count > 1) {
-            attune_dx_ = ((temp_tot_x - unit->getVelocityX()) / (flock_count - 1)) + unit->getVelocityX();
-            attune_dy_ = ((temp_tot_y - unit->getVelocityY()) / (flock_count - 1)) + unit->getVelocityY(); // think the velocity is per frame, I'd prefer it per second so its scale is 
+            return attune_vector_ =  Position( ((temp_tot_x - unit->getVelocityX()) / (flock_count - 1)) + unit->getVelocityX(), ((temp_tot_y - unit->getVelocityY()) / (flock_count - 1)) + unit->getVelocityY() ); // the velocity is per frame, I'd prefer it per second so its scale is 
         }
         else {
-            attune_dx_ = cos(unit->getAngle()) * speed * 6;
-            attune_dy_ = sin(unit->getAngle()) * speed * 6;
+            return attune_vector_ = Position(cos(unit->getAngle()) * speed * 6, sin(unit->getAngle()) * speed * 6);
         }
     }
 }
 
-void Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, const UnitType &type) {
+Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, const UnitType &type) {
     int dist_x = e_pos.x - pos.x;
     int dist_y = e_pos.y - pos.y;
     double theta = atan2(dist_y, dist_x); // att_y/att_x = tan (theta).
-    retreat_dx_ = -cos(theta) * CUNYAIModule::getProperSpeed(type) * 4;
-    retreat_dy_ = -sin(theta) * CUNYAIModule::getProperSpeed(type) * 4; // get slightly away from opponent.
+    return retreat_vector_ = Position ( -cos(theta) * distance_metric * 4, -sin(theta) * distance_metric * 4); // get slightly away from opponent.
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
@@ -404,71 +411,74 @@ void Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, cons
 //}
 
 //Cohesion, all units tend to prefer to be together.
-void Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
 
     const Position loc_center = ui.getMeanArmyLocation();
     if (loc_center != Positions::Origin) {
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        cohesion_dx_ = cos(theta) * 0.25 * distance_metric;
-        cohesion_dy_ = sin(theta) * 0.25 * distance_metric;
+        return cohesion_vector_ = Position( cos(theta) * 0.25 * distance_metric, sin(theta) * 0.25 * distance_metric );
     }
 }
 
-void Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
+Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
     if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
         Position possible_base = inv.start_positions_[0];
         int dist = unit->getDistance(possible_base);
         int dist_x = possible_base.x - pos.x;
         int dist_y = possible_base.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_dx_ = cos(theta) * dist; // run 100% towards them.
-        attract_dy_ = sin(theta) * dist;
-        cohesion_dx_ = seperation_dx_ = attune_dx_ = walkability_dx_ = centralization_dx_ = cohesion_dy_ = seperation_dy_ = attune_dy_ = walkability_dy_ = centralization_dy_ = 0;
+
+        Position stutter_vector_ = Positions::Origin;
+        Position attune_vector_ = Positions::Origin;
+        Position cohesion_vector_ = Positions::Origin;
+        Position centralization_vector_ = Positions::Origin;
+        Position seperation_vector_ = Positions::Origin;
+        //Position attract_vector_ = Positions::Origin;
+        Position retreat_vector_ = Positions::Origin;
+        Position walkability_vector_ = Positions::Origin;
+
         std::rotate(inv.start_positions_.begin(), inv.start_positions_.begin() + 1, inv.start_positions_.end());
+
+        return attract_vector_ = Position(cos(theta) * dist, sin(theta) * dist); // run 100% towards them.
     }
 }
 
 
 //Attraction, pull towards map center.
-void Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
-
+Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
         if (map.empty() || unit->isFlying()) {
             int dist_x = map_center.x - pos.x;
             int dist_y = map_center.y - pos.y;
             double theta = atan2(dist_y, dist_x);
-            attract_dx_ = cos(theta) * distance_metric; // run to (map)!
-            attract_dy_ = sin(theta) * distance_metric;
+            return attract_vector_ = Position( cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
         }
         else {
             WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-            vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-            attract_dx_ = direction[0] * distance_metric;
-            attract_dy_ = direction[1] * distance_metric;
+            Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+            return attract_vector_ = Position( direction.x * distance_metric, direction.y * distance_metric); // could overload the multiplication operator for vector multiplication.
         }
 }
 
 //Repulsion, pull away from map center. Literally just a negative of the previous.
-void Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
 
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_dx_ = -cos(theta) * distance_metric; // run to (map)!
-        attract_dy_ = -sin(theta) * distance_metric;
+        return attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
     }
     else {
         WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-        vector<double> direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-        attract_dx_ = -direction[0] * distance_metric;
-        attract_dy_ = -direction[1] * distance_metric;
+        Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+        return attract_vector_ = Position(-direction.x * distance_metric, -direction.y * distance_metric); // could overload the multiplication operator for vector multiplication.
     }
 }
 
 //Seperation from nearby units, search very local neighborhood of usually about 1-2 tiles.
-void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
@@ -492,13 +502,12 @@ void Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_I
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_dx_ += cos(theta) * distance_metric * 0.75; // run away from everyone. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ += sin(theta) * distance_metric * 0.75;
+        return seperation_vector_ += Position( cos(theta) * distance_metric * 0.75, sin(theta) * distance_metric * 0.75); // run away from everyone. Should help avoid being stuck in those wonky spots.
     }
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
-void Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
     int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
@@ -519,12 +528,11 @@ void Mobility::setSeperationScout(const Unit &unit, const Position &pos, const U
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_dx_ = cos(theta) * distance * 2; // run 2 tiles away from everyone. Should help avoid being stuck in those wonky spots.
-        seperation_dy_ = sin(theta) * distance * 2;
+        return seperation_vector_ = Position(cos(theta) * distance * 2, sin(theta) * distance * 2); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
     }
 }
 
-void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
+Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
         double temp_walkability_dx_ = 0;
         double temp_walkability_dy_ = 0;
         double theta = 0;
@@ -573,9 +581,7 @@ void Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, con
 
                     double theta = atan2(future_pos.x, future_pos.y);
                     //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                    walkability_dx_ += cos(theta) * vector_push_x * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/;
-                    walkability_dy_ += sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/;
-                    return;
+                    return walkability_vector_ += Position(cos(theta) * vector_push_x * 4 , sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
                 }
             }
         }
@@ -608,8 +614,8 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
     return false;
 }
 
-vector<double> Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
-    vector<double> return_vector = { 0, 0 };
+Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
+    Position return_vector = Positions::Origin;
     int my_spot = inv.getMapValue(pos, map);
     double temp_x = 0;
     double temp_y = 0;
@@ -644,9 +650,7 @@ vector<double> Mobility::getVectorTowardsMap(const Position &pos, const Inventor
 
     if (temp_y != 0 || temp_x != 0) {
         theta = atan2(temp_y + adj_y, temp_x + adj_x);
-        return_vector[0] = cos(theta);
-        return_vector[1] = sin(theta);
+        return_vector = Position(cos(theta), sin(theta));
     }
-
     return  return_vector;
 }
