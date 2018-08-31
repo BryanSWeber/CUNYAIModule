@@ -30,7 +30,7 @@ Player_Model CUNYAIModule::neutral_player_model;
 Resource_Inventory CUNYAIModule::land_inventory;
 //Research_Inventory CUNYAIModule::research_inventory;
 Inventory CUNYAIModule::inventory;
-FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::fap;
+FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap;
 FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
 
 bool CUNYAIModule::army_starved;
@@ -210,20 +210,22 @@ void CUNYAIModule::onFrame()
     friendly_player_model.units_.drawAllWorkerTasks(inventory, land_inventory);
 
     // Update FAPS with units.
-    fap.clear();
+    MCfap.clear();
     buildfap.clear();
-    enemy_player_model.units_.addToEnemyFAP(fap, enemy_player_model.researches_);
-    enemy_player_model.units_.addToEnemyBuildFAP(buildfap, enemy_player_model.researches_);
-    friendly_player_model.units_.addToFriendlyFAP(fap, friendly_player_model.researches_);
-    friendly_player_model.units_.addToFriendlyBuildFAP(buildfap, friendly_player_model.researches_);
+
+    enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
+    enemy_player_model.units_.addToBuildFAP(buildfap, false, enemy_player_model.researches_);
+
+    friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
+    friendly_player_model.units_.addToBuildFAP(buildfap, true, friendly_player_model.researches_);
     //friendly_player_model.units_.drawAllMAFAPaverages(inventory);
 
     // Let us estimate FAP values.
-    fap.simulate(); // 96 frames of simulation for us.
-    int friendly_fap_score = getFAPScore(fap, true);
-    int enemy_fap_score = getFAPScore(fap, false);
-    friendly_player_model.units_.pullFromFAP(*fap.getState().first);
-    enemy_player_model.units_.pullFromFAP(*fap.getState().second);
+    MCfap.simulate(); // 96 frames of simulation for us.
+    int friendly_fap_score = getFAPScore(MCfap, true);
+    int enemy_fap_score = getFAPScore(MCfap, false);
+    friendly_player_model.units_.pullFromFAP(*MCfap.getState().first);
+    enemy_player_model.units_.pullFromFAP(*MCfap.getState().second);
 
     writePlayerModel(friendly_player_model, "friendly");
     writePlayerModel(enemy_player_model, "enemy");

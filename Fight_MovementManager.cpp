@@ -29,39 +29,40 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Positions::Origin;
 
-    if (u_type != UnitTypes::Zerg_Overlord) {
+    if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
+
+        if (!ready_to_fight) { // Otherwise, return to safety.
+            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
+        }
+        else {
+            if (e_neighborhood.stock_shoots_up_ == 0) {
+                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            }
+            else {
+                setSeperationScout(unit, pos, e_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            }
+        }
+
+    }
+    else { 
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && ready_to_fight ) {
-            if(u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+        if (healthy && ready_to_fight) {
+            if (u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
             else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
         }
         else { // Otherwise, return to home.
             setAttraction(unit, pos, inv, inv.map_out_from_home_, inv.home_base_);
         }
-        
+
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
         }
 
-        int average_side = ui.unit_inventory_.find(unit)->second.circumference_/4;
+        int average_side = ui.unit_inventory_.find(unit)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
-        if(u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
+        if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
         setCohesion(unit, pos, local_neighborhood);
 
-    }
-    else { //If you are an overlord, follow an abbreviated version of this.
-
-        if (!ready_to_fight) { // Otherwise, return to safety.
-            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); 
-        }
-        else {
-            if (e_neighborhood.stock_shoots_up_ == 0) {
-                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
-            } 
-            else {
-                setSeperationScout(unit, pos, e_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
-            }
-        }
 
     }
 
@@ -75,9 +76,9 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     else setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_home_);
 
     //Move to the final position.
-    Position vector_avoided = avoidance_vector + retreat_vector_;
+    Position final_vector = avoidance_vector - walkability_vector_;
     //Make sure the end destination is one suitable for you.
-    Position final_pos = pos + avoidance_vector; //attract is zero when it's not set.
+    Position final_pos = pos + final_vector; //attract is zero when it's not set.
     
     if (final_pos != pos) {
 
@@ -105,13 +106,14 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         //    cout << out;
         //}
 
+
         CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_ - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
     }
 
 
@@ -146,15 +148,14 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim);
-            if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround) { // if we can fight this enemy 
+            if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
                 int dist_to_enemy = unit->getDistance(e->second.pos_);
 
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
-                    (e_type.isDetector() && ui.cloaker_count_ > ei.detector_count_) ||
+                    (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
                     e_type == UnitTypes::Protoss_Carrier ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
-                    //(e->second.current_hp_ < 0.25 * e_type.maxHitPoints() && CUNYAIModule::Can_Fight( e->second, unit )) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
                 bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
@@ -261,25 +262,20 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
         else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
     }
+    else {
+        setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+    }
 
-    setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
-
-
-    //setAlignment( unit, ui );
-    //setAlignment( unit, local_neighborhood);
-    //setCohesion( unit, pos, local_neighborhood);
-    //setCentralize(pos, inv); // causes problems with kiting.
-    //setDirectRetreat(pos, e_unit.pos_, unit->getType());//might need this to solve scourge problem?
 
     //Avoidance vector:
-    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_;
+    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_ + retreat_vector_;
     Position avoidance_pos = pos + avoidance_vector;
     setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_safety_);
 
     //final vector
-    Position vector_avoided = avoidance_vector + retreat_vector_;
+    Position final_vector = avoidance_vector - walkability_vector_;
     //Make sure the end destination is one suitable for you.
-    Position retreat_spot = pos + avoidance_vector; //attract is zero when it's not set.
+    Position retreat_spot = pos + final_vector; //attract is zero when it's not set.
 
     bool clear_walkable = retreat_spot.isValid() &&
         (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
@@ -315,12 +311,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             //}
 
             CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
-            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
-            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = pos + retreat_vector_ + attune_vector_ + centralization_vector_ + cohesion_vector_ + attract_vector_ - seperation_vector_ - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
+            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
+            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
         changing_unit.updateStoredUnit(unit);
@@ -482,7 +478,7 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
-        if (unit != u.first) {
+        if (unit != u.first && (u.second.is_flying_ == unit->isFlying()) ) { // only seperate if the unit is on the same plane.
             seperation_x += u.second.pos_.x - pos.x;
             seperation_y += u.second.pos_.y - pos.y;
         }

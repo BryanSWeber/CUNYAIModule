@@ -151,13 +151,12 @@ struct Unit_Inventory {
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
-    void addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds entire inventory to the friendly side of the FAP army.
-    void addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds entire inventory to the enemy side of the FAP army.
 
-    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
-    void addToFriendlyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds to the building combat simulator, friendly side.
-    void addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri); // adds to the building  combat simulator, enemy sdie.
-    static Position positionBuildFap(bool friendly);
+
+    void addToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
+    void addToMCFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
+    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri);// adds to the building combat simulator, friendly side.
+
 
     void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
@@ -180,5 +179,8 @@ struct Unit_Inventory {
     Unit_Inventory(Unit_Inventory const &) = default;
 
 };
+
+Position positionMCFAP(const Stored_Unit & su);
+Position positionBuildFap(bool friendly);
 
 

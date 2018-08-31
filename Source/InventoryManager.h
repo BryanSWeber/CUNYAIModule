@@ -43,6 +43,8 @@ struct Inventory {
     int map_x;
     int map_y;
 
+    int closest_unit_radial_distance_ = INT_MAX;
+
     vector<Position> start_positions_;
     vector<TilePosition> expo_positions_;
     vector<TilePosition> expo_positions_complete_;

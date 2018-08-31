@@ -67,7 +67,7 @@ public:
     static Player_Model neutral_player_model;
 	static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
-    static FAP::FastAPproximation<Stored_Unit*> fap; // integrating FAP into combat.
+    static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
 
     Building_Gene buildorder; //

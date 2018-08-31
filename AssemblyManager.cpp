@@ -461,18 +461,6 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         u_loc = getUnitInventoryInRadius(u_inv, drone->getPosition(), inv.my_portion_of_the_map_);
     }
 
-
-    //int invest_in_lurkers = Stock_Units(UnitTypes::Zerg_Spawning_Pool, u_inv) +
-    //    Stock_Units(UnitTypes::Zerg_Hydralisk_Den, u_inv) +
-    //    Stock_Buildings(UnitTypes::Zerg_Lair, u_inv) +
-    //    Stock_Buildings(UnitTypes::Zerg_Hive, u_inv) +
-    //    Stock_Tech(TechTypes::Lurker_Aspect);
-
-    //int invest_in_mutas = Stock_Units(UnitTypes::Zerg_Spawning_Pool, u_inv) +
-    //    Stock_Units(UnitTypes::Zerg_Spire, u_inv) +
-    //    Stock_Buildings(UnitTypes::Zerg_Lair, u_inv) +
-    //    Stock_Buildings(UnitTypes::Zerg_Hive, u_inv);
-
     //Macro-related Buildings.
     if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
@@ -733,7 +721,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
     auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
-    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
@@ -743,7 +731,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             Unit_Inventory friendly_units_under_consideration; // new every time.
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-            friendly_units_under_consideration.addToBuildFAP(buildfap_temp, comparision_spot, true, ri);
+            friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
             buildfap_temp.simulate(); // a deep but limited simulation for us.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());

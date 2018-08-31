@@ -829,51 +829,27 @@ bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) 
     return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
 }
 
-void Unit_Inventory::addToFriendlyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri) {
-    for (auto &u : unit_inventory_) {
-        fap_object.addUnitPlayer1(u.second.convertToFAP(ri));
-    }
-}
 
-void Unit_Inventory::addToEnemyFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri) {
-    for (auto &u : unit_inventory_) {
-        fap_object.addUnitPlayer2(u.second.convertToFAP(ri));
-    }
-}
-
-void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         if (CUNYAIModule::IsFightingUnit(u.second) &&  friendly) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         if (CUNYAIModule::IsFightingUnit(u.second) && !friendly) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
-Position Unit_Inventory::positionBuildFap(bool friendly) {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    int half_map = CUNYAIModule::inventory.my_portion_of_the_map_ / 2;
-    std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
-    int rand_x = dis(generator);
-    int rand_y = dis(generator);
-    return Position(rand_x, rand_y);
-}
-
-void Unit_Inventory::addToFriendlyBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri) {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(0, CUNYAIModule::inventory.my_portion_of_the_map_/2);    // default values for output.
+void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
-        int rand_x = dis(generator);
-        int rand_y = dis(generator);
-        if(CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(Position(rand_x, rand_y), ri));
+        Position pos = positionMCFAP(u.second);
+        if (CUNYAIModule::IsFightingUnit(u.second) && friendly) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        if (CUNYAIModule::IsFightingUnit(u.second) && !friendly) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
-void Unit_Inventory::addToEnemyBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Research_Inventory &ri) {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(CUNYAIModule::inventory.my_portion_of_the_map_/2, CUNYAIModule::inventory.my_portion_of_the_map_);    // default values for output.
+
+void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
-        int rand_x = dis(generator);
-        int rand_y = dis(generator);
-        if (CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(Position(rand_x, rand_y), ri ));
+        Position pos = positionBuildFap(friendly);
+        if(CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
@@ -907,4 +883,21 @@ Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
     auto& find_result = unit_inventory_.find(unit);
     if (find_result != unit_inventory_.end()) return find_result->second;
     else return nullptr;
+}
+
+Position positionBuildFap(bool friendly) {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    int half_map = CUNYAIModule::inventory.my_portion_of_the_map_ / 2;
+    std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
+    int rand_x = dis(generator);
+    int rand_y = dis(generator);
+    return Position(rand_x, rand_y);
+}
+
+Position positionMCFAP(const Stored_Unit & su) {
+    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
+    std::uniform_int_distribution<int> dis(-CUNYAIModule::getProperSpeed(su.type_) * 0, CUNYAIModule::getProperSpeed(su.type_) * 0);     // default values for output.
+    int rand_x = dis(generator);
+    int rand_y = dis(generator);
+    return Position(rand_x, rand_y) + su.pos_;
 }
