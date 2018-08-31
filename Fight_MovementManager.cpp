@@ -101,7 +101,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         //    cout << "Hello World";
         //    int Z = 4;
         //    int out = sample_fun(Z, Z += 1);
-        //    cout << " We got:";
+        //    cout << " We got:"; // 10. So it redefines first.
         //    cout << out;
         //}
 
@@ -310,7 +310,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             //    cout << "Hello World";
             //    int Z = 4;
             //    int out = sample_fun(Z, Z += 1);
-            //    cout << " We got:";
+            //    cout << " We got:"; // 10. So it redefines first.
             //    cout << out;
             //}
 
