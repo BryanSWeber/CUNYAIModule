@@ -12,7 +12,7 @@ struct Player_Model {
     Player_Model() {}; // need a constructor method.
 
     Player bwapi_player_; // this is a pointer, explicitly.
-    int estimated_workers_ = 0;
+    double estimated_workers_ = 0;
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;

@@ -668,7 +668,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
     for (int x = -3; x <= 3; ++x) {
         for (int y = -3; y <= 3; ++y) {
-            if (x != 3 && y != 3 && x != -3 && y != -3) continue;
+            if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for?
             double centralize_x = WalkPosition(pos).x + x;
             double centralize_y = WalkPosition(pos).y + y;
             if (!(x == 0 && y == 0) &&
@@ -696,3 +696,41 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv
     }
     return  return_vector;
 }
+
+//Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
+//    Position return_vector = Positions::Origin;
+//    int my_spot = inv.getMapValue(pos, map);
+//    int temp_x = 0;
+//    int temp_y = 0;
+//    int current_best = INT_MAX;
+//    double theta = 0;
+//    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+//    for (int x = -12; x <= 12; ++x) {
+//        for (int y = -12; y <= 12; ++y) {
+//            double centralize_x = WalkPosition(pos).x + x;
+//            double centralize_y = WalkPosition(pos).y + y;
+//            if (!(x == 0 && y == 0) &&
+//                centralize_x < map_dim.x &&
+//                centralize_y < map_dim.y &&
+//                centralize_x > 0 &&
+//                centralize_y > 0 &&
+//                centralize_y > 0) // Is the spot acceptable?
+//            {
+//                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
+//                    map[centralize_x][centralize_y] < current_best) // go directly to the best destination
+//                {
+//                    theta = atan2(y, x);
+//                    temp_x = cos(theta);
+//                    temp_y = sin(theta);
+//                    current_best = map[centralize_x][centralize_y];
+//                }
+//            }
+//        }
+//    }
+//
+//    if (temp_y != 0 || temp_x != 0) {
+//        theta = atan2(temp_y, temp_x);
+//        return_vector = Position(cos(theta), sin(theta));
+//    }
+//    return  return_vector;
+//}

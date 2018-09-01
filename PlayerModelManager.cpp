@@ -77,8 +77,8 @@ void Player_Model::evaluateWorkerCount() {
     else {
         //inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
         estimated_workers_ += max(units_.resource_depot_count_, 1) * 1 / (double)(UnitTypes::Zerg_Drone.buildTime());
-        estimated_workers_ = min(estimated_workers_, 85); // there exists a maximum reasonable number of workers.
+        estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
     }
-    int est_worker_count = min(max(units_.worker_count_, estimated_workers_), 85);
+    int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
 
 }
