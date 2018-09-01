@@ -447,37 +447,40 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Invento
 
 //Attraction, pull towards map center.
 Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
-        if (map.empty() || unit->isFlying()) {
-            int dist_x = map_center.x - pos.x;
-            int dist_y = map_center.y - pos.y;
-            double theta = atan2(dist_y, dist_x);
-            return attract_vector_ = Position( cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
-        }
-        else {
-            Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-            return attract_vector_ = Position( direction.x * distance_metric, direction.y * distance_metric); // move downhill
-        }
-}
-
-//Repulsion, pull away from map center. Literally just a negative of the previous.
-Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
-
+    attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        return attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
+        attract_vector_ = Position(cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
+    }
+    else {
+        attract_vector_ = getVectorTowardsMap(unit->getPosition(), inv, map); // move downhill (vector times scalar)
+    }
+    return attract_vector_;
+}
+
+//Repulsion, pull away from map center. Literally just a negative of the previous.
+Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+    attract_vector_ = Positions::Origin;
+    if (map.empty() || unit->isFlying()) {
+        int dist_x = map_center.x - pos.x;
+        int dist_y = map_center.y - pos.y;
+        double theta = atan2(dist_y, dist_x);
+        attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
     }
     else {
         Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-        return attract_vector_ = Position(-direction.x * distance_metric, -direction.y * distance_metric); // move uphill.  Don't use.
+        attract_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use. 
     }
+    return attract_vector_;
 }
 
 //Seperation from nearby units, search very local neighborhood.
 Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     int seperation_x = 0;
     int seperation_y = 0;
+    seperation_vector_ = Positions::Origin;
     for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
         if (unit != u.first && (unit->isFlying() == u.second.is_flying_) ) { // only seperate if the unit is on the same plane.
             seperation_x += u.second.pos_.x - pos.x;
@@ -487,8 +490,9 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        return seperation_vector_ = Position( cos(theta) * distance_metric * 0.75, sin(theta) * distance_metric * 0.75); // run away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_vector_ = Position( cos(theta) * distance_metric * 0.75, sin(theta) * distance_metric * 0.75); // run away from everyone. Should help avoid being stuck in those wonky spots.
     }
+    return seperation_vector_;
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
@@ -515,6 +519,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
         double theta = atan2(seperation_y, seperation_x);
         return seperation_vector_ = Position(cos(theta) * distance * 2, sin(theta) * distance * 2); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
     }
+    return seperation_vector_ = Positions::Origin;
 }
 
 //Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
@@ -584,13 +589,14 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
     bool unwalkable_tiles = false;
     pair<int, int> temp_int = { 0,0 };
     vector<WalkPosition> unwalkable_minitiles;
+    Position obstacle_found_near_this_position = Positions::Origin;
     int obstacle_x = 0;
     int obstacle_y = 0;
 
     if (!unit->isFlying()) {
         for (auto considered_pos : trial_positions) {
-            for (int x = -12; x <= 12; ++x) {
-                for (int y = -12; y <= 12; ++y) {
+            for (int x = -8; x <= 8; ++x) {
+                for (int y = -8; y <= 8; ++y) {
                     double centralize_x = WalkPosition(considered_pos).x + x;
                     double centralize_y = WalkPosition(considered_pos).y + y;
                     if (!(x == 0 && y == 0) &&
@@ -610,25 +616,29 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                 }
             }
             if (unwalkable_tiles) {
-                if (unwalkable_minitiles.size() > 0) {
-                    for (auto i : unwalkable_minitiles) {
-                        obstacle_x += i.x;
-                        obstacle_y += i.y;
-                    }
-                    obstacle_x /= unwalkable_minitiles.size();
-                    obstacle_y /= unwalkable_minitiles.size();
+                obstacle_found_near_this_position = considered_pos;
+                break;
+            }
+        }
 
-                    double vector_push_x = obstacle_x - WalkPosition(considered_pos).x;
-                    double vector_push_y = obstacle_y - WalkPosition(considered_pos).y;
-
-                    double theta = atan2(future_pos.x, future_pos.y);
-                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                    return walkability_vector_ = Position(cos(theta) * vector_push_x * 4, sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+        if (unwalkable_tiles) {
+            if (unwalkable_minitiles.size() > 0) {
+                for (auto i : unwalkable_minitiles) {
+                    obstacle_x += i.x;
+                    obstacle_y += i.y;
                 }
+                obstacle_x /= unwalkable_minitiles.size();
+                obstacle_y /= unwalkable_minitiles.size();
+
+                double vector_push_x = obstacle_x - WalkPosition(obstacle_found_near_this_position).x;
+                double vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
+
+                //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
+                return walkability_vector_ = Position(vector_push_x * 4, vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
             }
         }
     }
-
+    return walkability_vector_ = Positions::Origin;
 }
 
 // returns TRUE if the lurker needed fixing. For Attack.
@@ -656,57 +666,19 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
     return false;
 }
 
-Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
-    Position return_vector = Positions::Origin;
-    int my_spot = inv.getMapValue(pos, map);
-    double temp_x = 0;
-    double temp_y = 0;
-    double adj_x = 0;
-    double adj_y = 0;
-
-    double theta = 0;
-    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int x = -3; x <= 3; ++x) {
-        for (int y = -3; y <= 3; ++y) {
-            if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for?
-            double centralize_x = WalkPosition(pos).x + x;
-            double centralize_y = WalkPosition(pos).y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < map_dim.x &&
-                centralize_y < map_dim.y &&
-                centralize_x > 0 &&
-                centralize_y > 0 &&
-                centralize_y > 0) // Is the spot acceptable?
-            {
-                theta = atan2(y, x);
-
-                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-                    map[centralize_x][centralize_y] < my_spot) // go directly to my base.
-                {
-                    temp_x += cos(theta);
-                    temp_y += sin(theta);
-                }
-            }
-        }
-    }
-
-    if (temp_y != 0 || temp_x != 0) {
-        theta = atan2(temp_y + adj_y, temp_x + adj_x);
-        return_vector = Position(cos(theta), sin(theta));
-    }
-    return  return_vector;
-}
-
 //Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
 //    Position return_vector = Positions::Origin;
 //    int my_spot = inv.getMapValue(pos, map);
-//    int temp_x = 0;
-//    int temp_y = 0;
-//    int current_best = INT_MAX;
+//    double temp_x = 0;
+//    double temp_y = 0;
+//    double adj_x = 0;
+//    double adj_y = 0;
+//
 //    double theta = 0;
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-//    for (int x = -12; x <= 12; ++x) {
-//        for (int y = -12; y <= 12; ++y) {
+//    for (int x = -3; x <= 3; ++x) {
+//        for (int y = -3; y <= 3; ++y) {
+//            if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations.
 //            double centralize_x = WalkPosition(pos).x + x;
 //            double centralize_y = WalkPosition(pos).y + y;
 //            if (!(x == 0 && y == 0) &&
@@ -716,21 +688,59 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv
 //                centralize_y > 0 &&
 //                centralize_y > 0) // Is the spot acceptable?
 //            {
+//                theta = atan2(y, x);
+//
 //                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
-//                    map[centralize_x][centralize_y] < current_best) // go directly to the best destination
+//                    map[centralize_x][centralize_y] < my_spot) // go directly to my base.
 //                {
-//                    theta = atan2(y, x);
-//                    temp_x = cos(theta);
-//                    temp_y = sin(theta);
-//                    current_best = map[centralize_x][centralize_y];
+//                    temp_x += cos(theta);
+//                    temp_y += sin(theta);
 //                }
 //            }
 //        }
 //    }
 //
 //    if (temp_y != 0 || temp_x != 0) {
-//        theta = atan2(temp_y, temp_x);
+//        theta = atan2(temp_y + adj_y, temp_x + adj_x);
 //        return_vector = Position(cos(theta), sin(theta));
 //    }
 //    return  return_vector;
 //}
+
+Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
+    Position return_vector = Positions::Origin;
+    int my_spot = inv.getMapValue(pos, map);
+    int temp_x = 0;
+    int temp_y = 0;
+    int current_best = INT_MAX;
+    double theta = 0;
+    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+    for (int x = -3; x <= 3; ++x) {
+        for (int y = -3; y <= 3; ++y) {
+            if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations.
+            double centralize_x = WalkPosition(pos).x + x;
+            double centralize_y = WalkPosition(pos).y + y;
+            if (!(x == 0 && y == 0) &&
+                centralize_x < map_dim.x &&
+                centralize_y < map_dim.y &&
+                centralize_x > 0 &&
+                centralize_y > 0 &&
+                centralize_y > 0) // Is the spot acceptable?
+            {
+                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
+                    map[centralize_x][centralize_y] < current_best) // go directly to the best destination
+                {
+                    temp_x = x;
+                    temp_y = y;
+                    current_best = map[centralize_x][centralize_y];
+                }
+            }
+        }
+    }
+
+    if (temp_y != 0 || temp_x != 0) {
+        theta = atan2(temp_y, temp_x);
+        return_vector = Position(cos(theta) * distance_metric, sin(theta) * distance_metric); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+    }
+    return  return_vector;
+}

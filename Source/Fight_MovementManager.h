@@ -44,7 +44,7 @@ public:
     Position setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map);
     bool adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
-    // gives a vector that has the direction towards center on (map).
+    // gives a vector that has the direction towards center on (map). Must return a PAIR since it returns a unit vector.
     Position getVectorTowardsMap(const Position & pos, const Inventory & inv, const vector<vector<int>>& map) const;
 
 
