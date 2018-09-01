@@ -19,8 +19,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     //double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
-    Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
-
+    bool pathing_confidently = false;
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
@@ -35,11 +34,15 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
             setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
         }
         else {
-            if (e_neighborhood.stock_shoots_up_ == 0) {
-                setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+            e_neighborhood.updateUnitInventorySummary();
+
+            if (e_neighborhood.stock_shoots_up_ > 0) {
+                setSeperationScout(unit, pos, e_neighborhood);
             }
             else {
-                setSeperationScout(unit, pos, e_neighborhood); //This is triggering too often and your army is scattering, not everything else. 
+                setSeperationScout(unit, pos, local_neighborhood);
+                pathing_confidently = true;
             }
         }
 
@@ -49,6 +52,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
         if (healthy && ready_to_fight) {
             if (u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
             else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
+            pathing_confidently = true;
         }
         else { // Otherwise, return to home.
             setAttraction(unit, pos, inv, inv.map_out_from_home_, inv.home_base_);
@@ -56,14 +60,13 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
             setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+            pathing_confidently = true;
         }
 
         int average_side = ui.unit_inventory_.find(unit)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
         if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
         setCohesion(unit, pos, local_neighborhood);
-
-
     }
 
     //Avoidance vector:
@@ -119,7 +122,7 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
 
     Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
-    changing_unit.phase_ = "Pathing";
+    changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
 };
 // This is basic combat logic for nonspellcasting units.
 void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Inventory &inv, const Color &color = Colors::White)
@@ -260,13 +263,13 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         setSeperation(unit, pos, e_squad); // might return false positives.
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
-        else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
+        //else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_); // leads to getting stuck.
+        else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
     }
     else {
         setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
-
-
+    
     //Avoidance vector:
     Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_ + retreat_vector_;
     Position avoidance_pos = pos + avoidance_vector;
@@ -451,9 +454,8 @@ Position Mobility::setAttraction(const Unit &unit, const Position &pos, const In
             return attract_vector_ = Position( cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
         }
         else {
-            WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
             Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-            return attract_vector_ = Position( direction.x * distance_metric, direction.y * distance_metric); // could overload the multiplication operator for vector multiplication.
+            return attract_vector_ = Position( direction.x * distance_metric, direction.y * distance_metric); // move downhill
         }
 }
 
@@ -467,38 +469,25 @@ Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inv
         return attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
     }
     else {
-        WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
         Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-        return attract_vector_ = Position(-direction.x * distance_metric, -direction.y * distance_metric); // could overload the multiplication operator for vector multiplication.
+        return attract_vector_ = Position(-direction.x * distance_metric, -direction.y * distance_metric); // move uphill.  Don't use.
     }
 }
 
-//Seperation from nearby units, search very local neighborhood of usually about 1-2 tiles.
+//Seperation from nearby units, search very local neighborhood.
 Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
-        if (unit != u.first && (u.second.is_flying_ == unit->isFlying()) ) { // only seperate if the unit is on the same plane.
+        if (unit != u.first && (unit->isFlying() == u.second.is_flying_) ) { // only seperate if the unit is on the same plane.
             seperation_x += u.second.pos_.x - pos.x;
             seperation_y += u.second.pos_.y - pos.y;
         }
     }
 
-    //int sgn_x = (seperation_x > 0) - (seperation_x < 0); //sign_x;
-    //int sgn_y = (seperation_y > 0) - (seperation_y < 0); //sign_y;
-
-   // seperation_x /= max((int) ui.unit_inventory_.size(), 1);
-   // seperation_y /= max((int) ui.unit_inventory_.size(), 1);
-   
-    //seperation_x = min(seperation_x, distance_metric / 4 );
-    //seperation_y = min(seperation_y, distance_metric / 4 );
-
-   //seperation_dx_ = seperation_x;
-   //seperation_dy_ = seperation_y;  // will be subtracted later because seperation is a repulsuion rather than a pull.
-
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        return seperation_vector_ += Position( cos(theta) * distance_metric * 0.75, sin(theta) * distance_metric * 0.75); // run away from everyone. Should help avoid being stuck in those wonky spots.
+        return seperation_vector_ = Position( cos(theta) * distance_metric * 0.75, sin(theta) * distance_metric * 0.75); // run away from everyone. Should help avoid being stuck in those wonky spots.
     }
 }
 
@@ -528,62 +517,119 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
     }
 }
 
+//Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
+//        double temp_walkability_dx_ = 0;
+//        double temp_walkability_dy_ = 0;
+//        double theta = 0;
+//        WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+//        //Position avoidance_pos = { 2 * future_pos.x - current_pos.x, 2 * future_pos.y - current_pos.y};
+//        vector<Position> trial_positions = { current_pos, future_pos };
+//
+//        bool unwalkable_tiles = false;
+//        pair<int, int> min_tile = { INT_MAX, 0 }; // Thie stile is the LEAST walkable.
+//        pair<int, int> max_tile = { INT_MIN, 0 }; //this tile is the MOST walkable.
+//        pair<int,int> temp_int = {0,0};
+//        vector<WalkPosition> min_max_minitiles = { WalkPosition(future_pos), WalkPosition(future_pos) };
+//
+//        if (!unit->isFlying()) {
+//            for (auto considered_pos : trial_positions) {
+//                for (int x = -8; x <= 8; ++x) {
+//                    for (int y = -8; y <= 8; ++y) {
+//                        double centralize_x = WalkPosition(considered_pos).x + x;
+//                        double centralize_y = WalkPosition(considered_pos).y + y;
+//                        if (!(x == 0 && y == 0) &&
+//                            centralize_x < map_dim.x &&
+//                            centralize_y < map_dim.y &&
+//                            centralize_x > 0 &&
+//                            centralize_y > 0 &&
+//                            centralize_y > 0) // Is the spot acceptable?
+//                        {
+//                            temp_int = { inventory.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
+//                            if (temp_int.first <= 1 && !unwalkable_tiles) // repulse from unwalkable.
+//                            {
+//                                unwalkable_tiles = true;
+//                            }
+//                            if (temp_int.first < min_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
+//                                min_tile = temp_int;
+//                                min_max_minitiles[0] = WalkPosition(centralize_x, centralize_y);
+//                            }
+//                            if (temp_int.first > max_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
+//                                max_tile = temp_int;
+//                                min_max_minitiles[1] = WalkPosition(centralize_x, centralize_y);
+//                            }
+//                        }
+//                    }
+//                }
+//                if (unwalkable_tiles) {
+//                    double vector_push_x = min_max_minitiles[0].x - min_max_minitiles[1].x;
+//                    double vector_push_y = min_max_minitiles[0].y - min_max_minitiles[1].y;
+//
+//                    double theta = atan2(future_pos.x, future_pos.y);
+//                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
+//                    return walkability_vector_ += Position(cos(theta) * vector_push_x * 4 , sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+//                }
+//            }
+//        }
+//
+//}
+
 Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
-        double temp_walkability_dx_ = 0;
-        double temp_walkability_dy_ = 0;
-        double theta = 0;
-        WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-        //Position avoidance_pos = { 2 * future_pos.x - current_pos.x, 2 * future_pos.y - current_pos.y};
-        vector<Position> trial_positions = { current_pos, future_pos };
+    double temp_walkability_dx_ = 0;
+    double temp_walkability_dy_ = 0;
+    double theta = 0;
+    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
 
-        bool unwalkable_tiles = false;
-        pair<int, int> min_tile = { INT_MAX, 0 }; // Thie stile is the LEAST walkable.
-        pair<int, int> max_tile = { INT_MIN, 0 }; //this tile is the MOST walkable.
-        pair<int,int> temp_int = {0,0};
-        vector<WalkPosition> min_max_minitiles = { WalkPosition(future_pos), WalkPosition(future_pos) };
+    vector<Position> trial_positions = { current_pos, future_pos };
 
-        if (!unit->isFlying()) {
-            for (auto considered_pos : trial_positions) {
-                for (int x = -8; x <= 8; ++x) {
-                    for (int y = -8; y <= 8; ++y) {
-                        double centralize_x = WalkPosition(considered_pos).x + x;
-                        double centralize_y = WalkPosition(considered_pos).y + y;
-                        if (!(x == 0 && y == 0) &&
-                            centralize_x < map_dim.x &&
-                            centralize_y < map_dim.y &&
-                            centralize_x > 0 &&
-                            centralize_y > 0 &&
-                            centralize_y > 0) // Is the spot acceptable?
+    bool unwalkable_tiles = false;
+    pair<int, int> temp_int = { 0,0 };
+    vector<WalkPosition> unwalkable_minitiles;
+    int obstacle_x = 0;
+    int obstacle_y = 0;
+
+    if (!unit->isFlying()) {
+        for (auto considered_pos : trial_positions) {
+            for (int x = -12; x <= 12; ++x) {
+                for (int y = -12; y <= 12; ++y) {
+                    double centralize_x = WalkPosition(considered_pos).x + x;
+                    double centralize_y = WalkPosition(considered_pos).y + y;
+                    if (!(x == 0 && y == 0) &&
+                        centralize_x < map_dim.x &&
+                        centralize_y < map_dim.y &&
+                        centralize_x > 0 &&
+                        centralize_y > 0 &&
+                        centralize_y > 0) // Is the spot acceptable?
+                    {
+                        temp_int = { inventory.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
+                        if (temp_int.first <= 1) // repulse from unwalkable.
                         {
-                            temp_int = { inventory.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
-                            if (temp_int.first <= 1 && !unwalkable_tiles) // repulse from unwalkable.
-                            {
-                                unwalkable_tiles = true;
-                            }
-                            if (temp_int.first < min_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
-                                min_tile = temp_int;
-                                min_max_minitiles[0] = WalkPosition(centralize_x, centralize_y);
-                            }
-                            if (temp_int.first > max_tile.first || (temp_int.first == min_tile.first && temp_int.second < min_tile.second)) {
-                                max_tile = temp_int;
-                                min_max_minitiles[1] = WalkPosition(centralize_x, centralize_y);
-                            }
+                            unwalkable_tiles = true;
+                            unwalkable_minitiles.push_back(WalkPosition(centralize_x,centralize_y));
                         }
                     }
                 }
-                if (unwalkable_tiles) {
-                    double vector_push_x = min_max_minitiles[0].x - min_max_minitiles[1].x;
-                    double vector_push_y = min_max_minitiles[0].y - min_max_minitiles[1].y;
+            }
+            if (unwalkable_tiles) {
+                if (unwalkable_minitiles.size() > 0) {
+                    for (auto i : unwalkable_minitiles) {
+                        obstacle_x += i.x;
+                        obstacle_y += i.y;
+                    }
+                    obstacle_x /= unwalkable_minitiles.size();
+                    obstacle_y /= unwalkable_minitiles.size();
+
+                    double vector_push_x = obstacle_x - WalkPosition(considered_pos).x;
+                    double vector_push_y = obstacle_y - WalkPosition(considered_pos).y;
 
                     double theta = atan2(future_pos.x, future_pos.y);
                     //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                    return walkability_vector_ += Position(cos(theta) * vector_push_x * 4 , sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+                    return walkability_vector_ = Position(cos(theta) * vector_push_x * 4, sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
                 }
             }
         }
+    }
 
 }
-
 
 // returns TRUE if the lurker needed fixing. For Attack.
 bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {

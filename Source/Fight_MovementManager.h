@@ -31,7 +31,7 @@ public:
     Position setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
     Position setAttraction(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
-    // causes a unit to be pushed away from (map) center.
+    // causes a unit to be pushed away from (map) center. Dangerous for ground units, could lead to them running down dead ends.
     Position setRepulsion(const Unit & unit, const Position & pos, const Inventory & inv, const vector<vector<int>>& map, const Position & map_center);
     // causes a unit to move directly towards the enemy base.
     Position scoutEnemyBase(const Unit & unit, const Position & pos, Inventory & inv);
