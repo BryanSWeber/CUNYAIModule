@@ -656,7 +656,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
     }
     else
     {
-        readMap(map, newCenter);
+        readMap(map, WalkPosition(newCenter));
     }
     newVeins.close();
 }
@@ -1668,7 +1668,7 @@ void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition 
     newMap.close();
 }
 
-void Inventory::readMap( vector< vector<int> > &mapin, const Position &center)
+void Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &center)
 
 {
     std::stringstream ss;

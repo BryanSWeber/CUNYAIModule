@@ -175,7 +175,7 @@ struct Inventory {
     void Inventory::drawBasePositions() const;
 
     void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
-    void Inventory::readMap(vector< vector<int> > &mapin, const Position &center); // read one of the map objects we have created, centered around the passed position.
+    void Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
 
     // Adds start positions to inventory object.
     void Inventory::getStartPositions();
