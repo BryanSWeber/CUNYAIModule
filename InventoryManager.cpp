@@ -557,7 +557,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
     oldCenter = newCenter; // Must update old center manually.
     WalkPosition startloc = WalkPosition(newCenter);
     std::stringstream ss;
-    ss << newCenter;
+    ss << WalkPosition(newCenter);
     string base = ss.str();
 
     ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
@@ -652,7 +652,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
             fire_fill_queue_holder.clear();
         }
 
-        if(print) writeMap(map, newCenter);
+        if(print) writeMap(map, WalkPosition(newCenter));
     }
     else
     {
@@ -1635,7 +1635,7 @@ void Inventory::drawBasePositions() const
     }
 }
 
-void Inventory::writeMap(const vector< vector<int> > &mapin, const Position &center)
+void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
 {
     std::stringstream ss;
     ss << center;
