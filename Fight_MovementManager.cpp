@@ -411,14 +411,15 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 
 //Cohesion, all units tend to prefer to be together.
 Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
-
+    cohesion_vector_ = Positions::Origin;
     const Position loc_center = ui.getMeanArmyLocation();
     if (loc_center != Positions::Origin) {
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        return cohesion_vector_ = Position( cos(theta) * 0.25 * distance_metric, sin(theta) * 0.25 * distance_metric );
+        cohesion_vector_ = Position( cos(theta) * 0.25 * distance_metric, sin(theta) * 0.25 * distance_metric );
     }
+    return cohesion_vector_;
 }
 
 Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {

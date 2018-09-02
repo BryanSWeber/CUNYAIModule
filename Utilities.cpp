@@ -299,8 +299,10 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             //science
             string smashed_upgrade_types = "";
             string smashed_tech_types = "";
+            string smashed_inferred_building_types = "";
             string up_type;
             string tech_type;
+            string inferred_building_type;
 
             //living units - position, type, stock value.
             for (auto u : player.units_.unit_inventory_) {
@@ -355,10 +357,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             //science
             //upgrades
             for (auto u : player.researches_.upgrades_) {
-
-                std::stringstream type_translator;
-                type_translator << u.first.c_str();
-                up_type = type_translator.str();
+                up_type = u.first.c_str();
                 if (u.second > 0) {
                     smashed_upgrade_types += up_type + ", ";
                 }
@@ -366,14 +365,18 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             //tech types
             for (auto u : player.researches_.tech_) {
 
-                std::stringstream type_translator;
-                type_translator << u.first.c_str();
-                tech_type = type_translator.str();
+                tech_type = u.first.c_str();
                 if (u.second) {
                     smashed_tech_types += tech_type + ", ";
                 }
             }
-
+            // Research-sort Buildings, includes inferred ones.
+            for (auto u : player.researches_.buildings_) {
+                inferred_building_type = u.first.c_str();
+                if (u.second > 0) {
+                    smashed_inferred_building_types += inferred_building_type + ", ";
+                }
+            }
 
             output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
 
@@ -388,6 +391,8 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Valid Positions " << smashed_dead_unit_valid_positions << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Upgrade Types " << smashed_upgrade_types << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Tech Types " << smashed_upgrade_types << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Inferred Buildings " << smashed_upgrade_types << endl;
+
 
             if (player.bwapi_player_) {
                 output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;

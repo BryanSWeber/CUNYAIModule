@@ -341,11 +341,12 @@ void CUNYAIModule::onFrame()
     supply_starved = (inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
-    if constexpr (ANALYSIS_MODE) {
-        if (t_game % 24 == 0) {
-            friendly_player_model.spending_model_.printModelParameters();
-        }
-    }
+    //This command has passed its diagnostic usefullness.
+    //if constexpr (ANALYSIS_MODE) {
+    //    if (t_game % (24*10) == 0) {
+    //        friendly_player_model.spending_model_.printModelParameters();
+    //    }
+    //}
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
