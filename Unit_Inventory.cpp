@@ -192,7 +192,7 @@ void Unit_Inventory::drawAllWorkerTasks(const Inventory & inv, Resource_Inventor
 
 void Unit_Inventory::drawAllLocations(const Inventory & inv) const
 {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
             if (CUNYAIModule::isOnScreen(e->second.pos_, inv.screen_position_)) {
                 if (e->second.valid_pos_) {

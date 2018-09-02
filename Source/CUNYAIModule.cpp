@@ -359,7 +359,7 @@ void CUNYAIModule::onFrame()
 
     
     // Display the game status indicators at the top of the screen	
-    if constexpr(ANALYSIS_MODE) {
+    if constexpr(DRAWING_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
         Print_Cached_Inventory(0, 50, inventory);
@@ -648,7 +648,7 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + cos(theta) * detector_of_choice.type_.sightRange() * 0.75, c.y + sin(theta) * detector_of_choice.type_.sightRange() * 0.75);
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        if constexpr (ANALYSIS_MODE) {
+                        if constexpr (DRAWING_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, inventory.screen_position_, Colors::Cyan);
                         }
@@ -656,7 +656,7 @@ void CUNYAIModule::onFrame()
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        if constexpr (ANALYSIS_MODE) {
+                        if constexpr (DRAWING_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, inventory.screen_position_, c, Colors::Cyan);
                         }
@@ -762,7 +762,7 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
 
-                    //if constexpr (ANALYSIS_MODE) {
+                    //if constexpr (DRAWING_MODE) {
                     //    if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
                     //        Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d-%d", friend_loc.moving_average_fap_stock_, enemy_loc.moving_average_fap_stock_);
                     //    }
@@ -1036,7 +1036,7 @@ void CUNYAIModule::onFrame()
         {
             Broodwar->leaveGame();
         }
-        if constexpr (ANALYSIS_MODE) {
+        if constexpr (DRAWING_MODE) {
             int n;
             n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
             n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());

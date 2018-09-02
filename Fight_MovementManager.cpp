@@ -255,7 +255,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     Position pos = unit->getPosition();
     bool order_sent = false;
 
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
         Broodwar->drawCircleMap(e_unit.pos_, passed_distance, Colors::Green);
     }
@@ -634,7 +634,7 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                 double vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
 
                 //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                return walkability_vector_ = Position(vector_push_x * 4, vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+                return walkability_vector_ = Position(vector_push_x * 4 * 1.5, vector_push_y * 4 * 1.5 /** (3 - when_did_we_stop) / trial_positions.size()*/);
             }
         }
     }

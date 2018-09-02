@@ -137,7 +137,7 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
 
 // This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
-    if constexpr ( ANALYSIS_MODE ) {
+    if constexpr ( DRAWING_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
         }
@@ -146,7 +146,7 @@ void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
 
 // This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         if (isOnScreen(s_pos, screen_pos)) {
             Broodwar->drawCircleMap(s_pos, 25, col, true);
         }
@@ -154,7 +154,7 @@ void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_
 }
 
 void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
             // Draw the red background.
@@ -179,7 +179,7 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 }
 
 void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (ANALYSIS_MODE ) {
+    if constexpr (DRAWING_MODE ) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
             // Draw the red background.
@@ -204,7 +204,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 }
 
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         Position upper_left = resource.pos_;
         if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
             // Draw the orange background.
@@ -230,7 +230,7 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
 void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
 {
-    if constexpr(ANALYSIS_MODE) {
+    if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24 ) {
             // Draw the black background.
@@ -254,7 +254,7 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 }
 void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
 {
-    if constexpr(ANALYSIS_MODE) {
+    if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, unit.order_.c_str());
@@ -263,7 +263,7 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
 }
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
-    if constexpr(ANALYSIS_MODE) {
+    if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );

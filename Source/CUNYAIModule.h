@@ -13,7 +13,8 @@
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Visualizations, printing records, etc.
+constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
+constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
 constexpr bool TRAINING_AGAINST_BASE_AI = false; // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
@@ -163,7 +164,7 @@ public:
       //Sends a diagnostic text message, accepts another argument..
       template<typename ...Ts>
       static void DiagnosticText(char const *fmt, Ts && ... vals) {
-          if constexpr (ANALYSIS_MODE) {
+          if constexpr (DRAWING_MODE) {
               Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
           }
       }

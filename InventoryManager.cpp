@@ -1601,7 +1601,7 @@ void Inventory::setNextExpo( const TilePosition tp ) {
 
 void Inventory::drawExpoPositions() const
 {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
@@ -1622,7 +1622,7 @@ void Inventory::drawExpoPositions() const
 
 void Inventory::drawBasePositions() const
 {
-    if constexpr (ANALYSIS_MODE) {
+    if constexpr (DRAWING_MODE) {
         Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
 
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
