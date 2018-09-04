@@ -72,9 +72,9 @@ void Research_Inventory::updateUpgradeStock() {
     int temp_upgrade_stock = 0;
     for (auto i : upgrades_)//Max number of possible upgrade types
     {
-        int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2;
-        int value = ((i.first.mineralPrice() + i.first.gasPrice() * 1.25) + number_of_times_factor_triggers * (i.first.mineralPriceFactor() + i.first.gasPriceFactor() * 1.25));
-        temp_upgrade_stock += i.second * value;
+        int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - i.second; // 0, 1, 2 maximum...
+        int value = i.first.mineralPrice() + i.first.gasPrice() * 1.25;
+        temp_upgrade_stock += i.second * value + number_of_times_factor_triggers * (i.first.mineralPriceFactor() + i.first.gasPriceFactor() * 1.25);
     }
     upgrade_stock_ = temp_upgrade_stock;
 }

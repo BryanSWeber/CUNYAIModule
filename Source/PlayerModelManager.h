@@ -13,6 +13,8 @@ struct Player_Model {
 
     Player bwapi_player_; // this is a pointer, explicitly.
     double estimated_workers_ = 0;
+    double estimated_cumulative_worth_ = 0;
+    double estimated_net_worth_ = 0;
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;
@@ -23,6 +25,7 @@ struct Player_Model {
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
+    void evaluateCurrentWorth();// under development. Currently bugged but of interest.
 
 };
 

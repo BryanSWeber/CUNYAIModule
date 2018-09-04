@@ -23,6 +23,8 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     int estimated_worker_stock = estimated_workers_ * worker_value;
 
+    evaluateCurrentWorth();
+
     spending_model_.estimateCD(units_.stock_fighting_total_, researches_.research_stock_, estimated_worker_stock);
 };
 
@@ -39,7 +41,6 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 
     //Update Researches
     researches_.updateResearch(Broodwar->self(), units_);
-
 
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_ , units_.worker_count_ * worker_value );
@@ -81,4 +82,67 @@ void Player_Model::evaluateWorkerCount() {
     }
     int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
 
+}
+
+void Player_Model::evaluateCurrentWorth()
+{
+    if (Broodwar->getFrameCount() == 0) {
+        estimated_cumulative_worth_ = 50;
+    }
+    else { // what is the net worth of everything he has bought so far and has reasonably collected?
+        int min_expenditures_ = 0;
+        int gas_expenditures_ = 0;
+        int supply_expenditures_ = 0;
+
+        //collect how much of the enemy you can see.
+        for (auto i : units_.unit_inventory_) {
+
+            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
+            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
+            int modified_gas_cost = i.second.type_.gasPrice();
+
+            min_expenditures_ += modified_min_cost;
+            gas_expenditures_ += modified_gas_cost;
+            supply_expenditures_ += modified_supply;
+        }
+
+        for (auto i : researches_.upgrades_ ) {
+            int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - 1;
+
+            min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
+            gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
+        }
+        for (auto i : researches_.tech_) {
+            min_expenditures_ += i.first.mineralPrice() * i.second;
+            gas_expenditures_ += i.first.gasPrice() * i.second;
+        }
+
+        // collect how much of the enemy has died.
+        int min_losses_ = 0;
+        int gas_losses_ = 0;
+        int supply_losses_ = 0;
+
+        for (auto i : casualties_.unit_inventory_) {
+            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
+            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
+            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
+            int modified_gas_cost = i.second.type_.gasPrice();
+
+            min_losses_ += modified_min_cost;
+            gas_losses_ += modified_gas_cost;
+            supply_losses_ += modified_supply;
+        }
+
+        //Find the relative rates at which the opponent has been spending these resources.
+        double min_proportion = (min_expenditures_ + min_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
+        double supply_proportion = (supply_expenditures_ + supply_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
+        double resources_collected_this_frame = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
+        // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
+        estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; // 
+
+        int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+        double observed_current_worth = units_.stock_fighting_total_ + researches_.research_stock_ + units_.worker_count_ * worker_value;
+        estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ - supply_losses_);
+    }
 }

@@ -25,8 +25,8 @@ GeneticHistory::GeneticHistory( string file ) {
     std::mt19937 gen( rd() ); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis( 0, 1 );    // default values for output.
 
-    double delta_out = dis( gen ) ;
-    double gamma_out = dis( gen ) ; // Artifically chosen upper bounds. But above this, they often get truely silly.
+    double delta_out = dis( gen ) * 0.6 ;
+    double gamma_out = dis( gen ) * 0.6 ; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis( gen ) ;
     double a_econ_out = dis( gen ) ;

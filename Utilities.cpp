@@ -391,8 +391,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Valid Positions " << smashed_dead_unit_valid_positions << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Upgrade Types " << smashed_upgrade_types << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Tech Types " << smashed_upgrade_types << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Inferred Buildings " << smashed_upgrade_types << endl;
-
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Inferred Buildings " << smashed_inferred_building_types << endl;
 
             if (player.bwapi_player_) {
                 output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;
@@ -404,8 +403,9 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             output << label << " Frame Count " << Broodwar->getFrameCount() << " (K)Capital " << player.spending_model_.army_stock << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Technology " << player.spending_model_.tech_stock << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Testing Net Worth Function " << player.estimated_net_worth_ << endl;
 
-
+            
             output.close();
         }
     }
