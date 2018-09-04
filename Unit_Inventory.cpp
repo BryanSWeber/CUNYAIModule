@@ -450,6 +450,9 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int moving_average_fap_stock = 0;
     int stock_full_health = 0;
     int is_shooting = 0;
+    int is_attacking = 0;
+    int is_retreating = 0;
+
     vector<UnitType> already_seen_types;
 
     for ( auto const & u_iter : unit_inventory_ ) { // should only search through unit types not per unit.
@@ -457,6 +460,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
         future_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.future_fap_value_;
         moving_average_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.ma_future_fap_value_;
         is_shooting += u_iter.second.cd_remaining_ > 0; //
+        is_attacking += u_iter.second.phase_ == "Attacking";
+        is_retreating += u_iter.second.phase_ == "Retreating";
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
             
@@ -527,6 +532,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     moving_average_fap_stock_ = moving_average_fap_stock;
     stock_full_health_ = stock_full_health;
     is_shooting_ = is_shooting;
+    is_attacking_ = is_attacking;
+    is_retreating_ = is_retreating;
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {

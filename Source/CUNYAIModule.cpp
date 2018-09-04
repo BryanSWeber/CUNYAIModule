@@ -722,9 +722,10 @@ void CUNYAIModule::onFrame()
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
 
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating ) && (
+                        (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
+                            //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             threatening_stocks == 0 ||
                             inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
