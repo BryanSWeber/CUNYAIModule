@@ -725,8 +725,8 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                         centralize_y > 0 &&
                         centralize_y > 0) // Is the spot acceptable?
                     {
-                        temp_int = { inv.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
-                        if (temp_int.first <= 1) // repulse from unwalkable.
+                        temp_int = { inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
+                        if (temp_int.first == 1) // repulse from unwalkable.
                         {
                             unwalkable_tiles = true;
                             unwalkable_minitiles.push_back(WalkPosition(centralize_x,centralize_y));
@@ -846,7 +846,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv
                 centralize_y > 0 &&
                 centralize_y > 0) // Is the spot acceptable?
             {
-                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
+                if (inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y] == 0 && // avoid buildings
                     map[centralize_x][centralize_y] < current_best) // go directly to the best destination
                 {
                     temp_x = x;

@@ -588,6 +588,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
         int minitile_y_temp = minitile_y;
         bool filled_a_square = false;
 
+        // let us fill the map- counting outward from our destination.
         while (!fire_fill_queue.empty() || !fire_fill_queue_holder.empty()) {
 
             filled_a_square = false;
@@ -652,6 +653,9 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
             fire_fill_queue.swap(fire_fill_queue_holder);
             fire_fill_queue_holder.clear();
         }
+
+        // let us check for dead ends.
+
 
         if(print) writeMap(map, WalkPosition(newCenter));
     }
