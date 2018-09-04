@@ -42,8 +42,7 @@ struct Inventory {
     int estimated_enemy_workers_;
     int map_x;
     int map_y;
-
-    int closest_unit_radial_distance_ = INT_MAX;
+    int closest_radial_distance_enemy_ground_ = INT_MAX;
 
     vector<Position> start_positions_;
     vector<TilePosition> expo_positions_;
@@ -56,6 +55,7 @@ struct Inventory {
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
+    vector< int > radial_distances_from_enemy_ground_ = {0};
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
@@ -156,6 +156,9 @@ struct Inventory {
     void Inventory::updateBaseLoc(const Resource_Inventory &ri);
     void Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
     void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
+
+    // gets the radial distance of all units to the enemy base.
+    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map);
 
     // Returns the position of the weakest base.
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;

@@ -547,6 +547,7 @@ int Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
     return map[startloc.x][startloc.y];
 }
 
+
 void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
 
     int map_x = Broodwar->mapWidth() * 4;
@@ -1690,4 +1691,20 @@ void Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &cente
         }
     }
     newMap.close();
+}
+
+
+vector<int> Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map)
+{
+    vector<int> return_vector;
+
+    if (!map.empty()) {
+        for (auto u : ui.unit_inventory_) {
+            return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
+        }
+        return return_vector;
+
+    }
+
+    return return_vector = { 0 };
 }

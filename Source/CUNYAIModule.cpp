@@ -13,6 +13,7 @@
 #include <iostream> 
 #include <fstream> // for file read/writing
 #include <numeric> // std::accumulate
+#include <algorithm>    // std::min_element, std::max_element
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
 
@@ -273,6 +274,8 @@ void CUNYAIModule::onFrame()
     inventory.my_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size());
     inventory.updateStartPositions(enemy_player_model.units_);
     inventory.updateScreen_Position();
+    inventory.radial_distances_from_enemy_ground_ = Inventory::getRadialDistances(friendly_player_model.units_, inventory.map_out_from_enemy_ground_);
+    inventory.closest_radial_distance_enemy_ground_ = *std::min_element(inventory.radial_distances_from_enemy_ground_.begin(),inventory.radial_distances_from_enemy_ground_.end());
 
     if (t_game == 0) {
         //update local resources

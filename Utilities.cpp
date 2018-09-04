@@ -1,7 +1,6 @@
 #pragma once
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
-#include "Utilities.h"
 #include <fstream>
 
 using namespace BWAPI;

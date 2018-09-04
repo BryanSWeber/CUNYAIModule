@@ -27,7 +27,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
     bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Positions::Origin;
-
+    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (inv.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
@@ -47,9 +47,9 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         }
 
     }
-    else { 
+    else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && ready_to_fight) {
+        if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
             if (u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
             else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
             pathing_confidently = true;
@@ -74,8 +74,8 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     Position avoidance_pos = pos + avoidance_vector;
 
     //Which way should we avoid objects?
-    if (healthy && ready_to_fight && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_air_);
-    else if (healthy && ready_to_fight) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_ground_);
+    if (pathing_confidently && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_air_);
+    else if (pathing_confidently) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_ground_);
     else setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_home_);
 
     //Move to the final position.
