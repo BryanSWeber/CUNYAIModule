@@ -500,16 +500,16 @@ void CUNYAIModule::onFrame()
         //    }
         //} // Pretty to look at!
 
-        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
-        //        if (inventory.map_out_from_enemy_ground_[i][j] % 100 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
-        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
-        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
+        for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
+            for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
+                if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
+                    if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+                        Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
+                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+                    }
+                }
+            }
+        } // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
@@ -717,6 +717,7 @@ void CUNYAIModule::onFrame()
                 //bool we_take_a_fap_beating = false;
 
                 foe_within_radius = distance_to_foe < search_radius;
+
                 if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
@@ -762,11 +763,12 @@ void CUNYAIModule::onFrame()
                     bool drone_problem = u_type == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
 
                     bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
+                    //bool too_far_away_from_front_line = (inventory.getRadialDistanceOutFromEnemy(u->getPosition()) >(inventory.closest_radial_distance_enemy_ground_ + 3 * 24 * CUNYAIModule::getProperSpeed(u) / 4));
+                    //bool safe_distance_away = distance_to_foe > chargable_distance_enemy;
 
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
-
-
+                    
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
                         mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); 
                     }

@@ -592,7 +592,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
 
             filled_a_square = false;
 
-            while (!fire_fill_queue.empty()) { // this portion is now a flood fill, iteratively filling from its interior. Seems to be very close to fastest reasonable implementation.
+            while (!fire_fill_queue.empty()) { // this portion is now a flood fill, iteratively filling from its interior. Seems to be very close to fastest reasonable implementation. May be able to remove diagonals without issue.
 
                 minitile_x_temp = fire_fill_queue.begin()->x;
                 minitile_y_temp = fire_fill_queue.begin()->y;

@@ -108,7 +108,7 @@ void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_st
     double K_over_L = (double)(e_army_stock + 1) / (double)(e_worker_stock + 1); // avoid NAN's
     alpha_army = CUNYAIModule::bindBetween(K_over_L / (double)(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_econ, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / (double)e_worker_stock * alpha_econ / alpha_army, 0.05, 0.95 );
+    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / (double)(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
 
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;

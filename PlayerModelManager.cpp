@@ -50,13 +50,13 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
         //Update existing CD functions to more closely mirror opponent. Do every 15 sec or so.
         if (Broodwar->elapsedTime() % 15 == 0 && target_player.units_.stock_fighting_total_ > 0) {
             spending_model_.enemy_mimic(target_player, CUNYAIModule::adaptation_rate);
-            //CUNYAIModule::DiagnosticText("Matching expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
+            //CUNYAIModule::DiagnosticText("Matching expenditures,L:%4.2f to %4.2f,K:%4.2f to %4.2f,T:%4.2f to %4.2f", spending_model_.alpha_econ, target_player.spending_model_.alpha_econ, spending_model_.alpha_army, target_player.spending_model_.alpha_army, spending_model_.alpha_tech, target_player.spending_model_.alpha_army);
         }
         else if (Broodwar->elapsedTime() % 15 == 0 && target_player.units_.stock_fighting_total_ == 0) {
             spending_model_.alpha_army = CUNYAIModule::alpha_army_original;
             spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original;
             spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original;
-            //CUNYAIModule::DiagnosticText("Reseting expenditures,%4.2f, %4.2f,%4.2f", alpha_econ_temp, alpha_army_temp, alpha_tech_temp);
+            //CUNYAIModule::DiagnosticText("Reseting expenditures,%4.2f, %4.2f,%4.2f", spending_model_.alpha_econ, spending_model_.alpha_army, spending_model_.alpha_tech);
         }
     }
 

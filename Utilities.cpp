@@ -398,9 +398,9 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 output << label << " Frame Count " << Broodwar->getFrameCount() << " Building Score " << player.bwapi_player_->getBuildingScore() << endl;
             }
 
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Labor " << player.spending_model_.worker_stock << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " (K)Capital " << player.spending_model_.army_stock << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Technology " << player.spending_model_.tech_stock << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Labor " << player.spending_model_.worker_stock <<  " alpha_L " << player.spending_model_.alpha_econ  << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " (K)Capital " << player.spending_model_.army_stock << " alpha_K " << player.spending_model_.alpha_army  << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << " Technology " << player.spending_model_.tech_stock << " alpha_T " << player.spending_model_.alpha_tech << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
             output << label << " Frame Count " << Broodwar->getFrameCount() << " Testing Net Worth Function " << player.estimated_net_worth_ << endl;
 

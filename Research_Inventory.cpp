@@ -23,7 +23,7 @@ void Research_Inventory::updateTechTypes(const Player &player) {
     for (auto i:limited_array) //Max number of possible tech types
     {
         bool observed_level = player->hasResearched((TechType)i);
-        bool new_level = observed_level || int(tech_[(TechType)i]);
+        bool new_level = observed_level || tech_[(TechType)i];
         tech_[(TechType)i] = new_level;
     }
 }
