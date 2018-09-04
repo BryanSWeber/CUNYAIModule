@@ -1386,6 +1386,26 @@ Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Un
     return attacked_base;
 }
 
+Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory & di) const
+{
+    Position quiet_base = Positions::Origin;
+    int temp_safest_base = 0;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory di_loc = CUNYAIModule::getUnitInventoryInRadius(di, Position(expo), my_portion_of_the_map_);
+        ui_loc.updateUnitInventorySummary();
+        di_loc.updateUnitInventorySummary();
+
+        if (ui_loc.stock_fighting_total_ - di_loc.stock_total_ > temp_safest_base && ui_loc.stock_ground_fodder_ > 0 ) { // if they have fodder (buildings) and it is weaker, target that place!
+            temp_safest_base = ui_loc.stock_fighting_total_ - di_loc.stock_total_;
+            quiet_base = Position(expo);
+        }
+    }
+
+    return quiet_base;
+}
+
 void Inventory::getExpoPositions() {
 
     expo_positions_.clear();
@@ -1486,7 +1506,7 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni, const Unit_Inventory &di) {
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
@@ -1598,7 +1618,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         //otherwise go to your weakest base.
         Position suspected_safe_base = Positions::Origin;
 
-        suspected_safe_base = getStrongestBase(ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        suspected_safe_base = getNonCombatBase(ui, di); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);

@@ -166,9 +166,11 @@ struct Inventory {
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
     Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
-    // Returns the Position of a base with heavies
+    // Returns the Position of a base with heaviest set of attackers...
     Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
     Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
+    // Returns the position of a base with the least casualties...
+    Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
 
     // updates the next target expo.
     void Inventory::getExpoPositions();
@@ -189,6 +191,6 @@ struct Inventory {
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
 
 };

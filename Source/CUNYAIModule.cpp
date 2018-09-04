@@ -287,7 +287,7 @@ void CUNYAIModule::onFrame()
         inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_);
+    inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
     inventory.drawExpoPositions();
     inventory.drawBasePositions();
 
