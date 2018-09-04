@@ -272,6 +272,7 @@ void CUNYAIModule::onFrame()
     inventory.updateWorkersClearing(friendly_player_model.units_, land_inventory);
     inventory.updateWorkersLongDistanceMining(friendly_player_model.units_, land_inventory);
     inventory.my_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)Broodwar->getStartLocations().size());
+    inventory.expo_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)inventory.expo_positions_complete_.size());
     inventory.updateStartPositions(enemy_player_model.units_);
     inventory.updateScreen_Position();
     inventory.radial_distances_from_enemy_ground_ = Inventory::getRadialDistances(friendly_player_model.units_, inventory.map_out_from_enemy_ground_);
@@ -732,6 +733,7 @@ void CUNYAIModule::onFrame()
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             threatening_stocks == 0 ||
                             inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
+                            inventory.safe_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at safe base.
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) || //Don't run if drones are present.

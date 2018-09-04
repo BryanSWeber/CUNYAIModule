@@ -39,6 +39,7 @@ struct Inventory {
     int hatches_;
     int last_gas_check_;
     int my_portion_of_the_map_;
+    int expo_portion_of_the_map_;
     int estimated_enemy_workers_;
     int map_x;
     int map_y;
@@ -63,10 +64,10 @@ struct Inventory {
     vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
-    vector< vector<int> > map_out_from_home_; // distance from our own main.
-    vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base.
-    vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base.
-    vector< vector<int> > map_out_from_safety_; // distance from enemy base.
+    vector< vector<int> > map_out_from_home_; // distance from our own main. 1 if blocked/inaccessable by ground.
+    vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    vector< vector<int> > map_out_from_safety_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -165,12 +166,14 @@ struct Inventory {
     // Returns the position of the weakest base.
     Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
-    Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
+    //Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
     // Returns the Position of a base with heaviest set of attackers...
-    Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
+    //Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
     Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
     // Returns the position of a base with the least casualties...
     Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
+    // Returns the position of a base with the most fodder at it...
+    Position getMostValuedBase(const Unit_Inventory & ui) const;
 
     // updates the next target expo.
     void Inventory::getExpoPositions();

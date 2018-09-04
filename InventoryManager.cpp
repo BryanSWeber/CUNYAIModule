@@ -654,9 +654,6 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
             fire_fill_queue_holder.clear();
         }
 
-        // let us check for dead ends.
-
-
         if(print) writeMap(map, WalkPosition(newCenter));
     }
     else
@@ -1308,7 +1305,7 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), expo_portion_of_the_map_);
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
         if (ei_loc.moving_average_fap_stock_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
@@ -1320,84 +1317,84 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
     return weakest_base;
 }
 
-Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
-{
-    Position strongest_base = Positions::Origin;
-    int stock_current_best = 0;
-
-    for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
-        ei_loc.updateUnitInventorySummary();
-        ei_tiny.updateUnitInventorySummary();
-
-        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
-            stock_current_best = ei_loc.stock_fighting_total_;
-            strongest_base = Position(expo);
-        }
-    }
-    
-    return strongest_base;
-}
-
-//Gets position of base nearby greatest imbalance of combat units.
-Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
-{
-    //// Attempt 1.
-    Position attacked_base = Positions::Origin;
-    int largest_current_conflict = 0;
-    int temp_worst_base = 0;
-
-    for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
-        ei_loc.updateUnitInventorySummary();
-        ui_loc.updateUnitInventorySummary();
-        temp_worst_base = ei_loc.stock_fighting_total_ - ui_loc.stock_fighting_total_; //total future losses at base.
-        if ( temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0 ) { // you've got to have a building in that area.
-            largest_current_conflict = temp_worst_base;
-            attacked_base = Position(expo);
-        }
-    }
-
-    return attacked_base;
-
-}
+//Position Inventory::getStrongestBase(const Unit_Inventory &ei) const
+//{
+//    Position strongest_base = Positions::Origin;
+//    int stock_current_best = 0;
+//
+//    for (auto expo : expo_positions_complete_) {
+//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+//        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), expo_portion_of_the_map_);
+//        ei_loc.updateUnitInventorySummary();
+//        ei_tiny.updateUnitInventorySummary();
+//
+//        if (ei_loc.stock_fighting_total_ > stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+//            stock_current_best = ei_loc.stock_fighting_total_;
+//            strongest_base = Position(expo);
+//        }
+//    }
+//    
+//    return strongest_base;
+//}
+//
+////Gets position of base nearby greatest imbalance of combat units.
+//Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory & ui) const
+//{
+//    //// Attempt 1.
+//    Position attacked_base = Positions::Origin;
+//    int largest_current_conflict = 0;
+//    int temp_worst_base = 0;
+//
+//    for (auto expo : expo_positions_complete_) {
+//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+//        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
+//        ei_loc.updateUnitInventorySummary();
+//        ui_loc.updateUnitInventorySummary();
+//        temp_worst_base = ei_loc.stock_fighting_total_ - ui_loc.stock_fighting_total_; //total future losses at base.
+//        if ( temp_worst_base > largest_current_conflict && ui_loc.resource_depot_count_ > 0 ) { // you've got to have a building in that area.
+//            largest_current_conflict = temp_worst_base;
+//            attacked_base = Position(expo);
+//        }
+//    }
+//
+//    return attacked_base;
+//
+//}
 
 ////Gets Position of base with the most attackers outside of it.
-Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const
-{
-    Position attacked_base = Positions::Origin;
-    int largest_current_conflict = 0;
-    int temp_worst_base = 0;
-
-    for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_ * Broodwar->getPlayers().size() / (double)expo_positions_complete_.size());
-        ei_loc.updateUnitInventorySummary();
-        ui_loc.updateUnitInventorySummary();
-        temp_worst_base = ei_loc.is_shooting_ + 10 * ui_loc.is_shooting_; //total future losses at base.
-        if (temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0) { // you've got to have a building in that area.
-            largest_current_conflict = temp_worst_base;
-            attacked_base = Position(expo);
-        }
-    }
-
-    return attacked_base;
-}
+//Position Inventory::getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const
+//{
+//    Position attacked_base = Positions::Origin;
+//    int largest_current_conflict = 0;
+//    int temp_worst_base = 0;
+//
+//    for (auto expo : expo_positions_complete_) {
+//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
+//        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
+//        ei_loc.updateUnitInventorySummary();
+//        ui_loc.updateUnitInventorySummary();
+//        temp_worst_base = ei_loc.is_shooting_ + 10 * ui_loc.is_shooting_; //total future losses at base.
+//        if (temp_worst_base > largest_current_conflict && ui_loc.stock_ground_fodder_ > 0) { // you've got to have a building in that area.
+//            largest_current_conflict = temp_worst_base;
+//            attacked_base = Position(expo);
+//        }
+//    }
+//
+//    return attacked_base;
+//}
 
 Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory & di) const
 {
     Position quiet_base = Positions::Origin;
-    int temp_safest_base = 0;
+    int temp_safest_base = INT_MIN;
 
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
         Unit_Inventory di_loc = CUNYAIModule::getUnitInventoryInRadius(di, Position(expo), my_portion_of_the_map_);
         ui_loc.updateUnitInventorySummary();
         di_loc.updateUnitInventorySummary();
 
-        if (ui_loc.stock_fighting_total_ - di_loc.stock_total_ > temp_safest_base && ui_loc.stock_ground_fodder_ > 0 ) { // if they have fodder (buildings) and it is weaker, target that place!
+        if ( ui_loc.stock_fighting_total_ - di_loc.stock_total_ > temp_safest_base && ui_loc.resource_depot_count_ > 0 ) { // if they have fodder (buildings) and it is weaker, target that place!
             temp_safest_base = ui_loc.stock_fighting_total_ - di_loc.stock_total_;
             quiet_base = Position(expo);
         }
@@ -1405,6 +1402,26 @@ Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inven
 
     return quiet_base;
 }
+
+
+Position Inventory::getMostValuedBase(const Unit_Inventory & ui) const
+{
+    Position valued_base = Positions::Origin;
+    int temp_valued_base = INT_MIN;
+
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
+        ui_loc.updateUnitInventorySummary();
+
+        if (ui_loc.stock_ground_fodder_ + ui_loc.stock_air_fodder_ > temp_valued_base && ui_loc.resource_depot_count_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
+            temp_valued_base = ui_loc.stock_ground_fodder_ + ui_loc.stock_air_fodder_;
+            valued_base = Position(expo);
+        }
+    }
+
+    return valued_base;
+}
+
 
 void Inventory::getExpoPositions() {
 
@@ -1548,9 +1565,9 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
         if (ei.getMeanBuildingLocation() != Positions::Origin && center_building && center_building->pos_ && center_building->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
-            updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false);
+            updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
         }
-        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's a base we havent' seen yet?
+        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
             while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < start_positions_.size()) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
@@ -1558,7 +1575,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
             }
             updateMapVeinsOut( start_positions_[0], enemy_base_ground_, map_out_from_enemy_ground_);
         }
-        else if (!expo_positions_complete_.empty()) { // maybe it's a base we havent' seen yet?
+        else if (!expo_positions_complete_.empty()) { // maybe it's a expansion we havent' seen yet?
             expo_positions_ = expo_positions_complete_;
             int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
             checked_all_expo_positions_ = true;
@@ -1600,10 +1617,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
         Position suspected_friendly_base = Positions::Origin;
 
         if (ei.stock_fighting_total_ > 0) {
-            suspected_friendly_base = getAttackedBase(ei, ui); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
-        }
-        else {
-            suspected_friendly_base = getStrongestBase(ui);
+            suspected_friendly_base = getMostValuedBase(ui);
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
@@ -1615,7 +1629,7 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 
     if (frames_since_safe_base > 24 * 10) {
 
-        //otherwise go to your weakest base.
+        //otherwise go to your safest base - the one with least deaths near it and most units.
         Position suspected_safe_base = Positions::Origin;
 
         suspected_safe_base = getNonCombatBase(ui, di); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
