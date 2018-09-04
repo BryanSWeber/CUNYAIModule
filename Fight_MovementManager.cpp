@@ -13,7 +13,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Inventory &inv) {
+void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Inventory &inv) {
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
     //double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
@@ -123,7 +123,9 @@ void Mobility::Mobility_Movement(const Unit &unit, const Unit_Inventory &ui, Uni
     Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
     changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-};
+}
+
+
 // This is basic combat logic for nonspellcasting units.
 void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Inventory &inv, const Color &color = Colors::White)
 {
@@ -235,12 +237,128 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
         }
     }
 
+    if (attack_order_issued) {
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        changing_unit.updateStoredUnit(unit);
+        changing_unit.phase_ = "Attacking";
+    }
+
+    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, inv);
+}
+
+
+//Essentially, we would like to call the movement script BUT disable any attraction to the enemy since we are trying to only surround.
+void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Inventory & inv)
+{
+    Position pos = unit->getPosition();
+    distance_metric = DISTANCE_METRIC;
+    //double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
+    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
+    local_neighborhood.updateUnitInventorySummary();
+    bool pathing_confidently = false;
+    UnitType u_type = unit->getType();
+
+    bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
+    bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
+    bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
+    bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Positions::Origin;
+
+    if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
+
+        if (!ready_to_fight) { // Otherwise, return to safety.
+            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
+        }
+        else {
+            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+            e_neighborhood.updateUnitInventorySummary();
+
+            if (e_neighborhood.stock_shoots_up_ > 0) {
+                setSeperationScout(unit, pos, e_neighborhood);
+            }
+            else {
+                setSeperationScout(unit, pos, local_neighborhood);
+                pathing_confidently = true;
+            }
+        }
+
+    }
+    else {
+        // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
+        if (healthy && ready_to_fight) {
+            //if (u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+            //else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
+            pathing_confidently = true;
+        }
+        else { // Otherwise, return to home.
+            setAttraction(unit, pos, inv, inv.map_out_from_home_, inv.home_base_);
+        }
+
+        if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. 
+            setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+            pathing_confidently = true;
+        }
+
+        int average_side = ui.unit_inventory_.find(unit)->second.circumference_ / 4;
+        Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
+        if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
+        setCohesion(unit, pos, local_neighborhood);
+    }
+
+    //Avoidance vector:
+    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_;
+    Position avoidance_pos = pos + avoidance_vector;
+
+    //Which way should we avoid objects?
+    if (healthy && ready_to_fight && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_air_);
+    else if (healthy && ready_to_fight) setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_enemy_ground_);
+    else setObjectAvoid(unit, pos, avoidance_pos, inv, inv.map_out_from_home_);
+
+    //Move to the final position.
+    Position final_vector = avoidance_vector - walkability_vector_;
+    //Make sure the end destination is one suitable for you.
+    Position final_pos = pos + final_vector; //attract is zero when it's not set.
+
+    if (final_pos != pos) {
+
+        // lurkers should move when we need them to scout.
+        if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
+            unit->unburrow();
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            changing_unit.updateStoredUnit(unit);
+            return;
+        }
+
+        unit->move(final_pos);
+        Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
+        Position last_out2 = Positions::Origin;
+
+        //#include <iostream>
+        //using namespace std;
+        //int sample_fun(int X, int Y) { return X + Y; };
+        //int main()
+        //{
+        //    cout << "Hello World";
+        //    int Z = 4;
+        //    int out = sample_fun(Z, Z += 1);
+        //    cout << " We got:"; // 10. So it redefines first.
+        //    cout << out;
+        //}
+
+
+        CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
+    }
     Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     changing_unit.updateStoredUnit(unit);
-    changing_unit.phase_ = "Attacking";
-
-    if(!attack_order_issued) Mobility_Movement(unit, ui, ei, inv);
+    changing_unit.phase_ = "Surrounding";
 }
+
 // Basic retreat logic, range = enemy range
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Inventory &inv, const Color &color = Colors::White) {
 
@@ -379,7 +497,7 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
-//void Mobility::setCentralize(const Position &pos, const Inventory &inventory) {
+//void Mobility::setCentralize(const Position &pos, const Inventory &inv) {
 //    double temp_centralization_dx_ = 0;
 //    double temp_centralization_dy_ = 0;
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -523,7 +641,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
     return seperation_vector_ = Positions::Origin;
 }
 
-//Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
+//Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inv, const vector<vector<int>> &map) {
 //        double temp_walkability_dx_ = 0;
 //        double temp_walkability_dy_ = 0;
 //        double theta = 0;
@@ -579,7 +697,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 //
 //}
 
-Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inventory, const vector<vector<int>> &map) {
+Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inv, const vector<vector<int>> &map) {
     double temp_walkability_dx_ = 0;
     double temp_walkability_dy_ = 0;
     double theta = 0;
@@ -607,7 +725,7 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                         centralize_y > 0 &&
                         centralize_y > 0) // Is the spot acceptable?
                     {
-                        temp_int = { inventory.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
+                        temp_int = { inv.map_veins_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
                         if (temp_int.first <= 1) // repulse from unwalkable.
                         {
                             unwalkable_tiles = true;

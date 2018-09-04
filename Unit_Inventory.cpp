@@ -896,7 +896,7 @@ Position positionBuildFap(bool friendly) {
 
 Position positionMCFAP(const Stored_Unit & su) {
     std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(-CUNYAIModule::getProperSpeed(su.type_) * 0, CUNYAIModule::getProperSpeed(su.type_) * 0);     // default values for output.
+    std::uniform_int_distribution<int> dis(-CUNYAIModule::getProperSpeed(su.type_) * 4, CUNYAIModule::getProperSpeed(su.type_) * 4);     // default values for output.
     int rand_x = dis(generator);
     int rand_y = dis(generator);
     return Position(rand_x, rand_y) + su.pos_;

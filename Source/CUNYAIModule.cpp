@@ -688,7 +688,7 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_player_model.units_);
                 int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
-                int search_radius = max(max(chargable_distance_net + 64, enemy_player_model.units_.max_range_ + 64), 256 );
+                int search_radius = max(max(chargable_distance_net + 64, enemy_player_model.units_.max_range_ + 64), 256 ); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
@@ -763,19 +763,13 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
 
-                    //if constexpr (DRAWING_MODE) {
-                    //    if (isOnScreen(u->getPosition(), inventory.screen_position_)) {
-                    //        Broodwar->drawTextMap(u->getPosition().x, u->getPosition().y, "%d-%d", friend_loc.moving_average_fap_stock_, enemy_loc.moving_average_fap_stock_);
-                    //    }
-                    //}
-
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
-                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); 
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, inventory, Colors::Blue); // this is not actually getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, inventory, Colors::Blue); // this is not explicitly getting out of storm. It is simply scattering.
                         }
 
                     }
@@ -788,21 +782,21 @@ void CUNYAIModule::onFrame()
                             mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
-                    else {
-                            if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Positions::Origin)) {
-                                if (u_type == UnitTypes::Zerg_Overlord) {
-                                    //see unit destruction case. We will replace this overlord, likely a foolish scout.
-                                }
-                                else {
-                                    buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
-                                    CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
-                                }
+                    else{
+                        if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Positions::Origin)) {
+                            if (u_type == UnitTypes::Zerg_Overlord) {
+                                //see unit destruction case. We will replace this overlord, likely a foolish scout.
                             }
+                            else {
+                                buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
+                                CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
+                            }
+                        }
                             mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, inventory, Colors::White);
                     }
 
-                    // workers tasks should be reset.
 
+                    // workers tasks should be reset.
                     if (u_type.isWorker()) {
                         friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
                     }
@@ -813,7 +807,7 @@ void CUNYAIModule::onFrame()
             } // close local examination.
             
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
-                mobility.Mobility_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
+                mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
             }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
@@ -823,7 +817,7 @@ void CUNYAIModule::onFrame()
 
         //if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
         //    Mobility mobility;
-        //    mobility.Mobility_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
+        //    mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
         //} // If it is a combat unit, then use it to attack the enemy.
         //auto end_scout = std::chrono::high_resolution_clock::now();
 
