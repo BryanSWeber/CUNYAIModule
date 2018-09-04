@@ -706,6 +706,20 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
     return 9999999;
 }
 
+int Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
+{
+    if (map.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        int A = map[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 1) {
+            return map[(size_t)wp_a.x][(size_t)wp_a.y];
+        }
+    }
+
+    return 9999999;
+
+}
+
 bool Inventory::checkViableGroundPath(const Position A, const Position B) const
 {
     if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {

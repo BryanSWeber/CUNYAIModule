@@ -24,14 +24,15 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
         bool hatch_nearby = Count_Units(UnitTypes::Zerg_Hatchery, local_area) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){
+        if (unit_can_morph_intended_target && checkSafeBuildLoc( unit_pos, inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) && (unit->getType().isBuilding() || hatch_nearby ) ){ // morphing hatcheries into lairs & hives or spires into greater spires. 
                 if (unit->morph(building)) {
                     buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                     Stored_Unit& morphing_unit = ui.unit_inventory_.find(unit)->second;
                     morphing_unit.updateStoredUnit(unit);
                     return true;
                 }
-        } else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery && building != UnitTypes::Zerg_Greater_Spire)
+        } 
+        else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 24);
             if (my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby && unit->build(building, buildPosition) ) {
@@ -68,10 +69,14 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
             // If you need a spore, any old place will do for now.
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber, inventory) > 0 && u_relatively_weak_against_air && enemy_player_model.units_.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hatchery, unit_pos, 500);
+                Unit_Inventory lairs = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Lair, unit_pos, 500);
+                Unit_Inventory hives = getUnitInventoryInRadius(ui, UnitTypes::Zerg_Hive, unit_pos, 500);
+                hacheries = hacheries + lairs + hives;
                 Stored_Unit *close_hatch = getClosestStored(hacheries, unit_pos, 500);
                 if (close_hatch) {
                     central_base = TilePosition(close_hatch->pos_);
                 }
+                CUNYAIModule::DiagnosticText("Anticipating a spore");
             }
 
             // Let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
@@ -108,22 +113,23 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, Uni
                 int chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(central_base));
                 for (int x = -10; x <= 10; ++x) {
                     for (int y = -10; y <= 10; ++y) {
-                        double centralize_x = central_base.x + x;
-                        double centralize_y = central_base.y + y;
+                        int centralize_x = central_base.x + x;
+                        int centralize_y = central_base.y + y;
                         bool within_map = centralize_x < Broodwar->mapWidth() &&
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
                             centralize_y > 0;
-                        bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(TilePosition((int)centralize_x, (int)centralize_y)), 96).resource_inventory_.empty();
+                        TilePosition test_loc = TilePosition(centralize_x, centralize_y);
+                        bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(test_loc), 96).resource_inventory_.empty();
                         if (!(x == 0 && y == 0) &&
                             within_map &&
                             not_blocking_minerals &&
-                            Broodwar->canBuildHere(TilePosition((int)centralize_x, (int)centralize_y), UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            inventory.map_veins_[WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).x][WalkPosition(TilePosition((int)centralize_x, (int)centralize_y)).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
-                            inventory.getRadialDistanceOutFromEnemy(Position(TilePosition((int)centralize_x, (int)centralize_y))) <= chosen_base_distance) // Count all points further from home than we are.
+                            Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
+                            inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
+                            inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
                         {
-                            final_creep_colony_spot = TilePosition((int)centralize_x, (int)centralize_y);
-                            chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(TilePosition((int)centralize_x, (int)centralize_y)));
+                            final_creep_colony_spot = test_loc;
+                            chosen_base_distance = inventory.getRadialDistanceOutFromEnemy(Position(test_loc));
                         }
                     }
                 }

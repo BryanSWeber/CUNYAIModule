@@ -152,6 +152,8 @@ struct Inventory {
     int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
     int Inventory::getRadialDistanceOutFromHome(const Position A) const;
     bool Inventory::checkViableGroundPath(const Position A, const Position B) const;
+    int Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
+
     // Marks and scores base locations.
     void Inventory::updateBaseLoc(const Resource_Inventory &ri);
     void Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
