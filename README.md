@@ -8,4 +8,4 @@ https://project.dke.maastrichtuniversity.nl/games/files/proceedings-CIG2018.pdf
 
 Recent Development Notes: 
 
-(9-6-2018) Current drafts of CUNYBot are responding to opponent's choice of *t* as well, but the overall observed behavior remains a tit-for-tat style.  Technology has been closely integrated and better improved in current versions, but have not yet released these to SSCAIT. Tasks at hand are generally production choices, and reducing waste in combat.  To that end, FAP has been added as a combat simulator. It also serves as an agnostic method of choosing which units to produce, with some caveats.
+(9-6-2018) Current drafts of CUNYBot are responding to opponent's choice of *t* as well, and the overall observed behavior remains a tit-for-tat style.  Technology has been closely integrated and better improved in current versions, but have not yet released these to SSCAIT. Tasks at hand are generally production choices, and reducing waste in combat.  To that end, FAP has been added as a combat simulator. It also serves as an agnostic method of choosing which units to produce, with some caveats.
