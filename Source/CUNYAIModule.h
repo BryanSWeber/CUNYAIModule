@@ -96,7 +96,7 @@ public:
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
-      bool Check_N_Build( const UnitType &building, const Unit &unit, Unit_Inventory &ui, const bool &extra_critera );
+      bool Check_N_Build( const UnitType &building, const Unit &unit, const bool &extra_critera );
       // Check and grow a unit using larva.
       bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
@@ -107,11 +107,11 @@ public:
       bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
-      UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
+      static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
       bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
 
-      // Builds the next building you can afford.  Incomplete.
-      bool Building_Begin(const Unit & drone, const Inventory & inv, const Unit_Inventory & e_inv, Unit_Inventory & u_inv);
+      // Builds the next building you can afford. Area of constant improvement.
+      bool Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv);
       // Returns a tile that is suitable for building.
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
@@ -304,7 +304,7 @@ public:
 
       static double bindBetween(double x, double lower_bound, double upper_bound);
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
-      int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
+      static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
 

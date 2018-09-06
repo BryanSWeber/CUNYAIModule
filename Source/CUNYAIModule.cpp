@@ -430,12 +430,12 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         //vision belongs here.
-        Broodwar->drawTextScreen(375, 20, "Enemy Stock(Est.): %d", inventory.est_enemy_stock_);
-        Broodwar->drawTextScreen(375, 30, "Army Stock: %d", (int)exp(inventory.ln_army_stock_)); //
-        Broodwar->drawTextScreen(375, 40, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio());
-        Broodwar->drawTextScreen(375, 50, "Vision (Pct.): %4.2f", inventory.vision_tile_count_ / (double)map_area);  //
-        Broodwar->drawTextScreen(375, 60, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
-        Broodwar->drawTextScreen(375, 70, "Enemy Research Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
+        Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", inventory.est_enemy_stock_);
+        Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", (int)exp(inventory.ln_army_stock_)); //
+        Broodwar->drawTextScreen(375, 40, "Foe T Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
+        Broodwar->drawTextScreen(375, 50, "Gas (Pct. Ln.): %4.2f", inventory.getLn_Gas_Ratio());
+        Broodwar->drawTextScreen(375, 60, "Vision (Pct.): %4.2f", inventory.vision_tile_count_ / (double)map_area);  //
+        Broodwar->drawTextScreen(375, 70, "Unexplored Starts: %d", (int)inventory.start_positions_.size());  //
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -731,17 +731,16 @@ void CUNYAIModule::onFrame()
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
-                            threatening_stocks == 0 ||
+                            threatening_stocks == 0 || they_take_a_fap_beating ||
                             inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
                             inventory.safe_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at safe base.
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
-                            (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) || //Don't run if drones are present.
+                            (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
                             //(Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                             //threatening_stocks == 0 ||
                             //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                            they_take_a_fap_beating 
                             );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
@@ -820,14 +819,6 @@ void CUNYAIModule::onFrame()
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 
-        //Scouting/vision loop. Intially just brownian motion, now a fully implemented Mobility-type algorithm.
-        //auto start_scout = std::chrono::high_resolution_clock::now();
-
-        //if (spamGuard(u) && !foe_within_radius && u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()) { //Scout if you're not a drone or larva and can move. Spamguard here prevents double ordering of combat units.
-        //    Mobility mobility;
-        //    mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
-        //} // If it is a combat unit, then use it to attack the enemy.
-        //auto end_scout = std::chrono::high_resolution_clock::now();
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
@@ -856,11 +847,11 @@ void CUNYAIModule::onFrame()
                 // If it is successfully assigned, continue. On the next frame you will be caught by "Maintain the locks" step.
                 // If it is not successfully assigned, return to old task.
 
-                //BUILD RELATED TASKS:
+                //BUILD-RELATED TASKS:
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    Building_Begin(u, inventory, enemy_player_model.units_, friendly_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    Building_Begin(u, inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
@@ -880,7 +871,7 @@ void CUNYAIModule::onFrame()
                     continue;
                 }
 
-                //MINERAL RELATED TASKS
+                //MINERAL-RELATED TASKS
                 //Workers need to clear empty patches.
                 bool time_to_start_clearing_a_path = inventory.hatches_ >= 2 && Nearby_Blocking_Minerals(u, friendly_player_model.units_);
                 if (time_to_start_clearing_a_path && inventory.workers_clearing_ == 0 && isEmptyWorker(u)) {
@@ -951,7 +942,7 @@ void CUNYAIModule::onFrame()
                 miner.updateStoredUnit(u);
             }
 
-            //// let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
+            // let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
             if (miner.isAssignedResource(land_inventory) && !isEmptyWorker(u) && !u->isIdle()) {
                 continue;
             }
@@ -1039,18 +1030,18 @@ void CUNYAIModule::onFrame()
         {
             Broodwar->leaveGame();
         }
-        if constexpr (DRAWING_MODE) {
-            int n;
-            n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-            n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-            n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-            n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-            n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-            n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-            n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-            n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-            n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-        }
+    }
+    if constexpr (DRAWING_MODE) {
+        int n;
+        n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+        n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+        n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+        n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+        n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+        n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+        n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+        n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
     }
 } // closure: Onframe
 

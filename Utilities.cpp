@@ -377,32 +377,33 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 }
             }
 
-            output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_status.txt", ios_base::app);
+            output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
 
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Types " << smashed_unit_types << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Positions " << smashed_unit_positions << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Stock Value " << smashed_unit_stock_value << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Valid Positions " << smashed_unit_valid_positions << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Phase " << smashed_unit_phase << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Unit Types " << smashed_dead_unit_types << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Positions " << smashed_dead_unit_positions << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Stock Value " << smashed_dead_unit_stock_value << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Dead Valid Positions " << smashed_dead_unit_valid_positions << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Upgrade Types " << smashed_upgrade_types << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Tech Types " << smashed_upgrade_types << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Inferred Buildings " << smashed_inferred_building_types << endl;
+            output << label << " Frame Count " << Broodwar->getFrameCount() << endl;
+            output << " Unit Types " << smashed_unit_types << endl;
+            output << " Positions " << smashed_unit_positions << endl;
+            output << " Stock Value " << smashed_unit_stock_value << endl;
+            output << " Valid Positions " << smashed_unit_valid_positions << endl;
+            output << " Phase " << smashed_unit_phase << endl;
+            output << " Dead Unit Types " << smashed_dead_unit_types << endl;
+            output << " Dead Positions " << smashed_dead_unit_positions << endl;
+            output << " Dead Stock Value " << smashed_dead_unit_stock_value << endl;
+            output << " Dead Valid Positions " << smashed_dead_unit_valid_positions << endl;
+            output << " Upgrade Types " << smashed_upgrade_types << endl;
+            output << " Tech Types " << smashed_upgrade_types << endl;
+            output << " Inferred Buildings " << smashed_inferred_building_types << endl;
 
             if (player.bwapi_player_) {
-                output << label << " Frame Count " << Broodwar->getFrameCount() << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;
-                output << label << " Frame Count " << Broodwar->getFrameCount() << " Kill Score " << player.bwapi_player_->getKillScore() << endl;
-                output << label << " Frame Count " << Broodwar->getFrameCount() << " Building Score " << player.bwapi_player_->getBuildingScore() << endl;
+                output << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;
+                output << " Kill Score " << player.bwapi_player_->getKillScore() << endl;
+                output << " Building Score " << player.bwapi_player_->getBuildingScore() << endl;
             }
 
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Labor " << player.spending_model_.worker_stock <<  " alpha_L " << player.spending_model_.alpha_econ  << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " (K)Capital " << player.spending_model_.army_stock << " alpha_K " << player.spending_model_.alpha_army  << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Technology " << player.spending_model_.tech_stock << " alpha_T " << player.spending_model_.alpha_tech << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
-            output << label << " Frame Count " << Broodwar->getFrameCount() << " Testing Net Worth Function " << player.estimated_net_worth_ << endl;
+            output << " Labor " << player.spending_model_.worker_stock <<  " alpha_L " << player.spending_model_.alpha_econ  << " gradient " << player.spending_model_.econ_derivative << endl;
+            output << " (K)Capital " << player.spending_model_.army_stock << " alpha_K " << player.spending_model_.alpha_army << " gradient " << player.spending_model_.army_derivative << endl;
+            output << " Technology " << player.spending_model_.tech_stock << " alpha_T " << player.spending_model_.alpha_tech << " gradient " << player.spending_model_.tech_derivative << endl;
+            output << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
+            output << " Testing Net Worth Function " << player.estimated_net_worth_ << endl;
 
             
             output.close();
@@ -1939,14 +1940,12 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, c
 
 
     if (e_loc.stock_fighting_total_ > 0 && e_closest) {
-        if (e_loc.stock_fighting_total_ > 0 && e_closest) {
-            radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
-            radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
-            enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-            it_is_home_ = inv.home_base_.getDistance(pos) < 96;
-            can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
-            have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 20000 || inv.hatches_ == 1;
-        }
+        radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
+        radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
+        enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
+        it_is_home_ = inv.home_base_.getDistance(pos) < 96;
+        can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
+        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 20000 || inv.hatches_ == 1;
     }
 
 

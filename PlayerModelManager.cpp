@@ -67,6 +67,13 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     spending_model_.econ_derivative = spending_model_.econ_derivative;
     spending_model_.army_derivative = spending_model_.army_derivative;
     spending_model_.tech_derivative = spending_model_.tech_derivative;
+
+    //Update general weaknesses.
+    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
+    u_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_1, researches_) == UnitTypes::Zerg_Spore_Colony;
+    e_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian;
+
 };
 
 
