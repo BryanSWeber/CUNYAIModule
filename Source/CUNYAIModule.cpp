@@ -403,6 +403,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
+		Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Seed to copy exact game conditions for testing
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -501,16 +502,17 @@ void CUNYAIModule::onFrame()
         //    }
         //} // Pretty to look at!
 
-        for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
-            for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
-                if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
-                    if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                        Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
-                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-                    }
-                }
-            }
-        } // Pretty to look at!
+		/* Causing wierd visual bugs on screen (columns of numbers), easier to comment out for now */
+		//for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
+  //          for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
+  //              if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
+  //                  if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+  //                      Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
+  //                      //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+  //                  }
+  //              }
+  //          }
+  //      } // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
@@ -829,18 +831,18 @@ void CUNYAIModule::onFrame()
             bool too_much_gas = 1 - inventory.getLn_Gas_Ratio() > delta;
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
-            // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
-            bool was_gas = miner.isAssignedGas(land_inventory);
-            bool was_mineral = miner.isAssignedMining(land_inventory);
-            bool was_long_mine = miner.isLongRangeLock(land_inventory);
-            Unit old_mineral_patch = nullptr;
-            if ((was_mineral || was_gas) && !was_long_mine) {
-                old_mineral_patch = miner.locked_mine_;
-            }
+			// Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
+			bool was_gas = miner.isAssignedGas(land_inventory);
+			bool was_mineral = miner.isAssignedMining(land_inventory);
+			bool was_long_mine = miner.isLongRangeLock(land_inventory);
+			Unit old_mineral_patch = nullptr;
+			if ((was_mineral || was_gas) && !was_long_mine) {
+				old_mineral_patch = miner.locked_mine_;
+			}
 
-            if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
-
-                // Each mineral-related subtask does the following:
+			if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
+                
+				// Each mineral-related subtask does the following:
                 // Checks if it is doing a task of lower priority.
                 // It clears the worker. 
                 // It tries to assign the worker to the new task.
@@ -848,12 +850,15 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                if (miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24 && !build_check_this_frame) { 
                     build_check_this_frame = true;
-                    friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    Building_Begin(u, inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+					friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
+					Building_Begin(u, inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
-                        miner.stopMine(land_inventory);
+						miner.stopMine(land_inventory);
+						if (!isEmptyWorker(u) && miner.isAssignedBuilding(land_inventory)) {  //
+							u->returnCargo();
+						}
                         continue;
                     }
                     else if (old_mineral_patch) {
@@ -891,8 +896,8 @@ void CUNYAIModule::onFrame()
                 land_inventory.countViableMines();
                 bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_ && land_inventory.local_refineries_ > 0 && want_gas;
                 bool worker_bad_gas = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas);
-                bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
-                bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
+				bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
+				bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
                 // If we need gas, get gas!
                 if (could_use_another_gas && ( unassigned_worker || (worker_bad_gas && inventory.last_gas_check_ < t_game - 5 * 24 && isEmptyWorker(u))) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
@@ -919,7 +924,7 @@ void CUNYAIModule::onFrame()
                 }
             }
 
-            // return minerals manually if you have them.
+			// return minerals manually if you have them.
             if (!isEmptyWorker(u) && u->isIdle() && no_recent_worker_alteration) {
                 //friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 miner.bwapi_unit_->returnCargo();
@@ -932,15 +937,15 @@ void CUNYAIModule::onFrame()
                 //continue;
             }
 
-            // If idle get a job.
-            if (u->isIdle() && no_recent_worker_alteration) {
-                friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
-                Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_);
-                if (!miner.isAssignedMining(land_inventory)) {
-                    Worker_Gather(u, UnitTypes::Resource_Vespene_Geyser, friendly_player_model.units_);
-                }
-                miner.updateStoredUnit(u);
-            }
+			// If idle get a job.
+			if (u->isIdle() && no_recent_worker_alteration) {
+				friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation);
+				Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_);
+				if (!miner.isAssignedMining(land_inventory)) {
+					Worker_Gather(u, UnitTypes::Resource_Vespene_Geyser, friendly_player_model.units_);
+				}
+				miner.updateStoredUnit(u);
+			}
 
             // let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
             if (miner.isAssignedResource(land_inventory) && !isEmptyWorker(u) && !u->isIdle()) {
@@ -1031,18 +1036,19 @@ void CUNYAIModule::onFrame()
             Broodwar->leaveGame();
         }
     }
-    if constexpr (DRAWING_MODE) {
-        int n;
-        n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-        n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-        n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-        n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-        n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-        n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-        n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-        n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-    }
+	// Throwing an EXCEPTION ACCESS VIOLATION
+    //if constexpr (DRAWING_MODE) {
+    //    int n;
+    //    n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+    //    n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+    //    n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+    //    n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+    //    n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+    //    n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+    //    n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+    //    n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+    //    n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
+    //}
 } // closure: Onframe
 
 void CUNYAIModule::onSendText( std::string text )

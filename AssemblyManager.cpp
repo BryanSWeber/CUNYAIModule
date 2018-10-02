@@ -443,7 +443,6 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     bool buildings_started = false;
     bool expansion_vital = inventory.min_fields_ < inventory.hatches_ * 5 || inv.workers_distance_mining_ > 0.0625 * inv.min_workers_; // 1/16 workers LD mining is too much.
     bool expansion_meaningful = (Count_Units(UnitTypes::Zerg_Drone, inv) < 85 && (inventory.min_workers_ > inventory.min_fields_ * 2 || inventory.gas_workers_ > 2 * Count_Units(UnitTypes::Zerg_Extractor, inv))) || expansion_vital;
-    bool larva_starved = Count_Units(UnitTypes::Zerg_Larva, inv) <= Count_Units(UnitTypes::Zerg_Hatchery, inv);
     bool upgrade_bool = (tech_starved || (Count_Units(UnitTypes::Zerg_Larva, inv) == 0 && !army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < Count_Units(UnitTypes::Zerg_Hatchery, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, inv);
@@ -460,11 +459,11 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         e_loc = getUnitInventoryInRadius(e_inv, drone->getPosition(), inv.my_portion_of_the_map_);
         u_loc = getUnitInventoryInRadius(friendly_player_model.units_, drone->getPosition(), inv.my_portion_of_the_map_);
     }
-
-    //Macro-related Buildings.
-    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+	
+	//Macro-related Buildings.
+    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || econ_starved), inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
-    if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
+    if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, inv.hatches_ > 2 && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if on more than 2 bases and have the workers to sustain the larva
 
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
@@ -476,7 +475,6 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         can_upgrade_colonies &&
         !buildings_started &&
         nearby_enemy &&
-        (larva_starved || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1 &&
         Count_Units(UnitTypes::Zerg_Sunken_Colony, inv) + Count_Units(UnitTypes::Zerg_Spore_Colony, inv) < max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
    

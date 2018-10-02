@@ -146,6 +146,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
+	bool scourge_stop_attacking = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / (double)limit_units_diving;
@@ -155,46 +156,47 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim);
-            if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
-                int dist_to_enemy = unit->getDistance(e->second.pos_);
+			if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
+				int dist_to_enemy = unit->getDistance(e->second.pos_);
 
-                bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
-                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
-                    (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
-                    e_type == UnitTypes::Protoss_Carrier ||
-                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
-                    e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
-                bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+				bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
+					(e_type.isSpellcaster() && !e_type.isBuilding()) ||
+					(e_type.isDetector() && ui.cloaker_count_ > 0) ||
+					e_type == UnitTypes::Protoss_Carrier ||
+					(e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
+					e_type == UnitTypes::Protoss_Reaver || // Prioritise these guys: Splash, crippled combat units
+					e_type == UnitTypes::Terran_Medic; // Kill the healers
+				bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+				bool scourge_stop_attacking = u_type == UnitTypes::Zerg_Scourge && e_type == UnitTypes::Protoss_Interceptor;
 
-                if (critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
-                    e_priority = 6;
-                }
-                else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
-                    dist_to_enemy < min(chargeable_dist, 32) &&
-                    last_target &&
-                    (last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
-                    e_priority = 5;
-                }
-                else if (CUNYAIModule::Can_Fight(e->second, unit)) {
-                    e_priority = 4;
-                }
-                else if (e_type.isWorker()) {
-                    e_priority = 3;
-                }
-                else if (e_type.isResourceDepot()) {
-                    e_priority = 2;
-                }
-                else if (CUNYAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0) {
-                    e_priority = 1;
-                }
-                else if (e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
-                    e_priority = 0; // or if they cant fight back we'll get those last.
-                }
-                else {
-                    e_priority = -1; // should leave stuff like larvae and eggs in here. Low, low priority.
-                }
-
-
+				if (critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
+					e_priority = 6;
+				}
+				else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
+					dist_to_enemy < min(chargeable_dist, 32) &&
+					last_target &&
+					(last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
+					e_priority = 5;
+				}
+				else if (CUNYAIModule::Can_Fight(e->second, unit)) {
+					e_priority = 4;
+				}
+				else if (e_type.isWorker()) {
+					e_priority = 3;
+				}
+				else if (e_type.isResourceDepot()) {
+					e_priority = 2;
+				}
+				else if (CUNYAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0) {
+					e_priority = 1;
+				}
+				else if (e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
+					e_priority = 0; // or if they cant fight back we'll get those last.
+				}
+				else {
+					e_priority = -1; // should leave stuff like larvae and eggs in here. Low, low priority.
+				}
+	
                 if (e_priority >= priority && e_priority >= 3 && dist_to_enemy < max_dist) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
                     priority = e_priority;
@@ -206,7 +208,6 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
                     max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
                     target = &e->second;
                 }
-
             }
         }
     }
@@ -214,7 +215,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     bool attack_order_issued = false;
     //bool target_is_on_wrong_plane = target && target->bwapi_unit_ && target->elevation_ != ui.getStoredUnitValue(unit).elevation_ && melee && !ui.getStoredUnitValue(unit).is_flying_; // keeps crashing from nullptr target.
 
-    if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) ){
+    if ((target_sentinel || target_sentinel_poor_target_atk) && !scourge_stop_attacking && unit->hasPath(target->pos_)){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
             if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
                 //
@@ -245,7 +246,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
         changing_unit.phase_ = "Attacking";
     }
 
-    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, inv);
+    if(!attack_order_issued && !u_type == UnitTypes::Zerg_Drone) Pathing_Movement(unit, ui, ei, inv);
 }
 
 
