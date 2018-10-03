@@ -156,7 +156,15 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_ 
         << endl;
     output.close();
-
+	ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+	if (!check)
+	{
+		ofstream detector;
+		detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+		detector << -1;
+		detector.close();
+	}
+	check.close();
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
@@ -168,7 +176,17 @@ void CUNYAIModule::onFrame()
   // Return if the game is a replay or is paused
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
-
+	bool foundDetector = false;
+	if (Broodwar->getFrameCount() % (24 * 30) == 0 && foundDetector == false) {
+		if (enemy_player_model.units_.detector_count_ == 1)
+		{
+			ofstream detector;
+			detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+			detector << Broodwar->elapsedTime();
+			detector.close();
+			foundDetector = true;
+		}
+	}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -359,7 +377,6 @@ void CUNYAIModule::onFrame()
     //friendly_player_model.units_.updateUnitInventorySummary(); Redundant with //updateUnitInventory.
     land_inventory.updateMiners();
     land_inventory.updateGasCollectors();
-
     inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
     
