@@ -15,7 +15,7 @@
     <RootNamespace>ExampleAIModule</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <ProjectName>CUNYAIModule</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -91,7 +91,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>C:\Users\Bryan\BWAPI 4.2.0\bwapi-master\bwapi\lib\BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BWAPI_DIR)\lib\BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
