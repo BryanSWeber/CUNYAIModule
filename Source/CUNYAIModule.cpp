@@ -403,6 +403,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
+		Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Seed to copy exact game conditions for testing
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -848,7 +849,7 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     Building_Begin(u, inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
@@ -1031,6 +1032,7 @@ void CUNYAIModule::onFrame()
             Broodwar->leaveGame();
         }
     }
+
     if constexpr (DRAWING_MODE) {
         int n;
         n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
@@ -1043,6 +1045,7 @@ void CUNYAIModule::onFrame()
         n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
         n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
     }
+
 } // closure: Onframe
 
 void CUNYAIModule::onSendText( std::string text )
@@ -1295,9 +1298,11 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-            else {
-                buildorder.clearRemainingBuildOrder();
-            }
+			
+			/* Doesn't seem to be a needed fail-safe. Fixes a bug where the build order is cleared sometimes when a drone is used to build an extractor */
+            //else {
+            //    buildorder.clearRemainingBuildOrder(); 
+            //}
         }
     }
 }

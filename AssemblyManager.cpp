@@ -272,7 +272,6 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Inventory &inv, Unit_
     bool enough_drones = (Count_Units(UnitTypes::Zerg_Drone, inv) > inv.min_fields_ * 2 + Count_Units(UnitTypes::Zerg_Extractor, inv) * 3 + 1) || Count_Units(UnitTypes::Zerg_Drone, inv) >= 85;
     bool drone_conditional = econ_starved || tech_starved; // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
     bool one_tech_per_base = Count_Units(UnitTypes::Zerg_Hydralisk_Den, inv) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + Count_Units(UnitTypes::Zerg_Spire, inv) || Count_Units(UnitTypes::Zerg_Greater_Spire, inv) + Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, inv) < inv.hatches_;
-
     bool would_force_spire = Count_Units(UnitTypes::Zerg_Spire, inv) == 0 &&
         !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) &&
         !Broodwar->self()->isResearching(TechTypes::Lurker_Aspect) &&
@@ -483,6 +482,9 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     //First Building needed!
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, !econ_starved &&
         Count_Units(UnitTypes::Zerg_Spawning_Pool, inv) == 0);
+
+	// Trust the build order. If there is a build order and it wants a hydra den, build it
+	if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, !buildorder.isEmptyBuildOrder());
 
     //Consider an organized build plan.
     if (friendly_player_model.u_relatively_weak_against_air_ && e_inv.stock_fliers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 

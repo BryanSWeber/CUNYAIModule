@@ -45,8 +45,18 @@ GeneticHistory::GeneticHistory( string file ) {
         a_econ_out = dis(gen);
         a_tech_out = dis(gen);
         r_out = dis(gen); 
-
     }
+
+	if constexpr (TEST_MODE) {
+		// Values taken from print file (10/3/18)
+		delta_out = 0.3021355;
+		gamma_out = 0.279526;
+		a_army_out = 0.511545;
+		a_econ_out = 0.488455;
+		a_tech_out = 0.52895;
+		r_out = 0.5097605;
+	}
+
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
@@ -74,6 +84,10 @@ GeneticHistory::GeneticHistory( string file ) {
     if constexpr(TRAINING_AGAINST_BASE_AI) {
         build_order_list = { "drone drone drone drone drone overlord drone drone drone hatch pool drone drone" };
     }
+
+	if constexpr (TEST_MODE) {
+		build_order_list = { "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone" };
+	}
 
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1 );
     size_t build_order_rand = rand_bo(gen);
@@ -321,6 +335,10 @@ GeneticHistory::GeneticHistory( string file ) {
         size_t parent_2 = unif_dist_to_win_count(gen);
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
+
+		if constexpr (TEST_MODE) {
+			parent_2 = parent_1;
+		}
 
         if constexpr ( TRAINING_AGAINST_BASE_AI ) {
 
