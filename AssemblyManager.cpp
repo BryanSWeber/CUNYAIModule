@@ -460,17 +460,10 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     }
 
     // Trust the build order. If there is a build order and it wants a building, build it!
-    if (!buildorder.isEmptyBuildOrder()) {
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, false);
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, false);
-    }
+	if (!buildorder.isEmptyBuildOrder()) {
+		UnitType next_in_build_order = buildorder.building_gene_.front().getUnit();
+		if (!buildings_started) buildings_started = Check_N_Build(next_in_build_order, drone, false);
+	}
 
     //Macro-related Buildings.
     if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
