@@ -22,7 +22,7 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
+bool foundDetector;
 //Declare universally shared inventories.
 Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
@@ -44,7 +44,7 @@ double CUNYAIModule::alpha_econ_original;
 
 void CUNYAIModule::onStart()
 {
-
+	foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -176,8 +176,7 @@ void CUNYAIModule::onFrame()
   // Return if the game is a replay or is paused
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
-	bool foundDetector = false;
-	if (Broodwar->getFrameCount() % (24 * 30) == 0 && foundDetector == false) {
+	if (foundDetector == false) {
 		if (enemy_player_model.units_.detector_count_ == 1)
 		{
 			ofstream detector;
