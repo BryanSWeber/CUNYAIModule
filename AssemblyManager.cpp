@@ -459,12 +459,18 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         u_loc = getUnitInventoryInRadius(friendly_player_model.units_, drone->getPosition(), inv.my_portion_of_the_map_);
     }
 
-
-	// Trust the build order. If there is a build order and it wants a building, build it!
-	if (!buildorder.isEmptyBuildOrder()) {
-		UnitType next_in_build_order = buildorder.building_gene_.front().getUnit();
-		if (!buildings_started) buildings_started = Check_N_Build(next_in_build_order, drone, false);
-	}	
+    // Trust the build order. If there is a build order and it wants a building, build it!
+    if (!buildorder.isEmptyBuildOrder()) {
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, false);
+        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, false);
+    }
 
     //Macro-related Buildings.
     if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
@@ -804,8 +810,6 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object ling = Build_Order_Object(UnitTypes::Zerg_Zergling);
     Build_Order_Object creep = Build_Order_Object(UnitTypes::Zerg_Creep_Colony);
     Build_Order_Object sunken = Build_Order_Object(UnitTypes::Zerg_Sunken_Colony);
-	Build_Order_Object spore = Build_Order_Object(UnitTypes::Zerg_Spore_Colony);
-	Build_Order_Object evo = Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber);
     Build_Order_Object lair = Build_Order_Object(UnitTypes::Zerg_Lair);
     Build_Order_Object spire = Build_Order_Object(UnitTypes::Zerg_Spire);
     Build_Order_Object muta = Build_Order_Object(UnitTypes::Zerg_Mutalisk);
@@ -816,7 +820,6 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object grooved_spines = Build_Order_Object(UpgradeTypes::Grooved_Spines);
     Build_Order_Object muscular_augments = Build_Order_Object(UpgradeTypes::Muscular_Augments);
 
-	bool is_there_creep = false;
     for (auto &build : build_string) {
         if (build == "hatch") {
             building_gene_.push_back(hatch);
@@ -843,24 +846,11 @@ void Building_Gene::getInitialBuildOrder(string s) {
             building_gene_.push_back(ling);
         }
         else if (build == "creep") {
-			is_there_creep = true;
             building_gene_.push_back(creep);
         }
         else if (build == "sunken") {
-			if (!is_there_creep)
-				building_gene_.push_back(creep);
             building_gene_.push_back(sunken);
-			is_there_creep = false;
         }
-		else if (build == "spore") {
-			if (!is_there_creep)
-				building_gene_.push_back(creep);
-			building_gene_.push_back(spore);
-			is_there_creep = false;
-		}
-		else if (build == "evo") {
-			building_gene_.push_back(evo);
-		}
         else if (build == "lair") {
             building_gene_.push_back(lair);
         }
