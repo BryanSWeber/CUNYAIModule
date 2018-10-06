@@ -16,9 +16,9 @@ Unit_Inventory::Unit_Inventory(){}
 
 Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
 
-	for (const auto & u : unit_set) {
-		unit_inventory_.insert({ u, Stored_Unit(u) });
-	}
+    for (const auto & u : unit_set) {
+        unit_inventory_.insert({ u, Stored_Unit(u) });
+    }
 
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
@@ -438,8 +438,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int shoots_both = 0;
     int high_ground = 0;
     int range = 0;
-	int worker_count = 0;
-	int volume = 0;
+    int worker_count = 0;
+    int volume = 0;
     int detector_count = 0;
     int cloaker_count = 0;
     int max_cooldown = 0;
@@ -500,7 +500,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
             }
             stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
-			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
+            //Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
    //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
    //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
    //                 high_ground += u_iter.second.current_stock_value_;
@@ -509,7 +509,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
         }
     } 
 
-	worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
+    worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
     stock_fliers_ = fliers;
     stock_ground_units_ = ground_unit;
@@ -523,8 +523,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
     max_range_ = range;
     max_cooldown_ = max_cooldown;
-	worker_count_ = worker_count;
-	volume_ = volume;
+    worker_count_ = worker_count;
+    volume_ = volume;
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
     resource_depot_count_ = resource_depots;
@@ -586,7 +586,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     shields_ = unit->getShields();
     health_ = unit->getHitPoints();
     current_hp_ = shields_ + health_;
-	locked_mine_ = nullptr;
+    locked_mine_ = nullptr;
     velocity_x_ = unit->getVelocityX();
     velocity_y_ = unit->getVelocityY();
     order_ = unit->getOrder();
@@ -611,17 +611,17 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
 //Increments the number of miners on a resource.
 void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
-	locked_mine_ = new_resource.bwapi_unit_;
-	ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+    locked_mine_ = new_resource.bwapi_unit_;
+    ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 //Decrements the number of miners on a resource.
 void Stored_Unit::stopMine(Resource_Inventory &ri){
-	if (locked_mine_){
+    if (locked_mine_){
         if (getMine(ri)) {
             getMine(ri)->number_of_miners_ = max(getMine(ri)->number_of_miners_ - 1, 0);
         }
-	}
+    }
     locked_mine_ = nullptr;
 }
 

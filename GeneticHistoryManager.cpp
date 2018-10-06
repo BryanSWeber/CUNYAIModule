@@ -36,31 +36,12 @@ GeneticHistory::GeneticHistory( string file ) {
     //No longer used.
     double a_vis_out = dis(gen);
 
-    if constexpr (TRAINING_AGAINST_BASE_AI) {
-    
-        delta_out = 0.4;
-        gamma_out = 0.4; // Artifically chosen
-        // the values below will be normalized to 1.
-        a_army_out = dis(gen);
-        a_econ_out = dis(gen);
-        a_tech_out = dis(gen);
-        r_out = dis(gen); 
-    }
-
-	if constexpr (TEST_MODE) {
-		// Values taken from print file (10/3/18)
-		delta_out = 0.3021355;
-		gamma_out = 0.279526;
-		a_army_out = 0.511545;
-		a_econ_out = 0.488455;
-		a_tech_out = 0.52895;
-		r_out = 0.5097605;
-	}
-
     // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
     // drone drone drone drone drone overlord drone drone drone hatch pool extract ling lair drone drone drone drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta // 12 hatch into muta.
+	// "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
+	// "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
 
     string build_order_out;
     
@@ -82,20 +63,32 @@ GeneticHistory::GeneticHistory( string file ) {
     };
 
     if constexpr(TRAINING_AGAINST_BASE_AI) {
+		delta_out = 0.4;
+		gamma_out = 0.4; // Artifically chosen
+						 // the values below will be normalized to 1.
+		a_army_out = dis(gen);
+		a_econ_out = dis(gen);
+		a_tech_out = dis(gen);
+		r_out = dis(gen);
         build_order_list = { "drone drone drone drone drone overlord drone drone drone hatch pool drone drone" };
     }
 
-	if constexpr (TEST_MODE) {
-		build_order_list = { "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone" };
-	}
+    if constexpr (TEST_MODE) {
+		// Values taken from print file (10/3/18)
+		delta_out = 0.3021355;
+		gamma_out = 0.279526;
+		a_army_out = 0.511545;
+		a_econ_out = 0.488455;
+		a_tech_out = 0.52895;
+		r_out = 0.5097605;
+        build_order_list = { "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone" };
+    }
 
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1 );
     size_t build_order_rand = rand_bo(gen);
 
     build_order_out = build_order_list[ build_order_rand ];
-	
-  // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
-  // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
+    
 
     int selected_win_count = 0;
     int selected_lose_count = 0;
@@ -336,9 +329,9 @@ GeneticHistory::GeneticHistory( string file ) {
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-		if constexpr (TEST_MODE) {
-			parent_2 = parent_1;
-		}
+        if constexpr (TEST_MODE) {
+            parent_2 = parent_1;
+        }
 
         if constexpr ( TRAINING_AGAINST_BASE_AI ) {
 
@@ -518,6 +511,6 @@ GeneticHistory::GeneticHistory( string file ) {
             //    && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20) {
             //    break; // if we have an interior solution, let's use it, if not, we try again.
             //}
-        //}
+            //}
     }
 }

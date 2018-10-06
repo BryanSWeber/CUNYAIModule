@@ -220,8 +220,8 @@ bool CUNYAIModule::Gas_Outlet() {
     } // turns off gas interest when larve are 0.
 
       //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_player_model.units_) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
+      //        Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
+      //        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
       //if ( long_condition ) {
       //    outlet_avail = true;
       //} 

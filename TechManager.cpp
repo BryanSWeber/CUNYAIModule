@@ -38,15 +38,15 @@ bool CUNYAIModule::Tech_Avail() {
                 UpgradeType::set building_up_set = u->getType().upgradesWhat(); // does this idle building make that upgrade?
                 if ( building_up_set.find( up_current ) != building_up_set.end() ) {
 
-					bool upgrade_incomplete = BWAPI::Broodwar->self()->getUpgradeLevel(up_current) < up_current.maxRepeats() && !BWAPI::Broodwar->self()->isUpgrading(up_current);
+                    bool upgrade_incomplete = BWAPI::Broodwar->self()->getUpgradeLevel(up_current) < up_current.maxRepeats() && !BWAPI::Broodwar->self()->isUpgrading(up_current);
 
-					bool hydra_upgrade = up_current == UpgradeTypes::Zerg_Missile_Attacks || up_current == UpgradeTypes::Grooved_Spines || up_current == UpgradeTypes::Muscular_Augments;
-					bool ling_upgrade = up_current == UpgradeTypes::Zerg_Melee_Attacks || up_current == UpgradeTypes::Metabolic_Boost;
+                    bool hydra_upgrade = up_current == UpgradeTypes::Zerg_Missile_Attacks || up_current == UpgradeTypes::Grooved_Spines || up_current == UpgradeTypes::Muscular_Augments;
+                    bool ling_upgrade = up_current == UpgradeTypes::Zerg_Melee_Attacks || up_current == UpgradeTypes::Metabolic_Boost;
 
-					bool upgrade_conditionals = ( hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
-						(ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_));
+                    bool upgrade_conditionals = ( hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
+                        (ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_));
 
-					if (upgrade_incomplete && upgrade_conditionals) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do. We do not require air upgrades at this time, but they could still plausibly occur.
+                    if (upgrade_incomplete && upgrade_conditionals) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do. We do not require air upgrades at this time, but they could still plausibly occur.
                         return true;
                     }
                 }
@@ -110,6 +110,7 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (more_flyers_than_ground || maxed_armor));
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire, inv) > 0 && (more_flyers_than_ground || maxed_armor));
 
+	//should auto upgrade if there is a build order requirement for any of these three types.
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
             inventory.hatches_ > 1 &&
             Count_Units(UnitTypes::Zerg_Lair, inv) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair

@@ -18,24 +18,24 @@ void CUNYAIModule::PrintError_Unit(const Unit &unit) {
 
 // Identifies those moments where a worker is gathering and its unusual subcases.
 bool CUNYAIModule::isActiveWorker(const Unit &unit){
-	bool passive = //BWAPI::Orders::MoveToMinerals &&
-		unit->getOrder() == BWAPI::Orders::MoveToGas ||
-		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
-		//unit->getOrder() == BWAPI::Orders::WaitForGas && // should never be overstacked on gas.
-		unit->getOrder() == BWAPI::Orders::MiningMinerals ||
-		unit->getOrder() == BWAPI::Orders::HarvestGas ||
-		unit->getOrder() == BWAPI::Orders::ReturnMinerals ||
-		unit->getOrder() == BWAPI::Orders::ReturnGas ||
-		unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
-	return passive;
+    bool passive = //BWAPI::Orders::MoveToMinerals &&
+        unit->getOrder() == BWAPI::Orders::MoveToGas ||
+        unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
+        //unit->getOrder() == BWAPI::Orders::WaitForGas && // should never be overstacked on gas.
+        unit->getOrder() == BWAPI::Orders::MiningMinerals ||
+        unit->getOrder() == BWAPI::Orders::HarvestGas ||
+        unit->getOrder() == BWAPI::Orders::ReturnMinerals ||
+        unit->getOrder() == BWAPI::Orders::ReturnGas ||
+        unit->getOrder() == BWAPI::Orders::ResetCollision;//command is issued promptly when workers finish mining, but must resolve. http://satirist.org/ai/starcraft/blog/archives/220-how-to-beat-Stone,-according-to-AIL.html
+    return passive;
 }
 
 bool CUNYAIModule::isInLine(const Unit &unit){
-	bool passive = 
-		unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
-		unit->getOrder() == BWAPI::Orders::WaitForGas ||
-		unit->getOrder() == BWAPI::Orders::ResetCollision;
-	return passive;
+    bool passive = 
+        unit->getOrder() == BWAPI::Orders::WaitForMinerals ||
+        unit->getOrder() == BWAPI::Orders::WaitForGas ||
+        unit->getOrder() == BWAPI::Orders::ResetCollision;
+    return passive;
 }
 
 bool CUNYAIModule::isEmptyWorker(const Unit &unit) {
@@ -49,7 +49,7 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
     UnitCommandType u_type = unit->getLastCommand().getType();
 
-	bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
+    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
                          (u_type == UnitCommandTypes::Morph && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
@@ -61,7 +61,7 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                           u_type == UnitCommandTypes::None ||
                           u_type == UnitCommandTypes::Stop ||
-						  u_type == UnitCommandTypes::Unknown;
+                          u_type == UnitCommandTypes::Unknown;
 
 
     return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spamGuard(unit);
@@ -69,9 +69,9 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
 // Did the unit fight in the last 5 seconds?
 bool CUNYAIModule::isRecentCombatant(const Unit &unit) {
-	bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
-	bool recent_order = unit->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
-	return fighting_now && recent_order;
+    bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
+    bool recent_order = unit->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
+    return fighting_now && recent_order;
 }
 
 // Checks if a unit is a combat unit.
@@ -569,18 +569,18 @@ int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
 int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
 {
-	int count = 0;
-	for (const auto & unit : unit_set)
-	{
-		if (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) { // Count units under construction
-			count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
-		}
-		else if (unit->getType() == type && unit->getLastCommand().getType() == u_command_type) {
-			count++;
-		}
-	}
+    int count = 0;
+    for (const auto & unit : unit_set)
+    {
+        if (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) { // Count units under construction
+            count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        }
+        else if (unit->getType() == type && unit->getLastCommand().getType() == u_command_type) {
+            count++;
+        }
+    }
 
-	return count;
+    return count;
 }
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
 int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
@@ -916,42 +916,42 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 
 //Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
 Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
-	int min_dist = dist;
-	int temp_dist = 999999;
-	Stored_Unit* return_unit = nullptr;
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
 
-	if (!ui.unit_inventory_.empty()) {
-		for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
-			if (e->second.type_ == u_type && e->second.valid_pos_ ){
-				temp_dist = (int)(*e).second.pos_.getDistance(origin);
-				if (temp_dist <= min_dist) {
-					min_dist = temp_dist;
-					return_unit = &(e->second);
-				}
-			}
-		}
-	}
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if (e->second.type_ == u_type && e->second.valid_pos_ ){
+                temp_dist = (int)(*e).second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
 
-	return return_unit;
+    return return_unit;
 }
 
 //Gets pointer to closest unit to point in Resource_inventory. Checks range. Careful about visiblity.
 Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Position &origin, const int &dist = 999999) {
-	int min_dist = dist;
-	int temp_dist = 999999;
-	Stored_Resource* return_unit = nullptr;
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Stored_Resource* return_unit = nullptr;
 
-	if (!ri.resource_inventory_.empty()) {
-		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-			temp_dist = (int)(*r).second.pos_.getDistance(origin);
-			if (temp_dist <= min_dist ) {
-				min_dist = temp_dist;
-				return_unit = &(r->second);
-			}
-		}
-	}
+    if (!ri.resource_inventory_.empty()) {
+        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+            temp_dist = (int)(*r).second.pos_.getDistance(origin);
+            if (temp_dist <= min_dist ) {
+                min_dist = temp_dist;
+                return_unit = &(r->second);
+            }
+        }
+    }
 
-	return return_unit;
+    return return_unit;
 }
 
 Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
@@ -1221,24 +1221,24 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui,
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
 Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
-	Unit_Inventory ui_out;
-	for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
-		if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
-			ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
-		}
-	}
-	return ui_out;
+    Unit_Inventory ui_out;
+    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+        if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
+            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+        }
+    }
+    return ui_out;
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
 Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
-	Resource_Inventory ri_out;
-	for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-		if ((*r).second.pos_.getDistance(origin) <= dist) {
-			ri_out.addStored_Resource( (*r).second ); // if we take any distance and they are in inventory.
-		}
-	}
-	return ri_out;
+    Resource_Inventory ri_out;
+    for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+        if ((*r).second.pos_.getDistance(origin) <= dist) {
+            ri_out.addStored_Resource( (*r).second ); // if we take any distance and they are in inventory.
+        }
+    }
+    return ri_out;
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
@@ -1460,225 +1460,225 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
 //checks if there is a smooth path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
 bool CUNYAIModule::isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold){ // see Brehsam's Algorithm for all 8 octants.
-	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
-	WalkPosition final = WalkPosition(finalp);
-	WalkPosition initial = WalkPosition(initialp);
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y;
+    WalkPosition final = WalkPosition(finalp);
+    WalkPosition initial = WalkPosition(initialp);
 
-	dx = (final.x - initial.x);
-	dy = (final.y - initial.y);
-	dx1 = abs(dx);
-	dy1 = abs(dy);
-	px = 2 * dy1 - dx1;
-	py = 2 * dx1 - dy1;
-	map_x = Broodwar->mapWidth() * 4;
-	map_y = Broodwar->mapHeight() * 4;
+    dx = (final.x - initial.x);
+    dy = (final.y - initial.y);
+    dx1 = abs(dx);
+    dy1 = abs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    map_x = Broodwar->mapWidth() * 4;
+    map_y = Broodwar->mapHeight() * 4;
 
-	if (dy1 <= dx1)
-	{
-		if (dx >= 0)
-		{
-			x = initial.x;
-			y = initial.y;
-			xe = final.x;
-		}
-		else
-		{
-			x = final.x;
-			y = final.y;
-			xe = initial.x;
-		}
+    if (dy1 <= dx1)
+    {
+        if (dx >= 0)
+        {
+            x = initial.x;
+            y = initial.y;
+            xe = final.x;
+        }
+        else
+        {
+            x = final.x;
+            y = final.y;
+            xe = initial.x;
+        }
 
-		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
-		if ( safety_check && target_map[x][y] >= threshold) {
-			return false;
-		}
+        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y ;
+        if ( safety_check && target_map[x][y] >= threshold) {
+            return false;
+        }
 
-		for (int i = 0; x<xe; i++)
-		{
-			x = x + 1;
-			if (px<0)
-			{
-				px = px + 2 * dy1;
-			}
-			else
-			{
-				if ((dx<0 && dy<0) || (dx>0 && dy>0))
-				{
-					y++;
-				}
-				else
-				{
-					y--;
-				}
-				px = px + 2 * (dy1 - dx1);
-			}
+        for (int i = 0; x<xe; i++)
+        {
+            x = x + 1;
+            if (px<0)
+            {
+                px = px + 2 * dy1;
+            }
+            else
+            {
+                if ((dx<0 && dy<0) || (dx>0 && dy>0))
+                {
+                    y++;
+                }
+                else
+                {
+                    y--;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
 
-			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && target_map[x][y] >= threshold) {
-				return false;
-			}
-		}
-	}
-	else
-	{
-		if (dy >= 0)
-		{
-			x = initial.x;
-			y = initial.y;
-			ye = final.y;
-		}
-		else
-		{
-			x = final.x;
-			y = final.y;
-			ye = initial.y;
-		}
-		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && target_map[x][y] >= threshold) {
-			return false;
-		}
+            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+            if (safety_check && target_map[x][y] >= threshold) {
+                return false;
+            }
+        }
+    }
+    else
+    {
+        if (dy >= 0)
+        {
+            x = initial.x;
+            y = initial.y;
+            ye = final.y;
+        }
+        else
+        {
+            x = final.x;
+            y = final.y;
+            ye = initial.y;
+        }
+        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+        if (safety_check && target_map[x][y] >= threshold) {
+            return false;
+        }
 
-		for (int i = 0; y<ye; i++)
-		{
-			y = y + 1;
-			if (py <= 0)
-			{
-				py = py + 2 * dx1;
-			}
-			else
-			{
-				if ((dx<0 && dy<0) || (dx>0 && dy>0))
-				{
-					x++;
-				}
-				else
-				{
-					x--;
-				}
-				py = py + 2 * (dx1 - dy1);
-			}
-			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && target_map[x][y] >= threshold) {
-				return false;
-			}
+        for (int i = 0; y<ye; i++)
+        {
+            y = y + 1;
+            if (py <= 0)
+            {
+                py = py + 2 * dx1;
+            }
+            else
+            {
+                if ((dx<0 && dy<0) || (dx>0 && dy>0))
+                {
+                    x++;
+                }
+                else
+                {
+                    x--;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+            if (safety_check && target_map[x][y] >= threshold) {
+                return false;
+            }
 
-		}
-	}
+        }
+    }
 
-	return true;
+    return true;
 
 }
 
 //Counts the number of minitiles in a path to target. in minitiles
 int CUNYAIModule::getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold) // see Brehsam's Algorithm. Is likely bugged in current state.
 {
-	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
-	WalkPosition final = WalkPosition(finalp);
-	WalkPosition initial = WalkPosition(initialp);
+    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, map_x, map_y, squares_counted;
+    WalkPosition final = WalkPosition(finalp);
+    WalkPosition initial = WalkPosition(initialp);
 
-	squares_counted = 0;
-	dx = (final.x - initial.x);
-	dy = (final.y - initial.y);
-	dx1 = abs(dx);
-	dy1 = abs(dy);
-	px = 2 * dy1 - dx1;
-	py = 2 * dx1 - dy1;
-	map_x = Broodwar->mapWidth() * 4;
-	map_y = Broodwar->mapHeight() * 4;
+    squares_counted = 0;
+    dx = (final.x - initial.x);
+    dy = (final.y - initial.y);
+    dx1 = abs(dx);
+    dy1 = abs(dy);
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    map_x = Broodwar->mapWidth() * 4;
+    map_y = Broodwar->mapHeight() * 4;
 
-	if (dy1 <= dx1)
-	{
-		if (dx >= 0)
-		{
-			x = initial.x;
-			y = initial.y;
-			xe = final.x;
-		}
-		else
-		{
-			x = final.x;
-			y = final.y;
-			xe = initial.x;
-		}
+    if (dy1 <= dx1)
+    {
+        if (dx >= 0)
+        {
+            x = initial.x;
+            y = initial.y;
+            xe = final.x;
+        }
+        else
+        {
+            x = final.x;
+            y = final.y;
+            xe = initial.x;
+        }
 
-		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && target_map[x][y] >= 1) {
-			squares_counted++;
-		}
+        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+        if (safety_check && target_map[x][y] >= 1) {
+            squares_counted++;
+        }
 
-		for (int i = 0; x<xe; i++)
-		{
-			x = x + 1;
-			if (px<0)
-			{
-				px = px + 2 * dy1;
-			}
-			else
-			{
-				if ((dx<0 && dy<0) || (dx>0 && dy>0))
-				{
-					y++;
-				}
-				else
-				{
-					y--;
-				}
-				px = px + 2 * (dy1 - dx1);
-			}
+        for (int i = 0; x<xe; i++)
+        {
+            x = x + 1;
+            if (px<0)
+            {
+                px = px + 2 * dy1;
+            }
+            else
+            {
+                if ((dx<0 && dy<0) || (dx>0 && dy>0))
+                {
+                    y++;
+                }
+                else
+                {
+                    y--;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
 
-			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if (safety_check && target_map[x][y] >= 1) {
-				squares_counted++;
-			}
-		}
-	}
-	else
-	{
-		if (dy >= 0)
-		{
-			x = initial.x;
-			y = initial.y;
-			ye = final.y;
-		}
-		else
-		{
-			x = final.x;
-			y = final.y;
-			ye = initial.y;
-		}
-		bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-		if (safety_check && target_map[x][y] >= 1) {
-			squares_counted++;
-		}
+            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+            if (safety_check && target_map[x][y] >= 1) {
+                squares_counted++;
+            }
+        }
+    }
+    else
+    {
+        if (dy >= 0)
+        {
+            x = initial.x;
+            y = initial.y;
+            ye = final.y;
+        }
+        else
+        {
+            x = final.x;
+            y = final.y;
+            ye = initial.y;
+        }
+        bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+        if (safety_check && target_map[x][y] >= 1) {
+            squares_counted++;
+        }
 
-		for (int i = 0; y<ye; i++)
-		{
-			y = y + 1;
-			if (py <= 0)
-			{
-				py = py + 2 * dx1;
-			}
-			else
-			{
-				if ((dx<0 && dy<0) || (dx>0 && dy>0))
-				{
-					x++;
-				}
-				else
-				{
-					x--;
-				}
-				py = py + 2 * (dx1 - dy1);
-			}
-			bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
-			if ( safety_check && target_map[x][y] >= 1) {
-				squares_counted++;
-			}
+        for (int i = 0; y<ye; i++)
+        {
+            y = y + 1;
+            if (py <= 0)
+            {
+                py = py + 2 * dx1;
+            }
+            else
+            {
+                if ((dx<0 && dy<0) || (dx>0 && dy>0))
+                {
+                    x++;
+                }
+                else
+                {
+                    x--;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            bool safety_check = x > 1 && x < map_x && y > 1 && y < map_y;
+            if ( safety_check && target_map[x][y] >= 1) {
+                squares_counted++;
+            }
 
-		}
-	}
+        }
+    }
 
-	return squares_counted;
+    return squares_counted;
 }
 
 
@@ -1921,7 +1921,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
 }
 
 Position CUNYAIModule::getUnit_Center(Unit unit){
-	return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
+    return Position(unit->getPosition().x + unit->getType().dimensionLeft(), unit->getPosition().y + unit->getType().dimensionUp());
 }
 
 // checks if a location is safe and doesn't block minerals.

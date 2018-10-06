@@ -1188,14 +1188,14 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
         TilePosition min_pos_t = TilePosition( p->second.pos_ );
 
         //if (p->second.type_.isMineralField()){
-        //	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-        //	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-        //	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
         //}
         //else {
-        //	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-        //	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-        //	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
         //}
 
         for ( auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x ) {
@@ -1226,14 +1226,14 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                             //TilePosition tile_resource_position;
 
                             //if (j->second.type_.isMineralField()){
-                            //	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-                            //	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-                            //	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
                             //}
                             //else {
-                            //	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-                            //	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-                            //	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
                             //}
 
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),

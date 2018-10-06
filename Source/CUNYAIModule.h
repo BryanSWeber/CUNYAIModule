@@ -67,7 +67,7 @@ public:
     static Player_Model friendly_player_model;
     static Player_Model enemy_player_model;
     static Player_Model neutral_player_model;
-	static Resource_Inventory land_inventory; // resources.
+    static Resource_Inventory land_inventory; // resources.
     static Inventory inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
@@ -80,15 +80,15 @@ public:
     int med_delay;
     int long_delay;
 
-	char delay_string [50];
-	char preamble_string [50];
-	char larva_string [50];
-	char worker_string [50];
-	char scouting_string [50];
-	char combat_string [50];
-	char detection_string [50];
-	char upgrade_string [50];
-	char creep_colony_string [50];
+    char delay_string [50];
+    char preamble_string [50];
+    char larva_string [50];
+    char worker_string [50];
+    char scouting_string [50];
+    char combat_string [50];
+    char detection_string [50];
+    char upgrade_string [50];
+    char creep_colony_string [50];
 
     Race starting_enemy_race;
 
@@ -138,19 +138,19 @@ public:
 
   // Utility Functions
       // Prints unit's last error directly onto it.
-	  void PrintError_Unit(const Unit &unit);
-	  // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
-	  bool isActiveWorker(const Unit &unit);
+      void PrintError_Unit(const Unit &unit);
+      // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
+      bool isActiveWorker(const Unit &unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
-	  bool isIdleEmpty(const Unit &unit);
-	  // When should we reset the lock?
-	  bool isInLine(const Unit &unit);
+      bool isIdleEmpty(const Unit &unit);
+      // When should we reset the lock?
+      bool isInLine(const Unit &unit);
       bool isEmptyWorker(const Unit & unit); // Checks if it is carrying.
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
-	  static bool IsFightingUnit(const Unit &unit);
+      static bool IsFightingUnit(const Unit &unit);
       static bool IsFightingUnit(const Stored_Unit & unit);
-	  // evaluates if it was order to fight recently.
-	  bool isRecentCombatant(const Unit &unit);
+      // evaluates if it was order to fight recently.
+      bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
@@ -213,7 +213,7 @@ public:
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
-	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+      static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
       static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Inventory &inv);
       static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Inventory & inv);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
@@ -236,9 +236,9 @@ public:
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
-	  static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
-	  //Overload. Searches for units of a specific type. 
-	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
+      static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
+      //Overload. Searches for units of a specific type. 
+      static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static bool checkOccupiedArea(const Unit_Inventory & ui, const UnitType type, const Position & origin);
@@ -259,8 +259,8 @@ public:
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.
       static int Count_Units(const UnitType & type, const Inventory & inv);
-	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
-	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
+      // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
+      static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Inventory & inv);
@@ -294,8 +294,8 @@ public:
       static bool isOnScreen( const Position &pos , const Position &screen_pos);
       //Returns TRUE if a unit is safe to send an order to. False if the unit has been ordered about recently.
       static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
-	  // Returns the actual center of a unit.
-	  static Position getUnit_Center(Unit unit);
+      // Returns the actual center of a unit.
+      static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
       bool checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.

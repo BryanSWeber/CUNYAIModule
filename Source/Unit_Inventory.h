@@ -36,7 +36,7 @@ struct Stored_Unit {
     UnitType type_;
     UnitType build_type_;
     Position pos_; // in pixels
-	Unit locked_mine_;
+    Unit locked_mine_;
 
     // Unit Orders
     Order order_;
@@ -60,8 +60,8 @@ struct Stored_Unit {
     string phase_ = "None";
 
     //Needed commands for workers.
-	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
-	void stopMine(Resource_Inventory &ri);
+    void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
+    void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
     bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
     bool isAssignedLongDistanceMining(Resource_Inventory & ri);
@@ -117,8 +117,8 @@ struct Unit_Inventory {
     int stock_full_health_;
     int max_range_;
     int max_cooldown_;
-	int worker_count_;
-	int volume_;
+    int worker_count_;
+    int volume_;
     int detector_count_;
     int cloaker_count_;
     int resource_depot_count_;
@@ -127,7 +127,7 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
-	std::map <Unit, Stored_Unit> unit_inventory_;
+    std::map <Unit, Stored_Unit> unit_inventory_;
 
     // Updates the count of units.
     void addStored_Unit( const Unit &unit );
@@ -138,7 +138,7 @@ struct Unit_Inventory {
 
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
-	void updateUnitInventory(const Unitset &unit_set);
+    void updateUnitInventory(const Unitset &unit_set);
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.

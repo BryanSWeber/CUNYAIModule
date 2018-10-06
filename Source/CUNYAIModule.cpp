@@ -363,7 +363,7 @@ void CUNYAIModule::onFrame()
     inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
     
-    // Display the game status indicators at the top of the screen	
+    // Display the game status indicators at the top of the screen    
     if constexpr(DRAWING_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
@@ -403,7 +403,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
-		Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Seed to copy exact game conditions for testing
+        Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Seed to copy exact game conditions for testing
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -502,16 +502,16 @@ void CUNYAIModule::onFrame()
         //    }
         //} // Pretty to look at!
 
-        for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
-            for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
-                if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
-                    if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
-                        Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
-                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-                    }
-                }
-            }
-        } // Pretty to look at!
+        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
+        //        if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
+        //            if (isOnScreen({ (int)i * 8 + 4, (int)j * 8 + 4 }, inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
+        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
@@ -1298,11 +1298,9 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-			
-			/* Doesn't seem to be a needed fail-safe. Fixes a bug where the build order is cleared sometimes when a drone is used to build an extractor */
-            //else {
-            //    buildorder.clearRemainingBuildOrder(); 
-            //}
+            else if (unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing()) {
+                buildorder.clearRemainingBuildOrder(); 
+            }
         }
     }
 }
