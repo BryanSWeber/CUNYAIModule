@@ -13,10 +13,9 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Inventory &inv) {
+void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Inventory &inv) {
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
-    //double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
@@ -85,7 +84,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     //Make sure the end destination is one suitable for you.
     Position final_pos = pos + final_vector; //attract is zero when it's not set.
     
-    if (final_pos != pos) {
+    if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance ) {
 
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
@@ -119,17 +118,22 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
+
+		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+		changing_unit.updateStoredUnit(unit);
+		changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+		return;
     }
 
-
-    Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-    changing_unit.updateStoredUnit(unit);
-    changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+	Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+	unit->holdPosition();
+	changing_unit.updateStoredUnit(unit);
+	changing_unit.phase_ = "Surrounding";
 }
 
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Position &e_pos, const Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
@@ -143,7 +147,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     int helpful_e = useful_stocks[1]; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     int max_dist = passed_distance; // copy, to be modified later.
-    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
+	bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
@@ -245,7 +249,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
         changing_unit.phase_ = "Attacking";
     }
 
-    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, inv);
+    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, passed_distance, e_pos, inv);
 }
 
 
@@ -254,7 +258,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 //}
 
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Inventory &inv, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, Inventory &inv, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -339,7 +343,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, passed_distance, inv);
+        Tactical_Logic(unit, e_squad, u_squad, passed_distance, e_unit.pos_, inv);
     }
 
 }

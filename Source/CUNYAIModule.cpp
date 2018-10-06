@@ -725,15 +725,15 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-
+					Position e_pos = e_closest->pos_;
                     bool neccessary_attack =
                         (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             threatening_stocks == 0 || they_take_a_fap_beating ||
-                            inventory.home_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at home base.
-                            inventory.safe_base_.getDistance(e_closest->pos_) < search_radius || // Force fight at safe base.
+                            inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
+                            inventory.safe_base_.getDistance(e_pos) < search_radius || // Force fight at safe base.
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
@@ -771,7 +771,7 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
                     
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
-                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); 
+                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, e_pos, inventory, Colors::Orange);
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
@@ -786,7 +786,7 @@ void CUNYAIModule::onFrame()
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_1_second){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
-                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, e_pos, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
                     else{
@@ -814,7 +814,7 @@ void CUNYAIModule::onFrame()
             } // close local examination.
             
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
-                mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, inventory);
+                mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin, inventory); // -1 serves to never surround, makes sense if there is no closest enemy.
             }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
