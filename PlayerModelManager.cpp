@@ -127,6 +127,7 @@ void Player_Model::evaluateCurrentWorth()
 
             min_losses_ += i.second.modified_min_cost_;
             gas_losses_ += i.second.modified_gas_cost_;
+            supply_losses_ += i.second.modified_supply_;
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
