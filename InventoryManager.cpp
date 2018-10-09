@@ -734,9 +734,10 @@ bool Inventory::checkViableGroundPath(const Position A, const Position B) const
     }
 return false;
 }
+
 int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
-    if (map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
+    if (map_out_from_home_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
