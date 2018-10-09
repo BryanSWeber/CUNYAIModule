@@ -49,11 +49,11 @@ struct Stored_Unit {
     Position seperation_;
     Position retreat_;
     Position cohesion_;
-    unsigned int health_;
-    unsigned int shields_;
+    int health_;
+    int shields_;
     bool is_flying_;
-    unsigned int elevation_;
-    unsigned int cd_remaining_;
+    int elevation_;
+    int cd_remaining_;
     bool stimmed_;
     bool updated_fap_this_frame_;
 
@@ -79,7 +79,10 @@ struct Stored_Unit {
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
     int unit_ID_;
 
-    // evaluates the value of a stock of specific unit, in terms of pythagorian distance of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
+    // evaluates the value of a stock of specific unit, in terms of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
+	int modified_supply_;
+	int modified_min_cost_;
+	int modified_gas_cost_;
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.

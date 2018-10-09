@@ -223,8 +223,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     shields_ = unit->getShields();
     health_ = unit->getHitPoints();
     current_hp_ = shields_ + health_;
-    velocity_x_ = unit->getVelocityX();
-    velocity_y_ = unit->getVelocityY();
+    velocity_x_ = round(unit->getVelocityX());
+    velocity_y_ = round(unit->getVelocityY());
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
@@ -547,28 +547,42 @@ void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
 Stored_Unit::Stored_Unit() = default;
 
 //returns a steryotypical unit only.
-Stored_Unit::Stored_Unit( const UnitType &unittype ) {
-    valid_pos_ = false;
-    type_ = unittype;
-    build_type_ = UnitTypes::None;
-    shields_ = unittype.maxShields();
-    health_ = unittype.maxHitPoints();
-    current_hp_ = shields_ + health_;
-    locked_mine_ = nullptr;
-    circumference_ = type_.height() * 2 + type_.width() * 2;
-    circumference_remaining_ = circumference_;
-    is_flying_ = unittype.isFlyer();
-    elevation_ = 0; //inaccurate and will need to be fixed.
-    cd_remaining_ = 0;
-    stimmed_ = false;
+Stored_Unit::Stored_Unit(const UnitType &unittype) {
+	valid_pos_ = false;
+	type_ = unittype;
+	build_type_ = UnitTypes::None;
+	shields_ = unittype.maxShields();
+	health_ = unittype.maxHitPoints();
+	current_hp_ = shields_ + health_;
+	locked_mine_ = nullptr;
+	circumference_ = type_.height() * 2 + type_.width() * 2;
+	circumference_remaining_ = circumference_;
+	is_flying_ = unittype.isFlyer();
+	elevation_ = 0; //inaccurate and will need to be fixed.
+	cd_remaining_ = 0;
+	stimmed_ = false;
 
-    //Get unit's status. Precalculated, precached.
-    int modified_supply = unittype.getRace() == Races::Zerg && unittype.isBuilding() ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = unittype == UnitTypes::Terran_Bunker ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = unittype == UnitTypes::Terran_Bunker ? unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = unittype.gasPrice();
+	//Get unit's status. Precalculated, precached.
+	modified_supply_ = unittype.supplyRequired();
+	modified_min_cost_ = unittype.mineralPrice(); 
+	modified_gas_cost_ = unittype.gasPrice();
 
-    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
+	if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
+		modified_supply_ += 2;
+		modified_min_cost_ += 50;
+	}  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
+
+	if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
+		modified_gas_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity)) ;
+		modified_supply_ += UnitTypes::Protoss_Interceptor.gasPrice() * 4;
+	}
+
+	if (unittype == UnitTypes::Protoss_Interceptor) {
+		modified_gas_cost_ = 0;
+		modified_supply_ = 0;
+	}
+
+    stock_value_ = modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_;
 
     stock_value_ /= (1 + (int)unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
@@ -602,7 +616,12 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
-    stock_value_ = Stored_Unit(type_).stock_value_; //prevents retyping.
+	Stored_Unit shell = Stored_Unit(type_);
+		modified_min_cost_ = shell.modified_min_cost_;
+		modified_gas_cost_ = shell.modified_gas_cost_;
+		modified_supply_ = shell.modified_supply_;
+		stock_value_ = shell.stock_value_; //prevents retyping.
+
     ma_future_fap_value_ = stock_value_;
     future_fap_value_ = stock_value_;
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
@@ -722,8 +741,7 @@ bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
 }
 
 auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 
-        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
 
     int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
     int shield_upgrades = (int)(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
@@ -748,6 +766,8 @@ auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
 
+	int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+
     return FAP::makeUnit<Stored_Unit*>()
         .setData(this)
         .setUnitType(type_)
@@ -756,12 +776,12 @@ auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
         .setShields(shields_)
         .setFlying(is_flying_)
         .setElevation(elevation_)
-        .setAttackerCount(2)
-        .setArmorUpgrades(armor_upgrades)
+		.setAttackerCount(units_inside_object)
+		.setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
         .setShieldUpgrades(shield_upgrades) 
         .setSpeedUpgrade(speed_tech) 
-        .setAttackSpeedUpgrade(false)
+        .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
         .setRangeUpgrade(range_upgrade) 
@@ -796,7 +816,9 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
 
-    return FAP::makeUnit<Stored_Unit*>() // don't care about type.
+	int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+
+    return FAP::makeUnit<Stored_Unit*>()
         .setData(this)
         .setUnitType(type_)
         .setPosition(chosen_pos)
@@ -804,12 +826,12 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         .setShields(shields_)
         .setFlying(is_flying_)
         .setElevation(elevation_)
-        .setAttackerCount(2)
+        .setAttackerCount(units_inside_object)
         .setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
         .setShieldUpgrades(shield_upgrades) 
         .setSpeedUpgrade(speed_tech) 
-        .setAttackSpeedUpgrade(false) 
+        .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
         .setRangeUpgrade(range_upgrade) 
@@ -839,16 +861,16 @@ bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) 
 
 void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
-        if (CUNYAIModule::IsFightingUnit(u.second) &&  friendly) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        if (CUNYAIModule::IsFightingUnit(u.second) && !friendly) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        if (!friendly) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
 void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         Position pos = positionMCFAP(u.second);
-        if (CUNYAIModule::IsFightingUnit(u.second) && friendly) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        if (CUNYAIModule::IsFightingUnit(u.second) && !friendly) fap_object.addUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        if ( !friendly) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
@@ -856,7 +878,7 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
 void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
-        if(CUNYAIModule::IsFightingUnit(u.second)) fap_object.addUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
