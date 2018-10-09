@@ -547,28 +547,42 @@ void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
 Stored_Unit::Stored_Unit() = default;
 
 //returns a steryotypical unit only.
-Stored_Unit::Stored_Unit( const UnitType &unittype ) {
-    valid_pos_ = false;
-    type_ = unittype;
-    build_type_ = UnitTypes::None;
-    shields_ = unittype.maxShields();
-    health_ = unittype.maxHitPoints();
-    current_hp_ = shields_ + health_;
-    locked_mine_ = nullptr;
-    circumference_ = type_.height() * 2 + type_.width() * 2;
-    circumference_remaining_ = circumference_;
-    is_flying_ = unittype.isFlyer();
-    elevation_ = 0; //inaccurate and will need to be fixed.
-    cd_remaining_ = 0;
-    stimmed_ = false;
+Stored_Unit::Stored_Unit(const UnitType &unittype) {
+	valid_pos_ = false;
+	type_ = unittype;
+	build_type_ = UnitTypes::None;
+	shields_ = unittype.maxShields();
+	health_ = unittype.maxHitPoints();
+	current_hp_ = shields_ + health_;
+	locked_mine_ = nullptr;
+	circumference_ = type_.height() * 2 + type_.width() * 2;
+	circumference_remaining_ = circumference_;
+	is_flying_ = unittype.isFlyer();
+	elevation_ = 0; //inaccurate and will need to be fixed.
+	cd_remaining_ = 0;
+	stimmed_ = false;
 
-    //Get unit's status. Precalculated, precached.
-    int modified_supply = unittype.getRace() == Races::Zerg && unittype.isBuilding() ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-    modified_supply = unittype == UnitTypes::Terran_Bunker ? unittype.supplyRequired() + 2 :unittype.supplyRequired(); // Assume bunkers are loaded.
-    int modified_min_cost = unittype == UnitTypes::Terran_Bunker ? unittype.mineralPrice() + 50 :unittype.mineralPrice(); // Assume bunkers are loaded.
-    int modified_gas_cost = unittype.gasPrice();
+	//Get unit's status. Precalculated, precached.
+	modified_supply_ = unittype.supplyRequired();
+	modified_min_cost_ = unittype.mineralPrice(); 
+	modified_gas_cost_ = unittype.gasPrice();
 
-    stock_value_ = modified_min_cost + 1.25 * modified_gas_cost + 25 * modified_supply;
+	if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
+		modified_supply_ += 2;
+		modified_min_cost_ += 50;
+	}  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
+
+	if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
+		modified_gas_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity)) ;
+		modified_supply_ += UnitTypes::Protoss_Interceptor.gasPrice() * 4;
+	}
+
+	if (unittype == UnitTypes::Protoss_Interceptor) {
+		modified_gas_cost_ = 0;
+		modified_supply_ = 0;
+	}
+
+    stock_value_ = modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_;
 
     stock_value_ /= (1 + (int)unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
@@ -602,7 +616,12 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
-    stock_value_ = Stored_Unit(type_).stock_value_; //prevents retyping.
+	Stored_Unit shell = Stored_Unit(type_);
+		modified_min_cost_ = shell.modified_min_cost_;
+		modified_gas_cost_ = shell.modified_gas_cost_;
+		modified_supply_ = shell.modified_supply_;
+		stock_value_ = shell.stock_value_; //prevents retyping.
+
     ma_future_fap_value_ = stock_value_;
     future_fap_value_ = stock_value_;
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.

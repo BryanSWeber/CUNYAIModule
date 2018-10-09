@@ -103,20 +103,13 @@ void Player_Model::evaluateCurrentWorth()
 
         //collect how much of the enemy you can see.
         for (auto i : units_.unit_inventory_) {
-
-            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
-            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
-            int modified_gas_cost = i.second.type_.gasPrice();
-
-            min_expenditures_ += modified_min_cost;
-            gas_expenditures_ += modified_gas_cost;
-            supply_expenditures_ += modified_supply;
+            min_expenditures_ += i.second.modified_min_cost_;
+            gas_expenditures_ += i.second.modified_gas_cost_;
+            supply_expenditures_ += i.second.modified_supply_;
         }
 
         for (auto i : researches_.upgrades_ ) {
             int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - 1;
-
             min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
             gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
         }
@@ -131,14 +124,10 @@ void Player_Model::evaluateCurrentWorth()
         int supply_losses_ = 0;
 
         for (auto i : casualties_.unit_inventory_) {
-            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
-            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
-            int modified_gas_cost = i.second.type_.gasPrice();
 
-            min_losses_ += modified_min_cost;
-            gas_losses_ += modified_gas_cost;
-            supply_losses_ += modified_supply;
+            min_losses_ += i.second.modified_min_cost_;
+            gas_losses_ += i.second.modified_gas_cost_;
+            supply_losses_ += i.second.modified_supply_;
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
