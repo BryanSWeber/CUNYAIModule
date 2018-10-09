@@ -459,17 +459,18 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
         u_loc = getUnitInventoryInRadius(friendly_player_model.units_, drone->getPosition(), inv.my_portion_of_the_map_);
     }
 
-    // Trust the build order. If there is a build order and it wants a building, build it!
+	// Trust the build order. If there is a build order and it wants a building, build it!
 	if (!buildorder.isEmptyBuildOrder()) {
 		UnitType next_in_build_order = buildorder.building_gene_.front().getUnit();
-		if (!buildings_started) buildings_started = Check_N_Build(next_in_build_order, drone, false);
+		if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, inventory);
+		else buildings_started = Check_N_Build(next_in_build_order, drone, false);
 	}
 
     //Macro-related Buildings.
-    if( !buildings_started) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
+    if( !buildings_started ) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
-    if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
-
+    if( !buildings_started ) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
+	
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor, inv) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.

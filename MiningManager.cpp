@@ -32,6 +32,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );
+					CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
                 }
             }
         }

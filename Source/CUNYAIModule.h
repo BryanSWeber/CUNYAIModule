@@ -14,7 +14,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
-constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
+constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.

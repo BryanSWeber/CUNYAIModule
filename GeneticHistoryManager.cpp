@@ -425,13 +425,13 @@ GeneticHistory::GeneticHistory(string file) {
 
 	// Overwrite whatever you previously wanted if we're using "test mode".
 	if constexpr (TEST_MODE) {
-		// Values taken from print file (10/3/18)
+		// Values altered 
 		delta_out_mutate_ = 0.3021355;
-		gamma_out_mutate_ = 0.279526;
+		gamma_out_mutate_ = 0.35;
 		a_army_out_mutate_ = 0.511545;
 		a_econ_out_mutate_ = 0.488455;
 		a_tech_out_mutate_ = 0.52895;
 		r_out_mutate_ = 0.5097605;
-		build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone";
+		build_order_ = "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract"; //zerg_2hatchhydra -range added an overlord.
 	}
 }
