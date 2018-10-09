@@ -21,7 +21,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 
     evaluateWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-    int estimated_worker_stock = estimated_workers_ * worker_value;
+    int estimated_worker_stock = (int)round(estimated_workers_) * worker_value;
 
     evaluateCurrentWorth();
 

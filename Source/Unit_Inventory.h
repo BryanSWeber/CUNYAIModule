@@ -49,11 +49,11 @@ struct Stored_Unit {
     Position seperation_;
     Position retreat_;
     Position cohesion_;
-    unsigned int health_;
-    unsigned int shields_;
+    int health_;
+    int shields_;
     bool is_flying_;
-    unsigned int elevation_;
-    unsigned int cd_remaining_;
+    int elevation_;
+    int cd_remaining_;
     bool stimmed_;
     bool updated_fap_this_frame_;
 
