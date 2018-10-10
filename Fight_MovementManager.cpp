@@ -84,7 +84,8 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     //Make sure the end destination is one suitable for you.
     Position final_pos = pos + final_vector; //attract is zero when it's not set.
     
-    if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance ) {
+	//If you're not starting or ending too close to the "bad guys" you can continue to path.
+    if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance && pos.getDistance(e_pos) > passed_distance) {
 
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
@@ -125,15 +126,24 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 		return;
     }
 
-	Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-	unit->holdPosition();
-	changing_unit.updateStoredUnit(unit);
-	changing_unit.phase_ = "Surrounding";
+	// If you end too close to the bad guys, hold position.
+	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) > passed_distance) {
+		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+		unit->holdPosition();
+		changing_unit.updateStoredUnit(unit);
+		changing_unit.phase_ = "Surrounding";
+	}
+
+	// If you start too close to the bad guys, we have other issues.
+	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
+		CUNYAIModule::DiagnosticText("We've been overtaken...");
+		// This option should never happen!
+	}
 }
 
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Position &e_pos, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
@@ -244,12 +254,12 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     }
 
     if (attack_order_issued) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-        changing_unit.updateStoredUnit(unit);
-        changing_unit.phase_ = "Attacking";
+		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+		changing_unit.updateStoredUnit(unit);
+		changing_unit.phase_ = "Attacking";
     }
 
-    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, passed_distance, e_pos, inv);
+    if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White); // bot can get stuck in a loop here!
 }
 
 
@@ -258,7 +268,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 //}
 
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, Inventory &inv, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -343,7 +353,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, passed_distance, e_unit.pos_, inv);
+        Tactical_Logic(unit, e_unit, e_squad, u_squad, passed_distance, inv);
     }
 
 }

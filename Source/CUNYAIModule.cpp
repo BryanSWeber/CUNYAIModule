@@ -771,7 +771,7 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
                     
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
-                        mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, e_pos, inventory, Colors::Orange);
+                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange);
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
@@ -786,7 +786,7 @@ void CUNYAIModule::onFrame()
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_1_second){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
-                            mobility.Tactical_Logic(u, enemy_loc, friend_loc, search_radius, e_pos, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
                     else{

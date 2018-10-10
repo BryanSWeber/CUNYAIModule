@@ -93,7 +93,7 @@ void Research_Inventory::updateBuildingStock() {
     int temp_building_stock = 0;
     for (auto i : buildings_)//Max number of possible upgrade types
     {
-        int value = i.first.mineralPrice() + i.first.gasPrice() * 1.25 + (i.first.getRace() == Races::Zerg) * (UnitTypes::Zerg_Drone.mineralPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired());
+        int value = Stored_Unit(i.first).stock_value_;
         temp_building_stock +=  i.second * value; // include value of drone if race is zerg.
     }
     building_stock_ = temp_building_stock;
