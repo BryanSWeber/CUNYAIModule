@@ -137,7 +137,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 	// If you start too close to the bad guys, we have other issues.
 	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
 		CUNYAIModule::DiagnosticText("We've been overtaken...");
-		// This option should never happen!
+		// This option should never happen! It ought to trigger retreat/attack.
 	}
 }
 
@@ -259,7 +259,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 		changing_unit.phase_ = "Attacking";
     }
 
-    if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White); // bot can get stuck in a loop here!
+    if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true); // if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
 }
 
 
@@ -268,7 +268,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 //}
 
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White, const bool &force = false) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -318,7 +318,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
 
-    if ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && clear_walkable && melee_fight) ) {
+    if ( force || ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && clear_walkable && melee_fight) ) ) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
         }
