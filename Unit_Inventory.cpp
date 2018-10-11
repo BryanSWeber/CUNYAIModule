@@ -862,7 +862,7 @@ bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) 
 void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        if (!friendly) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+		else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
@@ -870,7 +870,7 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
     for (auto &u : unit_inventory_) {
         Position pos = positionMCFAP(u.second);
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        if ( !friendly) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
@@ -878,7 +878,8 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
 void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
-        fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        if(friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+		else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
