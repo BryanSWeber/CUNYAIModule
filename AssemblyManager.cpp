@@ -689,6 +689,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
+			buildfap_temp.clear();
             buildfap_temp = buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
             // enemy units do not change.
@@ -696,8 +697,8 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-            buildfap_temp.simulate(); // a deep but limited simulation for us.
-            potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+            buildfap_temp.simulate(-1); // a complete simulation?
+            potential_type.second = getFAPScore(buildfap_temp, true)^2 - getFAPScore(buildfap_temp, false)^2;
             //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
     }
 
