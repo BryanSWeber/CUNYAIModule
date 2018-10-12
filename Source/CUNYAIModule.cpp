@@ -191,7 +191,7 @@ void CUNYAIModule::onFrame()
 
     // Update enemy player model. Draw all associated units.
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
-    enemy_player_model.units_.drawAllHitPoints(inventory);
+    //enemy_player_model.units_.drawAllHitPoints(inventory);
     enemy_player_model.units_.drawAllLocations(inventory);
 
     //Update neutral units
@@ -206,7 +206,7 @@ void CUNYAIModule::onFrame()
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player. 
 
     //friendly_player_model.units_.drawAllVelocities(inventory);
-    friendly_player_model.units_.drawAllHitPoints(inventory);
+    //friendly_player_model.units_.drawAllHitPoints(inventory);
     friendly_player_model.units_.drawAllSpamGuards(inventory);
     friendly_player_model.units_.drawAllWorkerTasks(inventory, land_inventory);
 
@@ -216,10 +216,11 @@ void CUNYAIModule::onFrame()
 
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
     enemy_player_model.units_.addToBuildFAP(buildfap, false, enemy_player_model.researches_);
+	enemy_player_model.units_.drawAllMAFAPaverages(inventory);
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
     friendly_player_model.units_.addToBuildFAP(buildfap, true, friendly_player_model.researches_);
-    //friendly_player_model.units_.drawAllMAFAPaverages(inventory);
+    friendly_player_model.units_.drawAllMAFAPaverages(inventory);
 
     // Let us estimate FAP values.
     MCfap.simulate(); // 96 frames of simulation for us.
@@ -691,8 +692,8 @@ void CUNYAIModule::onFrame()
                 int distance_to_foe = (int)e_closest->pos_.getDistance(u->getPosition());
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_player_model.units_);
-                int chargable_distance_net = chargable_distance_self + chargable_distance_enemy; // how far can you get before he shoots?
-                int search_radius = max(max(chargable_distance_net + 64, enemy_player_model.units_.max_range_ + 64), 256 ); // expanded radius because of units intermittently suiciding against static D.
+                int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
+                int search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), (int)CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
 
                 Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);

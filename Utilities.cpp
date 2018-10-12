@@ -180,7 +180,7 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
     if constexpr (DRAWING_MODE ) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0 ) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
@@ -189,14 +189,18 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
             lower_right.x = upper_left.x + unit.type_.width();
             lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, false);
-
             //Overlay the appropriate green above it.
             lower_right = upper_left;
             lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, true);
 
+			int temp_stock_value = unit.stock_value_;
+			while (temp_stock_value > 25) {
+				lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_stock_value / (double)unit.stock_value_);
+				Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
+				temp_stock_value -= 25;
+			}
             //Overlay the 10hp rectangles over it.
         }
     }

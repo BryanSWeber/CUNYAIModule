@@ -432,6 +432,6 @@ GeneticHistory::GeneticHistory(string file) {
 		a_econ_out_mutate_ = 0.488455;
 		a_tech_out_mutate_ = 0.52895;
 		r_out_mutate_ = 0.5097605;
-		build_order_ = "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract"; //zerg_2hatchhydra -range added an overlord.
+		build_order_ = "drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken";  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
 	}
 }
