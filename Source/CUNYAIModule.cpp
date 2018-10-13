@@ -718,6 +718,11 @@ void CUNYAIModule::onFrame()
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
 
+				if constexpr (DRAWING_MODE) {
+					Broodwar->drawCircleMap(e_closest->pos_, enemy_player_model.units_.max_range_, Colors::Red);
+					Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+				}
+
                 foe_within_radius = distance_to_foe < search_radius;
 
                 if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
