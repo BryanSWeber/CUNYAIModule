@@ -715,32 +715,33 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
 }
 
 // returns helpful_friendly and helpful_enemy units from respective inventories.
-vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
-{
-    int helpful_e, helpful_u;
+//vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
+//{
+//    int helpful_e, helpful_u;
+//
+//        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
+//        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
+//
+//
+//        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
+//           //if (friend_loc.stock_ground_units_ == 0) {
+//            //    helpful_e = enemy_loc.stock_shoots_up_;
+//            //}
+//            //else if (friend_loc.stock_fliers_ == 0) {
+//            //    helpful_e = enemy_loc.stock_shoots_down_;
+//            //}
+//        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
+//            //if (enemy_loc.stock_ground_units_ == 0) {
+//            //    helpful_u = friend_loc.stock_shoots_up_;
+//            //}
+//            //else if (enemy_loc.stock_fliers_ == 0) {
+//            //    helpful_u = friend_loc.stock_shoots_down_;
+//            //}
+//            
+//        vector<int> return_vec = { helpful_u, helpful_e };
+//        return return_vec;
+//}
 
-        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
-        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
-
-
-        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
-           //if (friend_loc.stock_ground_units_ == 0) {
-            //    helpful_e = enemy_loc.stock_shoots_up_;
-            //}
-            //else if (friend_loc.stock_fliers_ == 0) {
-            //    helpful_e = enemy_loc.stock_shoots_down_;
-            //}
-        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
-            //if (enemy_loc.stock_ground_units_ == 0) {
-            //    helpful_u = friend_loc.stock_shoots_up_;
-            //}
-            //else if (enemy_loc.stock_fliers_ == 0) {
-            //    helpful_u = friend_loc.stock_shoots_down_;
-            //}
-            
-        vector<int> return_vec = { helpful_u, helpful_e };
-        return return_vec;
-}
 int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int targetable_e;

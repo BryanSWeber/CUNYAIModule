@@ -283,7 +283,7 @@ public:
       // evaluates the value of a stock of unit, in terms of supply added.
       static int Stock_Supply( const UnitType &unit, const Inventory &inv );
       // returns both useful stocks if both groups were to have a fight;
-      static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
+      //static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
       // returns the stock of opponants I can actually fight in their local area.
       static int getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc);
       // returns the stock of units that might actually threaten U in region.

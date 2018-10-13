@@ -147,14 +147,14 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
-    vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
+    //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit last_target = unit->getLastCommand().getTarget();
 
     int widest_dim = max(u_type.height(), u_type.width());
     int priority = 0;
     int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
-    int helpful_u = useful_stocks[0];
-    int helpful_e = useful_stocks[1]; // both forget value of psi units.
+    int helpful_u = ui.moving_average_fap_stock_;
+    int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     int max_dist = passed_distance; // copy, to be modified later.
 	bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
