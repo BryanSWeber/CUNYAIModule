@@ -176,15 +176,9 @@ void CUNYAIModule::onFrame()
   // Return if the game is a replay or is paused
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
+	
 	if (foundDetector == false) {
-		if (enemy_player_model.units_.detector_count_ == 1)
-		{
-			ofstream detector;
-			detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-			detector << Broodwar->elapsedTime();
-			detector.close();
-			foundDetector = true;
-		}
+		enemy_player_model.detection(enemy_player_model, foundDetector);
 	}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
