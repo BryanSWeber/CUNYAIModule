@@ -240,7 +240,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         stock_value_ = Stored_Unit(type_).stock_value_; // longer but prevents retyping.
         circumference_ = type_.height() * 2 + type_.width() * 2;
         circumference_remaining_ = circumference_;
-        future_fap_value_ = stock_value_;
+        future_fap_value_ = stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
         ma_future_fap_value_ = stock_value_;
     }
@@ -840,7 +840,9 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
-    fap_unit.data->future_fap_value_ = (int)(fap_unit.data->stock_value_ * (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields));
+	double proportion_health = (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields);
+	bool retreating_or_undetected = fap_unit.data->phase_ == "Retreating" || (fap_unit.data->bwapi_unit_->isBurrowed() && !fap_unit.data->bwapi_unit_->isDetected());
+    fap_unit.data->future_fap_value_ = retreating_or_undetected ? fap_unit.data->current_stock_value_ : (int)(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
     fap_unit.data->updated_fap_this_frame_ = true;
 }
 

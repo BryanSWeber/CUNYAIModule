@@ -196,7 +196,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
             lower_right = upper_left;
             lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
             lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
 			int temp_stock_value = unit.stock_value_;
 			while (temp_stock_value > 25) {

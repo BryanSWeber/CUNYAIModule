@@ -479,11 +479,10 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Inventory &inv, const
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (army_starved || e_loc.moving_average_fap_stock_ >= u_loc.moving_average_fap_stock_) &&  // army starved or under attack. ? And?
         Count_Units(UnitTypes::Zerg_Creep_Colony, inv) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
-        !buildings_started &&
         nearby_enemy &&
         (larva_starved || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
         inv.hatches_ > 1 &&
-        Count_Units(UnitTypes::Zerg_Sunken_Colony, inv) + Count_Units(UnitTypes::Zerg_Spore_Colony, inv) < max((inv.hatches_ * (inv.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+        Count_Units(UnitTypes::Zerg_Sunken_Colony, inv) + Count_Units(UnitTypes::Zerg_Spore_Colony, inv) < inv.hatches_ * (inv.hatches_ + 1)) / 2; // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
    
     //First Building needed!
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, !econ_starved &&
