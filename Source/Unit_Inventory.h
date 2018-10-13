@@ -55,6 +55,8 @@ struct Stored_Unit {
     int elevation_;
     int cd_remaining_;
     bool stimmed_;
+	bool burrowed_;
+	bool detected_;
     bool updated_fap_this_frame_;
 
     string phase_ = "None";

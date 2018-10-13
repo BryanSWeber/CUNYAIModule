@@ -234,7 +234,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
     cd_remaining_ = unit->getAirWeaponCooldown();
     stimmed_ = unit->isStimmed();
-
+	burrowed_ = unit->isBurrowed();
+	detected_ = unit->isDetected();
     if (type_ != unit->getType()) {
         type_ = unit->getType();
         stock_value_ = Stored_Unit(type_).stock_value_; // longer but prevents retyping.
@@ -245,10 +246,11 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         ma_future_fap_value_ = stock_value_;
     }
     else {
+		bool retreating_or_undetected = phase_ == "Retreating" || (burrowed_ && !detected_);
         double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
         circumference_remaining_ = circumference_;
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = weight * (double)ma_future_fap_value_ + (1 - weight) *(double)future_fap_value_;
+        ma_future_fap_value_ = retreating_or_undetected ? weight * (double)ma_future_fap_value_ + (1 - weight) *(double)current_stock_value_ : weight * (double)ma_future_fap_value_ + (1 - weight) *(double)future_fap_value_;
     }
 }
 
@@ -841,8 +843,7 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
 	double proportion_health = (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields);
-	bool retreating_or_undetected = fap_unit.data->phase_ == "Retreating" || (fap_unit.data->bwapi_unit_->isBurrowed() && !fap_unit.data->bwapi_unit_->isDetected());
-    fap_unit.data->future_fap_value_ = retreating_or_undetected ? fap_unit.data->current_stock_value_ : (int)(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
+    fap_unit.data->future_fap_value_ = (int)(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
     fap_unit.data->updated_fap_this_frame_ = true;
 }
 
