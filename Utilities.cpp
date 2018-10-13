@@ -155,8 +155,8 @@ void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_
 void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
-            // Draw the red background.
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
+            // Draw the background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
 
@@ -164,15 +164,18 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
             lower_right.x = upper_left.x + unit.type_.width();
             lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, false);
-
             //Overlay the appropriate green above it.
             lower_right = upper_left;
             lower_right.x = (int)( upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
-            //Overlay the 10hp rectangles over it.
+			int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
+			while (temp_hp_value > 25) {
+				lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_hp_value / (double)(unit.type_.maxHitPoints() + unit.type_.maxShields()));
+				Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
+				temp_hp_value -= 25;
+			}
         }
     }
 }
@@ -201,7 +204,6 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 				Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
 				temp_stock_value -= 25;
 			}
-            //Overlay the 10hp rectangles over it.
         }
     }
 }
