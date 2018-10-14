@@ -425,13 +425,13 @@ GeneticHistory::GeneticHistory(string file) {
 
 	// Overwrite whatever you previously wanted if we're using "test mode".
 	if constexpr (TEST_MODE) {
-		// Values altered 
+		// Values taken from print file (10/3/18)
 		delta_out_mutate_ = 0.3021355;
-		gamma_out_mutate_ = 0.35;
+		gamma_out_mutate_ = 0.279526;
 		a_army_out_mutate_ = 0.511545;
 		a_econ_out_mutate_ = 0.488455;
 		a_tech_out_mutate_ = 0.52895;
 		r_out_mutate_ = 0.5097605;
-		build_order_ = "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta"; 
+		build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone";
 	}
 }

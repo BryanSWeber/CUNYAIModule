@@ -246,7 +246,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         ma_future_fap_value_ = stock_value_;
     }
     else {
-		bool retreating_or_undetected = phase_ == "Retreating" || phase_ == "Pathing Out" || (burrowed_ && !detected_);
+		bool retreating_or_undetected = (phase_ == "Retreating" || phase_ == "Pathing Out" || (burrowed_ && !detected_));
         double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
         circumference_remaining_ = circumference_;
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
