@@ -643,8 +643,11 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
-	if(friendly_player_model.u_relatively_weak_against_air_) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-	else return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+	bool can_make_spore = morph_canidate->canMorph(UnitTypes::Zerg_Spore_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Spore_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.isEmptyBuildOrder());
+	bool can_make_sunken = morph_canidate->canMorph(UnitTypes::Zerg_Sunken_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Sunken_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony) || buildorder.isEmptyBuildOrder());
+
+	if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+	else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 }
 
 bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
@@ -698,11 +701,11 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
             buildfap_temp.simulate(24*10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             potential_type.second = getFAPScore(buildfap_temp, true)^2 - getFAPScore(buildfap_temp, false)^2;
-            //CUNYAIModule::DiagnosticText("Found is %d, for %s", larva_combat_types.find(potential_type.first)->second, larva_combat_types.find(potential_type.first)->first.c_str());
+            //CUNYAIModule::DiagnosticText("Found is %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
     }
 
-    for (auto potential_type : combat_types) {
-        if (potential_type.second > best_sim_score) {
+    for (auto &potential_type : combat_types) {
+        if (potential_type.second >= best_sim_score) {
             best_sim_score = potential_type.second;
             build_type = potential_type.first;
             //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());

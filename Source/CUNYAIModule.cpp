@@ -371,7 +371,7 @@ void CUNYAIModule::onFrame()
         Print_Cached_Inventory(0, 50, inventory);
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 80);
-        Print_Reservations(250, 170, my_reservation);
+        Print_Reservations(250, 180, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
             //Print_Unit_Inventory(500, 170, enemy_player_model.units_);
             Print_Research_Inventory(500, 170, enemy_player_model.researches_);
@@ -420,6 +420,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
         Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", inventory.next_expo_.x, inventory.next_expo_.y); //
+		Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
@@ -428,7 +429,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+		Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", inventory.est_enemy_stock_);
