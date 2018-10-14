@@ -643,8 +643,8 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Inventory
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
-    map<UnitType, int> morphable_combat_types = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    return CUNYAIModule::buildOptimalUnit(morph_canidate, morphable_combat_types);
+	if(friendly_player_model.u_relatively_weak_against_air_) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+	else return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 }
 
 bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
