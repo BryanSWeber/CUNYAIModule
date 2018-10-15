@@ -482,7 +482,6 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 shoots_down     += down_gun * unit_value_for_all_of_type;
                 shoots_both     += (up_gun && down_gun) * unit_value_for_all_of_type;
                 cloaker_count   += cloaker * count_of_unit_type;
-                detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
@@ -498,6 +497,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 ground_fodder += !flying_unit * unit_value_for_all_of_type;
             
             }
+            detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
             stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
 			//Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
