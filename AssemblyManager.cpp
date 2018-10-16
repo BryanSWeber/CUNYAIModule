@@ -95,7 +95,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         bool serious_problem = false;
 
                         if ( getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750) ) {
-                            serious_problem = (e_loc.stock_fighting_total_ > friend_loc.stock_fighting_total_);
+                            serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
                         }
 
                         if ( (new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) ) {
