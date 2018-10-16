@@ -100,6 +100,12 @@ void Unit_Inventory::purgeUnseenUnits()
     }
 }
 
+void Unit_Inventory::purgeAllPhases()
+{
+	for (auto &u = this->unit_inventory_.begin(); u != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+		u->second.phase_ = "None";
+	}
+}
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
@@ -238,12 +244,13 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
 	detected_ = unit->isDetected();
     if (type_ != unit->getType()) {
         type_ = unit->getType();
-        stock_value_ = Stored_Unit(type_).stock_value_; // longer but prevents retyping.
-        circumference_ = type_.height() * 2 + type_.width() * 2;
-        circumference_remaining_ = circumference_;
-        future_fap_value_ = stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
+		Stored_Unit shell = Stored_Unit(type_);
+        stock_value_ = shell.stock_value_; // longer but prevents retyping.
+        circumference_ = shell.circumference_;
+        circumference_remaining_ = shell.circumference_;
+        future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = stock_value_;
+        ma_future_fap_value_ = shell.stock_value_;
     }
     else {
 		bool retreating_or_undetected = (phase_ == "Retreating" || phase_ == "Pathing Out" || (burrowed_ && !detected_));

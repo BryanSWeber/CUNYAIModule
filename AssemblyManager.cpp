@@ -133,7 +133,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 12);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -699,9 +699,9 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-            buildfap_temp.simulate(24*10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-            potential_type.second = getFAPScore(buildfap_temp, true)^2 - getFAPScore(buildfap_temp, false)^2;
-            //CUNYAIModule::DiagnosticText("Found is %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+            buildfap_temp.simulate(24*100); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+            //if(Broodwar->getFrameCount() % 24 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
     }
 
     for (auto &potential_type : combat_types) {

@@ -90,6 +90,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
             unit->unburrow();
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+			changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
             changing_unit.updateStoredUnit(unit);
             return;
         }
@@ -122,7 +123,6 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
 		changing_unit.updateStoredUnit(unit);
-
 		return;
     }
 
@@ -132,12 +132,14 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 		unit->holdPosition();
 		changing_unit.phase_ = "Surrounding";
 		changing_unit.updateStoredUnit(unit);
+		return;
 	}
 
 	// If you start too close to the bad guys, we have other issues.
 	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
 		CUNYAIModule::DiagnosticText("We've been overtaken...");
 		// This option should never happen! It ought to trigger retreat/attack.
+		return;
 	}
 }
 
@@ -246,9 +248,11 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		changing_unit.phase_ = "Attacking";
 		changing_unit.updateStoredUnit(unit);
-    }
-
-	if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true); // if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+    } 
+	else {
+		Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true);
+	}// if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+	return;
 }
 
 
@@ -334,10 +338,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		changing_unit.phase_ = "Retreating";
         changing_unit.updateStoredUnit(unit);
+		return;
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
         Tactical_Logic(unit, e_unit, e_squad, u_squad, passed_distance, inv);
+		return;
     }
 
 }

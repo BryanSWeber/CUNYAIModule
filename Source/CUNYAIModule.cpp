@@ -709,6 +709,8 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility;
+			Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(u)->second;
+			changing_unit.phase_ = "None";
 
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 3200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
@@ -805,12 +807,12 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
                     
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
-                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, distance_to_foe + search_radius, inventory, Colors::Orange);
+                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange);
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, distance_to_foe + search_radius, inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
                         }
 
                     }
@@ -820,7 +822,7 @@ void CUNYAIModule::onFrame()
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_moments){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, inventory, my_reservation);
-                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, distance_to_foe + search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
                     else{
@@ -833,7 +835,7 @@ void CUNYAIModule::onFrame()
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, distance_to_foe + search_radius, inventory, Colors::White, false);
+                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, inventory, Colors::White, false);
                     }
 
 
