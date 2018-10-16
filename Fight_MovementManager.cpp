@@ -120,8 +120,9 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
 		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		changing_unit.updateStoredUnit(unit);
 		changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+		changing_unit.updateStoredUnit(unit);
+
 		return;
     }
 
@@ -129,8 +130,8 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) > passed_distance) {
 		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		unit->holdPosition();
-		changing_unit.updateStoredUnit(unit);
 		changing_unit.phase_ = "Surrounding";
+		changing_unit.updateStoredUnit(unit);
 	}
 
 	// If you start too close to the bad guys, we have other issues.
@@ -151,7 +152,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 
     int widest_dim = max(u_type.height(), u_type.width());
     int priority = 0;
-    int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
+    //int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
     int helpful_u = ui.moving_average_fap_stock_;
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
@@ -183,7 +184,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
-                    dist_to_enemy < min(chargeable_dist, 32) &&
+                    dist_to_enemy < 32 &&
                     last_target &&
                     (last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
                     e_priority = 5;
@@ -229,7 +230,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 
     if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) ){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
-            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
+            if (adjust_lurker_burrow(unit, ui, ei, target->pos_) || target->valid_pos_) {
                 //
             }
             else {
@@ -239,26 +240,15 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
             }
             attack_order_issued = true;
         }
-        else if (target->valid_pos_) {
-            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
-                //
-            }
-            else {
-                unit->attack(target->pos_);
-                if (melee) target->circumference_remaining_ -= widest_dim;
-                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
-            }
-            attack_order_issued = true;
-        }
     }
 
     if (attack_order_issued) {
 		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		changing_unit.updateStoredUnit(unit);
 		changing_unit.phase_ = "Attacking";
+		changing_unit.updateStoredUnit(unit);
     }
 
-    if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true); // if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+	if(!attack_order_issued) Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true); // if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
 }
 
 
@@ -342,8 +332,8 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
         }
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+		changing_unit.phase_ = "Retreating";
         changing_unit.updateStoredUnit(unit);
-        changing_unit.phase_ = "Retreating";
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.

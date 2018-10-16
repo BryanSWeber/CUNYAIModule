@@ -363,7 +363,34 @@ void CUNYAIModule::onFrame()
 
     inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
-    
+	//FAP::FastAPproximation<Stored_Unit*> TESTfap;
+	//Unit_Inventory test_inventory_friendly;
+	//Unit_Inventory test_inventory_enemy;
+	//test_inventory_friendly.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Sunken_Colony));
+	//Broodwar->sendText("The value of the sunken before a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+	//test_inventory_enemy.addStored_Unit(Stored_Unit(UnitTypes::Terran_Wraith));
+	//TESTfap.clear();
+	//test_inventory_friendly.addToFAPatPos(TESTfap, Position(100, 100),true, friendly_player_model.researches_);
+	//test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
+	//TESTfap.simulate(-1);
+	//test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
+	//Broodwar->sendText("The value of the sunken after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+	//Broodwar->sendText("The sunken is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
+	//Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+
+	//Unit_Inventory test_inventory_friendly2;
+	//TESTfap.clear();
+	//test_inventory_friendly2.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Spore_Colony));
+	//Broodwar->sendText("The value of the spore before a fight is: %d", test_inventory_friendly2.unit_inventory_.begin()->second.future_fap_value_);
+	//test_inventory_friendly2.addToFAPatPos(TESTfap, Position(100, 100), true, friendly_player_model.researches_);
+	//test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
+	//TESTfap.simulate(-1);
+	//test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
+	//Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+	//Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
+	//Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+
+
     // Display the game status indicators at the top of the screen    
     if constexpr(DRAWING_MODE) {
 

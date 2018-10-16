@@ -574,6 +574,10 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 		modified_min_cost_ += 50;
 	}  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
 
+	if (unittype.isSuccessorOf(UnitTypes::Zerg_Creep_Colony) ) {
+		modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
+	} 
+
 	if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
 		modified_gas_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity)) ;
 		modified_supply_ += UnitTypes::Protoss_Interceptor.gasPrice() * 4;
@@ -589,6 +593,8 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     stock_value_ /= (1 + (int)unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
+	future_fap_value_ = stock_value_;
+	ma_future_fap_value_ = stock_value_;
 };
 
 // We must be able to create Stored_Unit objects as well.
@@ -623,9 +629,8 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 		modified_gas_cost_ = shell.modified_gas_cost_;
 		modified_supply_ = shell.modified_supply_;
 		stock_value_ = shell.stock_value_; //prevents retyping.
-
-    ma_future_fap_value_ = stock_value_;
-    future_fap_value_ = stock_value_;
+	    ma_future_fap_value_ = shell.stock_value_;
+		future_fap_value_ = shell.stock_value_;
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
 
