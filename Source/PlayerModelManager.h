@@ -16,6 +16,7 @@ struct Player_Model {
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
 
+
     Unit_Inventory units_;
     Unit_Inventory casualties_;
     Research_Inventory researches_;
@@ -23,12 +24,12 @@ struct Player_Model {
     //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
 
     bool u_relatively_weak_against_air_; 
-    bool e_relatively_weak_against_air_;
+    bool e_relatively_weak_against_air_; 
 
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
     void evaluateCurrentWorth();// under development. Currently bugged but of interest.
-	void detection(Player_Model, bool);
+	void playerLog(Player_Model enemy_player_model, bool gameComplete);
 };
 

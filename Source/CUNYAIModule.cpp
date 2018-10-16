@@ -22,7 +22,7 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-bool foundDetector;
+//bool foundDetector;
 //Declare universally shared inventories.
 Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
@@ -44,7 +44,7 @@ double CUNYAIModule::alpha_econ_original;
 
 void CUNYAIModule::onStart()
 {
-	foundDetector = false;
+	//foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -156,7 +156,8 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_ 
         << endl;
     output.close();
-	ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+	enemy_player_model.playerLog(enemy_player_model, true);
+	/*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
 	if (!check)
 	{
 		ofstream detector;
@@ -164,7 +165,7 @@ void CUNYAIModule::onEnd( bool isWinner )
 		detector << -1;
 		detector.close();
 	}
-	check.close();
+	check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
@@ -177,9 +178,9 @@ void CUNYAIModule::onFrame()
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
 	
-	if (foundDetector == false) {
-		enemy_player_model.detection(enemy_player_model, foundDetector);
-	}
+	//if (foundDetector == false) {
+		enemy_player_model.playerLog(enemy_player_model, false);
+	//}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
