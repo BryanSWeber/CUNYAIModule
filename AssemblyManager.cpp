@@ -1,6 +1,6 @@
 #pragma once
 #include "Source\CUNYAIModule.h"
-#include "Source\InventoryManager.h"
+#include "Source\Map_Inventory.h"
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
 #include <iterator>

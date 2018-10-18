@@ -4,7 +4,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Unit_Inventory.h"
-#include "Source\InventoryManager.h"
+#include "Source\Map_Inventory.h"
 #include "Source\Reservation_Manager.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.

@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 
 using namespace std;
 using namespace BWAPI;

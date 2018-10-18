@@ -2,7 +2,7 @@
 
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
 
