@@ -1,6 +1,6 @@
 #pragma once
 #include "CUNYAIModule.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 
 using namespace BWAPI;
 using namespace Filter;

@@ -4,7 +4,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Unit_Inventory.h"
-#include "Source\InventoryManager.h"
+#include "Source\Map_Inventory.h"
 #include "Source\Reservation_Manager.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.
@@ -638,6 +638,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 		stock_value_ = shell.stock_value_; //prevents retyping.
 	    ma_future_fap_value_ = shell.stock_value_;
 		future_fap_value_ = shell.stock_value_;
+
     current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }
 
@@ -885,17 +886,18 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
     for (auto &u : unit_inventory_) {
         Position pos = positionMCFAP(u.second);
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-		else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
 
-void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
-	for (auto &u : unit_inventory_) {
-		Position pos = positionBuildFap(friendly);
-		if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+
+void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
+    for (auto &u : unit_inventory_) {
+        Position pos = positionBuildFap(friendly);
+        if(friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
 		else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
-	}
+    }
 }
 
 //This call seems very inelgant. Check if it can be made better.

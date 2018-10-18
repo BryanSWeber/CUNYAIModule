@@ -1,7 +1,7 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
 # include "Source\CUNYAIModule.h"
-# include "Source\InventoryManager.h"
+# include "Source\Map_Inventory.h"
 
 using namespace BWAPI;
 
@@ -12,20 +12,20 @@ bool CUNYAIModule::Tech_Avail() {
     for ( auto & u : BWAPI::Broodwar->self()->getUnits() ) {
 
         if ( u->getType() == BWAPI::UnitTypes::Zerg_Drone ) {
-            bool long_condition = (u->canBuild( BWAPI::UnitTypes::Zerg_Spawning_Pool ) && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Evolution_Chamber ) && Count_Units( BWAPI::UnitTypes::Zerg_Evolution_Chamber, inventory) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den, inventory) == 0)||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest, inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire, inventory) > 0 ) || // I have hardcoded spire before queens nest.
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, inventory) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Greater_Spire) && Count_Units(BWAPI::UnitTypes::Zerg_Greater_Spire, inventory) == 0);
+            bool long_condition = (u->canBuild( BWAPI::UnitTypes::Zerg_Spawning_Pool ) && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, current_map_inventory ) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Evolution_Chamber ) && Count_Units( BWAPI::UnitTypes::Zerg_Evolution_Chamber, current_map_inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den, current_map_inventory) == 0)||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire, current_map_inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest, current_map_inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire, current_map_inventory) > 0 ) || // I have hardcoded spire before queens nest.
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern, current_map_inventory) == 0) ||
+                    (u->canBuild( BWAPI::UnitTypes::Zerg_Greater_Spire) && Count_Units(BWAPI::UnitTypes::Zerg_Greater_Spire, current_map_inventory) == 0);
             if ( long_condition ) {
                 return true;
             }
         }
         else if ( (u->getType() == BWAPI::UnitTypes::Zerg_Hatchery || u->getType() == BWAPI::UnitTypes::Zerg_Lair || u->getType() == BWAPI::UnitTypes::Zerg_Hive) && !u->isUpgrading() && !u->isMorphing() ) {
-            bool long_condition = (u->canMorph( BWAPI::UnitTypes::Zerg_Lair ) && Count_Units( BWAPI::UnitTypes::Zerg_Lair, inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Hive, inventory) == 0) ||
-                    (u->canMorph( BWAPI::UnitTypes::Zerg_Hive ) && Count_Units( BWAPI::UnitTypes::Zerg_Hive, inventory) == 0);
+            bool long_condition = (u->canMorph( BWAPI::UnitTypes::Zerg_Lair ) && Count_Units( BWAPI::UnitTypes::Zerg_Lair, current_map_inventory) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Hive, current_map_inventory) == 0) ||
+                    (u->canMorph( BWAPI::UnitTypes::Zerg_Hive ) && Count_Units( BWAPI::UnitTypes::Zerg_Hive, current_map_inventory) == 0);
             if ( long_condition ) {
                 return true;
             }
@@ -71,7 +71,7 @@ bool CUNYAIModule::Tech_Avail() {
     return false;
 }
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
-bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv) {
+bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inventory &inv) {
     bool busy = false;
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva, inv ) == 0 && !army_starved));
     bool have_declared_lurkers = BWAPI::Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
@@ -112,19 +112,19 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory
 
 	//should auto upgrade if there is a build order requirement for any of these three types.
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
-            inventory.hatches_ > 1 &&
+            current_map_inventory.hatches_ > 1 &&
             Count_Units(UnitTypes::Zerg_Lair, inv) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
             Count_Units(UnitTypes::Zerg_Hive, inv) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
             building->getType() == UnitTypes::Zerg_Hatchery);
 
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Hive, building, upgrade_bool &&
-            inventory.hatches_ > 2 &&
+            current_map_inventory.hatches_ > 2 &&
             Count_Units(UnitTypes::Zerg_Queens_Nest, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Queens_Nest, inv) > 0 &&
             building->getType() == UnitTypes::Zerg_Lair &&
             Count_Units(UnitTypes::Zerg_Hive, inv) == 0); //If you're tech-starved at this point, don't make random hives.
 
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, upgrade_bool &&
-       inventory.hatches_ > 3 &&
+       current_map_inventory.hatches_ > 3 &&
        Count_Units(UnitTypes::Zerg_Hive, inv) - Count_Units_In_Progress(UnitTypes::Zerg_Hive, inv) > 0 &&
        building->getType() == UnitTypes::Zerg_Spire &&
        Count_Units(UnitTypes::Zerg_Greater_Spire, inv) == 0); //If you're tech-starved at this point, don't make random hives.

@@ -2004,7 +2004,7 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 
 int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
     if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
-					else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
