@@ -13,7 +13,7 @@ using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Inventory &inv) {
+void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv) {
     Position pos = unit->getPosition();
     distance_metric = DISTANCE_METRIC;
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
@@ -145,7 +145,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color = Colors::White)
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
@@ -257,11 +257,11 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 
 
 //Essentially, we would like to call the movement script BUT disable any attraction to the enemy since we are trying to only surround.
-//void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Inventory & inv){
+//void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Map_Inventory & inv){
 //}
 
 // Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Inventory &inv, const Color &color = Colors::White, const bool &force = false) {
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color = Colors::White, const bool &force = false) {
 
     int dist = unit->getDistance(e_unit.pos_);
     //int air_range = e_unit.type_.airWeapon().maxRange();
@@ -395,7 +395,7 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
-//void Mobility::setCentralize(const Position &pos, const Inventory &inv) {
+//void Mobility::setCentralize(const Position &pos, const Map_Inventory &inv) {
 //    double temp_centralization_dx_ = 0;
 //    double temp_centralization_dy_ = 0;
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -438,7 +438,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
     return cohesion_vector_;
 }
 
-Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Inventory &inv) {
+Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inventory &inv) {
     if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
         Position possible_base = inv.start_positions_[0];
         int dist = unit->getDistance(possible_base);
@@ -463,7 +463,7 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Invento
 
 
 //Attraction, pull towards map center.
-Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -478,7 +478,7 @@ Position Mobility::setAttraction(const Unit &unit, const Position &pos, const In
 }
 
 //Repulsion, pull away from map center. Literally just a negative of the previous.
-Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -542,7 +542,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
     return seperation_vector_ = Positions::Origin;
 }
 
-//Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inv, const vector<vector<int>> &map) {
+//Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Map_Inventory &inv, const vector<vector<int>> &map) {
 //        double temp_walkability_dx_ = 0;
 //        double temp_walkability_dy_ = 0;
 //        double theta = 0;
@@ -598,7 +598,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 //
 //}
 
-Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Inventory &inv, const vector<vector<int>> &map) {
+Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Map_Inventory &inv, const vector<vector<int>> &map) {
     double temp_walkability_dx_ = 0;
     double temp_walkability_dy_ = 0;
     double theta = 0;
@@ -686,7 +686,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
     return false;
 }
 
-//Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
+//Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map) const {
 //    Position return_vector = Positions::Origin;
 //    int my_spot = inv.getMapValue(pos, map);
 //    double temp_x = 0;
@@ -727,7 +727,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //    return  return_vector;
 //}
 
-Position Mobility::getVectorTowardsMap(const Position &pos, const Inventory &inv, const vector<vector<int>> &map) const {
+Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map) const {
     Position return_vector = Positions::Origin;
     int my_spot = inv.getMapValue(pos, map);
     int temp_x = 0;

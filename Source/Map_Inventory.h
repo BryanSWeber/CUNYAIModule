@@ -19,9 +19,9 @@ using namespace BWAPI;
 // map_veins_, depends on unwalkable barriers WITH buildings.
 // Map veins in and out from enemy - depends on Unwalkable barriers. Does not depend on buildings.
 
-struct Inventory {
-    Inventory();
-    Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
+struct Map_Inventory {
+    Map_Inventory();
+    Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
 
     Position screen_position_;
     double ln_army_stock_;
@@ -114,27 +114,27 @@ struct Inventory {
     double getLn_Supply_Ratio();
 
     // Updates the count of our gas workers.
-    void Inventory::updateGas_Workers();
+    void Map_Inventory::updateGas_Workers();
     // Updates the count of our min workers.
-    void Inventory::updateMin_Workers();
+    void Map_Inventory::updateMin_Workers();
 
     // Updates the number of mineral fields we "possess".
-    void Inventory::updateMin_Possessed(const Resource_Inventory & ri);
+    void Map_Inventory::updateMin_Possessed(const Resource_Inventory & ri);
 
     // Updates the number of hatcheries (and decendents).
-    void Inventory::updateHatcheries();
+    void Map_Inventory::updateHatcheries();
 
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
-    void Inventory::updateBuildablePos();
+    void Map_Inventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
-    void Inventory::updateUnwalkable();
+    void Map_Inventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades. Currently flawed.
-    void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
-    void Inventory::updateSmoothPos();
+    void Map_Inventory::updateSmoothPos();
     // Marks the distance from each obstacle. Requires updateunwalkablewithbuildings. //[Old usage:]Marks the main arteries of the map. 
-    void Inventory::updateMapVeins();
+    void Map_Inventory::updateMapVeins();
 
     // simply gets the map value at a particular position.
     static int getMapValue(const Position &pos, const vector<vector<int>> &map);
@@ -145,52 +145,52 @@ struct Inventory {
     // Updates the chokes on the map.
     //void Inventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
-    void Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
+    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
 
     // Gets distance using
-    int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
-    int Inventory::getRadialDistanceOutFromEnemy(const Position A) const;
-    int Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
-    int Inventory::getRadialDistanceOutFromHome(const Position A) const;
-    bool Inventory::checkViableGroundPath(const Position A, const Position B) const;
-    int Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
+    int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
+    int Map_Inventory::getRadialDistanceOutFromEnemy(const Position A) const;
+    int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
+    int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const;
+    bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const;
+    int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
 
     // Marks and scores base locations.
-    void Inventory::updateBaseLoc(const Resource_Inventory &ri);
-    void Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
-    void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
+    void Map_Inventory::updateBaseLoc(const Resource_Inventory &ri);
+    void Map_Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
+    void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
     // gets the radial distance of all units to the enemy base.
     static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map);
 
     // Returns the position of the weakest base.
-    Position Inventory::getWeakestBase(const Unit_Inventory &ei) const;
+    Position Map_Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
     //Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
     // Returns the Position of a base with heaviest set of attackers...
     //Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
     //Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
     // Returns the position of a base with the least casualties...
-    Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
+    Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
     // Returns the position of a base with the most fodder at it...
     Position getMostValuedBase(const Unit_Inventory & ui) const;
 
     // updates the next target expo.
-    void Inventory::getExpoPositions();
+    void Map_Inventory::getExpoPositions();
     // Changes the next expo to X:
-    void Inventory::setNextExpo(const TilePosition tp);
+    void Map_Inventory::setNextExpo(const TilePosition tp);
 
     //Visualizations
-    void Inventory::drawExpoPositions() const;
-    void Inventory::drawBasePositions() const;
+    void Map_Inventory::drawExpoPositions() const;
+    void Map_Inventory::drawBasePositions() const;
 
-    void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
-    void Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
+    void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
+    void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
 
     // Adds start positions to inventory object.
-    void Inventory::getStartPositions();
+    void Map_Inventory::getStartPositions();
     // Updates map positions and removes all visible ones;
-    void Inventory::updateStartPositions(const Unit_Inventory &ei);
+    void Map_Inventory::updateStartPositions(const Unit_Inventory &ei);
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.

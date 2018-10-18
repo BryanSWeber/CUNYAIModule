@@ -108,7 +108,7 @@ void Unit_Inventory::purgeAllPhases()
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
@@ -126,7 +126,7 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
@@ -142,7 +142,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
     miner.updateStoredUnit(unit);
 }
 
-void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
+void Unit_Inventory::drawAllVelocities(const Map_Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
@@ -150,14 +150,14 @@ void Unit_Inventory::drawAllVelocities(const Inventory &inv) const
     }
 }
 
-void Unit_Inventory::drawAllHitPoints(const Inventory &inv) const
+void Unit_Inventory::drawAllHitPoints(const Map_Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
         CUNYAIModule::DiagnosticHitPoints(u.second, inv.screen_position_);
     }
 
 }
-void Unit_Inventory::drawAllMAFAPaverages(const Inventory &inv) const
+void Unit_Inventory::drawAllMAFAPaverages(const Map_Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
         CUNYAIModule::DiagnosticFAP(u.second, inv.screen_position_);
@@ -165,14 +165,14 @@ void Unit_Inventory::drawAllMAFAPaverages(const Inventory &inv) const
 
 }
 
-void Unit_Inventory::drawAllSpamGuards(const Inventory &inv) const
+void Unit_Inventory::drawAllSpamGuards(const Map_Inventory &inv) const
 {
     for (auto u : unit_inventory_) {
         CUNYAIModule::DiagnosticSpamGuard(u.second, inv.screen_position_);
     }
 }
 
-void Unit_Inventory::drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const
+void Unit_Inventory::drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const
 {
     for (auto u : unit_inventory_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
@@ -196,7 +196,7 @@ void Unit_Inventory::drawAllWorkerTasks(const Inventory & inv, Resource_Inventor
     }
 }
 
-void Unit_Inventory::drawAllLocations(const Inventory & inv) const
+void Unit_Inventory::drawAllLocations(const Map_Inventory & inv) const
 {
     if constexpr (DRAWING_MODE) {
         for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {

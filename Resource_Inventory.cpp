@@ -97,7 +97,7 @@ Stored_Resource::Stored_Resource(Unit resource) {
 //    }
 //}
 
-void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv) {
+void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Map_Inventory &inv) {
     for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty();) {
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
@@ -148,7 +148,7 @@ void Resource_Inventory::countViableMines() {
         }
     } // find drone minima.
 }
-void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
+void Resource_Inventory::drawMineralRemaining(const Map_Inventory &inv) const
 {
     for (auto u : resource_inventory_) {
         CUNYAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);

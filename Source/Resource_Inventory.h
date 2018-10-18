@@ -9,7 +9,7 @@ using namespace std;
 using namespace BWAPI;
 
 struct Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
-struct Inventory;
+struct Map_Inventory;
 
 struct Stored_Resource{
 
@@ -56,9 +56,9 @@ struct Resource_Inventory {
     Position getMeanBuildingLocation() const;
     Position getMeanCombatLocation() const;
 
-    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Inventory &inv); // updates values of units in mine.
+    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
     void countViableMines(); //counts number of viable gas mines and local mineral patches.
-    void drawMineralRemaining(const Inventory &inv) const;
+    void drawMineralRemaining(const Map_Inventory &inv) const;
 
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
