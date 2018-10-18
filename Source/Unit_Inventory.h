@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Resource_Inventory.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 #include "Reservation_Manager.h"
 #include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
@@ -12,7 +12,7 @@ using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-struct Inventory;
+struct Map_Inventory;
 struct Reservation;
 
 struct Stored_Unit {
@@ -145,14 +145,14 @@ struct Unit_Inventory {
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
-    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
-    void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Inventory & inv, Reservation & res);
-    void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
-    void drawAllHitPoints(const Inventory & inv) const;
-    void drawAllMAFAPaverages(const Inventory & inv) const;
-    void drawAllSpamGuards(const Inventory & inv) const;
-    void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
-    void drawAllLocations(const Inventory &inv) const;
+    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
+    void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
+    void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
+    void drawAllHitPoints(const Map_Inventory & inv) const;
+    void drawAllMAFAPaverages(const Map_Inventory & inv) const;
+    void drawAllSpamGuards(const Map_Inventory & inv) const;
+    void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
+    void drawAllLocations(const Map_Inventory &inv) const;
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 

@@ -541,7 +541,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 }
 
 // Counts all units of one type in existance and owned by me. Counts units under construction.
-int CUNYAIModule::Count_Units(const UnitType &type, const Inventory &inv)
+int CUNYAIModule::Count_Units(const UnitType &type, const Map_Inventory &inv)
 {
     auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
     if (c_iter == inv.unit_type_.end()) {
@@ -554,7 +554,7 @@ int CUNYAIModule::Count_Units(const UnitType &type, const Inventory &inv)
 
 }
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
-int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Inventory &inv)
+int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Map_Inventory &inv)
 {
     auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
     if (c_iter == inv.unit_type_.end()) {
@@ -701,7 +701,7 @@ int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 }
 
 // evaluates the value of a stock of unit, in terms of supply added.
-int CUNYAIModule::Stock_Supply( const UnitType &unit, const Inventory &inv ) {
+int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv ) {
     int supply = unit.supplyProvided();
     int instances = Count_Units( unit, inv );
     int total_stock = supply * instances;
@@ -775,7 +775,7 @@ void CUNYAIModule::Print_Test_Case(const int &screen_x, const int &screen_y) {
     }
 }
 // Announces to player the name and count of all units in the unit inventory. Bland but practical.
-void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y, const Inventory &inv) {
+void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y, const Map_Inventory &inv) {
     int another_row_of_printing = 0;
     for (auto i : inv.unit_type_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -954,7 +954,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
     return return_unit;
 }
 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Map_Inventory &inv, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
@@ -973,7 +973,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, In
 }
 
 // Allows type -specific- selection. 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Map_Inventory &inv, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
@@ -992,7 +992,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Inventory &inv) {
+Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -1010,7 +1010,7 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin, const Inventory &inv) {
+Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -1050,7 +1050,7 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
 }
 
 //Gets position of closest occupied expo to position. Checks range. Careful about visiblity.
-//Position CUNYAIModule::getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist) {
+//Position CUNYAIModule::getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist) {
 //    //int min_dist = dist;
 //    //int temp_dist = 999999;
 //    //Position return_pos = Positions::Origin;
@@ -1177,7 +1177,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     return return_unit;
 }
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Inventory &inv, const int &dist) {
+Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Map_Inventory &inv, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     int temp_dist = 999999;
@@ -1424,7 +1424,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 }
 
 //checks if there is a smooth path to target. in minitiles
-//bool CUNYAIModule::isClearRayTrace( const Position &initial, const Position &final, const Inventory &inv ) // see Brehsam's Algorithm
+//bool CUNYAIModule::isClearRayTrace( const Position &initial, const Position &final, const Map_Inventory &inv ) // see Brehsam's Algorithm
 //{
 //    int dx = abs( final.x - initial.x ) / 8;
 //    int dy = abs( final.y - initial.y ) / 8;
@@ -1799,7 +1799,7 @@ int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei
 
 
 //finds nearest choke or best location within 100 minitiles.
-Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const Inventory &inv ) {
+Position CUNYAIModule::getNearestChoke( const Position &initial, const Position &final, const Map_Inventory &inv ) {
     WalkPosition e_position = WalkPosition( final );
     WalkPosition wk_postion = WalkPosition( initial );
     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
@@ -1925,7 +1925,7 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 }
 
 // checks if a location is safe and doesn't block minerals.
-bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
+bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
     Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
     //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
@@ -1953,7 +1953,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Inventory &inv, c
 }
 
 
-bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv) {
+bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
     bool desperate_for_minerals = inv.min_fields_ < 6;
     bool safe_mine = checkOccupiedArea(ui, pos, 250);
