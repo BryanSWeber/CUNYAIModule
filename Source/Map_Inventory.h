@@ -140,10 +140,10 @@ struct Map_Inventory {
     static int getMapValue(const Position &pos, const vector<vector<int>> &map);
 
     // Updates the visible map arteries. Only checks buildings.
-    //void Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
-    //void Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
+    //void Map_Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
+    //void Map_Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
     // Updates the chokes on the map.
-    //void Inventory::updateMapChokes(); //in progress
+    //void Map_Inventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
     void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
 
@@ -166,9 +166,9 @@ struct Map_Inventory {
     // Returns the position of the weakest base.
     Position Map_Inventory::getWeakestBase(const Unit_Inventory &ei) const;
     // Returns the Position of the strongest base.
-    //Position Inventory::getStrongestBase(const Unit_Inventory & ei) const;
+    //Position Map_Inventory::getStrongestBase(const Unit_Inventory & ei) const;
     // Returns the Position of a base with heaviest set of attackers...
-    //Position Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
+    //Position Map_Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
     //Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
     // Returns the position of a base with the least casualties...
     Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;

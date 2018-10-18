@@ -16,6 +16,7 @@ public:
     //Forces a unit to surround the concerning ei. Does not advance.
     //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
 
+
     Position Output;
 
     // Causes a unit to match headings with neighboring units.

@@ -934,7 +934,7 @@ Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
 
 Position positionBuildFap(bool friendly) {
     std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    int half_map = 680; // SC Screen size is 680 X 240
+	int half_map = 680; // SC Screen size is 680 X 240
     std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
     int rand_x = dis(generator);
     int rand_y = dis(generator);

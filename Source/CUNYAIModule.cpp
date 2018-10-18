@@ -191,7 +191,7 @@ void CUNYAIModule::onFrame()
 
     // Update enemy player model. Draw all associated units.
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
-    //enemy_player_model.units_.drawAllHitPoints(inventory);
+    //enemy_player_model.units_.drawAllHitPoints(current_map_inventory);
     enemy_player_model.units_.drawAllLocations(current_map_inventory);
 
     //Update neutral units
@@ -207,6 +207,7 @@ void CUNYAIModule::onFrame()
 
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
+
     friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
     friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
 
@@ -363,6 +364,7 @@ void CUNYAIModule::onFrame()
 
     current_map_inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
+
 	//FAP::FastAPproximation<Stored_Unit*> TESTfap;
 	//Unit_Inventory test_inventory_friendly;
 	//Unit_Inventory test_inventory_enemy;
@@ -389,6 +391,7 @@ void CUNYAIModule::onFrame()
 	//Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
 	//Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
 	//Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+
 
 
     // Display the game status indicators at the top of the screen    
@@ -448,6 +451,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
 		Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
@@ -768,8 +772,10 @@ void CUNYAIModule::onFrame()
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             threatening_stocks == 0 || they_take_a_fap_beating ||
+
                             current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
                             current_map_inventory.safe_base_.getDistance(e_pos) < search_radius || // Force fight at safe base.
+
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
@@ -808,11 +814,13 @@ void CUNYAIModule::onFrame()
                     
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
                         mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange);
+
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
                             mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
+
                         }
 
                     }
@@ -823,6 +831,7 @@ void CUNYAIModule::onFrame()
                             !unit_death_in_moments){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, current_map_inventory, my_reservation);
                             mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+
                         }
                     }
                     else{
@@ -836,6 +845,7 @@ void CUNYAIModule::onFrame()
                             }
                         }
                             mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+
                     }
 
 

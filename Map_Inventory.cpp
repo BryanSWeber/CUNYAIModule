@@ -749,7 +749,7 @@ int Map_Inventory::getRadialDistanceOutFromHome( const Position A ) const
 
 }
 
-//void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
+//void Map_Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
 //    int start_iter = 2;
@@ -960,7 +960,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
 
 }
 
-//void Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
+//void Map_Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
 //
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
@@ -1038,7 +1038,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
 //    }
 //}
 
-//void Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
+//void Map_Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));

@@ -1000,6 +1000,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 }
 
 Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
+
 	int min_dist = 999999;
 	int temp_dist = 999999;
 	Stored_Unit* return_unit = nullptr;
@@ -1937,7 +1938,6 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
-
     Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
     //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
