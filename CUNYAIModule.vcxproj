@@ -105,7 +105,6 @@
     <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Unit_Inventory.cpp" />
     <ClCompile Include="GeneticHistoryManager.cpp" />
-    <ClCompile Include="Map_Inventory.cpp" />
     <ClCompile Include="TechManager.cpp" />
     <ClCompile Include="VisionManager.cpp" />
     <ClCompile Include="MiningManager.cpp" />
@@ -125,7 +124,6 @@
     <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
-    <ClInclude Include="Source\Map_Inventory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
