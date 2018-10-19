@@ -683,7 +683,7 @@ void CUNYAIModule::onFrame()
 
 		// Scout Assignment Logic. Before Combat logic so scouts don't attack
 		if (scouting.needScout(u, t_game) && (u_type == UnitTypes::Zerg_Overlord || u_type == UnitTypes::Zerg_Zergling)) {
-			Position scout_spot = scouting.getScoutTargets(u, inventory, enemy_player_model.units_);
+			Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
 
 			if (u_type == UnitTypes::Zerg_Zergling && !scouting._exists_zergling_scout) {
 				scouting.setScout(u);
