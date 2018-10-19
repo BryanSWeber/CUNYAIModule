@@ -15,7 +15,7 @@
     <RootNamespace>ExampleAIModule</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <ProjectName>CUNYAIModule</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -102,6 +102,7 @@
     <ClCompile Include="Research_Inventory.cpp" />
     <ClCompile Include="Reserve_Manager.cpp" />
     <ClCompile Include="Resource_Inventory.cpp" />
+    <ClCompile Include="ScoutingManager.cpp" />
     <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Unit_Inventory.cpp" />
     <ClCompile Include="GeneticHistoryManager.cpp" />
@@ -122,6 +123,7 @@
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
+    <ClInclude Include="Source\ScoutingManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
   </ItemGroup>

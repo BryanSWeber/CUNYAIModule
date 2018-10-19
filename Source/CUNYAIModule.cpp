@@ -8,6 +8,7 @@
 #include "Research_Inventory.h"
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
+#include "ScoutingManager.h"
 #include "AssemblyManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iostream> 
@@ -41,6 +42,9 @@ double CUNYAIModule::adaptation_rate; //Adaptation rate to opponent.
 double CUNYAIModule::alpha_army_original;
 double CUNYAIModule::alpha_tech_original;
 double CUNYAIModule::alpha_econ_original;
+
+// Initalize scouting manager once on startup
+ScoutingManager scouting;
 
 void CUNYAIModule::onStart()
 {
@@ -85,7 +89,8 @@ void CUNYAIModule::onStart()
         // If you wish to deal with multiple enemies then you must use enemies().
         if ( Broodwar->enemy() ) // First make sure there is an enemy
             Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
-    }
+		if (Broodwar->enemy()->getRace() == Races::Terran) scouting._let_overlords_scout = false; // Don't let overlords scout against terran. Currently the only modification to AI based off race.
+	}
 
     //Initialize state variables
     gas_starved = false;
@@ -672,6 +677,29 @@ void CUNYAIModule::onFrame()
             }
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
+
+		// Update scouts, check if still alive.
+		scouting.updateScouts();
+
+		// Scout Assignment Logic. Before Combat logic so scouts don't attack
+		if (scouting.needScout(u, t_game) && (u_type == UnitTypes::Zerg_Overlord || u_type == UnitTypes::Zerg_Zergling)) {
+			Position scout_spot = scouting.getScoutTargets(u, inventory, enemy_player_model.units_);
+
+			if (u_type == UnitTypes::Zerg_Zergling && !scouting._exists_zergling_scout) {
+				scouting.setScout(u);
+				scouting.sendScout(u, scout_spot);
+			}
+			if (u_type == UnitTypes::Zerg_Overlord && !scouting._exists_overlord_scout) {
+				scouting.setScout(u);
+				scouting.sendScout(u, scout_spot);
+			}
+			continue;
+		}
+		// Scout Clearing Logic
+		if (scouting.isScoutingUnit(u) && (u->isIdle() || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()))) { //Clear from scouting if stopped moving or overlord is under attack
+			if (u_type == UnitTypes::Zerg_Overlord) scouting.clearScout(u);
+			if (u_type == UnitTypes::Zerg_Zergling) scouting.clearScout(u);
+		}
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
