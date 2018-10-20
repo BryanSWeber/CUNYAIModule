@@ -2,22 +2,25 @@
 
 #include "Source\ScoutingManager.h"
 
-ScoutingManager::ScoutingManager() {
-	int _last_overlord_scout_sent(0);
-	int _last_zergling_scout_sent(0);
-	bool _exists_zergling_scout(false);
-	bool _exists_overlord_scout(false);
-	bool _let_overlords_scout(true);
-	Unit _overlord_scout(nullptr);
-	Unit _zergling_scout(nullptr);
-	Unit _last_overlord_scout(nullptr);
-	Unit _last_zergling_scout(nullptr);
+ScoutingManager::ScoutingManager()
+	: last_overlord_scout_sent_(0),  // Using member initalizer list instead
+	  last_zergling_scout_sent_(0),
+	  let_overlords_scout_(true),
+	  exists_overlord_scout_(false),
+	  exists_zergling_scout_(false),
+	  overlord_scout_(nullptr),
+	  zergling_scout_(nullptr),
+	  last_overlord_scout_(nullptr),
+	  last_zergling_scout_(nullptr)
+{
 }
 
 // -- Work in progress -- Only scouting starting base locations currently
 Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, Unit_Inventory &ei) {
 // Scouting priorities
 	Position scout_spot;
+	//Position e_base_scout = inv.getMeanEnemyBuildingLocation(ei);
+	//Broodwar->sendText("%s"), e_base_scout;
 	if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
 		scout_spot = inv.start_positions_[0];
 	}
@@ -27,25 +30,29 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
 bool ScoutingManager::needScout(const Unit &unit, const int &t_game) {
 // When do we want to scout
 	UnitType u_type = unit->getType();
-	if (t_game < 5) return true;  // first 5 frames for a buffer. Doing (t_game == 0) sometimes skips sending initial overloard
+	if (t_game < 5 && let_overlords_scout_) // first 5 frames for a buffer. Doing (t_game == 0) sometimes skips sending initial overloard
+		return true;
 
 	// need zergling scout whenever we have zerglings, a scout doesn't exist already, and one hasn't been killed semi-recently
-	if ( u_type == UnitTypes::Zerg_Zergling && !_exists_zergling_scout && (_last_zergling_scout_sent < t_game - Broodwar->getLatencyFrames() - 30 * 24) ) return true;
+	if ( u_type == UnitTypes::Zerg_Zergling && !exists_zergling_scout_ && (last_zergling_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24) ) 
+		return true;
 
-	if (_let_overlords_scout && !_exists_overlord_scout && _last_overlord_scout_sent < t_game - Broodwar->getLatencyFrames() - 30 * 24) return true;
+	if (let_overlords_scout_ && !exists_overlord_scout_ && last_overlord_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24) 
+		return true;
+	
 	return false;
 }
 
 void ScoutingManager::updateScouts() {
 // Check if scouts have died
-	if (_exists_zergling_scout && !_zergling_scout->exists()) {  //if we thought we had a scout but now we don't
-		_zergling_scout = nullptr;
-		_exists_zergling_scout = false;
+	if (exists_zergling_scout_ && !zergling_scout_->exists()) {  //if we thought we had a scout but now we don't
+		zergling_scout_ = nullptr;
+		exists_zergling_scout_ = false;
 		Broodwar->sendText("Zergling scout died");
 	}
-	if (_exists_overlord_scout && !_overlord_scout->exists()) {  //if we thought we had a scout but now we don't
-		_overlord_scout = nullptr;
-		_exists_overlord_scout = false;
+	if (exists_overlord_scout_ && !overlord_scout_->exists()) {  //if we thought we had a scout but now we don't
+		overlord_scout_ = nullptr;
+		exists_overlord_scout_ = false;
 		Broodwar->sendText("Overlord scout died");
 	}
 }
@@ -54,18 +61,18 @@ void ScoutingManager::setScout(const Unit &unit) {
 // Store unit as a designated scout
 	UnitType u_type = unit->getType();
 
-	if (u_type == UnitTypes::Zerg_Overlord && _let_overlords_scout) {
-		_overlord_scout = unit;
-		_exists_overlord_scout = true;
-		_last_overlord_scout_sent = Broodwar->getFrameCount(); // Store timer of dead scout
+	if (u_type == UnitTypes::Zerg_Overlord) {
+		overlord_scout_ = unit;
+		exists_overlord_scout_ = true;
+		last_overlord_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
 		Broodwar->sendText("Setting an overlord scout");
 		return;
 	}
 
 	if (u_type == UnitTypes::Zerg_Zergling) {
-		_zergling_scout = unit;
-		_exists_zergling_scout = true;
-		_last_zergling_scout_sent = Broodwar->getFrameCount(); // Store timer of dead scout
+		zergling_scout_ = unit;
+		exists_zergling_scout_ = true;
+		last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
 		Broodwar->sendText("Setting a zergling scout");
 		return;
 	}
@@ -75,26 +82,27 @@ void ScoutingManager::clearScout(const Unit &unit) {
 // Clear the unit from scouting duty
 	UnitType u_type = unit->getType();
 
-	if (u_type == UnitTypes::Zerg_Overlord && isScoutingUnit(unit) && _overlord_scout->exists()) {
-		_last_overlord_scout = unit; // Keep track of the cleared scout if still exists
-		_overlord_scout = nullptr;
-		_exists_overlord_scout = false;
-		_last_overlord_scout_sent = Broodwar->getFrameCount(); // Store timer of dead scout
+	if (u_type == UnitTypes::Zerg_Overlord && isScoutingUnit(unit) && overlord_scout_->exists()) {
+		last_overlord_scout_ = unit; // Keep track of the cleared scout if still exists
+		overlord_scout_ = nullptr;
+		exists_overlord_scout_ = false;
+		last_overlord_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
 		Broodwar->sendText("Scout cleared");
 	}
 
-	if (u_type == UnitTypes::Zerg_Zergling && isScoutingUnit(unit) && _zergling_scout->exists()) {
-		_last_zergling_scout = unit;   // Keep track of the cleared scout if still exists
-		_zergling_scout = nullptr;
-		_exists_zergling_scout = false;
-		_last_zergling_scout_sent = Broodwar->getFrameCount(); // Store timer of dead scout
+	if (u_type == UnitTypes::Zerg_Zergling && isScoutingUnit(unit) && zergling_scout_->exists()) {
+		last_zergling_scout_ = unit;   // Keep track of the cleared scout if still exists
+		zergling_scout_ = nullptr;
+		exists_zergling_scout_ = false;
+		last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
 		Broodwar->sendText("Scout cleared");
 	}
 }
 
 bool ScoutingManager::isScoutingUnit(const Unit &unit) {
 // Check if a particular unit is a designated scout
-	if (_overlord_scout == unit || _zergling_scout == unit) return true;
+	if (overlord_scout_ == unit || zergling_scout_ == unit) 
+		return true;
 
 	return false;
 }

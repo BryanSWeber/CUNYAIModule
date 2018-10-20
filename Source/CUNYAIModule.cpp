@@ -89,7 +89,6 @@ void CUNYAIModule::onStart()
         // If you wish to deal with multiple enemies then you must use enemies().
         if ( Broodwar->enemy() ) // First make sure there is an enemy
             Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
-		if (Broodwar->enemy()->getRace() == Races::Terran) scouting._let_overlords_scout = false; // Don't let overlords scout against terran. Currently the only modification to AI based off race.
 	}
 
     //Initialize state variables
@@ -291,6 +290,10 @@ void CUNYAIModule::onFrame()
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         current_map_inventory.updateBaseLoc(land_inventory);
         current_map_inventory.getExpoPositions(); // prime this once on game start.
+		
+		// Don't let overlords scout against terran. Currently the only modification to AI based off race.
+		Race enemyRace = Broodwar->enemy()->getRace();
+		if (enemyRace == Races::Terran) scouting.let_overlords_scout_ = false;
     }
 
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
@@ -683,17 +686,18 @@ void CUNYAIModule::onFrame()
 
 		// Scout Assignment Logic. Before Combat logic so scouts don't attack
 		if (scouting.needScout(u, t_game) && (u_type == UnitTypes::Zerg_Overlord || u_type == UnitTypes::Zerg_Zergling)) {
+			Broodwar->sendText("Scouting loop");
 			Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
-
-			if (u_type == UnitTypes::Zerg_Zergling && !scouting._exists_zergling_scout) {
+			if (u_type == UnitTypes::Zerg_Zergling && !scouting.exists_zergling_scout_) {
 				scouting.setScout(u);
 				scouting.sendScout(u, scout_spot);
+				continue;
 			}
-			if (u_type == UnitTypes::Zerg_Overlord && !scouting._exists_overlord_scout) {
+			if (u_type == UnitTypes::Zerg_Overlord && !scouting.exists_overlord_scout_) {
 				scouting.setScout(u);
 				scouting.sendScout(u, scout_spot);
+				continue;
 			}
-			continue;
 		}
 		// Scout Clearing Logic
 		if (scouting.isScoutingUnit(u) && (u->isIdle() || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()))) { //Clear from scouting if stopped moving or overlord is under attack
@@ -705,7 +709,7 @@ void CUNYAIModule::onFrame()
         auto start_combat = std::chrono::high_resolution_clock::now();
         bool foe_within_radius = false;
 
-        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
+        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u) && !scouting.isScoutingUnit(u)) // Dont enter combat loop if scouting unit)
         {
             Mobility mobility;
 
