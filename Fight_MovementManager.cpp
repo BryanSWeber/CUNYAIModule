@@ -236,15 +236,12 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 
     if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) ){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
-            if (adjust_lurker_burrow(unit, ui, ei, target->pos_) || target->valid_pos_) {
-                //
-            }
-            else {
+            if (!adjust_lurker_burrow(unit, ui, ei, target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
                 unit->attack(target->bwapi_unit_);
                 if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
-            attack_order_issued = true;
+			attack_order_issued = true;
         }
     }
 
@@ -264,26 +261,25 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 //void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Map_Inventory & inv){
 //}
 
-// Basic retreat logic, range = enemy range
-
+// Basic retreat logic
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color = Colors::White, const bool &force = false) {
 
 
     int dist = unit->getDistance(e_unit.pos_);
-    //int air_range = e_unit.type_.airWeapon().maxRange();
-    //int ground_range = e_unit.type_.groundWeapon().maxRange();
     distance_metric = DISTANCE_METRIC; // retreating must be done very fast.
    
     int e_range = ei.max_range_;
-    int f_range = ui.max_range_;
+    //int f_range = ui.max_range_;
 
     Position pos = unit->getPosition();
     bool order_sent = false;
 
+	// If there are bad guys nearby, run from the immediate threat, otherwise run home.
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
-        setSeperation(unit, pos, e_squad); // might return false positives.
+		// All units seperate from nearby threats.
+        setSeperation(unit, pos, e_squad); 
+		// flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
-        //else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_); // leads to getting stuck.
         else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
     }
     else {
@@ -297,12 +293,13 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     //final vector
     Position final_vector = avoidance_vector - walkability_vector_;
+
     //Make sure the end destination is one suitable for you.
     Position retreat_spot = pos + final_vector; //attract is zero when it's not set.
 
-    bool clear_walkable = retreat_spot.isValid() &&
-        (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inv.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
+    //bool clear_walkable = retreat_spot.isValid() &&
+    //    (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
+    //        CUNYAIModule::isClearRayTrace(pos, retreat_spot, inv.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
@@ -321,18 +318,6 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
             Position last_out2 = Positions::Origin;
 
-            //#include <iostream>
-            //using namespace std;
-            //int sample_fun(int X, int Y) { return X + Y; };
-            //int main()
-            //{
-            //    cout << "Hello World";
-            //    int Z = 4;
-            //    int out = sample_fun(Z, Z += 1);
-            //    cout << " We got:"; // 10. So it redefines first.
-            //    cout << out;
-            //}
-
             CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
@@ -344,6 +329,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		changing_unit.phase_ = "Retreating";
         changing_unit.updateStoredUnit(unit);
+		if(retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey,  this might be a worthless retreat order!");
 		return;
     }
     else { // if that spot will not work for you, prep to die.
