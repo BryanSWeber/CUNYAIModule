@@ -547,28 +547,28 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 }
 
 // Counts all units of one type in existance and owned by me. Counts units under construction.
-int CUNYAIModule::Count_Units(const UnitType &type, const Map_Inventory &inv)
+int CUNYAIModule::Count_Units(const UnitType &type)
 {
-    auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
-    if (c_iter == inv.unit_type_.end()) {
+    auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
+    if (c_iter == CUNYAIModule::friendly_player_model.unit_type_.end()) {
         return 0;
     }
     else {
-        int distance = std::distance(inv.unit_type_.begin(), c_iter);
-        return inv.unit_count_[distance];
+        int distance = std::distance(CUNYAIModule::friendly_player_model.unit_type_.begin(), c_iter);
+        return CUNYAIModule::friendly_player_model.unit_count_[distance];
     }
 
 }
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
-int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Map_Inventory &inv)
+int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
 {
-    auto c_iter = find(inv.unit_type_.begin(), inv.unit_type_.end(), type);
-    if (c_iter == inv.unit_type_.end()) {
+    auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
+    if (c_iter == CUNYAIModule::friendly_player_model.unit_type_.end()) {
         return 0;
     }
     else {
-        int distance = std::distance(inv.unit_type_.begin(), c_iter);
-        return inv.unit_incomplete_[distance];
+        int distance = std::distance(CUNYAIModule::friendly_player_model.unit_type_.begin(), c_iter);
+        return CUNYAIModule::friendly_player_model.unit_incomplete_[distance];
     }
 }
 
@@ -709,7 +709,7 @@ int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 // evaluates the value of a stock of unit, in terms of supply added.
 int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv ) {
     int supply = unit.supplyProvided();
-    int instances = Count_Units( unit, inv );
+    int instances = Count_Units( unit);
     int total_stock = supply * instances;
     return total_stock;
 }
@@ -782,12 +782,12 @@ void CUNYAIModule::Print_Test_Case(const int &screen_x, const int &screen_y) {
     }
 }
 // Announces to player the name and count of all units in the unit inventory. Bland but practical.
-void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y, const Map_Inventory &inv) {
+void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y) {
     int another_row_of_printing = 0;
-    for (auto i : inv.unit_type_)
+    for (auto i : CUNYAIModule::friendly_player_model.unit_type_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        int u_count = CUNYAIModule::Count_Units(i, inv);
-        int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i, inv);
+        int u_count = CUNYAIModule::Count_Units(i);
+        int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i);
         if (u_count > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
             Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //

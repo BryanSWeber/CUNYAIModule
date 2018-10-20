@@ -16,10 +16,6 @@ using namespace std;
 Map_Inventory::Map_Inventory() {};
 Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
 
-    updateUnit_Counts( ui );
-    updateLn_Army_Stock( ui );
-    updateLn_Tech_Stock( ui );
-    updateLn_Worker_Stock();
     updateVision_Count();
 
     updateLn_Supply_Remain();
@@ -80,86 +76,7 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     }
 };
 
-// Tallies up my units for rapid counting.
-void Map_Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 
-    vector <UnitType> already_seen;
-    vector <int> unit_count_temp;
-    vector <int> unit_incomplete_temp;
-    for (auto const & u_iter : ui.unit_inventory_) { // should only search through unit types not per unit.
-        UnitType u_type = u_iter.second.type_;
-        bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
-        if ( new_unit_type ) {
-            int found_units = CUNYAIModule::Count_Units(u_type, ui);
-            int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, ui);
-            already_seen.push_back(u_type);
-            unit_count_temp.push_back(found_units);
-            unit_incomplete_temp.push_back(incomplete_units);
-        }
-    }
-
-    unit_type_ = already_seen;
-    unit_count_ = unit_count_temp;
-    unit_incomplete_ = unit_incomplete_temp;
-}
-
-
-// Defines the (safe) log of our army stock.
-void Map_Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
-
-    double total = ui.stock_fighting_total_ /*- CUNYAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
-
-    if ( total <= 0 ) {
-        total = 1;
-    }
-
-    ln_army_stock_ = log( total );
-};
-
-// Updates the (safe) log of our tech stock.
-void Map_Inventory::updateLn_Tech_Stock( const Unit_Inventory &ui ) {
-
-    double total = 0;
-
-    for ( int i = 132; i != 143; i++ )
-    { // iterating through all tech buildings. See enumeration of unittype for details.
-        UnitType build_current = (UnitType)i;
-        total += CUNYAIModule::Stock_Buildings( build_current, ui );
-    }
-
-    for ( int i = 0; i != 62; i++ )
-    { // iterating through all upgrades.
-        UpgradeType up_current = (UpgradeType)i;
-        total += CUNYAIModule::Stock_Ups( up_current );
-    }
-
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_tech_stock_ = log( total );
-};
-
-// Updates the (safe) log of our worker stock. calls both worker updates to be safe.
-void Map_Inventory::updateLn_Worker_Stock() {
-
-    double total = 0;
-
-    double cost = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-
-    updateGas_Workers();
-    updateMin_Workers();
-
-    int workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this); //gas_workers_ + min_workers_; // this is not needed if all workers are active.
-
-    total = cost * workers;
-
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_worker_stock_ = log( total );
-};
 
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
 void Map_Inventory::updateLn_Supply_Remain() {
@@ -322,9 +239,9 @@ void Map_Inventory::updateScreen_Position()
 
 // Updates the number of hatcheries (and decendent buildings).
 void Map_Inventory::updateHatcheries() {
-    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
+    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive);
 }
 
 

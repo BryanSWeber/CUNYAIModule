@@ -27,7 +27,8 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
     bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (inv.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
+    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
+
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
