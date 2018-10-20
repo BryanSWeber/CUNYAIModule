@@ -329,7 +329,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 		changing_unit.phase_ = "Retreating";
         changing_unit.updateStoredUnit(unit);
-		if(retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey,  this might be a worthless retreat order!");
+		if(retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
 		return;
     }
     else { // if that spot will not work for you, prep to die.
