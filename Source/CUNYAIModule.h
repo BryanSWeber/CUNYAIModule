@@ -199,7 +199,7 @@ public:
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
       void Print_Test_Case(const int & screen_x, const int & screen_y);
-      void Print_Cached_Inventory(const int & screen_x, const int & screen_y, const Map_Inventory & inv);
+      void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
       void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
@@ -257,12 +257,12 @@ public:
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.
-      static int Count_Units(const UnitType & type, const Map_Inventory & inv);
+      static int Count_Units(const UnitType & type);
       // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
       static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
-      static int Count_Units_In_Progress(const UnitType & type, const Map_Inventory & inv);
+      static int Count_Units_In_Progress(const UnitType & type);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.

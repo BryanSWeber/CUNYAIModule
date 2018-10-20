@@ -159,18 +159,18 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 
 bool CobbDouglas::evalArmyPossible()
 {
-
-   return ((Broodwar->self()->supplyUsed() < 400 && exp(CUNYAIModule::current_map_inventory.ln_army_stock_) / exp(CUNYAIModule::current_map_inventory.ln_worker_stock_) < 5 * alpha_army / alpha_tech)) ||
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::current_map_inventory) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
+	double K_over_L = (double)(CUNYAIModule::friendly_player_model.units_.stock_fighting_total_ + 1) / (double)(CUNYAIModule::friendly_player_model.units_.worker_count_ * Stored_Unit(UnitTypes::Zerg_Zergling).stock_value_ + 1); // avoid NAN's
+	int units_on_field = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool)
+		+ CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den)
+		+ CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire)
+		+ CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Ultralisk_Cavern);
+   return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) || units_on_field <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
 }
 
 bool CobbDouglas::evalEconPossible()
 {
     bool not_enough_miners = (CUNYAIModule::current_map_inventory.min_workers_ <= CUNYAIModule::current_map_inventory.min_fields_ * 2);
-    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, CUNYAIModule::current_map_inventory) < 85;
+    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85;
     return not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }

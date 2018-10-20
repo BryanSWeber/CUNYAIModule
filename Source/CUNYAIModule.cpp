@@ -112,7 +112,6 @@ void CUNYAIModule::onStart()
     buildorder.getInitialBuildOrder( gene_history.build_order_ );
 
     //update Map Grids
-    current_map_inventory.updateUnit_Counts(friendly_player_model.units_);
     current_map_inventory.updateBuildablePos();
     current_map_inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
@@ -252,10 +251,6 @@ void CUNYAIModule::onFrame()
     }
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
-    current_map_inventory.updateUnit_Counts(friendly_player_model.units_);
-    current_map_inventory.updateLn_Army_Stock(friendly_player_model.units_);
-    current_map_inventory.updateLn_Tech_Stock(friendly_player_model.units_);
-    current_map_inventory.updateLn_Worker_Stock();
     current_map_inventory.updateVision_Count();
 
     current_map_inventory.updateLn_Supply_Remain();
@@ -275,8 +270,6 @@ void CUNYAIModule::onFrame()
     current_map_inventory.expo_portion_of_the_map_ = (int)(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / (double)current_map_inventory.expo_positions_complete_.size());
     current_map_inventory.updateStartPositions(enemy_player_model.units_);
     current_map_inventory.updateScreen_Position();
-    current_map_inventory.radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(friendly_player_model.units_, current_map_inventory.map_out_from_enemy_ground_);
-    current_map_inventory.closest_radial_distance_enemy_ground_ = *std::min_element(current_map_inventory.radial_distances_from_enemy_ground_.begin(),current_map_inventory.radial_distances_from_enemy_ground_.end());
 
     if (t_game == 0) {
         //update local resources
@@ -316,7 +309,7 @@ void CUNYAIModule::onFrame()
             }
         }
 
-        bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor, current_map_inventory) == 0;
+        bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor) == 0;
         if (need_gas_now && no_extractor) {
             buildorder.clearRemainingBuildOrder();
             CUNYAIModule::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
@@ -367,7 +360,7 @@ void CUNYAIModule::onFrame()
     if constexpr(DRAWING_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
-        Print_Cached_Inventory(0, 50, current_map_inventory);
+        Print_Cached_Inventory(0, 50);
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 170, my_reservation);
@@ -431,7 +424,7 @@ void CUNYAIModule::onFrame()
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
-        Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", (int)exp(current_map_inventory.ln_army_stock_)); //
+        Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
         Broodwar->drawTextScreen(375, 40, "Foe T Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getLn_Gas_Ratio());
         Broodwar->drawTextScreen(375, 60, "Vision (Pct.): %4.2f", current_map_inventory.vision_tile_count_ / (double)map_area);  //
@@ -603,7 +596,7 @@ void CUNYAIModule::onFrame()
             }
 
             // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-            if (!attempted_morph_guardian_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire, current_map_inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire, current_map_inventory) > 0)
+            if (!attempted_morph_guardian_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0)
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
                 attempted_morph_guardian_this_frame = true;
@@ -825,7 +818,7 @@ void CUNYAIModule::onFrame()
         if (u_type.isWorker()) {
             Stored_Unit& miner = *friendly_player_model.units_.getStoredUnit(u);
 
-            bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor, current_map_inventory) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor, current_map_inventory)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
+            bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
             bool too_much_gas = 1 - current_map_inventory.getLn_Gas_Ratio() > delta;
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
