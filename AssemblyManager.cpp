@@ -625,21 +625,11 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
-    map<UnitType, int> larva_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } , { UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN } };
-    map<UnitType, int> hydra_combat_types = { { UnitTypes::Zerg_Hydralisk, INT_MIN } , { UnitTypes::Zerg_Lurker, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
-    map<UnitType, int> muta_combat_types = { { UnitTypes::Zerg_Mutalisk, INT_MIN } , { UnitTypes::Zerg_Guardian, INT_MIN } , { UnitTypes::Zerg_Devourer, INT_MIN } }; // Check if we DON'T want to morph. Always possible.
-
-    if (is_larva) {
-        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, larva_combat_types);
-    }
-    else if (is_hydra) {
-        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, hydra_combat_types);
-    }
-    else if (is_muta) {
-        is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, muta_combat_types);
-    }
+    map<UnitType, int> all_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+    is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, all_combat_types);
 
     return is_building;
+
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
@@ -652,17 +642,18 @@ bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 
 bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
     bool building_optimal_unit = false;
-    auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     int best_sim_score = INT_MIN;
-    Unit_Inventory friendly_units_under_consideration;
     UnitType build_type = UnitTypes::None;
 
     // drop all units types I cannot assemble at this time.
     auto pt_type = combat_types.begin();
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = (morph_canidate->canMorph(pt_type->first) || morph_canidate->getType() == pt_type->first) && my_reservation.checkAffordablePurchase(pt_type->first) && (buildorder.checkBuilding_Desired(pt_type->first) || buildorder.isEmptyBuildOrder());
+        bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
+        bool can_morph_into_prerequisite_hydra = morph_canidate->canMorph(UnitTypes::Zerg_Hydralisk) && pt_type->first == UnitTypes::Zerg_Lurker && friendly_player_model.researches_.tech_.at(TechTypes::Lurker_Aspect) > 0;
+        bool can_morph_into_prerequisite_muta = morph_canidate->canMorph(UnitTypes::Zerg_Mutalisk) && (pt_type->first == UnitTypes::Zerg_Devourer || pt_type->first == UnitTypes::Zerg_Guardian) && Count_Units(UnitTypes::Zerg_Greater_Spire) > 0;
 
-        if (can_make_or_already_is) {
+        if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
             pt_type++;
         }
         else {
@@ -699,7 +690,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-            buildfap_temp.simulate(24*100); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            buildfap_temp.simulate(24*20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
             //if(Broodwar->getFrameCount() % 24 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
     }
