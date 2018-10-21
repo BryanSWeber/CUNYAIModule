@@ -116,7 +116,8 @@ public:
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
-
+      // checks if a unit type MUST be built next (or meets extra critera). Used in many assembly functions.
+      bool mustBuild(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
@@ -248,6 +249,7 @@ public:
       static bool checkResourceOccupiedArea( const Resource_Inventory & ri, const Position & origin );
       //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist );
+
 
   // Utility functions that need to be accessed by any number of classes, ie. static declarations.
       // Counts the tally of a particular int a specific unit set. Includes those in production.

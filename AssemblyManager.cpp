@@ -227,9 +227,8 @@ bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.  Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
 {
-    if (larva->canMorph(unittype) && my_reservation.checkAffordablePurchase(unittype) && (buildorder.checkBuilding_Desired(unittype) || (extra_critera && buildorder.isEmptyBuildOrder())))
+    if (mustBuild(larva, unittype, extra_critera))
     {
-
         if (larva->morph(unittype)) {
             buildorder.updateRemainingBuildOrder(unittype); // Shouldn't be a problem if unit isn't in buildorder.
             if (unittype.isTwoUnitsInOneEgg()) {
@@ -239,7 +238,6 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
             morphing_unit.updateStoredUnit(larva);
             return true;
         }
-
     }
 
     return false;
@@ -633,8 +631,8 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
-    bool can_make_spore = morph_canidate->canMorph(UnitTypes::Zerg_Spore_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Spore_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.isEmptyBuildOrder());
-    bool can_make_sunken = morph_canidate->canMorph(UnitTypes::Zerg_Sunken_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Sunken_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony) || buildorder.isEmptyBuildOrder());
+    bool can_make_spore = mustBuild(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
+    bool can_make_sunken = mustBuild(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
 
     if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
     else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
@@ -648,7 +646,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     // drop all units types I cannot assemble at this time.
     auto pt_type = combat_types.begin();
     while (pt_type != combat_types.end()) {
-        bool can_make_or_already_is = (morph_canidate->canMorph(pt_type->first) || morph_canidate->getType() == pt_type->first) && my_reservation.checkAffordablePurchase(pt_type->first) && (buildorder.checkBuilding_Desired(pt_type->first) || buildorder.isEmptyBuildOrder());
+        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || mustBuild( morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
         bool can_morph_into_prerequisite_hydra = morph_canidate->canMorph(UnitTypes::Zerg_Hydralisk) && pt_type->first == UnitTypes::Zerg_Lurker && friendly_player_model.researches_.tech_.at(TechTypes::Lurker_Aspect) > 0;
         bool can_morph_into_prerequisite_muta = morph_canidate->canMorph(UnitTypes::Zerg_Mutalisk) && (pt_type->first == UnitTypes::Zerg_Devourer || pt_type->first == UnitTypes::Zerg_Guardian) && Count_Units(UnitTypes::Zerg_Greater_Spire) > 0;
@@ -705,6 +703,10 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
     return build_type;
 
+}
+
+bool CUNYAIModule::mustBuild(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
+    return unit->canMorph(ut) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
