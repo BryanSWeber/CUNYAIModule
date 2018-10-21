@@ -117,7 +117,7 @@ public:
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
       // checks if a unit type MUST be built next (or meets extra critera). Used in many assembly functions.
-      bool mustBuild(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      bool mustCreate(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:

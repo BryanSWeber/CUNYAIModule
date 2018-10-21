@@ -1603,12 +1603,11 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 {
     vector<int> return_vector;
 
-    if (!map.empty()) {
+    if (!map.empty() && !ui.unit_inventory_.empty()) {
         for (auto u : ui.unit_inventory_) {
             return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
         }
         return return_vector;
-
     }
 
     return return_vector = { 0 };
