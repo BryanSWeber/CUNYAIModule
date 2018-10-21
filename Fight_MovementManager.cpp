@@ -308,13 +308,14 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //bool squad_death_in_moments = u_squad.squadAliveinFuture(96); 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
+	bool is_retreating = false;
 
     if ( force || ( retreat_spot && !kiting /*&& !(unit_death_in_moments && squad_death_in_moments && clear_walkable && melee_fight)*/ ) ) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
+			is_retreating = true;
         }
-        else {
-            unit->move(retreat_spot); //run away.
+        else if (unit->move(retreat_spot)) { //run away.  Don't need immobile units retreating.
             Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
             Position last_out2 = Positions::Origin;
 
@@ -325,12 +326,16 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
             CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+			is_retreating = true;
         }
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		changing_unit.phase_ = "Retreating";
-        changing_unit.updateStoredUnit(unit);
-		if(retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
-		return;
+
+		if (is_retreating) {
+			Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+			changing_unit.phase_ = "Retreating";
+			changing_unit.updateStoredUnit(unit);
+			if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
+			return;
+		}
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.

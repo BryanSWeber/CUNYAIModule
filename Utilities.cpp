@@ -170,12 +170,12 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
-			int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
-			while (temp_hp_value > 25) {
-				lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_hp_value / (double)(unit.type_.maxHitPoints() + unit.type_.maxShields()));
-				Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-				temp_hp_value -= 25;
-			}
+            int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
+            while (temp_hp_value > 25) {
+                lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_hp_value / (double)(unit.type_.maxHitPoints() + unit.type_.maxShields()));
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
+                temp_hp_value -= 25;
+            }
         }
     }
 }
@@ -198,12 +198,12 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
-			int temp_stock_value = unit.stock_value_;
-			while (temp_stock_value > 25) {
-				lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_stock_value / (double)unit.stock_value_);
-				Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
-				temp_stock_value -= 25;
-			}
+            int temp_stock_value = unit.stock_value_;
+            while (temp_stock_value > 25) {
+                lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_stock_value / (double)unit.stock_value_);
+                Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
+                temp_stock_value -= 25;
+            }
         }
     }
 }
@@ -1001,21 +1001,21 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 
 Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
 
-	int min_dist = 999999;
-	int temp_dist = 999999;
-	Stored_Unit* return_unit = nullptr;
+    int min_dist = 999999;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
 
-	if (!ui.unit_inventory_.empty()) {
-		for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
-			temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
-			if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
-				min_dist = temp_dist;
-				return_unit = &(u->second);
-			}
-		}
-	}
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+            temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
+                min_dist = temp_dist;
+                return_unit = &(u->second);
+            }
+        }
+    }
 
-	return return_unit;
+    return return_unit;
 }
 
 Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
@@ -1411,9 +1411,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 5;
     }
 
-	//if (u_command == UnitCommandTypes::Hold_Position) {
-	//	cd_frames = 5;
-	//}
+    //if (u_command == UnitCommandTypes::Hold_Position) {
+    //    cd_frames = 5;
+    //}
     //if (u_command == UnitCommandTypes::Attack_Move) {
     //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     //}
@@ -1805,7 +1805,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-	int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
+    int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
     return (u->getType() != UnitTypes::Zerg_Lurker) * (int)CUNYAIModule::getProperSpeed(u) * (96/4) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
 }
 

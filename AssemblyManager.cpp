@@ -307,17 +307,17 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Map_Inventory &inv, U
         if (larva->canBuild(next_in_build_order) ) is_building = Check_N_Grow(next_in_build_order, larva, true);
     }
 
-	// catchall ground units, in case you have a BO that needs to be done.  Should be redundant with above code?
-	if (!buildorder.isEmptyBuildOrder()) {
-		if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, false);
-		if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, false);
-		if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, false);
-		if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, false);
-		if (is_hydra && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Lurker, larva, false);
-		if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, false);
-		if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, false);
-		if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Drone, larva, false);
-	}
+    // catchall ground units, in case you have a BO that needs to be done.  Should be redundant with above code?
+    if (!buildorder.isEmptyBuildOrder()) {
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, false);
+        if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, false);
+        if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Guardian, larva, false);
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, false);
+        if (is_hydra && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Lurker, larva, false);
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, false);
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Zergling, larva, false);
+        if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Drone, larva, false);
+    }
 
     //Supply blocked protection 
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Overlord, larva, supply_starved );
@@ -459,18 +459,18 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         u_loc = getUnitInventoryInRadius(friendly_player_model.units_, drone->getPosition(), inv.my_portion_of_the_map_);
     }
 
-	// Trust the build order. If there is a build order and it wants a building, build it!
-	if (!buildorder.isEmptyBuildOrder()) {
-		UnitType next_in_build_order = buildorder.building_gene_.front().getUnit();
-		if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, current_map_inventory);
-		else buildings_started = Check_N_Build(next_in_build_order, drone, false);
-	}
+    // Trust the build order. If there is a build order and it wants a building, build it!
+    if (!buildorder.isEmptyBuildOrder()) {
+        UnitType next_in_build_order = buildorder.building_gene_.front().getUnit();
+        if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, current_map_inventory);
+        else buildings_started = Check_N_Build(next_in_build_order, drone, false);
+    }
 
     //Macro-related Buildings.
     if( !buildings_started ) buildings_started = Expo(drone, (!army_starved || enemy_player_model.units_.moving_average_fap_stock_<= friendly_player_model.units_.moving_average_fap_stock_ || expansion_vital) && (expansion_meaningful || larva_starved || econ_starved), current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
     if( !buildings_started ) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, larva_starved && inv.min_workers_ + inv.gas_workers_ > inv.hatches_ * 5); // only macrohatch if you are short on larvae and can afford to spend.
-	
+    
     if( !buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         (inv.gas_workers_ >= 2 * (Count_Units(UnitTypes::Zerg_Extractor) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor)) && gas_starved) &&
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
@@ -644,11 +644,11 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
-	bool can_make_spore = morph_canidate->canMorph(UnitTypes::Zerg_Spore_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Spore_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.isEmptyBuildOrder());
-	bool can_make_sunken = morph_canidate->canMorph(UnitTypes::Zerg_Sunken_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Sunken_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony) || buildorder.isEmptyBuildOrder());
+    bool can_make_spore = morph_canidate->canMorph(UnitTypes::Zerg_Spore_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Spore_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Spore_Colony) || buildorder.isEmptyBuildOrder());
+    bool can_make_sunken = morph_canidate->canMorph(UnitTypes::Zerg_Sunken_Colony) && my_reservation.checkAffordablePurchase(UnitTypes::Zerg_Sunken_Colony) && (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Sunken_Colony) || buildorder.isEmptyBuildOrder());
 
-	if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-	else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 }
 
 bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
@@ -692,7 +692,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
-			buildfap_temp.clear();
+            buildfap_temp.clear();
             buildfap_temp = buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
             // enemy units do not change.

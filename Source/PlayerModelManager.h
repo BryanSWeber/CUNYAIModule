@@ -29,16 +29,16 @@ struct Player_Model {
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
     void evaluateCurrentWorth();
-	// under development. Currently bugged but of interest.
+    // under development. Currently bugged but of interest.
 
-	//stored to avoid extensive counting.  
-	void updateUnit_Counts();
+    //stored to avoid extensive counting.  
+    void updateUnit_Counts();
 
-	vector< UnitType > unit_type_;
-	vector< int > unit_count_;
-	vector< int > unit_incomplete_;
-	vector< int > radial_distances_from_enemy_ground_ = { 0 };
-	int closest_radial_distance_enemy_ground_ = INT_MAX;
+    vector< UnitType > unit_type_;
+    vector< int > unit_count_;
+    vector< int > unit_incomplete_;
+    vector< int > radial_distances_from_enemy_ground_ = { 0 };
+    int closest_radial_distance_enemy_ground_ = INT_MAX;
 
 };
 

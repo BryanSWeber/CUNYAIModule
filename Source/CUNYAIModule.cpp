@@ -216,7 +216,7 @@ void CUNYAIModule::onFrame()
 
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
     enemy_player_model.units_.addToBuildFAP(buildfap, false, enemy_player_model.researches_);
-	enemy_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
+    enemy_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
     friendly_player_model.units_.addToBuildFAP(buildfap, true, friendly_player_model.researches_);
@@ -358,32 +358,32 @@ void CUNYAIModule::onFrame()
     current_map_inventory.est_enemy_stock_ = (int)enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
 
 
-	//FAP::FastAPproximation<Stored_Unit*> TESTfap;
-	//Unit_Inventory test_inventory_friendly;
-	//Unit_Inventory test_inventory_enemy;
-	//test_inventory_friendly.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Sunken_Colony));
-	//Broodwar->sendText("The value of the sunken before a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-	//test_inventory_enemy.addStored_Unit(Stored_Unit(UnitTypes::Terran_Wraith));
-	//TESTfap.clear();
-	//test_inventory_friendly.addToFAPatPos(TESTfap, Position(100, 100),true, friendly_player_model.researches_);
-	//test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
-	//TESTfap.simulate(-1);
-	//test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
-	//Broodwar->sendText("The value of the sunken after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-	//Broodwar->sendText("The sunken is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
-	//Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+    //FAP::FastAPproximation<Stored_Unit*> TESTfap;
+    //Unit_Inventory test_inventory_friendly;
+    //Unit_Inventory test_inventory_enemy;
+    //test_inventory_friendly.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Sunken_Colony));
+    //Broodwar->sendText("The value of the sunken before a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+    //test_inventory_enemy.addStored_Unit(Stored_Unit(UnitTypes::Terran_Wraith));
+    //TESTfap.clear();
+    //test_inventory_friendly.addToFAPatPos(TESTfap, Position(100, 100),true, friendly_player_model.researches_);
+    //test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
+    //TESTfap.simulate(-1);
+    //test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
+    //Broodwar->sendText("The value of the sunken after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+    //Broodwar->sendText("The sunken is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
+    //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
 
-	//Unit_Inventory test_inventory_friendly2;
-	//TESTfap.clear();
-	//test_inventory_friendly2.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Spore_Colony));
-	//Broodwar->sendText("The value of the spore before a fight is: %d", test_inventory_friendly2.unit_inventory_.begin()->second.future_fap_value_);
-	//test_inventory_friendly2.addToFAPatPos(TESTfap, Position(100, 100), true, friendly_player_model.researches_);
-	//test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
-	//TESTfap.simulate(-1);
-	//test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
-	//Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-	//Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
-	//Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+    //Unit_Inventory test_inventory_friendly2;
+    //TESTfap.clear();
+    //test_inventory_friendly2.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Spore_Colony));
+    //Broodwar->sendText("The value of the spore before a fight is: %d", test_inventory_friendly2.unit_inventory_.begin()->second.future_fap_value_);
+    //test_inventory_friendly2.addToFAPatPos(TESTfap, Position(100, 100), true, friendly_player_model.researches_);
+    //test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
+    //TESTfap.simulate(-1);
+    //test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
+    //Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
+    //Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
+    //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
 
 
 
@@ -443,7 +443,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
         Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
-		Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
@@ -453,7 +453,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-		Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
+        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -706,8 +706,8 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility;
-			Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(u)->second;
-			changing_unit.phase_ = "None";
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(u)->second;
+            changing_unit.phase_ = "None";
 
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 3200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
@@ -745,10 +745,10 @@ void CUNYAIModule::onFrame()
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this. 
                 //bool we_take_a_fap_beating = false;
 
-				if constexpr (DRAWING_MODE) {
-					Broodwar->drawCircleMap(e_closest->pos_, enemy_player_model.units_.max_range_, Colors::Red);
-					Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-				}
+                if constexpr (DRAWING_MODE) {
+                    Broodwar->drawCircleMap(e_closest->pos_, enemy_player_model.units_.max_range_, Colors::Red);
+                    Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+                }
 
                 foe_within_radius = distance_to_foe < search_radius;
 
@@ -758,17 +758,16 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-					Position e_pos = e_closest->pos_;
+                    Position e_pos = e_closest->pos_;
+                    bool home_fight_mandatory = current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
+                                                current_map_inventory.safe_base_.getDistance(e_pos) < search_radius; // Force fight at safe base.
+
                     bool neccessary_attack =
                         (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             threatening_stocks == 0 || they_take_a_fap_beating ||
-
-                            current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
-                            current_map_inventory.safe_base_.getDistance(e_pos) < search_radius || // Force fight at safe base.
-
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
