@@ -1957,7 +1957,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         it_is_home_ = inv.home_base_.getDistance(pos) < 96;
         can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 20000 || inv.hatches_ == 1;
+        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 500 || inv.hatches_ == 1;
     }
 
 

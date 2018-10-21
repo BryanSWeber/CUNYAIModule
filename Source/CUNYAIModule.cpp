@@ -323,9 +323,6 @@ void CUNYAIModule::onFrame()
 
     bool build_check_this_frame = false;
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
-    Position mutating_creep_colony_position = Position{ 0,0 }; // this is a simply practical check that saves a TON of resources.
-    UnitType mutating_creep_colony_type = UnitTypes::Zerg_Creep_Colony;
-    bool mutating_creep_this_frame = false;
 
     //Vision inventory: Map area could be initialized on startup, since maps do not vary once made.
     int map_x = Broodwar->mapWidth();
@@ -396,8 +393,8 @@ void CUNYAIModule::onFrame()
         Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 180, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
-            //Print_Unit_Inventory(500, 170, enemy_player_model.units_);
-            Print_Research_Inventory(500, 170, enemy_player_model.researches_);
+            Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
         }
         else {
             Print_Build_Order_Remaining(500, 170, buildorder);
@@ -604,7 +601,7 @@ void CUNYAIModule::onFrame()
         // Unit creation & Hatchery management loop
         auto start_unit_morphs = std::chrono::high_resolution_clock::now();
 
-        if (last_frame_of_unit_morph_command < t_game - 12) {
+        if (last_frame_of_unit_morph_command < t_game - 12) { // must morph each type seperately, or else (ex) your bot will consider morphing a hydra and then pass on all larva for the frame.
 
             //Only morph one larva this frame.
             if (!attempted_morph_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
@@ -709,7 +706,7 @@ void CUNYAIModule::onFrame()
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(u)->second;
             changing_unit.phase_ = "None";
 
-            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 3200);
+            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 1200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
@@ -759,15 +756,16 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     Position e_pos = e_closest->pos_;
-                    bool home_fight_mandatory = current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
-                                                current_map_inventory.safe_base_.getDistance(e_pos) < search_radius; // Force fight at safe base.
-
+                    bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
+                                                (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
+                                                current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
+                    bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory;
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory) && (
+                        (targetable_stocks > 0 || grim_trigger_to_go_in) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
-                            threatening_stocks == 0 || they_take_a_fap_beating ||
+                            grim_trigger_to_go_in ||
                             //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
                             //!army_starved || // fight your army is appropriately sized.
                             (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
@@ -781,13 +779,13 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!they_take_a_fap_beating && !home_fight_mandatory) ||
+                        (!grim_trigger_to_go_in) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
                         //(u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
                         //(e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
-                        //                                                                      //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
+                        //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
                         //(!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
@@ -811,7 +809,6 @@ void CUNYAIModule::onFrame()
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
                             mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
-
                         }
 
                     }
@@ -884,7 +881,7 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 10 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
