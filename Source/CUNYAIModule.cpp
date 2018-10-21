@@ -763,7 +763,7 @@ void CUNYAIModule::onFrame()
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < search_radius; // Force fight at safe base.
 
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating) && (
+                        (targetable_stocks > 0 || threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -781,7 +781,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!they_take_a_fap_beating) ||
+                        (!they_take_a_fap_beating && !home_fight_mandatory) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||

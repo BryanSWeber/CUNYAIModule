@@ -86,14 +86,14 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     //Make sure the end destination is one suitable for you.
     Position final_pos = pos + final_vector; //attract is zero when it's not set.
     
-	//If you're not starting or ending too close to the "bad guys" you can continue to path.
+    //If you're not starting or ending too close to the "bad guys" you can continue to path.
     if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance && pos.getDistance(e_pos) > passed_distance) {
 
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
             unit->unburrow();
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-			changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+            changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
             changing_unit.updateStoredUnit(unit);
             return;
         }
@@ -123,27 +123,27 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
-		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-		changing_unit.updateStoredUnit(unit);
-		return;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+        changing_unit.updateStoredUnit(unit);
+        return;
     }
 
-	// If you end too close to the bad guys, hold position.
-	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) > passed_distance) {
-		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		unit->holdPosition();
-		changing_unit.phase_ = "Surrounding";
-		changing_unit.updateStoredUnit(unit);
-		return;
-	}
+    // If you end too close to the bad guys, hold position.
+    if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) > passed_distance) {
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        unit->holdPosition();
+        changing_unit.phase_ = "Surrounding";
+        changing_unit.updateStoredUnit(unit);
+        return;
+    }
 
-	// If you start too close to the bad guys, we have other issues.
-	if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
-		CUNYAIModule::DiagnosticText("We've been overtaken...");
-		// This option should never happen! It ought to trigger retreat/attack.
-		return;
-	}
+    // If you start too close to the bad guys, we have other issues.
+    if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
+        CUNYAIModule::DiagnosticText("We've been overtaken...");
+        // This option should never happen! It ought to trigger retreat/attack.
+        return;
+    }
 }
 
 
@@ -163,7 +163,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     int max_dist = passed_distance; // copy, to be modified later.
-	bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
@@ -241,19 +241,19 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
                 if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
-			attack_order_issued = true;
+            attack_order_issued = true;
         }
     }
 
     if (attack_order_issued) {
-		Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-		changing_unit.phase_ = "Attacking";
-		changing_unit.updateStoredUnit(unit);
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        changing_unit.phase_ = "Attacking";
+        changing_unit.updateStoredUnit(unit);
     } 
-	else {
-		Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true);
-	}// if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
-	return;
+    else {
+        Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true);
+    }// if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+    return;
 }
 
 
@@ -274,11 +274,11 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     Position pos = unit->getPosition();
     bool order_sent = false;
 
-	// If there are bad guys nearby, run from the immediate threat, otherwise run home.
+    // If there are bad guys nearby, run from the immediate threat, otherwise run home.
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
-		// All units seperate from nearby threats.
+        // All units seperate from nearby threats.
         setSeperation(unit, pos, e_squad); 
-		// flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
+        // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
         else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
     }
@@ -308,12 +308,12 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     //bool squad_death_in_moments = u_squad.squadAliveinFuture(96); 
     bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
-	bool is_retreating = false;
+    bool is_retreating = false;
 
     if ( force || ( retreat_spot && !kiting /*&& !(unit_death_in_moments && squad_death_in_moments && clear_walkable && melee_fight)*/ ) ) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
-			is_retreating = true;
+            is_retreating = true;
         }
         else if (unit->move(retreat_spot)) { //run away.  Don't need immobile units retreating.
             Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
@@ -326,21 +326,21 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
             CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
-			is_retreating = true;
+            is_retreating = true;
         }
 
-		if (is_retreating) {
-			Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-			changing_unit.phase_ = "Retreating";
-			changing_unit.updateStoredUnit(unit);
-			if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
-			return;
-		}
+        if (is_retreating) {
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            changing_unit.phase_ = "Retreating";
+            changing_unit.updateStoredUnit(unit);
+            if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
+            return;
+        }
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
         Tactical_Logic(unit, e_unit, e_squad, u_squad, passed_distance, inv);
-		return;
+        return;
     }
 
 }
