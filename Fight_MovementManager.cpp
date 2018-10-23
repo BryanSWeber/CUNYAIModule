@@ -273,11 +273,11 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     Position pos = unit->getPosition();
     bool order_sent = false;
-
+    Unit_Inventory e_squad_threatening = CUNYAIModule::getThreateningUnitInventoryInRadius(e_squad, pos, 999, unit->isFlying());
     // If there are bad guys nearby, run from the immediate threat, otherwise run home.
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         // All units seperate from nearby enemy units- threat or not.
-        setSeperation(unit, pos, e_squad); 
+        setSeperation(unit, pos, e_squad_threatening);
         // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
         else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
@@ -303,10 +303,10 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
-    bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
+    //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
     //bool unit_death_in_moments = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 96); 
     //bool squad_death_in_moments = u_squad.squadAliveinFuture(96); 
-    bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
+    //bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
     bool is_retreating = false;
 
