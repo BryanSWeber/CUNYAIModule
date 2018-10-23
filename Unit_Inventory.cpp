@@ -257,7 +257,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
         circumference_remaining_ = circumference_;
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = retreating_or_undetected ? weight * (double)ma_future_fap_value_ + (1 - weight) *(double)current_stock_value_ : weight * (double)ma_future_fap_value_ + (1 - weight) *(double)future_fap_value_;
+        ma_future_fap_value_ = retreating_or_undetected ? current_stock_value_ : weight * (double)ma_future_fap_value_ + (1 - weight) *(double)future_fap_value_;
     }
 }
 
