@@ -253,7 +253,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
-        bool retreating_or_undetected = (phase_ == "Retreating" || phase_ == "Pathing Out" || (burrowed_ && !detected_));
+        bool retreating_or_undetected = (/*phase_ == "Retreating" ||*/ phase_ == "Pathing Out" || phase_ == "Pathing In" || (burrowed_ && !detected_));
         double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
         circumference_remaining_ = circumference_;
         current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
@@ -891,12 +891,12 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
 }
 
 
-
+// we no longer build sim against their buildings.
 void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
         if(friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
@@ -934,7 +934,7 @@ Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
 
 Position positionBuildFap(bool friendly) {
     std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    int half_map = 240; // SC Screen size is 680 X 240
+    int half_map = 120; // SC Screen size is 680 X 240
     std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
     int rand_x = dis(generator);
     int rand_y = dis(generator);
