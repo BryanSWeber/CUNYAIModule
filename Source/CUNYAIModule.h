@@ -169,8 +169,9 @@ public:
               Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
           }
       }
-      // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
-      static bool Futile_Fight( Unit unit, Unit enemy );
+      // Defunct: Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
+      //static bool Futile_Fight( Unit unit, Unit enemy );
+
       // Outlines the case where you can attack their type (air/ground/cloaked)
       static bool Can_Fight( Unit unit, Unit enemy );
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
@@ -234,6 +235,7 @@ public:
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      static Unit_Inventory getThreateningUnitInventoryInRadius(const Unit_Inventory & ui, const Position & origin, const int & dist, const bool & air_attack);
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
       static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
