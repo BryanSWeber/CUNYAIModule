@@ -418,19 +418,19 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
 }
 
 // Outlines the case where UNIT cannot attack ENEMY type (air/ground), while ENEMY can attack UNIT.  Essentially bidirectional Can_Fight checks.
-bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {
-    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
-    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
-    
-    return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
-}
+//bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {
+//    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
+//    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
+//    
+//    return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
+//}
 
 // Outlines the case where UNIT can attack ENEMY;
 bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy->isFlying());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if ( enemy->exists() ) {
         return e_vunerable && enemy->isDetected();
@@ -445,7 +445,7 @@ bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy.is_flying_);
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -460,7 +460,7 @@ bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy.is_flying_);
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if ( enemy.bwapi_unit_ && enemy.bwapi_unit_->exists() ) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -475,7 +475,7 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy->isFlying());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy->exists()) {
         return e_vunerable && enemy->isDetected();
@@ -488,7 +488,7 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
 bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 {
     bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || unittype == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || (unittype == UnitTypes::Protoss_Reaver && !enemytype.isFlyer());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
 
     return e_vunerable; // also if they are cloaked and can attack us.
@@ -1217,11 +1217,31 @@ Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist, const bool &air_attack ) {
     Unit_Inventory ui_out;
-    for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-        if ( (*e).second.pos_.getDistance( origin ) <= dist && e->second.valid_pos_) {
-            ui_out.addStored_Unit( (*e).second ); // if we take any distance and they are in inventory.
+    if (air_attack) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Overlord)) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
+        }
+    }
+    else {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Drone)) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
+        }
+    }
+    return ui_out;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const Position &origin, const int &dist) {
+    Unit_Inventory ui_out;
+    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+        if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_) {
+            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
