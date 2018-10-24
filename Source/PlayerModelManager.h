@@ -30,6 +30,6 @@ struct Player_Model {
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
     void evaluateCurrentWorth();// under development. Currently bugged but of interest.
-	void playerLog(Player_Model enemy_player_model, bool gameComplete);
+	void playerLog(Player_Model & enemy_player_model, bool gameComplete);
 };
 
