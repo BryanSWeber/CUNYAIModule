@@ -3,112 +3,210 @@
 #include "Source\ScoutingManager.h"
 
 ScoutingManager::ScoutingManager()
-	: last_overlord_scout_sent_(0),  // Using member initalizer list instead
-	  last_zergling_scout_sent_(0),
-	  let_overlords_scout_(true),
-	  exists_overlord_scout_(false),
-	  exists_zergling_scout_(false),
-	  overlord_scout_(nullptr),
-	  zergling_scout_(nullptr),
-	  last_overlord_scout_(nullptr),
-	  last_zergling_scout_(nullptr)
+	: last_overlord_scout_sent_(0),
+	last_zergling_scout_sent_(0),
+
+	initial_scouts_(true),
+	let_overlords_scout_(true),
+	exists_overlord_scout_(false),
+	exists_zergling_scout_(false),
+	exists_expo_zergling_scout_(false),
+	found_enemy_base_(false),
+
+	overlord_scout_(nullptr),
+	zergling_scout_(nullptr),
+	expo_zergling_scout_(nullptr),
+	last_overlord_scout_(nullptr),
+	last_zergling_scout_(nullptr),
+	last_expo_scout_(nullptr),
+
+	scout_start_positions_(NULL),
+	scout_expo_positions_(NULL)
 {
 }
 
-// -- Work in progress -- Only scouting starting base locations currently
 Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, Unit_Inventory &ei) {
 // Scouting priorities
 	Position scout_spot;
-	//Position e_base_scout = inv.getMeanEnemyBuildingLocation(ei);
-	//Broodwar->sendText("%s"), e_base_scout;
-	if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
-		scout_spot = inv.start_positions_[0];
+	Position e_base_scout = inv.getMeanEnemyBuildingLocation(ei);
+	found_enemy_base_ = (e_base_scout != Positions::Origin);
+	
+	// If we haven't found any enemy buildings yet
+	if (!found_enemy_base_) {
+
+		// Build our scout start positions when empty, should only build once
+		if (scout_start_positions_.empty()) {
+			for (auto pos : inv.start_positions_) 
+				scout_start_positions_.push_back(pos);
+		}
+
+		scout_spot = scout_start_positions_[0]; 
+		scout_start_positions_.erase(scout_start_positions_.begin());  // Scouts go to unique starting locations
+		return scout_spot;
+	}
+
+	// Found an enemy building
+	if (found_enemy_base_) {
+		
+		// Suicide zergling or an overlord scout
+		if (zergling_scout_ == unit || overlord_scout_ == unit) { 
+			scout_spot = e_base_scout;   // Path into their base
+			return scout_spot;
+		}
+
+		// Check for expos/hidden stuff scout
+		if (expo_zergling_scout_ == unit) {
+			
+			// Build our scout expo positions when empty, will rebuild when empties
+			if (scout_expo_positions_.empty()) {
+				for (auto pos : inv.expo_positions_complete_) {
+					if (Broodwar->isVisible(pos))  // Don't care about bases we already see
+						continue;
+
+					scout_expo_positions_.push_back(Position(pos));
+				}
+			}
+
+			scout_spot = scout_expo_positions_[0];
+			scout_expo_positions_.erase(scout_expo_positions_.begin());  // Scout goes to unique location each time
+			return scout_spot;
+		}
 	}
 	return scout_spot;
 }
 
-bool ScoutingManager::needScout(const Unit &unit, const int &t_game) {
+bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
 // When do we want to scout
 	UnitType u_type = unit->getType();
-	if (t_game < 5 && let_overlords_scout_) // first 5 frames for a buffer. Doing (t_game == 0) sometimes skips sending initial overloard
-		return true;
 
-	// need zergling scout whenever we have zerglings, a scout doesn't exist already, and one hasn't been killed semi-recently
-	if ( u_type == UnitTypes::Zerg_Zergling && !exists_zergling_scout_ && (last_zergling_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24) ) 
-		return true;
+	// Make sure we have a zergling
+	if (u_type == UnitTypes::Zerg_Zergling) {
+		// Always have an expo scout
+		if (!exists_expo_zergling_scout_)
+			return true;
+		// If a suicidal zergling scout doesn't exists and it's been 30s since death
+		if (!exists_zergling_scout_ && last_zergling_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24)
+			return true;
+	}
 
-	if (let_overlords_scout_ && !exists_overlord_scout_ && last_overlord_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24) 
-		return true;
-	
+	// Make sure we have an overlord
+	if (u_type == UnitTypes::Zerg_Overlord) {
+		// Initial overlord scout
+		if (t_game < 3)
+			return true;
+		// If an overlord scout doesn't exist and it's been 60s since death
+		if (!exists_overlord_scout_ && last_overlord_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 60 * 24)
+			return true;
+	}
+
+	// Don't need a scout
 	return false;
 }
 
 void ScoutingManager::updateScouts() {
 // Check if scouts have died
-	if (exists_zergling_scout_ && !zergling_scout_->exists()) {  //if we thought we had a scout but now we don't
-		zergling_scout_ = nullptr;
-		exists_zergling_scout_ = false;
-		Broodwar->sendText("Zergling scout died");
+
+	//if we thought we had a suicide zergling scout but now we don't
+	if (zergling_scout_ != nullptr) {
+		if (!zergling_scout_->exists()) {
+			zergling_scout_ = 0;
+			exists_zergling_scout_ = false;
+			last_zergling_scout_sent_ = Broodwar->getFrameCount();
+			Broodwar->sendText("Zergling scout died");
+		}
 	}
-	if (exists_overlord_scout_ && !overlord_scout_->exists()) {  //if we thought we had a scout but now we don't
-		overlord_scout_ = nullptr;
-		exists_overlord_scout_ = false;
-		Broodwar->sendText("Overlord scout died");
+
+	//if we thought we had an expo zergling scout but now we don't
+	if (expo_zergling_scout_ != nullptr) {
+		if (!expo_zergling_scout_->exists()) {
+			expo_zergling_scout_ = 0;
+			exists_expo_zergling_scout_ = false;
+			Broodwar->sendText("Expo ling scout died");
+		}
+	}
+
+	//if we thought we had an overlord scout but now we don't
+	if (overlord_scout_ != nullptr) {
+		if (!overlord_scout_->exists()) {  //if we thought we had a scout but now we don't
+			overlord_scout_ = 0;
+			exists_overlord_scout_ = false;
+			last_overlord_scout_sent_ = Broodwar->getFrameCount();
+			Broodwar->sendText("Overlord scout died");
+		}
 	}
 }
 
-void ScoutingManager::setScout(const Unit &unit) {
+void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
 // Store unit as a designated scout
 	UnitType u_type = unit->getType();
-
+	// Set overlord as a scout
 	if (u_type == UnitTypes::Zerg_Overlord) {
 		overlord_scout_ = unit;
 		exists_overlord_scout_ = true;
-		last_overlord_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-		Broodwar->sendText("Setting an overlord scout");
 		return;
 	}
 
+	// Set zergling as a scout
 	if (u_type == UnitTypes::Zerg_Zergling) {
-		zergling_scout_ = unit;
-		exists_zergling_scout_ = true;
-		last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-		Broodwar->sendText("Setting a zergling scout");
-		return;
+		// expo scout
+		if (ling_type == 1) {
+			expo_zergling_scout_ = unit;
+			exists_expo_zergling_scout_ = true;
+			return;
+		}
+		// suicide scout
+		if (ling_type == 2) {
+			zergling_scout_ = unit;
+			exists_zergling_scout_ = true;
+			return;
+		}
 	}
+
 }
 
 void ScoutingManager::clearScout(const Unit &unit) {
 // Clear the unit from scouting duty
 	UnitType u_type = unit->getType();
 
-	if (u_type == UnitTypes::Zerg_Overlord && isScoutingUnit(unit) && overlord_scout_->exists()) {
+	// Clear overlords
+	if (u_type == UnitTypes::Zerg_Overlord) {
 		last_overlord_scout_ = unit; // Keep track of the cleared scout if still exists
 		overlord_scout_ = nullptr;
 		exists_overlord_scout_ = false;
 		last_overlord_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-		Broodwar->sendText("Scout cleared");
+		Broodwar->sendText("Overlord scout cleared");
 	}
 
-	if (u_type == UnitTypes::Zerg_Zergling && isScoutingUnit(unit) && zergling_scout_->exists()) {
-		last_zergling_scout_ = unit;   // Keep track of the cleared scout if still exists
-		zergling_scout_ = nullptr;
-		exists_zergling_scout_ = false;
-		last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-		Broodwar->sendText("Scout cleared");
+	// Clear zerglings
+	if (u_type == UnitTypes::Zerg_Zergling) {
+		// if suicide scout, clearing lets them engage in combat logic
+		if (zergling_scout_ == unit) {
+			last_zergling_scout_ = unit;   // Keep track of the cleared scout if still exists
+			zergling_scout_ = nullptr;
+			exists_zergling_scout_ = false;
+			last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
+			Broodwar->sendText("Ling scout cleared");
+		}
+		// if expo scout
+		if (expo_zergling_scout_ == unit) {
+			last_expo_scout_ = unit;   // Keep track of the cleared scout if still exists
+			expo_zergling_scout_ = nullptr;
+			exists_expo_zergling_scout_ = false;
+			Broodwar->sendText("Expo ling scout cleared");
+		}
 	}
 }
 
-bool ScoutingManager::isScoutingUnit(const Unit &unit) {
+bool ScoutingManager::isScoutingUnit(const Unit &unit) const {
 // Check if a particular unit is a designated scout
-	if (overlord_scout_ == unit || zergling_scout_ == unit) 
+	if (overlord_scout_ == unit || zergling_scout_ == unit || expo_zergling_scout_ == unit) 
 		return true;
 
 	return false;
 }
 
 // -- Work in progress --
-void ScoutingManager::sendScout(const Unit &unit, const Position &scout_spot) {
+void ScoutingManager::sendScout(const Unit &unit, const Position &scout_spot) const{
 // Move the scout to the assigned scouting location
 	unit->move(scout_spot);
 	Broodwar->sendText("Scout Sent");

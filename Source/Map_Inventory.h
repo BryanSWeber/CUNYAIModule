@@ -48,6 +48,7 @@ struct Map_Inventory {
     vector<Position> start_positions_;
     vector<TilePosition> expo_positions_;
     vector<TilePosition> expo_positions_complete_;
+	vector <TilePosition> enemy_buildings_;
     Position enemy_base_ground_;
     Position enemy_base_air_;
     Position home_base_;
@@ -192,6 +193,8 @@ struct Map_Inventory {
     // Updates map positions and removes all visible ones;
     void Map_Inventory::updateStartPositions(const Unit_Inventory &ei);
 
+	// Gets the mean location of all enemy buildings
+	Position Map_Inventory::getMeanEnemyBuildingLocation(Unit_Inventory &ei) const;
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
