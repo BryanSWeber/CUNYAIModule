@@ -28,8 +28,11 @@ ScoutingManager::ScoutingManager()
 Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, Unit_Inventory &ei) {
 // Scouting priorities
 	Position scout_spot;
-	Position e_base_scout = inv.getMeanEnemyBuildingLocation(ei);
-	found_enemy_base_ = (e_base_scout != Positions::Origin);
+
+	if (inv.getMeanEnemyBuildingLocation(ei) != Positions::Origin) {
+		Position e_base_scout = CUNYAIModule::getClosestGroundStored(ei, inv.getMeanEnemyBuildingLocation(ei), inv)->pos_;
+		found_enemy_base_ = true;
+	}
 	
 	// If we haven't found any enemy buildings yet
 	if (!found_enemy_base_) {
@@ -47,6 +50,8 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
 
 	// Found an enemy building
 	if (found_enemy_base_) {
+
+		Position e_base_scout = CUNYAIModule::getClosestGroundStored(ei, inv.getMeanEnemyBuildingLocation(ei), inv)->pos_;
 		
 		// Suicide zergling or an overlord scout
 		if (zergling_scout_ == unit || overlord_scout_ == unit) { 
@@ -106,6 +111,10 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
 void ScoutingManager::updateScouts() {
 // Check if scouts have died
 
+	//if (CUNYAIModule::getMostAdvancedThreatOrTargetStored(ui, unit, inv, 256)) {
+	//	clearScout(unit);
+	//	return false;
+	//}
 	//if we thought we had a suicide zergling scout but now we don't
 	if (zergling_scout_ != nullptr) {
 		if (!zergling_scout_->exists()) {

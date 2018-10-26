@@ -684,44 +684,52 @@ void CUNYAIModule::onFrame()
 		// Update scouts, check if still alive.
 		scouting.updateScouts();
 
-		// If enemy has units that can shoot overlords, stop overlord scouting
-		if (enemy_player_model.units_.stock_shoots_up_)
+		// Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
+		bool disable_scouting = ( ((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) || 
+								(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_) ) &&
+								 enemy_player_model.units_.stock_fighting_total_ != 0 );  //Make sure we've actually seen enemy stock before disabling scouting
+		
+		if (enemy_player_model.units_.stock_shoots_up_) // If enemy has units that can shoot overlords, stop overlord scouting
 			scouting.let_overlords_scout_ = false;
+		// Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
+		if (!disable_scouting) {
+			if ( scouting.needScout(u, t_game) &&
+				(!u->isAttacking() || !isRecentCombatant(u)) &&
+				((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
 
-		// Scout Assignment Logic. Before Combat logic so scouts don't attack
-		if ( scouting.needScout(u, t_game) && (!u->isAttacking() || !isRecentCombatant(u)) && 
-		   ((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
-
-			// Make zergling into a scout
-			if (u_type == UnitTypes::Zerg_Zergling) {
-				if (!scouting.exists_expo_zergling_scout_) {
-					scouting.setScout(u, 1);
+				// Make zergling into a scout
+				if (u_type == UnitTypes::Zerg_Zergling && (u != scouting.zergling_scout_ && u != scouting.expo_zergling_scout_)) { // Dont double assign scouts
+					if (!scouting.exists_expo_zergling_scout_) {
+						scouting.setScout(u, 1);
+						Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+						scouting.sendScout(u, scout_spot);
+						continue;
+					}
+					if (!scouting.exists_zergling_scout_) {
+						scouting.setScout(u, 2);
+						Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+						scouting.sendScout(u, scout_spot);
+						continue;
+					}
+				}
+				// Make overlord into a scout
+				if (u_type == UnitTypes::Zerg_Overlord) {
+					scouting.setScout(u);
 					Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
 					scouting.sendScout(u, scout_spot);
 					continue;
 				}
-				if (!scouting.exists_zergling_scout_) {
-					scouting.setScout(u, 2);
-					Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
-					scouting.sendScout(u, scout_spot);
-					continue;
-				}
-			}
-			// Make overlord into a scout
-			if (u_type == UnitTypes::Zerg_Overlord) {
-				scouting.setScout(u);
-				Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
-				scouting.sendScout(u, scout_spot);
-				continue;
 			}
 		}
 		// Scout Clearing Logic
-		if (scouting.isScoutingUnit(u) && (u->isIdle() || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()))) { //Clear from scouting if stopped moving or overlord is under attack
-			if (u_type == UnitTypes::Zerg_Overlord) 
+		if ( disable_scouting || ( u->isIdle() || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()) ) ) { //Clear from scouting if stopped moving or overlord is under attack
+			if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Overlord) {
 				scouting.clearScout(u);
-			if (u_type == UnitTypes::Zerg_Zergling) 
+				if (u->isUnderAttack())  //Disable future overlord scouts if under attack
+					scouting.let_overlords_scout_ = false;
+			}
+			if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling)
 				scouting.clearScout(u);
-			
 		}
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 

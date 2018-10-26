@@ -8,7 +8,7 @@ struct ScoutingManager {
 	int last_zergling_scout_sent_;
 
 	bool initial_scouts_;
-	bool let_overlords_scout_;  // Currently only false against Terran
+	bool let_overlords_scout_;  // False against Terran of if enemy can attack overlords
 	bool exists_overlord_scout_;
 	bool exists_zergling_scout_;
 	bool exists_expo_zergling_scout_;

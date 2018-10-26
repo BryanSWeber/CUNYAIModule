@@ -1706,7 +1706,7 @@ Position Map_Inventory::getMeanEnemyBuildingLocation(Unit_Inventory &ei) const {
 	Position out = Positions::Origin;
 	for (auto e : ei.unit_inventory_) {
 		UnitType e_type = e.second.type_;
-		if (e_type.isBuilding() && (!e_type.isResourceDepot() && !e_type.isRefinery())) { // Scout for tech buildings, don't care about expos or refineries
+		if (e_type.isBuilding()) { // Scout for tech buildings, don't care about expos or refineries
 			x_sum += e.second.pos_.x;
 			y_sum += e.second.pos_.y;
 			count++;
