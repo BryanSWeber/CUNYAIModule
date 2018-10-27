@@ -32,8 +32,11 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
 
 	// Get the mean enemy base location if we have found the enemy base
 	if (inv.getMeanEnemyBuildingLocation(ei) != Positions::Origin) {
-		e_base_scout = CUNYAIModule::getClosestGroundStored(ei, inv.getMeanEnemyBuildingLocation(ei), inv)->pos_;
-		found_enemy_base_ = true;
+		Stored_Unit* nearest_building = CUNYAIModule::getClosestGroundStored(ei, inv.getMeanEnemyBuildingLocation(ei), inv);
+		if (nearest_building != nullptr) {
+			e_base_scout = nearest_building->pos_;
+			found_enemy_base_ = true;
+		}
 	}
 	
 	// If we haven't found any enemy buildings yet
