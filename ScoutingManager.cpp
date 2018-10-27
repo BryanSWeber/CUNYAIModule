@@ -148,10 +148,13 @@ void ScoutingManager::updateScouts() {
 void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
 // Store unit as a designated scout
 	UnitType u_type = unit->getType();
+	Stored_Unit& scout_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+	scout_unit.updateStoredUnit(unit);
 	// Set overlord as a scout
 	if (u_type == UnitTypes::Zerg_Overlord) {
 		overlord_scout_ = unit;
 		exists_overlord_scout_ = true;
+		scout_unit.phase_ = "Scouting";
 		return;
 	}
 
@@ -161,12 +164,14 @@ void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
 		if (ling_type == 1) {
 			expo_zergling_scout_ = unit;
 			exists_expo_zergling_scout_ = true;
+			scout_unit.phase_ = "Scouting";
 			return;
 		}
 		// suicide scout
 		if (ling_type == 2) {
 			zergling_scout_ = unit;
 			exists_zergling_scout_ = true;
+			scout_unit.phase_ = "Scouting";
 			return;
 		}
 	}

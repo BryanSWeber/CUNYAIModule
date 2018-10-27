@@ -303,6 +303,13 @@ void CUNYAIModule::onFrame()
     land_inventory.updateGasCollectors();
     land_inventory.updateMiners();
 
+	// Update scouts, check if still alive.
+	scouting.updateScouts();
+	// Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
+	bool disable_scouting = (((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
+							(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
+							 enemy_player_model.units_.stock_total_ != 0);  //Make sure we've actually seen enemy stock before disabling scouting
+
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
     }
@@ -411,6 +418,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
+		Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Get the game seed
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -424,18 +432,19 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
+		Broodwar->drawTextScreen(250, 120, "Scouting: %s", disable_scouting ? "FALSE" : "TRUE"); //Are we scouting? False if disabled scouting is true
+        Broodwar->drawTextScreen(250, 130, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
+        Broodwar->drawTextScreen(250, 140, "Last Building: %s", buildorder.last_build_order.c_str()); //
+        Broodwar->drawTextScreen(250, 150, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
         if (buildorder.isEmptyBuildOrder()) {
-            Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
+            Broodwar->drawTextScreen(250, 170, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
         else {
-            Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
+            Broodwar->drawTextScreen(250, 170, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 160, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -681,20 +690,16 @@ void CUNYAIModule::onFrame()
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
 
-		// Update scouts, check if still alive.
-		scouting.updateScouts();
-
 		// Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
 		bool disable_scouting = ( ((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) || 
 								(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_) ) &&
 								 enemy_player_model.units_.stock_fighting_total_ != 0 );  //Make sure we've actually seen enemy stock before disabling scouting
-		
 		if (enemy_player_model.units_.stock_shoots_up_) // If enemy has units that can shoot overlords, stop overlord scouting
 			scouting.let_overlords_scout_ = false;
+
 		// Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
 		if (!disable_scouting) {
-			if ( scouting.needScout(u, t_game) &&
-				(!u->isAttacking() || !isRecentCombatant(u)) &&
+			if ( scouting.needScout(u, t_game) && (!u->isAttacking() && !isRecentCombatant(u)) &&
 				((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
 
 				// Make zergling into a scout
@@ -728,8 +733,14 @@ void CUNYAIModule::onFrame()
 				if (u->isUnderAttack())  //Disable future overlord scouts if under attack
 					scouting.let_overlords_scout_ = false;
 			}
-			if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling)
+			if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling) {
 				scouting.clearScout(u);
+				//if (u == scouting.last_zergling_scout_) {  // Old zergling scouts should move around a little
+				//	Mobility mobility;
+				//	mobility.setStutter(u, 256);
+				//	continue;
+				//}
+			}
 		}
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
