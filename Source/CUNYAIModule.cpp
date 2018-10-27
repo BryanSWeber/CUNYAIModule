@@ -1360,10 +1360,16 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         friendly_player_model.units_.purgeWorkerRelations(unit, land_inventory, current_map_inventory, my_reservation);
     }
 
+    if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon ) {
+        buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.
+        if (unit->getType().isTwoUnitsInOneEgg()) {
+            buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.
+        }
+    }
 
     if ( unit->getBuildType().isBuilding() ) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit, land_inventory, current_map_inventory, my_reservation);
-        buildorder.updateRemainingBuildOrder(unit->getBuildType());
+        buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on Morph ONLY, this might double catch them...
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {

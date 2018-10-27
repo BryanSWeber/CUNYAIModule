@@ -40,8 +40,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
-                CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Skip it and go on?...", building.c_str(), buildPosition.x, buildPosition.y);
-                buildorder.updateRemainingBuildOrder(building); // skips the building.
+                CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Freeze here please!...", building.c_str(), buildPosition.x, buildPosition.y);
+                //buildorder.updateRemainingBuildOrder(building); // skips the building.
             }
         }
         else if (unit_can_build_intended_target && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
@@ -230,10 +230,6 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
     if (mustCreate(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
-            buildorder.updateRemainingBuildOrder(unittype); // Shouldn't be a problem if unit isn't in buildorder.
-            if (unittype.isTwoUnitsInOneEgg()) {
-                buildorder.updateRemainingBuildOrder(unittype); // Shouldn't be a problem if unit isn't in buildorder.
-            }
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(larva)->second;
             morphing_unit.updateStoredUnit(larva);
             return true;
