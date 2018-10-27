@@ -690,13 +690,10 @@ void CUNYAIModule::onFrame()
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
 
-		// Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
-		bool disable_scouting = ( ((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) || 
-								(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_) ) &&
-								 enemy_player_model.units_.stock_fighting_total_ != 0 );  //Make sure we've actually seen enemy stock before disabling scouting
-		if (enemy_player_model.units_.stock_shoots_up_) // If enemy has units that can shoot overlords, stop overlord scouting
+		
+		// If enemy has units that can shoot overlords, stop overlord scouting
+		if (enemy_player_model.units_.stock_shoots_up_)
 			scouting.let_overlords_scout_ = false;
-
 		// Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
 		if (!disable_scouting) {
 			if ( scouting.needScout(u, t_game) && (!u->isAttacking() && !isRecentCombatant(u)) &&

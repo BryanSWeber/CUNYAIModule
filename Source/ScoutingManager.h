@@ -23,6 +23,8 @@ struct ScoutingManager {
 
 	vector<Position> scout_start_positions_;
 	vector<Position> scout_expo_positions_;
+
+	vector<int> scout_expo_distances_;
 	
 	// Initalizer
 	ScoutingManager();
