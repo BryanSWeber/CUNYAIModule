@@ -1379,7 +1379,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     bool wait_for_cooldown = false;
     int cd_frames = 0;
 
-    if (cd_frames_chosen == 99) {
+    if (cd_frames_chosen == 99) {// if default value, then we assume 0 cd frames. This is nearly always the case.
         cd_frames = 0;
     } 
     else { // if the person has selected some specific delay they are looking for, check that.
@@ -1389,35 +1389,37 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool unit_fighting = unit->isStartingAttack();
     if (unit_fighting) {
-        ready_to_move = false;
-        return ready_to_move;
+        return false; //unit is not ready to move.
     }
 
     UnitCommandType u_command = unit->getLastCommand().getType();
 
-    //if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
-    //    UnitType u_type = unit->getType();
-    //    //cd_frames = Broodwar->getLatencyFrames();
-    //    //if (u_type == UnitTypes::Zerg_Drone) {
-    //    //    cd_frames = 1;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Zergling) {
-    //    //    cd_frames = 5;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Hydralisk) {
-    //    //    cd_frames = 7;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Lurker) {
-    //    //    cd_frames = 2;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Mutalisk) {
-    //    //    cd_frames = 1;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Ultralisk) {
-    //    //    cd_frames = 15;
-    //    //}
-    //    //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-    //}
+    if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
+        UnitType u_type = unit->getType();
+        //cd_frames = Broodwar->getLatencyFrames();
+        //if (u_type == UnitTypes::Zerg_Drone) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Zergling) {
+        //    cd_frames = 5;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Hydralisk) {
+        //    cd_frames = 7;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Lurker) {
+        //    cd_frames = 2;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Mutalisk) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Ultralisk) {
+        //    cd_frames = 15;
+        //}
+        //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
+        //if (u_type == UnitTypes::Zerg_Devourer) {
+        //    cd_frames = 5;
+        //}
+    }
     //else 
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;

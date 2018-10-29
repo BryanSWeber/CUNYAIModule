@@ -617,8 +617,7 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
-    map<UnitType, int> all_combat_types = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-    is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, all_combat_types);
+    is_building = CUNYAIModule::buildOptimalUnit(morph_canidate, friendly_player_model.combat_unit_cartridge_);
 
     return is_building;
 
@@ -707,6 +706,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
     return build_type;
 
 }
+
 
 bool CUNYAIModule::mustCreate(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));

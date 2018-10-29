@@ -8,33 +8,22 @@ using namespace BWAPI;
 
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 bool CUNYAIModule::Tech_Avail() {
-
+    bool read_a_drone = false;
     for ( auto & u : BWAPI::Broodwar->self()->getUnits() ) {
-
-        if ( u->getType() == BWAPI::UnitTypes::Zerg_Drone ) {
-            bool long_condition = (u->canBuild( BWAPI::UnitTypes::Zerg_Spawning_Pool ) && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Evolution_Chamber ) && Count_Units( BWAPI::UnitTypes::Zerg_Evolution_Chamber) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Hydralisk_Den ) && Count_Units( BWAPI::UnitTypes::Zerg_Hydralisk_Den) == 0)||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Spire ) && Count_Units( BWAPI::UnitTypes::Zerg_Spire) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Queens_Nest ) && Count_Units( BWAPI::UnitTypes::Zerg_Queens_Nest) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Spire) > 0 ) || // I have hardcoded spire before queens nest.
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern ) && Count_Units( BWAPI::UnitTypes::Zerg_Ultralisk_Cavern) == 0) ||
-                    (u->canBuild( BWAPI::UnitTypes::Zerg_Greater_Spire) && Count_Units(BWAPI::UnitTypes::Zerg_Greater_Spire) == 0);
-            if ( long_condition ) {
-                return true;
+        if ( u->getType() == BWAPI::UnitTypes::Zerg_Drone && !read_a_drone) { // super redundant.
+            read_a_drone = true;
+            bool long_condition = false;
+            for (auto i : friendly_player_model.building_cartridge_) {
+                long_condition = long_condition || (u->canBuild(i.first) && Count_Units(i.first) == 0);
             }
-        }
-        else if ( (u->getType() == BWAPI::UnitTypes::Zerg_Hatchery || u->getType() == BWAPI::UnitTypes::Zerg_Lair || u->getType() == BWAPI::UnitTypes::Zerg_Hive) && !u->isUpgrading() && !u->isMorphing() ) {
-            bool long_condition = (u->canMorph( BWAPI::UnitTypes::Zerg_Lair ) && Count_Units( BWAPI::UnitTypes::Zerg_Lair) == 0 && Count_Units( BWAPI::UnitTypes::Zerg_Hive) == 0) ||
-                    (u->canMorph( BWAPI::UnitTypes::Zerg_Hive ) && Count_Units( BWAPI::UnitTypes::Zerg_Hive) == 0);
             if ( long_condition ) {
                 return true;
             }
         }
         else if ( u->getType().isBuilding() && !u->isUpgrading() && !u->isMorphing() ){ // check idle buildings for potential upgrades.
-            for ( int i = 0; i != 13; i++ )
+            for ( auto i : friendly_player_model.upgrade_cartridge_)
             { // iterating through the main upgrades we have available and CUNYAI "knows" about. 
-                int known_ups[13] = { 3, 4, 10, 11, 12, 25, 26, 27, 28, 29, 30, 52, 53 }; // Identifies zerg upgrades of that we have initialized at this time. See UpgradeType definition for references, listed below for conveinence.
-                UpgradeType up_current = (UpgradeType) known_ups[i];
+                UpgradeType up_current = i.first;
                 UpgradeType::set building_up_set = u->getType().upgradesWhat(); // does this idle building make that upgrade?
                 if ( building_up_set.find( up_current ) != building_up_set.end() ) {
 
@@ -51,12 +40,10 @@ bool CUNYAIModule::Tech_Avail() {
                     }
                 }
             }
-        } // if condition
-        else if ( u->getType().isBuilding() && !u->isUpgrading() && !u->isMorphing() ) { // check idle buildings for potential upgrades.
-            for ( int i = 0; i != 1; i++ )
+
+            for (auto i:friendly_player_model.tech_cartridge_)
             { // iterating through the main researches we have available and CUNYAI "knows" about. 
-                int known_techs[1] = { 32 }; // Identifies zerg upgrades of that we have initialized at this time. See UpgradeType definition for references, listed below for conveinence.
-                TechType tech_current = (TechType)known_techs[i];
+                TechType tech_current = i.first;
                 TechType::set building_tech_set = u->getType().researchesWhat(); // does this idle building make that upgrade?
                 if ( building_tech_set.find( tech_current ) != building_tech_set.end() ) {
                     bool tech_incomplete = Broodwar->self()->hasResearched( tech_current );

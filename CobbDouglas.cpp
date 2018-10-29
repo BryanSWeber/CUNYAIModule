@@ -159,7 +159,7 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 
 bool CobbDouglas::evalArmyPossible()
 {
-    double K_over_L = (double)(CUNYAIModule::friendly_player_model.units_.stock_fighting_total_ + 1) / (double)(CUNYAIModule::friendly_player_model.units_.worker_count_ * Stored_Unit(UnitTypes::Zerg_Drone).stock_value_ + 1); // avoid NAN's
+    double K_over_L = (double)(army_stock + 1) / (double)(worker_stock + 1); // avoid NAN's
     int units_on_field = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool)
         + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den)
         + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire)
