@@ -227,7 +227,7 @@ bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
 //Checks if a unit can be built from a larva, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.  Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
 {
-    if (mustCreate(larva, unittype, extra_critera))
+    if (checkDesirable(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(larva)->second;
@@ -624,11 +624,15 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
 }
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
-    bool can_make_spore = mustCreate(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
-    bool can_make_sunken = mustCreate(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
 
-    if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+
+    bool must_make_spore = checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
+    bool must_make_sunken = checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
+
+    if (friendly_player_model.u_relatively_weak_against_air_ && must_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (!friendly_player_model.u_relatively_weak_against_air_ && must_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it.
@@ -640,10 +644,10 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     // drop all units types I cannot assemble at this time.
     auto pt_type = combat_types.begin();
     while (pt_type != combat_types.end()) {
-        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || mustCreate( morph_canidate, pt_type->first, true);
+        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || checkDesirable( morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = mustCreate(morph_canidate, UnitTypes::Zerg_Lurker, true);
-        bool can_morph_into_prerequisite_muta = mustCreate(morph_canidate, UnitTypes::Zerg_Guardian, true); // or devourer
+        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Lurker, true);
+        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Guardian, true); // or devourer
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
             CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
@@ -708,8 +712,12 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 }
 
 
-bool CUNYAIModule::mustCreate(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
+bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+}
+
+bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && buildorder.checkBuilding_Desired(ut);
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
@@ -799,10 +807,12 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object drone = Build_Order_Object(UnitTypes::Zerg_Drone);
     Build_Order_Object ovi = Build_Order_Object(UnitTypes::Zerg_Overlord);
     Build_Order_Object pool = Build_Order_Object(UnitTypes::Zerg_Spawning_Pool);
+    Build_Order_Object evo = Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber);
     Build_Order_Object speed = Build_Order_Object(UpgradeTypes::Metabolic_Boost);
     Build_Order_Object ling = Build_Order_Object(UnitTypes::Zerg_Zergling);
     Build_Order_Object creep = Build_Order_Object(UnitTypes::Zerg_Creep_Colony);
     Build_Order_Object sunken = Build_Order_Object(UnitTypes::Zerg_Sunken_Colony);
+    Build_Order_Object spore = Build_Order_Object(UnitTypes::Zerg_Spore_Colony);
     Build_Order_Object lair = Build_Order_Object(UnitTypes::Zerg_Lair);
     Build_Order_Object spire = Build_Order_Object(UnitTypes::Zerg_Spire);
     Build_Order_Object muta = Build_Order_Object(UnitTypes::Zerg_Mutalisk);
@@ -832,6 +842,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
         else if (build == "pool") {
             building_gene_.push_back(pool);
         }
+        else if (build == "evo") {
+            building_gene_.push_back(evo);
+        }
         else if (build == "speed") {
             building_gene_.push_back(speed);
         }
@@ -843,6 +856,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
         }
         else if (build == "sunken") {
             building_gene_.push_back(sunken);
+        }
+        else if (build == "spore") {
+            building_gene_.push_back(spore);
         }
         else if (build == "lair") {
             building_gene_.push_back(lair);
