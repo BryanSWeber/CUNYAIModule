@@ -898,6 +898,20 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
         if(friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
+
+    Position pos = positionBuildFap(friendly);
+    if (friendly) {
+        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPPosition(Position{ 240,240 }, ri));
+        for (auto i = 0; i <= 5; i++) {
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPPosition(Position{ 240,240 }, ri));
+        }
+    }
+    else {
+        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPPosition(Position{ 0, 0 }, ri));
+        for (auto i = 0; i <= 5; i++) {
+            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPPosition(Position{ 0, 0 }, ri));
+        }
+    }
 }
 
 //This call seems very inelgant. Check if it can be made better.
