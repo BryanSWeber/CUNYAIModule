@@ -23,9 +23,6 @@
     <ClCompile Include="CobbDouglas.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="InventoryManager.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="AssemblyManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -45,10 +42,12 @@
     <ClCompile Include="PlayerModelManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Map_Inventory.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
-    <ClInclude Include="Source\InventoryManager.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
@@ -58,6 +57,7 @@
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
+    <ClInclude Include="Source\Map_Inventory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

@@ -32,8 +32,10 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 {
     bwapi_player_ = Broodwar->self();
+
     //Update Enemy Units
     //Update friendly unit inventory.
+	updateUnit_Counts();
     if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
@@ -74,6 +76,11 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
     u_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_1, researches_) == UnitTypes::Zerg_Spore_Colony;
     e_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian;
+
+	//Update map inventory
+	radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
+	closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
+
 
 };
 
@@ -123,20 +130,13 @@ void Player_Model::evaluateCurrentWorth()
 
         //collect how much of the enemy you can see.
         for (auto i : units_.unit_inventory_) {
-
-            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
-            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
-            int modified_gas_cost = i.second.type_.gasPrice();
-
-            min_expenditures_ += modified_min_cost;
-            gas_expenditures_ += modified_gas_cost;
-            supply_expenditures_ += modified_supply;
+            min_expenditures_ += i.second.modified_min_cost_;
+            gas_expenditures_ += i.second.modified_gas_cost_;
+            supply_expenditures_ += i.second.modified_supply_;
         }
 
         for (auto i : researches_.upgrades_ ) {
             int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - 1;
-
             min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
             gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
         }
@@ -151,14 +151,10 @@ void Player_Model::evaluateCurrentWorth()
         int supply_losses_ = 0;
 
         for (auto i : casualties_.unit_inventory_) {
-            int modified_supply = i.second.type_.getRace() == Races::Zerg && i.second.type_.isBuilding() ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Zerg units cost a supply (2, technically since BW cuts it in half.)
-            modified_supply = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.supplyRequired() + 2 : i.second.type_.supplyRequired(); // Assume bunkers are loaded.
-            int modified_min_cost = i.second.type_ == UnitTypes::Terran_Bunker ? i.second.type_.mineralPrice() + 50 : i.second.type_.mineralPrice(); // Assume bunkers are loaded.
-            int modified_gas_cost = i.second.type_.gasPrice();
 
-            min_losses_ += modified_min_cost;
-            gas_losses_ += modified_gas_cost;
-            supply_losses_ += modified_supply;
+            min_losses_ += i.second.modified_min_cost_;
+            gas_losses_ += i.second.modified_gas_cost_;
+            supply_losses_ += i.second.modified_supply_;
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
@@ -172,4 +168,26 @@ void Player_Model::evaluateCurrentWorth()
         double observed_current_worth = units_.stock_fighting_total_ + researches_.research_stock_ + units_.worker_count_ * worker_value;
         estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ - supply_losses_);
     }
+}
+
+// Tallies up my units for rapid counting.
+void Player_Model::updateUnit_Counts() {
+	vector <UnitType> already_seen;
+	vector <int> unit_count_temp;
+	vector <int> unit_incomplete_temp;
+	for (auto const & u_iter : units_.unit_inventory_) { // should only search through unit types not per unit.
+		UnitType u_type = u_iter.second.type_;
+		bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
+		if (new_unit_type) {
+			int found_units = CUNYAIModule::Count_Units(u_type, units_);
+			int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, units_);
+			already_seen.push_back(u_type);
+			unit_count_temp.push_back(found_units);
+			unit_incomplete_temp.push_back(incomplete_units);
+		}
+	}
+
+	unit_type_ = already_seen;
+	unit_count_ = unit_count_temp;
+	unit_incomplete_ = unit_incomplete_temp;
 }
