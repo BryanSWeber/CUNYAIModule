@@ -4,6 +4,7 @@
 #include "Source\Research_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\CobbDouglas.h"
+#include <fstream>
 
 using namespace std;
 using namespace BWAPI;
@@ -98,6 +99,25 @@ void Player_Model::evaluateWorkerCount() {
 
 }
 
+void Player_Model::playerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that checks for detection
+	for (int i = 0; i < 23 * 2; i++)
+		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.units_.playerData[i] == -1) {
+	enemy_player_model.units_.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
+	enemy_player_model.units_.test[i] = Broodwar->elapsedTime();
+}
+			//Switch the i for different types of input data
+		//{
+			if (gameComplete)
+			{
+			ofstream earliestDate;
+			earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+				for(int i = 0; i < 23; i++)
+					earliestDate << enemy_player_model.units_.playerData[i] << " " << enemy_player_model.units_.test[i] << "\n";
+			earliestDate.close();
+			}
+			//foundDetector = true;
+		//}
+}
 void Player_Model::evaluateCurrentWorth()
 {
     if (Broodwar->getFrameCount() == 0) {
