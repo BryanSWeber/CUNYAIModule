@@ -8,6 +8,18 @@
 using namespace std;
 using namespace BWAPI;
 
+void Player_Model::gameStartConditions() {
+// Starting conditions for the game based off enemy race, etc
+// Will only be called once upon game start
+	Race enemyRace = Broodwar->enemy()->getRace();
+
+	// Don't let overlords scout against terran. Currently the only modification to AI based off race.
+	if (enemyRace == Races::Terran) {
+		ScoutingManager scouting;
+		scouting.let_overlords_scout_ = false;
+	}
+}
+
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
     bwapi_player_ = other_player;

@@ -134,9 +134,9 @@ void ScoutingManager::updateScouts() {
 // Check if scouts have died
 
 	//if we thought we had a suicide zergling scout but now we don't
-	if (zergling_scout_ != nullptr) {
+	if (zergling_scout_) {
 		if (!zergling_scout_->exists()) {
-			zergling_scout_ = 0;
+			zergling_scout_ = nullptr;
 			exists_zergling_scout_ = false;
 			last_zergling_scout_sent_ = Broodwar->getFrameCount();
 			Broodwar->sendText("Zergling scout died");
@@ -144,18 +144,18 @@ void ScoutingManager::updateScouts() {
 	}
 
 	//if we thought we had an expo zergling scout but now we don't
-	if (expo_zergling_scout_ != nullptr) {
+	if (expo_zergling_scout_) {
 		if (!expo_zergling_scout_->exists()) {
-			expo_zergling_scout_ = 0;
+			expo_zergling_scout_ = nullptr;
 			exists_expo_zergling_scout_ = false;
 			Broodwar->sendText("Expo ling scout died");
 		}
 	}
 
 	//if we thought we had an overlord scout but now we don't
-	if (overlord_scout_ != nullptr) {
-		if (!overlord_scout_->exists()) {  //if we thought we had a scout but now we don't
-			overlord_scout_ = 0;
+	if (overlord_scout_) {
+		if (!overlord_scout_->exists()) { 
+			overlord_scout_ = nullptr;
 			exists_overlord_scout_ = false;
 			last_overlord_scout_sent_ = Broodwar->getFrameCount();
 			Broodwar->sendText("Overlord scout died");
