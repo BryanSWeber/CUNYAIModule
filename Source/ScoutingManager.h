@@ -4,6 +4,7 @@
 #include "CUNYAIModule.h"
 
 struct ScoutingManager {
+
 	int last_overlord_scout_sent_;
 	int last_zergling_scout_sent_;
 

@@ -26,7 +26,6 @@ struct Player_Model {
     bool u_relatively_weak_against_air_; 
     bool e_relatively_weak_against_air_;
 
-	void gameStartConditions();
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();

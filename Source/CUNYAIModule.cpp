@@ -98,9 +98,6 @@ void CUNYAIModule::onStart()
     econ_starved = true;
     tech_starved = false;
 
-	//Initialize the starting game conditions for our player model (based off enemy race, etc)
-	friendly_player_model.gameStartConditions(); 
-
     //Initialize model variables. 
     GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
@@ -293,6 +290,11 @@ void CUNYAIModule::onFrame()
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         current_map_inventory.updateBaseLoc(land_inventory);
         current_map_inventory.getExpoPositions(); // prime this once on game start.
+
+		// Don't let overlords scout against terran. Currently the only modification to AI based off race.
+		Race enemyRace = Broodwar->enemy()->getRace();
+		if (enemyRace == Races::Terran)
+			scouting.let_overlords_scout_ = false;
     }
 
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
