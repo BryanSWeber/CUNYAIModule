@@ -110,7 +110,7 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inven
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire) > 0 && (more_flyers_than_ground || maxed_armor));
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire) > 0 && (more_flyers_than_ground || maxed_armor));
 
-	//should auto upgrade if there is a build order requirement for any of these three types.
+    //should auto upgrade if there is a build order requirement for any of these three types.
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
             current_map_inventory.hatches_ > 1 &&
             Count_Units(UnitTypes::Zerg_Lair) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair

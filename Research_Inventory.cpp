@@ -73,8 +73,8 @@ void Research_Inventory::updateUpgradeStock() {
     for (auto i : upgrades_)//Max number of possible upgrade types
     {
         int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - i.second; // 0, 1, 2 maximum...
-        int value = i.first.mineralPrice() + i.first.gasPrice() * 1.25;
-        temp_upgrade_stock += i.second * value + number_of_times_factor_triggers * (i.first.mineralPriceFactor() + i.first.gasPriceFactor() * 1.25);
+        int value = i.first.mineralPrice() + (int)(i.first.gasPrice() * 1.25);
+        temp_upgrade_stock += i.second * value + number_of_times_factor_triggers * (int)(i.first.mineralPriceFactor() + i.first.gasPriceFactor() * 1.25);
     }
     upgrade_stock_ = temp_upgrade_stock;
 }
@@ -83,7 +83,7 @@ void Research_Inventory::updateTechStock() {
     int temp_tech_stock = 0;
     for (auto i : tech_)//Max number of possible upgrade types
     {
-        int value = (i.first.mineralPrice() + i.first.gasPrice() * 1.25);
+        int value = (int)(i.first.mineralPrice() + i.first.gasPrice() * 1.25);
         temp_tech_stock += (int)i.second * value;
     }
     tech_stock_ = temp_tech_stock;
@@ -93,7 +93,7 @@ void Research_Inventory::updateBuildingStock() {
     int temp_building_stock = 0;
     for (auto i : buildings_)//Max number of possible upgrade types
     {
-        int value = i.first.mineralPrice() + i.first.gasPrice() * 1.25 + (i.first.getRace() == Races::Zerg) * (UnitTypes::Zerg_Drone.mineralPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired());
+        int value = Stored_Unit(i.first).stock_value_;
         temp_building_stock +=  i.second * value; // include value of drone if race is zerg.
     }
     building_stock_ = temp_building_stock;

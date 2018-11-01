@@ -55,6 +55,8 @@ struct Stored_Unit {
     int elevation_;
     int cd_remaining_;
     bool stimmed_;
+    bool burrowed_;
+    bool detected_;
     bool updated_fap_this_frame_;
 
     string phase_ = "None";
@@ -80,9 +82,9 @@ struct Stored_Unit {
     int unit_ID_;
 
     // evaluates the value of a stock of specific unit, in terms of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
-	int modified_supply_;
-	int modified_min_cost_;
-	int modified_gas_cost_;
+    int modified_supply_;
+    int modified_min_cost_;
+    int modified_gas_cost_;
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
@@ -145,6 +147,7 @@ struct Unit_Inventory {
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
+    void purgeAllPhases();
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
     void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
