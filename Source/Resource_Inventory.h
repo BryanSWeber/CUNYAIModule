@@ -3,62 +3,62 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 
 using namespace std;
 using namespace BWAPI;
 
 struct Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
-struct Inventory;
+struct Map_Inventory;
 
 struct Stored_Resource{
 
-	//Creator methods
-	Stored_Resource();
-	Stored_Resource(Unit unit);
+    //Creator methods
+    Stored_Resource();
+    Stored_Resource(Unit unit);
 
-	int current_stock_value_;
+    int current_stock_value_;
     int max_stock_value_;
-	int number_of_miners_;
+    int number_of_miners_;
 
-	bool occupied_natural_;
-	bool full_resource_;
-	bool valid_pos_;
+    bool occupied_natural_;
+    bool full_resource_;
+    bool valid_pos_;
 
-	Position local_natural_;
-	Unit bwapi_unit_;
-	UnitType type_;
-	Position pos_;
+    Position local_natural_;
+    Unit bwapi_unit_;
+    UnitType type_;
+    Position pos_;
 
 };
 
 struct Resource_Inventory {
 
-	//Creates an instance of the Resource inventory class.
-	Resource_Inventory(); // for blank construction.
-	Resource_Inventory(const Unitset &unit_set);
+    //Creates an instance of the Resource inventory class.
+    Resource_Inventory(); // for blank construction.
+    Resource_Inventory(const Unitset &unit_set);
 
-	//what about their upgrades?
-	//Other details?
+    //what about their upgrades?
+    //Other details?
 
-	std::map <Unit, Stored_Resource> resource_inventory_;
+    std::map <Unit, Stored_Resource> resource_inventory_;
 
-	// Updates the count of resource units.
-	void addStored_Resource(Unit unit);
-	void addStored_Resource(Stored_Resource stored_resource);
+    // Updates the count of resource units.
+    void addStored_Resource(Unit unit);
+    void addStored_Resource(Stored_Resource stored_resource);
 
-	//Removes Resource
-	void removeStored_Resource(Unit unit);
+    //Removes Resource
+    void removeStored_Resource(Unit unit);
 
-	//Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
+    //Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
-	Position getMeanLocation() const;
-	Position getMeanBuildingLocation() const;
-	Position getMeanCombatLocation() const;
+    Position getMeanLocation() const;
+    Position getMeanBuildingLocation() const;
+    Position getMeanCombatLocation() const;
 
-    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Inventory &inv); // updates values of units in mine.
+    void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
     void countViableMines(); //counts number of viable gas mines and local mineral patches.
-    void drawMineralRemaining(const Inventory &inv) const;
+    void drawMineralRemaining(const Map_Inventory &inv) const;
 
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);

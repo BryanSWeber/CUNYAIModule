@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h> //4.2.0 BWAPI
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
 #include "Fight_MovementManager.h"
@@ -14,12 +14,12 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
-constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
-constexpr bool TRAINING_AGAINST_BASE_AI = false; // Replicate IEEE CIG tournament results. Needs "move output back to read", and "learning mode". disengage TIT_FOR_TAT
+constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses. Should be disabled for training against base AI.
+constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
+constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -66,8 +66,8 @@ public:
     static Player_Model friendly_player_model;
     static Player_Model enemy_player_model;
     static Player_Model neutral_player_model;
-	static Resource_Inventory land_inventory; // resources.
-    static Inventory inventory;  // macro variables, not every unit I have.
+    static Resource_Inventory land_inventory; // resources.
+    static Map_Inventory current_map_inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
 
@@ -79,15 +79,15 @@ public:
     int med_delay;
     int long_delay;
 
-	char delay_string [50];
-	char preamble_string [50];
-	char larva_string [50];
-	char worker_string [50];
-	char scouting_string [50];
-	char combat_string [50];
-	char detection_string [50];
-	char upgrade_string [50];
-	char creep_colony_string [50];
+    char delay_string [50];
+    char preamble_string [50];
+    char larva_string [50];
+    char worker_string [50];
+    char scouting_string [50];
+    char combat_string [50];
+    char detection_string [50];
+    char upgrade_string [50];
+    char creep_colony_string [50];
 
     Race starting_enemy_race;
 
@@ -104,27 +104,27 @@ public:
       // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
       bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
       // Morphs units "Reactively". Incomplete.
-      bool Reactive_Build( const Unit &larva, const Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
-      bool Reactive_BuildFAP(const Unit & larva, const Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
+      bool Reactive_Build( const Unit &larva, const Map_Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
+      bool Reactive_BuildFAP(const Unit & larva, const Map_Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
       static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
       bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
 
       // Builds the next building you can afford. Area of constant improvement.
-      bool Building_Begin(const Unit &drone, const Inventory &inv, const Unit_Inventory &e_inv);
+      bool Building_Begin(const Unit &drone, const Map_Inventory &inv, const Unit_Inventory &e_inv);
       // Returns a tile that is suitable for building.
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
-      void clearBuildingObstuctions(const Unit_Inventory & ui, Inventory & inv, const Unit &exception_unit);
+      void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
 
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
-      bool Expo( const Unit &unit , const bool &extra_critera, Inventory &inv);
+      bool Expo( const Unit &unit , const bool &extra_critera, Map_Inventory &inv);
       // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
       // attaches the miner to the nearest mine in the inventory, and updates the stored_unit.
-      void attachToNearestMine(Resource_Inventory & ri, Inventory & inv, Stored_Unit & miner);
+      void attachToNearestMine(Resource_Inventory & ri, Map_Inventory & inv, Stored_Unit & miner);
       // attaches the miner to the particular mine and updates the stored unit.
       void attachToParticularMine(Stored_Resource & mine, Resource_Inventory & ri, Stored_Unit & miner);
       // attaches the miner to the particular mine and updates the stored unit.
@@ -137,19 +137,19 @@ public:
 
   // Utility Functions
       // Prints unit's last error directly onto it.
-	  void PrintError_Unit(const Unit &unit);
-	  // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
-	  bool isActiveWorker(const Unit &unit);
+      void PrintError_Unit(const Unit &unit);
+      // Identifies those moments where a worker is gathering $$$ and its unusual subsets.
+      bool isActiveWorker(const Unit &unit);
       // An improvement on existing idle scripts. Checks if it is carrying, or otherwise busy. If it is stopped, it assumes it is not busy.
-	  bool isIdleEmpty(const Unit &unit);
-	  // When should we reset the lock?
-	  bool isInLine(const Unit &unit);
+      bool isIdleEmpty(const Unit &unit);
+      // When should we reset the lock?
+      bool isInLine(const Unit &unit);
       bool isEmptyWorker(const Unit & unit); // Checks if it is carrying.
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
-	  static bool IsFightingUnit(const Unit &unit);
+      static bool IsFightingUnit(const Unit &unit);
       static bool IsFightingUnit(const Stored_Unit & unit);
-	  // evaluates if it was order to fight recently.
-	  bool isRecentCombatant(const Unit &unit);
+      // evaluates if it was order to fight recently.
+      bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
@@ -188,18 +188,18 @@ public:
       //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
       static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
       // Same but only checks the map itself.
-      //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const Inventory & inv );
+      //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const Map_Inventory & inv );
       //counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
       static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
       //gets the nearest choke by simple counting along in the direction of the final unit.
-      static Position getNearestChoke( const Position & initial, const Position &final, const Inventory & inv );
+      static Position getNearestChoke( const Position & initial, const Position &final, const Map_Inventory & inv );
 
       // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
       void Print_Upgrade_Inventory( const int &screen_x, const int &screen_y );
       // Announces to player the name and type of all known units in set.
       void Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui );
       void Print_Test_Case(const int & screen_x, const int & screen_y);
-      void Print_Cached_Inventory(const int & screen_x, const int & screen_y, const Inventory & inv);
+      void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
       void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
       // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
       void Print_Build_Order_Remaining( const int & screen_x, const int & screen_y, const Building_Gene & bo );
@@ -212,15 +212,15 @@ public:
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
-	  static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
-      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Inventory &inv);
-      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Inventory & inv);
+      static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory &inv);
+      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory & inv);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Inventory & inv, const Position & origin);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Inventory & inv, const Position & origin);
-      //static Position getClosestExpo(const Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Map_Inventory & inv, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Map_Inventory & inv, const Position & origin);
+      //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
       //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -228,16 +228,16 @@ public:
       //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
-      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Inventory & inv, const int & dist = 999999);
+      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Map_Inventory & inv, const int & dist = 999999);
 
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
-	  static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
-	  //Overload. Searches for units of a specific type. 
-	  static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
+      static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
+      //Overload. Searches for units of a specific type. 
+      static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
       static bool checkOccupiedArea(const Unit_Inventory & ui, const UnitType type, const Position & origin);
@@ -257,12 +257,12 @@ public:
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.
-      static int Count_Units(const UnitType & type, const Inventory & inv);
-	  // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
-	  static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
+      static int Count_Units(const UnitType & type);
+      // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
+      static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
       static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
       static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
-      static int Count_Units_In_Progress(const UnitType & type, const Inventory & inv);
+      static int Count_Units_In_Progress(const UnitType & type);
       // Evaluates the total stock of a type of unit in the inventory.
       static int Stock_Units( const UnitType & unit_type, const Unit_Inventory & ui );
       // evaluates the value of a stock of combat units, for all unit types in a unit inventory.
@@ -281,7 +281,7 @@ public:
       // Evaluates stock of allied units in set that can shoot down.
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
-      static int Stock_Supply( const UnitType &unit, const Inventory &inv );
+      static int Stock_Supply( const UnitType &unit, const Map_Inventory &inv );
       // returns both useful stocks if both groups were to have a fight;
       static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
       // returns the stock of opponants I can actually fight in their local area.
@@ -293,12 +293,12 @@ public:
       static bool isOnScreen( const Position &pos , const Position &screen_pos);
       //Returns TRUE if a unit is safe to send an order to. False if the unit has been ordered about recently.
       static bool spamGuard(const Unit & unit, int cd_frames_chosen = 99);
-	  // Returns the actual center of a unit.
-	  static Position getUnit_Center(Unit unit);
+      // Returns the actual center of a unit.
+      static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
-      bool checkSafeBuildLoc(const Position pos, const Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
-      bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Inventory &inv);
+      bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
       // Checks if the player UI is weak against air in army ei.
       static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
 
@@ -316,7 +316,7 @@ public:
       // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
       static bool Tech_Avail();
       // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
-      bool Tech_Begin(Unit building, Unit_Inventory &ui, const Inventory &inv);
+      bool Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
   //Suprisingly missing functions:
       template< typename ContainerT, typename PredicateT >
       void erase_if(ContainerT& items, const PredicateT& predicate) {

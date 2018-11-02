@@ -2,7 +2,7 @@
 
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
-#include "Source\InventoryManager.h"
+#include "Source\Map_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
@@ -13,13 +13,9 @@
 using namespace std;
 
 // Creates a Inventory Object
-Inventory::Inventory() {};
-Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
+Map_Inventory::Map_Inventory() {};
+Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
 
-    updateUnit_Counts( ui );
-    updateLn_Army_Stock( ui );
-    updateLn_Tech_Stock( ui );
-    updateLn_Worker_Stock();
     updateVision_Count();
 
     updateLn_Supply_Remain();
@@ -80,89 +76,10 @@ Inventory::Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
     }
 };
 
-// Tallies up my units for rapid counting.
-void Inventory::updateUnit_Counts(const Unit_Inventory &ui) {
 
-    vector <UnitType> already_seen;
-    vector <int> unit_count_temp;
-    vector <int> unit_incomplete_temp;
-    for (auto const & u_iter : ui.unit_inventory_) { // should only search through unit types not per unit.
-        UnitType u_type = u_iter.second.type_;
-        bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
-        if ( new_unit_type ) {
-            int found_units = CUNYAIModule::Count_Units(u_type, ui);
-            int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, ui);
-            already_seen.push_back(u_type);
-            unit_count_temp.push_back(found_units);
-            unit_incomplete_temp.push_back(incomplete_units);
-        }
-    }
-
-    unit_type_ = already_seen;
-    unit_count_ = unit_count_temp;
-    unit_incomplete_ = unit_incomplete_temp;
-}
-
-
-// Defines the (safe) log of our army stock.
-void Inventory::updateLn_Army_Stock( const Unit_Inventory &ui ) {
-
-    double total = ui.stock_fighting_total_ /*- CUNYAIModule::Stock_Units(UnitTypes::Zerg_Drone, ui)*/;
-
-    if ( total <= 0 ) {
-        total = 1;
-    }
-
-    ln_army_stock_ = log( total );
-};
-
-// Updates the (safe) log of our tech stock.
-void Inventory::updateLn_Tech_Stock( const Unit_Inventory &ui ) {
-
-    double total = 0;
-
-    for ( int i = 132; i != 143; i++ )
-    { // iterating through all tech buildings. See enumeration of unittype for details.
-        UnitType build_current = (UnitType)i;
-        total += CUNYAIModule::Stock_Buildings( build_current, ui );
-    }
-
-    for ( int i = 0; i != 62; i++ )
-    { // iterating through all upgrades.
-        UpgradeType up_current = (UpgradeType)i;
-        total += CUNYAIModule::Stock_Ups( up_current );
-    }
-
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_tech_stock_ = log( total );
-};
-
-// Updates the (safe) log of our worker stock. calls both worker updates to be safe.
-void Inventory::updateLn_Worker_Stock() {
-
-    double total = 0;
-
-    double cost = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-
-    updateGas_Workers();
-    updateMin_Workers();
-
-    int workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this); //gas_workers_ + min_workers_; // this is not needed if all workers are active.
-
-    total = cost * workers;
-
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_worker_stock_ = log( total );
-};
 
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
-void Inventory::updateLn_Supply_Remain() {
+void Map_Inventory::updateLn_Supply_Remain() {
 
     double total = 0;
     for ( int i = 37; i != 48; i++ )
@@ -181,7 +98,7 @@ void Inventory::updateLn_Supply_Remain() {
 };
 
 // Updates the (safe) log of our consumed supply total.
-void Inventory::updateLn_Supply_Total() {
+void Map_Inventory::updateLn_Supply_Total() {
 
     double total = Broodwar->self()->supplyTotal();
     if ( total <= 0 ) {
@@ -192,7 +109,7 @@ void Inventory::updateLn_Supply_Total() {
 };
 
 // Updates the (safe) log of our gas total.
-void Inventory::updateLn_Gas_Total() {
+void Map_Inventory::updateLn_Gas_Total() {
 
     double total = Broodwar->self()->gas();
     if ( total <= 0 ) {
@@ -203,7 +120,7 @@ void Inventory::updateLn_Gas_Total() {
 };
 
 // Updates the (safe) log of our mineral total.
-void Inventory::updateLn_Min_Total() {
+void Map_Inventory::updateLn_Min_Total() {
 
     double total = Broodwar->self()->minerals();
     if ( total <= 0 ) {
@@ -214,7 +131,7 @@ void Inventory::updateLn_Min_Total() {
 };
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
-double Inventory::getLn_Gas_Ratio() {
+double Map_Inventory::getLn_Gas_Ratio() {
     // Normally:
     if ( ln_min_total_ > 0 || ln_gas_total_ > 0 ) {
         return ln_gas_total_ / (ln_min_total_ + ln_gas_total_);
@@ -225,7 +142,7 @@ double Inventory::getLn_Gas_Ratio() {
 };
 
 // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
-double Inventory::getLn_Supply_Ratio() {
+double Map_Inventory::getLn_Supply_Ratio() {
     // Normally:
     if ( ln_supply_total_ > 0 ) {
         return ln_supply_remain_ / ln_supply_total_;
@@ -236,7 +153,7 @@ double Inventory::getLn_Supply_Ratio() {
 };
 
 // Updates the count of our gas workers.
-void Inventory::updateGas_Workers() {
+void Map_Inventory::updateGas_Workers() {
     // Get worker tallies.
     int gas_workers = 0;
 
@@ -259,7 +176,7 @@ void Inventory::updateGas_Workers() {
 }
 
 // Updates the count of our mineral workers.
-void Inventory::updateMin_Workers() {
+void Map_Inventory::updateMin_Workers() {
     // Get worker tallies.
     int min_workers = 0;
 
@@ -282,7 +199,7 @@ void Inventory::updateMin_Workers() {
 }
 
 // Updates the number of mineral fields we "possess".
-void Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
+void Map_Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
 
     int min_fields = 0;
     for (auto r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); ++r) { //for each mineral
@@ -295,7 +212,7 @@ void Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
 }
 
 // Updates the count of our vision total, in tiles
-void Inventory::updateVision_Count() {
+void Map_Inventory::updateVision_Count() {
     int map_x = BWAPI::Broodwar->mapWidth();
     int map_y = BWAPI::Broodwar->mapHeight();
 
@@ -315,21 +232,21 @@ void Inventory::updateVision_Count() {
     vision_tile_count_ = total_tiles;
 }
 
-void Inventory::updateScreen_Position()
+void Map_Inventory::updateScreen_Position()
 {
     screen_position_ = Broodwar->getScreenPosition();
 }
 
 // Updates the number of hatcheries (and decendent buildings).
-void Inventory::updateHatcheries() {
-    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery, *this ) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair, *this ) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive, *this );
+void Map_Inventory::updateHatcheries() {
+    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair) +
+        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive);
 }
 
 
 //In Tiles?
-void Inventory::updateBuildablePos()
+void Map_Inventory::updateBuildablePos()
 {
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
@@ -344,7 +261,7 @@ void Inventory::updateBuildablePos()
     }
 };
 
-void Inventory::updateUnwalkable() {
+void Map_Inventory::updateUnwalkable() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
@@ -362,7 +279,7 @@ void Inventory::updateUnwalkable() {
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
-void Inventory::updateSmoothPos() {
+void Map_Inventory::updateSmoothPos() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     int choke_score = 0;
@@ -424,7 +341,7 @@ void Inventory::updateSmoothPos() {
     }
 }
 
-void Inventory::updateMapVeins() {
+void Map_Inventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
     bool changed_a_value_last_cycle = false;
@@ -541,14 +458,14 @@ void Inventory::updateMapVeins() {
 
 }
 
-int Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
+int Map_Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
 {
     WalkPosition startloc = WalkPosition(pos);
     return map[startloc.x][startloc.y];
 }
 
 
-void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
+void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
 
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -663,7 +580,7 @@ void Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter
     newVeins.close();
 }
 
-int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
+int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
 {
     if (map_out_from_enemy_ground_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
@@ -678,7 +595,7 @@ int Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Posit
      return 9999999;
 }
 
-int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
+int Map_Inventory::getRadialDistanceOutFromEnemy( const Position A) const
 {
     if ( map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition( A );
@@ -692,7 +609,7 @@ int Inventory::getRadialDistanceOutFromEnemy( const Position A) const
 
 }
 
-int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
+int Map_Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
 {
     if ( map_out_from_home_.size() > 0 && A.isValid() && B.isValid() ) {
         WalkPosition wp_a = WalkPosition(A);
@@ -707,7 +624,7 @@ int Inventory::getDifferentialDistanceOutFromHome( const Position A, const Posit
     return 9999999;
 }
 
-int Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
+int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
 {
     if (map.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
@@ -721,7 +638,7 @@ int Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<i
 
 }
 
-bool Inventory::checkViableGroundPath(const Position A, const Position B) const
+bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const
 {
     if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
@@ -734,9 +651,10 @@ bool Inventory::checkViableGroundPath(const Position A, const Position B) const
     }
 return false;
 }
-int Inventory::getRadialDistanceOutFromHome( const Position A ) const
+
+int Map_Inventory::getRadialDistanceOutFromHome( const Position A ) const
 {
-    if (map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
+    if (map_out_from_home_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
@@ -748,7 +666,7 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 
 }
 
-//void Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
+//void Map_Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
 //    int start_iter = 2;
@@ -855,7 +773,7 @@ int Inventory::getRadialDistanceOutFromHome( const Position A ) const
 
 
 // This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
-void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 
@@ -959,7 +877,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
 }
 
-//void Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
+//void Map_Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
 //
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
@@ -1037,7 +955,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 //    }
 //}
 
-//void Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
+//void Map_Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
@@ -1163,7 +1081,7 @@ void Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Un
 
 
 
-void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
+void Map_Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
 
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
@@ -1188,14 +1106,14 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
         TilePosition min_pos_t = TilePosition( p->second.pos_ );
 
         //if (p->second.type_.isMineralField()){
-        //	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-        //	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-        //	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
         //}
         //else {
-        //	int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-        //	int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-        //	min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
+        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
         //}
 
         for ( auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x ) {
@@ -1226,14 +1144,14 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
                             //TilePosition tile_resource_position;
 
                             //if (j->second.type_.isMineralField()){
-                            //	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-                            //	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-                            //	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
+                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
+                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
                             //}
                             //else {
-                            //	int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-                            //	int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-                            //	tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
+                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
+                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
+                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
                             //}
 
                             int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
@@ -1270,7 +1188,7 @@ void Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
     }
 }
 
-void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
+void Map_Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
 {
     int clearing_workers_found = 0;
 
@@ -1284,7 +1202,7 @@ void Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory &
     workers_clearing_ = clearing_workers_found;
 }
 
-void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri)
+void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri)
 {
     int long_distance_miners_found = 0;
 
@@ -1298,7 +1216,7 @@ void Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_In
     workers_distance_mining_ = long_distance_miners_found ;
 }
 
-Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
+Position Map_Inventory::getWeakestBase( const Unit_Inventory &ei) const
 {
     Position weakest_base = Positions::Origin;
     int stock_current_best = 0;
@@ -1318,7 +1236,7 @@ Position Inventory::getWeakestBase( const Unit_Inventory &ei) const
 }
 
 
-Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory & di) const
+Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory & di) const
 {
     Position quiet_base = Positions::Origin;
     int temp_safest_base = INT_MIN;
@@ -1339,7 +1257,7 @@ Position Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inven
 }
 
 
-Position Inventory::getMostValuedBase(const Unit_Inventory & ui) const
+Position Map_Inventory::getMostValuedBase(const Unit_Inventory & ui) const
 {
     Position valued_base = Positions::Origin;
     int temp_valued_base = INT_MIN;
@@ -1358,7 +1276,7 @@ Position Inventory::getMostValuedBase(const Unit_Inventory & ui) const
 }
 
 
-void Inventory::getExpoPositions() {
+void Map_Inventory::getExpoPositions() {
 
     expo_positions_.clear();
 
@@ -1431,13 +1349,13 @@ void Inventory::getExpoPositions() {
     expo_positions_complete_.assign(s.begin(), s.end());
 }
 
-void Inventory::getStartPositions() {
+void Map_Inventory::getStartPositions() {
     for ( auto loc : Broodwar->getStartLocations() ) {
         start_positions_.push_back( Position( loc ) );
     }
 }
 
-void Inventory::updateStartPositions(const Unit_Inventory &ei) {
+void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
     for ( auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
         if ( Broodwar->isExplored( TilePosition( *visible_base ) ) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base) ) {
             visible_base = start_positions_.erase( visible_base );
@@ -1458,7 +1376,7 @@ void Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni, const Unit_Inventory &di) {
+void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni, const Unit_Inventory &di) {
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
@@ -1583,11 +1501,11 @@ void Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, cons
 }
 
 
-void Inventory::setNextExpo( const TilePosition tp ) {
+void Map_Inventory::setNextExpo( const TilePosition tp ) {
     next_expo_ = tp;
 }
 
-void Inventory::drawExpoPositions() const
+void Map_Inventory::drawExpoPositions() const
 {
     if constexpr (DRAWING_MODE) {
         for (auto &p : expo_positions_complete_) {
@@ -1608,7 +1526,7 @@ void Inventory::drawExpoPositions() const
     }
 }
 
-void Inventory::drawBasePositions() const
+void Map_Inventory::drawBasePositions() const
 {
     if constexpr (DRAWING_MODE) {
         Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
@@ -1623,7 +1541,7 @@ void Inventory::drawBasePositions() const
     }
 }
 
-void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
+void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
 {
     std::stringstream ss;
     ss << center;
@@ -1656,7 +1574,7 @@ void Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition 
     newMap.close();
 }
 
-void Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &center)
+void Map_Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &center)
 
 {
     std::stringstream ss;
@@ -1681,7 +1599,7 @@ void Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &cente
 }
 
 
-vector<int> Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map)
+vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map)
 {
     vector<int> return_vector;
 

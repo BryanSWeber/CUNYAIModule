@@ -4,68 +4,68 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
-#include "Source\InventoryManager.h"
+#include "Source\Map_Inventory.h"
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
 
 
 Resource_Inventory::Resource_Inventory(){
-	// Updates the static locations of minerals and gas on the map. Should only be called on game start.
-	//if (Broodwar->getFrameCount() == 0){
-	//	Unitset min = Broodwar->getStaticMinerals();
-	//	Unitset geysers = Broodwar->getStaticGeysers();
+    // Updates the static locations of minerals and gas on the map. Should only be called on game start.
+    //if (Broodwar->getFrameCount() == 0){
+    //    Unitset min = Broodwar->getStaticMinerals();
+    //    Unitset geysers = Broodwar->getStaticGeysers();
 
-	//	for (auto m = min.begin(); m != min.end(); ++m) {
-	//			this->addStored_Resource(*m);
-	//	}
-	//	for (auto g = geysers.begin(); g != geysers.end(); ++g) {
-	//		this->addStored_Resource(*g);
-	//	}
-	//}
+    //    for (auto m = min.begin(); m != min.end(); ++m) {
+    //            this->addStored_Resource(*m);
+    //    }
+    //    for (auto g = geysers.begin(); g != geysers.end(); ++g) {
+    //        this->addStored_Resource(*g);
+    //    }
+    //}
 }
 
 Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
 
-	for (const auto & u : unit_set) {
-		resource_inventory_.insert({ u, Stored_Resource(u) });
-	}
+    for (const auto & u : unit_set) {
+        resource_inventory_.insert({ u, Stored_Resource(u) });
+    }
 
-	if (unit_set.empty()){
-		resource_inventory_;
-	}
+    if (unit_set.empty()){
+        resource_inventory_;
+    }
 
 }
 
 // Updates the count of enemy units.
 void Resource_Inventory::addStored_Resource(Unit resource) {
-	resource_inventory_.insert({ resource, Stored_Resource(resource) });
+    resource_inventory_.insert({ resource, Stored_Resource(resource) });
 };
 
 void Resource_Inventory::addStored_Resource(Stored_Resource stored_resource) {
-	resource_inventory_.insert({ stored_resource.bwapi_unit_, stored_resource });
+    resource_inventory_.insert({ stored_resource.bwapi_unit_, stored_resource });
 };
 
 
 //Removes enemy units that have died
 void Resource_Inventory::removeStored_Resource(Unit resource) {
-	resource_inventory_.erase(resource);
+    resource_inventory_.erase(resource);
 };
 
 Position Resource_Inventory::getMeanLocation() const {
-	int x_sum = 0;
-	int y_sum = 0;
-	int count = 0;
-	Position out =  Positions::Origin;
-	for (const auto &u : this->resource_inventory_) {
-		x_sum += u.second.pos_.x;
-		y_sum += u.second.pos_.y;
-		count++;
-	}
-	if (count > 0) {
-		out = Position(x_sum / count, y_sum / count);
-	}
-	return out;
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    Position out =  Positions::Origin;
+    for (const auto &u : this->resource_inventory_) {
+        x_sum += u.second.pos_.x;
+        y_sum += u.second.pos_.y;
+        count++;
+    }
+    if (count > 0) {
+        out = Position(x_sum / count, y_sum / count);
+    }
+    return out;
 }
 
 
@@ -75,29 +75,29 @@ Stored_Resource::Stored_Resource() = default;
 // We must be able to create Stored_Resource objects as well.
 Stored_Resource::Stored_Resource(Unit resource) {
 
-	current_stock_value_ = resource->getResources();
+    current_stock_value_ = resource->getResources();
     if (Broodwar->getFrameCount() == 0) {
         max_stock_value_ = current_stock_value_;
     }
-	number_of_miners_ = 0;
-	full_resource_ = false;
-	occupied_natural_ = false;
-	valid_pos_ = true;
+    number_of_miners_ = 0;
+    full_resource_ = false;
+    occupied_natural_ = false;
+    valid_pos_ = true;
 
-	//local_natural_;
+    //local_natural_;
     bwapi_unit_ = resource;
-	type_ = resource->getType();
-	pos_ = resource->getPosition();
+    type_ = resource->getType();
+    pos_ = resource->getPosition();
 }
 
 //void Stored_Resource::addMiner(Stored_Unit miner) {
-//	if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
-//		miner_inventory_.push_back(miner.bwapi_unit_);
-//		number_of_miners_++;
-//	}
+//    if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
+//        miner_inventory_.push_back(miner.bwapi_unit_);
+//        number_of_miners_++;
+//    }
 //}
 
-void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Inventory &inv) {
+void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Map_Inventory &inv) {
     for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty();) {
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
@@ -148,7 +148,7 @@ void Resource_Inventory::countViableMines() {
         }
     } // find drone minima.
 }
-void Resource_Inventory::drawMineralRemaining(const Inventory &inv) const
+void Resource_Inventory::drawMineralRemaining(const Map_Inventory &inv) const
 {
     for (auto u : resource_inventory_) {
         CUNYAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);

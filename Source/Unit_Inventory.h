@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Resource_Inventory.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 #include "Reservation_Manager.h"
 #include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
@@ -12,7 +12,7 @@ using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-struct Inventory;
+struct Map_Inventory;
 struct Reservation;
 
 struct Stored_Unit {
@@ -36,7 +36,7 @@ struct Stored_Unit {
     UnitType type_;
     UnitType build_type_;
     Position pos_; // in pixels
-	Unit locked_mine_;
+    Unit locked_mine_;
 
     // Unit Orders
     Order order_;
@@ -49,19 +49,19 @@ struct Stored_Unit {
     Position seperation_;
     Position retreat_;
     Position cohesion_;
-    unsigned int health_;
-    unsigned int shields_;
+    int health_;
+    int shields_;
     bool is_flying_;
-    unsigned int elevation_;
-    unsigned int cd_remaining_;
+    int elevation_;
+    int cd_remaining_;
     bool stimmed_;
     bool updated_fap_this_frame_;
 
     string phase_ = "None";
 
     //Needed commands for workers.
-	void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
-	void stopMine(Resource_Inventory &ri);
+    void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
+    void stopMine(Resource_Inventory &ri);
     Stored_Resource * getMine(Resource_Inventory & ri);
     bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
     bool isAssignedLongDistanceMining(Resource_Inventory & ri);
@@ -79,7 +79,10 @@ struct Stored_Unit {
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
     int unit_ID_;
 
-    // evaluates the value of a stock of specific unit, in terms of pythagorian distance of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
+    // evaluates the value of a stock of specific unit, in terms of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
+	int modified_supply_;
+	int modified_min_cost_;
+	int modified_gas_cost_;
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
@@ -117,8 +120,8 @@ struct Unit_Inventory {
     int stock_full_health_;
     int max_range_;
     int max_cooldown_;
-	int worker_count_;
-	int volume_;
+    int worker_count_;
+    int volume_;
     int detector_count_;
     int cloaker_count_;
     int resource_depot_count_;
@@ -127,7 +130,12 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
+<<<<<<< HEAD
 	//int playerData[23];
+=======
+
+	int playerData[23];
+>>>>>>> 19ef548d8b496b31ef146e1034ab1813bcbc534f
 	int inventoryCopy[23];
 	int test[23];
 	string unitInventoryLabel[23];
@@ -142,18 +150,18 @@ struct Unit_Inventory {
 
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
-	void updateUnitInventory(const Unitset &unit_set);
+    void updateUnitInventory(const Unitset &unit_set);
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
-    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Inventory &inv, Reservation &res);
-    void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Inventory & inv, Reservation & res);
-    void drawAllVelocities(const Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
-    void drawAllHitPoints(const Inventory & inv) const;
-    void drawAllMAFAPaverages(const Inventory & inv) const;
-    void drawAllSpamGuards(const Inventory & inv) const;
-    void drawAllWorkerTasks(const Inventory & inv, Resource_Inventory &ri) const;
-    void drawAllLocations(const Inventory &inv) const;
+    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
+    void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
+    void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
+    void drawAllHitPoints(const Map_Inventory & inv) const;
+    void drawAllMAFAPaverages(const Map_Inventory & inv) const;
+    void drawAllSpamGuards(const Map_Inventory & inv) const;
+    void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
+    void drawAllLocations(const Map_Inventory &inv) const;
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 

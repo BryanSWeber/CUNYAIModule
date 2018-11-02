@@ -1,6 +1,6 @@
 #pragma once
 #include "CUNYAIModule.h"
-#include "InventoryManager.h"
+#include "Map_Inventory.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -62,7 +62,7 @@ struct Building_Gene {
     void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
     void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
     void updateRemainingBuildOrder( const TechType & research );// drops item from list as complete.
-	void updateRemainingBuildOrder( const UnitType &ut ); // drops item from list as complete.
+    void updateRemainingBuildOrder( const UnitType &ut ); // drops item from list as complete.
     void clearRemainingBuildOrder(); // empties the build order.
     void announceBuildingAttempt( UnitType ut );  // do we have a guy going to build it?
     bool checkBuilding_Desired( UnitType ut ); 
