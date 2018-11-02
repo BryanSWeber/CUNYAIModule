@@ -130,12 +130,12 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
-<<<<<<< HEAD
+
 	//int playerData[23];
-=======
+
 
 	int playerData[23];
->>>>>>> 19ef548d8b496b31ef146e1034ab1813bcbc534f
+
 	int inventoryCopy[23];
 	int test[23];
 	string unitInventoryLabel[23];
