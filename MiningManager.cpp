@@ -6,7 +6,7 @@ using namespace Filter;
 using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
-bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory &inv ) {
+bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Inventory &inv ) {
     if ( my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ) && 
         (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
 
@@ -32,6 +32,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Inventory 
                 if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
                     dist = dist_temp;
                     inv.setNextExpo( p );
+					CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
                 }
             }
         }
@@ -101,7 +102,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.number_of_miners_ < max_drone && r->second.occupied_natural_ && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
+        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.number_of_miners_ < max_drone && r->second.occupied_natural_ && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
             low_drone = r->second.number_of_miners_;
             found_low_occupied_mine = true;
         }
@@ -121,7 +122,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
         }
 
-        if (mine_is_right_type && r->second.number_of_miners_ <= low_drone && r->second.number_of_miners_ < max_drone && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (mine_is_right_type && r->second.number_of_miners_ <= low_drone && r->second.number_of_miners_ < max_drone && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             if (r->second.occupied_natural_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r->second);
             }
@@ -133,19 +134,19 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
     // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
-        attachToNearestMine(available_fields, inventory, miner);
+        attachToNearestMine(available_fields, current_map_inventory, miner);
     } 
     
     if (!miner.isAssignedResource(available_fields) && !long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
-        attachToNearestMine(long_dist_fields, inventory, miner);
+        attachToNearestMine(long_dist_fields, current_map_inventory, miner);
     }
 
     miner.updateStoredUnit(unit);
 } // closure worker mine
 
 //Ataches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
-void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Inventory &inv, Stored_Unit &miner) {
-    Stored_Resource* closest = getClosestGroundStored(ri, inventory, miner.pos_);
+void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner) {
+    Stored_Resource* closest = getClosestGroundStored(ri, current_map_inventory, miner.pos_);
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
         miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding(ri)) {
@@ -177,13 +178,13 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && inventory.home_base_.getDistance(r->second.pos_) < inventory.my_portion_of_the_map_ ) {
+        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && current_map_inventory.home_base_.getDistance(r->second.pos_) < current_map_inventory.my_portion_of_the_map_ ) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty()) {
-        attachToNearestMine(available_fields, inventory, miner);
+        attachToNearestMine(available_fields, current_map_inventory, miner);
     }
     miner.updateStoredUnit(unit);
 }
@@ -196,7 +197,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_, 250) && inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_, 250) && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.
@@ -208,7 +209,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 bool CUNYAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( CUNYAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool, inventory ) > 0 ) {
+    if ( CUNYAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0 ) {
         outlet_avail = true;
     }
 
@@ -220,8 +221,8 @@ bool CUNYAIModule::Gas_Outlet() {
     } // turns off gas interest when larve are 0.
 
       //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_player_model.units_) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
-      //		Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
+      //        Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
+      //        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
       //if ( long_condition ) {
       //    outlet_avail = true;
       //} 
