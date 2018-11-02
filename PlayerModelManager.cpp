@@ -5,6 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\CobbDouglas.h"
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace BWAPI;
@@ -80,36 +81,43 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 
 void Player_Model::evaluateWorkerCount() {
 
-    if (Broodwar->getFrameCount() == 0) {
-        estimated_workers_ = 4;
-    }
-    else {
-        //inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
-        estimated_workers_ += max(units_.resource_depot_count_, 1) * 1 / (double)(UnitTypes::Zerg_Drone.buildTime());
-        estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
-    }
-    int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
+	if (Broodwar->getFrameCount() == 0) {
+		estimated_workers_ = 4;
+	}
+	else {
+		//inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
+		estimated_workers_ += max(units_.resource_depot_count_, 1) * 1 / (double)(UnitTypes::Zerg_Drone.buildTime());
+		estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
+	}
+	int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
 
 }
 
-void Player_Model::playerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that checks for detection
-	for (int i = 0; i < 23 * 2; i++)
-		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.units_.playerData[i] == -1) {
-	enemy_player_model.units_.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
-	enemy_player_model.units_.test[i] = Broodwar->elapsedTime();
-}
-			//Switch the i for different types of input data
-		//{
+void Player_Model::playerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
+
+	//Initialize all unit inventories seen to -1
+	if (Broodwar->getFrameCount() == 1)
+		for (int i = 0; i < 23; i++)
+			enemy_player_model.playerData[i] = -1;
+
+	//Record the earlist time spotted for each unit
+	for (int i = 0; i < 23; i++)
+		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.playerData[i] == -1)
+		{
+			enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
+			enemy_player_model.units_.test[i] = Broodwar->elapsedTime();
+		}
+			
+			//Write to file once at the end of the game
 			if (gameComplete)
 			{
 			ofstream earliestDate;
 			earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+			earliestDate << left << setw(25) << "Type of Info" << left << setw(20) << "Amount Found" << left << setw(20) << "First Spotted" << endl;
 				for(int i = 0; i < 23; i++)
-					earliestDate << enemy_player_model.units_.playerData[i] << " " << enemy_player_model.units_.test[i] << "\n";
+					earliestDate << left << setw(25) << enemy_player_model.units_.unitInventoryLabel[i] << left << setw(20) << enemy_player_model.playerData[i] << left << setw(20) << enemy_player_model.units_.test[i] << "\n";
 			earliestDate.close();
 			}
-			//foundDetector = true;
-		//}
 }
 void Player_Model::evaluateCurrentWorth()
 {

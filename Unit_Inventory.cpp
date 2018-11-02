@@ -452,8 +452,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int is_shooting = 0;
     int is_attacking = 0;
     int is_retreating = 0;
-	for (int i = 0; i < 23; i++)
-		playerData[i] = -1;
+	
 
     vector<UnitType> already_seen_types;
 
@@ -536,6 +535,29 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	inventoryCopy[20] = is_shooting_ = is_shooting;
 	inventoryCopy[21] = is_attacking_ = is_attacking;
 	inventoryCopy[22] = is_retreating_ = is_retreating;
+	unitInventoryLabel[0] = "Stock Fliers";
+	unitInventoryLabel[1] = "Stock Ground Units";
+	unitInventoryLabel[2] = "Stock Both Up And Down";
+	unitInventoryLabel[3] = "Stock Shoots Up";
+	unitInventoryLabel[4] = "Stock Shoots Down";
+	unitInventoryLabel[5] = "Stock High Ground";
+	unitInventoryLabel[6] = "Stock Fighting Total";
+	unitInventoryLabel[7] = "Stock Ground Fodder";
+	unitInventoryLabel[8] = "Stock Air Fodder";
+	unitInventoryLabel[9] = "Stock Total";
+	unitInventoryLabel[10] = "Max Range";
+	unitInventoryLabel[11] = "Max Cooldown";
+	unitInventoryLabel[12] = "Worker Count";
+	unitInventoryLabel[13] = "Volume";
+	unitInventoryLabel[14] = "Detector Count";
+	unitInventoryLabel[15] = "Cloaker Count";
+	unitInventoryLabel[16] = "Resource Depot Count";
+	unitInventoryLabel[17] = "Future Fap Stock";
+	unitInventoryLabel[18] = "Moving Average Fap Stock";
+	unitInventoryLabel[19] = "Stock Full Health";
+	unitInventoryLabel[20] = "Is Shooting";
+	unitInventoryLabel[21] = "Is Attacking";
+	unitInventoryLabel[22] = "Is Retreating";
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {

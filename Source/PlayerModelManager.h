@@ -31,5 +31,6 @@ struct Player_Model {
     void evaluateWorkerCount();
     void evaluateCurrentWorth();// under development. Currently bugged but of interest.
 	void playerLog(Player_Model & enemy_player_model, bool gameComplete);
+	int playerData[23];
 };
 
