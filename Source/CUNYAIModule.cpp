@@ -290,11 +290,6 @@ void CUNYAIModule::onFrame()
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         current_map_inventory.updateBaseLoc(land_inventory);
         current_map_inventory.getExpoPositions(); // prime this once on game start.
-
-        // Don't let overlords scout against terran. Currently the only modification to AI based off race.
-        Race enemyRace = Broodwar->enemy()->getRace();
-        if (enemyRace == Races::Terran)
-            scouting.let_overlords_scout_ = false;
     }
 
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
@@ -693,7 +688,7 @@ void CUNYAIModule::onFrame()
 
         
         // If enemy has units that can shoot overlords, stop overlord scouting
-        if (enemy_player_model.units_.stock_shoots_up_)
+        if (enemy_player_model.enemy_race_ == Races::Terran || enemy_player_model.units_.stock_shoots_up_)
             scouting.let_overlords_scout_ = false;
         // Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
         if (!disable_scouting) {
@@ -733,11 +728,6 @@ void CUNYAIModule::onFrame()
             }
             if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling) {
                 scouting.clearScout(u);
-                //if (u == scouting.last_zergling_scout_) {  // Old zergling scouts should move around a little
-                //	Mobility mobility;
-                //	mobility.setStutter(u, 256);
-                //	continue;
-                //}
             }
         }
 
@@ -919,7 +909,8 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+					Broodwar->sendText("Here!");
+					Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;

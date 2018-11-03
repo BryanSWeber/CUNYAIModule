@@ -13,6 +13,7 @@ struct Player_Model {
     Player_Model() {}; // need a constructor method.
 
     Player bwapi_player_; // this is a pointer, explicitly.
+    Race enemy_race_;
     double estimated_workers_ = 0;
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
