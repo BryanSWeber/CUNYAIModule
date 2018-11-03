@@ -434,6 +434,6 @@ GeneticHistory::GeneticHistory(string file) {
         a_econ_out_mutate_ = 0.488455;
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
-        build_order_ = "drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore"; //zerg_2hatchhydra -range added an overlord.
+        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling ling ling ling hydra_den drone drone drone drone"; //zerg_2hatchhydra -range added an overlord.
     }
 }
