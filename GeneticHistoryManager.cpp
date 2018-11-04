@@ -229,8 +229,9 @@ GeneticHistory::GeneticHistory(string file) {
     double race_or_player_w = winning_player > 0 ? winning_player : winning_race;
     double race_or_player_l = losing_player > 0 ? losing_player : losing_race;
 
-    double likelihood_w = race_or_player_w / (double)win_count * winning_map / (double)win_count;
-    double likelihood_l = race_or_player_l / (double)lose_count * losing_map / (double)lose_count;
+    double likelihood_w = race_or_player_w / static_cast<double>(win_count) * winning_map / static_cast<double>(win_count);
+    double likelihood_l = race_or_player_l / static_cast<double>(lose_count) * losing_map / static_cast<double>(lose_count);
+
     double rand_value = dis(gen);
 
     prob_win_given_conditions = fmax((likelihood_w * win_count) / (likelihood_w * win_count + likelihood_l * lose_count), 0.0);
@@ -310,7 +311,8 @@ GeneticHistory::GeneticHistory(string file) {
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
             //if we don't need diversity, combine our old wins together.
-        if (dis(gen) < uniqueCount / (double)build_order_list.size()) { // 
+
+        if (dis(gen) < uniqueCount / static_cast<double>(build_order_list.size())) { // 
             //Parent 2 must match the build of the first one.
             build_order_out = build_order_win[parent_1];
             while (build_order_out != build_order_win[parent_2]) {
@@ -434,6 +436,8 @@ GeneticHistory::GeneticHistory(string file) {
         a_econ_out_mutate_ = 0.488455;
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
+
         build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //zerg_9pool to hydra one base.
+
     }
 }

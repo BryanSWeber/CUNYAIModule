@@ -46,5 +46,6 @@ struct Player_Model {
     map<UpgradeType, int> upgrade_cartridge_;
     map<TechType, int> tech_cartridge_;
 
+
 };
 

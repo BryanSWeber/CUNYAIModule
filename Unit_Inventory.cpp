@@ -229,8 +229,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     shields_ = unit->getShields();
     health_ = unit->getHitPoints();
     current_hp_ = shields_ + health_;
-    velocity_x_ = round(unit->getVelocityX());
-    velocity_y_ = round(unit->getVelocityY());
+    velocity_x_ = static_cast<int>(round(unit->getVelocityX()));
+    velocity_y_ = static_cast<int>(round(unit->getVelocityY()));
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
@@ -249,15 +249,15 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
-        current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
         bool retreating_or_undetected = (/*phase_ == "Retreating" ||*/ phase_ == "Pathing Out" || phase_ == "Pathing In" || (burrowed_ && !detected_));
-        double weight = (_MOVING_AVERAGE_DURATION - 1) / (double)_MOVING_AVERAGE_DURATION;
+        double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
-        current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = retreating_or_undetected ? current_stock_value_ : weight * (double)ma_future_fap_value_ + (1 - weight) *(double)future_fap_value_;
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
+        ma_future_fap_value_ = retreating_or_undetected ? current_stock_value_ : static_cast<int>(round(weight * ma_future_fap_value_ + (1 - weight) * future_fap_value_));
     }
 }
 
@@ -598,9 +598,10 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ = 0;
     }
 
-    stock_value_ = modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_;
 
-    stock_value_ /= (1 + (int)unittype.isTwoUnitsInOneEgg()); // condensed /2 into one line to avoid if-branch prediction.
+    stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
+
+    stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
     future_fap_value_ = stock_value_;
@@ -619,8 +620,8 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     health_ = unit->getHitPoints();
     current_hp_ = shields_ + health_;
     locked_mine_ = nullptr;
-    velocity_x_ = unit->getVelocityX();
-    velocity_y_ = unit->getVelocityY();
+    velocity_x_ = static_cast<int>(round(unit->getVelocityX()));
+    velocity_y_ = static_cast<int>(round(unit->getVelocityY()));
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
@@ -642,7 +643,8 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         ma_future_fap_value_ = shell.stock_value_;
         future_fap_value_ = shell.stock_value_;
 
-    current_stock_value_ = (int)(stock_value_ * current_hp_ / (double)( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
+    current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
+
 }
 
 
@@ -762,7 +764,7 @@ auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
     int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
 
     int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = (int)(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
@@ -812,7 +814,7 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
 
     int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = (int)(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
@@ -858,8 +860,10 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
-    double proportion_health = (fap_unit.health + fap_unit.shields) / (double)(fap_unit.maxHealth + fap_unit.maxShields);
-    fap_unit.data->future_fap_value_ = (int)(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
+
+    double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
+    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
+
     fap_unit.data->updated_fap_this_frame_ = true;
 }
 
@@ -870,11 +874,11 @@ void Stored_Unit::updateFAPvalueDead()
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.ma_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
+    return unit.ma_future_fap_value_ <= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
 }
 
 bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) const{
-    return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / (double)_MOVING_AVERAGE_DURATION;
+    return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
 }
 
 
@@ -960,7 +964,7 @@ Position positionBuildFap(bool friendly) {
 
 Position positionMCFAP(const Stored_Unit & su) {
     std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(-CUNYAIModule::getProperSpeed(su.type_) * 4, CUNYAIModule::getProperSpeed(su.type_) * 4);     // default values for output.
+    std::uniform_int_distribution<int> dis(static_cast<int>(-CUNYAIModule::getProperSpeed(su.type_)) * 4, static_cast<int>(CUNYAIModule::getProperSpeed(su.type_)) * 4);     // default values for output.
     int rand_x = dis(generator);
     int rand_y = dis(generator);
     return Position(rand_x, rand_y) + su.pos_;

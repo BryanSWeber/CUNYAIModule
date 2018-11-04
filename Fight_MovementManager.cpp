@@ -6,7 +6,7 @@
 # include <numeric>
 
 
-#define DISTANCE_METRIC (int)(CUNYAIModule::getProperSpeed(unit) * 24);
+#define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0);
 
 using namespace BWAPI;
 using namespace Filter;
@@ -17,7 +17,7 @@ using namespace std;
 void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv) {
 
     Position pos = unit->getPosition();
-    distance_metric = DISTANCE_METRIC;
+    distance_metric = (int)DISTANCE_METRIC;
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
@@ -168,7 +168,7 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
-    double max_diveable_dist = passed_distance / (double)limit_units_diving;
+    double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
     for (auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e) {
         if (e->second.valid_pos_) {
@@ -266,7 +266,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
 
     int dist = unit->getDistance(e_unit.pos_);
-    distance_metric = DISTANCE_METRIC; // retreating must be done very fast.
+    distance_metric = (int)DISTANCE_METRIC; // retreating must be done very fast.
    
     int e_range = ei.max_range_;
     //int f_range = ui.max_range_;
@@ -355,14 +355,14 @@ Position Mobility::setStutter(const Unit &unit, const double &n) {
 
     // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
 
-    return stutter_vector_ = Position(n * dis(gen) * 32, n * dis(gen) * 32);
+    return stutter_vector_ = Position(static_cast<int>(32.0 * n * dis(gen)), static_cast<int>(32.0 * n * dis(gen)) );
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
 Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
-    int temp_tot_x = 0;
-    int temp_tot_y = 0;
-    int speed = CUNYAIModule::getProperSpeed(unit->getType());
+    double temp_tot_x = 0;
+    double temp_tot_y = 0;
+    double speed = CUNYAIModule::getProperSpeed(unit->getType());
     int flock_count = 0;
     if (!ui.unit_inventory_.empty()) {
         for (auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i) {
@@ -376,10 +376,12 @@ Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
         //double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
 
         if (flock_count > 1) {
-            return attune_vector_ =  Position( ((temp_tot_x - unit->getVelocityX()) / (flock_count - 1)) + unit->getVelocityX(), ((temp_tot_y - unit->getVelocityY()) / (flock_count - 1)) + unit->getVelocityY() ); // the velocity is per frame, I'd prefer it per second so its scale is 
+            int x = static_cast<int> ( ((temp_tot_x - unit->getVelocityX()) / static_cast<double>(flock_count - 1)) + unit->getVelocityX() );
+            int y = static_cast<int> ( ((temp_tot_y - unit->getVelocityY()) / static_cast<double>(flock_count - 1)) + unit->getVelocityY() );
+            return attune_vector_ =  Position( x , y ); // the velocity is per frame, I'd prefer it per second so its scale is 
         }
         else {
-            return attune_vector_ = Position(cos(unit->getAngle()) * speed * 6, sin(unit->getAngle()) * speed * 6);
+            return attune_vector_ = Position( static_cast<int>(cos(unit->getAngle()) * speed * 6.0) , static_cast<int>(sin(unit->getAngle()) * speed * 6.0) );
         }
     }
 }
@@ -388,7 +390,7 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
     int dist_x = e_pos.x - pos.x;
     int dist_y = e_pos.y - pos.y;
     double theta = atan2(dist_y, dist_x); // att_y/att_x = tan (theta).
-    return retreat_vector_ = Position ( -cos(theta) * distance_metric * 4, -sin(theta) * distance_metric * 4); // get slightly away from opponent.
+    return retreat_vector_ = Position ( static_cast<int>(-cos(theta) * distance_metric * 4.0), static_cast<int>(-sin(theta) * distance_metric * 4.0)); // get slightly away from opponent.
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
@@ -410,8 +412,8 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 //                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
 //            {
 //                double theta = atan2(y, x);
-//                temp_centralization_dx_ += cos(theta);
-//                temp_centralization_dy_ += sin(theta);
+//                temp_centralization_dx_ += static_cast<int>(cos(theta));
+//                temp_centralization_dy_ += static_cast<int>(sin(theta));
 //            }
 //        }
 //    }
@@ -430,7 +432,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        cohesion_vector_ = Position( cos(theta) * 0.25 * distance_metric, sin(theta) * 0.25 * distance_metric );
+        cohesion_vector_ = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric), static_cast<int>(static_cast<int>(sin(theta)) * 0.25 * distance_metric) );
     }
     return cohesion_vector_;
 }
@@ -438,7 +440,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
 Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inventory &inv) {
     if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
         Position possible_base = inv.start_positions_[0];
-        int dist = unit->getDistance(possible_base);
+        double dist = static_cast<double>(unit->getDistance(possible_base));
         int dist_x = possible_base.x - pos.x;
         int dist_y = possible_base.y - pos.y;
         double theta = atan2(dist_y, dist_x);
@@ -454,7 +456,7 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inv
 
         std::rotate(inv.start_positions_.begin(), inv.start_positions_.begin() + 1, inv.start_positions_.end());
 
-        return attract_vector_ = Position(cos(theta) * dist, sin(theta) * dist); // run 100% towards them.
+        return attract_vector_ = Position(static_cast<int>(cos(theta) * dist), static_cast<int>(sin(theta) * dist)); // run 100% towards them.
     }
 }
 
@@ -466,7 +468,7 @@ Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Ma
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_vector_ = Position(cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
+        attract_vector_ = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric));  // run to (map)!
     }
     else {
         attract_vector_ = getVectorTowardsMap(unit->getPosition(), inv, map); // move downhill (vector times scalar)
@@ -481,7 +483,7 @@ Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Map
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
+        attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric )); // run to (map)!
     }
     else {
         Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
@@ -506,7 +508,7 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_vector_ = Position( cos(theta) * distance_metric * 0.75 , sin(theta) * distance_metric * 0.75 ); // run away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_vector_ = Position(static_cast<int>(cos(theta) * 0.75 * distance_metric)  , static_cast<int>(sin(theta) * 0.75 * distance_metric) ); // run away from everyone. Should help avoid being stuck in those wonky spots.
         //seperation_vector_ = Position(cos(theta) * seperation_x / unit_count, sin(theta) * seperation_y / unit_count); // run away from everyone. Should help avoid being stuck in those wonky spots.
     }
     return seperation_vector_;
@@ -516,9 +518,9 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
-    int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
+    double distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
     int largest_dim = max(type.height(), type.width());
-    Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos, distance * 2 + largest_dim);
+    Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos, static_cast<int>(distance * 2.0 + largest_dim));
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
@@ -534,7 +536,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        return seperation_vector_ = Position(cos(theta) * distance * 2, sin(theta) * distance * 2); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
+        return seperation_vector_ = Position(static_cast<int>(cos(theta) * distance * 2.0), static_cast<int>(sin(theta) * distance * 2.0)); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
     }
     return seperation_vector_ = Positions::Origin;
 }
@@ -588,7 +590,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 //
 //                    double theta = atan2(future_pos.x, future_pos.y);
 //                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-//                    return walkability_vector_ += Position(cos(theta) * vector_push_x * 4 , sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+//                    return walkability_vector_ += Position(static_cast<int>(cos(theta)) * vector_push_x * 4 , static_cast<int>(sin(theta)) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
 //                }
 //            }
 //        }
@@ -614,8 +616,8 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
         for (auto considered_pos : trial_positions) {
             for (int x = -8; x <= 8; ++x) {
                 for (int y = -8; y <= 8; ++y) {
-                    double centralize_x = WalkPosition(considered_pos).x + x;
-                    double centralize_y = WalkPosition(considered_pos).y + y;
+                    int centralize_x = WalkPosition(considered_pos).x + x;
+                    int centralize_y = WalkPosition(considered_pos).y + y;
                     if (!(x == 0 && y == 0) &&
                         centralize_x < map_dim.x &&
                         centralize_y < map_dim.y &&
@@ -647,11 +649,11 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                 obstacle_x /= unwalkable_minitiles.size();
                 obstacle_y /= unwalkable_minitiles.size();
 
-                double vector_push_x = obstacle_x - WalkPosition(obstacle_found_near_this_position).x;
-                double vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
+                int vector_push_x = obstacle_x - WalkPosition(obstacle_found_near_this_position).x;
+                int vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
 
                 //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                return walkability_vector_ = Position(vector_push_x * 4 * 1.5, vector_push_y * 4 * 1.5 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+                return walkability_vector_ = Position(vector_push_x * 6, vector_push_y * 6 /** (3 - when_did_we_stop) / trial_positions.size()*/);
             }
         }
     }
@@ -674,7 +676,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
         }
         else if ( !unit->isBurrowed() && !dist_condition) {
             double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
-            Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75);
+            Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
             unit->move(closest_loc_to_permit_attacking);
             return true;
         }
@@ -710,8 +712,8 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
 //                    map[centralize_x][centralize_y] < my_spot) // go directly to my base.
 //                {
-//                    temp_x += cos(theta);
-//                    temp_y += sin(theta);
+//                    temp_x += static_cast<int>(cos(theta));
+//                    temp_y += static_cast<int>(sin(theta));
 //                }
 //            }
 //        }
@@ -719,7 +721,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //
 //    if (temp_y != 0 || temp_x != 0) {
 //        theta = atan2(temp_y + adj_y, temp_x + adj_x);
-//        return_vector = Position(cos(theta), sin(theta));
+//        return_vector = Position(static_cast<int>(cos(theta)), static_cast<int>(sin(theta)));
 //    }
 //    return  return_vector;
 //}
@@ -735,8 +737,8 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
     for (int x = -8; x <= 8; ++x) {
         for (int y = -8; y <= 8; ++y) {
             //if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations. Leads to problems when it thinks a barrier is not present.
-            double centralize_x = WalkPosition(pos).x + x;
-            double centralize_y = WalkPosition(pos).y + y;
+            int centralize_x = WalkPosition(pos).x + x;
+            int centralize_y = WalkPosition(pos).y + y;
             if (!(x == 0 && y == 0) &&
                 centralize_x < map_dim.x &&
                 centralize_y < map_dim.y &&
@@ -758,7 +760,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
 
     if (temp_y != 0 || temp_x != 0) {
         theta = atan2(temp_y, temp_x);
-        return_vector = Position(cos(theta) * distance_metric, sin(theta) * distance_metric); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+        return_vector = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
     }
     return  return_vector;
 }

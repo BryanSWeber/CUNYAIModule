@@ -105,10 +105,10 @@ bool CobbDouglas::tech_starved()
 
 void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
-    double K_over_L = (double)(e_army_stock + 1) / (double)(e_worker_stock + 1); // avoid NAN's
-    alpha_army = CUNYAIModule::bindBetween(K_over_L / (double)(1.0 + K_over_L), 0.05, 0.95);
+    double K_over_L = static_cast<double>(e_army_stock + 1) / static_cast<double>(e_worker_stock + 1); // avoid NAN's
+    alpha_army = CUNYAIModule::bindBetween(K_over_L / static_cast<double>(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_army, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / (double)(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
+    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / static_cast<double>(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
 
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;
@@ -159,7 +159,8 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 
 bool CobbDouglas::evalArmyPossible()
 {
-    double K_over_L = (double)(army_stock + 1) / (double)(worker_stock + 1); // avoid NAN's
+
+    double K_over_L = static_cast<double>(army_stock + 1) / static_cast<double>(worker_stock + 1); // avoid NAN's
 
     bool can_build_army = false;
     auto combat_types = CUNYAIModule::friendly_player_model.combat_unit_cartridge_; // safe copy.
@@ -173,6 +174,7 @@ bool CobbDouglas::evalArmyPossible()
     }
 
    return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+
 }
 
 bool CobbDouglas::evalEconPossible()
