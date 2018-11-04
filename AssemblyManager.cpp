@@ -123,7 +123,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             within_map &&
                             not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > (int) UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
+                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
                             current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = test_loc;
@@ -573,7 +573,7 @@ TilePosition CUNYAIModule::getBuildablePosition( const TilePosition target_pos, 
                 centralize_x > 0 &&
                 centralize_y > 0 &&
                 Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), build_type) &&
-                current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > (int) widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
+                current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
             ) {
                 canidate_return_position = TilePosition(centralize_x, centralize_y);
                 break;
@@ -634,6 +634,8 @@ bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 
     if (friendly_player_model.u_relatively_weak_against_air_ && can_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
     else if (!friendly_player_model.u_relatively_weak_against_air_ && can_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+
+    return false;
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it.

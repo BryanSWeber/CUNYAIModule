@@ -166,13 +166,13 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = (int)( upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
+            lower_right.x = static_cast<int>( upper_left.x + unit.type_.width() * unit.current_hp_ / static_cast<double> (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
             int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
             while (temp_hp_value > 25) {
-                lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_hp_value / (double)(unit.type_.maxHitPoints() + unit.type_.maxShields()));
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_hp_value / static_cast<double>(unit.type_.maxHitPoints() + unit.type_.maxShields()));
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
                 temp_hp_value -= 25;
             }
@@ -194,13 +194,13 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / static_cast<double>(unit.stock_value_));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
             int temp_stock_value = unit.stock_value_;
             while (temp_stock_value > 25) {
-                lower_right.x = (int)(upper_left.x + unit.type_.width() * temp_stock_value / (double)unit.stock_value_);
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_stock_value / static_cast<double>(unit.stock_value_));
                 Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
                 temp_stock_value -= 25;
             }
@@ -211,7 +211,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = resource.pos_;
-        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
+        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) ) {
             // Draw the orange background.
             upper_left.y = upper_left.y + resource.type_.dimensionUp();
             upper_left.x = upper_left.x - resource.type_.dimensionLeft();
@@ -224,7 +224,7 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
             //Overlay the appropriate blue above it.
             lower_right = upper_left;
-            lower_right.x = (int)( upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_);
+            lower_right.x = static_cast<int>( upper_left.x + resource.type_.width() * resource.current_stock_value_ / static_cast<double>(resource.max_stock_value_));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
 
@@ -250,7 +250,7 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 
             //Overlay the appropriate grey above it.
             lower_right = upper_left;
-            lower_right.x = (int)(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 ));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / static_cast<double>(24) ));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
 
@@ -639,20 +639,20 @@ int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventor
 
 // evaluates the value of a stock of upgrades, in terms of pythagorian distance of min & gas & supply. Counts totals of stacked upgrades like melee/range/armor.
 int CUNYAIModule::Stock_Ups( const UpgradeType &ups ) {
-    int lvl = Broodwar->self()->getUpgradeLevel( ups ) + (int)Broodwar->self()->isUpgrading( ups );
+    int lvl = Broodwar->self()->getUpgradeLevel( ups ) + static_cast<int>(Broodwar->self()->isUpgrading( ups ));
     int total_stock = 0;
     for ( int i = 1; i <= lvl; i++ ) {
-        int cost = ups.mineralPrice() + 1.25 * ups.gasPrice();
+        int cost = static_cast<int>(ups.mineralPrice() + 1.25 * ups.gasPrice());
         total_stock += cost;
     }
     return total_stock;
 }
 
 int CUNYAIModule::Stock_Tech(const TechType &tech) {
-    bool lvl = Broodwar->self()->hasResearched(tech) + (int)Broodwar->self()->isResearching(tech);
+    bool lvl = Broodwar->self()->hasResearched(tech) + static_cast<int>(Broodwar->self()->isResearching(tech));
     int total_stock = 0;
     if ( lvl ) {
-        int cost = tech.mineralPrice() + 1.25 * tech.gasPrice();
+        int cost = static_cast<int>(tech.mineralPrice() + 1.25 * tech.gasPrice());
         total_stock += cost;
     }
     return total_stock;
@@ -858,7 +858,7 @@ void CUNYAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
     int another_sort_of_upgrade = 0;
     for ( int i = 0; i != 62; i++ )
     { // iterating through all upgrades.
-        int up_count = Broodwar->self()->getUpgradeLevel( ((UpgradeType)i) ) + (int)Broodwar->self()->isUpgrading( ((UpgradeType)i) );
+        int up_count = Broodwar->self()->getUpgradeLevel( ((UpgradeType)i) ) + static_cast<int>( Broodwar->self()->isUpgrading( ((UpgradeType)i) ) );
         if ( up_count > 0 ) {
             Broodwar->drawTextScreen( screen_x, screen_y, "Upgrades:" );  //
             Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", ((UpgradeType)i).c_str() , up_count );  //
@@ -895,7 +895,7 @@ const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
 Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unitset e_set;
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-        if ( (*e).second.pos_.getDistance( origin ) <= dist ) {
+        if (static_cast<int>((*e).second.pos_.getDistance( origin )) <= dist ) {
             e_set.insert( (*e).second.bwapi_unit_ ); // if we take any distance and they are in inventory.
         }
     }
@@ -910,7 +910,7 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            temp_dist = (int)(*e).second.pos_.getDistance( origin );
+            temp_dist = static_cast<int>((*e).second.pos_.getDistance( origin ));
             if ( temp_dist <= min_dist && e->second.valid_pos_ ) {
                 min_dist = temp_dist;
                 return_unit = &(e->second);
@@ -930,7 +930,7 @@ Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             if (e->second.type_ == u_type && e->second.valid_pos_ ){
-                temp_dist = (int)(*e).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -950,7 +950,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = (int)(*r).second.pos_.getDistance(origin);
+            temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
             if (temp_dist <= min_dist ) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
@@ -1045,7 +1045,7 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             if (e->second.type_.isBuilding()) {
-                temp_dist = (*e).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist && e->second.valid_pos_) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1099,7 +1099,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Un
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
             if (r->second.type_ == r_type && r->second.valid_pos_) {
-                temp_dist = (int)(*r).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(r->second);
@@ -1123,7 +1123,7 @@ Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             can_attack = CUNYAIModule::Can_Fight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance(unit->getPosition());
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(unit->getPosition()));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1147,7 +1147,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
             can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
             can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance( origin );
+                temp_dist = static_cast<int>(e->second.pos_.getDistance( origin ));
                 if ( temp_dist <= min_dist ) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1173,7 +1173,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
             can_be_attacked_by = Can_Fight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1826,7 +1826,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
-    return (u->getType() != UnitTypes::Zerg_Lurker) * (int)CUNYAIModule::getProperSpeed(u) * (96/4) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
+    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u)) * (96/4) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
 }
 
 
@@ -2023,8 +2023,8 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Anabolic_Synthesis = 53,
 
 int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
-    if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
-    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+    if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {

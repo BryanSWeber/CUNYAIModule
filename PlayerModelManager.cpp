@@ -21,7 +21,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 
     evaluateWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-    int estimated_worker_stock = (int)round(estimated_workers_) * worker_value;
+    int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
 
     evaluateCurrentWorth();
 
@@ -90,10 +90,10 @@ void Player_Model::evaluateWorkerCount() {
     }
     else {
         //inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
-        estimated_workers_ += max(units_.resource_depot_count_, 1) / (double)(UnitTypes::Zerg_Drone.buildTime());
-        estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
+        estimated_workers_ += max(units_.resource_depot_count_, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+        estimated_workers_ = min(estimated_workers_, static_cast<double>(85)); // there exists a maximum reasonable number of workers.
     }
-    int est_worker_count = min(max(units_.worker_count_, (int)round(estimated_workers_)), 85);
+    int est_worker_count = min(max(units_.worker_count_, static_cast<int>(round(estimated_workers_))), 85);
 
 }
 
@@ -137,8 +137,8 @@ void Player_Model::evaluateCurrentWorth()
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
-        double min_proportion = (min_expenditures_ + min_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
-        double supply_proportion = (supply_expenditures_ + supply_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
+        double min_proportion = (min_expenditures_ + min_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
+        double supply_proportion = (supply_expenditures_ + supply_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
         double resources_collected_this_frame = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
         estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; // 

@@ -105,10 +105,10 @@ bool CobbDouglas::tech_starved()
 
 void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
-    double K_over_L = (double)(e_army_stock + 1) / (double)(e_worker_stock + 1); // avoid NAN's
-    alpha_army = CUNYAIModule::bindBetween(K_over_L / (double)(1.0 + K_over_L), 0.05, 0.95);
+    double K_over_L = static_cast<double>(e_army_stock + 1) / static_cast<double>(e_worker_stock + 1); // avoid NAN's
+    alpha_army = CUNYAIModule::bindBetween(K_over_L / static_cast<double>(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_army, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / (double)(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
+    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / static_cast<double>(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
 
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;
@@ -159,7 +159,7 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 
 bool CobbDouglas::evalArmyPossible()
 {
-    double K_over_L = (double)(CUNYAIModule::friendly_player_model.units_.stock_fighting_total_ + 1) / (double)(CUNYAIModule::friendly_player_model.units_.worker_count_ * Stored_Unit(UnitTypes::Zerg_Drone).stock_value_ + 1); // avoid NAN's
+    double K_over_L = static_cast<double>(CUNYAIModule::friendly_player_model.units_.stock_fighting_total_ + 1) / static_cast<double>(CUNYAIModule::friendly_player_model.units_.worker_count_ * Stored_Unit(UnitTypes::Zerg_Drone).stock_value_ + 1); // avoid NAN's
     int units_on_field = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool)
         + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den)
         + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire)
