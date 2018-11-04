@@ -123,7 +123,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             within_map &&
                             not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
+                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > (int) UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
                             current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = test_loc;
@@ -284,16 +284,16 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Map_Inventory &inv, U
     //bool marginal_benifit_from_air = ui.stock_fliers_ / (ei.stock_shoots_up_ + 1);
     //bool marginal_benifit_from_ground = ui.stock_shoots_down_ / (ei.stock_ground_units_ + 1);  //these aren't quite right 
 
-    int remaining_cost_to_get_lurkers = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Spawning_Pool, ui) +
-        Stored_Unit(UnitTypes::Zerg_Hydralisk_Den).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hydralisk_Den, ui) +
-        Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
-        Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui) +
-        TechTypes::Lurker_Aspect.mineralPrice() + 1.25 * TechTypes::Lurker_Aspect.gasPrice() - Stock_Tech(TechTypes::Lurker_Aspect);
+    //int remaining_cost_to_get_lurkers = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Spawning_Pool, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Hydralisk_Den).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hydralisk_Den, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui) +
+    //    TechTypes::Lurker_Aspect.mineralPrice() + 1.25 * TechTypes::Lurker_Aspect.gasPrice() - Stock_Tech(TechTypes::Lurker_Aspect);
 
-    int remaining_cost_to_get_mutas = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ - Stock_Units(UnitTypes::Zerg_Spawning_Pool, ui) +
-        Stored_Unit(UnitTypes::Zerg_Spire).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Spire, ui) +
-        Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
-        Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
+    //int remaining_cost_to_get_mutas = Stored_Unit(UnitTypes::Zerg_Spawning_Pool).stock_value_ - Stock_Units(UnitTypes::Zerg_Spawning_Pool, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Spire).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Spire, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Lair).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Lair, ui) +
+    //    Stored_Unit(UnitTypes::Zerg_Hive).stock_value_ - Stock_Buildings(UnitTypes::Zerg_Hive, ui);
 
     //if (Inventory::getMapValue(inv.enemy_base_ground_, inv.map_out_from_home_) == 0) { e_relatively_weak_against_air = true; u_relatively_weak_against_air = true; } // If this is an island situation...Untested.
 
@@ -573,7 +573,7 @@ TilePosition CUNYAIModule::getBuildablePosition( const TilePosition target_pos, 
                 centralize_x > 0 &&
                 centralize_y > 0 &&
                 Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), build_type) &&
-                current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
+                current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > (int) widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
             ) {
                 canidate_return_position = TilePosition(centralize_x, centralize_y);
                 break;

@@ -290,8 +290,8 @@ void Map_Inventory::updateSmoothPos() {
 
     for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles. 
         changed_a_value_last_cycle = false;
-        for (auto minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
-            for (auto minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
+        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
 
                  // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
                  // Repeat untill finished.
@@ -360,7 +360,7 @@ void Map_Inventory::updateMapVeins() {
         }
     }
 
-    vector<unsigned> flattened_map_veins;
+    vector<int> flattened_map_veins;
     for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
         for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
@@ -1344,8 +1344,8 @@ void Map_Inventory::getExpoPositions() {
 
     //From SO, quick conversion into set.
     set<TilePosition> s;
-    unsigned size = expo_positions_.size();
-    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_[i]);
+    int size = expo_positions_.size();
+    for (int i = 0; i < size; ++i) s.insert(expo_positions_[i]);
     expo_positions_complete_.assign(s.begin(), s.end());
 }
 
@@ -1422,7 +1422,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < start_positions_.size()) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < (int)start_positions_.size()) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
@@ -1556,7 +1556,7 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     std::ostringstream merged_holding_vector;
     // Convert all but the last element to avoid a trailing ","
     std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator<int>(merged_holding_vector, "\n"));
+        std::ostream_iterator< int>(merged_holding_vector, "\n"));
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 

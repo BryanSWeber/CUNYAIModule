@@ -813,7 +813,7 @@ void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &scre
 
     for (auto r : ri.tech_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (r.second > 0) {
+        if (r.second) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "Tech:");  //
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "%s", r.first.c_str());  //
             another_row_of_printing_research++;

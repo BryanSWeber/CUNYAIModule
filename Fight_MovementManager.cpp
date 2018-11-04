@@ -735,8 +735,8 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
     for (int x = -8; x <= 8; ++x) {
         for (int y = -8; y <= 8; ++y) {
             //if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations. Leads to problems when it thinks a barrier is not present.
-            double centralize_x = WalkPosition(pos).x + x;
-            double centralize_y = WalkPosition(pos).y + y;
+            int centralize_x = WalkPosition(pos).x + x;
+            int centralize_y = WalkPosition(pos).y + y;
             if (!(x == 0 && y == 0) &&
                 centralize_x < map_dim.x &&
                 centralize_y < map_dim.y &&
