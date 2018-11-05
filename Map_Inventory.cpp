@@ -350,9 +350,9 @@ void Map_Inventory::updateMapVeins() {
     map_veins_.clear();
     map_veins_ = unwalkable_barriers_with_buildings_;
 
-    vector<WalkPosition> needs_filling;
-    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
-        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations.
+   vector<WalkPosition> needs_filling;
+    for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations.
             if (map_veins_[minitile_x][minitile_y] == 0) {
                 needs_filling.push_back({ minitile_x, minitile_y });// if it is walkable, consider it a canidate for a choke.
                                                                     // Predefine list we will search over.
@@ -361,8 +361,8 @@ void Map_Inventory::updateMapVeins() {
     }
 
     vector<int> flattened_map_veins;
-    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
-        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+    for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
         }
     }
@@ -371,7 +371,7 @@ void Map_Inventory::updateMapVeins() {
     //y = k- i*m or k % map_y;
     //k = x * map_y + y;
 
-    for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for ( vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
             // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
@@ -385,69 +385,29 @@ void Map_Inventory::updateMapVeins() {
             int minitile_y = position_to_investigate->y;
 
             bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 < map_x && minitile_y + 1 < map_y;
-            local_grid = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + minitile_y] - 1 < iter - 1 || 
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
+            local_grid = safety_check && (flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
+                                           flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] - 1 < iter - 1 ||
+                                             flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
+                                              flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
+                                                 flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
+                                                   flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
+                                                     flattened_map_veins[(minitile_x + 1) * map_y + minitile_y] - 1 < iter - 1 ||
+                                                       flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1);
 
-            //local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
-            //local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
-            //local_grid[0][2] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //local_grid[1][0] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1;
-            ////local_grid[1][1] = safety_check && flattened_map_veins[minitile_x       * map_y + minitile_y]       < iter && flattened_map_veins[minitile_x       * map_y + minitile_y]       > 0;
-            //local_grid[1][2] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //local_grid[2][0] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1;
-            //local_grid[2][1] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y +  minitile_y]      - 1 < iter - 1;
-            //local_grid[2][2] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //// if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-            //bool opposing_tiles =
-            //    (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
-            //    (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
-            //    (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
-            //    (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
-            //    (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
-            ////(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
-            ////(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
-            ////(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
-
-            //bool open_path =
-            //    (!local_grid[0][0] && !local_grid[2][2]) ||
-            //    (!local_grid[1][0] && !local_grid[1][2]) ||
-            //    (!local_grid[2][0] && !local_grid[0][2]) ||
-            //    (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
-
-            //bool adjacent_tiles =
-            //    local_grid[0][0] && local_grid[0][1] && local_grid[0][2] || // left edge
-            //    local_grid[2][0] && local_grid[2][1] && local_grid[2][2] || // right edge
-            //    local_grid[0][0] && local_grid[1][0] && local_grid[2][0] || // bottom edge
-            //    local_grid[0][2] && local_grid[1][2] && local_grid[2][2] || // top edge
-            //    local_grid[0][1] && local_grid[1][0] && local_grid[0][0] || // lower left slice.
-            //    local_grid[0][1] && local_grid[1][2] && local_grid[0][2] || // upper left slice.
-            //    local_grid[1][2] && local_grid[2][1] && local_grid[2][2] || // upper right slice.
-            //    local_grid[1][0] && local_grid[2][1] && local_grid[2][0]; // lower right slice.
-            
-            //changed_a_value_last_cycle = opposing_tiles || adjacent_tiles || changed_a_value_last_cycle;
-            //int new_value = open_path * opposing_tiles * (299 - iter) + ((!open_path && opposing_tiles) || adjacent_tiles) * iter;
-            //int new_value = (opposing_tiles || adjacent_tiles) * iter;
             int new_value = local_grid * iter;
             changed_a_value_last_cycle = local_grid || changed_a_value_last_cycle;
             map_veins_[minitile_x][minitile_y] = new_value;
             flattened_map_veins[minitile_x * map_y + minitile_y] = new_value;  //should just unpack this at the end.
 
-            if ( local_grid ) {
-                std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-                needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
-            }
-            else { 
-                ++position_to_investigate; 
-            }
+            if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
+            else ++position_to_investigate;
+            //if ( local_grid ) {
+            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
+            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
+            //}
+            //else { 
+            //    ++position_to_investigate; 
+            //}
         }
         
         if (changed_a_value_last_cycle == false) {
@@ -1556,11 +1516,10 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     std::ostringstream merged_holding_vector;
     // Convert all but the last element to avoid a trailing ","
     std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator< int>(merged_holding_vector, "\n"));
+        std::ostream_iterator<int>(merged_holding_vector, "\n"));
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 
-    int number;
     ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newMap)
     {

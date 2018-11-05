@@ -111,35 +111,47 @@ void Unit_Inventory::purgeAllPhases()
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
-    miner.stopMine(ri);
+    auto found_object = this->unit_inventory_.find(unit);
+    if (found_object != this->unit_inventory_.end()) {
+        Stored_Unit& miner = found_object->second;
+        miner.stopMine(ri);
 
-    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build ) {
-        res.removeReserveSystem(unit->getBuildType());
+        if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+            res.removeReserveSystem(unit->getBuildType());
+        }
+        if (command.getTargetPosition() == Position(inv.next_expo_)) {
+            res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+        }
+        unit->stop();
+        miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.updateStoredUnit(unit);
     }
-    if (command.getTargetPosition() == Position(inv.next_expo_) ) {
-        res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+    else {
+        CUNYAIModule::DiagnosticText("Ooops, I couldn't purge a worker's relationships.");
     }
-    unit->stop();
-    miner.time_of_last_purge_ = Broodwar->getFrameCount();
-    miner.updateStoredUnit(unit);
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
 void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
-    miner.stopMine(ri);
+    auto found_object = this->unit_inventory_.find(unit);
+    if (found_object != this->unit_inventory_.end()) {
+        Stored_Unit& miner = found_object->second;
+        miner.stopMine(ri);
 
-    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-        res.removeReserveSystem(unit->getBuildType());
+        if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+            res.removeReserveSystem(unit->getBuildType());
+        }
+        if (command.getTargetPosition() == Position(inv.next_expo_)) {
+            res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+        }
+        miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.updateStoredUnit(unit);
     }
-    if (command.getTargetPosition() == Position(inv.next_expo_)) {
-        res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+    else {
+        CUNYAIModule::DiagnosticText("Ooops, I couldn't purge a worker's relationships.");
     }
-    miner.time_of_last_purge_ = Broodwar->getFrameCount();
-    miner.updateStoredUnit(unit);
 }
 
 void Unit_Inventory::drawAllVelocities(const Map_Inventory &inv) const

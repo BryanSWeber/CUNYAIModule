@@ -566,13 +566,15 @@ TilePosition CUNYAIModule::getBuildablePosition( const TilePosition target_pos, 
 
     TilePosition canidate_return_position = TilePosition (0,0);
     int widest_dim_in_minitiles = 4 * max(build_type.tileHeight(), build_type.tileWidth());
+    int width = Broodwar->mapWidth();
+    int height = Broodwar->mapHeight();
     for (int x = -tile_grid_size; x <= tile_grid_size; ++x) {
         for (int y = -tile_grid_size; y <= tile_grid_size; ++y) {
             int centralize_x = target_pos.x + x;
             int centralize_y = target_pos.y + y;
             if (!(x == 0 && y == 0) &&
-                centralize_x < Broodwar->mapWidth() &&
-                centralize_y < Broodwar->mapHeight() &&
+                centralize_x < width &&
+                centralize_y < height &&
                 centralize_x > 0 &&
                 centralize_y > 0 &&
                 Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), build_type) &&
