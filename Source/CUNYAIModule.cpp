@@ -301,10 +301,13 @@ void CUNYAIModule::onFrame()
 
     // Update scouts, check if still alive.
     scouting.updateScouts();
+    // If enemy has units that can shoot overlords, stop overlord scouting
+    if ( enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_) )
+        scouting.let_overlords_scout_ = false;
     // Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
-    bool disable_scouting = (((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
-                            (enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
-                             enemy_player_model.units_.stock_total_ != 0);  //Make sure we've actually seen enemy stock before disabling scouting
+    bool disable_scouting = false; //(((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
+                            //(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
+                             //enemy_player_model.units_.stock_total_ != 0);  //Make sure we've actually seen enemy stock before disabling scouting
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -686,23 +689,23 @@ void CUNYAIModule::onFrame()
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
 
-        
-        // If enemy has units that can shoot overlords, stop overlord scouting
-        if (enemy_player_model.enemy_race_ == Races::Terran || enemy_player_model.units_.stock_shoots_up_)
-            scouting.let_overlords_scout_ = false;
+        auto start_scout = std::chrono::high_resolution_clock::now();
         // Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
         if (!disable_scouting) {
+
             if ( scouting.needScout(u, t_game) && (!u->isAttacking() && !isRecentCombatant(u)) &&
                 ((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
 
                 // Make zergling into a scout
                 if (u_type == UnitTypes::Zerg_Zergling && (u != scouting.zergling_scout_ && u != scouting.expo_zergling_scout_)) { // Dont double assign scouts
+       
                     if (!scouting.exists_expo_zergling_scout_) {
                         scouting.setScout(u, 1);
                         Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
                         scouting.sendScout(u, scout_spot);
                         continue;
                     }
+                    
                     if (!scouting.exists_zergling_scout_) {
                         scouting.setScout(u, 2);
                         Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
@@ -710,6 +713,7 @@ void CUNYAIModule::onFrame()
                         continue;
                     }
                 }
+
                 // Make overlord into a scout
                 if (u_type == UnitTypes::Zerg_Overlord) {
                     scouting.setScout(u);
@@ -719,17 +723,32 @@ void CUNYAIModule::onFrame()
                 }
             }
         }
-        // Scout Clearing Logic
-        if ( disable_scouting || ( u->isIdle() || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()) ) ) { //Clear from scouting if stopped moving or overlord is under attack
+
+        // Scout Reassignment Logic -- reassign expo and overlord scouts to a new scout position instead of clearing
+        if (u->isIdle() && (u == scouting.expo_zergling_scout_ || u == scouting.overlord_scout_)) {
+            Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+            scouting.sendScout(u, scout_spot);
+            continue;
+        }
+
+        // Scout Clearing Logic -- clear scouts when scouting is disabled, if a suicide ling scout is idle, or if an overlord is under attack
+        if ( disable_scouting || ( (u->isIdle() && u == scouting.zergling_scout_) || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()) ) ) {
+            
             if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Overlord) {
                 scouting.clearScout(u);
                 if (u->isUnderAttack())  //Disable future overlord scouts if under attack
                     scouting.let_overlords_scout_ = false;
             }
-            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling) {
+            
+            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling)
                 scouting.clearScout(u);
-            }
         }
+
+        // Scout Diagnostics
+        if constexpr (DRAWING_MODE) {
+                scouting.diagnosticLine(u, current_map_inventory);
+        }
+        auto end_scout = std::chrono::high_resolution_clock::now();
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
@@ -909,8 +928,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 15 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-					Broodwar->sendText("Here!");
-					Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
