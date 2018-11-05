@@ -23,9 +23,8 @@ struct ScoutingManager {
     Unit last_expo_scout_;
 
     vector<Position> scout_start_positions_;
-    vector<Position> scout_expo_positions_;
 
-    vector<int> scout_expo_distances_;
+    unordered_map<int, Position> scout_expo_map_;
     
     // Initalizer
     ScoutingManager();
@@ -38,4 +37,5 @@ struct ScoutingManager {
     void clearScout(const Unit &unit);
     bool isScoutingUnit(const Unit &unit) const;
     void sendScout(const Unit &unit, const Position &scout_spot) const;
+    void diagnosticLine(const Unit &unit, const Map_Inventory &inv) const;
 };

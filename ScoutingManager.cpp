@@ -20,8 +20,7 @@ ScoutingManager::ScoutingManager()
     last_zergling_scout_(nullptr),
     last_expo_scout_(nullptr),
 
-    scout_start_positions_(NULL),
-    scout_expo_positions_(NULL)
+    scout_start_positions_(NULL)
 {
 }
 
@@ -44,7 +43,7 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
 
         // Build our scout start positions when empty, should only build once
         if (scout_start_positions_.empty()) {
-            for (auto pos : inv.start_positions_)
+            for (const auto& pos : inv.start_positions_)
                 scout_start_positions_.push_back(pos);
         }
 
@@ -66,38 +65,54 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
         else if (expo_zergling_scout_ == unit) {
 
             // Build our scout expo positions when empty, will rebuild when empties
-            if (scout_expo_positions_.empty()) {
+            if (scout_expo_map_.empty()) {
 
                 int total_distance = 0;
 
-                // Doesn't feel optimal, likely better off using probabilities but was stuck on the implementation
-                // For each possible base, get the distance from enemy and add to total distance
-                for (auto pos : inv.expo_positions_complete_) {
+                // Create a map <int, Position> of all base locations on map
+                for (const auto& pos : inv.expo_positions_complete_) {
                     int base_distance = inv.getRadialDistanceOutFromEnemy(Position(pos));
                     total_distance += base_distance;
-                    scout_expo_distances_.push_back(base_distance);
+                    scout_expo_map_[base_distance] = Position(pos);
                 }
 
-                int mean_base_distance = total_distance / size(scout_expo_distances_);
+                int mean_base_distance = total_distance / (scout_expo_map_.size() - 1);
 
-                // For each base distance, if that distance is smaller than the avg then that base is a more likely enemy base
-                for (auto dis : scout_expo_distances_) {
-                    if (dis < mean_base_distance) {
-                        // Reassign the base distances to actual expo positions
-                        for (auto pos : inv.expo_positions_complete_) {
-                            if (dis == inv.getRadialDistanceOutFromEnemy(Position(pos))) {
-                                scout_expo_positions_.push_back(Position(pos));
-                                break; //If we found the match, we are finished
-                            }
+                // Remove unwanted scout locations
+                for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ) {
+
+                    if (scout_expo_map_.size() > 1) {
+
+                        // Erase bases that our scout can't walk to
+                        if (!Broodwar->isWalkable(WalkPosition(itr->second))) {
+                            itr = scout_expo_map_.erase(itr);
+                            continue;
                         }
+                        // Erase bases that are already visible
+                        if (Broodwar->isVisible(TilePosition(itr->second))) {
+                            itr = scout_expo_map_.erase(itr);
+                            continue;
+                        }
+                        // Erase bases that are less than the mean distance -- doesn't work as intended on all maps
+                        if (itr->first > mean_base_distance) {
+                            itr = scout_expo_map_.erase(itr);
+                            continue;
+                        }
+                        else  //iterate through
+                            ++itr;
                     }
+                    // Break loop if only 1 base left to scout
+                    else
+                        break;
                 }
             }
 
-            else {
-                scout_spot = scout_expo_positions_[0];
-                scout_expo_positions_.erase(scout_expo_positions_.begin());  // Scout goes to unique location each time
+            // Assign scout locations
+            for (auto& base : scout_expo_map_) {
+                scout_spot = base.second;
+                scout_expo_map_.erase(base.first); //Erase the used base location, each scout goes to unique location
                 return scout_spot;
+
             }
         }
     }
@@ -134,7 +149,6 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
 
 void ScoutingManager::updateScouts() {
 // Check if scouts have died
-
     //if we thought we had a suicide zergling scout but now we don't
     if (zergling_scout_) {
         if (!zergling_scout_->exists()) {
@@ -204,6 +218,7 @@ void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
 void ScoutingManager::clearScout(const Unit &unit) {
 // Clear the unit from scouting duty
     UnitType u_type = unit->getType();
+    Stored_Unit& scout_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
 
     // Clear overlords
     if (u_type == UnitTypes::Zerg_Overlord) {
@@ -211,7 +226,7 @@ void ScoutingManager::clearScout(const Unit &unit) {
         overlord_scout_ = nullptr;
         exists_overlord_scout_ = false;
         last_overlord_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-        //Broodwar->sendText("Overlord scout cleared");
+        scout_unit.phase_ = "None";
     }
 
     // Clear zerglings
@@ -222,14 +237,14 @@ void ScoutingManager::clearScout(const Unit &unit) {
             zergling_scout_ = nullptr;
             exists_zergling_scout_ = false;
             last_zergling_scout_sent_ = Broodwar->getFrameCount(); // Store timer of dead scout
-            //Broodwar->sendText("Ling scout cleared");
+            scout_unit.phase_ = "None";
         }
         // if expo scout
         if (expo_zergling_scout_ == unit) {
             last_expo_scout_ = unit;   // Keep track of the cleared scout if still exists, not used for anything yet
             expo_zergling_scout_ = nullptr;
             exists_expo_zergling_scout_ = false;
-            //Broodwar->sendText("Expo ling scout cleared");
+            scout_unit.phase_ = "None";
         }
     }
 }
@@ -242,7 +257,21 @@ bool ScoutingManager::isScoutingUnit(const Unit &unit) const {
     return false;
 }
 
-void ScoutingManager::sendScout(const Unit &unit, const Position &scout_spot) const{
+void ScoutingManager::sendScout(const Unit &unit, const Position &scout_spot) const {
 // Move the scout to the assigned scouting location
     unit->move(scout_spot);
 }
+
+void ScoutingManager::diagnosticLine(const Unit &unit, const Map_Inventory &inv) const {
+    if (unit == zergling_scout_ || unit == overlord_scout_) {
+        Position pos = unit->getPosition();
+        Position scout_spot = unit->getTargetPosition();
+        CUNYAIModule::Diagnostic_Line(pos, scout_spot, inv.screen_position_, Colors::Purple);
+    }
+    if (unit == expo_zergling_scout_) {
+        Position pos = unit->getPosition();
+        Position scout_spot = unit->getTargetPosition();
+        CUNYAIModule::Diagnostic_Line(pos, scout_spot, inv.screen_position_, Colors::Yellow);
+    }
+}
+
