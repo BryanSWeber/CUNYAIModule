@@ -79,7 +79,7 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
                 int mean_base_distance = total_distance / (scout_expo_map_.size() - 1);
 
                 // Remove unwanted scout locations
-                for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ) {
+                for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ++itr) {
 
                     if (scout_expo_map_.size() > 1) {
 
@@ -98,8 +98,14 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
                             itr = scout_expo_map_.erase(itr);
                             continue;
                         }
-                        else  //iterate through
-                            ++itr;
+
+                        // Erase starting bases, suicide ling is for that
+                        for (auto start_pos : inv.start_positions_complete_) {
+                            if (itr->second == start_pos) {
+                                itr = scout_expo_map_.erase(itr);
+                                break;
+                            }
+                        }
                     }
                     // Break loop if only 1 base left to scout
                     else
@@ -108,11 +114,10 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
             }
 
             // Assign scout locations
-            for (auto& base : scout_expo_map_) {
-                scout_spot = base.second;
-                scout_expo_map_.erase(base.first); //Erase the used base location, each scout goes to unique location
-                return scout_spot;
-
+            for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ++itr) {
+                scout_spot = itr->second;
+                itr = scout_expo_map_.erase(itr); //Erase the used base location, each scout goes to unique location
+				return scout_spot;
             }
         }
     }
