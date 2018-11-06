@@ -171,7 +171,7 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
             int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
-            while (temp_hp_value > 25) {
+            for (int i = 0; i <= static_cast<int>((unit.type_.maxHitPoints() + unit.type_.maxShields()) / 25); i++) {
                 lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_hp_value / static_cast<double>(unit.type_.maxHitPoints() + unit.type_.maxShields()));
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
                 temp_hp_value -= 25;
@@ -199,7 +199,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
             int temp_stock_value = unit.stock_value_;
-            while (temp_stock_value > 25) {
+            for (int i = 0; i <= static_cast<int>(unit.stock_value_ / 25); i++) {
                 lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_stock_value / static_cast<double>(unit.stock_value_));
                 Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
                 temp_stock_value -= 25;
