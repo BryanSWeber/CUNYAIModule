@@ -135,9 +135,15 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
 void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
+<<<<<<< HEAD
     auto found_object = this->unit_inventory_.find(unit);
     if (found_object != this->unit_inventory_.end()) {
         Stored_Unit& miner = found_object->second;
+=======
+    auto found_position = this->unit_inventory_.find(unit);
+    if (found_position != this->unit_inventory_.end() ) {
+        Stored_Unit& miner = found_position->second;
+>>>>>>> master
         miner.stopMine(ri);
 
         if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
@@ -150,7 +156,11 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         miner.updateStoredUnit(unit);
     }
     else {
+<<<<<<< HEAD
         CUNYAIModule::DiagnosticText("Ooops, I couldn't purge a worker's relationships.");
+=======
+        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
+>>>>>>> master
     }
 }
 
