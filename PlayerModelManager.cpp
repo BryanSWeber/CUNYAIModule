@@ -11,6 +11,8 @@ using namespace BWAPI;
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
     bwapi_player_ = other_player;
+    enemy_race_ = bwapi_player_->getRace();
+
     //Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();

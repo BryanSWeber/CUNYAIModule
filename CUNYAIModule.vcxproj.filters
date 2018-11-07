@@ -45,6 +45,9 @@
     <ClCompile Include="Map_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="ScoutingManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -58,6 +61,7 @@
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
+    <ClInclude Include="Source\ScoutingManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
