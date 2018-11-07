@@ -138,7 +138,7 @@ void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameCo
 					enemy_player_model.units_.intel[24] = Broodwar->elapsedTime(); break;
 				}
 		}
-		else if (i > 24) // Calculate the max individual stock values
+		else if (i > 24 && i < 28) // Calculate the max individual stock values
 		{
 			if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.playerData[i])
 				enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
