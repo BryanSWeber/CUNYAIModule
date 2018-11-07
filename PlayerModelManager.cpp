@@ -97,9 +97,15 @@ void Player_Model::evaluateWorkerCount() {
 		estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
 	}
 	int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
+<<<<<<< HEAD
+
+=======
+>>>>>>> Student_Work
 
 }
 
+<<<<<<< HEAD
+=======
 void Player_Model::playerStock(Player_Model & enemy_player_model)
 {
 	enemy_player_model.units_.inventoryCopy[25] = enemy_player_model.spending_model_.worker_stock;
@@ -107,6 +113,7 @@ void Player_Model::playerStock(Player_Model & enemy_player_model)
 	enemy_player_model.units_.inventoryCopy[27] = enemy_player_model.spending_model_.tech_stock;
 }
 
+>>>>>>> Student_Work
 void Player_Model::readPlayerLog(Player_Model & enemy_player_model)
 {
 }

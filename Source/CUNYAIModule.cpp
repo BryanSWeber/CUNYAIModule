@@ -8,6 +8,7 @@
 #include "Research_Inventory.h"
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
+#include "ScoutingManager.h"
 #include "AssemblyManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iostream> 
@@ -41,6 +42,9 @@ double CUNYAIModule::adaptation_rate; //Adaptation rate to opponent.
 double CUNYAIModule::alpha_army_original;
 double CUNYAIModule::alpha_tech_original;
 double CUNYAIModule::alpha_econ_original;
+
+// Initalize scouting manager once on startup
+ScoutingManager scouting;
 
 void CUNYAIModule::onStart()
 {
@@ -303,6 +307,16 @@ void CUNYAIModule::onFrame()
     land_inventory.updateGasCollectors();
     land_inventory.updateMiners();
 
+    // Update scouts, check if still alive.
+    scouting.updateScouts();
+    // If enemy has units that can shoot overlords, stop overlord scouting
+    if ( enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_) )
+        scouting.let_overlords_scout_ = false;
+    // Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
+    bool disable_scouting = false; //(((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
+                            //(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
+                             //enemy_player_model.units_.stock_total_ != 0);  //Make sure we've actually seen enemy stock before disabling scouting
+
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
     }
@@ -411,6 +425,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
+        Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Get the game seed
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -424,18 +439,19 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
+        Broodwar->drawTextScreen(250, 120, "Scouting: %s", disable_scouting ? "FALSE" : "TRUE"); //Are we scouting? False if disabled scouting is true
+        Broodwar->drawTextScreen(250, 130, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
+        Broodwar->drawTextScreen(250, 140, "Last Building: %s", buildorder.last_build_order.c_str()); //
+        Broodwar->drawTextScreen(250, 150, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
         if (buildorder.isEmptyBuildOrder()) {
-            Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
+            Broodwar->drawTextScreen(250, 170, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
         else {
-            Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
+            Broodwar->drawTextScreen(250, 170, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 160, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -681,11 +697,72 @@ void CUNYAIModule::onFrame()
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
 
+        auto start_scout = std::chrono::high_resolution_clock::now();
+        // Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
+        if (!disable_scouting) {
+
+            if ( scouting.needScout(u, t_game) && (!u->isAttacking() && !isRecentCombatant(u)) &&
+                ((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
+
+                // Make zergling into a scout
+                if (u_type == UnitTypes::Zerg_Zergling && (u != scouting.zergling_scout_ && u != scouting.expo_zergling_scout_)) { // Dont double assign scouts
+       
+                    if (!scouting.exists_expo_zergling_scout_) {
+                        scouting.setScout(u, 1);
+                        Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                        scouting.sendScout(u, scout_spot);
+                        continue;
+                    }
+                    
+                    if (!scouting.exists_zergling_scout_) {
+                        scouting.setScout(u, 2);
+                        Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                        scouting.sendScout(u, scout_spot);
+                        continue;
+                    }
+                }
+
+                // Make overlord into a scout
+                if (u_type == UnitTypes::Zerg_Overlord) {
+                    scouting.setScout(u);
+                    Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                    scouting.sendScout(u, scout_spot);
+                    continue;
+                }
+            }
+        }
+
+        // Scout Reassignment Logic -- reassign expo and overlord scouts to a new scout position instead of clearing
+        if (u->isIdle() && (u == scouting.expo_zergling_scout_ || u == scouting.overlord_scout_)) {
+            Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+            scouting.sendScout(u, scout_spot);
+            continue;
+        }
+
+        // Scout Clearing Logic -- clear scouts when scouting is disabled, if a suicide ling scout is idle, or if an overlord is under attack
+        if ( disable_scouting || ( (u->isIdle() && u == scouting.zergling_scout_) || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()) ) ) {
+            
+            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Overlord) {
+                scouting.clearScout(u);
+                if (u->isUnderAttack())  //Disable future overlord scouts if under attack
+                    scouting.let_overlords_scout_ = false;
+            }
+            
+            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling)
+                scouting.clearScout(u);
+        }
+
+        // Scout Diagnostics
+        if constexpr (DRAWING_MODE) {
+                scouting.diagnosticLine(u, current_map_inventory);
+        }
+        auto end_scout = std::chrono::high_resolution_clock::now();
+
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
         auto start_combat = std::chrono::high_resolution_clock::now();
         bool foe_within_radius = false;
 
-        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
+        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u) && !scouting.isScoutingUnit(u)) // Dont enter combat loop if scouting unit)
         {
             Mobility mobility;
 
@@ -1040,18 +1117,18 @@ void CUNYAIModule::onFrame()
         }
     }
 
-    if constexpr (DRAWING_MODE) {
-        int n;
-        n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-        n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-        n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-        n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-        n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-        n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-        n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-        n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-    }
+    //if constexpr (DRAWING_MODE) {
+    //    int n;
+    //    n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+    //    n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+    //    n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+    //    n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+    //    n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+    //    n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+    //    n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+    //    n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+    //    n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
+    //}
 
 } // closure: Onframe
 
