@@ -452,6 +452,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int is_shooting = 0;
     int is_attacking = 0;
     int is_retreating = 0;
+	
 
     vector<UnitType> already_seen_types;
 
@@ -482,7 +483,6 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 shoots_down     += down_gun * unit_value_for_all_of_type;
                 shoots_both     += (up_gun && down_gun) * unit_value_for_all_of_type;
                 cloaker_count   += cloaker * count_of_unit_type;
-                detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
 
@@ -498,6 +498,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 ground_fodder += !flying_unit * unit_value_for_all_of_type;
             
             }
+            detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
             stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
             //Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
@@ -511,29 +512,59 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
-    stock_fliers_ = fliers;
-    stock_ground_units_ = ground_unit;
-    stock_both_up_and_down_ = shoots_both;
-    stock_shoots_up_ = shoots_up;
-    stock_shoots_down_ = shoots_down;
-    stock_high_ground_= high_ground;
-    stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
-    stock_ground_fodder_ = ground_fodder;
-    stock_air_fodder_ = air_fodder;
-    stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
-    max_range_ = range;
-    max_cooldown_ = max_cooldown;
-    worker_count_ = worker_count;
-    volume_ = volume;
-    detector_count_ = detector_count;
-    cloaker_count_ = cloaker_count;
-    resource_depot_count_ = resource_depots;
-    future_fap_stock_ = future_fap_stock;
-    moving_average_fap_stock_ = moving_average_fap_stock;
-    stock_full_health_ = stock_full_health;
-    is_shooting_ = is_shooting;
-    is_attacking_ = is_attacking;
-    is_retreating_ = is_retreating;
+
+    inventoryCopy[0] = stock_fliers_ = fliers;
+	inventoryCopy[1] = stock_ground_units_ = ground_unit;
+	inventoryCopy[2] = stock_both_up_and_down_ = shoots_both;
+	inventoryCopy[3] = stock_shoots_up_ = shoots_up;
+	inventoryCopy[4] = stock_shoots_down_ = shoots_down;
+	inventoryCopy[5] = stock_high_ground_= high_ground;
+	inventoryCopy[6] = stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
+	inventoryCopy[7] = stock_ground_fodder_ = ground_fodder;
+	inventoryCopy[8] = stock_air_fodder_ = air_fodder;
+	inventoryCopy[9] = stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
+	inventoryCopy[10] = max_range_ = range;
+	inventoryCopy[11] = max_cooldown_ = max_cooldown;
+	inventoryCopy[12] = worker_count_ = worker_count;
+	inventoryCopy[13] = volume_ = volume;
+	inventoryCopy[14] = detector_count_ = detector_count;
+	inventoryCopy[15] = cloaker_count_ = cloaker_count;
+	inventoryCopy[16] = is_retreating_ = is_retreating;
+	inventoryCopy[17] = future_fap_stock_ = future_fap_stock;
+	inventoryCopy[18] = moving_average_fap_stock_ = moving_average_fap_stock;
+	inventoryCopy[19] = stock_full_health_ = stock_full_health;
+	inventoryCopy[20] = is_shooting_ = is_shooting;
+	inventoryCopy[21] = is_attacking_ = is_attacking;
+	inventoryCopy[22] = resource_depot_count_ = resource_depots;
+	unitInventoryLabel[0] = "Stock Fliers";
+	unitInventoryLabel[1] = "Stock Ground Units";
+	unitInventoryLabel[2] = "Stock Both Up And Down";
+	unitInventoryLabel[3] = "Stock Shoots Up";
+	unitInventoryLabel[4] = "Stock Shoots Down";
+	unitInventoryLabel[5] = "Stock High Ground";
+	unitInventoryLabel[6] = "Stock Fighting Total";
+	unitInventoryLabel[7] = "Stock Ground Fodder";
+	unitInventoryLabel[8] = "Stock Air Fodder";
+	unitInventoryLabel[9] = "Stock Total";
+	unitInventoryLabel[10] = "Max Range";
+	unitInventoryLabel[11] = "Max Cooldown";
+	unitInventoryLabel[12] = "Worker Count";
+	unitInventoryLabel[13] = "Volume";
+	unitInventoryLabel[14] = "Detector Count";
+	unitInventoryLabel[15] = "Cloaker Count";
+	unitInventoryLabel[16] = "Is Retreating";
+	unitInventoryLabel[17] = "Future Fap Stock";
+	unitInventoryLabel[18] = "Moving Average Fap Stock";
+	unitInventoryLabel[19] = "Stock Full Health";
+	unitInventoryLabel[20] = "Is Shooting";
+	unitInventoryLabel[21] = "Is Attacking";
+	unitInventoryLabel[22] = "First Resource Depot";
+	unitInventoryLabel[23] = "Second Resource Depot";
+	unitInventoryLabel[24] = "Third Resource Depot";
+	unitInventoryLabel[25] = "Worker Stock";
+	unitInventoryLabel[26] = "Army Stock";
+	unitInventoryLabel[27] = "Tech Stock";
+	unitInventoryLabel[28] = "Max Stock Sum";
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
