@@ -96,7 +96,7 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
     if (u_type.canAttack() ||
         u_type == BWAPI::UnitTypes::Protoss_High_Templar ||
         u_type == BWAPI::UnitTypes::Terran_Bunker ||
-        unit->isFlying() && u_type.spaceProvided() > 0 )
+        (u_type.isFlyer() && u_type.spaceProvided()) )
     {
         return true;
     }
@@ -126,7 +126,33 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
         unit.type_.maxEnergy() > 0 ||
         unit.type_.isDetector() ||
         unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
-        unit.type_.isFlyer() && unit.type_.spaceProvided() > 0)
+        (unit.type_.isFlyer() && unit.type_.spaceProvided()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+// Checks if a stored unit is a combat unit.
+bool CUNYAIModule::IsFightingUnit(const UnitType &unittype)
+{
+
+    // no workers, overlords, or larva...
+    if (unittype.isWorker() ||
+        //unit.type_.isBuilding() ||
+        unittype == BWAPI::UnitTypes::Zerg_Larva ||
+        unittype == BWAPI::UnitTypes::Zerg_Overlord)
+    {
+        return false;
+    }
+
+    // This is a last minute check for psi-ops or transports.
+    if (unittype.canAttack() ||
+        unittype.maxEnergy() > 0 ||
+        unittype.isDetector() ||
+        unittype == BWAPI::UnitTypes::Terran_Bunker ||
+        (unittype.isFlyer() && unittype.spaceProvided()) )
     {
         return true;
     }
