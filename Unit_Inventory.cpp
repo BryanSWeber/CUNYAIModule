@@ -111,18 +111,24 @@ void Unit_Inventory::purgeAllPhases()
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    Stored_Unit& miner = this->unit_inventory_.find(unit)->second;
-    miner.stopMine(ri);
+    auto found_position = this->unit_inventory_.find(unit);
+    if (found_position != this->unit_inventory_.end()) {
+        Stored_Unit& miner = found_position->second;
+        miner.stopMine(ri);
 
-    if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build ) {
-        res.removeReserveSystem(unit->getBuildType());
+        if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+            res.removeReserveSystem(unit->getBuildType());
+        }
+        if (command.getTargetPosition() == Position(inv.next_expo_)) {
+            res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+        }
+        unit->stop();
+        miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.updateStoredUnit(unit);
     }
-    if (command.getTargetPosition() == Position(inv.next_expo_) ) {
-        res.removeReserveSystem( UnitTypes::Zerg_Hatchery );
+    else {
+        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
     }
-    unit->stop();
-    miner.time_of_last_purge_ = Broodwar->getFrameCount();
-    miner.updateStoredUnit(unit);
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
@@ -254,16 +260,16 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         stock_value_ = shell.stock_value_; // longer but prevents retyping.
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
-        future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
+        future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = shell.stock_value_;
+        ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
     }
     else {
         bool retreating_or_undetected = (/*phase_ == "Retreating" ||*/ phase_ == "Pathing Out" || phase_ == "Pathing In" || (burrowed_ && !detected_));
         double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = retreating_or_undetected ? current_stock_value_ : static_cast<int>(round(weight * ma_future_fap_value_ + (1 - weight) * future_fap_value_));
+        ma_future_fap_value_ = (CUNYAIModule::IsFightingUnit(unit) * retreating_or_undetected) ? current_stock_value_ : static_cast<int>(round(weight * ma_future_fap_value_ + (1 - weight) * future_fap_value_));
     }
 }
 
@@ -472,8 +478,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
      for (auto const & u_iter : unit_inventory_) { // should only search through unit types not per unit.
 
-         future_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.future_fap_value_;
-         moving_average_fap_stock += CUNYAIModule::IsFightingUnit(u_iter.second) * u_iter.second.ma_future_fap_value_;
+         future_fap_stock += u_iter.second.future_fap_value_;
+         moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
          is_shooting += u_iter.second.cd_remaining_ > 0; //
          is_attacking += u_iter.second.phase_ == "Attacking";
          is_retreating += u_iter.second.phase_ == "Retreating";
@@ -609,8 +615,8 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
-    future_fap_value_ = stock_value_;
-    ma_future_fap_value_ = stock_value_;
+    future_fap_value_ = CUNYAIModule::IsFightingUnit(unittype) * stock_value_;
+    ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unittype) * stock_value_;
 };
 
 // We must be able to create Stored_Unit objects as well.
@@ -645,8 +651,8 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         modified_gas_cost_ = shell.modified_gas_cost_;
         modified_supply_ = shell.modified_supply_;
         stock_value_ = shell.stock_value_; //prevents retyping.
-        ma_future_fap_value_ = shell.stock_value_;
-        future_fap_value_ = shell.stock_value_;
+        ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
+        future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
 
     current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
 }

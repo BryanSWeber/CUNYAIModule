@@ -1519,7 +1519,6 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 
-    int number;
     ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newMap)
     {
