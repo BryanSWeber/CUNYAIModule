@@ -529,13 +529,13 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	inventoryCopy[13] = volume_ = volume;
 	inventoryCopy[14] = detector_count_ = detector_count;
 	inventoryCopy[15] = cloaker_count_ = cloaker_count;
-	inventoryCopy[16] = resource_depot_count_ = resource_depots;
+	inventoryCopy[16] = is_retreating_ = is_retreating;
 	inventoryCopy[17] = future_fap_stock_ = future_fap_stock;
 	inventoryCopy[18] = moving_average_fap_stock_ = moving_average_fap_stock;
 	inventoryCopy[19] = stock_full_health_ = stock_full_health;
 	inventoryCopy[20] = is_shooting_ = is_shooting;
 	inventoryCopy[21] = is_attacking_ = is_attacking;
-	inventoryCopy[22] = is_retreating_ = is_retreating;
+	inventoryCopy[22] = resource_depot_count_ = resource_depots;
 	unitInventoryLabel[0] = "Stock Fliers";
 	unitInventoryLabel[1] = "Stock Ground Units";
 	unitInventoryLabel[2] = "Stock Both Up And Down";
@@ -552,13 +552,19 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	unitInventoryLabel[13] = "Volume";
 	unitInventoryLabel[14] = "Detector Count";
 	unitInventoryLabel[15] = "Cloaker Count";
-	unitInventoryLabel[16] = "Resource Depot Count";
+	unitInventoryLabel[16] = "Is Retreating";
 	unitInventoryLabel[17] = "Future Fap Stock";
 	unitInventoryLabel[18] = "Moving Average Fap Stock";
 	unitInventoryLabel[19] = "Stock Full Health";
 	unitInventoryLabel[20] = "Is Shooting";
 	unitInventoryLabel[21] = "Is Attacking";
-	unitInventoryLabel[22] = "Is Retreating";
+	unitInventoryLabel[22] = "First Resource Depot";
+	unitInventoryLabel[23] = "Second Resource Depot";
+	unitInventoryLabel[24] = "Third Resource Depot";
+	unitInventoryLabel[25] = "Worker Stock";
+	unitInventoryLabel[26] = "Army Stock";
+	unitInventoryLabel[27] = "Tech Stock";
+	unitInventoryLabel[28] = "Max Stock Sum";
 }
 
 void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {

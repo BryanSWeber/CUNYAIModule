@@ -127,6 +127,8 @@ void CUNYAIModule::onStart()
     long_delay = 0;
     my_reservation = Reservation();
 
+	enemy_player_model.readPlayerLog(enemy_player_model);
+
 }
 
 void CUNYAIModule::onEnd( bool isWinner )
@@ -155,7 +157,7 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_ 
         << endl;
     output.close();
-	enemy_player_model.playerLog(enemy_player_model, true);
+	enemy_player_model.writePlayerLog(enemy_player_model, true);
 	/*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
 	if (!check)
 	{
@@ -178,7 +180,8 @@ void CUNYAIModule::onFrame()
         return;
 	
 	//if (foundDetector == false) {
-		enemy_player_model.playerLog(enemy_player_model, false);
+	enemy_player_model.playerStock(enemy_player_model);
+	enemy_player_model.writePlayerLog(enemy_player_model, false);
 	//}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm

@@ -134,11 +134,11 @@ struct Unit_Inventory {
 	//int playerData[23];
 
 
-	int playerData[23];
+	//int playerData[23];
 
-	int inventoryCopy[23];
-	int test[23];
-	string unitInventoryLabel[23];
+	int inventoryCopy[29];
+	int intel[29];
+	string unitInventoryLabel[29];
 	std::map <Unit, Stored_Unit> unit_inventory_;
 
     // Updates the count of units.

@@ -100,30 +100,75 @@ void Player_Model::evaluateWorkerCount() {
 
 }
 
-void Player_Model::playerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
+void Player_Model::playerStock(Player_Model & enemy_player_model)
+{
+	enemy_player_model.units_.inventoryCopy[25] = enemy_player_model.spending_model_.worker_stock;
+	enemy_player_model.units_.inventoryCopy[26] = enemy_player_model.spending_model_.army_stock;
+	enemy_player_model.units_.inventoryCopy[27] = enemy_player_model.spending_model_.tech_stock;
+}
+
+void Player_Model::readPlayerLog(Player_Model & enemy_player_model)
+{
+}
+void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
 
 	//Initialize all unit inventories seen to -1
 	if (Broodwar->getFrameCount() == 1)
-		for (int i = 0; i < 23; i++)
+		for (int i = 0; i < 29; i++)
 			enemy_player_model.playerData[i] = -1;
 
 	//Record the earlist time spotted for each unit
-	for (int i = 0; i < 23; i++)
-		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.playerData[i] == -1)
+	for (int i = 0; i < 29; i++)
+		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.playerData[i] == -1 && i < 22)
 		{
 			enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
-			enemy_player_model.units_.test[i] = Broodwar->elapsedTime();
+			enemy_player_model.units_.intel[i] = Broodwar->elapsedTime();
 		}
+		else if (i == 22) // Calculate time each resource depot was sighted
+		{
+			if(enemy_player_model.playerData[i] == -1)
+				switch (enemy_player_model.units_.inventoryCopy[22])
+				{
+				case 0: break;
+				case 1: enemy_player_model.playerData[22] = enemy_player_model.units_.inventoryCopy[22]; 
+					enemy_player_model.units_.intel[22] = Broodwar->elapsedTime(); break;
+				case 2: enemy_player_model.playerData[23] = enemy_player_model.units_.inventoryCopy[22];
+					enemy_player_model.units_.intel[23] = Broodwar->elapsedTime(); break;
+				case 3: enemy_player_model.playerData[24] = enemy_player_model.units_.inventoryCopy[22];
+					enemy_player_model.units_.intel[24] = Broodwar->elapsedTime(); break;
+				}
+		}
+		else if (i > 24) // Calculate the max individual stock values
+		{
+			if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.playerData[i])
+				enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
+		}
+		else if(i == 28)// Calculate the sum of the stocks
+			enemy_player_model.playerData[i] = (enemy_player_model.playerData[i - 1] + enemy_player_model.playerData[i - 2] + enemy_player_model.playerData[i - 3]);
 			
 			//Write to file once at the end of the game
 			if (gameComplete)
 			{
-			ofstream earliestDate;
-			earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-			earliestDate << left << setw(25) << "Type of Info" << left << setw(20) << "Amount Found" << left << setw(20) << "First Spotted" << endl;
-				for(int i = 0; i < 23; i++)
-					earliestDate << left << setw(25) << enemy_player_model.units_.unitInventoryLabel[i] << left << setw(20) << enemy_player_model.playerData[i] << left << setw(20) << enemy_player_model.units_.test[i] << "\n";
-			earliestDate.close();
+				ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+				if (!inFile)
+				{
+					ofstream earliestDate;
+					earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+					for (int i = 0; i < 29; i++)
+							earliestDate << left << setw(25) << enemy_player_model.units_.unitInventoryLabel[i];
+					earliestDate << endl;
+				}
+				ofstream earliestDate;
+				earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+				//earliestDate << left << setw(25) << "Type of Info" << left << setw(20) << "Amount Found" << left << setw(20) << "First Spotted" << endl;
+				for (int i = 0; i < 29; i++)
+				{
+					stringstream ss;
+					ss << enemy_player_model.playerData[i] << '\\' << enemy_player_model.units_.intel[i];
+					earliestDate << left << setw(25) << ss.str();
+				}
+				earliestDate << endl;
+				earliestDate.close();
 			}
 }
 void Player_Model::evaluateCurrentWorth()
