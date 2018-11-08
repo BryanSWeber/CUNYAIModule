@@ -8,13 +8,14 @@ class Mobility {
 
 public:
     // Basic retreat logic
-    void Retreat_Logic( const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Map_Inventory &inv, const Color &color );
+    void Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color, const bool &force);
     // Tells the unit to fight. If it can attack both air and ground.
-    void Tactical_Logic(const Unit & unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int passed_dist, const Map_Inventory &inv, const Color & color);
+    void Tactical_Logic(const Unit & unit, const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Map_Inventory &inv, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something.
-    void Pathing_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
+    void Pathing_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv );
     //Forces a unit to surround the concerning ei. Does not advance.
-    void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
+    //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
+
 
     Position Output;
 

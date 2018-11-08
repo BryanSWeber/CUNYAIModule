@@ -290,8 +290,8 @@ void Map_Inventory::updateSmoothPos() {
 
     for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles. 
         changed_a_value_last_cycle = false;
-        for (auto minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
-            for (auto minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
+        for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
+            for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
 
                  // Psudocode: if any two opposing points are unwalkable, or the corners are blocked off, while an alternative path through the center is walkable, it can be smoothed out, the fewer cycles it takes to identify this, the rougher the surface.
                  // Repeat untill finished.
@@ -350,9 +350,9 @@ void Map_Inventory::updateMapVeins() {
     map_veins_.clear();
     map_veins_ = unwalkable_barriers_with_buildings_;
 
-    vector<WalkPosition> needs_filling;
-    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
-        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations.
+    list<WalkPosition> needs_filling;
+    for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations.
             if (map_veins_[minitile_x][minitile_y] == 0) {
                 needs_filling.push_back({ minitile_x, minitile_y });// if it is walkable, consider it a canidate for a choke.
                                                                     // Predefine list we will search over.
@@ -360,10 +360,10 @@ void Map_Inventory::updateMapVeins() {
         }
     }
 
-    vector<unsigned> flattened_map_veins;
-    for (auto minitile_x = 0; minitile_x < map_x; ++minitile_x) {
-        for (auto minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
+    vector<int> flattened_map_veins;
+    for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
+        for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            flattened_map_veins.push_back(map_veins_[minitile_x][minitile_y]);
         }
     }
 
@@ -371,88 +371,47 @@ void Map_Inventory::updateMapVeins() {
     //y = k- i*m or k % map_y;
     //k = x * map_y + y;
 
-    for (auto iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
-        for ( vector<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-            // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-            // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
-            // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
-            // Repeat untill finished.
+        for (list<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
+               // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
+               // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
+               // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
+               // Repeat untill finished.
 
-            //bool local_grid[3][3]; // WAY BETTER!
             bool local_grid = false; // further faster since I no longer care about actually generating the veins.
             int minitile_x = position_to_investigate->x;
             int minitile_y = position_to_investigate->y;
 
             bool safety_check = minitile_x > 0 && minitile_y > 0 && minitile_x + 1 < map_x && minitile_y + 1 < map_y;
-            local_grid = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1 ||
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + minitile_y] - 1 < iter - 1 || 
-                safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
+            local_grid = safety_check && (flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] == iter - 1 ||
+                flattened_map_veins[(minitile_x - 1) * map_y + minitile_y] == iter - 1 ||
+                flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] == iter - 1 ||
+                flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] == iter - 1 ||
+                flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] == iter - 1 ||
+                flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] == iter - 1 ||
+                flattened_map_veins[(minitile_x + 1) * map_y + minitile_y] == iter - 1 ||
+                flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] == iter - 1);
 
-            //local_grid[0][0] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y - 1)] - 1 < iter - 1; // Checks if number is between upper and lower. Depends on flattened map being unsigned. SO suggests: (unsigned)(number-lower) <= (upper-lower)
-            //local_grid[0][1] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + minitile_y]       - 1 < iter - 1;
-            //local_grid[0][2] = safety_check && flattened_map_veins[(minitile_x - 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //local_grid[1][0] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y - 1)] - 1 < iter - 1;
-            ////local_grid[1][1] = safety_check && flattened_map_veins[minitile_x       * map_y + minitile_y]       < iter && flattened_map_veins[minitile_x       * map_y + minitile_y]       > 0;
-            //local_grid[1][2] = safety_check && flattened_map_veins[minitile_x       * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //local_grid[2][0] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y - 1)] - 1 < iter - 1;
-            //local_grid[2][1] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y +  minitile_y]      - 1 < iter - 1;
-            //local_grid[2][2] = safety_check && flattened_map_veins[(minitile_x + 1) * map_y + (minitile_y + 1)] - 1 < iter - 1;
-
-            //// if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
-            //bool opposing_tiles =
-            //    (local_grid[0][0] && (local_grid[2][2] || local_grid[2][1] || local_grid[1][2])) ||
-            //    (local_grid[1][0] && (local_grid[1][2] || local_grid[0][2] || local_grid[2][2])) ||
-            //    (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
-            //    (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
-            //    (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
-            ////(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
-            ////(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
-            ////(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
-
-            //bool open_path =
-            //    (!local_grid[0][0] && !local_grid[2][2]) ||
-            //    (!local_grid[1][0] && !local_grid[1][2]) ||
-            //    (!local_grid[2][0] && !local_grid[0][2]) ||
-            //    (!local_grid[0][1] && !local_grid[2][1]); // this is symmetrical, so we only have to do half.
-
-            //bool adjacent_tiles =
-            //    local_grid[0][0] && local_grid[0][1] && local_grid[0][2] || // left edge
-            //    local_grid[2][0] && local_grid[2][1] && local_grid[2][2] || // right edge
-            //    local_grid[0][0] && local_grid[1][0] && local_grid[2][0] || // bottom edge
-            //    local_grid[0][2] && local_grid[1][2] && local_grid[2][2] || // top edge
-            //    local_grid[0][1] && local_grid[1][0] && local_grid[0][0] || // lower left slice.
-            //    local_grid[0][1] && local_grid[1][2] && local_grid[0][2] || // upper left slice.
-            //    local_grid[1][2] && local_grid[2][1] && local_grid[2][2] || // upper right slice.
-            //    local_grid[1][0] && local_grid[2][1] && local_grid[2][0]; // lower right slice.
-            
-            //changed_a_value_last_cycle = opposing_tiles || adjacent_tiles || changed_a_value_last_cycle;
-            //int new_value = open_path * opposing_tiles * (299 - iter) + ((!open_path && opposing_tiles) || adjacent_tiles) * iter;
-            //int new_value = (opposing_tiles || adjacent_tiles) * iter;
             int new_value = local_grid * iter;
             changed_a_value_last_cycle = local_grid || changed_a_value_last_cycle;
             map_veins_[minitile_x][minitile_y] = new_value;
             flattened_map_veins[minitile_x * map_y + minitile_y] = new_value;  //should just unpack this at the end.
 
-            if ( local_grid ) {
-                std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-                needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
-            }
-            else { 
-                ++position_to_investigate; 
-            }
+            if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
+            else ++position_to_investigate;
+            //if ( local_grid ) {
+            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
+            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
+            //}
+            //else { 
+            //    ++position_to_investigate; 
+            //}
         }
-        
+
         if (changed_a_value_last_cycle == false) {
             return; // if we did nothing last cycle, we don't need to punish ourselves.
-        } 
+        }
 
     }
 
@@ -1095,7 +1054,7 @@ void Map_Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
         for ( int x = 0; x <= map_x; ++x ) {
             vector<int> temp;
             for ( int y = 0; y <= map_y; ++y ) {
-                temp.push_back( (int)Broodwar->isBuildable( x, y ) ); // explicit converion.
+                temp.push_back( static_cast<int>(Broodwar->isBuildable( x, y )) ); // explicit converion.
             }
             base_values_.push_back( temp );
         }
@@ -1344,8 +1303,8 @@ void Map_Inventory::getExpoPositions() {
 
     //From SO, quick conversion into set.
     set<TilePosition> s;
-    unsigned size = expo_positions_.size();
-    for (unsigned i = 0; i < size; ++i) s.insert(expo_positions_[i]);
+    int size = expo_positions_.size();
+    for (int i = 0; i < size; ++i) s.insert(expo_positions_[i]);
     expo_positions_complete_.assign(s.begin(), s.end());
 }
 
@@ -1432,7 +1391,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < start_positions_.size()) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(start_positions_.size()) ) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
@@ -1566,11 +1525,10 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     std::ostringstream merged_holding_vector;
     // Convert all but the last element to avoid a trailing ","
     std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator<int>(merged_holding_vector, "\n"));
+        std::ostream_iterator< int>(merged_holding_vector, "\n"));
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 
-    int number;
     ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newMap)
     {
@@ -1613,12 +1571,11 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 {
     vector<int> return_vector;
 
-    if (!map.empty()) {
+    if (!map.empty() && !ui.unit_inventory_.empty()) {
         for (auto u : ui.unit_inventory_) {
             return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
         }
         return return_vector;
-
     }
 
     return return_vector = { 0 };

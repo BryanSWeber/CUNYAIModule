@@ -96,7 +96,7 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
     if (u_type.canAttack() ||
         u_type == BWAPI::UnitTypes::Protoss_High_Templar ||
         u_type == BWAPI::UnitTypes::Terran_Bunker ||
-        unit->isFlying() && u_type.spaceProvided() > 0 )
+        (u_type.isFlyer() && u_type.spaceProvided()) )
     {
         return true;
     }
@@ -126,7 +126,33 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
         unit.type_.maxEnergy() > 0 ||
         unit.type_.isDetector() ||
         unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
-        unit.type_.isFlyer() && unit.type_.spaceProvided() > 0)
+        (unit.type_.isFlyer() && unit.type_.spaceProvided()))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+// Checks if a stored unit is a combat unit.
+bool CUNYAIModule::IsFightingUnit(const UnitType &unittype)
+{
+
+    // no workers, overlords, or larva...
+    if (unittype.isWorker() ||
+        //unit.type_.isBuilding() ||
+        unittype == BWAPI::UnitTypes::Zerg_Larva ||
+        unittype == BWAPI::UnitTypes::Zerg_Overlord)
+    {
+        return false;
+    }
+
+    // This is a last minute check for psi-ops or transports.
+    if (unittype.canAttack() ||
+        unittype.maxEnergy() > 0 ||
+        unittype.isDetector() ||
+        unittype == BWAPI::UnitTypes::Terran_Bunker ||
+        (unittype.isFlyer() && unittype.spaceProvided()) )
     {
         return true;
     }
@@ -155,8 +181,8 @@ void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_
 void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != (double)unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
-            // Draw the red background.
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
+            // Draw the background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
 
@@ -164,15 +190,18 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
             lower_right.x = upper_left.x + unit.type_.width();
             lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, false);
-
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = (int)( upper_left.x + unit.type_.width() * unit.current_hp_ / (double) (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
+            lower_right.x = static_cast<int>( upper_left.x + unit.type_.width() * unit.current_hp_ / static_cast<double> (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
 
-            //Overlay the 10hp rectangles over it.
+            int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
+            for (int i = 0; i <= static_cast<int>((unit.type_.maxHitPoints() + unit.type_.maxShields()) / 25); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_hp_value / static_cast<double>(unit.type_.maxHitPoints() + unit.type_.maxShields()));
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
+                temp_hp_value -= 25;
+            }
         }
     }
 }
@@ -180,7 +209,7 @@ void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &s
 void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
     if constexpr (DRAWING_MODE ) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.ma_future_fap_value_ < unit.stock_value_ ) {
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0 ) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
@@ -189,15 +218,18 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
             lower_right.x = upper_left.x + unit.type_.width();
             lower_right.y = upper_left.y + 5;
 
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, false);
-
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = (int)(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / (double)(unit.stock_value_));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / static_cast<double>(unit.stock_value_));
             lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Blue, true);
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
-            //Overlay the 10hp rectangles over it.
+            int temp_stock_value = unit.stock_value_;
+            for (int i = 0; i <= static_cast<int>(unit.stock_value_ / 25); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_stock_value / static_cast<double>(unit.stock_value_));
+                Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
+                temp_stock_value -= 25;
+            }
         }
     }
 }
@@ -205,7 +237,7 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = resource.pos_;
-        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != (double)resource.max_stock_value_ ) {
+        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) ) {
             // Draw the orange background.
             upper_left.y = upper_left.y + resource.type_.dimensionUp();
             upper_left.x = upper_left.x - resource.type_.dimensionLeft();
@@ -218,7 +250,7 @@ void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, c
 
             //Overlay the appropriate blue above it.
             lower_right = upper_left;
-            lower_right.x = (int)( upper_left.x + resource.type_.width() * resource.current_stock_value_ / (double)resource.max_stock_value_);
+            lower_right.x = static_cast<int>( upper_left.x + resource.type_.width() * resource.current_stock_value_ / static_cast<double>(resource.max_stock_value_));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
 
@@ -244,7 +276,7 @@ void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & 
 
             //Overlay the appropriate grey above it.
             lower_right = upper_left;
-            lower_right.x = (int)(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / (double)24 ));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / static_cast<double>(24) ));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
 
@@ -412,19 +444,19 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
 }
 
 // Outlines the case where UNIT cannot attack ENEMY type (air/ground), while ENEMY can attack UNIT.  Essentially bidirectional Can_Fight checks.
-bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {
-    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
-    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
-    
-    return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
-}
+//bool CUNYAIModule::Futile_Fight( Unit unit, Unit enemy ) {
+//    bool e_invunerable = (enemy->isFlying() && unit->getType().airWeapon() == WeaponTypes::None ) || (!enemy->isFlying() && unit->getType().groundWeapon() == WeaponTypes::None) || unit->getType() == UnitTypes::Terran_Bunker || unit->getType() == UnitTypes::Protoss_Carrier || (unit->getType() == UnitTypes::Protoss_Reaver && !enemy->isFlying()); // if we cannot attack them.
+//    bool u_vunerable = (unit->isFlying() && enemy->getType().airWeapon() != WeaponTypes::None) || (!unit->isFlying() && enemy->getType().groundWeapon() != WeaponTypes::None) || enemy->getType() == UnitTypes::Terran_Bunker || enemy->getType() == UnitTypes::Protoss_Carrier || (enemy->getType() == UnitTypes::Protoss_Reaver && !unit->isFlying()); // they can attack us.
+//    
+//    return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
+//}
 
 // Outlines the case where UNIT can attack ENEMY;
 bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy->isFlying());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if ( enemy->exists() ) {
         return e_vunerable && enemy->isDetected();
@@ -439,7 +471,7 @@ bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy.is_flying_);
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -454,7 +486,7 @@ bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy.is_flying_);
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if ( enemy.bwapi_unit_ && enemy.bwapi_unit_->exists() ) {
         return e_vunerable && enemy.bwapi_unit_->isDetected();
@@ -469,7 +501,7 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || (u_type == UnitTypes::Protoss_Reaver && !enemy->isFlying());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
     if (enemy->exists()) {
         return e_vunerable && enemy->isDetected();
@@ -482,7 +514,7 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
 bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 {
     bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
-    bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || unittype == UnitTypes::Protoss_Reaver;
+    bool is_critical_type = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || (unittype == UnitTypes::Protoss_Reaver && !enemytype.isFlyer());
     bool e_vunerable = (has_appropriate_weapons || is_critical_type); // if we cannot attack them.
 
     return e_vunerable; // also if they are cloaked and can attack us.
@@ -625,7 +657,7 @@ int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inven
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
-    int cost = building.mineralPrice() + UnitTypes::Zerg_Drone.mineralPrice() + 1.25 * building.gasPrice() + UnitTypes::Zerg_Drone.gasPrice() + 25 * UnitTypes::Zerg_Drone.supplyRequired();
+    int cost = Stored_Unit(building).stock_value_;
     int instances = Count_Units( building , ui );
     int total_stock = cost * instances;
     return total_stock;
@@ -633,20 +665,20 @@ int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventor
 
 // evaluates the value of a stock of upgrades, in terms of pythagorian distance of min & gas & supply. Counts totals of stacked upgrades like melee/range/armor.
 int CUNYAIModule::Stock_Ups( const UpgradeType &ups ) {
-    int lvl = Broodwar->self()->getUpgradeLevel( ups ) + (int)Broodwar->self()->isUpgrading( ups );
+    int lvl = Broodwar->self()->getUpgradeLevel( ups ) + static_cast<int>(Broodwar->self()->isUpgrading( ups ));
     int total_stock = 0;
     for ( int i = 1; i <= lvl; i++ ) {
-        int cost = ups.mineralPrice() + 1.25 * ups.gasPrice();
+        int cost = static_cast<int>(ups.mineralPrice() + 1.25 * ups.gasPrice());
         total_stock += cost;
     }
     return total_stock;
 }
 
 int CUNYAIModule::Stock_Tech(const TechType &tech) {
-    bool lvl = Broodwar->self()->hasResearched(tech) + (int)Broodwar->self()->isResearching(tech);
+    bool lvl = Broodwar->self()->hasResearched(tech) + static_cast<int>(Broodwar->self()->isResearching(tech));
     int total_stock = 0;
     if ( lvl ) {
-        int cost = tech.mineralPrice() + 1.25 * tech.gasPrice();
+        int cost = static_cast<int>(tech.mineralPrice() + 1.25 * tech.gasPrice());
         total_stock += cost;
     }
     return total_stock;
@@ -709,32 +741,33 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv )
 }
 
 // returns helpful_friendly and helpful_enemy units from respective inventories.
-vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
-{
-    int helpful_e, helpful_u;
+//vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
+//{
+//    int helpful_e, helpful_u;
+//
+//        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
+//        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
+//
+//
+//        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
+//           //if (friend_loc.stock_ground_units_ == 0) {
+//            //    helpful_e = enemy_loc.stock_shoots_up_;
+//            //}
+//            //else if (friend_loc.stock_fliers_ == 0) {
+//            //    helpful_e = enemy_loc.stock_shoots_down_;
+//            //}
+//        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
+//            //if (enemy_loc.stock_ground_units_ == 0) {
+//            //    helpful_u = friend_loc.stock_shoots_up_;
+//            //}
+//            //else if (enemy_loc.stock_fliers_ == 0) {
+//            //    helpful_u = friend_loc.stock_shoots_down_;
+//            //}
+//            
+//        vector<int> return_vec = { helpful_u, helpful_e };
+//        return return_vec;
+//}
 
-        //helpful_e = min(enemy_loc.stock_shoots_down_, friend_loc.stock_ground_units_ * 2) + min(enemy_loc.stock_shoots_up_, friend_loc.stock_fliers_ * 2) - min(min(enemy_loc.stock_both_up_and_down_, friend_loc.stock_fliers_ * 2), friend_loc.stock_ground_units_ * 2); // A+B - A
-        //helpful_u = min(friend_loc.stock_shoots_down_, enemy_loc.stock_ground_units_ * 2) + min(friend_loc.stock_shoots_up_, enemy_loc.stock_fliers_ * 2) - min(min(friend_loc.stock_both_up_and_down_, enemy_loc.stock_fliers_ * 2), enemy_loc.stock_ground_units_ * 2); // A+B - A
-
-
-        helpful_e = enemy_loc.stock_shoots_down_ * (friend_loc.stock_ground_units_ > 0) + enemy_loc.stock_shoots_up_ * (friend_loc.stock_fliers_ > 0) - enemy_loc.stock_both_up_and_down_ * (friend_loc.stock_fliers_ > 0) * (friend_loc.stock_ground_units_ > 0); // A+B - A Union B
-           //if (friend_loc.stock_ground_units_ == 0) {
-            //    helpful_e = enemy_loc.stock_shoots_up_;
-            //}
-            //else if (friend_loc.stock_fliers_ == 0) {
-            //    helpful_e = enemy_loc.stock_shoots_down_;
-            //}
-        helpful_u = friend_loc.stock_shoots_down_ * (enemy_loc.stock_ground_units_ > 0) + friend_loc.stock_shoots_up_ * (enemy_loc.stock_fliers_ > 0) - friend_loc.stock_both_up_and_down_ * (enemy_loc.stock_fliers_ > 0) * (enemy_loc.stock_ground_units_ > 0); // A+B - A
-            //if (enemy_loc.stock_ground_units_ == 0) {
-            //    helpful_u = friend_loc.stock_shoots_up_;
-            //}
-            //else if (enemy_loc.stock_fliers_ == 0) {
-            //    helpful_u = friend_loc.stock_shoots_down_;
-            //}
-            
-        vector<int> return_vec = { helpful_u, helpful_e };
-        return return_vec;
-}
 int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
     int targetable_e;
@@ -806,7 +839,7 @@ void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &scre
 
     for (auto r : ri.tech_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (r.second > 0) {
+        if (r.second) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "Tech:");  //
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "%s", r.first.c_str());  //
             another_row_of_printing_research++;
@@ -851,7 +884,7 @@ void CUNYAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &scre
     int another_sort_of_upgrade = 0;
     for ( int i = 0; i != 62; i++ )
     { // iterating through all upgrades.
-        int up_count = Broodwar->self()->getUpgradeLevel( ((UpgradeType)i) ) + (int)Broodwar->self()->isUpgrading( ((UpgradeType)i) );
+        int up_count = Broodwar->self()->getUpgradeLevel( ((UpgradeType)i) ) + static_cast<int>( Broodwar->self()->isUpgrading( ((UpgradeType)i) ) );
         if ( up_count > 0 ) {
             Broodwar->drawTextScreen( screen_x, screen_y, "Upgrades:" );  //
             Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", ((UpgradeType)i).c_str() , up_count );  //
@@ -888,7 +921,7 @@ const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
 Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unitset e_set;
     for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-        if ( (*e).second.pos_.getDistance( origin ) <= dist ) {
+        if (static_cast<int>((*e).second.pos_.getDistance( origin )) <= dist ) {
             e_set.insert( (*e).second.bwapi_unit_ ); // if we take any distance and they are in inventory.
         }
     }
@@ -903,7 +936,7 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 
     if ( !ui.unit_inventory_.empty() ) {
         for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-            temp_dist = (int)(*e).second.pos_.getDistance( origin );
+            temp_dist = static_cast<int>((*e).second.pos_.getDistance( origin ));
             if ( temp_dist <= min_dist && e->second.valid_pos_ ) {
                 min_dist = temp_dist;
                 return_unit = &(e->second);
@@ -923,7 +956,7 @@ Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             if (e->second.type_ == u_type && e->second.valid_pos_ ){
-                temp_dist = (int)(*e).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -943,7 +976,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = (int)(*r).second.pos_.getDistance(origin);
+            temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
             if (temp_dist <= min_dist ) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
@@ -993,6 +1026,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 }
 
 Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
+
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
@@ -1037,7 +1071,7 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
     if (!ui.unit_inventory_.empty()) {
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             if (e->second.type_.isBuilding()) {
-                temp_dist = (*e).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist && e->second.valid_pos_) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1091,7 +1125,7 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Un
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
             if (r->second.type_ == r_type && r->second.valid_pos_) {
-                temp_dist = (int)(*r).second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>((*r).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(r->second);
@@ -1115,7 +1149,7 @@ Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
         for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
             can_attack = CUNYAIModule::Can_Fight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance(unit->getPosition());
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(unit->getPosition()));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1139,7 +1173,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
             can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
             can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance( origin );
+                temp_dist = static_cast<int>(e->second.pos_.getDistance( origin ));
                 if ( temp_dist <= min_dist ) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1165,7 +1199,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
             can_be_attacked_by = Can_Fight(e->second, unit);
 
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
-                temp_dist = (int)e->second.pos_.getDistance(origin);
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
                     return_unit = &(e->second);
@@ -1209,11 +1243,31 @@ Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist, const bool &air_attack ) {
     Unit_Inventory ui_out;
-    for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
-        if ( (*e).second.pos_.getDistance( origin ) <= dist && e->second.valid_pos_) {
-            ui_out.addStored_Unit( (*e).second ); // if we take any distance and they are in inventory.
+    if (air_attack) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Overlord)) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
+        }
+    }
+    else {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Drone)) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
+        }
+    }
+    return ui_out;
+}
+
+//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const Position &origin, const int &dist) {
+    Unit_Inventory ui_out;
+    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+        if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_) {
+            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1351,7 +1405,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     bool wait_for_cooldown = false;
     int cd_frames = 0;
 
-    if (cd_frames_chosen == 99) {
+    if (cd_frames_chosen == 99) {// if default value, then we assume 0 cd frames. This is nearly always the case.
         cd_frames = 0;
     } 
     else { // if the person has selected some specific delay they are looking for, check that.
@@ -1361,35 +1415,37 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     bool unit_fighting = unit->isStartingAttack();
     if (unit_fighting) {
-        ready_to_move = false;
-        return ready_to_move;
+        return false; //unit is not ready to move.
     }
 
     UnitCommandType u_command = unit->getLastCommand().getType();
 
-    //if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
-    //    UnitType u_type = unit->getType();
-    //    //cd_frames = Broodwar->getLatencyFrames();
-    //    //if (u_type == UnitTypes::Zerg_Drone) {
-    //    //    cd_frames = 1;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Zergling) {
-    //    //    cd_frames = 5;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Hydralisk) {
-    //    //    cd_frames = 7;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Lurker) {
-    //    //    cd_frames = 2;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Mutalisk) {
-    //    //    cd_frames = 1;
-    //    //}
-    //    //else if (u_type == UnitTypes::Zerg_Ultralisk) {
-    //    //    cd_frames = 15;
-    //    //}
-    //    //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-    //}
+    if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
+        UnitType u_type = unit->getType();
+        //cd_frames = Broodwar->getLatencyFrames();
+        //if (u_type == UnitTypes::Zerg_Drone) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Zergling) {
+        //    cd_frames = 5;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Hydralisk) {
+        //    cd_frames = 7;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Lurker) {
+        //    cd_frames = 2;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Mutalisk) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Ultralisk) {
+        //    cd_frames = 15;
+        //}
+        //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
+        //if (u_type == UnitTypes::Zerg_Devourer) {
+        //    cd_frames = 5;
+        //}
+    }
     //else 
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
@@ -1403,6 +1459,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 5;
     }
 
+    //if (u_command == UnitCommandTypes::Hold_Position) {
+    //    cd_frames = 5;
+    //}
     //if (u_command == UnitCommandTypes::Attack_Move) {
     //    cd_frames += 2; // an ad-hoc delay for aquiring targets, I don't know what it is formally atm.
     //}
@@ -1794,7 +1853,9 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
-    return (u->getType() != UnitTypes::Zerg_Lurker) * (int)CUNYAIModule::getProperSpeed(u) * (int)ei_loc.max_cooldown_ + CUNYAIModule::getProperRange(u) ; //lurkers have a proper speed of 0.
+    int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
+    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * (96/4)) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
+
 }
 
 
@@ -1945,7 +2006,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         it_is_home_ = inv.home_base_.getDistance(pos) < 96;
         can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 20000 || inv.hatches_ == 1;
+        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 500 || inv.hatches_ == 1;
     }
 
 
@@ -1991,12 +2052,12 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Anabolic_Synthesis = 53,
 
 int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
-    if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
-    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return currentScore + FAPunit.data->stock_value_ * (FAPunit.health + FAPunit.shields) / (double)(FAPunit.maxHealth + FAPunit.maxShields); });
+    if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
-    return  (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ || // Proportional win. fixed division by crossmultiplying.
+    return  //(ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ || // Proportional win. fixed division by crossmultiplying.
         //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
         ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }

@@ -116,7 +116,8 @@ public:
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
-
+      // checks if a unit type MUST be built next (or meets extra critera). Used in many assembly functions.
+      bool mustCreate(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
@@ -148,6 +149,8 @@ public:
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
       static bool IsFightingUnit(const Unit &unit);
       static bool IsFightingUnit(const Stored_Unit & unit);
+      static bool IsFightingUnit(const UnitType & unittype);
+
       // evaluates if it was order to fight recently.
       bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
@@ -168,8 +171,9 @@ public:
               Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
           }
       }
-      // Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
-      static bool Futile_Fight( Unit unit, Unit enemy );
+      // Defunct: Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
+      //static bool Futile_Fight( Unit unit, Unit enemy );
+
       // Outlines the case where you can attack their type (air/ground/cloaked)
       static bool Can_Fight( Unit unit, Unit enemy );
       static bool Can_Fight( Unit unit, Stored_Unit enemy );
@@ -233,6 +237,7 @@ public:
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
       static Unit_Inventory getUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist );
+      static Unit_Inventory getThreateningUnitInventoryInRadius(const Unit_Inventory & ui, const Position & origin, const int & dist, const bool & air_attack);
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
       static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
@@ -248,6 +253,7 @@ public:
       static bool checkResourceOccupiedArea( const Resource_Inventory & ri, const Position & origin );
       //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist );
+
 
   // Utility functions that need to be accessed by any number of classes, ie. static declarations.
       // Counts the tally of a particular int a specific unit set. Includes those in production.
@@ -283,7 +289,7 @@ public:
       // evaluates the value of a stock of unit, in terms of supply added.
       static int Stock_Supply( const UnitType &unit, const Map_Inventory &inv );
       // returns both useful stocks if both groups were to have a fight;
-      static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
+      //static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
       // returns the stock of opponants I can actually fight in their local area.
       static int getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc);
       // returns the stock of units that might actually threaten U in region.
