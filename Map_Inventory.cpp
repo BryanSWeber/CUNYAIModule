@@ -263,7 +263,7 @@ void Map_Inventory::updateBuildablePos()
 
 void Map_Inventory::updateUnwalkable() {
     int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     unwalkable_barriers_.reserve(map_x);
     // first, define matrixes to recieve the walkable locations for every minitile.
@@ -275,20 +275,20 @@ void Map_Inventory::updateUnwalkable() {
         }
         unwalkable_barriers_.push_back( temp );
     }
-    
+
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
 }
 
 void Map_Inventory::updateSmoothPos() {
     int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
     int choke_score = 0;
     bool changed_a_value_last_cycle;
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     smoothed_barriers_ = unwalkable_barriers_;
 
-    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles. 
+    for (auto iter = 2; iter < 16; iter++) { // iteration 1 is already done by labling unwalkables. Smoothout any dangerous tiles.
         changed_a_value_last_cycle = false;
         for (int minitile_x = 1; minitile_x <= map_x; ++minitile_x) {
             for (int minitile_y = 1; minitile_y <= map_y; ++minitile_y) { // Check all possible walkable locations.
@@ -331,7 +331,7 @@ void Map_Inventory::updateSmoothPos() {
 
 
                     changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
-                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * ( iter + open_path * (99 - 2 * iter) ); 
+                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * ( iter + open_path * (99 - 2 * iter) );
                 }
             }
         }
@@ -343,12 +343,13 @@ void Map_Inventory::updateSmoothPos() {
 
 void Map_Inventory::updateMapVeins() {
     int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
     bool changed_a_value_last_cycle = false;
 
     // first, define matrixes to recieve the walkable locations for every minitile.
     map_veins_.clear();
     map_veins_ = unwalkable_barriers_with_buildings_;
+
 
     list<WalkPosition> needs_filling;
     for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
@@ -363,7 +364,7 @@ void Map_Inventory::updateMapVeins() {
     vector<int> flattened_map_veins;
     for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
         for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_map_veins.push_back(map_veins_[minitile_x][minitile_y]);
+            flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
         }
     }
 
@@ -402,10 +403,10 @@ void Map_Inventory::updateMapVeins() {
             else ++position_to_investigate;
             //if ( local_grid ) {
             //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator. 
+            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator.
             //}
-            //else { 
-            //    ++position_to_investigate; 
+            //else {
+            //    ++position_to_investigate;
             //}
         }
 
@@ -734,7 +735,7 @@ int Map_Inventory::getRadialDistanceOutFromHome( const Position A ) const
 // This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
 void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
     int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_;
 
@@ -839,7 +840,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
 //void Map_Inventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
 //
 //    int map_x = Broodwar->mapWidth() * 4;
-//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 //    int test_bool = 0;
 //                                           // Predefine grid we will search over.
 //    bool local_grid[3][3]; // WAY BETTER!
@@ -916,7 +917,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
 
 //void Map_Inventory::updateMapChokes() { // in progress. Idea : A choke is if the maximum variation of ground distances in a 5x5 tile square is LESS than some threshold. It is a plane if it is GREATER than some threshold.
 //    int map_x = Broodwar->mapWidth() * 4;
-//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles. 
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 //    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
 //    int current_region_number = 1;
 //    int count_of_adjacent_importent_points = 0;
@@ -1079,7 +1080,7 @@ void Map_Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
             for ( auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 8; ++possible_base_tile_y ) { // Check wide area of possible build locations around each mineral.
 
                 if ( possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
-                    possible_base_tile_y >= 0 && possible_base_tile_y <= map_y ) { // must be in the map bounds 
+                    possible_base_tile_y >= 0 && possible_base_tile_y <= map_y ) { // must be in the map bounds
 
                     TilePosition prosepective_location_upper_left = { possible_base_tile_x , possible_base_tile_y }; // The build location is upper left tile of the building. T
                     TilePosition prosepective_location_upper_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y };
@@ -1282,7 +1283,7 @@ void Map_Inventory::getExpoPositions() {
 
             int x = canidate_spot.x;
             int y = canidate_spot.y;
-            
+
             for (int i = -12; i <= 12; i++) {
                 for (int j = -12; j <= 12; j++) {
                     bool safety_check = TilePosition(x + i, y + j).isValid(); //valid tile position
@@ -1297,7 +1298,7 @@ void Map_Inventory::getExpoPositions() {
                 expo_positions_.push_back(canidate_spot);
             }
         }
-    
+
     }
 
 
@@ -1349,7 +1350,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    int frames_this_cycle = Broodwar->getFrameCount() % (24 * 4); // technically more. 
+    int frames_this_cycle = Broodwar->getFrameCount() % (24 * 4); // technically more.
 
                                                                   // every frame this is incremented.
     frames_since_enemy_base_ground_++;
@@ -1360,7 +1361,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
     frames_since_unwalkable++;
 
     //every 10 sec check if we're sitting at our destination.
-    //if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && Broodwar->getFrameCount() % (24 * 5) == 0) { 
+    //if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && Broodwar->getFrameCount() % (24 * 5) == 0) {
     //    fram = true;
     //}
     if (unit_calculation_frame) return;
@@ -1373,20 +1374,20 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         frames_since_unwalkable = 0;
         return;
     }
-    
+
     if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
 
         updateMapVeins();
         frames_since_map_veins = 0;
         return;
     }
-    
+
     if (frames_since_enemy_base_ground_ > 24 * 10) {
         checked_all_expo_positions_ = false;
 
-        Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
+        Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
-        if (ei.getMeanBuildingLocation() != Positions::Origin && center_building && center_building->pos_ && center_building->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+        if (ei.getMeanBuildingLocation() != Positions::Origin && center_building && center_building->pos_ && center_building->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
@@ -1416,12 +1417,12 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         frames_since_enemy_base_ground_ = 0;
         return;
     }
-    
-    if (frames_since_enemy_base_air_ > 24 * 5) {
-    
-        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on 
 
-        if (ei.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method. 
+    if (frames_since_enemy_base_air_ > 24 * 5) {
+
+        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+
+        if (ei.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
         }
         else {
@@ -1525,7 +1526,7 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     std::ostringstream merged_holding_vector;
     // Convert all but the last element to avoid a trailing ","
     std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator< int>(merged_holding_vector, "\n"));
+        std::ostream_iterator<int>(merged_holding_vector, "\n"));
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 

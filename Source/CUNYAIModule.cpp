@@ -411,8 +411,6 @@ void CUNYAIModule::onFrame()
     //Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
     //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
 
-
-
     // Display the game status indicators at the top of the screen
     if constexpr(DRAWING_MODE) {
 
@@ -519,28 +517,28 @@ void CUNYAIModule::onFrame()
         }
 
 
-        //for ( vector<int>::size_type i = 0; i < inventory.map_veins_.size(); ++i ) {
-        //    for ( vector<int>::size_type j = 0; j < inventory.map_veins_[i].size(); ++j ) {
-        //        if ( inventory.map_veins_[i][j] > 175 ) {
-        //            if (isOnScreen( { static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_) ) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-        //            }
-        //        }
-        //        else if (inventory.map_veins_[i][j] < 20 && inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-        //            }
-        //        }
-        //        else if ( inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-        //            if (isOnScreen( { static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_) ) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
+        for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
+            for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
+                if (current_map_inventory.map_veins_[i][j] > 175 ) {
+                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+                    }
+                }
+                else if (current_map_inventory.map_veins_[i][j] < 20 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+                    if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
+                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                        Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+                    }
+                }
+                else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+                    }
+                }
+            }
+        } // Pretty to look at!
 
 
         //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
@@ -638,7 +636,7 @@ void CUNYAIModule::onFrame()
             {
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 attempted_morph_larva_this_frame = true;
-                if (Reactive_Build(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+                if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
                     last_frame_of_unit_morph_command = t_game;
                 }
                 continue;
@@ -1451,10 +1449,13 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         friendly_player_model.units_.purgeWorkerRelations(unit, land_inventory, current_map_inventory, my_reservation);
     }
 
+    if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon ) {
+        buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.  Don't have to worry about double-built units (lings) since the second one is not morphed as per BWAPI rules.
+    }
 
     if ( unit->getBuildType().isBuilding() ) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit, land_inventory, current_map_inventory, my_reservation);
-        buildorder.updateRemainingBuildOrder(unit->getBuildType());
+        buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on Morph ONLY, this might double catch them...
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {

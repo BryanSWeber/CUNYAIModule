@@ -42,8 +42,15 @@ struct Player_Model {
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
     int closest_radial_distance_enemy_ground_ = INT_MAX;
 
+    //unit cartridges, Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
+    map<UnitType, int> combat_unit_cartridge_;
+    map<UnitType, int> building_cartridge_;
+    map<UpgradeType, int> upgrade_cartridge_;
+    map<TechType, int> tech_cartridge_;
+
 	void playerStock(Player_Model & enemy_player_model);
 	void readPlayerLog(Player_Model & enemy_player_model);
 	void writePlayerLog(Player_Model & enemy_player_model, bool gameComplete);
 	int playerData[29];
+
 };

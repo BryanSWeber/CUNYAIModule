@@ -116,8 +116,10 @@ public:
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
-      // checks if a unit type MUST be built next (or meets extra critera). Used in many assembly functions.
-      bool mustCreate(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
+      bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      // checks if ut is required and can be built by unit at this time.
+      bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut, const bool & extra_criteria);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
