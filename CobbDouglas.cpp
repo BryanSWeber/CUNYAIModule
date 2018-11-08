@@ -159,12 +159,22 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 
 bool CobbDouglas::evalArmyPossible()
 {
-    double K_over_L = static_cast<double>(CUNYAIModule::friendly_player_model.units_.stock_fighting_total_ + 1) / static_cast<double>(CUNYAIModule::friendly_player_model.units_.worker_count_ * Stored_Unit(UnitTypes::Zerg_Drone).stock_value_ + 1); // avoid NAN's
-    int units_on_field = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Ultralisk_Cavern);
-   return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) || units_on_field <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+
+    double K_over_L = static_cast<double>(army_stock + 1) / static_cast<double>(worker_stock + 1); // avoid NAN's
+
+    bool can_build_army = false;
+    auto combat_types = CUNYAIModule::friendly_player_model.combat_unit_cartridge_; // safe copy.
+
+    // drop all units types I cannot assemble at this time.
+    for(auto unit_selection:combat_types) {
+        if (Broodwar->canMake(unit_selection.first)) {
+            can_build_army = true;
+            break;
+        }
+    }
+
+   return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+
 }
 
 bool CobbDouglas::evalEconPossible()

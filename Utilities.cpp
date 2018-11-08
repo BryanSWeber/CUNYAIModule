@@ -85,7 +85,7 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
 
     // no workers or buildings allowed. Or overlords, or larva..
     if ( unit && u_type.isWorker() ||
-        u_type.isBuilding() ||
+        //u_type.isBuilding() ||
         u_type == BWAPI::UnitTypes::Zerg_Larva ||
         u_type == BWAPI::UnitTypes::Zerg_Overlord )
     {
@@ -94,9 +94,12 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
 
     // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
     if (u_type.canAttack() ||
-        u_type == BWAPI::UnitTypes::Protoss_High_Templar ||
+        u_type.maxEnergy() > 0 ||
+        u_type.isDetector() ||
         u_type == BWAPI::UnitTypes::Terran_Bunker ||
-        (u_type.isFlyer() && u_type.spaceProvided()) )
+        u_type.spaceProvided() ||
+        u_type == BWAPI::UnitTypes::Protoss_Carrier ||
+        u_type == BWAPI::UnitTypes::Protoss_Reaver)
     {
         return true;
     }
@@ -126,7 +129,9 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
         unit.type_.maxEnergy() > 0 ||
         unit.type_.isDetector() ||
         unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
-        (unit.type_.isFlyer() && unit.type_.spaceProvided()))
+        unit.type_.spaceProvided() ||
+        unit.type_ == BWAPI::UnitTypes::Protoss_Carrier ||
+        unit.type_ == BWAPI::UnitTypes::Protoss_Reaver)
     {
         return true;
     }
@@ -152,7 +157,9 @@ bool CUNYAIModule::IsFightingUnit(const UnitType &unittype)
         unittype.maxEnergy() > 0 ||
         unittype.isDetector() ||
         unittype == BWAPI::UnitTypes::Terran_Bunker ||
-        (unittype.isFlyer() && unittype.spaceProvided()) )
+        unittype.spaceProvided() ||
+        unittype == BWAPI::UnitTypes::Protoss_Carrier ||
+        unittype == BWAPI::UnitTypes::Protoss_Reaver)
     {
         return true;
     }

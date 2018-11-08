@@ -111,9 +111,10 @@ void Unit_Inventory::purgeAllPhases()
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    auto found_position = this->unit_inventory_.find(unit);
-    if (found_position != this->unit_inventory_.end()) {
-        Stored_Unit& miner = found_position->second;
+    auto found_object = this->unit_inventory_.find(unit);
+    if (found_object != this->unit_inventory_.end()) {
+        Stored_Unit& miner = found_object->second;
+
         miner.stopMine(ri);
 
         if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
@@ -135,9 +136,10 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
 void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
-    auto found_position = this->unit_inventory_.find(unit);
-    if (found_position != this->unit_inventory_.end() ) {
-        Stored_Unit& miner = found_position->second;
+    auto found_object = this->unit_inventory_.find(unit);
+    if (found_object != this->unit_inventory_.end()) {
+        Stored_Unit& miner = found_object->second;
+
         miner.stopMine(ri);
 
         if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
@@ -260,16 +262,16 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         stock_value_ = shell.stock_value_; // longer but prevents retyping.
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
-        future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
+        future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
+        ma_future_fap_value_ = shell.stock_value_;
     }
     else {
         bool retreating_or_undetected = (/*phase_ == "Retreating" ||*/ phase_ == "Pathing Out" || phase_ == "Pathing In" || (burrowed_ && !detected_));
         double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        ma_future_fap_value_ = (CUNYAIModule::IsFightingUnit(unit) * retreating_or_undetected) ? current_stock_value_ : static_cast<int>(round(weight * ma_future_fap_value_ + (1 - weight) * future_fap_value_));
+        ma_future_fap_value_ = retreating_or_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_);
     }
 }
 
@@ -610,13 +612,14 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ = 0;
     }
 
+
     stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
     stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
-    future_fap_value_ = CUNYAIModule::IsFightingUnit(unittype) * stock_value_;
-    ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unittype) * stock_value_;
+    future_fap_value_ = stock_value_;
+    ma_future_fap_value_ = stock_value_;
 };
 
 // We must be able to create Stored_Unit objects as well.
@@ -651,10 +654,11 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
         modified_gas_cost_ = shell.modified_gas_cost_;
         modified_supply_ = shell.modified_supply_;
         stock_value_ = shell.stock_value_; //prevents retyping.
-        ma_future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
-        future_fap_value_ = CUNYAIModule::IsFightingUnit(unit) * shell.stock_value_;
+        ma_future_fap_value_ = shell.stock_value_;
+        future_fap_value_ = shell.stock_value_;
 
     current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
+
 }
 
 
@@ -870,8 +874,10 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
+
     double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
-    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health); // if you are retreating, we assume you preserve your health.
+    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health); 
+
     fap_unit.data->updated_fap_this_frame_ = true;
 }
 
@@ -912,6 +918,20 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
         Position pos = positionBuildFap(friendly);
         if(friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+    }
+
+    Position pos = positionBuildFap(friendly);
+    if (friendly) {
+        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPPosition(Position{ 240,240 }, ri));
+        for (auto i = 0; i <= 5; i++) {
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPPosition(Position{ 240,240 }, ri));
+        }
+    }
+    else {
+        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPPosition(Position{ 0, 0 }, ri));
+        for (auto i = 0; i <= 5; i++) {
+            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPPosition(Position{ 0, 0 }, ri));
+        }
     }
 }
 
