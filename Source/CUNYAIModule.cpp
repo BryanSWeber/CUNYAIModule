@@ -208,7 +208,7 @@ void CUNYAIModule::onFrame()
     //friendly_player_model.units_.drawAllHitPoints(inventory);
 
     friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
-    friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
+    //friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
 
     // Update FAPS with units.
     MCfap.clear();
@@ -554,9 +554,9 @@ void CUNYAIModule::onFrame()
             CUNYAIModule::DiagnosticPhase(j.second,current_map_inventory.screen_position_);
         }
 
-        Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
+        //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
         Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
-        Diagnostic_Watch_Expos();
+        //Diagnostic_Watch_Expos();
     }// close analysis mode
 
 

@@ -60,6 +60,7 @@ GeneticHistory::GeneticHistory(string file) {
         //"drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
         "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
        "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
+       "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool", //supermacro cheese
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
     };
@@ -437,7 +438,7 @@ GeneticHistory::GeneticHistory(string file) {
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
 
-        build_order_ = "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool"; //SuperMacro Cheese
+        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //Standard Opener
 
     }
 }
