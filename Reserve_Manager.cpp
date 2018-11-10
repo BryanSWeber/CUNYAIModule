@@ -127,7 +127,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             ++res_it;
         }
         else {
-            CUNYAIModule::DiagnosticText( "No evidience a worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str() );
+            CUNYAIModule::DiagnosticText( "No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str() );
             auto remove_me = res_it;
             res_it++;
             removeReserveSystem( remove_me->first, remove_me->second );  // contains an erase.

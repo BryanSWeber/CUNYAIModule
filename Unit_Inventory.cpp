@@ -152,7 +152,6 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
-        miner.phase_ = "None";
         miner.updateStoredUnit(unit);
     }
     else {
@@ -741,7 +740,7 @@ bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
 // Warning- depends on unit being updated.
 bool Stored_Unit::isAssignedBuilding(Resource_Inventory  &ri) {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph ) && time_since_last_command_ < 30 * 24 && !isAssignedResource(ri);
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph) && time_since_last_command_ < 30 * 24 && !isAssignedResource(ri);
 
     return building_sent;
 }

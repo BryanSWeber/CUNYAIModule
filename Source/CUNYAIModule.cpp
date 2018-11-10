@@ -487,28 +487,28 @@ void CUNYAIModule::onFrame()
         }
 
 
-        for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
-                if (current_map_inventory.map_veins_[i][j] > 175 ) {
-                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-                    }
-                }
-                else if (current_map_inventory.map_veins_[i][j] < 8 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-                    if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-                    }
-                }
-                else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-                    }
-                }
-            }
-        } // Pretty to look at!
+        //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
+        //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
+        //        if (current_map_inventory.map_veins_[i][j] > 175 ) {
+        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+        //            }
+        //        }
+        //        else if (current_map_inventory.map_veins_[i][j] < 8 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+        //            }
+        //        }
+        //        else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
 
 
         //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
@@ -868,6 +868,25 @@ void CUNYAIModule::onFrame()
                 old_mineral_patch = miner.locked_mine_;
             }
 
+            //Workers at their end build location should build there!
+            if (miner.phase_ == "Expoing" && t_game % 20 == 0) {
+                if (Broodwar->isExplored(current_map_inventory.next_expo_) && u->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
+                    CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(u)->second;
+                    morphing_unit.phase_ = "Expoing";
+                    morphing_unit.updateStoredUnit(u);
+                }
+                else if (!Broodwar->isExplored(current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
+                    u->move(Position(current_map_inventory.next_expo_));
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(u)->second;
+                    morphing_unit.phase_ = "Expoing";
+                    morphing_unit.updateStoredUnit(u);
+                    CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Still moving there to check it out.", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
+                }
+                continue;
+            }
+
+
             if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
 
                 // Each mineral-related subtask does the following:
@@ -891,15 +910,6 @@ void CUNYAIModule::onFrame()
                         //continue;
                     }
                 } // Close Build loop
-
-                //Workers at their end build location should build there!
-                if (miner.isAssignedBuilding(land_inventory) && TilePosition(miner.pos_) == current_map_inventory.next_expo_ && my_reservation.reservation_map_.at(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()))){
-                    clearBuildingObstuctions(friendly_player_model.units_, current_map_inventory, miner.bwapi_unit_);
-                    if (miner.bwapi_unit_->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_)) {
-                        my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
-                    }
-                    continue;
-                }
 
                 //MINERAL-RELATED TASKS
                 //Workers need to clear empty patches.
