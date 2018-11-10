@@ -152,6 +152,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.phase_ = "None";
         miner.updateStoredUnit(unit);
     }
     else {
