@@ -100,12 +100,12 @@ void Unit_Inventory::purgeUnseenUnits()
     }
 }
 
-void Unit_Inventory::purgeAllPhases()
-{
-    for (auto &u = this->unit_inventory_.begin(); u != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
-        u->second.phase_ = "None";
-    }
-}
+//void Unit_Inventory::purgeAllPhases()
+//{
+//    for (auto &u = this->unit_inventory_.begin(); u != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+//        u->second.phase_ = "None";
+//    }
+//}
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
 void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)

@@ -136,10 +136,12 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
         attachToNearestMine(available_fields, current_map_inventory, miner);
+        miner.phase_ = "Mining";
     } 
     
     if (!miner.isAssignedResource(available_fields) && !long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
         attachToNearestMine(long_dist_fields, current_map_inventory, miner);
+        miner.phase_ = "Distance Mining";
     }
 
     miner.updateStoredUnit(unit);

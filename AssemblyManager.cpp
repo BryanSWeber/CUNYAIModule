@@ -141,6 +141,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                morphing_unit.phase_ = "Building";
                 morphing_unit.updateStoredUnit(unit);
                 return true;
             }

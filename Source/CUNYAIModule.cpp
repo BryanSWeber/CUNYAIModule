@@ -1330,7 +1330,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
     if (unit->getPlayer() == Broodwar->self()) {
         if (unit->getType().isWorker()) {
-            friendly_player_model.units_.purgeWorkerRelations(unit, land_inventory, current_map_inventory, my_reservation);
+            friendly_player_model.units_.purgeWorkerRelationsNoStop(unit, land_inventory, current_map_inventory, my_reservation);
         }
 
         if (!buildorder.ever_clear_) {
