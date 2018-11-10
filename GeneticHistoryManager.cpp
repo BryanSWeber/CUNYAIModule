@@ -437,7 +437,7 @@ GeneticHistory::GeneticHistory(string file) {
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
 
-        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //zerg_9pool to hydra one base.
+        build_order_ = "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool"; //SuperMacro Cheese
 
     }
 }
