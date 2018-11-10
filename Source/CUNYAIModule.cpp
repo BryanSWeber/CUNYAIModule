@@ -556,6 +556,7 @@ void CUNYAIModule::onFrame()
 
         Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
         Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
+        Diagnostic_Watch_Expos();
     }// close analysis mode
 
 
@@ -869,7 +870,7 @@ void CUNYAIModule::onFrame()
             }
 
             //Workers at their end build location should build there!
-            if (miner.phase_ == "Expoing" && t_game % 20 == 0) {
+            if (miner.phase_ == "Expoing" && t_game % 14 == 0) {
                 if (Broodwar->isExplored(current_map_inventory.next_expo_) && u->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
                     Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(u)->second;

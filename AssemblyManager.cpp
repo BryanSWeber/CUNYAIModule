@@ -192,6 +192,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
                     morphing_unit.phase_ = "Building";
                     morphing_unit.updateStoredUnit(unit);
+
                     return true;
                 }
                 else if (buildorder.checkBuilding_Desired(building)) {
@@ -212,6 +213,7 @@ bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
         if (unit->upgrade(ups)) {
             buildorder.updateRemainingBuildOrder(ups);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            morphing_unit.phase_ = "Upgrading";
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
@@ -227,6 +229,7 @@ bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, cons
         if (unit->research(tech)) {
             buildorder.updateRemainingBuildOrder(tech);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            morphing_unit.phase_ = "Researching";
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());
             return true;
@@ -243,6 +246,7 @@ bool CUNYAIModule::Check_N_Grow(const UnitType &unittype, const Unit &larva, con
     {
         if (larva->morph(unittype)) {
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(larva)->second;
+            morphing_unit.phase_ = "Morphing";
             morphing_unit.updateStoredUnit(larva);
             return true;
         }

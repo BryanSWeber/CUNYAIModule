@@ -158,6 +158,7 @@ public:
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Tiles(const Position & screen_pos, Color col);
+      static void Diagnostic_Watch_Expos();
       static void Diagnostic_Destination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
       static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
       static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);

@@ -188,6 +188,17 @@ void CUNYAIModule::Diagnostic_Tiles(const Position &screen_pos, Color col = Colo
 }
 
 // This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Watch_Expos() {
+    if constexpr (DRAWING_MODE) {
+        if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
+            Position centered = Position(TilePosition(CUNYAIModule::current_map_inventory.next_expo_.x - 640 / (4 * 16) + 2 , CUNYAIModule::current_map_inventory.next_expo_.y - 480 / (4 * 16) + 1 ));
+            Broodwar->setScreenPosition(centered);
+        }
+    }
+}
+
+
+// This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
     if constexpr (DRAWING_MODE) {
         for (auto u : ui.unit_inventory_) {
