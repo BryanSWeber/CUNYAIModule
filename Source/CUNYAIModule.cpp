@@ -495,7 +495,7 @@ void CUNYAIModule::onFrame()
                         Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
                     }
                 }
-                else if (current_map_inventory.map_veins_[i][j] < 20 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+                else if (current_map_inventory.map_veins_[i][j] < 8 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
                     if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
                         //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
                         Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
@@ -554,7 +554,8 @@ void CUNYAIModule::onFrame()
             CUNYAIModule::DiagnosticPhase(j.second,current_map_inventory.screen_position_);
         }
 
-
+        Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
+        Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
     }// close analysis mode
 
 
@@ -701,8 +702,6 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility;
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(u)->second;
-            changing_unit.phase_ = "None";
 
             Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 1200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
@@ -894,10 +893,10 @@ void CUNYAIModule::onFrame()
                 } // Close Build loop
 
                 //Workers at their end build location should build there!
-                if (miner.isAssignedBuilding(land_inventory) && TilePosition(miner.pos_) == current_map_inventory.next_expo_ && my_reservation.reservation_map_.at(miner.bwapi_unit_->getBuildType())) {
+                if (miner.isAssignedBuilding(land_inventory) && TilePosition(miner.pos_) == current_map_inventory.next_expo_ && my_reservation.reservation_map_.at(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()))){
                     clearBuildingObstuctions(friendly_player_model.units_, current_map_inventory, miner.bwapi_unit_);
                     if (miner.bwapi_unit_->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_)) {
-                        my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+                        my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
                     }
                     continue;
                 }
@@ -1222,7 +1221,7 @@ void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone && unit->getPlayer() == Broodwar->self()) {
-        my_reservation.removeReserveSystem(unit->getType());
+        my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
     }
 
     if (unit->getType().isWorker()) {
@@ -1368,7 +1367,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
     }
 
     if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        my_reservation.removeReserveSystem( unit->getType() );
+        my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType() );
     }
 
 }

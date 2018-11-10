@@ -14,11 +14,11 @@ struct Reservation {
     int gas_reserve_;
     int building_timer_;
     int last_builder_sent_;
-    map<UnitType, TilePosition> reservation_map_;
+    map<TilePosition, UnitType> reservation_map_;
 
     // Updates mineral, gas, and time reserves for a particular unit. 
-    bool Reservation::addReserveSystem( UnitType type , TilePosition tile);
-    void Reservation::removeReserveSystem( UnitType type );
+    bool Reservation::addReserveSystem( TilePosition tile, UnitType type );
+    void Reservation::removeReserveSystem( TilePosition tile, UnitType type );
 
     // Decrements the clock. Simple but works.
     void Reservation::decrementReserveTimer();

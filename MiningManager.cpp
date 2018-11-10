@@ -7,8 +7,7 @@ using namespace std;
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Inventory &inv ) {
-    if ( my_reservation.checkAffordablePurchase( UnitTypes::Zerg_Hatchery ) && 
-        (buildorder.checkBuilding_Desired( UnitTypes::Zerg_Hatchery ) || (extra_critera && buildorder.isEmptyBuildOrder()) ) ) {
+    if (checkDesirable(unit, UnitTypes::Zerg_Hatchery,extra_critera) ) {
 
         int dist = 99999999;
         inv.getExpoPositions(); // update the possible expo positions.
@@ -45,15 +44,17 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Invent
             //clear all obstructions, if any.
             clearBuildingObstuctions(friendly_player_model.units_, inv, unit);
 
-            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
+            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                morphing_unit.phase_ = "Expoing";
                 morphing_unit.updateStoredUnit(unit);
                 return true;
             }
-            else if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(UnitTypes::Zerg_Hatchery, inv.next_expo_)) {
+            else if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 unit->move( Position( inv.next_expo_ ) );
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                morphing_unit.phase_ = "Expoing";
                 morphing_unit.updateStoredUnit(unit);
                 CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
                 return true;
@@ -150,7 +151,8 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
         miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding(ri)) {
-            my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+            my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
+            miner.phase_ = "Mining";
         }
     }
     miner.updateStoredUnit(miner.bwapi_unit_);
@@ -159,13 +161,15 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
 void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner) {
     miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second, land_inventory); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
     if (miner.bwapi_unit_ && miner.isAssignedBuilding(land_inventory)) {
-        my_reservation.removeReserveSystem(miner.bwapi_unit_->getBuildType());
+        my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
+        miner.phase_ = "Mining";
     }
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
 void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, Stored_Unit &miner) {
     miner.startMine(ri.resource_inventory_.find(mine)->second, land_inventory); // Let's not make mistakes by attaching it to "availabile Fields""
+    miner.phase_ = "Mining";
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
@@ -185,6 +189,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 
     if (!available_fields.resource_inventory_.empty()) {
         attachToNearestMine(available_fields, current_map_inventory, miner);
+        miner.phase_ = "Clearing";
     }
     miner.updateStoredUnit(unit);
 }

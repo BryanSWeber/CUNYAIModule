@@ -49,13 +49,13 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
     UnitCommandType u_type = unit->getLastCommand().getType();
 
-    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
+    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 30 * 24) ||
                          (u_type == UnitCommandTypes::Morph && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
-                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
+                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 30 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 15 * 24) || // unit is done upgrading.
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
@@ -172,6 +172,28 @@ void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
     if constexpr ( DRAWING_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
+        }
+    }
+}
+
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
+    if constexpr (DRAWING_MODE) {
+        for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x+=2) {
+            for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y+=2) {
+                Broodwar->drawTextMap(Position(TilePosition(x, y)), "(%d,%d)", x, y);
+            }
+        }
+    }
+}
+
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
+    if constexpr (DRAWING_MODE) {
+        for (auto u : ui.unit_inventory_) {
+            Position fin = u.second.pos_;
+            Position start = u.second.bwapi_unit_->getTargetPosition();
+            Diagnostic_Line(start, fin, screen_pos, col);
         }
     }
 }
@@ -571,9 +593,8 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 {
     int count = 0;
-    map<UnitType, TilePosition>::const_iterator it = res.reservation_map_.find( type );
-    if ( it != res.reservation_map_.end() ) {
-        count++;
+    for (auto it : res.reservation_map_ ) {
+        if( it.second == type ) count++;
     }
 
     return count;

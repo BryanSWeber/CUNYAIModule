@@ -116,15 +116,17 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
         Stored_Unit& miner = found_object->second;
 
         miner.stopMine(ri);
-
-        if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-            res.removeReserveSystem(unit->getBuildType());
-        }
-        if (command.getTargetPosition() == Position(inv.next_expo_)) {
-            res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+        if (unit->getOrderTargetPosition() != Positions::Origin) {
+            if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
+            }
+            if (command.getTargetTilePosition() == inv.next_expo_) {
+                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery);
+            }
         }
         unit->stop();
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.phase_ = "None";
         miner.updateStoredUnit(unit);
     }
     else {
@@ -141,14 +143,16 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         Stored_Unit& miner = found_object->second;
 
         miner.stopMine(ri);
-
-        if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-            res.removeReserveSystem(unit->getBuildType());
-        }
-        if (command.getTargetPosition() == Position(inv.next_expo_)) {
-            res.removeReserveSystem(UnitTypes::Zerg_Hatchery);
+        if (unit->getOrderTargetPosition() != Positions::Origin) {
+            if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
+            }
+            if (command.getTargetTilePosition() == inv.next_expo_ && inv.next_expo_ != TilePositions::Origin) {
+                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery);
+            }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
+        miner.phase_ = "None";
         miner.updateStoredUnit(unit);
     }
     else {

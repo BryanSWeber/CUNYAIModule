@@ -15,7 +15,7 @@ extern FAP::FastAPproximation<Stored_Unit*> buildfap;
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
 {
-    if (my_reservation.checkAffordablePurchase(building) && (buildorder.checkBuilding_Desired(building) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
+    if (checkDesirable(unit, building, extra_critera) ) {
         Position unit_pos = unit->getPosition();
         bool unit_can_build_intended_target = unit->canBuild(building);
         bool unit_can_morph_intended_target = unit->canMorph(building);
@@ -28,6 +28,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 if (unit->morph(building)) {
                     buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
                     Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                    morphing_unit.phase_ = "Building";
                     morphing_unit.updateStoredUnit(unit);
                     return true;
                 }
@@ -35,8 +36,11 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 24);
-            if (my_reservation.addReserveSystem(building, buildPosition) && hatch_nearby && unit->build(building, buildPosition) ) {
-                buildorder.announceBuildingAttempt(building);
+            if (my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
+                buildorder.announceBuildingAttempt(building); 
+                Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                morphing_unit.phase_ = "Building";
+                morphing_unit.updateStoredUnit(unit);
                 return true;
             }
             else if (buildorder.checkBuilding_Desired(building)) {
@@ -134,7 +138,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             }
 
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
-            if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(building, buildPosition)) {
+            if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
                 morphing_unit.updateStoredUnit(unit);
@@ -153,8 +157,11 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-                if ( BWAPI::Broodwar->isVisible(buildPosition) && my_reservation.addReserveSystem(building, buildPosition) && unit->build(building, buildPosition)) {
+                if ( BWAPI::Broodwar->isVisible(buildPosition) && my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                    morphing_unit.phase_ = "Building";
+                    morphing_unit.updateStoredUnit(unit);
                     return true;
                 } //extractors must have buildings nearby or we shouldn't build them.
                 //else if ( !BWAPI::Broodwar->isVisible(buildPosition) && unit->move(Position(buildPosition)) && my_reservation.addReserveSystem(building, buildPosition)) {
@@ -179,8 +186,11 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
                     Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
 
-                if ( hatch_nearby && my_reservation.addReserveSystem(building, buildPosition) && unit->build(building, buildPosition)) {
+                if ( hatch_nearby && my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
                     buildorder.announceBuildingAttempt(building);
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
+                    morphing_unit.phase_ = "Building";
+                    morphing_unit.updateStoredUnit(unit);
                     return true;
                 }
                 else if (buildorder.checkBuilding_Desired(building)) {

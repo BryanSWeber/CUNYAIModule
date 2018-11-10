@@ -18,8 +18,8 @@ Reservation::Reservation() {
     last_builder_sent_ = 0;
 }
 
-bool Reservation::addReserveSystem( UnitType type, TilePosition pos ) {
-    bool safe = reservation_map_.insert({ type, pos }).second;
+bool Reservation::addReserveSystem( TilePosition pos, UnitType type) {
+    bool safe = reservation_map_.insert({ pos, type }).second;
     if ( safe ) {
         min_reserve_ += type.mineralPrice();
         gas_reserve_ += type.gasPrice();
@@ -30,15 +30,15 @@ bool Reservation::addReserveSystem( UnitType type, TilePosition pos ) {
     return safe;
 }
 
-void Reservation::removeReserveSystem(UnitType type) {
-    map<UnitType, TilePosition>::iterator it = reservation_map_.find(type);
+void Reservation::removeReserveSystem(TilePosition pos, UnitType type) {
+    map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end()) {
-        reservation_map_.erase(type);
-        min_reserve_ -= type.mineralPrice();
-        gas_reserve_ -= type.gasPrice();
+        reservation_map_.erase(pos);
+        min_reserve_ -= it->second.mineralPrice();
+        gas_reserve_ -= it->second.gasPrice();
     }
-    else if (type != UnitTypes::None ) {
-        CUNYAIModule::DiagnosticText("We're trying to remove %s from the reservation queue but can't find it.", type.c_str());
+    else {
+        CUNYAIModule::DiagnosticText("We're trying to remove %s at tilepostion (%d, %d) from the reservation queue but it's not stored here.", type.c_str(), pos.x, pos.y);
     }
 };
 
@@ -71,14 +71,28 @@ bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
 
 bool Reservation::checkAffordablePurchase( const UnitType type ) { 
     bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
-    bool open_reservation = reservation_map_.empty() || reservation_map_.find(type)==reservation_map_.end();
+    bool already_making_one = false;
+    for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
+        if (it->second == type) {
+            already_making_one = true;
+            break;
+        }
+    }
+    bool open_reservation = reservation_map_.empty() || !already_making_one;
     return affordable && open_reservation;
 }
 
 int Reservation::countTimesWeCanAffordPurchase(const UnitType type) {
     bool affordable = true;
     int i = 0;
-    bool open_reservation = reservation_map_.empty() || reservation_map_.find(type) == reservation_map_.end();
+    bool already_making_one = false;
+    for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
+        if (it->second == type) {
+            already_making_one = true;
+            break;
+        }
+    }
+    bool open_reservation = reservation_map_.empty() || !already_making_one;
 
     while (affordable) {
         affordable = Broodwar->self()->minerals() - i * type.mineralPrice() >= min_reserve_ && Broodwar->self()->gas() - i * type.gasPrice() >= gas_reserve_;
@@ -104,7 +118,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
         bool keep = false;
 
         for ( auto unit_it = ui.unit_inventory_.begin(); unit_it != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); unit_it++ ) {
-            if ( res_it->second == unit_it->second.bwapi_unit_->getLastCommand().getTargetTilePosition() ) {
+            if ( res_it->first == unit_it->second.bwapi_unit_->getLastCommand().getTargetTilePosition() || res_it->second == unit_it->second.bwapi_unit_->getBuildType() ) {
                 keep = true;
             }
         } // check if we have a unit building it.
@@ -113,16 +127,16 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             ++res_it;
         }
         else {
-            CUNYAIModule::DiagnosticText( "No evidience a worker is building the reserved %s. Freeing up the funds.", res_it->first.c_str() );
-            UnitType remove_me = res_it->first;
+            CUNYAIModule::DiagnosticText( "No evidience a worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str() );
+            auto remove_me = res_it;
             res_it++;
-            removeReserveSystem( remove_me );  // contains an erase.
+            removeReserveSystem( remove_me->first, remove_me->second );  // contains an erase.
         }
     }
 
     for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); res_it++ ) {
-        min_reserve_ += res_it->first.mineralPrice();
-        gas_reserve_ += res_it->first.gasPrice();
+        min_reserve_ += res_it->second.mineralPrice();
+        gas_reserve_ += res_it->second.gasPrice();
     }
 
     if ( !reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
