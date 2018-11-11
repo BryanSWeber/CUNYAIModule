@@ -57,7 +57,7 @@ struct Stored_Unit {
     int cd_remaining_;
     bool stimmed_;
     bool burrowed_;
-    bool detected_;
+    bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
 
     string phase_ = "None";

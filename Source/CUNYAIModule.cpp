@@ -718,15 +718,18 @@ void CUNYAIModule::onFrame()
                 int search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), static_cast<int>CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
 
-                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                //Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
+                Unit_Inventory enemy_loc = (/*enemy_loc_around_target +*/ enemy_loc_around_self);
 
-                Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                //Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
+                Unit_Inventory friend_loc = (/*friend_loc_around_target + */friend_loc_around_me);
+
+                friend_loc.updateUnitInventorySummary();
+                enemy_loc.updateUnitInventorySummary();
 
                 //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
                 //int helpful_u = useful_stocks[0];
