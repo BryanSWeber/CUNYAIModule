@@ -276,7 +276,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
         
-        if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_);
+        if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_);
         else ma_future_fap_value_ = future_fap_value_; // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
     }
 }
