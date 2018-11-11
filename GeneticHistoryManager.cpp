@@ -202,30 +202,31 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
+                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
 
 
         if (std::get<11>(game_data[j]) == e_name) {
             if (std::get<7>(game_data[j]) == 1) { 
+                game_data_partial_match.push_back(game_data[j]);
+                win_count[0]++;
+            }
+            else lose_count[0]++;
+        }
+
+        if (std::get<6>(game_data[j]) == e_race) {
+            if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[1]++;
             }
             else lose_count[1]++;
         }
 
-        if (std::get<6>(game_data[j]) == e_race) {
-            if (std::get<7>(game_data[j]) == 1) {
-                game_data_partial_match.push_back(game_data[j]);
-                win_count[2]++;
-            }
-            else lose_count[2]++;
-        }
-
         if (std::get<12>(game_data[j]) == map_name) {
             if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
-                win_count[3]++;
+               win_count[2]++;
             }
-            else lose_count[3]++;
+            else lose_count[2]++;
         }
 
     }
@@ -238,7 +239,8 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     // start from most recent and count our way back from there.
-    for (auto game_iter = game_data_partial_match.end(); game_iter != game_data_partial_match.begin(); --game_iter) {
+    for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
 
         bool conditions_for_inclusion = true;
         int counter = 0;
@@ -250,28 +252,28 @@ GeneticHistory::GeneticHistory(string file) {
 
         // an inelegant statement follows. How do I make this into a switch?
 
-        if (win_count[1] > 0 && win_count[2] > 0 && win_count[3] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
+        if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
             conditions_for_inclusion = name_matches && race_matches && map_matches;
         }
-        else if (win_count[1] > 0 && win_count[2] > 0 && win_count[3] == 0) {
+        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (win_count[1] > 0 && win_count[2] == 0 && win_count[3] > 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] > 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (win_count[1] == 0 && win_count[2] > 0 && win_count[3] > 0) {
+        else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] > 0) {
             conditions_for_inclusion = !name_matches && race_matches && map_matches;
         }
-        else if (win_count[1] > 0 && win_count[2] > 0 && win_count[3] == 0) {
+        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (win_count[1] > 0 && win_count[2] == 0 && win_count[3] == 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (win_count[1] == 0 && win_count[2] > 0 && win_count[3] == 0) {
+        else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] == 0) {
             conditions_for_inclusion = !name_matches && race_matches && !map_matches;
         }
-        else if (win_count[1] == 0 && win_count[2] == 0 && win_count[3] > 0) {
+        else if (win_count[0] == 0 && win_count[1] == 0 &&win_count[2] > 0) {
             conditions_for_inclusion = !name_matches && !race_matches && map_matches;
         }
 
@@ -287,6 +289,7 @@ GeneticHistory::GeneticHistory(string file) {
             break;
         }
     } //or widest hunt possible.
+
 
     if (game_data_well_matched.size() > 0) { // redefine final output.
 
@@ -367,7 +370,7 @@ GeneticHistory::GeneticHistory(string file) {
         }
     }
 
-    prob_win_given_opponent = fmax(win_count[1] / static_cast<double>(win_count[1] + lose_count[1]), 0.0);
+    prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
     loss_rate_ = 1 - prob_win_given_opponent;
 
 
