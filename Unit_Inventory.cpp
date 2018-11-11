@@ -271,7 +271,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
-        bool retreating_undetected= ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
+        bool retreating_undetected= unit->canAttack() && ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
         double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
