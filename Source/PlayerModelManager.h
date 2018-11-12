@@ -46,5 +46,7 @@ struct Player_Model {
 	void readPlayerLog(Player_Model & enemy_player_model);
 	void writePlayerLog(Player_Model & enemy_player_model, bool gameComplete);
 	int playerData[29];
+	int oldData[29];
+	int oldIntel[29];
 };
 

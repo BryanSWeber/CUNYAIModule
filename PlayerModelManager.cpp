@@ -6,6 +6,7 @@
 #include "Source\CobbDouglas.h"
 #include <fstream>
 #include <iomanip>
+#include <limits>
 
 using namespace std;
 using namespace BWAPI;
@@ -13,6 +14,8 @@ using namespace BWAPI;
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
     bwapi_player_ = other_player;
+    enemy_race_ = bwapi_player_->getRace();
+
     //Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();
@@ -97,15 +100,11 @@ void Player_Model::evaluateWorkerCount() {
 		estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
 	}
 	int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
-<<<<<<< HEAD
 
-=======
->>>>>>> Student_Work
 
 }
 
-<<<<<<< HEAD
-=======
+
 void Player_Model::playerStock(Player_Model & enemy_player_model)
 {
 	enemy_player_model.units_.inventoryCopy[25] = enemy_player_model.spending_model_.worker_stock;
@@ -113,9 +112,44 @@ void Player_Model::playerStock(Player_Model & enemy_player_model)
 	enemy_player_model.units_.inventoryCopy[27] = enemy_player_model.spending_model_.tech_stock;
 }
 
->>>>>>> Student_Work
+
 void Player_Model::readPlayerLog(Player_Model & enemy_player_model)
 {
+	string data;
+	int index = 0;
+	int iteration = 0;
+	ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+
+	if (inFile)
+	{
+		Broodwar->sendText("Found old Data!\n");
+		int numoflines = 0;
+		while (getline(inFile, data))
+			++numoflines;
+
+		inFile.clear();
+		inFile.seekg(std::ios::beg);
+		for (int i = 0; i < numoflines - 1; ++i) {
+			inFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		}
+
+		while (inFile >> data)
+		{
+			if (data == "/")
+				inFile >> data;
+
+			stringstream conversion(data);
+			if (iteration % 2 == 0)
+				conversion >> oldData[index];
+			else
+			{
+				conversion >> oldIntel[index];
+				index++;
+			}
+			iteration++;
+		}
+		inFile.close();
+	}
 }
 void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
 
@@ -131,27 +165,33 @@ void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameCo
 			enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
 			enemy_player_model.units_.intel[i] = Broodwar->elapsedTime();
 		}
-		else if (i == 22) // Calculate time each resource depot was sighted
+		else if (i < 25) // Calculate time each resource depot was sighted
 		{
-			if(enemy_player_model.playerData[i] == -1)
-				switch (enemy_player_model.units_.inventoryCopy[22])
+			//if (enemy_player_model.playerData[i] == -1)
+			switch (enemy_player_model.units_.inventoryCopy[22])
 				{
 				case 0: break;
-				case 1: enemy_player_model.playerData[22] = enemy_player_model.units_.inventoryCopy[22]; 
-					enemy_player_model.units_.intel[22] = Broodwar->elapsedTime(); break;
-				case 2: enemy_player_model.playerData[23] = enemy_player_model.units_.inventoryCopy[22];
-					enemy_player_model.units_.intel[23] = Broodwar->elapsedTime(); break;
-				case 3: enemy_player_model.playerData[24] = enemy_player_model.units_.inventoryCopy[22];
-					enemy_player_model.units_.intel[24] = Broodwar->elapsedTime(); break;
+				case 1: enemy_player_model.playerData[22] == -1 ? (enemy_player_model.playerData[22] = enemy_player_model.units_.inventoryCopy[22],
+					enemy_player_model.units_.intel[22] = Broodwar->elapsedTime()) : NULL; break;
+				case 2: enemy_player_model.playerData[23] == -1 ? (enemy_player_model.playerData[23] = enemy_player_model.units_.inventoryCopy[22],
+					enemy_player_model.units_.intel[23] = Broodwar->elapsedTime()) : NULL; break;
+				case 3: enemy_player_model.playerData[24] == -1 ? (enemy_player_model.playerData[24] = enemy_player_model.units_.inventoryCopy[22],
+					enemy_player_model.units_.intel[24] = Broodwar->elapsedTime()) : NULL; break;
 				}
 		}
-		else if (i > 24 && i < 28) // Calculate the max individual stock values
+		else if (i < 28) // Calculate the max individual stock values
 		{
 			if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.playerData[i])
+			{
 				enemy_player_model.playerData[i] = enemy_player_model.units_.inventoryCopy[i];
+				enemy_player_model.units_.intel[i] = Broodwar->elapsedTime();
+			}
 		}
-		else if(i == 28)// Calculate the sum of the stocks
+		else if (i == 28)// Calculate the sum of the stocks
+		{
 			enemy_player_model.playerData[i] = (enemy_player_model.playerData[i - 1] + enemy_player_model.playerData[i - 2] + enemy_player_model.playerData[i - 3]);
+			enemy_player_model.units_.intel[i] = Broodwar->elapsedTime();
+		}
 			
 			//Write to file once at the end of the game
 			if (gameComplete)
@@ -171,7 +211,7 @@ void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameCo
 				for (int i = 0; i < 29; i++)
 				{
 					stringstream ss;
-					ss << enemy_player_model.playerData[i] << '\\' << enemy_player_model.units_.intel[i];
+					ss << enemy_player_model.playerData[i] << " / " << enemy_player_model.units_.intel[i];
 					earliestDate << left << setw(25) << ss.str();
 				}
 				earliestDate << endl;

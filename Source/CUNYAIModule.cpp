@@ -180,9 +180,9 @@ void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
-    if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
-        return;
-	
+	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
+		return;
+		
 	//if (foundDetector == false) {
 	enemy_player_model.playerStock(enemy_player_model);
 	enemy_player_model.writePlayerLog(enemy_player_model, false);
@@ -1129,7 +1129,7 @@ void CUNYAIModule::onFrame()
     //    n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
     //    n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
     //}
-
+	Broodwar->sendText("%i %i", enemy_player_model.oldData[1], enemy_player_model.oldIntel[1]);
 } // closure: Onframe
 
 void CUNYAIModule::onSendText( std::string text )
