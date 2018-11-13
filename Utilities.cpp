@@ -1481,9 +1481,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         //    cd_frames = 15;
         //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-        //if (u_type == UnitTypes::Zerg_Devourer) {
-        //    cd_frames = 5;
-        //}
+        if (u_type == UnitTypes::Zerg_Devourer) {
+            cd_frames = 9;
+        }
     }
     //else 
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
