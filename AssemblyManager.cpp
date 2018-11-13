@@ -686,6 +686,26 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
         }
     }
 
+
+    //Heuristics for building. They are pretty simple combat results from a simulation.
+    bool it_needs_to_shoot_up = false;
+    bool it_needs_to_fly = false;
+
+    // determine undesirables in simulation.
+    for (auto &potential_type : combat_types) {
+        if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
+        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
+    }
+    // remove undesireables.
+    auto potential_type = combat_types.begin();
+    while (potential_type != combat_types.end()) {
+        if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
+        else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
+        else potential_type++;
+    }
+
+    if (combat_types.empty()) return false;
+
     // Find the best of them.
     build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
 
@@ -705,25 +725,6 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
     Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
-
-    bool it_needs_to_shoot_up = false;
-    bool it_needs_to_fly = false;
-
-    // determine undesirables in simulation.
-    for (auto &potential_type : combat_types) {
-        if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
-        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
-    }
-    // remove undesireables.
-    auto potential_type = combat_types.begin();
-    while (potential_type != combat_types.end()) {
-        if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
-        else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
-        else potential_type++;
-    }
-
-    if (combat_types.empty()) return UnitTypes::None;
-    if (combat_types.size() == 1) return combat_types.begin()->first;
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
