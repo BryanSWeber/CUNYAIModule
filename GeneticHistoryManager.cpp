@@ -270,12 +270,6 @@ GeneticHistory::GeneticHistory(string file) {
         else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] == 0) {
-            conditions_for_inclusion = !name_matches && race_matches && !map_matches;
-        }
-        else if (win_count[0] == 0 && win_count[1] == 0 &&win_count[2] > 0) {
-            conditions_for_inclusion = !name_matches && !race_matches && map_matches;
-        }
 
         if (conditions_for_inclusion && game_won) {
             game_data_well_matched.push_back(*game_iter);
