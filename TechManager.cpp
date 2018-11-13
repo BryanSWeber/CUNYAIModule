@@ -10,7 +10,7 @@ using namespace BWAPI;
 bool CUNYAIModule::Tech_Avail() {
 
     for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
-        if (Broodwar->canResearch(tech.first))  return true; // If we can make it and don't have it.
+        if ( CUNYAIModule::Count_Units(tech.first.requiredUnit()) )  return true; // If we can make it and don't have it.
     }
 
     for (auto upgrade : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
@@ -18,7 +18,7 @@ bool CUNYAIModule::Tech_Avail() {
         bool hydra_upgrade = upgrade.first == UpgradeTypes::Zerg_Missile_Attacks || upgrade.first == UpgradeTypes::Grooved_Spines || upgrade.first == UpgradeTypes::Muscular_Augments;
         bool ling_upgrade = upgrade.first == UpgradeTypes::Zerg_Melee_Attacks || upgrade.first == UpgradeTypes::Metabolic_Boost;
 
-        if ((muta_upgrade || hydra_upgrade || ling_upgrade) && Broodwar->canUpgrade(upgrade.first)) {
+        if ((muta_upgrade || hydra_upgrade || ling_upgrade) && CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) ) {
 
             bool upgrade_conditionals = (hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
                 (ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
@@ -28,11 +28,15 @@ bool CUNYAIModule::Tech_Avail() {
                 return true;
             }
         }
-        else if (Broodwar->canUpgrade(upgrade.first)) return true; // If we can make it and don't have it.
+        else if (CUNYAIModule::Count_Units(upgrade.first.whatsRequired())) return true; // If we can make it and don't have it.
     }
 
     for (auto building : CUNYAIModule::friendly_player_model.building_cartridge_) {
-        if(Broodwar->canMake(building.first) && Count_Units(building.first) == 0) return true; // If we can make it and don't have it.
+        bool pass_guard = true;
+        for (auto req : building.first.requiredUnits()) {
+            if(Count_Units(req.first) == 0 || !pass_guard) pass_guard = false;
+        }
+        if( pass_guard && Count_Units(building.first) == 0) return true; // If we can make it and don't have it.
     }
 
     return false;
