@@ -113,27 +113,27 @@ void Player_Model::playerStock(Player_Model & enemy_player_model)
 }
 
 
-void Player_Model::readPlayerLog(Player_Model & enemy_player_model)
+void Player_Model::readPlayerLog(Player_Model & enemy_player_model) // Function that reads in previous game's data
 {
 	string data;
 	int index = 0;
 	int iteration = 0;
 	ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
 
-	if (inFile)
+	if (inFile) // If file exists for current enemy, then extract previous game's data
 	{
 		Broodwar->sendText("Found old Data!\n");
 		int numoflines = 0;
-		while (getline(inFile, data))
+		while (getline(inFile, data)) // This loop calculates the number of lines the file has
 			++numoflines;
 
 		inFile.clear();
-		inFile.seekg(std::ios::beg);
+		inFile.seekg(std::ios::beg); // Skip to the last line to read from it (The latest game)
 		for (int i = 0; i < numoflines - 1; ++i) {
 			inFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		}
 
-		while (inFile >> data)
+		while (inFile >> data) // Read in the data
 		{
 			if (data == "/")
 				inFile >> data;
