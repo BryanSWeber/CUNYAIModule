@@ -689,25 +689,27 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
 
     //Heuristics for building. They are pretty simple combat results from a simulation.
     bool it_needs_to_shoot_up = false;
+    bool it_needs_to_shoot_down = false;
     bool it_needs_to_fly = false;
 
     // determine undesirables in simulation.
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
+        if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
     }
     // remove undesireables.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
         if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
+        else if (potential_type->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type++);
         else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
         else potential_type++;
     }
 
     if (combat_types.empty()) return false;
-
-    // Find the best of them.
-    build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
+    else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
+    else build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
 
     // Build it.
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true) || morph_canidate->getType() == build_type; // catchall ground units, in case you have a BO that needs to be done.
