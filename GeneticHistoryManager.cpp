@@ -104,14 +104,14 @@ GeneticHistory::GeneticHistory(string file) {
     //vector<string> map_name_total;
     //vector<string> build_order_total;
 
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
 
     vector<double> r_win;
@@ -202,7 +202,7 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
-                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
+                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
 
         if (std::get<11>(game_data[j]) == e_name) {
@@ -240,7 +240,7 @@ GeneticHistory::GeneticHistory(string file) {
 
     // start from most recent and count our way back from there.
     for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
-        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, map_name_total)
+        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
         bool conditions_for_inclusion = true;
         int counter = 0;
