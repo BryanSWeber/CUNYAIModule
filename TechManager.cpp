@@ -79,8 +79,8 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inven
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Carapace, building, upgrade_bool);
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Melee_Attacks, building, upgrade_bool && !more_hydras_than_lings  || maxed_range);
     if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Missile_Attacks, building, upgrade_bool && more_hydras_than_lings || maxed_melee);
-    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire) > 0 && (more_flyers_than_hydras || maxed_armor));
-    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && Count_Units(UnitTypes::Zerg_Spire) > 0 && (more_flyers_than_hydras || maxed_armor));
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && (Count_Units(UnitTypes::Zerg_Spire) > 0 || Count_Units(UnitTypes::Zerg_Greater_Spire) > 0) && (more_flyers_than_hydras || maxed_armor));
+    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && (Count_Units(UnitTypes::Zerg_Spire) > 0 || Count_Units(UnitTypes::Zerg_Greater_Spire) > 0) && (more_flyers_than_hydras || maxed_armor));
 
     //should auto upgrade if there is a build order requirement for any of these three types.
   if(!busy) busy = Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
