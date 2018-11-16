@@ -1371,7 +1371,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         friendly_player_model.units_.purgeWorkerRelations(unit, land_inventory, current_map_inventory, my_reservation);
     }
 
-    if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon ) {
+    if ( unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon || unit->getType() == UnitTypes::Zerg_Lurker_Egg ) {
         buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.  Don't have to worry about double-built units (lings) since the second one is not morphed as per BWAPI rules.
     }
 
