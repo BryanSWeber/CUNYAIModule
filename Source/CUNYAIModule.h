@@ -19,7 +19,7 @@ constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker
 constexpr bool SSCAIT_OR_DOCKER = false; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -237,6 +237,7 @@ public:
       //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+      static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
       static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Map_Inventory & inv, const int & dist = 999999);
 
 

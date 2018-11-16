@@ -780,7 +780,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk) ||
+                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && threatening_stocks > 0.5 * friend_loc.stock_fliers_ ) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -808,9 +808,7 @@ void CUNYAIModule::onFrame()
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
-                        if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
-                        }
+                        if (closest)  mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
 
                     }
                     else if (drone_problem) {
@@ -832,7 +830,9 @@ void CUNYAIModule::onFrame()
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+                            Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
+                            if ( closest ) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+                            else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
 
                     }
 
