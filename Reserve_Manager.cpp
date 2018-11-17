@@ -34,8 +34,8 @@ void Reservation::removeReserveSystem(TilePosition pos, UnitType type) {
     map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end()) {
         reservation_map_.erase(pos);
-        min_reserve_ -= it->second.mineralPrice();
-        gas_reserve_ -= it->second.gasPrice();
+        if(it->second.mineralPrice()) min_reserve_ -= it->second.mineralPrice();
+        if (it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
     }
     else {
         CUNYAIModule::DiagnosticText("We're trying to remove %s at tilepostion (%d, %d) from the reservation queue but it's not stored here.", type.c_str(), pos.x, pos.y);

@@ -209,7 +209,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
+    bool upgrade_in_cartridges = friendly_player_model.upgrade_cartridge_.find(ups) != friendly_player_model.upgrade_cartridge_.end();
+    if ( unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder())) ) {
         if (unit->upgrade(ups)) {
             buildorder.updateRemainingBuildOrder(ups);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -225,7 +226,8 @@ bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
 //Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
+    bool research_in_cartridges = friendly_player_model.tech_cartridge_.find(tech) != friendly_player_model.tech_cartridge_.end();
+    if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             buildorder.updateRemainingBuildOrder(tech);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -519,7 +521,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
             Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
     else if (!friendly_player_model.e_relatively_weak_against_air_) {
@@ -548,7 +550,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
             Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
@@ -565,7 +567,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
             Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
@@ -677,7 +679,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -763,15 +765,17 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
 }
 
+bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
+    return friendly_player_model.combat_unit_cartridge_.find(ut) != friendly_player_model.combat_unit_cartridge_.end() || friendly_player_model.building_cartridge_.find(ut) != friendly_player_model.building_cartridge_.end() || friendly_player_model.eco_unit_cartridge_.find(ut) != friendly_player_model.eco_unit_cartridge_.end();
 
+}
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && buildorder.checkBuilding_Desired(ut);
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuilding_Desired(ut);
 }
-
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
     if (!building_gene_.empty()) {
