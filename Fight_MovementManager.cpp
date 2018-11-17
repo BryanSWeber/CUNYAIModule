@@ -6,17 +6,18 @@
 # include <numeric>
 
 
-#define DISTANCE_METRIC (int)(CUNYAIModule::getProperSpeed(unit) * 24);
+#define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0);
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
-void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv) {
+
+void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv) {
+
     Position pos = unit->getPosition();
-    distance_metric = DISTANCE_METRIC;
-    //double normalization = pos.getDistance(inv.home_base_) / (double)inv.my_portion_of_the_map_; // It is a boids type algorithm.
+    distance_metric = (int)DISTANCE_METRIC;
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
@@ -26,8 +27,8 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
     bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
-    bool in_my_base = local_neighborhood.getMeanBuildingLocation() != Positions::Origin;
-    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (inv.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
+    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
+
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
@@ -85,12 +86,14 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     //Make sure the end destination is one suitable for you.
     Position final_pos = pos + final_vector; //attract is zero when it's not set.
     
-    if (final_pos != pos) {
+    //If you're not starting or ending too close to the "bad guys" you can continue to path.
+    if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance && pos.getDistance(e_pos) > passed_distance) {
 
         // lurkers should move when we need them to scout.
         if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
             unit->unburrow();
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
             changing_unit.updateStoredUnit(unit);
             return;
         }
@@ -119,28 +122,45 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
+
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+        changing_unit.updateStoredUnit(unit);
+        return;
     }
 
+    // If you end too close to the bad guys, hold position.
+    if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) > passed_distance) {
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+        unit->holdPosition();
+        changing_unit.phase_ = "Surrounding";
+        changing_unit.updateStoredUnit(unit);
+        return;
+    }
 
-    Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-    changing_unit.updateStoredUnit(unit);
-    changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
+    // If you start too close to the bad guys, we have other issues.
+    if (final_pos != pos && final_pos.getDistance(e_pos) < passed_distance && pos.getDistance(e_pos) < passed_distance) {
+        CUNYAIModule::DiagnosticText("We've been overtaken...");
+        // This option should never happen! It ought to trigger retreat/attack.
+        return;
+    }
 }
 
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, const Map_Inventory &inv, const Color &color = Colors::White)
+void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color = Colors::White)
+
 {
     UnitType u_type = unit->getType();
     Stored_Unit* target;
-    vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
+    //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit last_target = unit->getLastCommand().getTarget();
 
     int widest_dim = max(u_type.height(), u_type.width());
     int priority = 0;
-    int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
-    int helpful_u = useful_stocks[0];
-    int helpful_e = useful_stocks[1]; // both forget value of psi units.
+    //int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
+    int helpful_u = ui.moving_average_fap_stock_;
+    int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     int max_dist = passed_distance; // copy, to be modified later.
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
@@ -148,14 +168,14 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
-    double max_diveable_dist = passed_distance / (double)limit_units_diving;
+    double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
     for (auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e) {
         if (e->second.valid_pos_) {
             UnitType e_type = e->second.type_;
             int e_priority = 0;
-            bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim);
-            if (CUNYAIModule::Can_Fight(unit, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
+            //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim);
+            if (CUNYAIModule::Can_Fight(unit, e->second) /*&& can_continue_to_surround*/ && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
                 int dist_to_enemy = unit->getDistance(e->second.pos_);
 
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
@@ -170,7 +190,7 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
-                    dist_to_enemy < min(chargeable_dist, 32) &&
+                    dist_to_enemy < 32 &&
                     last_target &&
                     (last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
                     e_priority = 5;
@@ -216,22 +236,8 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 
     if ((target_sentinel || target_sentinel_poor_target_atk) && unit->hasPath(target->pos_) ){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
-            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
-                //
-            }
-            else {
+            if (!adjust_lurker_burrow(unit, ui, ei, target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
                 unit->attack(target->bwapi_unit_);
-                if (melee) target->circumference_remaining_ -= widest_dim;
-                CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
-            }
-            attack_order_issued = true;
-        }
-        else if (target->valid_pos_) {
-            if (adjust_lurker_burrow(unit, ui, ei, target->pos_)) {
-                //
-            }
-            else {
-                unit->attack(target->pos_);
                 if (melee) target->circumference_remaining_ -= widest_dim;
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
@@ -241,11 +247,13 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 
     if (attack_order_issued) {
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-        changing_unit.updateStoredUnit(unit);
         changing_unit.phase_ = "Attacking";
-    }
-
-    if(!attack_order_issued) Pathing_Movement(unit, ui, ei, inv);
+        changing_unit.updateStoredUnit(unit);
+    } 
+    else {
+        Retreat_Logic(unit, e_unit, ui, ei, ei, ui, passed_distance, inv, Colors::White, true);
+    }// if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+    return;
 }
 
 
@@ -253,29 +261,25 @@ void Mobility::Tactical_Logic(const Unit &unit, Unit_Inventory &ei, const Unit_I
 //void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Map_Inventory & inv){
 //}
 
-// Basic retreat logic, range = enemy range
-void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int passed_distance, Map_Inventory &inv, const Color &color = Colors::White) {
+// Basic retreat logic
+void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Map_Inventory &inv, const Color &color = Colors::White, const bool &force = false) {
+
 
     int dist = unit->getDistance(e_unit.pos_);
-    //int air_range = e_unit.type_.airWeapon().maxRange();
-    //int ground_range = e_unit.type_.groundWeapon().maxRange();
-    distance_metric = DISTANCE_METRIC; // retreating must be done very fast.
+    distance_metric = (int)DISTANCE_METRIC; // retreating must be done very fast.
    
     int e_range = ei.max_range_;
-    int f_range = ui.max_range_;
+    //int f_range = ui.max_range_;
 
     Position pos = unit->getPosition();
     bool order_sent = false;
-
-    if constexpr (DRAWING_MODE) {
-        Broodwar->drawCircleMap(e_unit.pos_, e_range, Colors::Red);
-        Broodwar->drawCircleMap(e_unit.pos_, passed_distance, Colors::Green);
-    }
-
+    Unit_Inventory e_squad_threatening = CUNYAIModule::getThreateningUnitInventoryInRadius(e_squad, pos, 999, unit->isFlying());
+    // If there are bad guys nearby, run from the immediate threat, otherwise run home.
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
-        setSeperation(unit, pos, e_squad); // might return false positives.
+        // All units seperate from nearby enemy units- threat or not.
+        setSeperation(unit, pos, e_squad_threatening);
+        // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
         if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
-        //else setRepulsion(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_); // leads to getting stuck.
         else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
     }
     else {
@@ -289,41 +293,31 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
     //final vector
     Position final_vector = avoidance_vector - walkability_vector_;
+
     //Make sure the end destination is one suitable for you.
     Position retreat_spot = pos + final_vector; //attract is zero when it's not set.
 
-    bool clear_walkable = retreat_spot.isValid() &&
-        (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-            CUNYAIModule::isClearRayTrace(pos, retreat_spot, inv.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
+    //bool clear_walkable = retreat_spot.isValid() &&
+    //    (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
+    //        CUNYAIModule::isClearRayTrace(pos, retreat_spot, inv.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
     bool cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
     bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit); // only kite if he's in range,
 
-    bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
-    bool unit_death_in_1_second = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 48);
-    bool squad_death_in_1_second = u_squad.squadAliveinFuture(48);
-    bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
+    //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
+    //bool unit_death_in_moments = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 96); 
+    //bool squad_death_in_moments = u_squad.squadAliveinFuture(96); 
+    //bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
     bool melee_fight = CUNYAIModule::getProperRange(unit) < 64 && e_squad.max_range_ < 64;
+    bool is_retreating = false;
 
-    if ( retreat_spot && !kiting && !(unit_death_in_1_second && squad_death_in_1_second && clear_walkable && melee_fight) ) {
+    if ( force || ( retreat_spot && !kiting /*&& !(unit_death_in_moments && squad_death_in_moments && clear_walkable && melee_fight)*/ ) ) {
         if (unit->getType() == UnitTypes::Zerg_Lurker && unit->isBurrowed() && unit->isDetected() && ei.stock_ground_units_ == 0) {
             unit->unburrow();
+            is_retreating = true;
         }
-        else {
-            unit->move(retreat_spot); //run away.
+        else if (unit->move(retreat_spot)) { //run away.  Don't need immobile units retreating.
             Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
             Position last_out2 = Positions::Origin;
-
-            //#include <iostream>
-            //using namespace std;
-            //int sample_fun(int X, int Y) { return X + Y; };
-            //int main()
-            //{
-            //    cout << "Hello World";
-            //    int Z = 4;
-            //    int out = sample_fun(Z, Z += 1);
-            //    cout << " We got:"; // 10. So it redefines first.
-            //    cout << out;
-            //}
 
             CUNYAIModule::Diagnostic_Line(pos, last_out1 = pos + retreat_vector_, inv.screen_position_, Colors::White);//Run directly away
             CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, inv.screen_position_, Colors::Red);//Alignment
@@ -332,14 +326,21 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
             CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
             CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different 
+            is_retreating = true;
         }
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-        changing_unit.updateStoredUnit(unit);
-        changing_unit.phase_ = "Retreating";
+
+        if (is_retreating) {
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            changing_unit.phase_ = "Retreating";
+            changing_unit.updateStoredUnit(unit);
+            //if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
+            return;
+        }
     }
     else { // if that spot will not work for you, prep to die.
         // if your death is immenent fight back.
-        Tactical_Logic(unit, e_squad, u_squad, passed_distance, inv);
+        Tactical_Logic(unit, e_unit, e_squad, u_squad, passed_distance, inv);
+        return;
     }
 
 }
@@ -354,14 +355,14 @@ Position Mobility::setStutter(const Unit &unit, const double &n) {
 
     // The naieve approach of rand()%3 - 1 is "distressingly non-random in lower order bits" according to stackoverflow and other sources.
 
-    return stutter_vector_ = Position(n * dis(gen) * 32, n * dis(gen) * 32);
+    return stutter_vector_ = Position(static_cast<int>(32.0 * n * dis(gen)), static_cast<int>(32.0 * n * dis(gen)) );
 }
 
 //Alignment. Convinces all units in unit inventory to move at similar velocities.
 Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
-    int temp_tot_x = 0;
-    int temp_tot_y = 0;
-    int speed = CUNYAIModule::getProperSpeed(unit->getType());
+    double temp_tot_x = 0;
+    double temp_tot_y = 0;
+    double speed = CUNYAIModule::getProperSpeed(unit->getType());
     int flock_count = 0;
     if (!ui.unit_inventory_.empty()) {
         for (auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i) {
@@ -375,10 +376,12 @@ Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
         //double theta = atan2( temp_tot_y - unit->getVelocityY() , temp_tot_x - unit->getVelocityX() );  // subtract out the unit's personal heading.
 
         if (flock_count > 1) {
-            return attune_vector_ =  Position( ((temp_tot_x - unit->getVelocityX()) / (flock_count - 1)) + unit->getVelocityX(), ((temp_tot_y - unit->getVelocityY()) / (flock_count - 1)) + unit->getVelocityY() ); // the velocity is per frame, I'd prefer it per second so its scale is 
+            int x = static_cast<int> ( ((temp_tot_x - unit->getVelocityX()) / static_cast<double>(flock_count - 1)) + unit->getVelocityX() );
+            int y = static_cast<int> ( ((temp_tot_y - unit->getVelocityY()) / static_cast<double>(flock_count - 1)) + unit->getVelocityY() );
+            return attune_vector_ =  Position( x , y ); // the velocity is per frame, I'd prefer it per second so its scale is 
         }
         else {
-            return attune_vector_ = Position(cos(unit->getAngle()) * speed * 6, sin(unit->getAngle()) * speed * 6);
+            return attune_vector_ = Position( static_cast<int>(cos(unit->getAngle()) * speed * 6.0) , static_cast<int>(sin(unit->getAngle()) * speed * 6.0) );
         }
     }
 }
@@ -387,7 +390,7 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
     int dist_x = e_pos.x - pos.x;
     int dist_y = e_pos.y - pos.y;
     double theta = atan2(dist_y, dist_x); // att_y/att_x = tan (theta).
-    return retreat_vector_ = Position ( -cos(theta) * distance_metric * 4, -sin(theta) * distance_metric * 4); // get slightly away from opponent.
+    return retreat_vector_ = Position ( static_cast<int>(-cos(theta) * distance_metric * 4.0), static_cast<int>(-sin(theta) * distance_metric * 4.0)); // get slightly away from opponent.
 }
 
 //Centralization, all units prefer sitting along map veins to edges.
@@ -409,8 +412,8 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 //                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
 //            {
 //                double theta = atan2(y, x);
-//                temp_centralization_dx_ += cos(theta);
-//                temp_centralization_dy_ += sin(theta);
+//                temp_centralization_dx_ += static_cast<int>(cos(theta));
+//                temp_centralization_dy_ += static_cast<int>(sin(theta));
 //            }
 //        }
 //    }
@@ -429,7 +432,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
         double cohesion_x = loc_center.x - pos.x;
         double cohesion_y = loc_center.y - pos.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        cohesion_vector_ = Position( cos(theta) * 0.25 * distance_metric, sin(theta) * 0.25 * distance_metric );
+        cohesion_vector_ = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric), static_cast<int>(static_cast<int>(sin(theta)) * 0.25 * distance_metric) );
     }
     return cohesion_vector_;
 }
@@ -437,7 +440,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
 Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inventory &inv) {
     if (!inv.start_positions_.empty() && find(inv.start_positions_.begin(), inv.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == inv.start_positions_.end()) {
         Position possible_base = inv.start_positions_[0];
-        int dist = unit->getDistance(possible_base);
+        double dist = static_cast<double>(unit->getDistance(possible_base));
         int dist_x = possible_base.x - pos.x;
         int dist_y = possible_base.y - pos.y;
         double theta = atan2(dist_y, dist_x);
@@ -453,7 +456,7 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inv
 
         std::rotate(inv.start_positions_.begin(), inv.start_positions_.begin() + 1, inv.start_positions_.end());
 
-        return attract_vector_ = Position(cos(theta) * dist, sin(theta) * dist); // run 100% towards them.
+        return attract_vector_ = Position(static_cast<int>(cos(theta) * dist), static_cast<int>(sin(theta) * dist)); // run 100% towards them.
     }
 }
 
@@ -465,7 +468,7 @@ Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Ma
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_vector_ = Position(cos(theta) * distance_metric, sin(theta) * distance_metric);  // run to (map)!
+        attract_vector_ = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric));  // run to (map)!
     }
     else {
         attract_vector_ = getVectorTowardsMap(unit->getPosition(), inv, map); // move downhill (vector times scalar)
@@ -480,7 +483,7 @@ Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Map
         int dist_x = map_center.x - pos.x;
         int dist_y = map_center.y - pos.y;
         double theta = atan2(dist_y, dist_x);
-        attract_vector_ = Position( -cos(theta) * distance_metric, -sin(theta) * distance_metric ); // run to (map)!
+        attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric )); // run to (map)!
     }
     else {
         Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
@@ -505,7 +508,7 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        seperation_vector_ = Position( cos(theta) * distance_metric * 0.75 , sin(theta) * distance_metric * 0.75 ); // run away from everyone. Should help avoid being stuck in those wonky spots.
+        seperation_vector_ = Position(static_cast<int>(cos(theta) * 0.75 * distance_metric)  , static_cast<int>(sin(theta) * 0.75 * distance_metric) ); // run away from everyone. Should help avoid being stuck in those wonky spots.
         //seperation_vector_ = Position(cos(theta) * seperation_x / unit_count, sin(theta) * seperation_y / unit_count); // run away from everyone. Should help avoid being stuck in those wonky spots.
     }
     return seperation_vector_;
@@ -515,9 +518,9 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
-    int distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
+    double distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
     int largest_dim = max(type.height(), type.width());
-    Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos, distance * 2 + largest_dim);
+    Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos, static_cast<int>(distance * 2.0 + largest_dim));
     int seperation_x = 0;
     int seperation_y = 0;
     for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
@@ -533,7 +536,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 
     if (seperation_y != 0 || seperation_x != 0) {
         double theta = atan2(seperation_y, seperation_x);
-        return seperation_vector_ = Position(cos(theta) * distance * 2, sin(theta) * distance * 2); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
+        return seperation_vector_ = Position(static_cast<int>(cos(theta) * distance * 2.0), static_cast<int>(sin(theta) * distance * 2.0)); // run sight ranges away from everyone. Should help avoid being stuck in those wonky spots.
     }
     return seperation_vector_ = Positions::Origin;
 }
@@ -587,7 +590,7 @@ Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, con
 //
 //                    double theta = atan2(future_pos.x, future_pos.y);
 //                    //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-//                    return walkability_vector_ += Position(cos(theta) * vector_push_x * 4 , sin(theta) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+//                    return walkability_vector_ += Position(static_cast<int>(cos(theta)) * vector_push_x * 4 , static_cast<int>(sin(theta)) * vector_push_y * 4 /** (3 - when_did_we_stop) / trial_positions.size()*/);
 //                }
 //            }
 //        }
@@ -613,8 +616,8 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
         for (auto considered_pos : trial_positions) {
             for (int x = -8; x <= 8; ++x) {
                 for (int y = -8; y <= 8; ++y) {
-                    double centralize_x = WalkPosition(considered_pos).x + x;
-                    double centralize_y = WalkPosition(considered_pos).y + y;
+                    int centralize_x = WalkPosition(considered_pos).x + x;
+                    int centralize_y = WalkPosition(considered_pos).y + y;
                     if (!(x == 0 && y == 0) &&
                         centralize_x < map_dim.x &&
                         centralize_y < map_dim.y &&
@@ -646,11 +649,11 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                 obstacle_x /= unwalkable_minitiles.size();
                 obstacle_y /= unwalkable_minitiles.size();
 
-                double vector_push_x = obstacle_x - WalkPosition(obstacle_found_near_this_position).x;
-                double vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
+                int vector_push_x = obstacle_x - WalkPosition(obstacle_found_near_this_position).x;
+                int vector_push_y = obstacle_y - WalkPosition(obstacle_found_near_this_position).y;
 
                 //int when_did_we_stop = std::distance(trial_positions.begin(), std::find(trial_positions.begin(), trial_positions.end(), considered_pos)); // should go to 0,1,2.
-                return walkability_vector_ = Position(vector_push_x * 4 * 1.5, vector_push_y * 4 * 1.5 /** (3 - when_did_we_stop) / trial_positions.size()*/);
+                return walkability_vector_ = Position(vector_push_x * 6, vector_push_y * 6 /** (3 - when_did_we_stop) / trial_positions.size()*/);
             }
         }
     }
@@ -673,7 +676,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
         }
         else if ( !unit->isBurrowed() && !dist_condition) {
             double theta = atan2(position_of_target.y - unit->getPosition().y, position_of_target.x - unit->getPosition().x);
-            Position closest_loc_to_permit_attacking = Position(position_of_target.x + cos(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75, position_of_target.y + sin(theta) * UnitTypes::Zerg_Lurker.groundWeapon().maxRange() * 0.75);
+            Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
             unit->move(closest_loc_to_permit_attacking);
             return true;
         }
@@ -709,8 +712,8 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //                if (inv.map_veins_[centralize_x][centralize_y] > 1 && // avoid buildings
 //                    map[centralize_x][centralize_y] < my_spot) // go directly to my base.
 //                {
-//                    temp_x += cos(theta);
-//                    temp_y += sin(theta);
+//                    temp_x += static_cast<int>(cos(theta));
+//                    temp_y += static_cast<int>(sin(theta));
 //                }
 //            }
 //        }
@@ -718,7 +721,7 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //
 //    if (temp_y != 0 || temp_x != 0) {
 //        theta = atan2(temp_y + adj_y, temp_x + adj_x);
-//        return_vector = Position(cos(theta), sin(theta));
+//        return_vector = Position(static_cast<int>(cos(theta)), static_cast<int>(sin(theta)));
 //    }
 //    return  return_vector;
 //}
@@ -734,8 +737,8 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
     for (int x = -8; x <= 8; ++x) {
         for (int y = -8; y <= 8; ++y) {
             //if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations. Leads to problems when it thinks a barrier is not present.
-            double centralize_x = WalkPosition(pos).x + x;
-            double centralize_y = WalkPosition(pos).y + y;
+            int centralize_x = WalkPosition(pos).x + x;
+            int centralize_y = WalkPosition(pos).y + y;
             if (!(x == 0 && y == 0) &&
                 centralize_x < map_dim.x &&
                 centralize_y < map_dim.y &&
@@ -757,7 +760,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
 
     if (temp_y != 0 || temp_x != 0) {
         theta = atan2(temp_y, temp_x);
-        return_vector = Position(cos(theta) * distance_metric, sin(theta) * distance_metric); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+        return_vector = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
     }
     return  return_vector;
 }

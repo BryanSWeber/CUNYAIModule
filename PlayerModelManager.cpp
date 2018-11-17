@@ -23,7 +23,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 
     evaluateWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-    int estimated_worker_stock = estimated_workers_ * worker_value;
+    int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
 
     evaluateCurrentWorth();
 
@@ -33,8 +33,10 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
 void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 {
     bwapi_player_ = Broodwar->self();
+
     //Update Enemy Units
     //Update friendly unit inventory.
+    updateUnit_Counts();
     if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
@@ -72,9 +74,19 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
 
     //Update general weaknesses.
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Maybe two attempts with hydras?  Noting there is no such thing as splash damage, these units have identical costs.
-    u_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_1, researches_) == UnitTypes::Zerg_Spore_Colony;
-    e_relatively_weak_against_air_ = CUNYAIModule::returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian;
+    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Noting there is no such thing as splash damage, these units have identical costs and statistics.
+    u_relatively_weak_against_air_ = (bool)(CUNYAIModule::returnOptimalUnit(air_test_1, researches_) == UnitTypes::Zerg_Spore_Colony);
+    e_relatively_weak_against_air_ = (bool)(CUNYAIModule::returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian);
+
+    //Update map inventory
+    radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
+    closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
+
+    //Set default cartridges:
+    combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+    building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN } };
+    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
+    tech_cartridge_ = { { TechTypes::Lurker_Aspect, INT_MIN } };
 
 };
 
@@ -86,10 +98,10 @@ void Player_Model::evaluateWorkerCount() {
     }
     else {
         //inventory.estimated_enemy_workers_ *= exp(rate_of_worker_growth); // exponential growth.
-        estimated_workers_ += max(units_.resource_depot_count_, 1) * 1 / (double)(UnitTypes::Zerg_Drone.buildTime());
-        estimated_workers_ = min(estimated_workers_, (double)85); // there exists a maximum reasonable number of workers.
+        estimated_workers_ += max(units_.resource_depot_count_, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+        estimated_workers_ = min(estimated_workers_, static_cast<double>(85)); // there exists a maximum reasonable number of workers.
     }
-    int est_worker_count = min(max((double)units_.worker_count_, estimated_workers_), (double)85);
+    int est_worker_count = min(max(units_.worker_count_, static_cast<int>(round(estimated_workers_))), 85);
 
 }
 
@@ -133,8 +145,8 @@ void Player_Model::evaluateCurrentWorth()
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
-        double min_proportion = (min_expenditures_ + min_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
-        double supply_proportion = (supply_expenditures_ + supply_losses_) / (double)(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
+        double min_proportion = (min_expenditures_ + min_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
+        double supply_proportion = (supply_expenditures_ + supply_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
         double resources_collected_this_frame = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
         estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; // 
@@ -143,4 +155,26 @@ void Player_Model::evaluateCurrentWorth()
         double observed_current_worth = units_.stock_fighting_total_ + researches_.research_stock_ + units_.worker_count_ * worker_value;
         estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ - supply_losses_);
     }
+}
+
+// Tallies up my units for rapid counting.
+void Player_Model::updateUnit_Counts() {
+    vector <UnitType> already_seen;
+    vector <int> unit_count_temp;
+    vector <int> unit_incomplete_temp;
+    for (auto const & u_iter : units_.unit_inventory_) { // should only search through unit types not per unit.
+        UnitType u_type = u_iter.second.type_;
+        bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
+        if (new_unit_type) {
+            int found_units = CUNYAIModule::Count_Units(u_type, units_);
+            int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, units_);
+            already_seen.push_back(u_type);
+            unit_count_temp.push_back(found_units);
+            unit_incomplete_temp.push_back(incomplete_units);
+        }
+    }
+
+    unit_type_ = already_seen;
+    unit_count_ = unit_count_temp;
+    unit_incomplete_ = unit_incomplete_temp;
 }

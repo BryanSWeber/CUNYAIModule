@@ -24,9 +24,6 @@ struct Map_Inventory {
     Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
 
     Position screen_position_;
-    double ln_army_stock_;
-    double ln_tech_stock_;
-    double ln_worker_stock_;
 
     double ln_supply_remain_;
     double ln_supply_total_;
@@ -43,7 +40,6 @@ struct Map_Inventory {
     int estimated_enemy_workers_;
     int map_x;
     int map_y;
-    int closest_radial_distance_enemy_ground_ = INT_MAX;
 
     vector<Position> start_positions_;              
     vector<Position> start_positions_complete_;     
@@ -54,11 +50,6 @@ struct Map_Inventory {
     Position enemy_base_air_;
     Position home_base_;
     Position safe_base_;
-
-    vector< UnitType > unit_type_;
-    vector< int > unit_count_;
-    vector< int > unit_incomplete_;
-    vector< int > radial_distances_from_enemy_ground_ = {0};
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
@@ -89,8 +80,7 @@ struct Map_Inventory {
     int frames_since_enemy_base_ground_ = 0;
     int frames_since_enemy_base_air_ = 0;
 
-    // Counts my units so I don't have to do this for each unit onframe.
-    void updateUnit_Counts(const Unit_Inventory & ui);
+
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock(const Unit_Inventory &ui);
     // Updates the (safe) log of our army stock.

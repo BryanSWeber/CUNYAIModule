@@ -24,6 +24,7 @@ struct Stored_Unit {
     Stored_Unit();
     auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
     auto convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri); // puts the stored unit into the fap type... at a specific position
+    auto convertToFAPVegtable(const Position & chosen_pos, const Research_Inventory & ri);
 
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
@@ -55,6 +56,8 @@ struct Stored_Unit {
     int elevation_;
     int cd_remaining_;
     bool stimmed_;
+    bool burrowed_;
+    bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
 
     string phase_ = "None";
@@ -80,9 +83,9 @@ struct Stored_Unit {
     int unit_ID_;
 
     // evaluates the value of a stock of specific unit, in terms of min & gas & supply. Doesn't consider the counterfactual larva. Is set to considers the unit's condition. BWAPI measures supply in half units. 
-	int modified_supply_;
-	int modified_min_cost_;
-	int modified_gas_cost_;
+    int modified_supply_;
+    int modified_min_cost_;
+    int modified_gas_cost_;
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
@@ -145,6 +148,7 @@ struct Unit_Inventory {
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
+    void purgeAllPhases();
     void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
     void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
@@ -157,8 +161,9 @@ struct Unit_Inventory {
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
 
-
+    // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.
     void addToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
+    void addVegtableToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
     void addToMCFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
     void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri);// adds to the building combat simulator, friendly side.
 

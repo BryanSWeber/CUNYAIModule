@@ -105,10 +105,10 @@ bool CobbDouglas::tech_starved()
 
 void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
-    double K_over_L = (double)(e_army_stock + 1) / (double)(e_worker_stock + 1); // avoid NAN's
-    alpha_army = CUNYAIModule::bindBetween(K_over_L / (double)(1.0 + K_over_L), 0.05, 0.95);
+    double K_over_L = static_cast<double>(e_army_stock + 1) / static_cast<double>(e_worker_stock + 1); // avoid NAN's
+    alpha_army = CUNYAIModule::bindBetween(K_over_L / static_cast<double>(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_army, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / (double)(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
+    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / static_cast<double>(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
 
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;
@@ -160,17 +160,27 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 bool CobbDouglas::evalArmyPossible()
 {
 
-   return ((Broodwar->self()->supplyUsed() < 400 && exp(CUNYAIModule::current_map_inventory.ln_army_stock_) / exp(CUNYAIModule::current_map_inventory.ln_worker_stock_) < 5 * alpha_army / alpha_tech)) ||
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spawning_Pool, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Spire, CUNYAIModule::current_map_inventory)
-        + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::current_map_inventory) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Ultralisk_Cavern, CUNYAIModule::current_map_inventory) <= 0; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you can't build combat units at all.
+    double K_over_L = static_cast<double>(army_stock + 1) / static_cast<double>(worker_stock + 1); // avoid NAN's
+
+    bool can_build_army = false;
+    auto combat_types = CUNYAIModule::friendly_player_model.combat_unit_cartridge_; // safe copy.
+
+    // drop all units types I cannot assemble at this time.
+    for(auto unit_selection:combat_types) {
+        if (Broodwar->canMake(unit_selection.first)) {
+            can_build_army = true;
+            break;
+        }
+    }
+
+   return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+
 }
 
 bool CobbDouglas::evalEconPossible()
 {
     bool not_enough_miners = (CUNYAIModule::current_map_inventory.min_workers_ <= CUNYAIModule::current_map_inventory.min_fields_ * 2);
-    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, CUNYAIModule::current_map_inventory) < 85;
+    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85;
     return not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
