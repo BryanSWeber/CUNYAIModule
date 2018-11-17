@@ -18,7 +18,7 @@ bool CUNYAIModule::Tech_Avail() {
         bool hydra_upgrade = upgrade.first == UpgradeTypes::Zerg_Missile_Attacks || upgrade.first == UpgradeTypes::Grooved_Spines || upgrade.first == UpgradeTypes::Muscular_Augments;
         bool ling_upgrade = upgrade.first == UpgradeTypes::Zerg_Melee_Attacks || upgrade.first == UpgradeTypes::Metabolic_Boost;
 
-        if ((muta_upgrade || hydra_upgrade || ling_upgrade) && CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) ) {
+        if ((muta_upgrade || hydra_upgrade || ling_upgrade) && CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) && friendly_player_model.researches_.upgrades_[upgrade.first] < upgrade.first.maxRepeats()) {
 
             bool upgrade_conditionals = (hydra_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) > Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
                 (ling_upgrade && Stock_Units(UnitTypes::Zerg_Hydralisk, friendly_player_model.units_) < Stock_Units(UnitTypes::Zerg_Zergling, friendly_player_model.units_)) ||
@@ -28,15 +28,19 @@ bool CUNYAIModule::Tech_Avail() {
                 return true;
             }
         }
-        else if (CUNYAIModule::Count_Units(upgrade.first.whatsRequired())) return true; // If we can make it and don't have it.
+        else if (CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) && friendly_player_model.researches_.upgrades_[upgrade.first] < upgrade.first.maxRepeats() ) return true; // If we can make it and don't have it.
     }
 
     for (auto building : CUNYAIModule::friendly_player_model.building_cartridge_) {
         bool pass_guard = true;
+        bool own_successor = false;
         for (auto req : building.first.requiredUnits()) {
             if(Count_Units(req.first) == 0 || !pass_guard) pass_guard = false;
         }
-        if( pass_guard && Count_Units(building.first) == 0) return true; // If we can make it and don't have it.
+        for (auto possessed_unit : friendly_player_model.units_.unit_inventory_) {
+            if (possessed_unit.second.type_.isSuccessorOf(building.first)) own_successor = true;
+        }
+        if( pass_guard && Count_Units(building.first) == 0 && !own_successor) return true; // If we can make it and don't have it.
     }
 
     return false;
