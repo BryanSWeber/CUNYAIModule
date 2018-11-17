@@ -649,8 +649,8 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 
-    if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 
     bool must_make_spore = checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
     bool must_make_sunken = checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
@@ -662,7 +662,7 @@ bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it.
-bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
+bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
@@ -690,17 +690,20 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     bool it_needs_to_shoot_up = false;
     bool it_needs_to_shoot_down = false;
     bool it_needs_to_fly = false;
+    bool required = false;
 
     // determine undesirables in simulation.
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
+        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type.first)) required = true;
     }
     // remove undesireables.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
+        if (required) potential_type++;
+        else if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
         else if (potential_type->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type++);
         else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
         else potential_type++;
@@ -765,7 +768,7 @@ bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bo
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
-bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
+bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && buildorder.checkBuilding_Desired(ut);
 }
 

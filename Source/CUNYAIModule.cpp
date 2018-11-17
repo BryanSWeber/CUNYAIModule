@@ -41,6 +41,9 @@ double CUNYAIModule::adaptation_rate; //Adaptation rate to opponent.
 double CUNYAIModule::alpha_army_original;
 double CUNYAIModule::alpha_tech_original;
 double CUNYAIModule::alpha_econ_original;
+double CUNYAIModule::delta;
+double CUNYAIModule::gamma;
+Building_Gene CUNYAIModule::buildorder;
 
 void CUNYAIModule::onStart()
 {
@@ -109,7 +112,7 @@ void CUNYAIModule::onStart()
     win_rate = (1 - gene_history.loss_rate_);
 
     //get initial build order.
-    buildorder.getInitialBuildOrder( gene_history.build_order_ );
+    buildorder.getInitialBuildOrder( gene_history.build_order_ ); 
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -126,6 +129,8 @@ void CUNYAIModule::onStart()
     med_delay = 0;
     long_delay = 0;
     my_reservation = Reservation();
+
+    friendly_player_model.setLockedOpeningValues();
 
 }
 

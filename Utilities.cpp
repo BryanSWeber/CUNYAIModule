@@ -1253,7 +1253,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
+    bool can_attack;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();

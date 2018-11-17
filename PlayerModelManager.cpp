@@ -80,12 +80,6 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
     closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
 
-    //Set default cartridges:
-    combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-    building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN } };
-    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
-    tech_cartridge_ = { { TechTypes::Lurker_Aspect, INT_MIN } };
-
 };
 
 
@@ -175,4 +169,24 @@ void Player_Model::updateUnit_Counts() {
     unit_type_ = already_seen;
     unit_count_ = unit_count_temp;
     unit_incomplete_ = unit_incomplete_temp;
+}
+
+// sample command set to explore zergling rushing.
+void Player_Model::setLockedOpeningValues() {
+     
+    // sample command set to explore zergling rushing.
+     spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
+     spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
+     spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
+
+     CUNYAIModule::delta = 0.00;
+     CUNYAIModule::gamma = 0.55;
+     CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
+
+    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
+    combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
+    building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN} };
+    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
+    tech_cartridge_ = {  };
+    
 }

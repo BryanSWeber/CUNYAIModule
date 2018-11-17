@@ -180,7 +180,7 @@ bool CobbDouglas::evalArmyPossible()
 bool CobbDouglas::evalEconPossible()
 {
     bool not_enough_miners = (CUNYAIModule::current_map_inventory.min_workers_ <= CUNYAIModule::current_map_inventory.min_fields_ * 2);
-    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85;
+    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85 && Broodwar->self()->supplyUsed() < 400;
     return not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }

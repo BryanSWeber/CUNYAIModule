@@ -52,11 +52,14 @@ struct CobbDouglas
 };
 
 
+//The CD model is not made for 0's. But zeros happen in SC. 
 template <class T>
 double safeDiv(T &lhs, T &rhs) {
-    if (rhs > 0)  return static_cast<double>(lhs) / static_cast<double>(rhs);
-    else if (lhs > 0 && rhs == 0)  return static_cast<double>(INT_MAX);
-    else if (lhs < 0 && rhs == 0)  return static_cast<double>(INT_MIN);
-    else raise(SIGSEGV);  // simulates a standard crash when access invalid memory
+    if (lhs!=0 && rhs != 0)  return static_cast<double>(lhs) / static_cast<double>(rhs);
+    else if (lhs == 0 && rhs != 0) return DBL_MIN;
+    else if (lhs > 0 && rhs == 0)  return DBL_MAX;
+    else if (lhs < 0 && rhs == 0)  return -DBL_MAX;
+    else if (lhs == 0 && rhs == 0) return DBL_MIN;
+    //else raise(SIGSEGV);  // simulates a standard crash when access invalid memory
                                   // ie anything that can go wrong with pointers.
 }
