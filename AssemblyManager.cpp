@@ -209,7 +209,8 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
+    bool upgrade_in_cartridges = friendly_player_model.upgrade_cartridge_.find(ups) != friendly_player_model.upgrade_cartridge_.end();
+    if ( unit->canUpgrade(ups) && my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (buildorder.checkUpgrade_Desired(ups) || (extra_critera && buildorder.isEmptyBuildOrder())) ) {
         if (unit->upgrade(ups)) {
             buildorder.updateRemainingBuildOrder(ups);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -225,7 +226,8 @@ bool CUNYAIModule::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, con
 //Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates friendly_player_model.units_.
 bool CUNYAIModule::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
+    bool research_in_cartridges = friendly_player_model.tech_cartridge_.find(tech) != friendly_player_model.tech_cartridge_.end();
+    if (unit->canResearch(tech) && my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (buildorder.checkResearch_Desired(tech) || (extra_critera && buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             buildorder.updateRemainingBuildOrder(tech);
             Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -499,14 +501,13 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
 
    
     //First Building needed!
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, !econ_starved &&
-        Count_Units(UnitTypes::Zerg_Spawning_Pool) == 0);
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, !econ_starved && Count_Units(UnitTypes::Zerg_Spawning_Pool) == 0);
 
     //Consider an organized build plan.
     if (friendly_player_model.u_relatively_weak_against_air_ && e_inv.stock_fliers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_)  > 0 &&
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
@@ -514,13 +515,13 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
             Count_Units(UnitTypes::Zerg_Hydralisk_Den) == 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
-            Count_Units(UnitTypes::Zerg_Spire) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) == 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
     else if (!friendly_player_model.e_relatively_weak_against_air_) {
@@ -532,7 +533,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 1);
 
@@ -540,7 +541,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 1 &&
             Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits()) == 1 &&
-            Count_Units(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Morph, Broodwar->self()->getUnits()) == 0 && //costly, slow.
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 2);
@@ -548,8 +549,8 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         // >3 bases
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
@@ -560,13 +561,13 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
     else if (friendly_player_model.e_relatively_weak_against_air_) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
             Count_Units(UnitTypes::Zerg_Spire) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_)> 0 &&
             current_map_inventory.hatches_ > 1);
         // >3 bases
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) > 0 &&
-            Count_Units(UnitTypes::Zerg_Spire) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
@@ -650,8 +651,8 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
 
 bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 
-    if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 
     bool must_make_spore = checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
     bool must_make_sunken = checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
@@ -663,7 +664,7 @@ bool CUNYAIModule::buildStaticDefence(const Unit &morph_canidate) {
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it.
-bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types) {
+bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
@@ -678,7 +679,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -686,8 +687,33 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
         }
     }
 
-    // Find the best of them.
-    build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
+
+    //Heuristics for building. They are pretty simple combat results from a simulation.
+    bool it_needs_to_shoot_up = false;
+    bool it_needs_to_shoot_down = false;
+    bool it_needs_to_fly = false;
+    bool required = false;
+
+    // determine undesirables in simulation.
+    for (auto &potential_type : combat_types) {
+        if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
+        if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_down = true;
+        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
+        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type.first)) required = true;
+    }
+    // remove undesireables.
+    auto potential_type = combat_types.begin();
+    while (potential_type != combat_types.end()) {
+        if (required) potential_type++;
+        else if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
+        else if (potential_type->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type++);
+        else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
+        else potential_type++;
+    }
+
+    if (combat_types.empty()) return false;
+    else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
+    else build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
 
     // Build it.
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true) || morph_canidate->getType() == build_type; // catchall ground units, in case you have a BO that needs to be done.
@@ -739,15 +765,25 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
 }
 
+bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
+    return friendly_player_model.combat_unit_cartridge_.find(ut) != friendly_player_model.combat_unit_cartridge_.end() || friendly_player_model.building_cartridge_.find(ut) != friendly_player_model.building_cartridge_.end() || friendly_player_model.eco_unit_cartridge_.find(ut) != friendly_player_model.eco_unit_cartridge_.end();
+}
+
+bool CUNYAIModule::checkInCartridge(const UpgradeType &ut) {
+    return friendly_player_model.upgrade_cartridge_.find(ut) != friendly_player_model.upgrade_cartridge_.end();
+}
+
+bool CUNYAIModule::checkInCartridge(const TechType &ut) {
+    return friendly_player_model.tech_cartridge_.find(ut) != friendly_player_model.tech_cartridge_.end();
+}
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
-bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && buildorder.checkBuilding_Desired(ut);
+bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuilding_Desired(ut);
 }
-
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
     if (!building_gene_.empty()) {

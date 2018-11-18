@@ -42,6 +42,9 @@ double CUNYAIModule::adaptation_rate; //Adaptation rate to opponent.
 double CUNYAIModule::alpha_army_original;
 double CUNYAIModule::alpha_tech_original;
 double CUNYAIModule::alpha_econ_original;
+double CUNYAIModule::delta;
+double CUNYAIModule::gamma;
+Building_Gene CUNYAIModule::buildorder;
 
 // Initalize scouting manager once on startup
 ScoutingManager scouting;
@@ -130,6 +133,8 @@ void CUNYAIModule::onStart()
     med_delay = 0;
     long_delay = 0;
     my_reservation = Reservation();
+
+    //friendly_player_model.setLockedOpeningValues();
 
 }
 
@@ -436,7 +441,9 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
-        Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Get the game seed
+        Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
+        Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
+        Broodwar->drawTextScreen(125, 170, "Seed: %d", Broodwar->getRandomSeed()); // Get the game seed
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
@@ -795,18 +802,18 @@ void CUNYAIModule::onFrame()
                 int search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), static_cast<int>CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
 
-                //Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                Unit_Inventory enemy_loc = (/*enemy_loc_around_target +*/ enemy_loc_around_self);
+                Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
-                //Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                 Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                 //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                Unit_Inventory friend_loc = (/*friend_loc_around_target + */friend_loc_around_me);
+                Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
-                friend_loc.updateUnitInventorySummary();
-                enemy_loc.updateUnitInventorySummary();
+                //friend_loc.updateUnitInventorySummary();
+                //enemy_loc.updateUnitInventorySummary();
 
                 //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
                 //int helpful_u = useful_stocks[0];
@@ -857,7 +864,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!grim_trigger_to_go_in) ||
+                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && threatening_stocks > 0.5 * friend_loc.stock_fliers_ ) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -885,9 +892,7 @@ void CUNYAIModule::onFrame()
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
-                        if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
-                        }
+                        if (closest)  mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
 
                     }
                     else if (drone_problem) {
@@ -909,7 +914,9 @@ void CUNYAIModule::onFrame()
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                            mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+                            Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
+                            if ( closest ) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+                            else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
 
                     }
 
@@ -1448,7 +1455,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         friendly_player_model.units_.purgeWorkerRelations(unit, land_inventory, current_map_inventory, my_reservation);
     }
 
-    if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon ) {
+    if ( unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon || unit->getType() == UnitTypes::Zerg_Lurker_Egg ) {
         buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.  Don't have to worry about double-built units (lings) since the second one is not morphed as per BWAPI rules.
     }
 

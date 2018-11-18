@@ -575,7 +575,27 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
         //    count++;
         //}
 
-        count += (e.second.type_ == type) + !(e.second.type_ == type) * 2 * (e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type); // better without if-conditions.
+        count += (e.second.type_ == type) + (e.second.type_ != type && e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type) * (1 + e.second.build_type_.isTwoUnitsInOneEgg()) ; // better without if-conditions.
+    }
+
+    return count;
+}
+
+// Counts all units of one type in existance and owned by enemies. 
+int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
+{
+    int count = 0;
+
+    for (auto & e : ui.unit_inventory_) {
+
+        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
+        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        //} 
+        //else if ( e.second.type_ == type ) {
+        //    count++;
+        //}
+
+        count += (e.second.type_ == type) + (e.second.type_ != type) * e.second.type_.isSuccessorOf(type); // better without if-conditions.
     }
 
     return count;
@@ -593,7 +613,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
         //else if ( unit->getType() == type ) {
         //    count++;
         //}
-        count += (unit->getType() == type) + !(unit->getType() == type) * 2 * (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type); // better without if-conditions.
+        count += (unit->getType() == type) + (unit->getType() != type && unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) * (1 + unit->getBuildType().isTwoUnitsInOneEgg()); // better without if-conditions.
 
     }
 
@@ -624,6 +644,7 @@ int CUNYAIModule::Count_Units(const UnitType &type)
     }
 
 }
+
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
 int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
 {
@@ -1249,6 +1270,32 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 
     return return_unit;
 }
+
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+
+            if ( can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Map_Inventory &inv, const int &dist) {
     int min_dist = dist;
@@ -1481,9 +1528,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         //    cd_frames = 15;
         //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-        //if (u_type == UnitTypes::Zerg_Devourer) {
-        //    cd_frames = 5;
-        //}
+        if (u_type == UnitTypes::Zerg_Devourer) {
+            cd_frames = 9;
+        }
     }
     //else 
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
