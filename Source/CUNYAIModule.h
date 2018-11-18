@@ -15,11 +15,11 @@
 constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
 constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
-constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
-constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
+constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
+constexpr bool SSCAIT_OR_DOCKER = false; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -117,8 +117,8 @@ public:
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
       bool checkInCartridge( const UnitType & ut);
-      bool checkInCartridge(const UpgradeType & ut);
-      bool checkInCartridge(const TechType & ut);
+      bool checkInCartridge( const UpgradeType & ut);
+      bool checkInCartridge( const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
       bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
       // checks if ut is required and can be built by unit at this time.

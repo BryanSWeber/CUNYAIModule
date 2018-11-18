@@ -130,7 +130,7 @@ void CUNYAIModule::onStart()
     long_delay = 0;
     my_reservation = Reservation();
 
-    friendly_player_model.setLockedOpeningValues();
+    //friendly_player_model.setLockedOpeningValues();
 
 }
 
