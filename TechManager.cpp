@@ -52,7 +52,8 @@ bool CUNYAIModule::Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inven
     bool upgrade_bool = (tech_starved || (Count_Units( UnitTypes::Zerg_Larva) == 0 && !army_starved));
     bool have_declared_lurkers = BWAPI::Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
     bool have_declared_mutas = Count_Units(UnitTypes::Zerg_Spire) > 0;
-    bool have_declared_a_major_unit_type = have_declared_lurkers || have_declared_mutas;
+    bool cannot_build_major_unit_type = !checkInCartridge(UnitTypes::Zerg_Lurker) && !checkInCartridge(UnitTypes::Zerg_Mutalisk);
+    bool have_declared_a_major_unit_type = have_declared_lurkers || have_declared_mutas || cannot_build_major_unit_type;
     bool have_hive = Count_Units(UnitTypes::Zerg_Hive) > 0;
     bool maxed_melee = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Melee_Attacks) == 3;
     bool maxed_range = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Missile_Attacks) == 3;

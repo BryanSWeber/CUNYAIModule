@@ -507,7 +507,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
     if (friendly_player_model.u_relatively_weak_against_air_ && e_inv.stock_fliers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive)  > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_)  > 0 &&
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
@@ -515,13 +515,13 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
             Count_Units(UnitTypes::Zerg_Hydralisk_Den) == 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
-            Count_Units(UnitTypes::Zerg_Spire) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) == 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             current_map_inventory.hatches_ > 1);
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) > 0 &&
-            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
     else if (!friendly_player_model.e_relatively_weak_against_air_) {
@@ -533,7 +533,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 1);
 
@@ -541,7 +541,7 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 1 &&
             Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits()) == 1 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
             Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Morph, Broodwar->self()->getUnits()) == 0 && //costly, slow.
             Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             current_map_inventory.hatches_ > 2);
@@ -549,8 +549,8 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         // >3 bases
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) > 0 &&
-            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
@@ -561,13 +561,13 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
     else if (friendly_player_model.e_relatively_weak_against_air_) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
             Count_Units(UnitTypes::Zerg_Spire) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) > 0 &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_)> 0 &&
             current_map_inventory.hatches_ > 1);
         // >3 bases
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
-            Count_Units(UnitTypes::Zerg_Lair) + Count_Units(UnitTypes::Zerg_Hive) > 0 &&
-            (Count_Units(UnitTypes::Zerg_Spire) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
+            Count_SuccessorUnits(UnitTypes::Zerg_Lair, friendly_player_model.units_) > 0 &&
+            (Count_SuccessorUnits(UnitTypes::Zerg_Spire, friendly_player_model.units_) > 0 || !checkInCartridge(UnitTypes::Zerg_Spire)) &&
             current_map_inventory.hatches_ > 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
@@ -767,8 +767,16 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
     return friendly_player_model.combat_unit_cartridge_.find(ut) != friendly_player_model.combat_unit_cartridge_.end() || friendly_player_model.building_cartridge_.find(ut) != friendly_player_model.building_cartridge_.end() || friendly_player_model.eco_unit_cartridge_.find(ut) != friendly_player_model.eco_unit_cartridge_.end();
-
 }
+
+bool CUNYAIModule::checkInCartridge(const UpgradeType &ut) {
+    return friendly_player_model.upgrade_cartridge_.find(ut) != friendly_player_model.upgrade_cartridge_.end();
+}
+
+bool CUNYAIModule::checkInCartridge(const TechType &ut) {
+    return friendly_player_model.tech_cartridge_.find(ut) != friendly_player_model.tech_cartridge_.end();
+}
+
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }

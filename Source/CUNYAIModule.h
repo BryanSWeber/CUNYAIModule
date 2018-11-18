@@ -117,6 +117,8 @@ public:
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
       bool checkInCartridge( const UnitType & ut);
+      bool checkInCartridge(const UpgradeType & ut);
+      bool checkInCartridge(const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
       bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
       // checks if ut is required and can be built by unit at this time.
@@ -267,6 +269,7 @@ public:
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
+      int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.

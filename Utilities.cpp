@@ -575,7 +575,27 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
         //    count++;
         //}
 
-        count += (e.second.type_ == type) + !(e.second.type_ == type) * 2 * (e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type); // better without if-conditions.
+        count += (e.second.type_ == type) + (e.second.type_ != type && e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type) * (1 + e.second.build_type_.isTwoUnitsInOneEgg()) ; // better without if-conditions.
+    }
+
+    return count;
+}
+
+// Counts all units of one type in existance and owned by enemies. 
+int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
+{
+    int count = 0;
+
+    for (auto & e : ui.unit_inventory_) {
+
+        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
+        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        //} 
+        //else if ( e.second.type_ == type ) {
+        //    count++;
+        //}
+
+        count += (e.second.type_ == type) + (e.second.type_ != type) * e.second.type_.isSuccessorOf(type); // better without if-conditions.
     }
 
     return count;
@@ -593,7 +613,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
         //else if ( unit->getType() == type ) {
         //    count++;
         //}
-        count += (unit->getType() == type) + !(unit->getType() == type) * 2 * (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type); // better without if-conditions.
+        count += (unit->getType() == type) + (unit->getType() != type && unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) * (1 + unit->getBuildType().isTwoUnitsInOneEgg()); // better without if-conditions.
 
     }
 
@@ -624,6 +644,7 @@ int CUNYAIModule::Count_Units(const UnitType &type)
     }
 
 }
+
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
 int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
 {
