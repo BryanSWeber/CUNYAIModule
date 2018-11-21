@@ -25,6 +25,7 @@ bool Reservation::addReserveSystem( TilePosition pos, UnitType type) {
         gas_reserve_ += type.gasPrice();
         building_timer_ = type.buildTime() > building_timer_ ? type.buildTime() : building_timer_;
         last_builder_sent_ = Broodwar->getFrameCount();
+        CUNYAIModule::buildorder.updateRemainingBuildOrder(type);
     }
 
     return safe;
@@ -33,9 +34,10 @@ bool Reservation::addReserveSystem( TilePosition pos, UnitType type) {
 void Reservation::removeReserveSystem(TilePosition pos, UnitType type) {
     map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end()) {
+        if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) CUNYAIModule::buildorder.addBuildOrderElement(type);
         reservation_map_.erase(pos);
         if(it->second.mineralPrice()) min_reserve_ -= it->second.mineralPrice();
-        if (it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
+        if(it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
     }
     else {
         CUNYAIModule::DiagnosticText("We're trying to remove %s at tilepostion (%d, %d) from the reservation queue but it's not stored here.", type.c_str(), pos.x, pos.y);

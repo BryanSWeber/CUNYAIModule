@@ -332,12 +332,27 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
         }
     }
 }
+
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );
+        }
+    }
+}
+
+void CUNYAIModule::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
+{
+    if constexpr(DRAWING_MODE) {
+        for (auto res : reservations.reservation_map_) {
+            Position upper_left = Position(res.first);
+            Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
+            if (isOnScreen(upper_left, screen_pos)) {
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
+                Broodwar->drawTextMap(upper_left, res.second.c_str());
+            }
         }
     }
 }

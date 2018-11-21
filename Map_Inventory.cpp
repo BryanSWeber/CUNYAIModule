@@ -1489,15 +1489,15 @@ void Map_Inventory::drawExpoPositions() const
 void Map_Inventory::drawBasePositions() const
 {
     if constexpr (DRAWING_MODE) {
-        Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
+        Broodwar->drawCircleMap(enemy_base_ground_, 15, Colors::Red, true);
 
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
-        Broodwar->drawCircleMap(enemy_base_air_, 30, Colors::Orange, false);
+        Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
 
-        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+        Broodwar->drawCircleMap(home_base_, 15, Colors::Green, true);
 
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
-        Broodwar->drawCircleMap(safe_base_, 30, Colors::Blue, false);
+        Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);
     }
 }
 

@@ -5,6 +5,8 @@
 #include "Source\Unit_Inventory.h"
 #include <iterator>
 #include <numeric>
+#include <fstream>
+
 
 using namespace BWAPI;
 using namespace Filter;
@@ -35,7 +37,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
         } 
         else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 24);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(unit->getTilePosition(), building, 12);
             if (my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
                 buildorder.announceBuildingAttempt(building); 
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -80,39 +82,36 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
                 CUNYAIModule::DiagnosticText("Anticipating a spore");
             }
-
-            // Let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
-            if (current_map_inventory.map_out_from_enemy_ground_.size() != 0 && current_map_inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
+            // Otherwise, let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
+            else if (current_map_inventory.map_out_from_enemy_ground_.size() != 0 && current_map_inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
                 if (central_base == TilePositions::Origin) {
                     int old_dist = 9999999;
 
-                    for (auto base = base_core.begin(); base != base_core.end(); ++base) {
+                    for (auto base = base_core.begin(); base != base_core.end(); ++base) { // loop over every base.
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
-                        int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition());
+                        int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
 
                         CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), 750);
-                        int closest_enemy = 0;
-                        int closest_hatch = 0;
                         bool serious_problem = false;
 
-                        if ( getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750) ) {
+                        if ( getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750) ) { // if they outnumber us here...
                             serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
                         }
 
-                        if ( (new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) ) {
+                        if ( (new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) ) {  // then let's build at that base.
                             central_base = central_base_new;
                             old_dist = new_dist;
-                            if (serious_problem) {
+                            if (serious_problem) { 
                                 break; 
                             }
                         }
                     }
                 } //confirm we have identified a base around which to build.
 
-                int chosen_base_distance = current_map_inventory.getRadialDistanceOutFromEnemy(Position(central_base));
+                int chosen_base_distance = current_map_inventory.getRadialDistanceOutFromEnemy(Position(central_base)); // Now let us build around that base.
                 for (int x = -10; x <= 10; ++x) {
                     for (int y = -10; y <= 10; ++y) {
                         int centralize_x = central_base.x + x;
@@ -127,7 +126,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             within_map &&
                             not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
-                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around blue veins.
+                            current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around other buildings.
                             current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
                         {
                             final_creep_colony_spot = test_loc;
@@ -137,7 +136,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 2);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -956,6 +955,37 @@ void Building_Gene::getInitialBuildOrder(string s) {
 }
 
 void Building_Gene::clearRemainingBuildOrder() {
+    if constexpr (ANALYSIS_MODE) {
+        if (!building_gene_.empty()) {
+
+            if (building_gene_.front().getUnit().supplyRequired() > Broodwar->self()->supplyTotal() - Broodwar->self()->supplyTotal()) {
+                ofstream output; // Prints to brood war file while in the WRITE file.
+                output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+                string print_value = "";
+
+                //print_value += building_gene_.front().getResearch().c_str();
+                print_value += building_gene_.front().getUnit().c_str();
+                //print_value += building_gene_.front().getUpgrade().c_str();
+
+                output << "Supply blocked: " << print_value << endl;
+                output.close();
+                Broodwar->sendText("A %s was canceled.", print_value);
+            }
+            else {
+                ofstream output; // Prints to brood war file while in the WRITE file.
+                output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+                string print_value = "";
+
+                print_value += building_gene_.front().getResearch().c_str();
+                print_value += building_gene_.front().getUnit().c_str();
+                print_value += building_gene_.front().getUpgrade().c_str();
+
+                output << "Couldn't build: " << print_value << endl;
+                output.close();
+                Broodwar->sendText("A %s was canceled.", print_value);
+            }
+        }
+    }
     building_gene_.clear();
 };
 

@@ -147,7 +147,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
             }
-            if (command.getTargetTilePosition() == inv.next_expo_ && inv.next_expo_ != TilePositions::Origin) {
+            if (command.getTargetTilePosition() == inv.next_expo_) {
                 res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery);
             }
         }

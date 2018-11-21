@@ -33,6 +33,7 @@ Resource_Inventory CUNYAIModule::land_inventory;
 Map_Inventory CUNYAIModule::current_map_inventory;
 FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap;
 FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
+GeneticHistory CUNYAIModule::gene_history;
 
 bool CUNYAIModule::army_starved;
 bool CUNYAIModule::econ_starved;
@@ -98,7 +99,7 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables. 
-    GeneticHistory gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
+    gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
@@ -132,6 +133,14 @@ void CUNYAIModule::onStart()
 
     //friendly_player_model.setLockedOpeningValues();
 
+    // Testing Build Order content intenstively.
+    ofstream output; // Prints to brood war file while in the WRITE file.
+    output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+    string print_value = "";
+    print_value += gene_history.build_order_;
+    output << "Trying Build Order" << print_value << endl;
+    output.close();
+
 }
 
 void CUNYAIModule::onEnd( bool isWinner )
@@ -164,6 +173,21 @@ void CUNYAIModule::onEnd( bool isWinner )
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
     }
+
+    if (!buildorder.isEmptyBuildOrder()) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+        string print_value = "";
+
+        print_value += buildorder.building_gene_.front().getResearch().c_str();
+        print_value += buildorder.building_gene_.front().getUnit().c_str();
+        print_value += buildorder.building_gene_.front().getUpgrade().c_str();
+
+        output << "Couldn't build: " << print_value << endl;
+        output.close();
+        Broodwar->sendText("A %s was canceled.", print_value);
+    }; // testing build order stuff intensively.
+
 }
 
 void CUNYAIModule::onFrame()
@@ -325,6 +349,7 @@ void CUNYAIModule::onFrame()
 
     my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations(friendly_player_model.units_);
+    DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
 
     bool build_check_this_frame = false;
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
@@ -787,7 +812,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && threatening_stocks > 0.5 * friend_loc.stock_fliers_ ) ||
+                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_) ) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -833,7 +858,7 @@ void CUNYAIModule::onFrame()
                                 //see unit destruction case. We will replace this overlord, likely a foolish scout.
                             }
                             else {
-                                buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
+                                //buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
@@ -908,7 +933,7 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 10 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
+                if (isEmptyWorker(u) && /*miner.isAssignedResource(land_inventory) &&*/ !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
@@ -1095,6 +1120,8 @@ void CUNYAIModule::onFrame()
         n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
         n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / static_cast<double>(total_frame_time.count()) * 100, creepcolony_time.count());
     }
+
+    if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // testing build order stuff intensively.
 
 } // closure: Onframe
 
@@ -1384,12 +1411,17 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
 
     if ( unit->getBuildType().isBuilding() ) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit, land_inventory, current_map_inventory, my_reservation);
-        buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on Morph ONLY, this might double catch them...
+        //buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on RESERVATION ONLY, this might double catch them...
+
+        if (unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone) {
+            my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType());
+        }
+        else {
+            buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Upgrading building morphs are not reserved... (ex greater spire)
+        }
     }
 
-    if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone ) {
-        my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType() );
-    }
+
 
 }
 
