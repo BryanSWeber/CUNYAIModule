@@ -342,7 +342,7 @@ void CUNYAIModule::onFrame()
 
         bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor) == 0;
         if (need_gas_now && no_extractor) {
-            buildorder.clearRemainingBuildOrder();
+            //buildorder.clearRemainingBuildOrder();
             CUNYAIModule::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
         }
     }
