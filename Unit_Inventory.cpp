@@ -118,10 +118,10 @@ void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &
         miner.stopMine(ri);
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
+                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
             if (command.getTargetTilePosition() == inv.next_expo_) {
-                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery);
+                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         unit->stop();
@@ -145,10 +145,10 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         miner.stopMine(ri);
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType());
+                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
             if (command.getTargetTilePosition() == inv.next_expo_) {
-                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery);
+                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();

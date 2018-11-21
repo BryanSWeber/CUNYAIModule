@@ -147,7 +147,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
             else if (buildorder.checkBuilding_Desired(building)) {
                 CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                 //buildorder.updateRemainingBuildOrder(building); // skips the building.
-                buildorder.clearRemainingBuildOrder();
+                //buildorder.clearRemainingBuildOrder();
             }
         }
         else if (unit_can_build_intended_target && building == UnitTypes::Zerg_Extractor) {
@@ -171,7 +171,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) && buildorder.checkBuilding_Desired(building)) {
                     CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                     //buildorder.updateRemainingBuildOrder(building); // skips the building.
-                    buildorder.clearRemainingBuildOrder();
+                    //buildorder.clearRemainingBuildOrder();
                 }
             }
 
@@ -197,7 +197,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 else if (buildorder.checkBuilding_Desired(building)) {
                     CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                     //buildorder.updateRemainingBuildOrder(building); // skips the building.
-                    buildorder.clearRemainingBuildOrder();
+                    //buildorder.clearRemainingBuildOrder();
                 }
             }
         }
@@ -855,6 +855,11 @@ void Building_Gene::addBuildOrderElement(const TechType & research)
 void Building_Gene::addBuildOrderElement(const UnitType & ut)
 {
     building_gene_.push_back(Build_Order_Object(ut));
+}
+
+void Building_Gene::retryBuildOrderElement(const UnitType & ut)
+{
+    building_gene_.insert(building_gene_.begin(), Build_Order_Object(ut));
 }
 
 void Building_Gene::getInitialBuildOrder(string s) {

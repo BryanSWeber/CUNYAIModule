@@ -74,6 +74,8 @@ struct Building_Gene {
     void addBuildOrderElement(const TechType & research);// adds an element to the list.
     void addBuildOrderElement(const UnitType &ut); // adds an element to the list.
 
+    void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the list again.
+
     //bool checkExistsInBuild( UnitType unit );
 };
 

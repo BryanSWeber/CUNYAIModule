@@ -31,10 +31,10 @@ bool Reservation::addReserveSystem( TilePosition pos, UnitType type) {
     return safe;
 }
 
-void Reservation::removeReserveSystem(TilePosition pos, UnitType type) {
+void Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end()) {
-        if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) CUNYAIModule::buildorder.addBuildOrderElement(type);
+        if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_building) CUNYAIModule::buildorder.retryBuildOrderElement(type);
         reservation_map_.erase(pos);
         if(it->second.mineralPrice()) min_reserve_ -= it->second.mineralPrice();
         if(it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
@@ -132,7 +132,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
             CUNYAIModule::DiagnosticText( "No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str() );
             auto remove_me = res_it;
             res_it++;
-            removeReserveSystem( remove_me->first, remove_me->second );  // contains an erase.
+            removeReserveSystem( remove_me->first, remove_me->second , true);  // contains an erase.
         }
     }
 
