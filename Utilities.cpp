@@ -1547,7 +1547,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
         if (u_type == UnitTypes::Zerg_Devourer) {
-            cd_frames = 9;
+            cd_frames = 28; // this is an INSANE cooldown.
         }
     }
     //else 
