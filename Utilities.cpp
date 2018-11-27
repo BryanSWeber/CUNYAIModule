@@ -945,6 +945,9 @@ void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &
             else if ( i.getUpgrade() != UpgradeTypes::None ) {
                 Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getUpgrade().c_str() );  //
             }
+            else if (i.getResearch() != UpgradeTypes::None) {
+                Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getResearch().c_str());  //
+            }
             another_row_of_printing++;
         }
     }

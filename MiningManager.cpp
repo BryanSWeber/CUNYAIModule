@@ -223,16 +223,12 @@ bool CUNYAIModule::Gas_Outlet() {
     bool long_condition = Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Hydralisk ) ||
         Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Mutalisk ) ||
         Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Ultralisk );
+
     if ( long_condition ) {
         outlet_avail = true;
     } // turns off gas interest when larve are 0.
 
-      //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_player_model.units_) > 0 ||
-      //        Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
-      //        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
-      //if ( long_condition ) {
-      //    outlet_avail = true;
-      //} 
+    if (buildorder.building_gene_.front().getResearch().gasPrice() > 0 || buildorder.building_gene_.front().getUnit().gasPrice() > 0 || buildorder.building_gene_.front().getUpgrade().gasPrice() > 0) outlet_avail = true;
 
     return outlet_avail;
 }

@@ -136,7 +136,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
-            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 2);
+            TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
                 Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
@@ -335,20 +335,24 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Map_Inventory &inv, U
     // Eco building.
     if (is_larva && !is_building) is_building = Check_N_Grow(larva->getType().getRace().getWorker(), larva, (drone_conditional || wasting_larva_soon) && !enough_drones );
 
+    if (is_larva && !is_building && buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && Count_Units(UnitTypes::Zerg_Hydralisk) == 0) {
+        buildorder.addBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an evo chamber if they have Air.
+        CUNYAIModule::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
+        return is_building = true;
+    }
+
     //Army build/replenish.  Cycle through military units available.
     if (friendly_player_model.u_relatively_weak_against_air_ && ei.stock_fliers_ > 0 ) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not). 
         if (is_muta && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Devourer, larva, (army_starved || wasting_larva_soon) && Count_Units(UnitTypes::Zerg_Greater_Spire) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Scourge, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire) > 0 && Count_Units(UnitTypes::Zerg_Scourge) <= 6); // hard cap on scourges, they build 2 at a time.
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Mutalisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Spire) > 0);
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Hydralisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
-
-        if (is_larva && !is_building) {
             //Evo chamber is required tech for spore colony
-            if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && buildorder.isEmptyBuildOrder()) {
-                buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
-                CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
-                return is_building = true;
-            } // hydralisk den is required tech for hydras, a ground to air/ ground to ground unit.
+        if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && buildorder.isEmptyBuildOrder()) {
+            buildorder.addBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
+            CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
+            return is_building = true;
+        } // hydralisk den is required tech for hydras, a ground to air/ ground to ground unit.
             //else if (Count_Units(UnitTypes::Zerg_Hydralisk_Den) == 0 && buildorder.isEmptyBuildOrder()) {
             //    buildorder.addBuildOrderElement(UnitTypes::Zerg_Hydralisk_Den);
             //    CUNYAIModule::DiagnosticText("Reactionary Hydra Den");
@@ -359,7 +363,7 @@ bool CUNYAIModule::Reactive_Build(const Unit &larva, const Map_Inventory &inv, U
             //    CUNYAIModule::DiagnosticText("Reactionary Spire");
             //    return is_building = true;
             //}
-        }
+
     }
     else if ( !friendly_player_model.e_relatively_weak_against_air_) {
         if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Ultralisk, larva, (army_starved || wasting_larva_soon)  && Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) > 0); // catchall ground units.
@@ -627,6 +631,19 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
     bool wasting_larva_soon = true;
     int best_sim_score = INT_MIN;
 
+    if (buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && Count_Units(UnitTypes::Zerg_Hydralisk) == 0) {
+        buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if 
+        CUNYAIModule::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
+        return is_building = true;
+    }
+    //Evo chamber is required tech for spore colony
+    if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0) {
+        buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
+        CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
+        return is_building = true;
+    }
+
+
     if (is_larva && morph_canidate->getHatchery()) {
         wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
     }
@@ -691,6 +708,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     bool it_needs_to_shoot_up = false;
     bool it_needs_to_shoot_down = false;
     bool it_needs_to_fly = false;
+    bool too_many_scourge = false;
     bool required = false;
 
     // determine undesirables in simulation.
@@ -698,6 +716,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
         if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
+        if (potential_type.first == UnitTypes::Zerg_Scourge && enemy_player_model.units_.stock_fliers_ < Count_Units(UnitTypes::Zerg_Scourge) * Stored_Unit(UnitTypes::Zerg_Scourge).stock_value_ )  too_many_scourge = true;
         if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type.first)) required = true;
     }
     // remove undesireables.
@@ -707,6 +726,8 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
         else if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
         else if (potential_type->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type++);
         else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
+        else if (potential_type->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type++);
+
         else potential_type++;
     }
 
@@ -959,9 +980,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
     }
 }
 
-void Building_Gene::clearRemainingBuildOrder() {
+void Building_Gene::clearRemainingBuildOrder( const bool diagnostic) {
     if constexpr (ANALYSIS_MODE) {
-        if (!building_gene_.empty()) {
+        if (!building_gene_.empty() && diagnostic) {
 
             if (building_gene_.front().getUnit().supplyRequired() > Broodwar->self()->supplyTotal() - Broodwar->self()->supplyTotal()) {
                 ofstream output; // Prints to brood war file while in the WRITE file.

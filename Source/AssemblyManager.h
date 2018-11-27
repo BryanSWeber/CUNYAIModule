@@ -59,11 +59,11 @@ struct Building_Gene {
     UnitType last_build_order;
 
     void getInitialBuildOrder(string s);
+    void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
     void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
     void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
     void updateRemainingBuildOrder( const TechType & research );// drops item from list as complete.
     void updateRemainingBuildOrder( const UnitType &ut ); // drops item from list as complete.
-    void clearRemainingBuildOrder(); // empties the build order.
     void announceBuildingAttempt( UnitType ut );  // do we have a guy going to build it?
     bool checkBuilding_Desired( UnitType ut ); 
     bool checkUpgrade_Desired( UpgradeType upgrade );

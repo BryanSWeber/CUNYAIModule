@@ -184,8 +184,9 @@ void CUNYAIModule::onEnd( bool isWinner )
         print_value += buildorder.building_gene_.front().getUpgrade().c_str();
 
         output << "Couldn't build: " << print_value << endl;
+        output << "Hatches Left?:" << current_map_inventory.hatches_ << endl;
+        output << "Win:" << isWinner << endl;
         output.close();
-        Broodwar->sendText("A %s was canceled.", print_value);
     }; // testing build order stuff intensively.
 
 }
@@ -858,7 +859,7 @@ void CUNYAIModule::onFrame()
                                 //see unit destruction case. We will replace this overlord, likely a foolish scout.
                             }
                             else {
-                                //buildorder.clearRemainingBuildOrder(); // Neutralize the build order if something other than a worker scout is happening.
+                                buildorder.clearRemainingBuildOrder( false ); // Neutralize the build order if something other than a worker scout is happening.
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
@@ -970,7 +971,7 @@ void CUNYAIModule::onFrame()
                 bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
                 bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
                 // If we need gas, get gas!
-                if (could_use_another_gas && ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24 && isEmptyWorker(u))) ) { //if this is your first worker of the frame consider resetting him.
+                if (could_use_another_gas && ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24)) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                     current_map_inventory.last_gas_check_ = t_game;
                     if (could_use_another_gas /*&& !was_gas*/) { // don't reassign from gas into gas.
@@ -988,7 +989,7 @@ void CUNYAIModule::onFrame()
                 }
 
                 //Otherwise, we should put them on minerals.
-                if (!could_use_another_gas && ( unassigned_worker || (worker_bad_mine && current_map_inventory.last_gas_check_ < t_game - 5 * 24 && isEmptyWorker(u))) ) { //if this is your first worker of the frame consider resetting him.
+                if (!could_use_another_gas && ( unassigned_worker || (worker_bad_mine && current_map_inventory.last_gas_check_ < t_game - 5 * 24 )) ) { //if this is your first worker of the frame consider resetting him.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                     current_map_inventory.last_gas_check_ = t_game;
                     Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
@@ -1121,7 +1122,7 @@ void CUNYAIModule::onFrame()
         n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / static_cast<double>(total_frame_time.count()) * 100, creepcolony_time.count());
     }
 
-    if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // testing build order stuff intensively.
+    //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // testing build order stuff intensively.
 
 } // closure: Onframe
 
@@ -1372,8 +1373,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-            else if (unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing()) {
-                buildorder.clearRemainingBuildOrder(); 
+            else if ( unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing() ) {
+                //buildorder.clearRemainingBuildOrder( false ); 
             }
         }
     }
