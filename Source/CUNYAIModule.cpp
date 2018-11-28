@@ -1129,7 +1129,7 @@ void CUNYAIModule::onFrame()
     //    n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
     //    n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
     //}
-	Broodwar->sendText("%i %i", enemy_player_model.oldData[1], enemy_player_model.oldIntel[1]);
+	//Broodwar->sendText("%i %i %i %i \n %i %i %i %i", enemy_player_model.oldMinStock[1], enemy_player_model.oldMinTime[1], enemy_player_model.oldMaxStock[1], enemy_player_model.oldMaxTime[1], enemy_player_model.minStockAverage[1], enemy_player_model.minTimeAverage[1], enemy_player_model.maxStockAverage[1], enemy_player_model.maxTimeAverage[1]);
 } // closure: Onframe
 
 void CUNYAIModule::onSendText( std::string text )

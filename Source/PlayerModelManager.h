@@ -48,5 +48,23 @@ struct Player_Model {
 	int playerData[29];
 	int oldData[29];
 	int oldIntel[29];
+	//new stuff
+	int minTime[29];
+	int minTimeAverage[29];
+
+	int minStock[29];
+	int minStockAverage[29];
+
+	int maxStock[29];
+	int maxStockAverage[29];
+
+	int maxTime[29];
+	int maxTimeAverage[29];
+
+
+	int oldMinStock[29];
+	int oldMinTime[29];
+	int oldMaxStock[29];
+	int oldMaxTime[29];
 };
 

@@ -446,6 +446,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     int ground_fodder = 0;
     int air_fodder = 0;
     int resource_depots = 0;
+	int resource_depots2 = 0;
+	int resource_depots3 = 0;
     int future_fap_stock = 0;
     int moving_average_fap_stock = 0;
     int stock_full_health = 0;
@@ -494,6 +496,10 @@ void Unit_Inventory::updateUnitInventorySummary() {
             }
             else {
                 resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
+				if(resource_depots == 2)
+					resource_depots2 += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
+				else if(resource_depots == 3)
+					resource_depots3 += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
                 air_fodder += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
                 ground_fodder += !flying_unit * unit_value_for_all_of_type;
             
@@ -536,6 +542,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	inventoryCopy[20] = is_shooting_ = is_shooting;
 	inventoryCopy[21] = is_attacking_ = is_attacking;
 	inventoryCopy[22] = resource_depot_count_ = resource_depots;
+	inventoryCopy[23] = resource_depot_count_2 = resource_depots2;
+	inventoryCopy[23] = resource_depot_count_3 = resource_depots3;
 	unitInventoryLabel[0] = "Stock Fliers";
 	unitInventoryLabel[1] = "Stock Ground Units";
 	unitInventoryLabel[2] = "Stock Both Up And Down";

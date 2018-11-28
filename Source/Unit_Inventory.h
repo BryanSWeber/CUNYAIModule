@@ -125,6 +125,8 @@ struct Unit_Inventory {
     int detector_count_;
     int cloaker_count_;
     int resource_depot_count_;
+	int resource_depot_count_2;
+	int resource_depot_count_3;
     int future_fap_stock_;
     int moving_average_fap_stock_;
     int is_shooting_;
