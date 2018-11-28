@@ -73,5 +73,3 @@ struct Player_Model {
 	int oldMaxStock[29];
 	int oldMaxTime[29];
 };
-
-};
