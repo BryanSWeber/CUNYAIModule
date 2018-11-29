@@ -85,12 +85,6 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
     closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
 
-    //Set default cartridges:
-    combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-    building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN } };
-    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
-    tech_cartridge_ = { { TechTypes::Lurker_Aspect, INT_MIN } };
-
 };
 
 
@@ -112,165 +106,165 @@ void Player_Model::evaluateWorkerCount() {
 
 void Player_Model::playerStock(Player_Model & enemy_player_model)
 {
-	enemy_player_model.units_.inventoryCopy[25] = static_cast<int>(enemy_player_model.spending_model_.worker_stock);
-	enemy_player_model.units_.inventoryCopy[26] = static_cast<int>(enemy_player_model.spending_model_.army_stock);
-	enemy_player_model.units_.inventoryCopy[27] = static_cast<int>(enemy_player_model.spending_model_.tech_stock);
+    enemy_player_model.units_.inventoryCopy[25] = static_cast<int>(enemy_player_model.spending_model_.worker_stock);
+    enemy_player_model.units_.inventoryCopy[26] = static_cast<int>(enemy_player_model.spending_model_.army_stock);
+    enemy_player_model.units_.inventoryCopy[27] = static_cast<int>(enemy_player_model.spending_model_.tech_stock);
 }
 
 
 void Player_Model::readPlayerLog(Player_Model & enemy_player_model) // Function that reads in previous game's data
 {
-	string data;
-	int index = 0;
-	int iteration = 0;
-	ifstream infile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+    string data;
+    int index = 0;
+    int iteration = 0;
+    ifstream infile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
 
-	int minStockCounter[29];
-	int maxStockCounter[29];
-	int minTimeCounter[29];
-	int maxTimeCounter[29];
+    int minStockCounter[29];
+    int maxStockCounter[29];
+    int minTimeCounter[29];
+    int maxTimeCounter[29];
 
-	fill_n(minStockAverage, 29, 0);
-	fill_n(minTimeAverage, 29, 0);
-	fill_n(maxTimeAverage, 29, 0);
-	fill_n(maxStockAverage, 29, 0);
-	fill_n(minStockCounter, 29, 0);
-	fill_n(minTimeCounter, 29, 0);
-	fill_n(maxStockCounter, 29, 0);
-	fill_n(maxTimeCounter, 29, 0);
+    fill_n(minStockAverage, 29, 0);
+    fill_n(minTimeAverage, 29, 0);
+    fill_n(maxTimeAverage, 29, 0);
+    fill_n(maxStockAverage, 29, 0);
+    fill_n(minStockCounter, 29, 0);
+    fill_n(minTimeCounter, 29, 0);
+    fill_n(maxStockCounter, 29, 0);
+    fill_n(maxTimeCounter, 29, 0);
 
-	int numoflines = 0;
-	getline(infile, data); //Skip 1 line
+    int numoflines = 0;
+    getline(infile, data); //Skip 1 line
 
 
-	infile.clear();
-	infile.seekg(std::ios::beg); // Move the start position to the second line
+    infile.clear();
+    infile.seekg(std::ios::beg); // Move the start position to the second line
 
-	infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');//ignore first line
+    infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');//ignore first line
 
-	while (infile >> data) // Read in the data
-	{
+    while (infile >> data) // Read in the data
+    {
 
-		if (data == ",")
-			infile >> data;
+        if (data == ",")
+            infile >> data;
 
-		stringstream conversion(data);
-		conversion >> oldMinStock[index];
+        stringstream conversion(data);
+        conversion >> oldMinStock[index];
 
-		if (oldMinStock[index] != 0)
-		{
-			minStockAverage[index] += oldMinStock[index];
-			minStockCounter[index]++;
-		}
+        if (oldMinStock[index] != 0)
+        {
+            minStockAverage[index] += oldMinStock[index];
+            minStockCounter[index]++;
+        }
 
-		conversion.str(std::string());
-		conversion.clear();
-		infile >> data;
-		infile >> data;
-		stringstream conversion2(data);
-		conversion2 >> oldMinTime[index];
+        conversion.str(std::string());
+        conversion.clear();
+        infile >> data;
+        infile >> data;
+        stringstream conversion2(data);
+        conversion2 >> oldMinTime[index];
 
-		if (oldMinTime[index] != 0)
-		{
-			minTimeAverage[index] += oldMinTime[index];
-			minTimeCounter[index] = minTimeCounter[index] + 1;
-		}
+        if (oldMinTime[index] != 0)
+        {
+            minTimeAverage[index] += oldMinTime[index];
+            minTimeCounter[index] = minTimeCounter[index] + 1;
+        }
 
-		conversion2.str(std::string());
-		conversion2.clear();
-		infile >> data;
-		infile >> data;
-		stringstream conversion3(data);
-		conversion3 >> oldMaxStock[index];
-		conversion3.str(std::string());
-		conversion3.clear();
+        conversion2.str(std::string());
+        conversion2.clear();
+        infile >> data;
+        infile >> data;
+        stringstream conversion3(data);
+        conversion3 >> oldMaxStock[index];
+        conversion3.str(std::string());
+        conversion3.clear();
 
-		if (oldMaxStock[index] != 0)
-		{
-			maxStockAverage[index] += oldMaxStock[index];
-			maxStockCounter[index] = maxStockCounter[index] + 1;
-			cout << maxStockCounter[index] << endl;
-		}
-		infile >> data;
-		infile >> data;
-		stringstream conversion4(data);
-		conversion4 >> oldMaxTime[index];
-		conversion4.str(std::string());
-		conversion4.clear();
+        if (oldMaxStock[index] != 0)
+        {
+            maxStockAverage[index] += oldMaxStock[index];
+            maxStockCounter[index] = maxStockCounter[index] + 1;
+            cout << maxStockCounter[index] << endl;
+        }
+        infile >> data;
+        infile >> data;
+        stringstream conversion4(data);
+        conversion4 >> oldMaxTime[index];
+        conversion4.str(std::string());
+        conversion4.clear();
 
-		if (oldMaxTime[index] != 0)
-		{
-			maxTimeAverage[index] += oldMaxTime[index];
-			maxTimeCounter[index]++;
-		}
+        if (oldMaxTime[index] != 0)
+        {
+            maxTimeAverage[index] += oldMaxTime[index];
+            maxTimeCounter[index]++;
+        }
 
-		index++;
+        index++;
 
-		if (index == 29 && !infile.eof())
-			index = 0;
+        if (index == 29 && !infile.eof())
+            index = 0;
 
-		iteration++;
-	}
+        iteration++;
+    }
 
-	for (int i = 0; i < 29; i++)
-	{
-		if (minStockCounter[i] > 0)
-			minStockAverage[i] /= minStockCounter[i];
-		if (minTimeCounter[i] > 0)
-			minTimeAverage[i] /= minTimeCounter[i];
-		if (maxStockCounter[i] > 0)
-			maxStockAverage[i] /= maxStockCounter[i];
-		if (maxTimeCounter[i] > 0)
-			maxTimeAverage[i] /= maxTimeCounter[i];
-		cout << "avg is " << minStockAverage[i] << endl;
-	}
+    for (int i = 0; i < 29; i++)
+    {
+        if (minStockCounter[i] > 0)
+            minStockAverage[i] /= minStockCounter[i];
+        if (minTimeCounter[i] > 0)
+            minTimeAverage[i] /= minTimeCounter[i];
+        if (maxStockCounter[i] > 0)
+            maxStockAverage[i] /= maxStockCounter[i];
+        if (maxTimeCounter[i] > 0)
+            maxTimeAverage[i] /= maxTimeCounter[i];
+        cout << "avg is " << minStockAverage[i] << endl;
+    }
 
 }
 void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
 
-	//Initialize all unit inventories seen to -1
-	if (Broodwar->getFrameCount() == 1)
-		for (int i = 0; i < 29; i++)
-			enemy_player_model.minTime[i] = 0;
+    //Initialize all unit inventories seen to -1
+    if (Broodwar->getFrameCount() == 1)
+        for (int i = 0; i < 29; i++)
+            enemy_player_model.minTime[i] = 0;
 
-	for (int i = 0; i < 29; i++)
-	{
-		if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.minTime[i] == 0)
-		{
-			enemy_player_model.minTime[i] = Broodwar->elapsedTime();
-			enemy_player_model.minStock[i] = enemy_player_model.units_.inventoryCopy[i];
-		}
-		if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.maxStock[i])
-		{
-			enemy_player_model.maxStock[i] = enemy_player_model.units_.inventoryCopy[i];
-			enemy_player_model.maxTime[i] = Broodwar->elapsedTime();
-		}
-	}
+    for (int i = 0; i < 29; i++)
+    {
+        if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.minTime[i] == 0)
+        {
+            enemy_player_model.minTime[i] = Broodwar->elapsedTime();
+            enemy_player_model.minStock[i] = enemy_player_model.units_.inventoryCopy[i];
+        }
+        if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.maxStock[i])
+        {
+            enemy_player_model.maxStock[i] = enemy_player_model.units_.inventoryCopy[i];
+            enemy_player_model.maxTime[i] = Broodwar->elapsedTime();
+        }
+    }
 
-			//Write to file once at the end of the game
-			if (gameComplete)
-			{
-				ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
-				if (!inFile)
-				{
-					ofstream enemyData;
-					enemyData.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-					for (int i = 0; i < 29; i++)
-							enemyData << left << setw(30) << enemy_player_model.units_.unitInventoryLabel[i];
-					enemyData << endl;
-				}
-				ofstream earliestDate;
-				earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+            //Write to file once at the end of the game
+            if (gameComplete)
+            {
+                ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+                if (!inFile)
+                {
+                    ofstream enemyData;
+                    enemyData.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+                    for (int i = 0; i < 29; i++)
+                            enemyData << left << setw(30) << enemy_player_model.units_.unitInventoryLabel[i];
+                    enemyData << endl;
+                }
+                ofstream earliestDate;
+                earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
 
-				for (int i = 0; i < 29; i++)
-				{
-					stringstream ss;
-					ss << enemy_player_model.minStock[i] << " , " << enemy_player_model.minTime[i] << " , " << enemy_player_model.maxStock[i] << " , " << enemy_player_model.maxTime[i];
-					earliestDate << left << setw(30) << ss.str();
-				}
-				earliestDate << endl;
-				earliestDate.close();
-			}
+                for (int i = 0; i < 29; i++)
+                {
+                    stringstream ss;
+                    ss << enemy_player_model.minStock[i] << " , " << enemy_player_model.minTime[i] << " , " << enemy_player_model.maxStock[i] << " , " << enemy_player_model.maxTime[i];
+                    earliestDate << left << setw(30) << ss.str();
+                }
+                earliestDate << endl;
+                earliestDate.close();
+            }
 }
 void Player_Model::evaluateCurrentWorth()
 {
@@ -344,4 +338,25 @@ void Player_Model::updateUnit_Counts() {
     unit_type_ = already_seen;
     unit_count_ = unit_count_temp;
     unit_incomplete_ = unit_incomplete_temp;
+}
+
+// sample command set to explore zergling rushing.
+void Player_Model::setLockedOpeningValues() {
+
+    // sample command set to explore zergling rushing.
+     spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
+     spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
+     spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
+
+     CUNYAIModule::delta = 0.00;
+     CUNYAIModule::gamma = 0.55;
+     CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
+
+    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
+    combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
+    //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
+    building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
+    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
+    tech_cartridge_ = {  };
+
 }

@@ -28,8 +28,8 @@ void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk )
     bool econ_possible = evalEconPossible();
     bool tech_possible = evalTechPossible();
 
-    econ_derivative = alpha_econ *                                                           pow(tech_stock, alpha_tech * alpha_army) * pow(army_stock/worker_stock, alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
-    army_derivative = alpha_army *              pow(worker_stock / army_stock, alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
+    econ_derivative = alpha_econ *                                                           pow(tech_stock, alpha_tech * alpha_army) * pow(safeDiv(army_stock,worker_stock), alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
+    army_derivative = alpha_army *              pow( safeDiv(worker_stock , army_stock), alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
     tech_derivative = alpha_tech * alpha_army * pow(worker_stock, alpha_econ) *              pow(tech_stock, alpha_tech * alpha_army - 1 ) * pow(army_stock, alpha_army) * tech_possible;
 }
 
@@ -105,10 +105,10 @@ bool CobbDouglas::tech_starved()
 
 void CobbDouglas::estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock) // FOR MODELING ENEMIES ONLY
 {
-    double K_over_L = static_cast<double>(e_army_stock + 1) / static_cast<double>(e_worker_stock + 1); // avoid NAN's
+    double K_over_L = safeDiv(e_army_stock, e_worker_stock); // avoid NAN's
     alpha_army = CUNYAIModule::bindBetween(K_over_L / static_cast<double>(1.0 + K_over_L), 0.05, 0.95);
     alpha_econ = CUNYAIModule::bindBetween(1 - alpha_army, 0.05, 0.95);
-    alpha_tech = CUNYAIModule::bindBetween(e_tech_stock / static_cast<double>(e_worker_stock + 1) * alpha_econ / alpha_army, 0.05, 0.95 );
+    alpha_tech = CUNYAIModule::bindBetween( safeDiv(e_tech_stock , e_worker_stock ) * alpha_econ / alpha_army, 0.05, 0.95 );
 
     army_stock = e_army_stock;
     tech_stock = e_tech_stock;
@@ -134,8 +134,8 @@ void CobbDouglas::enemy_mimic(const Player_Model & enemy, const double adaptatio
 
 
     //reevaluate our tech choices.
-    econ_derivative = alpha_econ * pow(tech_stock, alpha_tech * alpha_army) * pow(army_stock / worker_stock, alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
-    army_derivative = alpha_army * pow(worker_stock / army_stock, alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
+    econ_derivative = alpha_econ * pow(tech_stock, alpha_tech * alpha_army) * pow(safeDiv(army_stock , worker_stock), alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
+    army_derivative = alpha_army * pow(safeDiv(worker_stock , army_stock), alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
     tech_derivative = alpha_tech * alpha_army * pow(worker_stock, alpha_econ) *              pow(tech_stock, alpha_tech * alpha_army - 1) * pow(army_stock, alpha_army) * tech_possible;
 
     if (isnan(econ_derivative)) econ_derivative = 0;
@@ -160,12 +160,12 @@ void CobbDouglas::printModelParameters() { // we have poorly named parameters, a
 bool CobbDouglas::evalArmyPossible()
 {
 
-    double K_over_L = static_cast<double>(army_stock + 1) / static_cast<double>(worker_stock + 1); // avoid NAN's
+    double K_over_L = safeDiv( army_stock , worker_stock); // avoid NAN's
 
     bool can_build_army = false;
     auto combat_types = CUNYAIModule::friendly_player_model.combat_unit_cartridge_; // safe copy.
 
-    // drop all units types I cannot assemble at this time.
+    // drop all units types I cannot assemble at this time. 
     for(auto unit_selection:combat_types) {
         if (Broodwar->canMake(unit_selection.first)) {
             can_build_army = true;
@@ -180,7 +180,7 @@ bool CobbDouglas::evalArmyPossible()
 bool CobbDouglas::evalEconPossible()
 {
     bool not_enough_miners = (CUNYAIModule::current_map_inventory.min_workers_ <= CUNYAIModule::current_map_inventory.min_fields_ * 2);
-    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85;
+    bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85 && Broodwar->self()->supplyUsed() < 400;
     return not_enough_miners && not_enough_workers; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
@@ -189,3 +189,4 @@ bool CobbDouglas::evalTechPossible()
 {
     return CUNYAIModule::Tech_Avail(); // if you have no tech available, you cannot be tech starved.
 }
+

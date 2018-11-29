@@ -9,12 +9,15 @@
 # include <ctime>
 # include <string>
 # include <algorithm>
+# include <set>
 # include <random> // C++ base random is low quality.
 
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+
+GeneticHistory::GeneticHistory() {};
 
 // Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
 GeneticHistory::GeneticHistory(string file) {
@@ -58,8 +61,9 @@ GeneticHistory::GeneticHistory(string file) {
         //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
         //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone drone drone drone drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
         //"drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta.  Requires another overlord?
+        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta. Extra overlord is for safety.
        "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
+       "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool", //supermacro cheese
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
     };
@@ -72,16 +76,9 @@ GeneticHistory::GeneticHistory(string file) {
 
     int selected_win_count = 0;
     int selected_lose_count = 0;
-    int win_count = 0;
-    int lose_count = 0;
+    int win_count[3] = { 0,0,0 }; //player, race, map.
+    int lose_count[3] = { 0,0,0 }; // player, race, map.
     int relevant_game_count = 0;
-    int winning_player_map_race = 0;
-    int winning_player_map = 0;
-    int winning_player_race = 0;
-    int winning_map_race = 0;
-    int winning_player = 0;
-    int winning_map = 0;
-    int winning_race = 0;
     int losing_player_map_race = 0;
     int losing_player_map = 0;
     int losing_player_race = 0;
@@ -90,38 +87,42 @@ GeneticHistory::GeneticHistory(string file) {
     int losing_map = 0;
     int losing_race = 0;
     int games_since_last_win = 999; // starting at 0 makes the script think it WON the last game. 999 is a functional marker for having never won.
-    double prob_win_given_conditions;
+    double prob_win_given_opponent;
 
     string entry; // entered string from stream
-    vector<double> delta_total;
-    vector<double> gamma_total;
-    vector<double> a_army_total;
-    vector<double> a_vis_total;
-    vector<double> a_econ_total;
-    vector<double> a_tech_total;
-    vector<double> r_total;
-    vector<string> race_total;
+    //std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>;  // all stats for the game.
+    //vector<double> delta_total;
+    //vector<double> gamma_total;
+    //vector<double> a_army_total;
+    //vector<double> a_econ_total;
+    //vector<double> a_tech_total;
+    //vector<double> r_total;
+    //vector<string> race_total;
+    //vector<int> win_total;
+    //vector<int> sdelay_total;
+    //vector<int> mdelay_total;
+    //vector<int> ldelay_total;
+    //vector<string> name_total;
+    //vector<string> map_name_total;
+    //vector<string> build_order_total;
 
-    vector<int> win_total;
-    vector<int> sdelay_total;
-    vector<int> mdelay_total;
-    vector<int> ldelay_total;
-    vector<string> name_total;
-    vector<string> map_name_total;
-    vector<string> build_order_total;
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
-    vector<double> delta_win;
-    vector<double> gamma_win;
-    vector<double> a_army_win;
-    vector<double> a_econ_win;
-    vector<double> a_tech_win;
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+
+
     vector<double> r_win;
     vector<string> map_name_win;
     vector<string> build_order_win;
 
-    vector<string> build_orders_tried;
-    vector<string> enemy_races_tried;
-
+    std::set<string> build_orders_best_match;
+    std::set<string> build_orders_partial_match;
+    std::set<string> build_orders_untried;
 
     loss_rate_ = 1;
 
@@ -139,42 +140,61 @@ GeneticHistory::GeneticHistory(string file) {
     input.open(file, ios::in); //ios.in?
 
     for (int j = 0; j < csv_length; ++j) { // further brute force inelegance.
+        // The ugly tuple.
+        double delta_total;
+        double gamma_total;
+        double a_army_total;
+        double a_econ_total;
+        double a_tech_total;
+        double r_total;
+        string race_total;
+        bool win_total;
+        int sdelay_total;
+        int mdelay_total;
+        int ldelay_total;
+        string name_total;
+        string map_name_total;
+        string build_order_total;
 
         getline(input, entry, ',');
-        delta_total.push_back(stod(entry));
+        delta_total=stod(entry);
 
         getline(input, entry, ',');
-        gamma_total.push_back(stod(entry));
+        gamma_total=stod(entry);
 
         getline(input, entry, ',');
-        a_army_total.push_back(stod(entry));
-        getline(input, entry, ',');
-        a_econ_total.push_back(stod(entry));
-        getline(input, entry, ',');
-        a_tech_total.push_back(stod(entry));
-        getline(input, entry, ',');
-        r_total.push_back(stod(entry));
+        a_army_total=stod(entry);
 
         getline(input, entry, ',');
-        race_total.push_back(entry);
+        a_econ_total=stod(entry);
+        getline(input, entry, ',');
+        a_tech_total=stod(entry);
+        getline(input, entry, ',');
+        r_total=stod(entry);
 
         getline(input, entry, ',');
-        win_total.push_back(stoi(entry));
+        race_total=entry;
 
         getline(input, entry, ',');
-        sdelay_total.push_back(stoi(entry));
-        getline(input, entry, ',');
-        mdelay_total.push_back(stoi(entry));
-        getline(input, entry, ',');
-        ldelay_total.push_back(stoi(entry));
+        win_total=static_cast<bool>(stoi(entry));
 
         getline(input, entry, ',');
-        name_total.push_back(entry);
+        sdelay_total=stoi(entry);
         getline(input, entry, ',');
-        map_name_total.push_back(entry);
+        mdelay_total=stoi(entry);
+        getline(input, entry, ',');
+        ldelay_total=stoi(entry);
+
+        getline(input, entry, ',');
+        name_total=entry;
+        getline(input, entry, ',');
+        map_name_total=entry;
 
         getline(input, entry); //diff. End of line char, not ','
-        build_order_total.push_back(entry);
+        build_order_total=entry;
+
+        a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, build_order_total);
+        game_data.push_back(a_game);
 
     } // closure for each row
 
@@ -184,200 +204,175 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
+                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
-        if (win_total[j] == 1) {
-            win_count++;
-        }
-        else {
-            lose_count++;
-        }
 
-        if (name_total[j] == e_name && (e_race == "Unknown" || race_total[j] == e_race)) {
-            if (win_total[j] == 1) {
-                winning_player++;
+        if (std::get<11>(game_data[j]) == e_name) {
+            if (std::get<7>(game_data[j]) == 1) { 
+                game_data_partial_match.push_back(game_data[j]);
+                win_count[0]++;
             }
-            else {
-                losing_player++;
-            }
+            else lose_count[0]++;
         }
 
-        if (race_total[j] == e_race) {
-            if (win_total[j] == 1) {
-                winning_race++;
+        if (std::get<6>(game_data[j]) == e_race) {
+            if (std::get<7>(game_data[j]) == 1) {
+                game_data_partial_match.push_back(game_data[j]);
+                win_count[1]++;
             }
-            else {
-                losing_race++;
-            }
+            else lose_count[1]++;
         }
 
-        if (map_name_total[j] == map_name) {
-            if (win_total[j] == 1) {
-                winning_map++;
+        if (std::get<12>(game_data[j]) == map_name) {
+            if (std::get<7>(game_data[j]) == 1) {
+                game_data_partial_match.push_back(game_data[j]);
+               win_count[2]++;
             }
-            else {
-                losing_map++;
-            }
+            else lose_count[2]++;
         }
 
-        if (name_total[j] == e_name) {
-            enemy_races_tried.push_back(race_total[j]);
-        }
     }
 
     //What model is this? It's greedy...
 
-    double race_or_player_w = winning_player > 0 ? winning_player : winning_race;
-    double race_or_player_l = losing_player > 0 ? losing_player : losing_race;
-
-    double likelihood_w = race_or_player_w / static_cast<double>(win_count) * winning_map / static_cast<double>(win_count);
-    double likelihood_l = race_or_player_l / static_cast<double>(lose_count) * losing_map / static_cast<double>(lose_count);
 
     double rand_value = dis(gen);
 
-    prob_win_given_conditions = fmax((likelihood_w * win_count) / (likelihood_w * win_count + likelihood_l * lose_count), 0.0);
-
-    vector<int> frequency = { winning_player, winning_race, winning_map };
 
 
     // start from most recent and count our way back from there.
-    for (int j = csv_length; j > 0; --j) {
+    for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
 
         bool conditions_for_inclusion = true;
         int counter = 0;
-        //int min_frequency = 9999999999;
 
-        bool name_matches = name_total[j] == e_name;
-        bool race_matches = (e_race == "Unknown" || race_total[j] == e_race);
-        bool map_matches = map_name_total[j] == map_name;
+        bool name_matches = std::get<11>(*game_iter) == e_name;
+        bool race_matches = std::get<6>(*game_iter) == e_race;
+        bool map_matches = std::get<12>(*game_iter) == map_name;
+        bool game_won = std::get<7>(*game_iter);
+
         // an inelegant statement follows. How do I make this into a switch?
-        if (winning_player > 0 && winning_race > 0 && winning_map > 0) { //choice in race for random players is like a whole new ball park.
+
+        if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
             conditions_for_inclusion = name_matches && race_matches && map_matches;
         }
-        else if (winning_player > 0 && winning_race > 0 && winning_map == 0) {
+        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (winning_player > 0 && winning_race == 0 && winning_map > 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] > 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (winning_player == 0 && winning_race > 0 && winning_map > 0) {
+        else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] > 0) {
             conditions_for_inclusion = !name_matches && race_matches && map_matches;
         }
-        else if (winning_player > 0 && winning_race > 0 && winning_map == 0) {
+        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (winning_player > 0 && winning_race == 0 && winning_map == 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] == 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-        else if (winning_player == 0 && winning_race > 0 && winning_map == 0) {
-            conditions_for_inclusion = !name_matches && race_matches && !map_matches;
-        }
-        else if (winning_player == 0 && winning_race == 0 && winning_map > 0) {
-            conditions_for_inclusion = !name_matches && !race_matches && map_matches;
-        }
 
-        if (conditions_for_inclusion && win_total[j] == 1) {
-            delta_win.push_back(delta_total[j]);
-            gamma_win.push_back(gamma_total[j]);
-            a_army_win.push_back(a_army_total[j]);
-            a_econ_win.push_back(a_econ_total[j]);
-            a_tech_win.push_back(a_tech_total[j]);
-            r_win.push_back(r_total[j]);
-            build_order_win.push_back(build_order_total[j]);
-            build_orders_tried.push_back(build_order_total[j]);
-            selected_win_count++;
+        if (conditions_for_inclusion && game_won) {
+            game_data_well_matched.push_back(*game_iter);
             games_since_last_win = 0;
         }
-        else if (conditions_for_inclusion && win_total[j] == 0) {
-            selected_lose_count++;
-            build_orders_tried.push_back(build_order_total[j]);
+        else if (conditions_for_inclusion && !game_won) {
             games_since_last_win++;
         }
 
-        if (selected_win_count >= 10) { // stop once we have 50 games in the parantage.
+        if (game_data_well_matched.size() >= 10) { // stop once we have 50 games in the parantage.
             break;
         }
     } //or widest hunt possible.
 
-    std::sort(build_orders_tried.begin(), build_orders_tried.end());
-    int uniqueCount = std::unique(build_orders_tried.begin(), build_orders_tried.end()) - build_orders_tried.begin();
 
-    if (selected_win_count > 0) { // redefine final output.
+    if (game_data_well_matched.size() > 0) { // redefine final output.
 
-        std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, build_order_win.size() - 1); // safe even if there is only 1 win., index starts at 0.
-
-        size_t parent_1 = unif_dist_to_win_count(gen);
-        size_t parent_2 = unif_dist_to_win_count(gen);
+        std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_well_matched.size() - 1); // safe even if there is only 1 win., index starts at 0.
+        size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
+        parent_1 = game_data_well_matched[rand_parent_1];
+        string opening_of_choice = std::get<13>(parent_1); // its matching parents must have a similar opening.
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-            //if we don't need diversity, combine our old wins together.
+        //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) < uniqueCount / static_cast<double>(build_order_list.size())) { // 
+        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { // 
             //Parent 2 must match the build of the first one.
-            build_order_out = build_order_win[parent_1];
-            while (build_order_out != build_order_win[parent_2]) {
-                parent_2 = unif_dist_to_win_count(gen); // get a matching parent.
+            for (auto potential_parent : game_data_well_matched) {
+                if (std::get<13>(potential_parent) == opening_of_choice) {
+                    game_data_parent_match.push_back(potential_parent);
+                }
             }
+
+            std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_parent_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
+            size_t rand_parent_2 = unif_dist_to_win_count(gen); // choose a random 'parent'.
+            parent_2 = game_data_parent_match[rand_parent_2];
+
 
             if constexpr (!LEARNING_MODE) {
                 parent_2 = parent_1;
             }
 
-            delta_out = CUNYAIModule::bindBetween(pow(delta_win[parent_1], crossover)* pow(delta_win[parent_2], (1 - crossover)), 0., 1.);
-            gamma_out = CUNYAIModule::bindBetween(pow(gamma_win[parent_1], crossover) * pow(gamma_win[parent_2], (1 - crossover)), 0., 1.);
-            a_army_out = CUNYAIModule::bindBetween(pow(a_army_win[parent_1], crossover) * pow(a_army_win[parent_2], (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-            a_econ_out = CUNYAIModule::bindBetween(pow(a_econ_win[parent_1], crossover) * pow(a_econ_win[parent_2], (1 - crossover)), 0., 1.);
-            a_tech_out = CUNYAIModule::bindBetween(pow(a_tech_win[parent_1], crossover) * pow(a_tech_win[parent_2], (1 - crossover)), 0., 1.);
-            r_out = CUNYAIModule::bindBetween(pow(r_win[parent_1], crossover) * pow(r_win[parent_2], (1 - crossover)), 0., 1.);
+            delta_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
+            gamma_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
+            a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+            a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
+            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
+            r_out      = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
         else { // we must need diversity.  
             // use the random values we have determined in the beginning and the random opening.
         }
 
-        //if we won our last game, change nothing.
-        //if (games_since_last_win == 0) {
-        //    parent_1 = build_order_win.size() - 1; // safe even if there is only 1 win., index starts at 0.
-        //    parent_2 = build_order_win.size() - 1;
-        //    build_order_out = build_order_win.back();// vectors start at 0.
+    }
+    else if( game_data_partial_match.size() > 0 ){ // do our best with the partial match data.
+        std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_partial_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
+        size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
+        parent_1 = game_data_partial_match[rand_parent_1];
+        string opening_of_choice = std::get<13>(parent_1); // its matching parents must have a similar opening.
 
-        //    delta_out = delta_win[parent_1];
-        //    gamma_out = gamma_win[parent_1];
-        //    a_army_out = a_army_win[parent_1];
-        //    a_econ_out = a_econ_win[parent_1];
-        //    a_tech_out = a_tech_win[parent_1];
-        //    r_out =   r_win[parent_1];
-        //}
+        double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-    //Gene swapping between parents. Not as popular for continuous optimization problems.
-    //int chrom_0 = (rand() % 100 + 1) / 2;
-    //int chrom_1 = (rand() % 100 + 1) / 2;
-    //int chrom_2 = (rand() % 100 + 1) / 2;
-    //int chrom_3 = (rand() % 100 + 1) / 2;
-    //int chrom_4 = (rand() % 100 + 1) / 2;
-    //int chrom_5 = (rand() % 100 + 1) / 2;
+                                     //if we don't need diversity, combine our old wins together.
 
-    //double delta_out_temp = chrom_0 > 50 ? delta_win[parent_1] : delta_win[parent_2];
-    //double gamma_out_temp = chrom_1 > 50 ? gamma_win[parent_1] : gamma_win[parent_2];
-    //double a_army_out_temp = chrom_2 > 50 ? a_army_win[parent_1] : a_army_win[parent_2];
-    //double a_vis_out_temp = chrom_3 > 50 ? a_vis_win[parent_1] : a_vis_win[parent_2];
-    //double a_econ_out_temp = chrom_4 > 50 ? a_econ_win[parent_1] : a_econ_win[parent_2];
-    //double a_tech_out_temp = chrom_5 > 50 ? a_tech_win[parent_1] : a_tech_win[parent_2];
+        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { // 
+                                                                                                                    //Parent 2 must match the build of the first one.
+            for (auto potential_parent : game_data_partial_match) {
+                if (std::get<13>(potential_parent) == opening_of_choice) {
+                    game_data_parent_match.push_back(potential_parent);
+                }
+            }
 
-    //linear_crossover, interior of parents.
-    //a_army_out  = crossover * a_army_win[parent_1] + (1 - crossover) * a_army_win[parent_2];  
-    //a_econ_out  = crossover * a_econ_win[parent_1] + (1 - crossover) * a_econ_win[parent_2];
-    //a_tech_out  = crossover * a_tech_win[parent_1] + (1 - crossover) * a_tech_win[parent_2];
-    //r_out       = crossover * r_win[parent_1]      + (1 - crossover) * r_win[parent_2];
+            std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_parent_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
+            size_t rand_parent_2 = unif_dist_to_win_count(gen); // choose a random 'parent'.
+            parent_2 = game_data_parent_match[rand_parent_2];
 
-        loss_rate_ = 1 - prob_win_given_conditions /*(double)win_count / (double)relevant_game_count*/;
 
+            if constexpr (!LEARNING_MODE) {
+                parent_2 = parent_1;
+            }
+
+            delta_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
+            gamma_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
+            a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+            a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
+            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
+            r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
+        }
+        else { // we must need diversity.  
+               // use the random values we have determined in the beginning and the random opening.
+        }
     }
 
+    prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
+    loss_rate_ = 1 - prob_win_given_opponent;
 
 
     //for (int i = 0; i < 1000; i++) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
 
-        //From genetic history, random parent for each gene. Mutate the genome
+    //From genetic history, random parent for each gene. Mutate the genome
     std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
     std::normal_distribution<double> normal_mutation_size(0, 0.05);
 
@@ -437,7 +432,7 @@ GeneticHistory::GeneticHistory(string file) {
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
 
-        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //zerg_9pool to hydra one base.
+        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //Standard Opener
 
     }
 }

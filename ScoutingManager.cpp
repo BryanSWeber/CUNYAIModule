@@ -117,7 +117,7 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
             for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ++itr) {
                 scout_spot = itr->second;
                 itr = scout_expo_map_.erase(itr); //Erase the used base location, each scout goes to unique location
-				return scout_spot;
+                return scout_spot;
             }
         }
     }
