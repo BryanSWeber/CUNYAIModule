@@ -488,6 +488,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
         is_shooting += u_iter.second.cd_remaining_ > 0; //
         is_attacking += u_iter.second.phase_ == "Attacking";
         is_retreating += u_iter.second.phase_ == "Retreating";
+		resource_depots += u_iter.second.type_.isResourceDepot();
 
         if ( find( already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_ ) == already_seen_types.end() ) { // if you haven't already checked this unit type.
 
@@ -518,15 +519,11 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 already_seen_types.push_back( u_iter.second.type_ );
             }
             else {
-                resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
-				if(resource_depots == 2)
-					resource_depots2 += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
-				else if(resource_depots == 3)
-					resource_depots3 += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
                 air_fodder += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
                 ground_fodder += !flying_unit * unit_value_for_all_of_type;
 
             }
+
             detector_count  += u_iter.second.type_.isDetector() * count_of_unit_type;
             stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
@@ -539,6 +536,10 @@ void Unit_Inventory::updateUnitInventorySummary() {
         }
     }
 
+	if (resource_depots == 2)
+		resource_depots2 += resource_depots;
+	else if (resource_depots == 3)
+		resource_depots3 += resource_depots;
     worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
 
@@ -566,7 +567,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 	inventoryCopy[21] = is_attacking_ = is_attacking;
 	inventoryCopy[22] = resource_depot_count_ = resource_depots;
 	inventoryCopy[23] = resource_depot_count_2 = resource_depots2;
-	inventoryCopy[23] = resource_depot_count_3 = resource_depots3;
+	inventoryCopy[24] = resource_depot_count_3 = resource_depots3;
 	unitInventoryLabel[0] = "Stock Fliers";
 	unitInventoryLabel[1] = "Stock Ground Units";
 	unitInventoryLabel[2] = "Stock Both Up And Down";

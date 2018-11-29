@@ -182,7 +182,8 @@ void CUNYAIModule::onFrame()
   // Return if the game is a replay or is paused
 	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
 		return;
-
+	Broodwar->sendText("%i", enemy_player_model.units_.inventoryCopy[22]);
+	Broodwar->sendText("%i", enemy_player_model.units_.resource_depot_count_);
 	//if (foundDetector == false) {
 	enemy_player_model.playerStock(enemy_player_model);
 	enemy_player_model.writePlayerLog(enemy_player_model, false);
