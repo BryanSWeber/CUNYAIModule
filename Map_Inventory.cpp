@@ -451,13 +451,12 @@ void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCe
         distance_below_y = max(map_y - minitile_y, map_y);
         int t = std::max(map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y);
         //int maxI = t*t; // total number of spiral steps we have to make.
-        int total_squares_filled = 0;
+        int total_squares_filled = 2; // If you start at 1 you will be implicitly marking certain squares as unwalkable. 1 is the short code for unwalkable.
 
         vector <WalkPosition> fire_fill_queue;
         vector <WalkPosition> fire_fill_queue_holder;
 
         //begin with a flood fill.
-        total_squares_filled++;
         map[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back({ minitile_x, minitile_y });
 

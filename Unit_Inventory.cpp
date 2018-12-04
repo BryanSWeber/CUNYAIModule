@@ -214,6 +214,7 @@ void Unit_Inventory::drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inve
     }
 }
 
+// Blue if invalid position (lost and can't find), red if valid.
 void Unit_Inventory::drawAllLocations(const Map_Inventory & inv) const
 {
     if constexpr (DRAWING_MODE) {
@@ -224,6 +225,23 @@ void Unit_Inventory::drawAllLocations(const Map_Inventory & inv) const
                 }
                 else if (!e->second.valid_pos_) {
                     Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
+                }
+            }
+        }
+    }
+}
+
+//Marks as red if it's on a minitile that ground units should not be at.
+void Unit_Inventory::drawAllMisplacedGroundUnits(const Map_Inventory & inv) const
+{
+    if constexpr (DRAWING_MODE) {
+        for (auto e = unit_inventory_.begin(); e != unit_inventory_.end() && !unit_inventory_.empty(); e++) {
+            if (CUNYAIModule::isOnScreen(e->second.pos_, inv.screen_position_) && !e->second.type_.isBuilding()) {
+                if ( inv.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1 ) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
+                }
+                else if (inv.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 0) {
+                    Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue, true); // Mark as RED if not in a walkable spot.
                 }
             }
         }

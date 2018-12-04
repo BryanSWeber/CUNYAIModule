@@ -91,7 +91,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
                         int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
 
-                        CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
+                        //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), 750);

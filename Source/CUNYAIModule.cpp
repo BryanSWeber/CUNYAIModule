@@ -233,13 +233,12 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllLocations(current_map_inventory);
 
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player. 
-
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
-
     friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
     //friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
-
+    //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_map_inventory);
+    //land_inventory.drawUnreachablePatch(current_map_inventory);
     // Update FAPS with units.
     MCfap.clear();
     buildfap.clear();
@@ -315,7 +314,7 @@ void CUNYAIModule::onFrame()
 
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
     current_map_inventory.drawExpoPositions();
-    current_map_inventory.drawBasePositions();
+    //current_map_inventory.drawBasePositions();
 
     land_inventory.updateGasCollectors();
     land_inventory.updateMiners();
@@ -544,11 +543,11 @@ void CUNYAIModule::onFrame()
         //} // Pretty to look at!
 
 
-        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
-        //        if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) { 
-        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
+        //for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
+        //        if (current_map_inventory.map_out_from_home_[i][j] <= 5 /*&& current_map_inventory.map_out_from_home_[i][j] <= 1*/ ) {
+        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", current_map_inventory.map_out_from_home_[i][j] );
         //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
         //            }
         //        }
@@ -934,7 +933,7 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 5 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
@@ -971,29 +970,33 @@ void CUNYAIModule::onFrame()
                 bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
                 bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
                 // If we need gas, get gas!
-                if (could_use_another_gas && ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24)) ) { //if this is your first worker of the frame consider resetting him.
+                if ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24)) { //if this is your first worker of the frame consider resetting him.
+
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                     current_map_inventory.last_gas_check_ = t_game;
-                    if (could_use_another_gas /*&& !was_gas*/) { // don't reassign from gas into gas.
+
+                    if (could_use_another_gas) {
                         Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_player_model.units_); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
                         if (miner.isAssignedGas(land_inventory)) {
                             //continue;
                         }
                         else { // default to gathering minerals.
+                            friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                             Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_); //assign a worker (minerals)
                             if (miner.isAssignedMining(land_inventory)) {
                                 //continue;
                             }
+                            else {
+                                Broodwar->sendText("Whoopsie, a fall-through!");
+                            }
                         }
+                    }                //Otherwise, we should put them on minerals.
+                    else { //if this is your first worker of the frame consider resetting him.
+                        Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
                     }
                 }
 
-                //Otherwise, we should put them on minerals.
-                if (!could_use_another_gas && ( unassigned_worker || (worker_bad_mine && current_map_inventory.last_gas_check_ < t_game - 5 * 24 )) ) { //if this is your first worker of the frame consider resetting him.
-                    friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
-                    current_map_inventory.last_gas_check_ = t_game;
-                    Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
-                }
+
             }
 
             // return minerals manually if you have them.
@@ -1122,7 +1125,7 @@ void CUNYAIModule::onFrame()
         n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / static_cast<double>(total_frame_time.count()) * 100, creepcolony_time.count());
     }
 
-    //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // testing build order stuff intensively.
+    //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
 
 } // closure: Onframe
 

@@ -157,6 +157,7 @@ struct Unit_Inventory {
     void drawAllSpamGuards(const Map_Inventory & inv) const;
     void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Map_Inventory &inv) const;
+    void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
