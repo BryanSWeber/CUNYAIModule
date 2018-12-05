@@ -8,9 +8,10 @@
 #include "Research_Inventory.h"
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
+#include "ScoutingManager.h"
 #include "AssemblyManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-#include <iostream> 
+#include <iostream>
 #include <fstream> // for file read/writing
 #include <numeric> // std::accumulate
 #include <algorithm>    // std::min_element, std::max_element
@@ -22,7 +23,7 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
+//bool foundDetector;
 //Declare universally shared inventories.
 Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
@@ -46,9 +47,12 @@ double CUNYAIModule::delta;
 double CUNYAIModule::gamma;
 Building_Gene CUNYAIModule::buildorder;
 
+// Initalize scouting manager once on startup
+ScoutingManager scouting;
+
 void CUNYAIModule::onStart()
 {
-
+    //foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -98,22 +102,22 @@ void CUNYAIModule::onStart()
     econ_starved = true;
     tech_starved = false;
 
-    //Initialize model variables. 
+    //Initialize model variables.
     gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
 
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
-    gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
+    gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
     //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
-    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
-    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+    alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
+    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
+    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
     adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
 
     win_rate = (1 - gene_history.loss_rate_);
 
     //get initial build order.
-    buildorder.getInitialBuildOrder( gene_history.build_order_ ); 
+    buildorder.getInitialBuildOrder( gene_history.build_order_ );
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -131,6 +135,9 @@ void CUNYAIModule::onStart()
     long_delay = 0;
     my_reservation = Reservation();
 
+
+      enemy_player_model.readPlayerLog(enemy_player_model);
+
     //friendly_player_model.setLockedOpeningValues();
 
     // Testing Build Order content intenstively.
@@ -141,37 +148,47 @@ void CUNYAIModule::onStart()
     output << "Trying Build Order" << print_value << endl;
     output.close();
 
+
 }
 
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
-        rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file. 
+        rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file.
     }
 
     ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << "," 
-        << gamma << ',' 
-        << alpha_army_original << ',' 
-        << alpha_econ_original << ',' 
-        << alpha_tech_original << ',' 
-        << adaptation_rate << ',' 
-        << Broodwar->enemy()->getRace().c_str() << "," 
-        << isWinner << ',' 
-        << short_delay << ',' 
-        << med_delay << ',' 
-        << long_delay << ',' 
-        << opponent_name << ',' 
-        << Broodwar->mapFileName().c_str() 
-        << ',' << buildorder.initial_building_gene_ 
+    output << delta << ","
+        << gamma << ','
+        << alpha_army_original << ','
+        << alpha_econ_original << ','
+        << alpha_tech_original << ','
+        << adaptation_rate << ','
+        << Broodwar->enemy()->getRace().c_str() << ","
+        << isWinner << ','
+        << short_delay << ','
+        << med_delay << ','
+        << long_delay << ','
+        << opponent_name << ','
+        << Broodwar->mapFileName().c_str()
+        << ',' << buildorder.initial_building_gene_
         << endl;
     output.close();
-
+    enemy_player_model.writePlayerLog(enemy_player_model, true);
+    /*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+    if (!check)
+    {
+        ofstream detector;
+        detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+        detector << -1;
+        detector.close();
+    }
+    check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file. 
+        rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
     }
 
     if (!buildorder.isEmptyBuildOrder()) {
@@ -198,6 +215,10 @@ void CUNYAIModule::onFrame()
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
 
+    //if (foundDetector == false) {
+    enemy_player_model.playerStock(enemy_player_model);
+    enemy_player_model.writePlayerLog(enemy_player_model, false);
+    //}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -233,6 +254,7 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllLocations(current_map_inventory);
 
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player. 
+
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
     friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
@@ -266,16 +288,16 @@ void CUNYAIModule::onFrame()
     land_inventory.drawMineralRemaining(current_map_inventory);
 
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
-        //Initialize model variables. 
+        //Initialize model variables.
         GeneticHistory gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt");
 
         delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
-        gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
+        gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
         //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-        friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
-        friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
-        friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
+        friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
+        friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
+        friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
         adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
         win_rate = (1 - gene_history.loss_rate_);
         Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
@@ -318,6 +340,16 @@ void CUNYAIModule::onFrame()
 
     land_inventory.updateGasCollectors();
     land_inventory.updateMiners();
+
+    // Update scouts, check if still alive.
+    scouting.updateScouts();
+    // If enemy has units that can shoot overlords, stop overlord scouting
+    if ( enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_) )
+        scouting.let_overlords_scout_ = false;
+    // Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
+    bool disable_scouting = false; //(((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
+                            //(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
+                             //enemy_player_model.units_.stock_total_ != 0);  //Make sure we've actually seen enemy stock before disabling scouting
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -412,7 +444,7 @@ void CUNYAIModule::onFrame()
     //Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
     //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
 
-    // Display the game status indicators at the top of the screen    
+    // Display the game status indicators at the top of the screen
     if constexpr(DRAWING_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
@@ -452,13 +484,14 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
         Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
         Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
-        Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
-        Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
+        Broodwar->drawTextScreen(125, 150, "Seed: %d", Broodwar->getRandomSeed()); // Get the game seed
+        Broodwar->drawTextScreen(125, 160, "Min Reserved: %d", my_reservation.min_reserve_); //
+        Broodwar->drawTextScreen(125, 170, "Gas Reserved: %d", my_reservation.gas_reserve_); //
 
         Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
         Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
         Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
-        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); // 
+        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
         Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
         Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
         Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
@@ -471,16 +504,16 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
         Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
-
+        //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
+        Broodwar->drawTextScreen(250, 160, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
         if (buildorder.isEmptyBuildOrder()) {
-            Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
+            Broodwar->drawTextScreen(250, 170, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
         else {
-            Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
+            Broodwar->drawTextScreen(250, 170, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
         }
 
-        //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
+
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -494,10 +527,10 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
         //Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
 
-        Broodwar->drawTextScreen(500, 20, "Performance:");  // 
-        Broodwar->drawTextScreen(500, 30, "APM: %d", Broodwar->getAPM());  // 
-        Broodwar->drawTextScreen(500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS());  // 
-        Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  // 
+        Broodwar->drawTextScreen(500, 20, "Performance:");  //
+        Broodwar->drawTextScreen(500, 30, "APM: %d", Broodwar->getAPM());  //
+        Broodwar->drawTextScreen(500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS());  //
+        Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  //
         Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
 
         Broodwar->drawTextScreen(500, 70, delay_string);
@@ -510,14 +543,13 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 140, upgrade_string);
         Broodwar->drawTextScreen(500, 150, creep_colony_string);
 
-        for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-            if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-            }
-        }
-
+        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
+        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
+        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
+        //    }
+        //}
 
         //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
         //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
@@ -728,11 +760,72 @@ void CUNYAIModule::onFrame()
         }
         auto end_detector = std::chrono::high_resolution_clock::now();
 
-        //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground. 
+        auto start_scout = std::chrono::high_resolution_clock::now();
+        // Scout Assignment Logic. Before Combat logic so scouts don't attack. Only if scouting isn't disabled
+        if (!disable_scouting) {
+
+            if ( scouting.needScout(u, t_game) && (!u->isAttacking() && !isRecentCombatant(u)) &&
+                ((u_type == UnitTypes::Zerg_Overlord && scouting.let_overlords_scout_) || u_type == UnitTypes::Zerg_Zergling) ) {
+
+                // Make zergling into a scout
+                if (u_type == UnitTypes::Zerg_Zergling && (u != scouting.zergling_scout_ && u != scouting.expo_zergling_scout_)) { // Dont double assign scouts
+
+                    if (!scouting.exists_expo_zergling_scout_) {
+                        scouting.setScout(u, 1);
+                        Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                        scouting.sendScout(u, scout_spot);
+                        continue;
+                    }
+
+                    if (!scouting.exists_zergling_scout_) {
+                        scouting.setScout(u, 2);
+                        Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                        scouting.sendScout(u, scout_spot);
+                        continue;
+                    }
+                }
+
+                // Make overlord into a scout
+                if (u_type == UnitTypes::Zerg_Overlord) {
+                    scouting.setScout(u);
+                    Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+                    scouting.sendScout(u, scout_spot);
+                    continue;
+                }
+            }
+        }
+
+        // Scout Reassignment Logic -- reassign expo and overlord scouts to a new scout position instead of clearing
+        if (u->isIdle() && (u == scouting.expo_zergling_scout_ || u == scouting.overlord_scout_)) {
+            Position scout_spot = scouting.getScoutTargets(u, current_map_inventory, enemy_player_model.units_);
+            scouting.sendScout(u, scout_spot);
+            continue;
+        }
+
+        // Scout Clearing Logic -- clear scouts when scouting is disabled, if a suicide ling scout is idle, or if an overlord is under attack
+        if ( disable_scouting || ( (u->isIdle() && u == scouting.zergling_scout_) || (u_type == UnitTypes::Zerg_Overlord && u->isUnderAttack()) ) ) {
+
+            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Overlord) {
+                scouting.clearScout(u);
+                if (u->isUnderAttack())  //Disable future overlord scouts if under attack
+                    scouting.let_overlords_scout_ = false;
+            }
+
+            if (scouting.isScoutingUnit(u) && u_type == UnitTypes::Zerg_Zergling)
+                scouting.clearScout(u);
+        }
+
+        // Scout Diagnostics
+        if constexpr (DRAWING_MODE) {
+                scouting.diagnosticLine(u, current_map_inventory);
+        }
+        auto end_scout = std::chrono::high_resolution_clock::now();
+
+        //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground.
         auto start_combat = std::chrono::high_resolution_clock::now();
         bool foe_within_radius = false;
 
-        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
+        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u) && !scouting.isScoutingUnit(u)) // Dont enter combat loop if scouting unit)
         {
             Mobility mobility;
 
@@ -741,7 +834,7 @@ void CUNYAIModule::onFrame()
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
 
-            if (e_closest) { // if there are bad guys, search for friends within that area. 
+            if (e_closest) { // if there are bad guys, search for friends within that area.
 
                 int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
@@ -772,7 +865,7 @@ void CUNYAIModule::onFrame()
                 bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friend_loc.unit_inventory_.at(u),24); // 1 second.
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast(friend_loc, enemy_loc);
 
-                //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this. 
+                //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
 
                 if constexpr (DRAWING_MODE) {
@@ -795,7 +888,7 @@ void CUNYAIModule::onFrame()
                     bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory;
                     bool neccessary_attack =
                         (targetable_stocks > 0 || grim_trigger_to_go_in) && (
-                            //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces. 
+                            //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
                             grim_trigger_to_go_in ||
@@ -806,7 +899,7 @@ void CUNYAIModule::onFrame()
                                 //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                             //threatening_stocks == 0 ||
                             //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                            );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either. 
+                            );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 
@@ -834,7 +927,7 @@ void CUNYAIModule::onFrame()
 
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
-                    
+
                     if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
                         mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange);
                     }
@@ -878,7 +971,7 @@ void CUNYAIModule::onFrame()
                 }
 
             } // close local examination.
-            
+
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
                 mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin, current_map_inventory); // -1 serves to never surround, makes sense if there is no closest enemy.
             }
@@ -891,7 +984,7 @@ void CUNYAIModule::onFrame()
         if (u_type.isWorker()) {
             Stored_Unit& miner = *friendly_player_model.units_.getStoredUnit(u);
 
-            bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
+            bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.
             bool too_much_gas = 1 - current_map_inventory.getLn_Gas_Ratio() > delta;
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
@@ -923,11 +1016,11 @@ void CUNYAIModule::onFrame()
             }
 
 
-            if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task. 
+            if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.
 
                 // Each mineral-related subtask does the following:
                 // Checks if it is doing a task of lower priority.
-                // It clears the worker. 
+                // It clears the worker.
                 // It tries to assign the worker to the new task.
                 // If it is successfully assigned, continue. On the next frame you will be caught by "Maintain the locks" step.
                 // If it is not successfully assigned, return to old task.
@@ -1317,7 +1410,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
         // Check for miners who may have been digging at that patch.
         for ( auto potential_miner = friendly_player_model.units_.unit_inventory_.begin(); potential_miner != friendly_player_model.units_.unit_inventory_.end() && !friendly_player_model.units_.unit_inventory_.empty(); potential_miner++ ) {
- 
+
             if (potential_miner->second.locked_mine_ == unit) {
                 Unit miner_unit = potential_miner->second.bwapi_unit_;
 
@@ -1347,7 +1440,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         CUNYAIModule::DiagnosticText("A mine is dead!");
 
 
-        // clear it just in case. 
+        // clear it just in case.
         auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
         if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
             land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
@@ -1377,7 +1470,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
             else if ( unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing() ) {
-                //buildorder.clearRemainingBuildOrder( false ); 
+                //buildorder.clearRemainingBuildOrder( false );
             }
         }
     }
