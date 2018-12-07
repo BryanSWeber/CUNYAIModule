@@ -879,11 +879,15 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object sunken = Build_Order_Object(UnitTypes::Zerg_Sunken_Colony);
     Build_Order_Object spore = Build_Order_Object(UnitTypes::Zerg_Spore_Colony);
     Build_Order_Object lair = Build_Order_Object(UnitTypes::Zerg_Lair);
+    Build_Order_Object hive = Build_Order_Object(UnitTypes::Zerg_Hive);
     Build_Order_Object spire = Build_Order_Object(UnitTypes::Zerg_Spire);
+    Build_Order_Object greater_spire = Build_Order_Object(UnitTypes::Zerg_Greater_Spire);
+    Build_Order_Object devourer = Build_Order_Object(UnitTypes::Zerg_Devourer);
     Build_Order_Object muta = Build_Order_Object(UnitTypes::Zerg_Mutalisk);
     Build_Order_Object hydra = Build_Order_Object(UnitTypes::Zerg_Hydralisk);
     Build_Order_Object lurker = Build_Order_Object(UnitTypes::Zerg_Lurker);
     Build_Order_Object hydra_den = Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den);
+    Build_Order_Object queens_nest = Build_Order_Object(UnitTypes::Zerg_Queens_Nest);
     Build_Order_Object lurker_tech = Build_Order_Object(TechTypes::Lurker_Aspect);
     Build_Order_Object grooved_spines = Build_Order_Object(UpgradeTypes::Grooved_Spines);
     Build_Order_Object muscular_augments = Build_Order_Object(UpgradeTypes::Muscular_Augments);
@@ -928,8 +932,17 @@ void Building_Gene::getInitialBuildOrder(string s) {
         else if (build == "lair") {
             building_gene_.push_back(lair);
         }
+        else if (build == "hive") {
+            building_gene_.push_back(hive);
+        }
         else if (build == "spire") {
             building_gene_.push_back(spire);
+        }
+        else if (build == "greater_spire") {
+            building_gene_.push_back(greater_spire);
+        }
+        else if (build == "devourer") {
+            building_gene_.push_back(devourer);
         }
         else if (build == "muta") {
             building_gene_.push_back(muta);
@@ -945,6 +958,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
         }
         else if (build == "hydra_den") {
             building_gene_.push_back(hydra_den);
+        }
+        else if (build == "queens_nest") {
+            building_gene_.push_back(queens_nest);
         }
         else if (build == "grooved_spines") {
             building_gene_.push_back(grooved_spines);
