@@ -120,7 +120,7 @@ void CUNYAIModule::onStart()
     current_map_inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
     current_map_inventory.updateMapVeins();
-    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()), current_map_inventory.home_base_, current_map_inventory.map_out_from_home_ );
+    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.home_base_, current_map_inventory.map_out_from_home_ );
     //inventory.updateMapChokes();
     current_map_inventory.updateBaseLoc( land_inventory );
     current_map_inventory.getStartPositions();
@@ -543,16 +543,16 @@ void CUNYAIModule::onFrame()
         //} // Pretty to look at!
 
 
-        //for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
-        //        if (current_map_inventory.map_out_from_home_[i][j] <= 5 /*&& current_map_inventory.map_out_from_home_[i][j] <= 1*/ ) {
-        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", current_map_inventory.map_out_from_home_[i][j] );
-        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
+        for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
+            for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
+                if (current_map_inventory.map_out_from_home_[i][j] <= 5 /*&& current_map_inventory.map_out_from_home_[i][j] <= 1*/ ) {
+                    if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
+                        Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", current_map_inventory.map_out_from_home_[i][j] );
+                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+                    }
+                }
+            }
+        } // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {

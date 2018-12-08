@@ -1385,7 +1385,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
-            updateMapVeinsOut( start_positions_[0], enemy_base_ground_, map_out_from_enemy_ground_);
+            updateMapVeinsOut( start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), enemy_base_ground_, map_out_from_enemy_ground_);
         }
         else if (!expo_positions_complete_.empty()) { // maybe it's a expansion we havent' seen yet?
             expo_positions_ = expo_positions_complete_;
@@ -1400,7 +1400,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
             }
 
             if (!expo_positions_.empty()) {
-                updateMapVeinsOut(Position(expo_positions_[random_index]), enemy_base_ground_, map_out_from_enemy_ground_);
+                updateMapVeinsOut(Position(expo_positions_[random_index]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()) , enemy_base_ground_, map_out_from_enemy_ground_);
             }
         }
         frames_since_enemy_base_ground_ = 0;
@@ -1433,7 +1433,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
-            updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
+            updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), home_base_, map_out_from_home_);
         }
         frames_since_home_base = 0;
         return;
@@ -1447,7 +1447,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         suspected_safe_base = getNonCombatBase(ui, di); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
-            updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);
+            updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
         }
         else {
             safe_base_ = home_base_;
