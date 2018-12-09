@@ -17,10 +17,12 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
+GeneticHistory::GeneticHistory() {};
+
 // Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
 GeneticHistory::GeneticHistory(string file) {
 
-    //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked. 
+    //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked.
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
@@ -41,7 +43,7 @@ GeneticHistory::GeneticHistory(string file) {
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
     // drone drone drone drone drone overlord drone drone drone hatch pool extract ling lair drone drone drone drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta // 12 hatch into muta.
-    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
+    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta:
     // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
 
     string build_order_out;
@@ -49,7 +51,7 @@ GeneticHistory::GeneticHistory(string file) {
     // Build orders for specific cheesy situations
     vector<string> cheese_build_order_list = {
         "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
-        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.	
+        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech", //1 h lurker, tenative.
         "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling", // 2h lurker
         //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
@@ -116,9 +118,9 @@ GeneticHistory::GeneticHistory(string file) {
         "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
 		"drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
 
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta", // 2h muta + 2 creep (both late)
-		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta", // 2h muta + 3 creep (1 early)
-		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone creep drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta" // 2h muta + 5 creep (2 early)
+        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h muta + 2 creep (both late)
+		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h muta + 3 creep (1 early)
+		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone creep drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta" // 2h muta + 5 creep (2 early)
     };
     // General builds against a random race opponent
     vector<string> random_build_order_list = {
@@ -301,7 +303,7 @@ GeneticHistory::GeneticHistory(string file) {
 
 
         if (std::get<11>(game_data[j]) == e_name) {
-            if (std::get<7>(game_data[j]) == 1) { 
+            if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[0]++;
             }
@@ -391,7 +393,7 @@ GeneticHistory::GeneticHistory(string file) {
 
         //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { // 
+        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { //
             //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_well_matched) {
                 if (std::get<13>(potential_parent) == opening_of_choice) {
@@ -415,7 +417,7 @@ GeneticHistory::GeneticHistory(string file) {
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
             r_out      = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
-        else { // we must need diversity.  
+        else { // we must need diversity.
             // use the random values we have determined in the beginning and the random opening.
         }
 
@@ -430,7 +432,7 @@ GeneticHistory::GeneticHistory(string file) {
 
                                      //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { // 
+        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { //
                                                                                                                     //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_partial_match) {
                 if (std::get<13>(potential_parent) == opening_of_choice) {
@@ -454,7 +456,7 @@ GeneticHistory::GeneticHistory(string file) {
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
             r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
-        else { // we must need diversity.  
+        else { // we must need diversity.
                // use the random values we have determined in the beginning and the random opening.
         }
     }
@@ -517,7 +519,7 @@ GeneticHistory::GeneticHistory(string file) {
 
     // Overwrite whatever you previously wanted if we're using "test mode".
     if constexpr (TEST_MODE) {
-        // Values altered 
+        // Values altered
         delta_out_mutate_ = 0.3021355;
         gamma_out_mutate_ = 0.35;
         a_army_out_mutate_ = 0.511545;

@@ -85,7 +85,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
     // mineral patches can handle up to 2 miners, gas/refineries can handle up to 3.
     if ( mine_minerals ) {
-        low_drone = 2;
+        low_drone = 1;
         max_drone = 2;
     } else {
         low_drone = 2; // note : Does not count worker IN extractor.
@@ -94,17 +94,17 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
 
     // scrape over every resource to determine the lowest number of miners.
-    for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
+    for (auto r : land_inventory.resource_inventory_) {
 
         if (mine_minerals) {
-            mine_is_right_type = r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            mine_is_right_type = r.second.type_.isMineralField() && r.second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
-            mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
+            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r->second.pos_.isValid() && r->second.number_of_miners_ < low_drone && r->second.number_of_miners_ < max_drone && r->second.occupied_natural_ && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
-            low_drone = r->second.number_of_miners_;
+        if ( mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_natural_ && current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
+            low_drone = r.second.number_of_miners_;
             found_low_occupied_mine = true;
         }
 
@@ -114,21 +114,20 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     //    CUNYAIModule::DiagnosticText("Mine Minerals : %d", mine_minerals);
 
 
-    for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
+    for (auto r : land_inventory.resource_inventory_) {
 
         if (mine_minerals) {
-            mine_is_right_type = r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            mine_is_right_type = r.second.type_.isMineralField() && r.second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
-            mine_is_right_type = r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_);
+            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
 
-        if (mine_is_right_type && r->second.number_of_miners_ <= low_drone && r->second.number_of_miners_ < max_drone && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
-            if (r->second.occupied_natural_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
-                available_fields.addStored_Resource(r->second);
-            }
-            else {
-                long_dist_fields.addStored_Resource(r->second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
+        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) ) {
+            long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
+
+            if (r.second.occupied_natural_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
+                available_fields.addStored_Resource(r.second);
             }
         }
     } //find closest mine meeting this criteria.
@@ -138,12 +137,11 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         attachToNearestMine(available_fields, current_map_inventory, miner);
         miner.phase_ = "Mining";
     } 
-    
-    if (!miner.isAssignedResource(available_fields) && !long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
+    else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
         attachToNearestMine(long_dist_fields, current_map_inventory, miner);
         miner.phase_ = "Distance Mining";
     }
-
+    
     miner.updateStoredUnit(unit);
 } // closure worker mine
 
@@ -153,9 +151,9 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
         miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding(ri)) {
-            my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
-            miner.phase_ = "Mining";
+            my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
         }
+        miner.phase_ = "Mining";
     }
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
@@ -163,9 +161,9 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
 void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner) {
     miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second, land_inventory); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
     if (miner.bwapi_unit_ && miner.isAssignedBuilding(land_inventory)) {
-        my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType());
-        miner.phase_ = "Mining";
+        my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
     }
+    miner.phase_ = "Mining";
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
@@ -223,16 +221,12 @@ bool CUNYAIModule::Gas_Outlet() {
     bool long_condition = Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Hydralisk ) ||
         Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Mutalisk ) ||
         Broodwar->self()->hasUnitTypeRequirement( UnitTypes::Zerg_Ultralisk );
+
     if ( long_condition ) {
         outlet_avail = true;
     } // turns off gas interest when larve are 0.
 
-      //bool long_condition = Count_Units(UnitTypes::Zerg_Hydralisk_Den, friendly_player_model.units_) > 0 ||
-      //        Count_Units( UnitTypes::Zerg_Spire, friendly_player_model.units_ ) > 0 ||
-      //        Count_Units( UnitTypes::Zerg_Ultralisk_Cavern, friendly_player_model.units_ ) > 0;
-      //if ( long_condition ) {
-      //    outlet_avail = true;
-      //} 
+    if (buildorder.building_gene_.front().getResearch().gasPrice() > 0 || buildorder.building_gene_.front().getUnit().gasPrice() > 0 || buildorder.building_gene_.front().getUpgrade().gasPrice() > 0) outlet_avail = true;
 
     return outlet_avail;
 }

@@ -7,6 +7,7 @@ using namespace std;
 using namespace BWAPI;
 
 struct GeneticHistory {
+    GeneticHistory();
 
     double delta_out_mutate_;
     double gamma_out_mutate_;

@@ -18,7 +18,7 @@ struct Reservation {
 
     // Updates mineral, gas, and time reserves for a particular unit. 
     bool Reservation::addReserveSystem( TilePosition tile, UnitType type );
-    void Reservation::removeReserveSystem( TilePosition tile, UnitType type );
+    void Reservation::removeReserveSystem( TilePosition tile, UnitType type, bool retry_this_building);
 
     // Decrements the clock. Simple but works.
     void Reservation::decrementReserveTimer();

@@ -10,13 +10,14 @@
 #include "Reservation_Manager.h"
 #include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp"
+#include "GeneticHistoryManager.h"
 #include <chrono> // for in-game frame clock.
 
-constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
-constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
-constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
-constexpr bool SSCAIT_OR_DOCKER = false; // should be TRUE for SC-docker, TRUE for SSCAIT.
+constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
+constexpr bool ANALYSIS_MODE = false; // Printing records, etc.
+constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
+constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
+constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
@@ -73,6 +74,7 @@ public:
 
     static Building_Gene buildorder; //
     Reservation my_reservation; 
+    static GeneticHistory gene_history;
 
    //These measure its clock.
     int short_delay;
@@ -170,6 +172,7 @@ public:
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticReservations(const Reservation reservations, const Position & screen_pos);
       static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
       //Sends a diagnostic text message, accepts another argument..

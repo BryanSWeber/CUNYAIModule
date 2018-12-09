@@ -332,12 +332,27 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
         }
     }
 }
+
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );
+        }
+    }
+}
+
+void CUNYAIModule::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
+{
+    if constexpr(DRAWING_MODE) {
+        for (auto res : reservations.reservation_map_) {
+            Position upper_left = Position(res.first);
+            Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
+            if (isOnScreen(upper_left, screen_pos)) {
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
+                Broodwar->drawTextMap(upper_left, res.second.c_str());
+            }
         }
     }
 }
@@ -929,6 +944,9 @@ void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &
             }
             else if ( i.getUpgrade() != UpgradeTypes::None ) {
                 Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getUpgrade().c_str() );  //
+            }
+            else if (i.getResearch() != UpgradeTypes::None) {
+                Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getResearch().c_str());  //
             }
             another_row_of_printing++;
         }
@@ -1529,7 +1547,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
         if (u_type == UnitTypes::Zerg_Devourer) {
-            cd_frames = 9;
+            cd_frames = 28; // this is an INSANE cooldown.
         }
     }
     //else 
