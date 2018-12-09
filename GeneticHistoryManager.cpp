@@ -46,31 +46,125 @@ GeneticHistory::GeneticHistory(string file) {
 
     string build_order_out;
 
-
-    vector<string> build_order_list = {
+    // Build orders for specific cheesy situations
+    vector<string> cheese_build_order_list = {
         "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
-        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
-        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-        "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
-        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
-        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
+        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.	
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech", //1 h lurker, tenative.
         "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling", // 2h lurker
         //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
         //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone drone drone drone drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
         //"drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta", // 2h - Muta.  Requires another overlord?
-       "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
-       "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool", //supermacro cheese
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
+        "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool", //supermacro cheese
         "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone creep drone drone drone sunken drone ling drone queens_nest spire drone creep drone drone overlord drone hive sunken extract drone drone drone overlord drone drone drone drone hatch drone drone creep greater_spire drone drone drone overlord drone drone sunken devourer devourer devourer devourer" //3h - Devourers. Auto loss against any sort of early aggresion/base AI
     };
 
-    std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
-    size_t build_order_rand = rand_bo(gen);
+    // General Zerg vs Protoss builds for most situations
+    vector<string> ZvP_build_order_list = {
+        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
 
-    build_order_out = build_order_list[build_order_rand];
+        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
+		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+
+        "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
+		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
+		"drone drone drone drone drone pool drone extract overlord drone creep ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base. + 1 creep
+
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone" // 12hatch-pool
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
+
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 1 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord creep drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 2 creep
+
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord.
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 1 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord creep drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 2 creep
+    };
+
+    // General Zerg vs Terran builds for most sitatuions
+    vector<string> ZvT_build_order_list = {
+        "drone drone drone pool drone overlord drone ling ling ling ling hatch drone drone drone extract",  // 7 pool
+
+        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
+		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
+
+        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
+		"drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
+
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech", //1 h lurker, tenative.
+		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 1 creep
+		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken lair drone creep overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 2 creep
+    };
+
+    // General Zerg vs Zerg builds for most situations
+    vector<string> ZvZ_build_order_list = {
+		"drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
+		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+
+		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed drone lair ling drone overlord drone drone spire", //1 base - 9 pool to fast spire
+		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed creep drone lair ling sunken drone overlord drone spire", //1 base - 9 pool to fast spire + 1 creep
+		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed creep drone lair ling sunken drone creep drone drone spire drone sunken overlord", //1 base - 9 pool to fast spire + 2 creep
+
+        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
+		"drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
+
+        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta", // 2h muta + 2 creep (both late)
+		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta", // 2h muta + 3 creep (1 early)
+		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone creep drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord muta muta muta muta muta muta muta muta muta overlord muta muta muta" // 2h muta + 5 creep (2 early)
+    };
+    // General builds against a random race opponent
+    vector<string> random_build_order_list = {
+        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
+
+        "drone drone drone pool drone overlord drone ling ling ling ling hatch drone drone drone extract",  // 7 pool
+
+        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
+		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+
+        "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
+		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep" // 12hatch-pool + 2 creep
+    };
+
+    if (Broodwar->enemy()->getRace() == Races::Terran) {
+        std::uniform_int_distribution<size_t> rand_bo(0, ZvT_build_order_list.size() - 1);
+        size_t build_order_rand = rand_bo(gen);
+
+        build_order_out = ZvT_build_order_list[build_order_rand];
+    }
+
+    if (Broodwar->enemy()->getRace() == Races::Protoss) {
+        std::uniform_int_distribution<size_t> rand_bo(0, ZvP_build_order_list.size() - 1);
+        size_t build_order_rand = rand_bo(gen);
+
+        build_order_out = ZvP_build_order_list[build_order_rand];
+    }
+
+    if (Broodwar->enemy()->getRace() == Races::Zerg) {
+        std::uniform_int_distribution<size_t> rand_bo(0, ZvZ_build_order_list.size() - 1);
+        size_t build_order_rand = rand_bo(gen);
+
+        build_order_out = ZvZ_build_order_list[build_order_rand];
+    }
+
+    // Opponents race is sometimes labeled as unknown for random race. Maybe a BWAPI bug
+    if (Broodwar->enemy()->getRace() == Races::Unknown || Broodwar->enemy()->getRace() == Races::Random) {
+        std::uniform_int_distribution<size_t> rand_bo(0, random_build_order_list.size() - 1);
+        size_t build_order_rand = rand_bo(gen);
+
+        build_order_out = random_build_order_list[build_order_rand];
+    }
 
 
     int selected_win_count = 0;
