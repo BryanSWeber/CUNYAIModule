@@ -72,19 +72,19 @@ GeneticHistory::GeneticHistory(string file) {
 		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
 
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
-		"drone drone drone drone drone pool drone extract overlord drone creep ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base. + 1 creep
+		"drone drone drone drone drone pool drone extract overlord drone creep ling ling ling sunken hydra_den drone drone drone drone", //zerg_9pool to hydra one base. + 1 creep
 
 		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone" // 12hatch-pool
 		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
 		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
 
         "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 1 creep
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord creep drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 2 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 1 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone grooved_spines sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 2 creep
 
         "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord.
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 1 creep
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone drone drone hydra_den drone overlord creep drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 2 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 1 creep
+		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone muscular_augments sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 2 creep
     };
 
     // General Zerg vs Terran builds for most sitatuions
@@ -108,20 +108,15 @@ GeneticHistory::GeneticHistory(string file) {
 
     // General Zerg vs Zerg builds for most situations
     vector<string> ZvZ_build_order_list = {
-		"drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
-		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+		"drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
 
-		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed drone lair ling drone overlord drone drone spire", //1 base - 9 pool to fast spire
-		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed creep drone lair ling sunken drone overlord drone spire", //1 base - 9 pool to fast spire + 1 creep
-		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed creep drone lair ling sunken drone creep drone drone spire drone sunken overlord", //1 base - 9 pool to fast spire + 2 creep
+		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed drone lair", //1 base - 9 pool to fast spire w/ ling speed
+		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken speed drone lair", //1 base - 9 pool to fast spire w/ ling speed + 1 creep
 
-        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
-		"drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
-
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h muta + 2 creep (both late)
-		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h muta + 3 creep (1 early)
-		"drone drone drone drone overlord drone drone drone hatch pool extract creep drone drone drone ling drone creep drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta" // 2h muta + 5 creep (2 early)
+		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone drone lair", //1 base - 9 pool to fast spire w/o ling speed
+		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair", //1 base - 9 pool to fast spire w/o ling speed + 1 creep
     };
+
     // General builds against a random race opponent
     vector<string> random_build_order_list = {
         "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
@@ -146,14 +141,14 @@ GeneticHistory::GeneticHistory(string file) {
         build_order_out = ZvT_build_order_list[build_order_rand];
     }
 
-    if (Broodwar->enemy()->getRace() == Races::Protoss) {
+    else if (Broodwar->enemy()->getRace() == Races::Protoss) {
         std::uniform_int_distribution<size_t> rand_bo(0, ZvP_build_order_list.size() - 1);
         size_t build_order_rand = rand_bo(gen);
 
         build_order_out = ZvP_build_order_list[build_order_rand];
     }
 
-    if (Broodwar->enemy()->getRace() == Races::Zerg) {
+    else if (Broodwar->enemy()->getRace() == Races::Zerg) {
         std::uniform_int_distribution<size_t> rand_bo(0, ZvZ_build_order_list.size() - 1);
         size_t build_order_rand = rand_bo(gen);
 
@@ -161,7 +156,7 @@ GeneticHistory::GeneticHistory(string file) {
     }
 
     // Opponents race is sometimes labeled as unknown for random race. Maybe a BWAPI bug
-    if (Broodwar->enemy()->getRace() == Races::Unknown || Broodwar->enemy()->getRace() == Races::Random) {
+    else if (Broodwar->enemy()->getRace() == Races::Unknown || Broodwar->enemy()->getRace() == Races::Random) {
         std::uniform_int_distribution<size_t> rand_bo(0, random_build_order_list.size() - 1);
         size_t build_order_rand = rand_bo(gen);
 
@@ -527,7 +522,7 @@ GeneticHistory::GeneticHistory(string file) {
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
 
-        build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //Standard Opener
+        build_order_ = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken speed drone lair"; //Standard Opener
 
     }
 }

@@ -88,29 +88,30 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     int old_dist = 9999999;
 
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) { // loop over every base.
+                        
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
+                        if (!BWAPI::Broodwar->hasCreep(central_base_new)) // Skip bases that don't have the creep yet for a sunken
+                            continue;
                         int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
-
                         //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), 750);
                         bool serious_problem = false;
 
-                        if ( getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750) ) { // if they outnumber us here...
+                        if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) { // if they outnumber us here...
                             serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
                         }
 
-                        if ( (new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) ) {  // then let's build at that base.
+                        if ((new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory)) {  // then let's build at that base.
                             central_base = central_base_new;
                             old_dist = new_dist;
-                            if (serious_problem) { 
-                                break; 
+                            if (serious_problem) {
+                                break;
                             }
                         }
                     }
                 } //confirm we have identified a base around which to build.
-
                 int chosen_base_distance = current_map_inventory.getRadialDistanceOutFromEnemy(Position(central_base)); // Now let us build around that base.
                 for (int x = -10; x <= 10; ++x) {
                     for (int y = -10; y <= 10; ++y) {
@@ -120,8 +121,13 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
                             centralize_y > 0;
+                        
                         TilePosition test_loc = TilePosition(centralize_x, centralize_y);
+                        if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
+                            continue;
+                        
                         bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(test_loc), 96).resource_inventory_.empty();
+                        
                         if (!(x == 0 && y == 0) &&
                             within_map &&
                             not_blocking_minerals &&
@@ -135,7 +141,6 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     }
                 }
             }
-
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
