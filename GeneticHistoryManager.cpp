@@ -20,7 +20,7 @@ using namespace std;
 GeneticHistory::GeneticHistory() {};
 
 // Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
-GeneticHistory::GeneticHistory(string file) {
+GeneticHistory::GeneticHistory(string file, Player_Model& friendly_player_model) {
 
     //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked.
 
@@ -66,25 +66,25 @@ GeneticHistory::GeneticHistory(string file) {
         "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
 
         "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+        "drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
 
         "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
-		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+        "drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
 
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
-		"drone drone drone drone drone pool drone extract overlord drone creep ling ling ling sunken hydra_den drone drone drone drone", //zerg_9pool to hydra one base. + 1 creep
+        "drone drone drone drone drone pool drone extract overlord drone creep ling ling ling sunken hydra_den drone drone drone drone", //zerg_9pool to hydra one base. + 1 creep
 
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone" // 12hatch-pool
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone" // 12hatch-pool
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
 
         "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 1 creep
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone grooved_spines sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 2 creep
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 1 creep
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone grooved_spines sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord. + 2 creep
 
         "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord.
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 1 creep
-		"drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone muscular_augments sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 2 creep
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 1 creep
+        "drone drone drone drone overlord drone drone drone hatch pool drone extract drone creep drone drone drone sunken drone drone hydra_den drone overlord creep drone drone drone muscular_augments sunken hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra - speed. added an overlord. + 2 creep
     };
 
     // General Zerg vs Terran builds for most sitatuions
@@ -92,29 +92,29 @@ GeneticHistory::GeneticHistory(string file) {
         "drone drone drone pool drone overlord drone ling ling ling ling hatch drone drone drone extract",  // 7 pool
 
         "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+        "drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
 
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep", // 12hatch-pool + 2 creep
 
         "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
-		"drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
+        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed creep", // 12-pool tenative + 1 creep.
 
         "drone drone drone drone drone pool drone extract overlord drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech", //1 h lurker, tenative.
-		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 1 creep
-		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken lair drone creep overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 2 creep
+        "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 1 creep
+        "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken lair drone creep overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech" //1 h lurker, tenative. + 2 creep
     };
 
     // General Zerg vs Zerg builds for most situations
     vector<string> ZvZ_build_order_list = {
-		"drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
+        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
 
-		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed drone lair", //1 base - 9 pool to fast spire w/ ling speed
-		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken speed drone lair", //1 base - 9 pool to fast spire w/ ling speed + 1 creep
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling drone speed drone lair", //1 base - 9 pool to fast spire w/ ling speed
+        "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken speed drone lair", //1 base - 9 pool to fast spire w/ ling speed + 1 creep
 
-		"drone drone drone drone drone pool drone extract overlord drone ling ling ling drone drone lair", //1 base - 9 pool to fast spire w/o ling speed
-		"drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair", //1 base - 9 pool to fast spire w/o ling speed + 1 creep
+        "drone drone drone drone drone pool drone extract overlord drone ling ling ling drone drone lair", //1 base - 9 pool to fast spire w/o ling speed
+        "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair", //1 base - 9 pool to fast spire w/o ling speed + 1 creep
     };
 
     // General builds against a random race opponent
@@ -124,14 +124,14 @@ GeneticHistory::GeneticHistory(string file) {
         "drone drone drone pool drone overlord drone ling ling ling ling hatch drone drone drone extract",  // 7 pool
 
         "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-		"drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
+        "drone drone drone drone drone overlord pool drone creep drone", // 9pool gasless + 1 creep
 
         "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
-		"drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
+        "drone drone drone drone drone overlord pool drone extract drone creep drone", // 9pool + 1 creep
 
         "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
-		"drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep" // 12hatch-pool + 2 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone creep", // 12hatch-pool + 1 creep
+        "drone drone drone drone drone overlord drone drone drone hatch pool drone creep drone creep" // 12hatch-pool + 2 creep
     };
 
     if (Broodwar->enemy()->getRace() == Races::Terran) {
@@ -511,6 +511,18 @@ GeneticHistory::GeneticHistory(string file) {
     //    break; // if we have an interior solution, let's use it, if not, we try again.
     //}
     //}
+
+
+// Setup cartridges and overwrite previous values for specific matchups
+    // Cartridges for Zerg vs Zerg
+    if (Broodwar->enemy()->getRace() == Races::Zerg) {
+        map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN }, { UnitTypes::Zerg_Mutalisk, INT_MIN } };
+        map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN}, { UnitTypes::Zerg_Spire, INT_MIN }, { UnitTypes::Zerg_Creep_Colony, INT_MIN }, { UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+        map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN }, { UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN } };
+        map<TechType, int> tech_cart = { };
+        friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build_order_);
+    }
+
 
     // Overwrite whatever you previously wanted if we're using "test mode".
     if constexpr (TEST_MODE) {

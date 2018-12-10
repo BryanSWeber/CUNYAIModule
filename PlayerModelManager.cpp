@@ -174,7 +174,7 @@ void Player_Model::updateUnit_Counts() {
 }
 
 // sample command set to explore zergling rushing.
-void Player_Model::setLockedOpeningValues() {
+void Player_Model::setLockedOpeningValuesLingRush() {
      
     // sample command set to explore zergling rushing.
      spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
@@ -193,3 +193,32 @@ void Player_Model::setLockedOpeningValues() {
     tech_cartridge_ = {  };
     
 }
+
+// Generic command set for locked values
+// Must pass cartridges, every other parameter can be left to default (passing builds in is currently bugged)
+void Player_Model::setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart, 
+                                          const string& build, const int& a_army, const int& a_econ, const int& a_tech, const int& delta, const int& gamma) {
+
+    if (a_army)
+        spending_model_.alpha_army = CUNYAIModule::alpha_army_original = a_army;
+    if (a_econ)
+        spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = a_econ;
+    if (a_tech)
+        spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = a_tech;
+
+    if (delta)
+        CUNYAIModule::delta = delta;
+    if (gamma)
+        CUNYAIModule::gamma = gamma;
+
+    //CUNYAIModule::buildorder = Building_Gene(build);  Some sort of bug currently with this
+
+    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
+    combat_unit_cartridge_ = unit_cart;
+    //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
+    building_cartridge_ = building_cart;
+    upgrade_cartridge_ = upgrade_cart;
+    tech_cartridge_ = tech_cart;
+
+}
+
