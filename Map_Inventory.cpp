@@ -451,13 +451,12 @@ void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCe
         distance_below_y = max(map_y - minitile_y, map_y);
         int t = std::max(map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y);
         //int maxI = t*t; // total number of spiral steps we have to make.
-        int total_squares_filled = 0;
+        int total_squares_filled = 2; // If you start at 1 you will be implicitly marking certain squares as unwalkable. 1 is the short code for unwalkable.
 
         vector <WalkPosition> fire_fill_queue;
         vector <WalkPosition> fire_fill_queue_holder;
 
         //begin with a flood fill.
-        total_squares_filled++;
         map[minitile_x][minitile_y] = total_squares_filled;
         fire_fill_queue.push_back({ minitile_x, minitile_y });
 
@@ -1396,7 +1395,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
-            updateMapVeinsOut( start_positions_[0], enemy_base_ground_, map_out_from_enemy_ground_);
+            updateMapVeinsOut( start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), enemy_base_ground_, map_out_from_enemy_ground_);
         }
         else if (!expo_positions_complete_.empty()) { // maybe it's a expansion we havent' seen yet?
             expo_positions_ = expo_positions_complete_;
@@ -1411,7 +1410,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
             }
 
             if (!expo_positions_.empty()) {
-                updateMapVeinsOut(Position(expo_positions_[random_index]), enemy_base_ground_, map_out_from_enemy_ground_);
+                updateMapVeinsOut(Position(expo_positions_[random_index]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()) , enemy_base_ground_, map_out_from_enemy_ground_);
             }
         }
         frames_since_enemy_base_ground_ = 0;
@@ -1444,7 +1443,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
-            updateMapVeinsOut(suspected_friendly_base, home_base_, map_out_from_home_);
+            updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), home_base_, map_out_from_home_);
         }
         frames_since_home_base = 0;
         return;
@@ -1458,7 +1457,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         suspected_safe_base = getNonCombatBase(ui, di); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
 
         if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
-            updateMapVeinsOut(suspected_safe_base, safe_base_, map_out_from_safety_);
+            updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
         }
         else {
             safe_base_ = home_base_;
@@ -1499,15 +1498,15 @@ void Map_Inventory::drawExpoPositions() const
 void Map_Inventory::drawBasePositions() const
 {
     if constexpr (DRAWING_MODE) {
-        Broodwar->drawCircleMap(enemy_base_ground_, 25, Colors::Red, true);
+        Broodwar->drawCircleMap(enemy_base_ground_, 15, Colors::Red, true);
 
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
-        Broodwar->drawCircleMap(enemy_base_air_, 30, Colors::Orange, false);
+        Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
 
-        Broodwar->drawCircleMap(home_base_, 25, Colors::Green, true);
+        Broodwar->drawCircleMap(home_base_, 15, Colors::Green, true);
 
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
-        Broodwar->drawCircleMap(safe_base_, 30, Colors::Blue, false);
+        Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);
     }
 }
 

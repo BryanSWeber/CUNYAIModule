@@ -156,6 +156,22 @@ void Resource_Inventory::drawMineralRemaining(const Map_Inventory &inv) const
 
 }
 
+void Resource_Inventory::drawUnreachablePatch(const Map_Inventory & inv) const
+{
+    if constexpr (DRAWING_MODE) {
+        for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
+            if (CUNYAIModule::isOnScreen(r->second.pos_, inv.screen_position_)) {
+                if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
+                    Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
+                }
+                else if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 0) {
+                    Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Blue, true); // Mark as blue if in a walkable spot.
+                }
+            }
+        }
+    }
+}
+
 
 //how many workers are mining?
 void Resource_Inventory::updateMiners()

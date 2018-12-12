@@ -49,13 +49,13 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
     UnitCommandType u_type = unit->getLastCommand().getType();
 
-    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving()) ||
+    bool task_complete = (u_type == UnitCommandTypes::Move && !unit->isMoving() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 30 * 24) ||
                          (u_type == UnitCommandTypes::Morph && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !(unit->isMorphing() || unit->isMoving() || unit->isAccelerating())) ||
                          (u_type == UnitCommandTypes::Attack_Move && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Attack_Unit && !unit->isMoving() && !unit->isAttacking()) ||
                          (u_type == UnitCommandTypes::Return_Cargo && !laden_worker && !isInLine(unit) ) ||
                          (u_type == UnitCommandTypes::Gather && !unit->isMoving() && !unit->isGatheringGas() && !unit->isGatheringMinerals() && !isInLine(unit)) ||
-                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 5 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
+                         (u_type == UnitCommandTypes::Build && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 30 * 24 && !( unit->isMoving() || unit->isAccelerating() ) ) || // assumes a command has failed if it hasn't executed in the last 10 seconds.
                          (u_type == UnitCommandTypes::Upgrade && !unit->isUpgrading() && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 15 * 24) || // unit is done upgrading.
                          (u_type == UnitCommandTypes::Burrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
                          (u_type == UnitCommandTypes::Unburrow && unit->getLastCommandFrame() < Broodwar->getFrameCount() - 3 * 24) ||
@@ -172,6 +172,39 @@ void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos
     if constexpr ( DRAWING_MODE ) {
         if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
             Broodwar->drawLineMap( s_pos, f_pos, col );
+        }
+    }
+}
+
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
+    if constexpr (DRAWING_MODE) {
+        for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x+=2) {
+            for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y+=2) {
+                Broodwar->drawTextMap(Position(TilePosition(x, y)), "(%d,%d)", x, y);
+            }
+        }
+    }
+}
+
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Watch_Expos() {
+    if constexpr (DRAWING_MODE) {
+        if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
+            Position centered = Position(TilePosition(CUNYAIModule::current_map_inventory.next_expo_.x - 640 / (4 * 16) + 2 , CUNYAIModule::current_map_inventory.next_expo_.y - 480 / (4 * 16) + 1 ));
+            Broodwar->setScreenPosition(centered);
+        }
+    }
+}
+
+
+// This function limits the drawing that needs to be done by the bot.
+void CUNYAIModule::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
+    if constexpr (DRAWING_MODE) {
+        for (auto u : ui.unit_inventory_) {
+            Position fin = u.second.pos_;
+            Position start = u.second.bwapi_unit_->getTargetPosition();
+            Diagnostic_Line(start, fin, screen_pos, col);
         }
     }
 }
@@ -299,12 +332,27 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
         }
     }
 }
+
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );
+        }
+    }
+}
+
+void CUNYAIModule::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
+{
+    if constexpr(DRAWING_MODE) {
+        for (auto res : reservations.reservation_map_) {
+            Position upper_left = Position(res.first);
+            Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
+            if (isOnScreen(upper_left, screen_pos)) {
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
+                Broodwar->drawTextMap(upper_left, res.second.c_str());
+            }
         }
     }
 }
@@ -542,7 +590,27 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
         //    count++;
         //}
 
-        count += (e.second.type_ == type) + !(e.second.type_ == type) * 2 * (e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type); // better without if-conditions.
+        count += (e.second.type_ == type) + (e.second.type_ != type && e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type) * (1 + e.second.build_type_.isTwoUnitsInOneEgg()) ; // better without if-conditions.
+    }
+
+    return count;
+}
+
+// Counts all units of one type in existance and owned by enemies. 
+int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
+{
+    int count = 0;
+
+    for (auto & e : ui.unit_inventory_) {
+
+        //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
+        //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
+        //} 
+        //else if ( e.second.type_ == type ) {
+        //    count++;
+        //}
+
+        count += (e.second.type_ == type) + (e.second.type_ != type) * e.second.type_.isSuccessorOf(type); // better without if-conditions.
     }
 
     return count;
@@ -560,7 +628,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
         //else if ( unit->getType() == type ) {
         //    count++;
         //}
-        count += (unit->getType() == type) + !(unit->getType() == type) * 2 * (unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type); // better without if-conditions.
+        count += (unit->getType() == type) + (unit->getType() != type && unit->getType() == UnitTypes::Zerg_Egg && unit->getBuildType() == type) * (1 + unit->getBuildType().isTwoUnitsInOneEgg()); // better without if-conditions.
 
     }
 
@@ -571,9 +639,8 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 {
     int count = 0;
-    map<UnitType, TilePosition>::const_iterator it = res.reservation_map_.find( type );
-    if ( it != res.reservation_map_.end() ) {
-        count++;
+    for (auto it : res.reservation_map_ ) {
+        if( it.second == type ) count++;
     }
 
     return count;
@@ -592,6 +659,7 @@ int CUNYAIModule::Count_Units(const UnitType &type)
     }
 
 }
+
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
 int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
 {
@@ -876,6 +944,9 @@ void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &
             }
             else if ( i.getUpgrade() != UpgradeTypes::None ) {
                 Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getUpgrade().c_str() );  //
+            }
+            else if (i.getResearch() != UpgradeTypes::None) {
+                Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getResearch().c_str());  //
             }
             another_row_of_printing++;
         }
@@ -1217,6 +1288,32 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 
     return return_unit;
 }
+
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_inventory_.empty()) {
+        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+
+            if ( can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Map_Inventory &inv, const int &dist) {
     int min_dist = dist;
@@ -1449,9 +1546,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         //    cd_frames = 15;
         //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-        //if (u_type == UnitTypes::Zerg_Devourer) {
-        //    cd_frames = 5;
-        //}
+        if (u_type == UnitTypes::Zerg_Devourer) {
+            cd_frames = 28; // this is an INSANE cooldown.
+        }
     }
     //else 
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {

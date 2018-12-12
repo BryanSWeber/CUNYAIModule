@@ -59,19 +59,19 @@ struct Resource_Inventory {
     void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
     void countViableMines(); //counts number of viable gas mines and local mineral patches.
     void drawMineralRemaining(const Map_Inventory &inv) const;
-
+    void drawUnreachablePatch(const Map_Inventory & inv) const;;
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
 
     //for all patches, long distance or otherwise.
-    int total_miners_;
-    int total_gas_;
+    int total_miners_ = 0;
+    int total_gas_ = 0;
 
     // For only local patches.
-    int local_mineral_patches_;
-    int local_refineries_;
-    int local_miners_;
-    int local_gas_collectors_;
+    int local_mineral_patches_ = 0;
+    int local_refineries_ = 0;
+    int local_miners_ = 0;
+    int local_gas_collectors_ = 0;
 
     void updateMiners();
     void updateGasCollectors();
