@@ -128,12 +128,23 @@ struct Unit_Inventory {
     int detector_count_;
     int cloaker_count_;
     int resource_depot_count_;
+	int resource_depot_count_2;
+	int resource_depot_count_3;
     int future_fap_stock_;
     int moving_average_fap_stock_;
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
-    std::map <Unit, Stored_Unit> unit_inventory_;
+
+	//int playerData[23];
+
+
+	//int playerData[23];
+
+	int inventoryCopy[29];
+	int intel[29];
+	string unitInventoryLabel[29];
+	std::map <Unit, Stored_Unit> unit_inventory_;
 
     // Updates the count of units.
     void addStored_Unit( const Unit &unit );
