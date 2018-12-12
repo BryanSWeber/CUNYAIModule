@@ -4,6 +4,7 @@
 #include "Research_Inventory.h"
 #include "Unit_Inventory.h"
 #include "CobbDouglas.h"
+#include "ScoutingManager.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -19,6 +20,7 @@ struct Player_Model {
     }; // need a constructor method.
 
     Player bwapi_player_; // this is a pointer, explicitly.
+    Race enemy_race_;
     double estimated_workers_ = 0;
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
@@ -41,7 +43,9 @@ struct Player_Model {
     //stored to avoid extensive counting.  
     void updateUnit_Counts();
 
-    void setLockedOpeningValues();
+    void setLockedOpeningValuesLingRush();
+    void setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart,
+                                const string& build = "", const int& a_army = NULL, const int& a_econ = NULL, const int& a_tech = NULL, const int& delta = NULL, const int& gamma = NULL);
 
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
