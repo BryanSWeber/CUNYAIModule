@@ -23,7 +23,7 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
+//bool foundDetector;
 //Declare universally shared inventories.
 Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
@@ -52,7 +52,7 @@ ScoutingManager scouting;
 
 void CUNYAIModule::onStart()
 {
-
+	//foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -105,6 +105,7 @@ void CUNYAIModule::onStart()
     //Initialize model variables.
     gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt", friendly_player_model );
 
+
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
@@ -134,6 +135,8 @@ void CUNYAIModule::onStart()
     med_delay = 0;
     long_delay = 0;
     my_reservation = Reservation();
+
+	enemy_player_model.readPlayerLog(enemy_player_model);
 
     //friendly_player_model.setLockedOpeningValues();
 
@@ -173,7 +176,16 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_
         << endl;
     output.close();
-
+	enemy_player_model.writePlayerLog(enemy_player_model, true);
+	/*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+	if (!check)
+	{
+		ofstream detector;
+		detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+		detector << -1;
+		detector.close();
+	}
+	check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
     }
@@ -199,9 +211,14 @@ void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
-    if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
-        return;
-
+	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
+		return;
+	Broodwar->sendText("%i", enemy_player_model.units_.inventoryCopy[22]);
+	Broodwar->sendText("%i", enemy_player_model.units_.resource_depot_count_);
+	//if (foundDetector == false) {
+	enemy_player_model.playerStock(enemy_player_model);
+	enemy_player_model.writePlayerLog(enemy_player_model, false);
+	//}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -237,6 +254,7 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllLocations(current_map_inventory);
 
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player.
+
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
     friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
@@ -487,6 +505,8 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 130, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
         Broodwar->drawTextScreen(250, 140, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 150, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
+        Broodwar->drawTextScreen(250, 160, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 180, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
@@ -495,8 +515,6 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 160, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
-        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -569,6 +587,18 @@ void CUNYAIModule::onFrame()
                 }
             }
         } // Pretty to look at!
+
+        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_home_.size(); ++i) {
+        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_home_[i].size(); ++j) {
+        //        if (inventory.map_out_from_home_[i][j] % 100 == 0 /*&& inventory.map_out_from_home_[i][j] <= 1*/ ) {
+        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
+        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_home_[i][j] );
+        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+
 
         //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
@@ -998,7 +1028,6 @@ void CUNYAIModule::onFrame()
                 }
                 continue;
             }
-
 
             if (!isRecentCombatant(miner.bwapi_unit_) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.
 
@@ -1455,6 +1484,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             }
             else if ( unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing() ) {
                 //buildorder.clearRemainingBuildOrder( false );
+
             }
         }
     }

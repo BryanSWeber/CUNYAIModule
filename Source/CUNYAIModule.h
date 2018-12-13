@@ -15,11 +15,11 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing records, etc.
-constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
+constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
+constexpr bool TIT_FOR_TAT_ENGAGED = false; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 
 // Remember not to use "Broodwar" in any global class constructor!
@@ -46,7 +46,6 @@ public:
   virtual void onSaveGame(std::string gameName);
   virtual void onUnitComplete(BWAPI::Unit unit);
   // Everything below this line is safe to modify.
-
 
 // Status of AI
   static double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
