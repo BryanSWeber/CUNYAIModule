@@ -705,31 +705,49 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     }
 
 
-    //Heuristics for building. They are pretty simple combat results from a simulation.
+    //Heuristic classes for building. They are pretty simple combat results from a simulation.
     bool it_needs_to_shoot_up = false;
     bool it_needs_to_shoot_down = false;
     bool it_needs_to_fly = false;
     bool too_many_scourge = false;
     bool required = false;
 
-    // determine undesirables in simulation.
-    for (auto &potential_type : combat_types) {
-        if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_up = true;
-        if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_)  it_needs_to_shoot_down = true;
-        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  it_needs_to_fly = true;
-        if (potential_type.first == UnitTypes::Zerg_Scourge && enemy_player_model.units_.stock_fliers_ < Count_Units(UnitTypes::Zerg_Scourge) * Stored_Unit(UnitTypes::Zerg_Scourge).stock_value_ )  too_many_scourge = true;
-        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type.first)) required = true;
-    }
-    // remove undesireables.
+    // Check if unit is even feasible, or the unit already IS that type.
     auto potential_type = combat_types.begin();
-    while (potential_type != combat_types.end()) {
-        if (required) potential_type++;
-        else if (potential_type->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type++);
-        else if (potential_type->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type++);
-        else if (!potential_type->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type++);
-        else if (potential_type->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type++);
+    while (potential_type != combat_types.end() ) {
+        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first ) potential_type++;
+        else combat_types.erase(potential_type++);
+    }
 
-        else potential_type++;
+    // Check if we have a member of each of the classes.
+    bool up_shooting_class = false;
+    bool down_shooting_class = false;
+    bool flying_class = false;
+
+    for (auto &potential_type : combat_types) {
+        if (potential_type.first.airWeapon() != WeaponTypes::None)  up_shooting_class = true; 
+        if (potential_type.first.groundWeapon() != WeaponTypes::None )  down_shooting_class = true;
+        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_)  flying_class = true;
+    }
+
+    // Identify desirable unit classes prior to simulation.
+    for (auto &potential_type : combat_types) {
+        if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
+        if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_ && down_shooting_class)  it_needs_to_shoot_down = true;
+        if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_ && flying_class) it_needs_to_fly = true;
+        if (potential_type.first == UnitTypes::Zerg_Scourge && enemy_player_model.units_.stock_fliers_ < Count_Units(UnitTypes::Zerg_Scourge) * Stored_Unit(UnitTypes::Zerg_Scourge).stock_value_)  too_many_scourge = true;
+    }
+
+    // remove undesireables.
+    auto potential_type2 = combat_types.begin();
+    while (potential_type2 != combat_types.end()) {
+        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++;
+        else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
+        else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
+        else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
+        else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
+
+        else potential_type2++;
     }
 
     if (combat_types.empty()) return false;
