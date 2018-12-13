@@ -46,12 +46,6 @@ double CUNYAIModule::delta;
 double CUNYAIModule::gamma;
 Building_Gene CUNYAIModule::buildorder;
 
-<<<<<<< Updated upstream
-=======
-// Initalize scouting manager once on startup
-ScoutingManager scouting;
-
->>>>>>> Stashed changes
 void CUNYAIModule::onStart()
 {
 
@@ -201,18 +195,10 @@ void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
-<<<<<<< Updated upstream
+
     if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
         return;
 
-=======
-	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
-		return;
-	//if (foundDetector == false) {
-	enemy_player_model.playerStock(enemy_player_model);
-	enemy_player_model.writePlayerLog(enemy_player_model, false);
-	//}
->>>>>>> Stashed changes
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -482,20 +468,11 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
         Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
         Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-<<<<<<< Updated upstream
         Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
         Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
         Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
         Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
-=======
-        Broodwar->drawTextScreen(250, 120, "Scouting: %s", disable_scouting ? "FALSE" : "TRUE"); //Are we scouting? False if disabled scouting is true
-        Broodwar->drawTextScreen(250, 130, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        Broodwar->drawTextScreen(250, 140, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        Broodwar->drawTextScreen(250, 150, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
-        Broodwar->drawTextScreen(250, 160, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
-        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
->>>>>>> Stashed changes
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
         }
@@ -1110,7 +1087,6 @@ void CUNYAIModule::onFrame()
         detector_time += end_detector - start_detector;
         larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
-        scout_time += end_scout - start_scout;
         combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
         creepcolony_time += end_creepcolony - start_creepcolony;
