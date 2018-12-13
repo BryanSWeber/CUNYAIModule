@@ -31,7 +31,7 @@ struct ScoutingManager {
 
     // Checks if unit is our scouting unit
     Position getScoutTargets(const Unit &unit, Map_Inventory &inv, Unit_Inventory &ei);
-    void updateScouts();
+    void updateScouts(const Player_Model& enemy_player_model);
     bool needScout(const Unit &unit, const int &t_game) const;
     void setScout(const Unit &unit, const int &ling_type=0);
     void clearScout(const Unit &unit);

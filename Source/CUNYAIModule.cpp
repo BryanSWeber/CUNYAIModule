@@ -213,8 +213,6 @@ void CUNYAIModule::onFrame()
   // Return if the game is a replay or is paused
 	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
 		return;
-	Broodwar->sendText("%i", enemy_player_model.units_.inventoryCopy[22]);
-	Broodwar->sendText("%i", enemy_player_model.units_.resource_depot_count_);
 	//if (foundDetector == false) {
 	enemy_player_model.playerStock(enemy_player_model);
 	enemy_player_model.writePlayerLog(enemy_player_model, false);
@@ -342,10 +340,8 @@ void CUNYAIModule::onFrame()
     land_inventory.updateMiners();
 
     // Update scouts, check if still alive.
-    scouting.updateScouts();
-    // If enemy has units that can shoot overlords, stop overlord scouting
-    if ( enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_) )
-        scouting.let_overlords_scout_ = false;
+    scouting.updateScouts(enemy_player_model);
+
     // Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
     bool disable_scouting = false; //(((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
                             //(enemy_player_model.units_.stock_fighting_total_ > friendly_player_model.units_.stock_fighting_total_)) &&
