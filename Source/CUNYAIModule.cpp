@@ -222,9 +222,19 @@ void CUNYAIModule::onStart()
 
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
+	//Convert the read file's directory to an array of chars (since the rename function only takes in char arrays as input
+	string name = ".\\bwapi-data\\read\\" + Broodwar->enemy()->getName() + ".txt";
+	char * readArr = new char[name.length() + 1];
+	strcpy(readArr, name.c_str());
+
+	//Convert the write file's directory to an array of chars (since the rename function only takes in char arrays as input
+	string name2 = ".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt";
+	char * writeArr = new char[name2.length() + 1];
+	strcpy(writeArr, name2.c_str());
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
         rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file.
+		rename(readArr, writeArr);
     }
 
     ofstream output; // Prints to brood war file while in the WRITE file.
@@ -258,6 +268,7 @@ void CUNYAIModule::onEnd( bool isWinner )
 	check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
+		rename(writeArr, readArr);
     }
 
     if (!buildorder.isEmptyBuildOrder()) {
