@@ -24,6 +24,7 @@ struct Stored_Unit {
     Stored_Unit();
     auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
     auto convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri); // puts the stored unit into the fap type... at a specific position
+    auto convertToFAPVegtable(const Position & chosen_pos, const Research_Inventory & ri);
 
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
@@ -56,7 +57,7 @@ struct Stored_Unit {
     int cd_remaining_;
     bool stimmed_;
     bool burrowed_;
-    bool detected_;
+    bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
 
     string phase_ = "None";
@@ -167,12 +168,14 @@ struct Unit_Inventory {
     void drawAllSpamGuards(const Map_Inventory & inv) const;
     void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Map_Inventory &inv) const;
+    void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
 
     bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
 
-
+    // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.
     void addToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
+    void addVegtableToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
     void addToMCFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
     void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri);// adds to the building combat simulator, friendly side.
 

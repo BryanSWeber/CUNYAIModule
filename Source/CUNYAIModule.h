@@ -10,16 +10,17 @@
 #include "Reservation_Manager.h"
 #include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp"
+#include "GeneticHistoryManager.h"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
-constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
-constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be OFF for sc-docker, ON for chaoslauncher at home & Training against base ai.
-constexpr bool SSCAIT_OR_DOCKER = true; // should be ON for SC-docker, ON for SSCAIT.
+constexpr bool ANALYSIS_MODE = false; // Printing records, etc.
+constexpr bool DRAWING_MODE = false; // Visualizations, printing records, etc. Should seperate these.
+constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
+constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -48,9 +49,9 @@ public:
 
 
 // Status of AI
-  double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+  static double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
     bool supply_starved;
-  double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
+  static double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
     bool gas_starved;
     double win_rate; //fairly straighforward.
 
@@ -71,8 +72,9 @@ public:
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
 
-    Building_Gene buildorder; //
+    static Building_Gene buildorder; //
     Reservation my_reservation; 
+    static GeneticHistory gene_history;
 
    //These measure its clock.
     int short_delay;
@@ -108,7 +110,7 @@ public:
       bool Reactive_BuildFAP(const Unit & larva, const Map_Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
       static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
-      bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> &combat_types); //Compares a set of units via FAP simulations.
+      bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types); //Compares a set of units via FAP simulations. Uses a COPY of the combat types.
 
       // Builds the next building you can afford. Area of constant improvement.
       bool Building_Begin(const Unit &drone, const Map_Inventory &inv, const Unit_Inventory &e_inv);
@@ -116,10 +118,13 @@ public:
       TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
+      bool checkInCartridge( const UnitType & ut);
+      bool checkInCartridge( const UpgradeType & ut);
+      bool checkInCartridge( const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
       bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
       // checks if ut is required and can be built by unit at this time.
-      bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut, const bool & extra_criteria);
+      bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
@@ -157,6 +162,9 @@ public:
       bool isRecentCombatant(const Unit &unit);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
+      static void Diagnostic_Tiles(const Position & screen_pos, Color col);
+      static void Diagnostic_Watch_Expos();
+      static void Diagnostic_Destination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
       static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
       static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
@@ -164,6 +172,7 @@ public:
       static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
       static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
+      static void DiagnosticReservations(const Reservation reservations, const Position & screen_pos);
       static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
       //Sends a diagnostic text message, accepts another argument..
@@ -234,6 +243,7 @@ public:
       //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+      static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
       static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Map_Inventory & inv, const int & dist = 999999);
 
 
@@ -262,6 +272,7 @@ public:
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
+      int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.
