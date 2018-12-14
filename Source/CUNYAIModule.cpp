@@ -47,8 +47,6 @@ double CUNYAIModule::delta;
 double CUNYAIModule::gamma;
 Building_Gene CUNYAIModule::buildorder;
 
-// Initalize scouting manager once on startup
-ScoutingManager scouting;
 
 // Initalize scouting manager once on startup
 ScoutingManager scouting;
