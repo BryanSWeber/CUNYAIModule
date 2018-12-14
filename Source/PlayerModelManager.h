@@ -45,8 +45,7 @@ struct Player_Model {
 
     void setLockedOpeningValuesLingRush();
     void setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart,
-                                const string& build, const double& a_army = NULL, const double& a_econ = NULL, const double& a_tech = NULL, const double& delta = NULL, const double& gamma = NULL);
-
+                                const string& build = "", const double& a_army = NULL, const double& a_econ = NULL, const double& a_tech = NULL, const double& delta = NULL, const double& gamma = NULL, const double &r = NULL);
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
     vector< int > unit_incomplete_;

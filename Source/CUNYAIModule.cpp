@@ -54,102 +54,170 @@ ScoutingManager scouting;
 void CUNYAIModule::onStart()
 {
 	//foundDetector = false;
-    // Hello World!
-    Broodwar->sendText( "Good luck, have fun!" );
+	// Hello World!
+	Broodwar->sendText("Good luck, have fun!");
 
-    // Print the map name.
-    // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
-    Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
+	// Print the map name.
+	// BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
+	Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
 
-    // Enable the UserInput flag, which allows us to control the bot and type messages. Also needed to get the screen position.
-    Broodwar->enableFlag( Flag::UserInput );
+	// Enable the UserInput flag, which allows us to control the bot and type messages. Also needed to get the screen position.
+	Broodwar->enableFlag(Flag::UserInput);
 
-    // Uncomment the following line and the bot will know about everything through the fog of war (cheat).
-    //Broodwar->enableFlag(Flag::CompleteMapInformation);
+	// Uncomment the following line and the bot will know about everything through the fog of war (cheat).
+	//Broodwar->enableFlag(Flag::CompleteMapInformation);
 
-    // Set the command optimization level so that common commands can be grouped
-    // and reduce the bot's APM (Actions Per Minute).
-    Broodwar->setCommandOptimizationLevel( 2 );
+	// Set the command optimization level so that common commands can be grouped
+	// and reduce the bot's APM (Actions Per Minute).
+	Broodwar->setCommandOptimizationLevel(2);
 
-    // Check if this is a replay
-    if ( Broodwar->isReplay() )
-    {
+	// Check if this is a replay
+	if (Broodwar->isReplay())
+	{
 
-        // Announce the players in the replay
-        Broodwar << "The following players are in this replay:" << std::endl;
+		// Announce the players in the replay
+		Broodwar << "The following players are in this replay:" << std::endl;
 
-        // Iterate all the players in the game using a std:: iterator
-        Playerset players = Broodwar->getPlayers();
-        for ( auto p : players )
-        {
-            // Only print the player if they are not an observer
-            if ( !p->isObserver() )
-                Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
-        }
+		// Iterate all the players in the game using a std:: iterator
+		Playerset players = Broodwar->getPlayers();
+		for (auto p : players)
+		{
+			// Only print the player if they are not an observer
+			if (!p->isObserver())
+				Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
+		}
 
-    }
-    else // if this is not a replay
-    {
-        // Retrieve you and your enemy's races. enemy() will just return the first enemy.
-        // If you wish to deal with multiple enemies then you must use enemies().
-        if ( Broodwar->enemy() ) // First make sure there is an enemy
-            Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
-    }
+	}
+	else // if this is not a replay
+	{
+		// Retrieve you and your enemy's races. enemy() will just return the first enemy.
+		// If you wish to deal with multiple enemies then you must use enemies().
+		if (Broodwar->enemy()) // First make sure there is an enemy
+			Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
+	}
 
-    //Initialize state variables
-    gas_starved = false;
-    army_starved = false;
-    supply_starved = false;
-    econ_starved = true;
-    tech_starved = false;
+	//Initialize state variables
+	gas_starved = false;
+	army_starved = false;
+	supply_starved = false;
+	econ_starved = true;
+	tech_starved = false;
 
-    //Initialize model variables.
+	//Initialize model variables.
+	gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt", friendly_player_model);
 
-    gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt", friendly_player_model );
+	delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
+	gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
+	//Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
+	alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
+	alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
+	alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
+	adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
 
-    delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
-    gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
+	win_rate = (1 - gene_history.loss_rate_);
 
-    //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
-    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
-    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
-    adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
+	//get initial build order.
+	buildorder.getInitialBuildOrder(gene_history.build_order_);
 
-    win_rate = (1 - gene_history.loss_rate_);
+	//update Map Grids
+	current_map_inventory.updateBuildablePos();
+	current_map_inventory.updateUnwalkable();
+	//inventory.updateSmoothPos();
+	current_map_inventory.updateMapVeins();
+	current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.home_base_, current_map_inventory.map_out_from_home_);
+	//inventory.updateMapChokes();
+	current_map_inventory.updateBaseLoc(land_inventory);
+	current_map_inventory.getStartPositions();
 
-    //get initial build order.
-    buildorder.getInitialBuildOrder(gene_history.build_order_);
-
-    //update Map Grids
-    current_map_inventory.updateBuildablePos();
-    current_map_inventory.updateUnwalkable();
-    //inventory.updateSmoothPos();
-    current_map_inventory.updateMapVeins();
-    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.home_base_, current_map_inventory.map_out_from_home_ );
-    //inventory.updateMapChokes();
-    current_map_inventory.updateBaseLoc( land_inventory );
-    current_map_inventory.getStartPositions();
-
-    //update timers.
-    short_delay = 0;
-    med_delay = 0;
-    long_delay = 0;
-    my_reservation = Reservation();
+	//update timers.
+	short_delay = 0;
+	med_delay = 0;
+	long_delay = 0;
+	my_reservation = Reservation();
 
 	enemy_player_model.readPlayerLog(enemy_player_model);
 
-    //friendly_player_model.setLockedOpeningValues();
+	//friendly_player_model.setLockedOpeningValues();
 
-    // Testing Build Order content intenstively.
-    ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
-    string print_value = "";
-    print_value += gene_history.build_order_;
-    output << "Trying Build Order" << print_value << endl;
-    output.close();
+	// Testing Build Order content intenstively.
+	ofstream output; // Prints to brood war file while in the WRITE file.
+	output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+	string print_value = "";
+	print_value += gene_history.build_order_;
+	output << "Trying Build Order" << print_value << endl;
+	output.close();
 
+
+// Setup cartridges and overwrite previous values for specific matchups
+	// Cartridges for Zerg vs Zerg
+	if (Broodwar->enemy()->getRace() == Races::Zerg) {
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Mutalisk, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN } };
+		map<TechType, int> tech_cart = {};
+		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, gene_history.build_order_);
+	}
+
+	// Cartridge for if the enemy has no stealth detection (1h lurker rush with +2 sunkens)
+	else if (friendly_player_model.maxStock[14] == 0) {
+		string build = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken lair drone creep overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech"; //1 h lurker, tenative. + 2 creep
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling, INT_MIN }, { UnitTypes::Zerg_Hydralisk, INT_MIN }, { UnitTypes::Zerg_Lurker, INT_MIN }, { UnitTypes::Zerg_Lurker_Egg, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Metabolic_Boost, INT_MIN } };
+		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
+		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
+	}
+
+	// Cartridge for air-only opponents -- If they make flying units and their ground combat units = 0
+	else if (friendly_player_model.maxStockAverage[0] > 0 && friendly_player_model.minStockAverage[1] == 0) {
+		string build = "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone drone drone drone drone ling drone queens_nest spire drone creep drone drone overlord drone hive spore extract drone drone drone overlord drone drone drone drone hatch drone drone creep greater_spire drone drone drone overlord drone drone spore devourer devourer devourer devourer"; //3h - Devourers.
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Devourer, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN }, { UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN } };
+		map<TechType, int> tech_cart = { };
+		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
+	}
+
+	// Cartridge for opponents that can't shoot up -- If their stock shoot_up = 0 and their stock shoot_up_and_down = 0
+	else if (friendly_player_model.minStockAverage[2] == 0 && friendly_player_model.minStockAverage[3] == 0) {
+		string build = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair"; //1 base - 9 pool to fast spire w/o ling speed + 1 creep
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Mutalisk, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN } };
+		map<TechType, int> tech_cart = {};
+	}
+
+	// Cartridge for regular rush opponents -- If they only ever have one base, their max tech stock is below 500, but we don't spot combat units until after 3 minutes
+	// Passes full cartridges only changes the build order
+	else if (friendly_player_model.minStockAverage[23] == 0 && friendly_player_model.maxStock[27] < 500 && friendly_player_model.minTimeAverage[6] > 300) {
+		string build = "drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep drone sunken creep drone sunken"; //super sunken build
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
+		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
+		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
+	}
+
+	// Cartridge for super fast rush opoonents -- If they only ever have one base, their max tech stock is below 500, and we see combat units before 3 minutes
+	// Passes full cartridges only changes the build order
+	else if (friendly_player_model.minStockAverage[23] == 0 && friendly_player_model.maxStock[27] < 500 && friendly_player_model.minTimeAverage[6] < 300) {
+		string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
+		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
+	}
+
+	// Cartridge for worker rush opponents -- If they never build any combat units
+	// Passes full cartridges only changes the build order
+	else if (friendly_player_model.maxStockAverage[6] == 0) {
+		string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
+		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
+		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
+	}
 }
 
 void CUNYAIModule::onEnd( bool isWinner )

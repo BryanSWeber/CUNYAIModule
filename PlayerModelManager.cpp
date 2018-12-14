@@ -363,29 +363,30 @@ void Player_Model::setLockedOpeningValuesLingRush() {
 }
 
 // Generic command set for locked values
-// Must pass cartridges and build, every other parameter can be left to default (something is buggy with passing gene paramaters).
+// Must pass cartridges and build, every other parameter can be left to default (values can not be set to 0 (set to 0.0001 instead).
 void Player_Model::setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart,
-                                          const string& build, const double& a_army, const double& a_econ, const double& a_tech, const double& delta, const double& gamma) {
+                                          const string& build, const double& a_army, const double& a_econ, const double& a_tech, const double& delta, const double& gamma, const double& r) {
 
     if (a_army)
-        spending_model_.alpha_army = CUNYAIModule::alpha_army_original = a_army;
+        spending_model_.alpha_army = CUNYAIModule::gene_history.a_army_out_mutate_ = CUNYAIModule::alpha_army_original = a_army;
     if (a_econ)
-        spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = a_econ;
+        spending_model_.alpha_econ = CUNYAIModule::gene_history.a_econ_out_mutate_ = CUNYAIModule::alpha_econ_original = a_econ;
     if (a_tech)
-        spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = a_tech;
+        spending_model_.alpha_tech = CUNYAIModule::gene_history.a_tech_out_mutate_ = CUNYAIModule::alpha_tech_original = a_tech;
 
     if (delta)
-		CUNYAIModule::delta = delta;
+        CUNYAIModule::gene_history.delta_out_mutate_ = CUNYAIModule::delta = delta;
     if (gamma)
-		CUNYAIModule::gamma = gamma;
+        CUNYAIModule::gene_history.gamma_out_mutate_ = CUNYAIModule::gamma = gamma;
+    if (r)
+        CUNYAIModule::gene_history.r_out_mutate_ = CUNYAIModule::adaptation_rate = r;
 
     CUNYAIModule::buildorder = Building_Gene(build);
 
-    //unit cartridges (while these only are relevant for CUNYBot, they are still passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
+    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
     combat_unit_cartridge_ = unit_cart;
     //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
     building_cartridge_ = building_cart;
     upgrade_cartridge_ = upgrade_cart;
     tech_cartridge_ = tech_cart;
-
 }
