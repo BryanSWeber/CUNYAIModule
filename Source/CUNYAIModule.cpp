@@ -50,9 +50,12 @@ Building_Gene CUNYAIModule::buildorder;
 // Initalize scouting manager once on startup
 ScoutingManager scouting;
 
+// Initalize scouting manager once on startup
+ScoutingManager scouting;
+
 void CUNYAIModule::onStart()
 {
-    //foundDetector = false;
+	//foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -103,7 +106,9 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt", friendly_player_model);
+
+    gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt", friendly_player_model );
+
 
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -135,7 +140,7 @@ void CUNYAIModule::onStart()
     long_delay = 0;
     my_reservation = Reservation();
 
-    enemy_player_model.readPlayerLog(enemy_player_model);
+	enemy_player_model.readPlayerLog(enemy_player_model);
 
     //friendly_player_model.setLockedOpeningValues();
 
@@ -175,16 +180,16 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_
         << endl;
     output.close();
-    enemy_player_model.writePlayerLog(enemy_player_model, true);
-    /*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
-    if (!check)
-    {
-        ofstream detector;
-        detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-        detector << -1;
-        detector.close();
-    }
-    check.close();*/
+	enemy_player_model.writePlayerLog(enemy_player_model, true);
+	/*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+	if (!check)
+	{
+		ofstream detector;
+		detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+		detector << -1;
+		detector.close();
+	}
+	check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
     }
@@ -286,6 +291,7 @@ void CUNYAIModule::onFrame()
 
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
         //Initialize model variables.
+
         GeneticHistory gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt", friendly_player_model);
 
         delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
