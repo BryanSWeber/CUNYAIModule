@@ -164,7 +164,6 @@ void ScoutingManager::updateScouts(const Player_Model& enemy_player_model, const
         let_overlords_scout_ = true;
 
     if (Broodwar->canMake(UnitTypes::Zerg_Zergling) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Zergling) <= 1 && CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Zergling, friendly_player_model.units_) == 0) {
-        Broodwar->sendText("building zergling");
         force_zergling_ = true;
     }
 
