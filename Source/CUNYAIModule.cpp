@@ -52,7 +52,7 @@ ScoutingManager scouting;
 
 void CUNYAIModule::onStart()
 {
-	//foundDetector = false;
+    //foundDetector = false;
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -103,8 +103,7 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt", friendly_player_model );
-
+    gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt", friendly_player_model);
 
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -118,7 +117,7 @@ void CUNYAIModule::onStart()
     win_rate = (1 - gene_history.loss_rate_);
 
     //get initial build order.
-    buildorder.getInitialBuildOrder( gene_history.build_order_ );
+    buildorder.getInitialBuildOrder(gene_history.build_order_);
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -136,7 +135,7 @@ void CUNYAIModule::onStart()
     long_delay = 0;
     my_reservation = Reservation();
 
-	enemy_player_model.readPlayerLog(enemy_player_model);
+    enemy_player_model.readPlayerLog(enemy_player_model);
 
     //friendly_player_model.setLockedOpeningValues();
 
@@ -176,16 +175,16 @@ void CUNYAIModule::onEnd( bool isWinner )
         << ',' << buildorder.initial_building_gene_
         << endl;
     output.close();
-	enemy_player_model.writePlayerLog(enemy_player_model, true);
-	/*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
-	if (!check)
-	{
-		ofstream detector;
-		detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-		detector << -1;
-		detector.close();
-	}
-	check.close();*/
+    enemy_player_model.writePlayerLog(enemy_player_model, true);
+    /*ifstream check(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::in);
+    if (!check)
+    {
+        ofstream detector;
+        detector.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + Broodwar->enemy()->getName() + ".txt", ios_base::app);
+        detector << -1;
+        detector.close();
+    }
+    check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
     }
@@ -211,12 +210,12 @@ void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
-	if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
-		return;
-	//if (foundDetector == false) {
-	enemy_player_model.playerStock(enemy_player_model);
-	enemy_player_model.writePlayerLog(enemy_player_model, false);
-	//}
+    if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
+        return;
+    //if (foundDetector == false) {
+    enemy_player_model.playerStock(enemy_player_model);
+    enemy_player_model.writePlayerLog(enemy_player_model, false);
+    //}
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -340,7 +339,7 @@ void CUNYAIModule::onFrame()
     land_inventory.updateMiners();
 
     // Update scouts, check if still alive.
-    scouting.updateScouts(enemy_player_model);
+    scouting.updateScouts(enemy_player_model, friendly_player_model);
 
     // Disable scouting temporarily if we have a massive army to attack or are under threat of being killed
     bool disable_scouting = false; //(((friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) > enemy_player_model.units_.stock_fighting_total_ * 3) ||
@@ -680,12 +679,21 @@ void CUNYAIModule::onFrame()
             //Only morph one larva this frame.
             if (!attempted_morph_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
             {
-                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 attempted_morph_larva_this_frame = true;
+
+                //Force build a zergling for scouting if we don't have one available
+                if (scouting.force_zergling_) {
+                    Check_N_Grow(UnitTypes::Zerg_Zergling, u, true);
+                    scouting.force_zergling_ = false;
+                    last_frame_of_unit_morph_command = t_game;
+                    continue;
+                }
+
+                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
                     last_frame_of_unit_morph_command = t_game;
+                    continue;
                 }
-                continue;
             }
 
             // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.

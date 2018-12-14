@@ -12,6 +12,7 @@ ScoutingManager::ScoutingManager()
     exists_zergling_scout_(false),
     exists_expo_zergling_scout_(false),
     found_enemy_base_(false),
+    force_zergling_(false),
 
     overlord_scout_(nullptr),
     zergling_scout_(nullptr),
@@ -117,7 +118,7 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
             for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ++itr) {
                 scout_spot = itr->second;
                 itr = scout_expo_map_.erase(itr); //Erase the used base location, each scout goes to unique location
-				return scout_spot;
+                return scout_spot;
             }
         }
     }
@@ -152,15 +153,20 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
     return false;
 }
 
-void ScoutingManager::updateScouts(const Player_Model& enemy_player_model) {
+void ScoutingManager::updateScouts(const Player_Model& enemy_player_model, const Player_Model& friendly_player_model) {
 // Check if scouts have died and update overlord scouting
 
-	// If enemy has units that can shoot overlords, stop overlord scouting
-	if ((enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_)) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
-		let_overlords_scout_ = false;
-	// Turn overlord scouting back on if we have overlord speed upgrade
-	if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 1)
-		let_overlords_scout_ = true;
+    // If enemy has units that can shoot overlords, stop overlord scouting
+    if ((enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_)) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
+        let_overlords_scout_ = false;
+    // Turn overlord scouting back on if we have overlord speed upgrade
+    if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 1)
+        let_overlords_scout_ = true;
+
+    if (Broodwar->canMake(UnitTypes::Zerg_Zergling) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Zergling) <= 1 && CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Zergling, friendly_player_model.units_) == 0) {
+        Broodwar->sendText("building zergling");
+        force_zergling_ = true;
+    }
 
     //if we thought we had a suicide zergling scout but now we don't
     if (zergling_scout_) {

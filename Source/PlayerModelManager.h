@@ -45,7 +45,7 @@ struct Player_Model {
 
     void setLockedOpeningValuesLingRush();
     void setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart,
-                                const string& build = "", const int& a_army = NULL, const int& a_econ = NULL, const int& a_tech = NULL, const int& delta = NULL, const int& gamma = NULL);
+                                const string& build, const double& a_army = NULL, const double& a_econ = NULL, const double& a_tech = NULL, const double& delta = NULL, const double& gamma = NULL);
 
     vector< UnitType > unit_type_;
     vector< int > unit_count_;
@@ -60,29 +60,29 @@ struct Player_Model {
     map<UpgradeType, int> upgrade_cartridge_;
     map<TechType, int> tech_cartridge_;
 
-	void playerStock(Player_Model & enemy_player_model);
-	void readPlayerLog(Player_Model & enemy_player_model);
-	void writePlayerLog(Player_Model & enemy_player_model, bool gameComplete);
-	int playerData[29];
-	int oldData[29];
-	int oldIntel[29];
-	//new stuff
-	int minTime[29];
-	int minTimeAverage[29];
+    void playerStock(Player_Model & enemy_player_model);
+    void readPlayerLog(Player_Model & enemy_player_model);
+    void writePlayerLog(Player_Model & enemy_player_model, bool gameComplete);
+    int playerData[29];
+    int oldData[29];
+    int oldIntel[29];
+    //new stuff
+    int minTime[29];
+    int minTimeAverage[29];
 
-	int minStock[29];
-	int minStockAverage[29];
+    int minStock[29];
+    int minStockAverage[29];
 
-	int maxStock[29];
-	int maxStockAverage[29];
-
-
-	int maxTime[29];
-	int maxTimeAverage[29];
+    int maxStock[29];
+    int maxStockAverage[29];
 
 
-	int oldMinStock[29];
-	int oldMinTime[29];
-	int oldMaxStock[29];
-	int oldMaxTime[29];
+    int maxTime[29];
+    int maxTimeAverage[29];
+
+
+    int oldMinStock[29];
+    int oldMinTime[29];
+    int oldMaxStock[29];
+    int oldMaxTime[29];
 };
