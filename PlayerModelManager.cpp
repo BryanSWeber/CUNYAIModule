@@ -381,7 +381,8 @@ void Player_Model::setLockedOpeningValues(const map<UnitType, int>& unit_cart, c
     if (r)
         CUNYAIModule::gene_history.r_out_mutate_ = CUNYAIModule::adaptation_rate = r;
 
-    CUNYAIModule::buildorder = Building_Gene(build);
+	if (!build.empty())
+		CUNYAIModule::buildorder = Building_Gene(build);
 
     //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
     combat_unit_cartridge_ = unit_cart;
