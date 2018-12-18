@@ -161,10 +161,10 @@ void CUNYAIModule::onStart()
 	}
 
 	// If any value in the file is greater than 0 then we have seen that opponent before  and can use a cart
-	if (std::max_element(friendly_player_model.maxStock, friendly_player_model.maxStock + 29) > 0) 
+	if (*std::max_element(enemy_player_model.maxStockAverage, enemy_player_model.maxStockAverage + 29) > 0)
 	{
 		// Cartridge for if the enemy has no stealth detection (1h lurker rush with +2 sunkens)
-		if (friendly_player_model.maxStock[14] == 0) {
+		if (enemy_player_model.maxStock[14] == 0) {
 			string build = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken lair drone creep overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech"; //1 h lurker, tenative. + 2 creep
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling, INT_MIN }, { UnitTypes::Zerg_Hydralisk, INT_MIN }, { UnitTypes::Zerg_Lurker, INT_MIN }, { UnitTypes::Zerg_Lurker_Egg, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -174,7 +174,7 @@ void CUNYAIModule::onStart()
 		}
 
 		// Cartridge for air-only opponents -- If they make flying units and their ground combat units = 0
-		if (friendly_player_model.maxStockAverage[0] > 0 && friendly_player_model.minStockAverage[1] == 0) {
+		if (enemy_player_model.maxStockAverage[0] > 0 && enemy_player_model.minStockAverage[1] == 0) {
 			string build = "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone drone drone drone drone ling drone queens_nest spire drone creep drone drone overlord drone hive spore extract drone drone drone overlord drone drone drone drone hatch drone drone creep greater_spire drone drone drone overlord drone drone spore devourer devourer devourer devourer"; //3h - Devourers.
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN }, { UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -184,7 +184,7 @@ void CUNYAIModule::onStart()
 		}
 
 		// Cartridge for opponents that can't shoot up -- If their stock shoot_up = 0 and their stock shoot_up_and_down = 0
-		if (friendly_player_model.minStockAverage[2] == 0 && friendly_player_model.minStockAverage[3] == 0) {
+		if (enemy_player_model.minStockAverage[2] == 0 && enemy_player_model.minStockAverage[3] == 0) {
 			string build = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair"; //1 base - 9 pool to fast spire w/o ling speed + 1 creep
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Mutalisk, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -194,7 +194,7 @@ void CUNYAIModule::onStart()
 
 		// Cartridge for regular rush opponents -- If they only ever have one base, their max tech stock is below 500, but we don't spot combat units until after 3 minutes
 		// Passes full cartridges only changes the build order
-		if (friendly_player_model.minStockAverage[23] == 0 && friendly_player_model.maxStock[27] < 500 && friendly_player_model.minTimeAverage[6] > 300) {
+		if (enemy_player_model.minStockAverage[23] == 0 && enemy_player_model.maxStock[27] < 500 && enemy_player_model.minTimeAverage[6] > 300) {
 			string build = "drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep drone sunken creep drone sunken"; //super sunken build
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -205,7 +205,7 @@ void CUNYAIModule::onStart()
 
 		// Cartridge for super fast rush opoonents -- If they only ever have one base, their max tech stock is below 500, and we see combat units before 3 minutes
 		// Passes full cartridges only changes the build order
-		if (friendly_player_model.minStockAverage[23] == 0 && friendly_player_model.maxStock[27] < 500 && friendly_player_model.minTimeAverage[6] < 300) {
+		if (enemy_player_model.minStockAverage[23] == 0 && enemy_player_model.maxStock[27] < 500 && enemy_player_model.minTimeAverage[6] < 300) {
 			string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -216,7 +216,7 @@ void CUNYAIModule::onStart()
 
 		// Cartridge for worker rush opponents -- If they never build any combat units
 		// Passes full cartridges only changes the build order
-		if (friendly_player_model.maxStockAverage[6] == 0) {
+		if (enemy_player_model.maxStockAverage[6] == 0) {
 			string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
