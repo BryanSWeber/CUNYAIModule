@@ -319,6 +319,7 @@ void CUNYAIModule::onFrame()
     //enemy_player_model.units_.drawAllHitPoints(current_map_inventory);
     enemy_player_model.units_.drawAllLocations(current_map_inventory);
 
+	enemy_player_model.playerStock(enemy_player_model);
     //Update neutral units
     Player* neutral_player;
     for (auto p : Broodwar->getPlayers()) {
