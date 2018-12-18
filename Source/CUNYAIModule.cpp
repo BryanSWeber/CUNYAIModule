@@ -51,6 +51,7 @@ Building_Gene CUNYAIModule::buildorder;
 // Initalize scouting manager once on startup
 ScoutingManager scouting;
 
+
 void CUNYAIModule::onStart()
 {
 	//foundDetector = false;
@@ -292,12 +293,7 @@ void CUNYAIModule::onFrame()
 { // Called once every game frame
 
   // Return if the game is a replay or is paused
-    if (Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self())
-        return;
-    //if (foundDetector == false) {
-    enemy_player_model.playerStock(enemy_player_model);
-    enemy_player_model.writePlayerLog(enemy_player_model, false);
-    //}
+
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
     std::chrono::duration<double, std::milli> preamble_time;
@@ -529,7 +525,7 @@ void CUNYAIModule::onFrame()
         Print_Cached_Inventory(0, 50);
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 80);
-        Print_Reservations(250, 180, my_reservation);
+        Print_Reservations(250, 190, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
             Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
             //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
@@ -597,10 +593,11 @@ void CUNYAIModule::onFrame()
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
         Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
-        Broodwar->drawTextScreen(375, 40, "Foe T Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-        Broodwar->drawTextScreen(375, 50, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getLn_Gas_Ratio());
-        Broodwar->drawTextScreen(375, 60, "Vision (Pct.): %4.2f", current_map_inventory.vision_tile_count_ / static_cast<double>(map_area));  //
-        Broodwar->drawTextScreen(375, 70, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
+        Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
+        Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
+        Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getLn_Gas_Ratio());
+        Broodwar->drawTextScreen(375, 70, "Vision (Pct.): %4.2f", current_map_inventory.vision_tile_count_ / static_cast<double>(map_area));  //
+        Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -984,9 +981,9 @@ void CUNYAIModule::onFrame()
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     Position e_pos = e_closest->pos_;
                     bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
-                                                (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
-                                                current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory;
+                                                (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
+                                                current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
+                    bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking");
                     bool neccessary_attack =
                         (targetable_stocks > 0 || grim_trigger_to_go_in) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
@@ -1180,7 +1177,7 @@ void CUNYAIModule::onFrame()
                                 //continue;
                             }
                             else {
-                                Broodwar->sendText("Whoopsie, a fall-through!");
+                                //Broodwar->sendText("Whoopsie, a fall-through!");
                             }
                         }
                     }                //Otherwise, we should put them on minerals.
@@ -1278,7 +1275,6 @@ void CUNYAIModule::onFrame()
         detector_time += end_detector - start_detector;
         larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
-        //scout_time += end_scout - start_scout;
         combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
         creepcolony_time += end_creepcolony - start_creepcolony;
@@ -1305,18 +1301,18 @@ void CUNYAIModule::onFrame()
         }
     }
 
-    //if constexpr (DRAWING_MODE) {
-    //    int n;
-    //    n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-    //    n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
-    //    n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
-    //    n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
-    //    n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
-    //    n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
-    //    n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
-    //    n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
-    //    n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
-    //}
+    if constexpr (DRAWING_MODE) {
+        int n;
+        n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / (double)total_frame_time.count() * 100, preamble_time.count());
+        n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / (double)total_frame_time.count() * 100, larva_time.count());
+        n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / (double)total_frame_time.count() * 100, worker_time.count());
+        n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / (double)total_frame_time.count() * 100, scout_time.count());
+        n = sprintf(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / (double)total_frame_time.count() * 100, combat_time.count());
+        n = sprintf(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / (double)total_frame_time.count() * 100, detector_time.count());
+        n = sprintf(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / (double)total_frame_time.count() * 100, upgrade_time.count());
+        n = sprintf(creep_colony_string, "CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / (double)total_frame_time.count() * 100, creepcolony_time.count());
+    }
 
     //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
 
