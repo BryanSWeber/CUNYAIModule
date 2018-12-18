@@ -52,7 +52,7 @@ struct Player_Model {
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
     int closest_radial_distance_enemy_ground_ = INT_MAX;
 
-    //unit cartridges 
+    //unit cartridges
     map<UnitType, int> combat_unit_cartridge_;
     map<UnitType, int> eco_unit_cartridge_;
     map<UnitType, int> building_cartridge_;

@@ -47,6 +47,7 @@ double CUNYAIModule::delta;
 double CUNYAIModule::gamma;
 Building_Gene CUNYAIModule::buildorder;
 
+
 // Initalize scouting manager once on startup
 ScoutingManager scouting;
 
@@ -186,7 +187,6 @@ void CUNYAIModule::onStart()
 		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
 		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN } };
 		map<TechType, int> tech_cart = {};
-		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
 	}
 
 	// Cartridge for regular rush opponents -- If they only ever have one base, their max tech stock is below 500, but we don't spot combat units until after 3 minutes
@@ -219,24 +219,25 @@ void CUNYAIModule::onStart()
 		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
 		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
 		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
-		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
-	}
-
-	// Cartridge for a new opponent -- If we have never seen a unit stock/a worker stock/and a first base before
-	if (friendly_player_model.maxStockAverage[9] == 0 && friendly_player_model.maxStockAverage[12] == 0 && friendly_player_model.maxStockAverage[22] == 0 && Broodwar->enemy()->getRace() != Races::Zerg) {
-		map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-		map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-		map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
-		map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
 		friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart);
 	}
 }
 
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
+	//Convert the read file's directory to an array of chars (since the rename function only takes in char arrays as input
+	string name = ".\\bwapi-data\\read\\" + Broodwar->enemy()->getName() + ".txt";
+	char * readArr = new char[name.length() + 1];
+	strcpy(readArr, name.c_str());
+
+	//Convert the write file's directory to an array of chars (since the rename function only takes in char arrays as input
+	string name2 = ".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt";
+	char * writeArr = new char[name2.length() + 1];
+	strcpy(writeArr, name2.c_str());
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
         rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file.
+		rename(readArr, writeArr);
     }
 
     ofstream output; // Prints to brood war file while in the WRITE file.
@@ -270,6 +271,7 @@ void CUNYAIModule::onEnd( bool isWinner )
     check.close();*/
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
+		rename(writeArr, readArr);
     }
 
     if (!buildorder.isEmptyBuildOrder()) {
@@ -319,6 +321,7 @@ void CUNYAIModule::onFrame()
     //enemy_player_model.units_.drawAllHitPoints(current_map_inventory);
     enemy_player_model.units_.drawAllLocations(current_map_inventory);
 
+	enemy_player_model.playerStock(enemy_player_model);
     //Update neutral units
     Player* neutral_player;
     for (auto p : Broodwar->getPlayers()) {
