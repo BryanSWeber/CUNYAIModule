@@ -9,7 +9,7 @@ using namespace std;
 bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Inventory &inv ) {
     if (checkDesirable(unit, UnitTypes::Zerg_Hatchery,extra_critera) ) {
 
-        int dist = 99999999;
+        int expo_score = 99999999;
         inv.getExpoPositions(); // update the possible expo positions.
         inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
 
@@ -20,7 +20,7 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Invent
         // Let's build at the safest close canidate position.
         if ( safe_worker ) {
             for ( auto &p : inv.expo_positions_ ) {
-                int dist_temp = inv.getRadialDistanceOutFromHome(Position(p)) ;
+                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))));
 
                 bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_player_model.units_, friendly_player_model.units_, land_inventory);
 
@@ -28,8 +28,8 @@ bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Invent
                                     getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
                                     getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Hive, Position( p ), 500 );
                 bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 32;
-                if ( (dist_temp < dist || expansion_is_home) && safe_expo && !occupied_expo) {
-                    dist = dist_temp;
+                if ( (score_temp < expo_score || expansion_is_home) && safe_expo && !occupied_expo) {
+                    expo_score = score_temp;
                     inv.setNextExpo( p );
                     //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
                 }
