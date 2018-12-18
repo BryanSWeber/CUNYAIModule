@@ -14,6 +14,7 @@ struct ScoutingManager {
     bool exists_zergling_scout_;
     bool exists_expo_zergling_scout_;
     bool found_enemy_base_;
+    bool force_zergling_;
 
     Unit overlord_scout_;
     Unit zergling_scout_;
@@ -31,7 +32,7 @@ struct ScoutingManager {
 
     // Checks if unit is our scouting unit
     Position getScoutTargets(const Unit &unit, Map_Inventory &inv, Unit_Inventory &ei);
-    void updateScouts();
+    void updateScouts(const Player_Model& enemy_player_model, const Player_Model& friendly_player_model);
     bool needScout(const Unit &unit, const int &t_game) const;
     void setScout(const Unit &unit, const int &ling_type=0);
     void clearScout(const Unit &unit);

@@ -12,6 +12,7 @@ ScoutingManager::ScoutingManager()
     exists_zergling_scout_(false),
     exists_expo_zergling_scout_(false),
     found_enemy_base_(false),
+    force_zergling_(false),
 
     overlord_scout_(nullptr),
     zergling_scout_(nullptr),
@@ -117,7 +118,7 @@ Position ScoutingManager::getScoutTargets(const Unit &unit, Map_Inventory &inv, 
             for (auto itr = scout_expo_map_.begin(); itr != scout_expo_map_.end(); ++itr) {
                 scout_spot = itr->second;
                 itr = scout_expo_map_.erase(itr); //Erase the used base location, each scout goes to unique location
-				return scout_spot;
+                return scout_spot;
             }
         }
     }
@@ -133,7 +134,7 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
         // Always have an expo scout
         if (!exists_expo_zergling_scout_)
             return true;
-        // If a suicidal zergling scout doesn't exists and it's been 30s since death
+        // If a suicidal zergling scout doesn't exists and it's been 30s since death/cleared
         if (!exists_zergling_scout_ && last_zergling_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24)
             return true;
     }
@@ -143,8 +144,8 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
         // Initial overlord scout
         if (t_game < 3)
             return true;
-        // If an overlord scout doesn't exist and it's been 60s since death
-        if (!exists_overlord_scout_ && last_overlord_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 60 * 24)
+        // If an overlord scout doesn't exist and it's been 30s since death/cleared
+        if (!exists_overlord_scout_ && last_overlord_scout_sent_ < t_game - Broodwar->getLatencyFrames() - 30 * 24)
             return true;
     }
 
@@ -152,8 +153,20 @@ bool ScoutingManager::needScout(const Unit &unit, const int &t_game) const {
     return false;
 }
 
-void ScoutingManager::updateScouts() {
-// Check if scouts have died
+void ScoutingManager::updateScouts(const Player_Model& enemy_player_model, const Player_Model& friendly_player_model) {
+// Check if scouts have died and update overlord scouting
+
+    // If enemy has units that can shoot overlords, stop overlord scouting
+    if ((enemy_player_model.enemy_race_ == Races::Terran || (enemy_player_model.units_.stock_shoots_up_ || enemy_player_model.units_.stock_both_up_and_down_)) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
+        let_overlords_scout_ = false;
+    // Turn overlord scouting back on if we have overlord speed upgrade
+    if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 1)
+        let_overlords_scout_ = true;
+
+    if (Broodwar->canMake(UnitTypes::Zerg_Zergling) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Zergling) <= 1 && CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Zergling, friendly_player_model.units_) == 0) {
+        force_zergling_ = true;
+    }
+
     //if we thought we had a suicide zergling scout but now we don't
     if (zergling_scout_) {
         if (!zergling_scout_->exists()) {
@@ -186,6 +199,7 @@ void ScoutingManager::updateScouts() {
 
 void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
 // Store unit as a designated scout
+// ling_type = 1 is expo scout, ling_type = 2 is suicide base scout
     UnitType u_type = unit->getType();
     Stored_Unit& scout_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
     scout_unit.updateStoredUnit(unit);

@@ -909,6 +909,8 @@ void Building_Gene::retryBuildOrderElement(const UnitType & ut)
 
 void Building_Gene::getInitialBuildOrder(string s) {
 
+	building_gene_.clear();
+
     initial_building_gene_ = s;
 
     std::stringstream ss(s);
