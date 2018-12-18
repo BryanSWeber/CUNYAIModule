@@ -106,9 +106,9 @@ void Player_Model::evaluateWorkerCount() {
 
 void Player_Model::playerStock(Player_Model & enemy_player_model)
 {
-	enemy_player_model.units_.inventoryCopy[25] = static_cast<int>(enemy_player_model.spending_model_.worker_stock);
-	enemy_player_model.units_.inventoryCopy[26] = static_cast<int>(enemy_player_model.spending_model_.army_stock);
-	enemy_player_model.units_.inventoryCopy[27] = static_cast<int>(enemy_player_model.spending_model_.tech_stock);
+    enemy_player_model.units_.inventoryCopy[25] = static_cast<int>(enemy_player_model.spending_model_.worker_stock);
+    enemy_player_model.units_.inventoryCopy[26] = static_cast<int>(enemy_player_model.spending_model_.army_stock);
+    enemy_player_model.units_.inventoryCopy[27] = static_cast<int>(enemy_player_model.spending_model_.tech_stock);
 }
 
 
