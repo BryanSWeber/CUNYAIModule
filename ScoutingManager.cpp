@@ -173,27 +173,28 @@ void ScoutingManager::updateScouts(const Player_Model& enemy_player_model, const
             zergling_scout_ = nullptr;
             exists_zergling_scout_ = false;
             last_zergling_scout_sent_ = Broodwar->getFrameCount();
-            Broodwar->sendText("Zergling scout died");
+			CUNYAIModule::DiagnosticText("Zergling scout died");
         }
     }
 
     //if we thought we had an expo zergling scout but now we don't
     if (expo_zergling_scout_) {
-        if (!expo_zergling_scout_->exists()) {
-            expo_zergling_scout_ = nullptr;
-            exists_expo_zergling_scout_ = false;
-            Broodwar->sendText("Expo ling scout died");
+		if (!expo_zergling_scout_->exists()) {
+			expo_zergling_scout_ = nullptr;
+			exists_expo_zergling_scout_ = false;
+			CUNYAIModule::DiagnosticText("Expo ling scout died");
+
         }
     }
 
     //if we thought we had an overlord scout but now we don't
     if (overlord_scout_) {
-        if (!overlord_scout_->exists()) { 
-            overlord_scout_ = nullptr;
-            exists_overlord_scout_ = false;
-            last_overlord_scout_sent_ = Broodwar->getFrameCount();
-            Broodwar->sendText("Overlord scout died");
-        }
+		if (!overlord_scout_->exists()) {
+			overlord_scout_ = nullptr;
+			exists_overlord_scout_ = false;
+			last_overlord_scout_sent_ = Broodwar->getFrameCount();
+			CUNYAIModule::DiagnosticText("Overlord scout died");
+		}
     }
 }
 
@@ -208,7 +209,7 @@ void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
         overlord_scout_ = unit;
         exists_overlord_scout_ = true;
         scout_unit.phase_ = "Scouting";
-        Broodwar->sendText("Overlord scout sent");
+		CUNYAIModule::DiagnosticText("Overlord scout sent");
         return;
     }
 
@@ -219,7 +220,7 @@ void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
             expo_zergling_scout_ = unit;
             exists_expo_zergling_scout_ = true;
             scout_unit.phase_ = "Scouting";
-            Broodwar->sendText("Expo ling scout sent");
+			CUNYAIModule::DiagnosticText("Expo ling scout sent");
             return;
         }
         // suicide scout
@@ -227,7 +228,7 @@ void ScoutingManager::setScout(const Unit &unit, const int &ling_type) {
             zergling_scout_ = unit;
             exists_zergling_scout_ = true;
             scout_unit.phase_ = "Scouting";
-            Broodwar->sendText("Suicide ling scout sent");
+			CUNYAIModule::DiagnosticText("Suicide ling scout sent");
             return;
         }
     }
