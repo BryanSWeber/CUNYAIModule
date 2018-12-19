@@ -768,12 +768,12 @@ void CUNYAIModule::onFrame()
                 attempted_morph_larva_this_frame = true;
 
                 //Force build a zergling for scouting if we don't have one available
-                if (scouting.force_zergling_) {
-                    Check_N_Grow(UnitTypes::Zerg_Zergling, u, true);
-                    scouting.force_zergling_ = false;
-                    last_frame_of_unit_morph_command = t_game;
-                    continue;
-                }
+                //if (scouting.force_zergling_) {
+                //    Check_N_Grow(UnitTypes::Zerg_Zergling, u, true);
+                //    scouting.force_zergling_ = false;
+                //    last_frame_of_unit_morph_command = t_game;
+                //    continue;
+                //}
 
                 // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
                 if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
