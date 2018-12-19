@@ -1309,9 +1309,19 @@ void Map_Inventory::getExpoPositions() {
 }
 
 void Map_Inventory::getStartPositions() {
-    for ( auto loc : Broodwar->getStartLocations() ) {
+
+    //Only build the complete list once
+    if (start_positions_complete_.empty()) {
+        for (auto loc : Broodwar->getStartLocations()) {
+            start_positions_complete_.push_back(Position(loc));
+        }
+    }
+
+    for ( auto loc : start_positions_complete_ ) {
         start_positions_.push_back( Position( loc ) );
     }
+
+
 }
 
 void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
@@ -1569,4 +1579,25 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
     }
 
     return return_vector = { 0 };
+}
+
+Position Map_Inventory::getMeanEnemyBuildingLocation(Unit_Inventory &ei) const {
+// Potentially large overhead? 
+// Cycling through every enemy unit, could split into storing enemy buildings and only updating instead
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    Position out = Positions::Origin;
+    for (auto e : ei.unit_inventory_) {
+        UnitType e_type = e.second.type_;
+        if (e_type.isBuilding()) { // Scout for tech buildings, don't care about expos or refineries
+            x_sum += e.second.pos_.x;
+            y_sum += e.second.pos_.y;
+            count++;
+        }
+    }
+    if (count > 0) {
+        out = Position(x_sum / count, y_sum / count);
+    }
+    return out;
 }
