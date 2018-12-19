@@ -19,5 +19,5 @@ struct GeneticHistory {
     double loss_rate_;
     string build_order_;
 
-    GeneticHistory( string file, Player_Model& friendly_player_model);
+    GeneticHistory( string file );
 };

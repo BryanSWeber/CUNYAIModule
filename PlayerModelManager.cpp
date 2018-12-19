@@ -4,9 +4,6 @@
 #include "Source\Research_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\CobbDouglas.h"
-#include <fstream>
-#include <iomanip>
-#include <limits>
 
 using namespace std;
 using namespace BWAPI;
@@ -14,8 +11,6 @@ using namespace BWAPI;
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
     bwapi_player_ = other_player;
-    enemy_race_ = bwapi_player_->getRace();
-
     //Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();
@@ -40,7 +35,7 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     //Update Enemy Units
     //Update friendly unit inventory.
     updateUnit_Counts();
-    if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals.
+    if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
     units_.purgeUnseenUnits(); //Critical for self!
@@ -100,172 +95,8 @@ void Player_Model::evaluateWorkerCount() {
     }
     estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
 
-
 }
 
-
-void Player_Model::playerStock(Player_Model & enemy_player_model)
-{
-    enemy_player_model.units_.inventoryCopy[25] = static_cast<int>(enemy_player_model.spending_model_.worker_stock);
-    enemy_player_model.units_.inventoryCopy[26] = static_cast<int>(enemy_player_model.spending_model_.army_stock);
-    enemy_player_model.units_.inventoryCopy[27] = static_cast<int>(enemy_player_model.spending_model_.tech_stock);
-}
-
-
-void Player_Model::readPlayerLog(Player_Model & enemy_player_model) // Function that reads in previous game's data
-{
-    string data;
-    int index = 0;
-    int iteration = 0;
-    ifstream infile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
-
-    int minStockCounter[29];
-    int maxStockCounter[29];
-    int minTimeCounter[29];
-    int maxTimeCounter[29];
-
-    fill_n(minStockAverage, 29, 0);
-    fill_n(minTimeAverage, 29, 0);
-    fill_n(maxTimeAverage, 29, 0);
-    fill_n(maxStockAverage, 29, 0);
-    fill_n(minStockCounter, 29, 0);
-    fill_n(minTimeCounter, 29, 0);
-    fill_n(maxStockCounter, 29, 0);
-    fill_n(maxTimeCounter, 29, 0);
-
-    int numoflines = 0;
-    getline(infile, data); //Skip 1 line
-
-
-    infile.clear();
-    infile.seekg(std::ios::beg); // Move the start position to the second line
-
-    infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');//ignore first line
-
-    while (infile >> data) // Read in the data
-    {
-
-        if (data == ",")
-            infile >> data;
-
-        stringstream conversion(data);
-        conversion >> oldMinStock[index];
-
-        if (oldMinStock[index] != 0)
-        {
-            minStockAverage[index] += oldMinStock[index];
-            minStockCounter[index]++;
-        }
-
-        conversion.str(std::string());
-        conversion.clear();
-        infile >> data;
-        infile >> data;
-        stringstream conversion2(data);
-        conversion2 >> oldMinTime[index];
-
-        if (oldMinTime[index] != 0)
-        {
-            minTimeAverage[index] += oldMinTime[index];
-            minTimeCounter[index] = minTimeCounter[index] + 1;
-        }
-
-        conversion2.str(std::string());
-        conversion2.clear();
-        infile >> data;
-        infile >> data;
-        stringstream conversion3(data);
-        conversion3 >> oldMaxStock[index];
-        conversion3.str(std::string());
-        conversion3.clear();
-
-        if (oldMaxStock[index] != 0)
-        {
-            maxStockAverage[index] += oldMaxStock[index];
-            maxStockCounter[index] = maxStockCounter[index] + 1;
-            cout << maxStockCounter[index] << endl;
-        }
-        infile >> data;
-        infile >> data;
-        stringstream conversion4(data);
-        conversion4 >> oldMaxTime[index];
-        conversion4.str(std::string());
-        conversion4.clear();
-
-        if (oldMaxTime[index] != 0)
-        {
-            maxTimeAverage[index] += oldMaxTime[index];
-            maxTimeCounter[index]++;
-        }
-
-        index++;
-
-        if (index == 29 && !infile.eof())
-            index = 0;
-
-        iteration++;
-    }
-
-    for (int i = 0; i < 29; i++)
-    {
-        if (minStockCounter[i] > 0)
-            minStockAverage[i] /= minStockCounter[i];
-        if (minTimeCounter[i] > 0)
-            minTimeAverage[i] /= minTimeCounter[i];
-        if (maxStockCounter[i] > 0)
-            maxStockAverage[i] /= maxStockCounter[i];
-        if (maxTimeCounter[i] > 0)
-            maxTimeAverage[i] /= maxTimeCounter[i];
-        cout << "avg is " << minStockAverage[i] << endl;
-    }
-
-}
-void Player_Model::writePlayerLog(Player_Model & enemy_player_model, bool gameComplete) { //Function that records a player's noticed inventory
-
-    //Initialize all unit inventories seen to -1
-    if (Broodwar->getFrameCount() == 1)
-        for (int i = 0; i < 29; i++)
-            enemy_player_model.minTime[i] = 0;
-
-    for (int i = 0; i < 29; i++)
-    {
-        if (enemy_player_model.units_.inventoryCopy[i] > 0 && enemy_player_model.minTime[i] == 0)
-        {
-            enemy_player_model.minTime[i] = Broodwar->elapsedTime();
-            enemy_player_model.minStock[i] = enemy_player_model.units_.inventoryCopy[i];
-        }
-        if (enemy_player_model.units_.inventoryCopy[i] > enemy_player_model.maxStock[i])
-        {
-            enemy_player_model.maxStock[i] = enemy_player_model.units_.inventoryCopy[i];
-            enemy_player_model.maxTime[i] = Broodwar->elapsedTime();
-        }
-    }
-
-            //Write to file once at the end of the game
-            if (gameComplete)
-            {
-                ifstream inFile(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::in);
-                if (!inFile)
-                {
-                    ofstream enemyData;
-                    enemyData.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-                    for (int i = 0; i < 29; i++)
-                            enemyData << left << setw(30) << enemy_player_model.units_.unitInventoryLabel[i];
-                    enemyData << endl;
-                }
-                ofstream earliestDate;
-                earliestDate.open(".\\bwapi-data\\write\\" + Broodwar->enemy()->getName() + ".txt", ios_base::app);
-
-                for (int i = 0; i < 29; i++)
-                {
-                    stringstream ss;
-                    ss << enemy_player_model.minStock[i] << " , " << enemy_player_model.minTime[i] << " , " << enemy_player_model.maxStock[i] << " , " << enemy_player_model.maxTime[i];
-                    earliestDate << left << setw(30) << ss.str();
-                }
-                earliestDate << endl;
-                earliestDate.close();
-            }
-}
 void Player_Model::evaluateCurrentWorth()
 {
     if (Broodwar->getFrameCount() == 0) {
@@ -310,7 +141,7 @@ void Player_Model::evaluateCurrentWorth()
         double supply_proportion = (supply_expenditures_ + supply_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
         double resources_collected_this_frame = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
-        estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; //
+        estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; // 
 
         int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
         double observed_current_worth = units_.stock_fighting_total_ + researches_.research_stock_ + units_.worker_count_ * worker_value;
@@ -340,10 +171,9 @@ void Player_Model::updateUnit_Counts() {
     unit_incomplete_ = unit_incomplete_temp;
 }
 
-
 // sample command set to explore zergling rushing.
-void Player_Model::setLockedOpeningValuesLingRush() {
-
+void Player_Model::setLockedOpeningValues() {
+     
     // sample command set to explore zergling rushing.
      spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
      spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
@@ -359,35 +189,5 @@ void Player_Model::setLockedOpeningValuesLingRush() {
     building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
     upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
     tech_cartridge_ = {  };
-
-}
-
-// Generic command set for locked values
-// Must pass cartridges and build, every other parameter can be left to default (values can not be set to 0 (set to 0.0001 instead).
-void Player_Model::setLockedOpeningValues(const map<UnitType, int>& unit_cart, const map<UnitType, int>& building_cart, const map<UpgradeType, int>& upgrade_cart, const map<TechType, int>& tech_cart,
-                                          const string& build, const double& a_army, const double& a_econ, const double& a_tech, const double& delta, const double& gamma, const double& r) {
-
-    if (a_army)
-        spending_model_.alpha_army = CUNYAIModule::gene_history.a_army_out_mutate_ = CUNYAIModule::alpha_army_original = a_army;
-    if (a_econ)
-        spending_model_.alpha_econ = CUNYAIModule::gene_history.a_econ_out_mutate_ = CUNYAIModule::alpha_econ_original = a_econ;
-    if (a_tech)
-        spending_model_.alpha_tech = CUNYAIModule::gene_history.a_tech_out_mutate_ = CUNYAIModule::alpha_tech_original = a_tech;
-
-    if (delta)
-        CUNYAIModule::gene_history.delta_out_mutate_ = CUNYAIModule::delta = delta;
-    if (gamma)
-        CUNYAIModule::gene_history.gamma_out_mutate_ = CUNYAIModule::gamma = gamma;
-    if (r)
-        CUNYAIModule::gene_history.r_out_mutate_ = CUNYAIModule::adaptation_rate = r;
-
-	if (!build.empty())
-		CUNYAIModule::buildorder = Building_Gene(build);
-
-    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
-    combat_unit_cartridge_ = unit_cart;
-    //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
-    building_cartridge_ = building_cart;
-    upgrade_cartridge_ = upgrade_cart;
-    tech_cartridge_ = tech_cart;
+    
 }
