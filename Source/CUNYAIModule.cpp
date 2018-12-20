@@ -174,7 +174,7 @@ void CUNYAIModule::onStart()
 		}
 
 		// Cartridge for air-only opponents -- If they make flying units and their ground combat units = 0
-		if (enemy_player_model.maxStockAverage[0] > 0 && enemy_player_model.minStockAverage[1] == 0) {
+		if (enemy_player_model.maxStock[0] > 0 && enemy_player_model.minStock[1] == 0) {
 			string build = "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone drone drone drone drone ling drone queens_nest spire drone creep drone drone overlord drone hive spore extract drone drone drone overlord drone drone drone drone hatch drone drone creep greater_spire drone drone drone overlord drone drone spore devourer devourer devourer devourer"; //3h - Devourers.
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN }, { UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -184,17 +184,19 @@ void CUNYAIModule::onStart()
 		}
 
 		// Cartridge for opponents that can't shoot up -- If their stock shoot_up = 0 and their stock shoot_up_and_down = 0
-		if (enemy_player_model.minStockAverage[2] == 0 && enemy_player_model.minStockAverage[3] == 0) {
+		if (enemy_player_model.minStock[2] == 0 && enemy_player_model.minStock[3] == 0) {
 			string build = "drone drone drone drone drone pool drone extract overlord creep drone ling ling ling sunken drone lair"; //1 base - 9 pool to fast spire w/o ling speed + 1 creep
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Mutalisk, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
 			map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN } };
 			map<TechType, int> tech_cart = {};
+			friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
 		}
 
 		// Cartridge for regular rush opponents -- If we don't ever see a 2nd or 3rd base, their max tech stock is below 500, but we don't spot combat units until after 3 minutes
 		// Passes full cartridges only changes the build order
-		if (enemy_player_model.maxStockAverage[22] <= 1 && enemy_player_model.minStockAverage[23] == 0 && enemy_player_model.minStockAverage[24] == 0 && enemy_player_model.maxStock[27] < 500 && enemy_player_model.minTimeAverage[6] > 300) {
+
+		if (enemy_player_model.maxStock[22] <= 1 && enemy_player_model.minStock[23] == 0 && enemy_player_model.minStock[24] == 0 && enemy_player_model.maxStock[27] < 500) {
 			string build = "drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep drone sunken creep drone sunken"; //super sunken build
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -205,7 +207,7 @@ void CUNYAIModule::onStart()
 
 		// Cartridge for super fast rush opoonents -- If we don't , their max tech stock is below 500, and we see combat units before 3 minutes
 		// Passes full cartridges only changes the build order
-		if (enemy_player_model.maxStockAverage[22] <=  1 && enemy_player_model.minStockAverage[23] == 0 && enemy_player_model.minStockAverage[24] == 0 && enemy_player_model.maxStock[27] < 500 && enemy_player_model.minTimeAverage[6] < 300) {
+		if (enemy_player_model.maxStock[22] <=  1 && enemy_player_model.minStock[23] == 0 && enemy_player_model.minStock[24] == 0 && enemy_player_model.maxStock[27] < 500 && enemy_player_model.minTime[6] < 300) {
 			string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
 			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
@@ -218,11 +220,11 @@ void CUNYAIModule::onStart()
 		// Passes full cartridges only changes the build order
 		if (enemy_player_model.maxStockAverage[6] == 0) {
 			string build = "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling"; // 5pool with some commitment.
-			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-			map<UpgradeType, int> upgrade_cart = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
-			map<TechType, int> tech_cart = { { TechTypes::Lurker_Aspect, INT_MIN } };
-			friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart);
+			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Zergling , INT_MIN } };
+			map<UnitType, int> building_cart = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN } };
+			map<UpgradeType, int> upgrade_cart = { };
+			map<TechType, int> tech_cart = { };
+			friendly_player_model.setLockedOpeningValues(unit_cart, building_cart, upgrade_cart, tech_cart, build);
 		}
 	}
 }
