@@ -183,7 +183,6 @@ void ScoutingManager::updateScouts(const Player_Model& enemy_player_model, const
 			expo_zergling_scout_ = nullptr;
 			exists_expo_zergling_scout_ = false;
 			CUNYAIModule::DiagnosticText("Expo ling scout died");
-
         }
     }
 
@@ -294,4 +293,3 @@ void ScoutingManager::diagnosticLine(const Unit &unit, const Map_Inventory &inv)
         CUNYAIModule::Diagnostic_Line(pos, scout_spot, inv.screen_position_, Colors::Yellow);
     }
 }
-
