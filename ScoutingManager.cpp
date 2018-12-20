@@ -294,4 +294,3 @@ void ScoutingManager::diagnosticLine(const Unit &unit, const Map_Inventory &inv)
         CUNYAIModule::Diagnostic_Line(pos, scout_spot, inv.screen_position_, Colors::Yellow);
     }
 }
-
