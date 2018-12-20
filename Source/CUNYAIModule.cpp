@@ -894,7 +894,7 @@ void CUNYAIModule::onFrame()
             Stored_Unit& miner = *friendly_player_model.units_.getStoredUnit(u);
 
             bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.  
-            bool too_much_gas = 1 - current_map_inventory.getLn_Gas_Ratio() > delta;
+            bool too_much_gas = current_map_inventory.getLn_Gas_Ratio() > delta;
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
             // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
