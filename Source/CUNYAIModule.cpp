@@ -195,6 +195,7 @@ void CUNYAIModule::onStart()
 
 		// Cartridge for regular rush opponents -- If we don't ever see a 2nd or 3rd base, their max tech stock is below 500, but we don't spot combat units until after 3 minutes
 		// Passes full cartridges only changes the build order
+
 		if (enemy_player_model.maxStock[22] <= 1 && enemy_player_model.minStock[23] == 0 && enemy_player_model.minStock[24] == 0 && enemy_player_model.maxStock[27] < 500) {
 			string build = "drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep drone sunken creep drone sunken"; //super sunken build
 			map<UnitType, int> unit_cart = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
