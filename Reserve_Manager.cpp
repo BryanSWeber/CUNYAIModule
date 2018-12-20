@@ -44,6 +44,13 @@ void Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retr
     }
 };
 
+bool Reservation::checkTypeInReserveSystem(UnitType type) {
+    for(auto reservation : reservation_map_) {
+        if(reservation.second == type) return true;
+    }
+    return false;
+};
+
 void Reservation::decrementReserveTimer() {
     if ( Broodwar->getFrameCount() == 0 ) {
         building_timer_ = 0;

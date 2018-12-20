@@ -88,29 +88,30 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     int old_dist = 9999999;
 
                     for (auto base = base_core.begin(); base != base_core.end(); ++base) { // loop over every base.
+                        
                         TilePosition central_base_new = TilePosition((*base)->getPosition());
+                        if (!BWAPI::Broodwar->hasCreep(central_base_new)) // Skip bases that don't have the creep yet for a sunken
+                            continue;
                         int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
-
                         //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
                         Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
                         Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), 750);
                         bool serious_problem = false;
 
-                        if ( getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750) ) { // if they outnumber us here...
+                        if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) { // if they outnumber us here...
                             serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
                         }
 
-                        if ( (new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory) ) {  // then let's build at that base.
+                        if ((new_dist <= old_dist || serious_problem) && checkSafeBuildLoc(Position(central_base_new), current_map_inventory, enemy_player_model.units_, friendly_player_model.units_, land_inventory)) {  // then let's build at that base.
                             central_base = central_base_new;
                             old_dist = new_dist;
-                            if (serious_problem) { 
-                                break; 
+                            if (serious_problem) {
+                                break;
                             }
                         }
                     }
                 } //confirm we have identified a base around which to build.
-
                 int chosen_base_distance = current_map_inventory.getRadialDistanceOutFromEnemy(Position(central_base)); // Now let us build around that base.
                 for (int x = -10; x <= 10; ++x) {
                     for (int y = -10; y <= 10; ++y) {
@@ -120,8 +121,13 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                             centralize_y < Broodwar->mapHeight() &&
                             centralize_x > 0 &&
                             centralize_y > 0;
+                        
                         TilePosition test_loc = TilePosition(centralize_x, centralize_y);
+                        if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
+                            continue;
+                        
                         bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(test_loc), 96).resource_inventory_.empty();
+                        
                         if (!(x == 0 && y == 0) &&
                             within_map &&
                             not_blocking_minerals &&
@@ -135,7 +141,6 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     }
                 }
             }
-
             TilePosition buildPosition = CUNYAIModule::getBuildablePosition(final_creep_colony_spot, building, 4);
             if (unit->build(building, buildPosition) && my_reservation.addReserveSystem(buildPosition, building)) {
                 buildorder.announceBuildingAttempt(building);
@@ -638,7 +643,7 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
     }
 
     //Evo chamber is required tech for spore colony
-    if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0) {
+    if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0) {
         buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
         CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
         return is_building = true;
@@ -691,12 +696,12 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || checkDesirable( morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian || pt_type->first == UnitTypes::Zerg_Devourer); 
+        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && checkDesirable(UnitTypes::Zerg_Lurker , true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ( (checkDesirable(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (checkDesirable(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -712,10 +717,12 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     bool too_many_scourge = false;
     bool required = false;
 
-    // Check if unit is even feasible, or the unit already IS that type.
+    // Check if unit is even feasible, or the unit already IS that type, or is needed for that type.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end() ) {
-        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first ) potential_type++;
+        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && checkDesirable(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ( (checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
+        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -754,6 +761,13 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
     else build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
 
+
+    //A catch for prerequisite build units.
+    bool morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker;
+    bool morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer);
+    if (morph_into_prerequisite_hydra) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Hydralisk, morph_canidate, true);
+    else if (morph_into_prerequisite_muta) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Mutalisk, morph_canidate, true);
+    
     // Build it.
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true) || morph_canidate->getType() == build_type; // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit) {
@@ -818,6 +832,11 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+}
+
+// checks if player wants the unit, in general.
+bool CUNYAIModule::checkDesirable(const UnitType &ut, const bool &extra_criteria) {
+    return Broodwar->canMake(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
@@ -904,6 +923,8 @@ void Building_Gene::retryBuildOrderElement(const UnitType & ut)
 
 void Building_Gene::getInitialBuildOrder(string s) {
 
+	building_gene_.clear();
+
     initial_building_gene_ = s;
 
     std::stringstream ss(s);
@@ -923,11 +944,15 @@ void Building_Gene::getInitialBuildOrder(string s) {
     Build_Order_Object sunken = Build_Order_Object(UnitTypes::Zerg_Sunken_Colony);
     Build_Order_Object spore = Build_Order_Object(UnitTypes::Zerg_Spore_Colony);
     Build_Order_Object lair = Build_Order_Object(UnitTypes::Zerg_Lair);
+    Build_Order_Object hive = Build_Order_Object(UnitTypes::Zerg_Hive);
     Build_Order_Object spire = Build_Order_Object(UnitTypes::Zerg_Spire);
+    Build_Order_Object greater_spire = Build_Order_Object(UnitTypes::Zerg_Greater_Spire);
+    Build_Order_Object devourer = Build_Order_Object(UnitTypes::Zerg_Devourer);
     Build_Order_Object muta = Build_Order_Object(UnitTypes::Zerg_Mutalisk);
     Build_Order_Object hydra = Build_Order_Object(UnitTypes::Zerg_Hydralisk);
     Build_Order_Object lurker = Build_Order_Object(UnitTypes::Zerg_Lurker);
     Build_Order_Object hydra_den = Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den);
+    Build_Order_Object queens_nest = Build_Order_Object(UnitTypes::Zerg_Queens_Nest);
     Build_Order_Object lurker_tech = Build_Order_Object(TechTypes::Lurker_Aspect);
     Build_Order_Object grooved_spines = Build_Order_Object(UpgradeTypes::Grooved_Spines);
     Build_Order_Object muscular_augments = Build_Order_Object(UpgradeTypes::Muscular_Augments);
@@ -972,8 +997,17 @@ void Building_Gene::getInitialBuildOrder(string s) {
         else if (build == "lair") {
             building_gene_.push_back(lair);
         }
+        else if (build == "hive") {
+            building_gene_.push_back(hive);
+        }
         else if (build == "spire") {
             building_gene_.push_back(spire);
+        }
+        else if (build == "greater_spire") {
+            building_gene_.push_back(greater_spire);
+        }
+        else if (build == "devourer") {
+            building_gene_.push_back(devourer);
         }
         else if (build == "muta") {
             building_gene_.push_back(muta);
@@ -989,6 +1023,9 @@ void Building_Gene::getInitialBuildOrder(string s) {
         }
         else if (build == "hydra_den") {
             building_gene_.push_back(hydra_den);
+        }
+        else if (build == "queens_nest") {
+            building_gene_.push_back(queens_nest);
         }
         else if (build == "grooved_spines") {
             building_gene_.push_back(grooved_spines);
