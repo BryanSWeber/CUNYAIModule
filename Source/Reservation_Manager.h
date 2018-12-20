@@ -20,6 +20,8 @@ struct Reservation {
     bool Reservation::addReserveSystem( TilePosition tile, UnitType type );
     void Reservation::removeReserveSystem( TilePosition tile, UnitType type, bool retry_this_building);
 
+    bool checkTypeInReserveSystem(UnitType type);
+
     // Decrements the clock. Simple but works.
     void Reservation::decrementReserveTimer();
 

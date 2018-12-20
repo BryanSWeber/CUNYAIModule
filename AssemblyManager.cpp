@@ -643,7 +643,7 @@ bool CUNYAIModule::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inven
     }
 
     //Evo chamber is required tech for spore colony
-    if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0) {
+    if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0) {
         buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
         CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
         return is_building = true;
@@ -696,12 +696,12 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || checkDesirable( morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian || pt_type->first == UnitTypes::Zerg_Devourer); 
+        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && checkDesirable(UnitTypes::Zerg_Lurker , true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ( (checkDesirable(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (checkDesirable(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -717,10 +717,12 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     bool too_many_scourge = false;
     bool required = false;
 
-    // Check if unit is even feasible, or the unit already IS that type.
+    // Check if unit is even feasible, or the unit already IS that type, or is needed for that type.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end() ) {
-        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first ) potential_type++;
+        bool can_morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && checkDesirable(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ( (checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
+        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -759,6 +761,13 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
     else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
     else build_type = returnOptimalUnit(combat_types, friendly_player_model.researches_);
 
+
+    //A catch for prerequisite build units.
+    bool morph_into_prerequisite_hydra = checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker;
+    bool morph_into_prerequisite_muta = checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer);
+    if (morph_into_prerequisite_hydra) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Hydralisk, morph_canidate, true);
+    else if (morph_into_prerequisite_muta) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Mutalisk, morph_canidate, true);
+    
     // Build it.
     if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true) || morph_canidate->getType() == build_type; // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit) {
@@ -823,6 +832,11 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+}
+
+// checks if player wants the unit, in general.
+bool CUNYAIModule::checkDesirable(const UnitType &ut, const bool &extra_criteria) {
+    return Broodwar->canMake(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {

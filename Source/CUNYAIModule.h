@@ -122,6 +122,7 @@ public:
       bool checkInCartridge( const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
       bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.
       bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
 
