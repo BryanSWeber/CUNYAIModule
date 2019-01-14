@@ -375,9 +375,7 @@ void Map_Inventory::updateMapVeins() {
     for (int iter = 2; iter < 300; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for (list<WalkPosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-               // Psudocode: if any two opposing points are smoothed away, while an alternative path through the center is walkable, it is a choke, the fewer cycles it takes to identify this, the tigher the choke.
-               // If any 3 points adjacent are smoothed away it is probably just a bad place to walk, dead end, etc. Mark it as smoothed away.  Do not consider it smoothed away this cycle.
-               // if any corner of it is inaccessable, it is a diagonal wall, mark it as smoothed away. Do not consider it smoothed away this cycle.
+               // Psudocode: Mark every point touching a wall as n. Then, mark all minitiles touching those points as n+1.
                // Repeat untill finished.
 
             bool local_grid = false; // further faster since I no longer care about actually generating the veins.
