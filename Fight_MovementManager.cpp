@@ -607,7 +607,6 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
     vector<Position> trial_positions = { current_pos, future_pos };
 
     bool unwalkable_tiles = false;
-    pair<int, int> temp_int = { 0,0 };
     vector<WalkPosition> unwalkable_minitiles;
     Position obstacle_found_near_this_position = Positions::Origin;
     int obstacle_x = 0;
@@ -626,8 +625,7 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                         centralize_y > 0 &&
                         centralize_y > 0) // Is the spot acceptable?
                     {
-                        temp_int = { inv.unwalkable_barriers_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
-                        if (temp_int.first == 1) // repulse from unwalkable.
+                        if (inv.unwalkable_barriers_[centralize_x][centralize_y] == 1) // repulse from unwalkable.
                         {
                             unwalkable_tiles = true;
                             unwalkable_minitiles.push_back(WalkPosition(centralize_x,centralize_y));
@@ -765,7 +763,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
         bool shadow_check = false;
 
         for (auto barrier_point : barrier_points) {
-            shadow_check = abs(centralize_x) > abs(barrier_point.x) && abs(centralize_y) > abs(barrier_point.y) && 
+            shadow_check = abs(centralize_x) >= abs(barrier_point.x) && abs(centralize_y) >= abs(barrier_point.y) && 
                            signbit(static_cast<float>(centralize_x)) == signbit(static_cast<float>(barrier_point.x)) && signbit(static_cast<float>(centralize_y)) == signbit(static_cast<float>(barrier_point.y)); // is it further out and in the same quadrant? If so it's in the "shadow". Rough, incredibly lazy.
             if (shadow_check) break;
         }
@@ -780,15 +778,14 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
         {
             if (inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y] == 1) // if it's a barrier, make a shadow.
             {
-                barrier_points.push_back(Position(SpiralOut().x, SpiralOut().y));
+                barrier_points.push_back(Position(centralize_x, centralize_y));
             }
-            else if (map[centralize_x][centralize_y] < current_best && map[centralize_x][centralize_y] >= 1) // otherwise, if it's an improvement, go directly to the best destination
+            else if (map[centralize_x][centralize_y] < current_best && map[centralize_x][centralize_y] > 1) // otherwise, if it's an improvement, go directly to the best destination
             {
                 temp_x = spiral.x;
                 temp_y = spiral.y;
                 current_best = map[centralize_x][centralize_y];
             }
-
         }
     }
 
