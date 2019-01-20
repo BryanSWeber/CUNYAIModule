@@ -1511,7 +1511,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     if (cd_frames_chosen == 99) {// if default value, then we assume 0 cd frames. This is nearly always the case.
         cd_frames = 0;
-    }
+    } 
     else { // if the person has selected some specific delay they are looking for, check that.
         ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames_chosen;
         return ready_to_move;
@@ -1526,28 +1526,28 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
 
     if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
         UnitType u_type = unit->getType();
-        cd_frames = Broodwar->getLatencyFrames();
-        if (u_type == UnitTypes::Zerg_Drone) {
-            cd_frames = 1;
-        }
-        else if (u_type == UnitTypes::Zerg_Zergling) {
-            cd_frames = 5;
-        }
-        else if (u_type == UnitTypes::Zerg_Hydralisk) {
-            cd_frames = 7;
-        }
-        else if (u_type == UnitTypes::Zerg_Lurker) {
-            cd_frames = 2;
-        }
-        else if (u_type == UnitTypes::Zerg_Mutalisk) {
-            cd_frames = 1;
-        }
-        else if (u_type == UnitTypes::Zerg_Ultralisk) {
-            cd_frames = 15;
-        }
+        //cd_frames = Broodwar->getLatencyFrames();
+        //if (u_type == UnitTypes::Zerg_Drone) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Zergling) {
+        //    cd_frames = 5;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Hydralisk) {
+        //    cd_frames = 7;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Lurker) {
+        //    cd_frames = 2;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Mutalisk) {
+        //    cd_frames = 1;
+        //}
+        //else if (u_type == UnitTypes::Zerg_Ultralisk) {
+        //    cd_frames = 15;
+        //}
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
-        else if (u_type == UnitTypes::Zerg_Devourer) {
-            cd_frames = 9; // this is an INSANE cooldown.
+        if (u_type == UnitTypes::Zerg_Devourer) {
+            cd_frames = 28; // this is an INSANE cooldown.
         }
     }
     //else 
@@ -1581,13 +1581,8 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     //    cd_frames = Broodwar->getLatencyFrames();
     //}
 
-    if ( u_command == UnitCommandTypes::Stop ) {
-        cd_frames = 1;
-    }
-
-    if (ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() == cd_frames + 1 && u_command == UnitCommandTypes::Attack_Unit && ((unit->getTarget() && unit->isInWeaponRange(unit->getTarget())) || !unit->getTarget()) ) unit->stop();
-    else  ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames;
-        return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
+    ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames;
+    return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
 }
 
