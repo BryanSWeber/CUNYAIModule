@@ -589,7 +589,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
-        Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
+        //Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
         //Diagnostic_Watch_Expos();
     }// close analysis mode
 

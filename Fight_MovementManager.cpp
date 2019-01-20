@@ -756,7 +756,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
 
     // we need to spiral out from the center, stopping if we hit an object.
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int i = 0; i <= 64; i++) {
+    for (int i = 0; i <= 256; i++) {
         spiral.goNext();
         int centralize_x = WalkPosition(pos).x + spiral.x;
         int centralize_y = WalkPosition(pos).y + spiral.y;
