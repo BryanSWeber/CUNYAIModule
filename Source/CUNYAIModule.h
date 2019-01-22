@@ -94,7 +94,10 @@ public:
     Race starting_enemy_race;
 
   int t_build;
-  int last_frame_of_unit_morph_command = 0;
+  int last_frame_of_larva_morph_command = 0;
+  int last_frame_of_hydra_morph_command = 0;
+  int last_frame_of_muta_morph_command = 0;
+
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.

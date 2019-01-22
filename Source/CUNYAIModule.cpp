@@ -634,41 +634,32 @@ void CUNYAIModule::onFrame()
 
         // Unit creation & Hatchery management loop
         auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-
-        if (last_frame_of_unit_morph_command < t_game - 12) { // must morph each type seperately, or else (ex) your bot will consider morphing a hydra and then pass on all larva for the frame.
-
-            //Only morph one larva this frame.
-            if (!attempted_morph_larva_this_frame && u_type == UnitTypes::Zerg_Larva )
-            {
-                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-                attempted_morph_larva_this_frame = true;
-                if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                    last_frame_of_unit_morph_command = t_game;
-                }
-                continue;
+        // must morph each type seperately, or else (ex) your bot will consider morphing a hydra and then pass on all larva for the frame.
+        if (last_frame_of_larva_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Larva) { 
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
+            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+                last_frame_of_larva_morph_command = t_game;
             }
+            continue;
+        }
+            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
+        if (last_frame_of_hydra_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
+        {
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+                last_frame_of_hydra_morph_command = t_game;
+            }
+            continue;
+        }
 
             // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-            if (!attempted_morph_lurker_this_frame && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
-            {
-                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-                attempted_morph_lurker_this_frame = true;
-                if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                    last_frame_of_unit_morph_command = t_game;
-                }
-                continue;
+        if (last_frame_of_muta_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0)
+        {
+            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
+            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+                last_frame_of_muta_morph_command = t_game;
             }
-
-            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-            if (!attempted_morph_guardian_this_frame && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0)
-            {
-                // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-                attempted_morph_guardian_this_frame = true;
-                if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                    last_frame_of_unit_morph_command = t_game;
-                }
-                continue;
-            }
+            continue;
         }
 
         auto end_unit_morphs = std::chrono::high_resolution_clock::now();
