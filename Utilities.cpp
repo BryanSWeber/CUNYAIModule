@@ -2166,3 +2166,10 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
         //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
         ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
+
+bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory &ui, const Unit_Inventory &ei) {
+
+    return  ((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24)) || // Proportional win. fixed division by crossmultiplying. Added unitalive in future so the bot is more reasonable in combat situations.
+            //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
+             ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+}

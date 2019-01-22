@@ -3,6 +3,7 @@
 #include "Source\Map_Inventory.h"
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iterator>
 #include <numeric>
 #include <fstream>
@@ -797,6 +798,7 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
             buildfap_temp.simulate(24*20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             potential_type.second = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+            buildfap_temp.clear();
             //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
     }
 
@@ -809,8 +811,62 @@ UnitType CUNYAIModule::returnOptimalUnit(map<UnitType, int> &combat_types, const
         else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             //build_type = 
             if(build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
-            if(potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+            else if(potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
             //CUNYAIModule::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
+        }
+    }
+
+    return build_type;
+
+}
+
+//Simply returns the unittype that is the "best" of a BuildFAP sim.
+UnitType CUNYAIModule::testAirWeakness(const Research_Inventory &ri) {
+    bool building_optimal_unit = false;
+    auto buildfap_temp = buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
+    int best_sim_score = INT_MIN;
+    UnitType build_type = UnitTypes::None;
+    Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
+                                                       //add friendly units under consideration to FAP in loop, resetting each time.
+
+    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+    // test sunkens
+        buildfap_temp.clear();
+        buildfap_temp = buildfap; // restore the buildfap temp.
+        Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Sunken_Colony);
+        // enemy units do not change.
+        Unit_Inventory friendly_units_under_consideration; // new every time.
+        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+        buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+        air_test_1.at(UnitTypes::Zerg_Sunken_Colony) = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false);
+        buildfap_temp.clear();
+        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+
+
+    // test fake anti-air sunkens
+        buildfap_temp.clear();
+        buildfap_temp = buildfap; // restore the buildfap temp.
+        // enemy units do not change.
+        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        friendly_units_under_consideration.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+        buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+        air_test_1.at(UnitTypes::Zerg_Spore_Colony) = getFAPScore(buildfap_temp, true) - getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
+        buildfap_temp.clear();
+        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+
+
+    for (auto &potential_type : air_test_1) {
+        if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+            best_sim_score = potential_type.second;
+            build_type = potential_type.first;
+            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        }
+        else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+                                                            //build_type = 
+            if (build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
+            else if (potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+                                                                                                                                                                           //CUNYAIModule::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
         }
     }
 

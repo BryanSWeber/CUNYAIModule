@@ -110,6 +110,7 @@ public:
       bool Reactive_BuildFAP(const Unit & larva, const Map_Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
       bool buildStaticDefence(const Unit & morph_canidate);
       static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
+      static UnitType testAirWeakness(const Research_Inventory & ri); // returns spore colony if weak against air.
       bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types); //Compares a set of units via FAP simulations. Uses a COPY of the combat types.
 
       // Builds the next building you can afford. Area of constant improvement.
@@ -327,6 +328,7 @@ public:
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
+      static bool checkSuperiorFAPForecast2(const Unit & u, const Unit_Inventory & ui, const Unit_Inventory & ei);
 
   // Vision Functions
       // returns number of visible tiles.

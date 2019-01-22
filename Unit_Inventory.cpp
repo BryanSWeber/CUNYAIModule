@@ -896,7 +896,7 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         ;
 }
 
-auto Stored_Unit::convertToFAPVegtable(const Position &chosen_pos, const Research_Inventory &ri) {
+auto Stored_Unit::convertToFAPDisabled(const Position &chosen_pos, const Research_Inventory &ri) {
 
     int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
@@ -941,7 +941,76 @@ auto Stored_Unit::convertToFAPVegtable(const Position &chosen_pos, const Researc
         .setAirMinRange(0)
         .setGroundDamageType(0)
         .setAirDamageType(0)
-        .setArmor(1)
+        .setArmor(type_.armor())
+        .setMaxHealth(type_.maxHitPoints())
+        .setMaxShields(type_.maxShields())
+        .setOrganic(type_.isOrganic())
+        .setUnitSize(type_.size())
+        //normal characteristics below..
+        .setPosition(chosen_pos)
+        .setHealth(health_)
+        .setShields(shields_)
+        .setFlying(is_flying_)
+        .setElevation(elevation_)
+        .setAttackerCount(units_inside_object)
+        .setArmorUpgrades(armor_upgrades)
+        .setAttackUpgrades(gun_upgrades)
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
+        .setAttackSpeedUpgrade(attack_speed_upgrade)
+        .setAttackCooldownRemaining(cd_remaining_)
+        .setStimmed(stimmed_)
+        .setRangeUpgrade(range_upgrade)
+        ;
+}
+
+// Unit now can attack up and only attacks up. For the anti-air anti-ground test to have absolute equality.
+auto Stored_Unit::convertToFAPAnitAir(const Position &chosen_pos, const Research_Inventory &ri) {
+
+    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+
+    bool speed_tech = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+
+    bool range_upgrade = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+
+    bool attack_speed_upgrade =  // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+
+    return FAP::makeUnit<Stored_Unit*>()
+        .setData(this)
+        .setOnlyUnitType(type_)
+        //Vegetable characteristics below...
+        .setSpeed(static_cast<float>(type_.topSpeed()))
+        .setAirCooldown(type_.groundWeapon().damageCooldown())
+        .setGroundCooldown(99999)
+        .setAirDamage(type_.groundWeapon().damageAmount())
+        .setGroundDamage(0)
+        .setGroundMaxRange(0)
+        .setAirMaxRange(type_.groundWeapon().maxRange())
+        .setGroundMinRange(0)
+        .setAirMinRange(type_.groundWeapon().minRange())
+        .setGroundDamageType(0)
+        .setAirDamageType(type_.groundWeapon().damageType())
+        .setArmor(type_.armor())
         .setMaxHealth(type_.maxHitPoints())
         .setMaxShields(type_.maxShields())
         .setOrganic(type_.isOrganic())
@@ -995,10 +1064,17 @@ void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_obj
     }
 }
 
-void Unit_Inventory::addVegtableToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void Unit_Inventory::addDisabledToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+    }
+}
+
+void Unit_Inventory::addAntiAirToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+    for (auto &u : unit_inventory_) {
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPAnitAir(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPAnitAir(pos, ri));
     }
 }
 
@@ -1021,24 +1097,24 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
 
     Position pos = positionBuildFap(friendly);
     if (friendly) {
-        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPVegtable(Position{ 240,240 }, ri));
+        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 240,240 }, ri));
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 240,240 }, ri));
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPVegtable(Position{ 240,240 }, ri));
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
     }
     else {
-        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPVegtable(Position{ 0, 0 }, ri));
+        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 0, 0 }, ri));
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 0, 0 }, ri));
+            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 0, 0 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPVegtable(Position{ 240,240 }, ri));
+            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
     }
 }
