@@ -743,7 +743,7 @@ bool CUNYAIModule::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, in
         if (potential_type.first.airWeapon() != WeaponTypes::None && friendly_player_model.u_relatively_weak_against_air_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !friendly_player_model.u_relatively_weak_against_air_ && down_shooting_class)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && friendly_player_model.e_relatively_weak_against_air_ && flying_class) it_needs_to_fly = true;
-        if (potential_type.first == UnitTypes::Zerg_Scourge && enemy_player_model.units_.stock_fliers_ < Count_Units(UnitTypes::Zerg_Scourge) * Stored_Unit(UnitTypes::Zerg_Scourge).stock_value_)  too_many_scourge = true;
+        if (potential_type.first == UnitTypes::Zerg_Scourge && enemy_player_model.units_.flyer_count_ < Count_Units(UnitTypes::Zerg_Scourge) )  too_many_scourge = true;
     }
 
     // remove undesireables.

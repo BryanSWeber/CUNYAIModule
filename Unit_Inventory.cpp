@@ -479,6 +479,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 
      int fliers = 0;
+     int flyer_count = 0;
      int ground_unit = 0;
      int shoots_up = 0;
      int shoots_down = 0;
@@ -524,6 +525,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
                  int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
 
                  fliers += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                 flyer_count = flying_unit * count_of_unit_type;
                  ground_unit += !flying_unit * unit_value_for_all_of_type;
                  shoots_up += up_gun * unit_value_for_all_of_type;
                  shoots_down += down_gun * unit_value_for_all_of_type;
@@ -577,6 +579,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     volume_ = volume;
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
+    flyer_count_ = flyer_count;
     resource_depot_count_ = resource_depots;
     future_fap_stock_ = future_fap_stock;
     moving_average_fap_stock_ = moving_average_fap_stock;
