@@ -186,16 +186,19 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
                 bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
-                if (critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
-                    e_priority = 6;
+                if (CUNYAIModule::Can_Fight(e->second, unit) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
+                    e_priority = 7;
                 }
                 else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit) &&
                     dist_to_enemy < 32 &&
                     last_target &&
                     (last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
-                    e_priority = 5;
+                    e_priority = 6;
                 }
                 else if (CUNYAIModule::Can_Fight(e->second, unit)) {
+                    e_priority = 5;
+                }
+                else if (critical_target) {
                     e_priority = 4;
                 }
                 else if (e_type.isWorker()) {
