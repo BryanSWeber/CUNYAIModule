@@ -46,7 +46,6 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
                 pathing_confidently = true;
             }
         }
-
     }
     else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.

@@ -187,6 +187,6 @@ bool CobbDouglas::evalEconPossible()
 
 bool CobbDouglas::evalTechPossible()
 {
-    return CUNYAIModule::Tech_Avail(); // if you have no tech available, you cannot be tech starved.
+    return TechManager::Tech_Avail(); // if you have no tech available, you cannot be tech starved.
 }
 

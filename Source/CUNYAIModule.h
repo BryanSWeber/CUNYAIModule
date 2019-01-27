@@ -11,6 +11,7 @@
 #include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
+#include "TechManager.h"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
@@ -71,9 +72,10 @@ public:
     static Map_Inventory current_map_inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
+    static TechManager techmanager;
 
     static Building_Gene buildorder; //
-    Reservation my_reservation; 
+    static Reservation my_reservation;
     static GeneticHistory gene_history;
 
    //These measure its clock.
@@ -101,13 +103,13 @@ public:
 
   // Assembly Functions
       //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
-      bool Check_N_Build( const UnitType &building, const Unit &unit, const bool &extra_critera );
+      static bool Check_N_Build( const UnitType &building, const Unit &unit, const bool &extra_critera );
       // Check and grow a unit using larva.
-      bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
+      static bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
       //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-      bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );
+      static bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );
       // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
-      bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
+      static bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
       // Morphs units "Reactively". Incomplete.
       bool Reactive_Build( const Unit &larva, const Map_Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
       bool Reactive_BuildFAP(const Unit & larva, const Map_Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
@@ -119,15 +121,16 @@ public:
       // Builds the next building you can afford. Area of constant improvement.
       bool Building_Begin(const Unit &drone, const Map_Inventory &inv, const Unit_Inventory &e_inv);
       // Returns a tile that is suitable for building.
-      TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
+      static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
       // Moves all units except for the Stored exeption_unit elsewhere.
       void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
-      bool checkInCartridge( const UnitType & ut);
-      bool checkInCartridge( const UpgradeType & ut);
-      bool checkInCartridge( const TechType & ut);
+      static bool checkInCartridge( const UnitType & ut);
+      static bool checkInCartridge( const UpgradeType & ut);
+      static bool checkInCartridge( const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
-      bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
-      bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
+      static bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      static bool checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria);
+      static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.
       bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
 
@@ -320,7 +323,7 @@ public:
       // Returns the actual center of a unit.
       static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
-      bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      static bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
       // Checks if the player UI is weak against air in army ei.
@@ -337,11 +340,6 @@ public:
       // returns number of visible tiles.
       int Vision_Count();
 
-  // Tech Functions
-      // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-      static bool Tech_Avail();
-      // Returns next upgrade to get. Also manages tech-related morphs. Now updates the units after usage.
-      bool Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
   //Suprisingly missing functions:
       template< typename ContainerT, typename PredicateT >
       void erase_if(ContainerT& items, const PredicateT& predicate) {

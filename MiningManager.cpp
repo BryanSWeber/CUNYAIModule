@@ -214,7 +214,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 bool CUNYAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( CUNYAIModule::Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0 ) {
+    if ( techmanager.Tech_Avail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0 ) {
         outlet_avail = true;
     }
 

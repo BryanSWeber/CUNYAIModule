@@ -9,6 +9,7 @@
 #include "GeneticHistoryManager.h"
 #include "Fight_MovementManager.h"
 #include "AssemblyManager.h"
+#include "TechManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <iostream> 
 #include <fstream> // for file read/writing
@@ -23,32 +24,30 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Declare universally shared inventories.
-Player_Model CUNYAIModule::friendly_player_model;
-Player_Model CUNYAIModule::enemy_player_model;
-Player_Model CUNYAIModule::neutral_player_model;
-//Unit_Inventory CUNYAIModule::enemy_inventory;
-Resource_Inventory CUNYAIModule::land_inventory;
-//Research_Inventory CUNYAIModule::research_inventory;
-Map_Inventory CUNYAIModule::current_map_inventory;
-FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap;
-FAP::FastAPproximation<Stored_Unit*>  CUNYAIModule::buildfap;
-GeneticHistory CUNYAIModule::gene_history;
+    bool CUNYAIModule::army_starved = false;
+    bool CUNYAIModule::econ_starved = false;
+    bool CUNYAIModule::tech_starved = false;
+    double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
+    double CUNYAIModule::alpha_army_original = 0;
+    double CUNYAIModule::alpha_tech_original = 0;
+    double CUNYAIModule::alpha_econ_original = 0;
+    double CUNYAIModule::gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+    double CUNYAIModule::delta; // for gas levels. Gas is critical for spending but will be matched with supply.
+    Player_Model CUNYAIModule::friendly_player_model;
+    Player_Model CUNYAIModule::enemy_player_model;
+    Player_Model CUNYAIModule::neutral_player_model;
+    Resource_Inventory CUNYAIModule::land_inventory; // resources.
+    Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
+    FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
+    FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::buildfap; // attempting to integrate FAP into building decisions.
+    TechManager CUNYAIModule::techmanager;
 
-bool CUNYAIModule::army_starved;
-bool CUNYAIModule::econ_starved;
-bool CUNYAIModule::tech_starved;
-double CUNYAIModule::adaptation_rate; //Adaptation rate to opponent.
-double CUNYAIModule::alpha_army_original;
-double CUNYAIModule::alpha_tech_original;
-double CUNYAIModule::alpha_econ_original;
-double CUNYAIModule::delta;
-double CUNYAIModule::gamma;
-Building_Gene CUNYAIModule::buildorder;
+    Building_Gene CUNYAIModule::buildorder; //
+    Reservation CUNYAIModule::my_reservation;
+    GeneticHistory CUNYAIModule::gene_history;
 
 void CUNYAIModule::onStart()
 {
-
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -364,7 +363,7 @@ void CUNYAIModule::onFrame()
     gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
         (Gas_Outlet() && Broodwar->self()->gas() < 125) || // you need gas to buy things you have already invested in.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
-        (tech_starved && Tech_Avail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
+        (tech_starved && techmanager.Tech_Avail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
@@ -1060,7 +1059,7 @@ void CUNYAIModule::onFrame()
 
         if (isIdleEmpty(u) && !u->canAttack() && u_type != UnitTypes::Zerg_Larva && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
-            Tech_Begin(u, friendly_player_model.units_, current_map_inventory);
+            techmanager.Tech_Begin(u, friendly_player_model.units_, current_map_inventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }
