@@ -24,6 +24,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
+//Declare static variables for access in other modules.
     bool CUNYAIModule::army_starved = false;
     bool CUNYAIModule::econ_starved = false;
     bool CUNYAIModule::tech_starved = false;
@@ -1059,7 +1060,7 @@ void CUNYAIModule::onFrame()
 
         if (isIdleEmpty(u) && !u->canAttack() && u_type != UnitTypes::Zerg_Larva && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
-            techmanager.Tech_Begin(u, friendly_player_model.units_, current_map_inventory);
+            techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_map_inventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }

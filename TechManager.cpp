@@ -8,30 +8,34 @@
 
 using namespace BWAPI;
 
+std::map<UpgradeType, int> TechManager::upgrade_cycle = {};
+
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 bool TechManager::Tech_Avail() {
 
     for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
-        if ( CUNYAIModule:: Count_Units(tech.first.requiredUnit()) )  return true; // If we can make it and don't have it.
+        if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  return true; // If we can make it and don't have it.
     }
 
-    for (auto upgrade : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
-        bool muta_upgrade = upgrade.first == UpgradeTypes::Zerg_Flyer_Attacks || upgrade.first == UpgradeTypes::Zerg_Flyer_Carapace;
-        bool hydra_upgrade = upgrade.first == UpgradeTypes::Zerg_Missile_Attacks || upgrade.first == UpgradeTypes::Grooved_Spines || upgrade.first == UpgradeTypes::Muscular_Augments;
-        bool ling_upgrade = upgrade.first == UpgradeTypes::Zerg_Melee_Attacks || upgrade.first == UpgradeTypes::Metabolic_Boost;
+    int best_sim_score = INT_MIN;
+    UpgradeType up_type = UpgradeTypes::None;
 
-        if ((muta_upgrade || hydra_upgrade || ling_upgrade) && CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) && CUNYAIModule::friendly_player_model.researches_.upgrades_[upgrade.first] < upgrade.first.maxRepeats()) {
-
-            bool upgrade_conditionals = (hydra_upgrade && CUNYAIModule::Stock_Units(UnitTypes::Zerg_Hydralisk, CUNYAIModule::friendly_player_model.units_) > CUNYAIModule::Stock_Units(UnitTypes::Zerg_Zergling, CUNYAIModule::friendly_player_model.units_)) ||
-                (ling_upgrade && CUNYAIModule::Stock_Units(UnitTypes::Zerg_Hydralisk, CUNYAIModule::friendly_player_model.units_) < CUNYAIModule::Stock_Units(UnitTypes::Zerg_Zergling, CUNYAIModule::friendly_player_model.units_)) ||
-                (muta_upgrade && CUNYAIModule::friendly_player_model.units_.stock_fliers_ > CUNYAIModule::Stock_Units(UnitTypes::Zerg_Hydralisk, CUNYAIModule::friendly_player_model.units_));
-
-            if (upgrade_conditionals) { // if it is not maxed, and nothing is upgrading it, then there must be some tech work we could do. We do not require air upgrades at this time, but they could still plausibly occur.
-                return true;
-            }
+    for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
+        auto buildfap_copy = CUNYAIModule::buildfap;
+        CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
+        buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+        int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
+        buildfap_copy.clear();
+        upgrade_cycle.insert({ potential_up.first, score });
+    }
+    for (auto &potential_up : upgrade_cycle) {
+        if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+            best_sim_score = potential_up.second;
+            up_type = potential_up.first;
+            Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
         }
-        else if (CUNYAIModule::Count_Units(upgrade.first.whatsRequired()) && CUNYAIModule::friendly_player_model.researches_.upgrades_[upgrade.first] < upgrade.first.maxRepeats() ) return true; // If we can make it and don't have it.
     }
+    if (up_type != UpgradeTypes::None && CUNYAIModule::Count_Units(up_type.whatsRequired()) && CUNYAIModule::friendly_player_model.researches_.upgrades_[up_type] < up_type.maxRepeats() ) return true; // If we can make it and don't have it.
 
     for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.building_cartridge_) {
         bool pass_guard = true;
@@ -46,69 +50,6 @@ bool TechManager::Tech_Avail() {
     }
 
     return false;
-}
-
-// Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
-bool TechManager::Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inventory &inv) {
-    bool busy = false;
-    bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::Count_Units( UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
-    bool have_declared_lurkers = BWAPI::Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
-    bool have_declared_mutas = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) > 0;
-    bool cannot_build_major_unit_type = !CUNYAIModule::checkInCartridge(UnitTypes::Zerg_Lurker) && !CUNYAIModule::checkInCartridge(UnitTypes::Zerg_Mutalisk);
-    bool have_declared_a_major_unit_type = have_declared_lurkers || have_declared_mutas || cannot_build_major_unit_type;
-    bool have_hive = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0;
-    bool maxed_melee = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Melee_Attacks) == 3;
-    bool maxed_range = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Missile_Attacks) == 3;
-    bool maxed_armor = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3;
-
-    bool more_hydras_than_lings = CUNYAIModule::Stock_Units(UnitTypes::Zerg_Hydralisk, CUNYAIModule::friendly_player_model.units_) > CUNYAIModule::Stock_Units(UnitTypes::Zerg_Zergling, CUNYAIModule::friendly_player_model.units_);
-    bool more_flyers_than_hydras = ui.stock_fliers_ > CUNYAIModule::Stock_Units(UnitTypes::Zerg_Hydralisk, CUNYAIModule::friendly_player_model.units_);
-
-    // Major Upgrades:
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Metabolic_Boost, building, upgrade_bool && CUNYAIModule::Stock_Units(UnitTypes::Zerg_Zergling, CUNYAIModule::friendly_player_model.units_) > 0);
-    if (!busy) busy = CUNYAIModule::Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (CUNYAIModule:: Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule:: Count_Units(UnitTypes::Zerg_Hive) > 0) && CUNYAIModule:: Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
-
-    //Midgame/situational upgrades.
-    if (!have_declared_a_major_unit_type || have_hive || CUNYAIModule::buildorder.checkUpgrade_Desired(UpgradeTypes::Muscular_Augments) || CUNYAIModule::buildorder.checkUpgrade_Desired(UpgradeTypes::Grooved_Spines)) {
-        if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Muscular_Augments, building, upgrade_bool && more_hydras_than_lings || maxed_melee || maxed_range);
-        if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Grooved_Spines, building, upgrade_bool && more_hydras_than_lings || maxed_melee || maxed_range);
-    }
-
-    //Super game upgrades.
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Adrenal_Glands, building, upgrade_bool);
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Anabolic_Synthesis, building, upgrade_bool && CUNYAIModule:: Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) > 0);
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Chitinous_Plating, building, upgrade_bool && CUNYAIModule:: Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) > 0);
-
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && have_declared_a_major_unit_type && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0));
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Antennae, building, CUNYAIModule::tech_starved && have_hive); //This upgrade is terrible, thus last.
-
-    // Unit buffs
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Zerg_Carapace, building, upgrade_bool);
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Zerg_Melee_Attacks, building, upgrade_bool && !more_hydras_than_lings  || maxed_range);
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Zerg_Missile_Attacks, building, upgrade_bool && more_hydras_than_lings || maxed_melee);
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Attacks, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) > 0) && (more_flyers_than_hydras || maxed_armor));
-    if (!busy) busy = CUNYAIModule::Check_N_Upgrade(UpgradeTypes::Zerg_Flyer_Carapace, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) > 0) && (more_flyers_than_hydras || maxed_armor));
-
-    //should auto upgrade if there is a build order requirement for any of these three types.
-  if(!busy) busy = CUNYAIModule::Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
-      CUNYAIModule::current_map_inventory.hatches_ > 1 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
-            building->getType() == UnitTypes::Zerg_Hatchery);
-
-  if(!busy) busy = CUNYAIModule::Check_N_Build(UnitTypes::Zerg_Hive, building, upgrade_bool &&
-      CUNYAIModule::current_map_inventory.hatches_ > 2 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Queens_Nest) > 0 &&
-            building->getType() == UnitTypes::Zerg_Lair &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
-
-  if(!busy) busy = CUNYAIModule::Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, upgrade_bool &&
-       CUNYAIModule::current_map_inventory.hatches_ > 3 &&
-       CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hive) > 0 &&
-       building->getType() == UnitTypes::Zerg_Spire &&
-       CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
-
-    return busy;
 }
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
@@ -132,13 +73,14 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
         if (!busy) {
-            if (CUNYAIModule::checkDesirable(building, potential_up.first, false)) {
+            if (CUNYAIModule::checkDesirable(building, potential_up.first, true)) {
                 auto buildfap_copy = CUNYAIModule::buildfap;
                 CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
                 buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
                 int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
                 buildfap_copy.clear();
                 upgrade_cycle.insert({ potential_up.first, score });
+                //Broodwar->sendText("Considering a %s", potential_up.first.c_str());
             }
         }
     }
@@ -147,7 +89,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             best_sim_score = potential_up.second;
             up_type = potential_up.first;
-            Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
+            //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
         }
     }
 
@@ -175,6 +117,8 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hive) > 0 &&
         building->getType() == UnitTypes::Zerg_Spire &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
+
+    upgrade_cycle.clear(); // clear so it's fresh every time.
 
     return busy;
 }

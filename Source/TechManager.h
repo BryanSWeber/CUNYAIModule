@@ -6,11 +6,9 @@
 using namespace BWAPI;
 
 class TechManager {
-
 public:
-    std::map<UpgradeType, int> upgrade_cycle;
+    static std::map<UpgradeType, int> upgrade_cycle; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 
     static bool Tech_Avail();
-    bool Tech_Begin(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
     bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
 };
