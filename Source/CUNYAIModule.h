@@ -51,9 +51,9 @@ public:
 
 // Status of AI
   static double gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
-    bool supply_starved;
+  static bool supply_starved;
   static double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
-    bool gas_starved;
+  static bool gas_starved;
     double win_rate; //fairly straighforward.
 
   static bool army_starved;
@@ -73,7 +73,7 @@ public:
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
     static FAP::FastAPproximation<Stored_Unit*> buildfap; // attempting to integrate FAP into building decisions.
     static TechManager techmanager;
-
+    static AssemblyManager assemblymanager;
     static Building_Gene buildorder; //
     static Reservation my_reservation;
     static GeneticHistory gene_history;
@@ -102,28 +102,7 @@ public:
 
 
   // Assembly Functions
-      //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
-      static bool Check_N_Build( const UnitType &building, const Unit &unit, const bool &extra_critera );
-      // Check and grow a unit using larva.
-      static bool Check_N_Grow( const UnitType &unittype, const Unit &larva, const bool &extra_critera );
-      //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
-      static bool Check_N_Upgrade( const UpgradeType &ups, const Unit &unit, const bool &extra_critera );
-      // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
-      static bool Check_N_Research( const TechType & tech, const Unit & unit, const bool & extra_critera );
-      // Morphs units "Reactively". Incomplete.
-      bool Reactive_Build( const Unit &larva, const Map_Inventory &inv, Unit_Inventory &fi, const Unit_Inventory &ei );
-      bool Reactive_BuildFAP(const Unit & larva, const Map_Inventory & inv, const Unit_Inventory &ui, const Unit_Inventory &ei); // attempts to do so via a series of FAP simulations.
-      bool buildStaticDefence(const Unit & morph_canidate);
-      static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory &ri); // returns an optimal unit type from set.
-      static UnitType testAirWeakness(const Research_Inventory & ri); // returns spore colony if weak against air.
-      bool buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types); //Compares a set of units via FAP simulations. Uses a COPY of the combat types.
 
-      // Builds the next building you can afford. Area of constant improvement.
-      bool Building_Begin(const Unit &drone, const Map_Inventory &inv, const Unit_Inventory &e_inv);
-      // Returns a tile that is suitable for building.
-      static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
-      // Moves all units except for the Stored exeption_unit elsewhere.
-      void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit &exception_unit);
       static bool checkInCartridge( const UnitType & ut);
       static bool checkInCartridge( const UpgradeType & ut);
       static bool checkInCartridge( const TechType & ut);
@@ -132,11 +111,11 @@ public:
       static bool checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria);
       static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.
-      bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
+      static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
-      bool Expo( const Unit &unit , const bool &extra_critera, Map_Inventory &inv);
+      static bool Expo( const Unit &unit , const bool &extra_critera, Map_Inventory &inv);
       // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
       void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
       // attaches the miner to the nearest mine in the inventory, and updates the stored_unit.
@@ -280,7 +259,7 @@ public:
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
-      int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
+      static int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
       // Counts the tally of all created units in my personal inventory of that type.

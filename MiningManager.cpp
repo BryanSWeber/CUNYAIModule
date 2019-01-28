@@ -5,68 +5,6 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-//Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
-bool CUNYAIModule::Expo( const Unit &unit, const bool &extra_critera, Map_Inventory &inv ) {
-    if (checkDesirable(unit, UnitTypes::Zerg_Hatchery,extra_critera) ) {
-
-        int expo_score = 99999999;
-        inv.getExpoPositions(); // update the possible expo positions.
-        inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
-
-        bool safe_worker = enemy_player_model.units_.unit_inventory_.empty() ||
-            getClosestThreatOrTargetStored( enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500 ) == nullptr ||
-            getClosestThreatOrTargetStored( enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500 )->type_.isWorker();
-
-        // Let's build at the safest close canidate position.
-        if ( safe_worker ) {
-            for ( auto &p : inv.expo_positions_ ) {
-                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))));
-
-                bool safe_expo = checkSafeBuildLoc(Position(p), inv, enemy_player_model.units_, friendly_player_model.units_, land_inventory);
-
-                bool occupied_expo =getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Hatchery, Position( p ), 500 ) ||
-                                    getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Lair, Position( p ), 500 ) ||
-                                    getClosestStored( friendly_player_model.units_, UnitTypes::Zerg_Hive, Position( p ), 500 );
-                bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 32;
-                if ( (score_temp < expo_score || expansion_is_home) && safe_expo && !occupied_expo) {
-                    expo_score = score_temp;
-                    inv.setNextExpo( p );
-                    //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
-                }
-            }
-        }
-        else {
-            return false;  // If there's nothing, give up.
-        }
-
-        // If we found -something-
-        if ( inv.next_expo_ && inv.next_expo_ != TilePositions::Origin ) {
-            //clear all obstructions, if any.
-            clearBuildingObstuctions(friendly_player_model.units_, inv, unit);
-
-            if ( Broodwar->isExplored( inv.next_expo_ ) && unit->build( UnitTypes::Zerg_Hatchery, inv.next_expo_ ) && my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
-                CUNYAIModule::DiagnosticText( "Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y );
-                Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
-                morphing_unit.phase_ = "Expoing";
-                morphing_unit.updateStoredUnit(unit);
-                return true;
-            }
-            else if ( !Broodwar->isExplored( inv.next_expo_ ) && my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
-                unit->move( Position( inv.next_expo_ ) );
-                Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(unit)->second;
-                morphing_unit.phase_ = "Expoing";
-                morphing_unit.updateStoredUnit(unit);
-                CUNYAIModule::DiagnosticText( "Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y );
-                return true;
-            }
-            //}
-        }
-    } // closure affordablity.
-
-    return false;
-}
-
-
   //Sends a Worker to gather resources from UNITTYPE (mineral or refinery). letabot has code on this. "AssignEvenSplit(Unit* unit)"
 void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inventory &ui) {
 
@@ -214,7 +152,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 bool CUNYAIModule::Gas_Outlet() {
     bool outlet_avail = false;
 
-    if ( techmanager.tech_avail_ && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0 ) {
+    if ( techmanager.checkTechAvail() && Count_Units( BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0 ) {
         outlet_avail = true;
     }
 

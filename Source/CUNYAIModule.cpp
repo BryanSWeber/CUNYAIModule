@@ -28,6 +28,10 @@ using namespace std;
     bool CUNYAIModule::army_starved = false;
     bool CUNYAIModule::econ_starved = false;
     bool CUNYAIModule::tech_starved = false;
+    bool CUNYAIModule::supply_starved = false;
+    bool CUNYAIModule::gas_starved = false;
+    double gamma = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+    double delta = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
     double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
     double CUNYAIModule::alpha_army_original = 0;
     double CUNYAIModule::alpha_tech_original = 0;
@@ -42,7 +46,7 @@ using namespace std;
     FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
     FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::buildfap; // attempting to integrate FAP into building decisions.
     TechManager CUNYAIModule::techmanager;
-
+    AssemblyManager CUNYAIModule::assemblymanager;
     Building_Gene CUNYAIModule::buildorder; //
     Reservation CUNYAIModule::my_reservation;
     GeneticHistory CUNYAIModule::gene_history;
@@ -321,6 +325,7 @@ void CUNYAIModule::onFrame()
     land_inventory.updateMiners();
 
     techmanager.updateTech_Avail();
+    assemblymanager.updateOptimalUnit(friendly_player_model.combat_unit_cartridge_, friendly_player_model.researches_);
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -366,7 +371,7 @@ void CUNYAIModule::onFrame()
     gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
         (Gas_Outlet() && Broodwar->self()->gas() < 125) || // you need gas to buy things you have already invested in.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
-        (tech_starved && techmanager.tech_avail_ && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
+        (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
                         Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
@@ -419,9 +424,11 @@ void CUNYAIModule::onFrame()
     if constexpr(DRAWING_MODE) {
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
-        Print_Cached_Inventory(0, 50);
+        //Print_Cached_Inventory(0, 50);
+        assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        Print_Upgrade_Inventory(375, 80);
+        //Print_Upgrade_Inventory(375, 80);
+        techmanager.Print_Upgrade_FAP_Cycle(375, 80);
         Print_Reservations(250, 190, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
             Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
@@ -639,7 +646,7 @@ void CUNYAIModule::onFrame()
         // must morph each type seperately, or else (ex) your bot will consider morphing a hydra and then pass on all larva for the frame.
         if (last_frame_of_larva_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Larva) { 
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
                 last_frame_of_larva_morph_command = t_game;
             }
             continue;
@@ -648,7 +655,7 @@ void CUNYAIModule::onFrame()
         if (last_frame_of_hydra_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
                 last_frame_of_hydra_morph_command = t_game;
             }
             continue;
@@ -658,7 +665,7 @@ void CUNYAIModule::onFrame()
         if (last_frame_of_muta_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0)
         {
             // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            if (Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
+            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
                 last_frame_of_muta_morph_command = t_game;
             }
             continue;
@@ -931,7 +938,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    assemblymanager.Building_Begin(u, current_map_inventory, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
@@ -1072,7 +1079,7 @@ void CUNYAIModule::onFrame()
         auto start_creepcolony = std::chrono::high_resolution_clock::now();
 
         if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
-                   buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
+            assemblymanager.buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
         }// closure: Creep colony loop
 
         auto end_creepcolony = std::chrono::high_resolution_clock::now();

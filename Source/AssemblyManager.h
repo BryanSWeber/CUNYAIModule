@@ -1,10 +1,38 @@
 #pragma once
 #include "CUNYAIModule.h"
 #include "Map_Inventory.h"
+#include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+
+
+class AssemblyManager {
+private: 
+    static std::map<UnitType, int> assembly_cycle; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+public:
+    static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
+    static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
+    static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
+    static void updateOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // evaluates the optimal unit types from a comparison set. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
+    static bool buildStaticDefence(const Unit & morph_canidate);
+    static bool buildOptimalUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
+    //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
+    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera);
+    // Check and grow a unit using larva.
+    static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);
+    static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
+    // Builds the next building you can afford. Area of constant improvement.
+    static bool Building_Begin(const Unit & drone, const Map_Inventory & inv, const Unit_Inventory & e_inv);
+    // Returns a tile that is suitable for building.
+    static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
+    // Moves all units except for the Stored exeption_unit elsewhere.
+    static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
+    // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle.
+    static bool Reactive_BuildFAP(const Unit & morph_canidate, const Map_Inventory & inv, const Unit_Inventory & ui, const Unit_Inventory & ei);
+};
+
 
 class Build_Order_Object {
 private:
