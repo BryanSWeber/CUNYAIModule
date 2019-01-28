@@ -71,6 +71,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                 }
             }
 
+            bool intended_spore = false;
             // If you need a spore, any old place will do for now.
             if (Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && friendly_player_model.u_relatively_weak_against_air_ && enemy_player_model.units_.stock_fliers_ > 0 ) {
                 Unit_Inventory hacheries = getUnitInventoryInRadius(friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos, 500);
@@ -82,6 +83,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                     central_base = TilePosition(close_hatch->pos_);
                 }
                 CUNYAIModule::DiagnosticText("Anticipating a spore");
+                intended_spore = true;
             }
             // Otherwise, let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
             else if (current_map_inventory.map_out_from_enemy_ground_.size() != 0 && current_map_inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
@@ -96,11 +98,11 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         int new_dist = current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
                         //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
-                        Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), 750);
-                        Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), 750);
+                        Unit_Inventory e_loc = getUnitInventoryInRadius(enemy_player_model.units_, Position(central_base_new), current_map_inventory.my_portion_of_the_map_);
+                        Unit_Inventory friend_loc = getUnitInventoryInRadius(friendly_player_model.units_, Position(central_base_new), current_map_inventory.my_portion_of_the_map_);
                         bool serious_problem = false;
 
-                        if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), 750)) { // if they outnumber us here...
+                        if (getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), current_map_inventory.my_portion_of_the_map_)) { // if they outnumber us here...
                             serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
                         }
 
@@ -127,7 +129,7 @@ bool CUNYAIModule::Check_N_Build(const UnitType &building, const Unit &unit, con
                         if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
                             continue;
                         
-                        bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(test_loc), 96).resource_inventory_.empty();
+                        bool not_blocking_minerals = getResourceInventoryInRadius(land_inventory, Position(test_loc), 96).resource_inventory_.empty() || intended_spore;
                         
                         if (!(x == 0 && y == 0) &&
                             within_map &&
@@ -306,10 +308,10 @@ bool CUNYAIModule::Building_Begin(const Unit &drone, const Map_Inventory &inv, c
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
     //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (army_starved || e_loc.moving_average_fap_stock_ >= u_loc.moving_average_fap_stock_ || e_loc.stock_fighting_total_ > u_loc.stock_fighting_total_) &&  // army starved or under attack. ? And?
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, !checkSuperiorFAPForecast(u_loc, e_loc) && nearby_enemy && // under attack. ? And?
         Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
-        (nearby_enemy || larva_starved || supply_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply.
+        ( larva_starved || supply_starved || gas_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
         current_map_inventory.hatches_ > 1 &&
         Count_Units(UnitTypes::Zerg_Sunken_Colony) + Count_Units(UnitTypes::Zerg_Spore_Colony) < max( (current_map_inventory.hatches_ * (current_map_inventory.hatches_ + 1)) / 2, 6) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
@@ -636,7 +638,9 @@ UnitType CUNYAIModule::testAirWeakness(const Research_Inventory &ri) {
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    // test sunkens
+
+    if (enemy_player_model.units_.flyer_count_ > 0) {
+        // test sunkens
         buildfap_temp.clear();
         buildfap_temp = buildfap; // restore the buildfap temp.
         Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Sunken_Colony);
@@ -650,7 +654,7 @@ UnitType CUNYAIModule::testAirWeakness(const Research_Inventory &ri) {
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
 
-    // test fake anti-air sunkens
+            // test fake anti-air sunkens
         buildfap_temp.clear();
         buildfap_temp = buildfap; // restore the buildfap temp.
         // enemy units do not change.
@@ -662,22 +666,18 @@ UnitType CUNYAIModule::testAirWeakness(const Research_Inventory &ri) {
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
 
-    for (auto &potential_type : air_test_1) {
-        if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            best_sim_score = potential_type.second;
-            build_type = potential_type.first;
-            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+        for (auto &potential_type : air_test_1) {
+            if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+                best_sim_score = potential_type.second;
+                build_type = potential_type.first;
+                //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+            }
         }
-        else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-                                                            //build_type = 
-            if (build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
-            else if (potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
-                                                                                                                                                                           //CUNYAIModule::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
-        }
+
+        return build_type;
     }
 
-    return build_type;
-
+    else return UnitTypes::Zerg_Sunken_Colony;
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
