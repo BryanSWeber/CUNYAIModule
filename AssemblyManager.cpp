@@ -657,13 +657,14 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
         buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
         buildfap_temp.clear();
-        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+
+        if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
+        else assembly_cycle[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0) * assembly_cycle[potential_type.first] + static_cast<double>(1.0 / 240.0) * potential_type.second); //moving average over 240 simulations, 10 seconds.
+
+        if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle.find(potential_type.first)->second, assembly_cycle.find(potential_type.first)->first.c_str());
     }
 
-    for (auto &potential_type : combat_types) {
-        if (assembly_cycle.count(potential_type.first) == 0) assembly_cycle[potential_type.first] = potential_type.second;
-        else assembly_cycle[potential_type.first] = static_cast<int>(static_cast<double>(239 / 240)*assembly_cycle[potential_type.first] + static_cast<double>(1 / 240) * potential_type.second); //moving average over 240 simulations, 10 seconds.
-    }
+
 }
 
 

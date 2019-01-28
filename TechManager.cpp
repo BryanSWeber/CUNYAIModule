@@ -20,8 +20,8 @@ void TechManager::updateOptimalTech() {
             buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
             buildfap_copy.clear();
-            if (upgrade_cycle.count(potential_up.first) == 0) upgrade_cycle[potential_up.first] = score;
-            else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239 / 240)*upgrade_cycle[potential_up.first] + static_cast<double>(1 / 240) * score); //moving average over 240 simulations, 10 seconds.
+            if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
+            else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 240.0) * score); //moving average over 240 simulations, 10 seconds.
         //}
     }
 }
