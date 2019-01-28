@@ -175,9 +175,15 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
 
 void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_upgrade = 0;
-    for (auto assembly_idea : upgrade_cycle) {
+    map<int, UpgradeType> sorted_list;
+
+    for (auto it : upgrade_cycle) {
+        sorted_list.insert({ it.second, it.first });
+    }
+
+    for (auto assembly_idea : sorted_list) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", CUNYAIModule::noRaceName(assembly_idea.first.c_str()), assembly_idea.second);
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", CUNYAIModule::noRaceName(assembly_idea.second.c_str()), assembly_idea.first);
             another_sort_of_upgrade++;
     }
 }

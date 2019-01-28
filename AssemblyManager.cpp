@@ -647,21 +647,22 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
-        buildfap_temp.clear();
-        buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
-        Stored_Unit su = Stored_Unit(potential_type.first);
-        // enemy units do not change.
-        Unit_Inventory friendly_units_under_consideration; // new every time.
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
-        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-        friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-        buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
-        buildfap_temp.clear();
+        //if ( CUNYAIModule::checkDesirable(potential_type.first, true) ){ // while this runs faster, it will potentially get biased towards lings and hydras.
+            buildfap_temp.clear();
+            buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
+            Stored_Unit su = Stored_Unit(potential_type.first);
+            // enemy units do not change.
+            Unit_Inventory friendly_units_under_consideration; // new every time.
+            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+            friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+            buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
+            buildfap_temp.clear();
 
-        if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
-        else assembly_cycle[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0) * assembly_cycle[potential_type.first] + static_cast<double>(1.0 / 240.0) * potential_type.second); //moving average over 240 simulations, 10 seconds.
-
+            if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
+            else assembly_cycle[potential_type.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * assembly_cycle[potential_type.first] + static_cast<double>(1.0 / 240.0) * potential_type.second); //moving average over 240 simulations, 10 seconds.
+        //}
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle.find(potential_type.first)->second, assembly_cycle.find(potential_type.first)->first.c_str());
     }
 
@@ -724,10 +725,14 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
 void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_unit = 0;
+    map<int, UnitType> sorted_list;
+    for (auto it : assembly_cycle) {
+        sorted_list.insert({ it.second, it.first });
+    }
 
-    for (auto it: assembly_cycle) {
+    for (auto it: sorted_list) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UnitSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(it.first.c_str()), it.second);
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(it.second.c_str()), it.first);
             another_sort_of_unit++;
     }
 }
