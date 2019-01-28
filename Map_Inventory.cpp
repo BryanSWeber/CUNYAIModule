@@ -81,14 +81,7 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
 void Map_Inventory::updateLn_Supply_Remain() {
 
-    double total = 0;
-    for ( int i = 37; i != 48; i++ )
-    { // iterating through all units.  (including buildings).
-        UnitType u_current = (UnitType)i;
-        total += CUNYAIModule::Stock_Supply( u_current, *this );
-    }
-
-    total = total - Broodwar->self()->supplyUsed();
+    int total = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
 
     if ( total <= 0 ) {
         total = 1;

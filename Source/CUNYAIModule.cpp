@@ -320,6 +320,8 @@ void CUNYAIModule::onFrame()
     land_inventory.updateGasCollectors();
     land_inventory.updateMiners();
 
+    techmanager.updateTech_Avail();
+
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
     }
@@ -364,9 +366,9 @@ void CUNYAIModule::onFrame()
     gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
         (Gas_Outlet() && Broodwar->self()->gas() < 125) || // you need gas to buy things you have already invested in.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
-        (tech_starved && techmanager.Tech_Avail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
+        (tech_starved && techmanager.tech_avail_ && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
-        Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
+                        Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
     //This command has passed its diagnostic usefullness.
     //if constexpr (ANALYSIS_MODE) {
