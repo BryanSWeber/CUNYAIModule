@@ -4,9 +4,10 @@
 # include "Source\Fight_MovementManager.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
-
+# include <math.h> 
 
 #define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0);
+//#define DISTANCE_METRIC (2.760 * 24.0);
 
 using namespace BWAPI;
 using namespace Filter;
@@ -607,7 +608,6 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
     vector<Position> trial_positions = { current_pos, future_pos };
 
     bool unwalkable_tiles = false;
-    pair<int, int> temp_int = { 0,0 };
     vector<WalkPosition> unwalkable_minitiles;
     Position obstacle_found_near_this_position = Positions::Origin;
     int obstacle_x = 0;
@@ -626,8 +626,7 @@ Position Mobility::setObjectAvoid(const Unit &unit, const Position &current_pos,
                         centralize_y > 0 &&
                         centralize_y > 0) // Is the spot acceptable?
                     {
-                        temp_int = { inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y], map[centralize_x][centralize_y] };
-                        if (temp_int.first == 1) // repulse from unwalkable.
+                        if (inv.unwalkable_barriers_[centralize_x][centralize_y] == 1) // repulse from unwalkable.
                         {
                             unwalkable_tiles = true;
                             unwalkable_minitiles.push_back(WalkPosition(centralize_x,centralize_y));
@@ -727,6 +726,24 @@ bool Mobility::adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, 
 //    return  return_vector;
 //}
 
+
+class SpiralOut { // from SO
+protected:
+    unsigned layer;
+    unsigned leg;
+public:
+    int x, y; //read these as output from next, do not modify.
+    SpiralOut() :layer(1), leg(0), x(0), y(0) {}
+    void goNext() {
+        switch (leg) {
+        case 0: ++x; if (x == layer)  ++leg;                break;
+        case 1: ++y; if (y == layer)  ++leg;                break;
+        case 2: --x; if (-x == layer)  ++leg;                break;
+        case 3: --y; if (-y == layer) { leg = 0; ++layer; }   break;
+        }
+    }
+};
+
 Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map) const {
     Position return_vector = Positions::Origin;
     int my_spot = inv.getMapValue(pos, map);
@@ -734,27 +751,41 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
     int temp_y = 0;
     int current_best = INT_MAX;
     double theta = 0;
+    vector<Position> barrier_points;
+  
+    SpiralOut spiral;
+
+    // we need to spiral out from the center, stopping if we hit an object.
     WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-    for (int x = -8; x <= 8; ++x) {
-        for (int y = -8; y <= 8; ++y) {
-            //if (x != 3 && y != 3 && x != -3 && y != -3) continue;  // what was this added for? Only explore periphery for movement locations. Leads to problems when it thinks a barrier is not present.
-            int centralize_x = WalkPosition(pos).x + x;
-            int centralize_y = WalkPosition(pos).y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < map_dim.x &&
-                centralize_y < map_dim.y &&
-                centralize_x > 0 &&
-                centralize_y > 0 &&
-                centralize_y > 0) // Is the spot acceptable?
+    for (int i = 0; i <= 256; i++) {
+        spiral.goNext();
+        int centralize_x = WalkPosition(pos).x + spiral.x;
+        int centralize_y = WalkPosition(pos).y + spiral.y;
+        bool shadow_check = false;
+
+        for (auto barrier_point : barrier_points) {
+            shadow_check = abs(centralize_x) >= abs(barrier_point.x) && abs(centralize_y) >= abs(barrier_point.y) && 
+                           signbit(static_cast<float>(centralize_x)) == signbit(static_cast<float>(barrier_point.x)) && signbit(static_cast<float>(centralize_y)) == signbit(static_cast<float>(barrier_point.y)); // is it further out and in the same quadrant? If so it's in the "shadow". Rough, incredibly lazy.
+            if (shadow_check) break;
+        }
+
+        if (centralize_x < map_dim.x &&
+            centralize_y < map_dim.y &&
+            centralize_x > 0 &&
+            centralize_y > 0 &&
+            centralize_y > 0 &&
+            !shadow_check
+            ) // Is the spot acceptable?
+        {
+            if (inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y] == 1) // if it's a barrier, make a shadow.
             {
-                if (inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y] == 0 && // avoid buildings
-                    map[centralize_x][centralize_y] >= 1 && // must be reachable by ground. 
-                    map[centralize_x][centralize_y] < current_best) // go directly to the best destination
-                {
-                    temp_x = x;
-                    temp_y = y;
-                    current_best = map[centralize_x][centralize_y];
-                }
+                barrier_points.push_back(Position(centralize_x, centralize_y));
+            }
+            else if (map[centralize_x][centralize_y] < current_best && map[centralize_x][centralize_y] > 1) // otherwise, if it's an improvement, go directly to the best destination
+            {
+                temp_x = spiral.x;
+                temp_y = spiral.y;
+                current_best = map[centralize_x][centralize_y];
             }
         }
     }

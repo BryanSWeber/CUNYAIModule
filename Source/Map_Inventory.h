@@ -54,7 +54,7 @@ struct Map_Inventory {
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
-    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
+    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
     vector< vector<int> > map_out_from_home_; // distance from our own main. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
