@@ -1102,24 +1102,24 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
 
     Position pos = positionBuildFap(friendly);
     if (friendly) {
-        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
+        fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
+            fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
+            fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+            fap_object.addUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
     }
     else {
-        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 0, 0 }, ri));
+        fap_object.addUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 0, 0 }, ri));
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 0, 0 }, ri));
+            fap_object.addUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 0, 0 }, ri));
         }
         for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+            fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
         }
     }
 }
