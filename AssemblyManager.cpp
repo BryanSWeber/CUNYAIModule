@@ -537,7 +537,7 @@ bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType,
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -661,7 +661,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
     }
 
     for (auto &potential_type : combat_types) {
-        if (assembly_cycle[potential_type.first] == INT_MIN || assembly_cycle.count(potential_type.first) == 0) assembly_cycle[potential_type.first] = potential_type.second;
+        if (assembly_cycle.count(potential_type.first) == 0) assembly_cycle[potential_type.first] = potential_type.second;
         else assembly_cycle[potential_type.first] = static_cast<int>(static_cast<double>(239 / 240)*assembly_cycle[potential_type.first] + static_cast<double>(1 / 240) * potential_type.second); //moving average over 240 simulations, 10 seconds.
     }
 }
@@ -722,12 +722,11 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
 void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_unit = 0;
-    for (auto assembly_idea : assembly_cycle){
-        if (assembly_idea.first.c_str() && assembly_idea.second > INT_MIN) {
+
+    for (auto it: assembly_cycle) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UnitSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", (assembly_idea.first.c_str(), assembly_idea.second));
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(it.first.c_str()), it.second);
             another_sort_of_unit++;
-        }
     }
 }
 

@@ -209,7 +209,7 @@ public:
       void Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res );
 
       //Strips the RACE_ from the front of the unit type string. 
-      const char * noRaceName( const char *name );
+      static const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.

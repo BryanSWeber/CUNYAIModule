@@ -13,7 +13,6 @@ private:
     static std::map<UnitType, int> assembly_cycle; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 public:
     static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
-    static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
     static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
     static void updateOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // evaluates the optimal unit types from a comparison set. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate);
@@ -31,6 +30,8 @@ public:
     static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle.
     static bool Reactive_BuildFAP(const Unit & morph_canidate, const Map_Inventory & inv, const Unit_Inventory & ui, const Unit_Inventory & ei);
+    // print the assembly cycle we're thinking about.
+    static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
 };
 
 

@@ -427,11 +427,11 @@ void CUNYAIModule::onFrame()
         //Print_Cached_Inventory(0, 50);
         assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        //Print_Upgrade_Inventory(375, 80);
-        techmanager.Print_Upgrade_FAP_Cycle(375, 80);
+        Print_Upgrade_Inventory(375, 80);
         Print_Reservations(250, 190, my_reservation);
         if (buildorder.isEmptyBuildOrder()) {
-            Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
             //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
         }
         else {

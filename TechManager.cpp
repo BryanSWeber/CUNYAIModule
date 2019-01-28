@@ -14,15 +14,15 @@ bool TechManager::tech_avail_ = true;
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
-        if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) > 0 || CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
+        //if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) > 0 || CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
             auto buildfap_copy = CUNYAIModule::buildfap;
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
             buildfap_copy.clear();
-            if (upgrade_cycle[potential_up.first] == INT_MIN || upgrade_cycle.count(potential_up.first) == 0) upgrade_cycle[potential_up.first] = score;
+            if (upgrade_cycle.count(potential_up.first) == 0) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239 / 240)*upgrade_cycle[potential_up.first] + static_cast<double>(1 / 240) * score); //moving average over 240 simulations, 10 seconds.
-        }
+        //}
     }
 }
 
@@ -92,10 +92,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
         if (!busy) {
-            if (CUNYAIModule::checkDesirable(building, potential_up.first, true)) {
-                Broodwar->sendText("Considering a %s", potential_up.first.c_str());
-            }
-            else {
+            if ( !CUNYAIModule::checkDesirable(building, potential_up.first, true) ) {
                 local_upgrade_cycle.erase(potential_up.first);
             }
         }
@@ -105,7 +102,6 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             best_sim_score = potential_up.second;
             up_type = potential_up.first;
-            Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
         }
     }
 
@@ -134,7 +130,6 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         building->getType() == UnitTypes::Zerg_Spire &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
 
-    upgrade_cycle.clear(); // clear so it's fresh every time.
 
     return busy;
 }
@@ -176,10 +171,8 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
 void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_upgrade = 0;
     for (auto assembly_idea : upgrade_cycle) {
-        if (assembly_idea.first.c_str() && assembly_idea.second > INT_MIN) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", (assembly_idea.first.c_str(), assembly_idea.second));
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", CUNYAIModule::noRaceName(assembly_idea.first.c_str()), assembly_idea.second);
             another_sort_of_upgrade++;
-        }
     }
 }
