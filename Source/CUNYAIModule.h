@@ -112,6 +112,7 @@ public:
       static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.
       static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
+      static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);
 
   // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:

@@ -3,12 +3,13 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\TechManager.h"
+#include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
 
 using namespace BWAPI;
 
-std::map<UpgradeType, int> TechManager::upgrade_cycle = {};
+std::map<UpgradeType, int> TechManager::upgrade_cycle = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
 bool TechManager::tech_avail_ = true;
 
 // updates the upgrade cycle.
@@ -102,6 +103,10 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             best_sim_score = potential_up.second;
             up_type = potential_up.first;
+        }
+        if (CUNYAIModule::checkFeasibleRequirement(building, potential_up.first)) {
+            up_type = potential_up.first;
+            break; // if it's required, we are done. Build it!
         }
     }
 

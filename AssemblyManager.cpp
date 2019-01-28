@@ -4,6 +4,7 @@
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "Source\PlayerModelManager.h" // needed for cartidges.
 #include <iterator>
 #include <numeric>
 #include <fstream>
@@ -13,7 +14,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-std::map<UnitType, int> AssemblyManager::assembly_cycle = {}; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+std::map<UnitType, int> AssemblyManager::assembly_cycle = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } }; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
@@ -758,6 +759,10 @@ bool CUNYAIModule::checkDesirable(const UnitType &ut, const bool &extra_criteria
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuilding_Desired(ut);
+}
+
+bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
+    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {

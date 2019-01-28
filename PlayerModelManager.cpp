@@ -8,6 +8,13 @@
 using namespace std;
 using namespace BWAPI;
 
+//(while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building(excludes static defense).
+std::map<UnitType, int> Player_Model::combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
+std::map<UnitType, int> Player_Model::eco_unit_cartridge_ = { { UnitTypes::Zerg_Drone , INT_MIN },{ UnitTypes::Zerg_Hatchery , INT_MIN },{ UnitTypes::Zerg_Overlord , INT_MIN },{ UnitTypes::Zerg_Extractor, INT_MIN } };
+std::map<UnitType, int> Player_Model::building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN },{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
+std::map<UpgradeType, int> Player_Model::upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
+std::map<TechType, int> Player_Model::tech_cartridge_ = { { TechTypes::Lurker_Aspect, INT_MIN } };
+
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
     bwapi_player_ = other_player;

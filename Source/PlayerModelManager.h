@@ -9,14 +9,10 @@ using namespace std;
 using namespace BWAPI;
 
 struct Player_Model {
-    Player_Model() {
-        //(while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building(excludes static defense).
-         combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, INT_MIN } ,{ UnitTypes::Zerg_Mutalisk, INT_MIN },{ UnitTypes::Zerg_Scourge, INT_MIN },{ UnitTypes::Zerg_Hydralisk, INT_MIN },{ UnitTypes::Zerg_Zergling , INT_MIN },{ UnitTypes::Zerg_Lurker, INT_MIN } ,{ UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Devourer, INT_MIN } };
-         eco_unit_cartridge_ = { { UnitTypes::Zerg_Drone , INT_MIN }, { UnitTypes::Zerg_Hatchery , INT_MIN },{ UnitTypes::Zerg_Overlord , INT_MIN }, {UnitTypes::Zerg_Extractor, INT_MIN} };
-         building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, INT_MIN } ,{ UnitTypes::Zerg_Evolution_Chamber, INT_MIN },{ UnitTypes::Zerg_Hydralisk_Den, INT_MIN },{ UnitTypes::Zerg_Spire, INT_MIN },{ UnitTypes::Zerg_Queens_Nest , INT_MIN },{ UnitTypes::Zerg_Ultralisk_Cavern, INT_MIN } ,{ UnitTypes::Zerg_Greater_Spire, INT_MIN },{ UnitTypes::Zerg_Hatchery, INT_MIN } ,{ UnitTypes::Zerg_Lair, INT_MIN },{ UnitTypes::Zerg_Hive, INT_MIN },{ UnitTypes::Zerg_Creep_Colony, INT_MIN },{ UnitTypes::Zerg_Sunken_Colony, INT_MIN }, { UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-         upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Flyer_Carapace, INT_MIN },{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Missile_Attacks, INT_MIN },{ UpgradeTypes::Zerg_Flyer_Attacks, INT_MIN },{ UpgradeTypes::Antennae, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN },{ UpgradeTypes::Adrenal_Glands, INT_MIN },{ UpgradeTypes::Muscular_Augments, INT_MIN },{ UpgradeTypes::Grooved_Spines, INT_MIN },{ UpgradeTypes::Chitinous_Plating, INT_MIN },{ UpgradeTypes::Anabolic_Synthesis, INT_MIN } };
-         tech_cartridge_ = { { TechTypes::Lurker_Aspect, INT_MIN } };
-    }; // need a constructor method.
+private:
+
+public:
+    Player_Model() {}; // need a constructor method.
 
     Player bwapi_player_; // this is a pointer, explicitly.
     double estimated_workers_ = 0;
@@ -49,11 +45,12 @@ struct Player_Model {
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
     int closest_radial_distance_enemy_ground_ = INT_MAX;
 
+//Need to make private eventually:
     //unit cartridges 
-    map<UnitType, int> combat_unit_cartridge_;
-    map<UnitType, int> eco_unit_cartridge_;
-    map<UnitType, int> building_cartridge_;
-    map<UpgradeType, int> upgrade_cartridge_;
-    map<TechType, int> tech_cartridge_;
+    static map<UnitType, int> combat_unit_cartridge_;
+    static map<UnitType, int> eco_unit_cartridge_;
+    static map<UnitType, int> building_cartridge_;
+    static map<UpgradeType, int> upgrade_cartridge_;
+    static map<TechType, int> tech_cartridge_;
 };
 
