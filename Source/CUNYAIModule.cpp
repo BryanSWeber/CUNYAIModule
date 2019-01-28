@@ -965,7 +965,7 @@ void CUNYAIModule::onFrame()
                 bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
                 bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
                 // If we need gas, get gas!
-                if ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24)) { //if this is your first worker of the frame consider resetting him.
+                if ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 5 * 24) || worker_bad_mine && current_map_inventory.last_gas_check_ < t_game - 5 * 24) { //if this is your first worker of the frame consider resetting him.
 
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                     current_map_inventory.last_gas_check_ = t_game;
