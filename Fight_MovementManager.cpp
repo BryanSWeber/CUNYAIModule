@@ -67,7 +67,6 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
             pathing_confidently = true;
         }
 
-
         setCohesion(unit, pos, local_neighborhood);
     }
 
