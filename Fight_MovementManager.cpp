@@ -777,11 +777,11 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
             !shadow_check
             ) // Is the spot acceptable?
         {
-            if (inv.unwalkable_barriers_with_buildings_[centralize_x][centralize_y] == 1) // if it's a barrier, make a shadow.
+            if (map[centralize_x][centralize_y] <= 2) // if it's a barrier (or right on top of one), make a shadow.
             {
                 barrier_points.push_back(Position(centralize_x, centralize_y));
             }
-            else if (map[centralize_x][centralize_y] < current_best && map[centralize_x][centralize_y] > 1) // otherwise, if it's an improvement, go directly to the best destination
+            else if (map[centralize_x][centralize_y] < current_best && map[centralize_x][centralize_y] > 2) // otherwise, if it's an improvement, go directly to the best destination
             {
                 temp_x = spiral.x;
                 temp_y = spiral.y;
