@@ -307,6 +307,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
     bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
     bool nearby_enemy = CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_,drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+    bool drone_death = false;
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -314,6 +315,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     if (nearby_enemy) {
         e_loc = CUNYAIModule::getUnitInventoryInRadius(e_inv, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
         u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+        drone_death = u_loc.unit_inventory_.find(drone) != u_loc.unit_inventory_.end() && Stored_Unit::unitAliveinFuture(u_loc.unit_inventory_.at(drone), 24);
     }
 
     // Trust the build order. If there is a build order and it wants a building, build it!
@@ -335,7 +337,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
     //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, !CUNYAIModule::checkSuperiorFAPForecast2(drone, u_loc, e_loc) && nearby_enemy && // under attack. ? And?
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast(u_loc, e_loc) || drone_death) && nearby_enemy && // under attack. ? And?
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
@@ -484,7 +486,6 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
         CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
         is_building = true;
     }
-
 
     if (is_larva && morph_canidate->getHatchery()) {
         wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
@@ -729,9 +730,9 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
         sorted_list.insert({ it.second, it.first });
     }
 
-    for (auto it: sorted_list) {
+    for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UnitSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(it.second.c_str()), it.first);
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(unit_idea->second.c_str()), unit_idea->first);
             another_sort_of_unit++;
     }
 }
