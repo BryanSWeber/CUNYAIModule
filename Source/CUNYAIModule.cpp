@@ -30,6 +30,7 @@ using namespace std;
     bool CUNYAIModule::tech_starved = false;
     bool CUNYAIModule::supply_starved = false;
     bool CUNYAIModule::gas_starved = false;
+    bool CUNYAIModule::larva_starved = false;
     double gamma = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
     double delta = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
     double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
@@ -326,6 +327,7 @@ void CUNYAIModule::onFrame()
 
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalUnit(friendly_player_model.combat_unit_cartridge_, friendly_player_model.researches_);
+    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;

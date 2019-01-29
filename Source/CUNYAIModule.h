@@ -54,11 +54,12 @@ public:
   static bool supply_starved;
   static double delta; // for gas levels. Gas is critical for spending but will be matched with supply.
   static bool gas_starved;
-    double win_rate; //fairly straighforward.
+  double win_rate; //fairly straighforward.
 
   static bool army_starved;
   static bool econ_starved;
   static bool tech_starved;
+  static bool larva_starved;
   static double adaptation_rate; //Adaptation rate to opponent.
   static double alpha_army_original;
   static double alpha_tech_original;

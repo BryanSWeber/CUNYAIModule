@@ -298,8 +298,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     bool buildings_started = false;
     bool any_macro_problems = CUNYAIModule::current_map_inventory.min_workers_ > CUNYAIModule::current_map_inventory.min_fields_ * 1.75 || CUNYAIModule::current_map_inventory.gas_workers_ > 2 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) || CUNYAIModule::current_map_inventory.min_fields_ < CUNYAIModule::current_map_inventory.hatches_ * 5 || CUNYAIModule::current_map_inventory.workers_distance_mining_ > 0.0625 * CUNYAIModule::current_map_inventory.min_workers_; // 1/16 workers LD mining is too much.
     bool expansion_meaningful = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85 && (any_macro_problems);
-    bool larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
-    bool the_only_macro_hatch_case = (larva_starved && !expansion_meaningful && !CUNYAIModule::econ_starved);
+    bool the_only_macro_hatch_case = (CUNYAIModule::larva_starved && !expansion_meaningful && !CUNYAIModule::econ_starved);
     bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery);
@@ -325,7 +324,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     }
 
     //Macro-related Buildings.
-    if( !buildings_started ) buildings_started = Expo(drone, (expansion_meaningful || larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
+    if( !buildings_started ) buildings_started = Expo(drone, (expansion_meaningful || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if( !buildings_started ) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, the_only_macro_hatch_case); // only macrohatch if you are short on larvae and can afford to spend.
@@ -336,10 +335,10 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
         Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
     //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, !CUNYAIModule::checkSuperiorFAPForecast(u_loc, e_loc) && nearby_enemy && // under attack. ? And?
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, !CUNYAIModule::checkSuperiorFAPForecast2(drone, u_loc, e_loc) && nearby_enemy && // under attack. ? And?
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
-        (larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
+        (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
         CUNYAIModule::current_map_inventory.hatches_ > 1 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max( (CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6) ); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
@@ -661,7 +660,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
             buildfap_temp.clear();
 
             if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
-            else assembly_cycle[potential_type.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * assembly_cycle[potential_type.first] + static_cast<double>(1.0 / 240.0) * potential_type.second); //moving average over 240 simulations, 10 seconds.
+            else assembly_cycle[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
         //}
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle.find(potential_type.first)->second, assembly_cycle.find(potential_type.first)->first.c_str());
     }
