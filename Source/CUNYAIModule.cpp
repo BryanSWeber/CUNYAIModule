@@ -793,7 +793,7 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     Position e_pos = e_closest->pos_;
-                    bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
+                    bool home_fight_mandatory = /*u_type != UnitTypes::Zerg_Drone &&*/
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
                     bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking");
