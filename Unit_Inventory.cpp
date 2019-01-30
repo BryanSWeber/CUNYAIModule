@@ -67,7 +67,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
             }
         }
 
-        if(Broodwar->elapsedTime() % 4 == 0) e.second.circumference_remaining_ = e.second.circumference_; //Every 4 seconds, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
+        if(Broodwar->elapsedTime() % 2 == 0) e.second.circumference_remaining_ = e.second.circumference_; //Every 4 seconds, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
 
         if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
