@@ -315,7 +315,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     if (nearby_enemy) {
         e_loc = CUNYAIModule::getUnitInventoryInRadius(e_inv, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
         u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-        drone_death = u_loc.unit_inventory_.find(drone) != u_loc.unit_inventory_.end() && Stored_Unit::unitAliveinFuture(u_loc.unit_inventory_.at(drone), 24);
+        drone_death = u_loc.unit_inventory_.find(drone) != u_loc.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(u_loc.unit_inventory_.at(drone), 24);
     }
 
     // Trust the build order. If there is a build order and it wants a building, build it!
