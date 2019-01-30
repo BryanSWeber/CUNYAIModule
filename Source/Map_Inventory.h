@@ -4,6 +4,7 @@
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
+#include "PlayerModelManager.h"
 
 
 using namespace std;
@@ -185,5 +186,10 @@ struct Map_Inventory {
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
+
+
+   //Potential field stuff:
+    vector<vector<int>> createPotentialField();
+    void createAAPotentialField(vector<vector<int>>& pf, Player_Model & enemy_player);
 
 };
