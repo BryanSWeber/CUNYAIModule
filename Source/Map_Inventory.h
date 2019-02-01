@@ -189,7 +189,8 @@ struct Map_Inventory {
 
 
    //Potential field stuff:
-    vector<vector<int>> createPotentialField();
-    void createAAPotentialField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    vector<vector<int>> createEmptyPotentialField();
+    vector<vector<int>> createPotentialField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    void DiagnosticPotentialField(vector<vector<int>>& pf);
 
 };

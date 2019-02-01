@@ -532,29 +532,31 @@ void CUNYAIModule::onFrame()
         }
 
 
-        for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
-                if (current_map_inventory.map_veins_[i][j] > 175 ) {
-                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-                    }
-                }
-                else if (current_map_inventory.map_veins_[i][j] <= 2 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-                    if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-                    }
-                }
-                else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-                    if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-                        //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-                        Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-                    }
-                }
-            }
-        } // Pretty to look at!
-
+        //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
+        //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
+        //        if (current_map_inventory.map_veins_[i][j] > 175 ) {
+        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
+        //            }
+        //        }
+        //        else if (current_map_inventory.map_veins_[i][j] <= 2 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
+        //            }
+        //        }
+        //        else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
+        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
+        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
+        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
+        //            }
+        //        }
+        //    }
+        //} // Pretty to look at!
+        vector<vector<int>> pf_aa = current_map_inventory.createEmptyPotentialField();
+        pf_aa = current_map_inventory.createPotentialField(pf_aa, enemy_player_model);
+        current_map_inventory.DiagnosticPotentialField(pf_aa);
 
         //for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
