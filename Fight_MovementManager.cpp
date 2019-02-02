@@ -36,16 +36,19 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
             setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
         }
         else {
-            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
-            e_neighborhood.updateUnitInventorySummary();
+            setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
+            setAttractionField(unit, pos, inv, inv.pf_explore_, inv.safe_base_);
+            pathing_confidently = true;
+            //Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+            //e_neighborhood.updateUnitInventorySummary();
 
-            if (e_neighborhood.stock_shoots_up_ > 0) {
-                setSeperationScout(unit, pos, e_neighborhood);
-            }
-            else {
-                setSeperationScout(unit, pos, local_neighborhood);
-                pathing_confidently = true;
-            }
+            //if (e_neighborhood.stock_shoots_up_ > 0) {
+            //    setSeperationScout(unit, pos, e_neighborhood);
+            //}
+            //else {
+            //    setSeperationScout(unit, pos, local_neighborhood);
+            //    pathing_confidently = true;
+            //}
         }
     }
     else {
@@ -72,7 +75,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     }
 
     //Avoidance vector:
-    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_;
+    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + repulse_vector_ + centralization_vector_;
     Position avoidance_pos = pos + avoidance_vector;
 
     //Which way should we avoid objects?
@@ -119,8 +122,9 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, inv.screen_position_, Colors::Blue); // Centraliziation.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, inv.screen_position_, Colors::Purple); // Cohesion
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, inv.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + repulse_vector_, inv.screen_position_, Colors::Black); //Repulsion towards attackable enemies or home base.
+        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - seperation_vector_, inv.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
+        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - walkability_vector_, inv.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
         changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
@@ -478,25 +482,8 @@ Position Mobility::setAttractionMap(const Unit &unit, const Position &pos, const
     return attract_vector_;
 }
 
-
-//Repulsion, pull away from map center. Literally just a negative of the previous.
-Position Mobility::setRepulsionMap(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
-    attract_vector_ = Positions::Origin;
-    if (map.empty() || unit->isFlying()) {
-        int dist_x = map_center.x - pos.x;
-        int dist_y = map_center.y - pos.y;
-        double theta = atan2(dist_y, dist_x);
-        attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric )); // run to (map)!
-    }
-    else {
-        Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
-        attract_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use, seems buggy!
-    }
-    return attract_vector_;
-}
-
-//Repulsion, pull away from field values. Literally just a negative of the previous.
-Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &field, const Position &map_center) {
+//Attraction, pull towards higher values.
+Position Mobility::setAttractionField(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &field, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (field.empty()) {
         int dist_x = map_center.x - pos.x;
@@ -505,10 +492,41 @@ Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, cons
         attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric)); // run to (map)!
     }
     else {
-        Position direction = getVectorTowardsField(unit->getPosition(), inv, field);
-        attract_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use. 
+        attract_vector_ = getVectorTowardsField(unit->getPosition(), inv, field);
     }
     return attract_vector_;
+}
+
+//Repulsion, pull away from map center. Literally just a negative of the previous.
+Position Mobility::setRepulsionMap(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+    repulse_vector_ = Positions::Origin;
+    if (map.empty() || unit->isFlying()) {
+        int dist_x = map_center.x - pos.x;
+        int dist_y = map_center.y - pos.y;
+        double theta = atan2(dist_y, dist_x);
+        repulse_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric )); // run to (map)!
+    }
+    else {
+        Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+        repulse_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use, seems buggy!
+    }
+    return repulse_vector_;
+}
+
+//Repulsion, pull away from field values. Literally just a negative of the previous.
+Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &field, const Position &map_center) {
+    repulse_vector_ = Positions::Origin;
+    if (field.empty()) {
+        int dist_x = map_center.x - pos.x;
+        int dist_y = map_center.y - pos.y;
+        double theta = atan2(dist_y, dist_x);
+        repulse_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric)); // run to (map)!
+    }
+    else {
+        Position direction = getVectorTowardsField(unit->getPosition(), inv, field);
+        repulse_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use. 
+    }
+    return repulse_vector_;
 }
 
 
@@ -822,7 +840,6 @@ Position Mobility::getVectorTowardsField(const Position &pos, const Map_Inventor
     int temp_y = 0;
     int current_best = INT_MAX;
     double theta = 0;
-    vector<Position> barrier_points;
 
     SpiralOut spiral; // don't really need to spiral out here anymore
 
@@ -832,21 +849,15 @@ Position Mobility::getVectorTowardsField(const Position &pos, const Map_Inventor
         spiral.goNext();
         int centralize_x = TilePosition(pos).x + spiral.x;
         int centralize_y = TilePosition(pos).y + spiral.y;
-        bool shadow_check = false;
 
         if (centralize_x < map_dim.x &&
             centralize_y < map_dim.y &&
             centralize_x > 0 &&
             centralize_y > 0 &&
-            centralize_y > 0 &&
-            !shadow_check
+            centralize_y > 0 
             ) // Is the spot acceptable?
         {
-            if (field[centralize_x][centralize_y] <= 2) // if it's a barrier (or right on top of one), make a shadow.
-            {
-                barrier_points.push_back(Position(centralize_x, centralize_y));
-            }
-            else if (field[centralize_x][centralize_y] < current_best && field[centralize_x][centralize_y] > 2) // otherwise, if it's an improvement, go directly to the best destination
+            if (field[centralize_x][centralize_y] > current_best && field[centralize_x][centralize_y] > 0) // otherwise, if it's an improvement, go directly to the best destination
             {
                 temp_x = spiral.x;
                 temp_y = spiral.y;

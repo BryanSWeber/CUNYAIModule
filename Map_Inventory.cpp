@@ -1641,7 +1641,7 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 50) > home_value || changed_a_value_last_cycle;
+            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
             pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
             //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
@@ -1657,10 +1657,12 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
         }
 
         if (changed_a_value_last_cycle == false) {
+            pf_threat_ = pf;
             return pf; // if we did nothing last cycle, we don't need to punish ourselves.
         }
 
     }
+    pf_threat_ = pf;
     return pf;
 }
 
@@ -1671,7 +1673,7 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.type_.airWeapon() != WeaponTypes::None;
+        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * (unit.second.type_.airWeapon() != WeaponTypes::None);
     }
 
 
@@ -1694,7 +1696,7 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < 30; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 0; iter < 90; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
@@ -1714,7 +1716,7 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 50) > home_value || changed_a_value_last_cycle;
+            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
             pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
                                                                                                                                    //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
@@ -1730,10 +1732,27 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
         }
 
         if (changed_a_value_last_cycle == false) {
+            pf_aa_ = pf;
             return pf; // if we did nothing last cycle, we don't need to punish ourselves.
         }
 
     }
+    pf_aa_ = pf;
+    return pf;
+}
+
+vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &pf) {
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            pf[tile_x][tile_y] += Broodwar->isVisible(TilePosition(tile_x,tile_y)) + 5 * Broodwar->isExplored(TilePosition(tile_x, tile_y));
+        }
+    }
+    pf_explore_ = pf;
+
     return pf;
 }
 
@@ -1786,7 +1805,7 @@ vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &p
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 50) > home_value || changed_a_value_last_cycle;
+            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
             pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
                                                                                                                                    //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
@@ -1802,10 +1821,12 @@ vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &p
         }
 
         if (changed_a_value_last_cycle == false) {
+            pf_attract_ = pf;
             return pf; // if we did nothing last cycle, we don't need to punish ourselves.
         }
 
     }
+    pf_attract_ = pf;
     return pf;
 }
 

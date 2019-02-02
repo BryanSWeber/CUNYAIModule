@@ -83,6 +83,7 @@ struct Map_Inventory {
     vector< vector<int> > pf_threat_;
     vector< vector<int> > pf_attract_;
     vector< vector<int> > pf_aa_;
+    vector< vector<int> > pf_explore_;
 
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock(const Unit_Inventory &ui);
@@ -197,6 +198,7 @@ struct Map_Inventory {
     vector<vector<int>> createEmptyField();
     vector<vector<int>> createThreatField(vector<vector<int>>& pf, Player_Model & enemy_player);
     vector<vector<int>> createAAField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    vector<vector<int>> createExploreField(vector<vector<int>>& pf);
     vector<vector<int>> createAttractField(vector<vector<int>>& pf, Player_Model & enemy_player);
 
     void DiagnosticField(vector<vector<int>>& pf);

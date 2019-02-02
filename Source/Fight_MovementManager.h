@@ -31,6 +31,7 @@ public:
     Position setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
     Position setAttractionMap(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
+    Position setAttractionField(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field, const Position & map_center);
     // causes a unit to be pushed away from (map) center. Dangerous for ground units, could lead to them running down dead ends.
     Position setRepulsionMap(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position & map_center);
     Position setRepulsionField(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field, const Position & map_center);
@@ -60,6 +61,7 @@ private:
     Position centralization_vector_ = Positions::Origin;
     Position seperation_vector_ = Positions::Origin;
     Position attract_vector_ = Positions::Origin;
+    Position repulse_vector_ = Positions::Origin;
     Position retreat_vector_ = Positions::Origin;
     Position walkability_vector_ = Positions::Origin;
 
