@@ -647,7 +647,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
-        //if ( CUNYAIModule::checkDesirable(potential_type.first, true) ){ // while this runs faster, it will potentially get biased towards lings and hydras.
+        if ( CUNYAIModule::checkDesirable(potential_type.first, true) ){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
             buildfap_temp.clear();
             buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
@@ -662,7 +662,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
 
             if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
             else assembly_cycle[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
-        //}
+        }
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle.find(potential_type.first)->second, assembly_cycle.find(potential_type.first)->first.c_str());
     }
 
@@ -751,6 +751,10 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
     return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+}
+
+bool CUNYAIModule::checkDesirable(const UpgradeType &ut, const bool &extra_criteria) {
+    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgrade_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {

@@ -85,7 +85,8 @@ public:
     int long_delay;
 
     char delay_string [50];
-    char preamble_string [50];
+    char map_string[50];
+    char playermodel_string[50];
     char larva_string [50];
     char worker_string [50];
     char scouting_string [50];
@@ -109,6 +110,7 @@ public:
       static bool checkInCartridge( const TechType & ut);
       // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
       static bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+      static bool checkDesirable(const UpgradeType & ut, const bool & extra_criteria);
       static bool checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria);
       static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.

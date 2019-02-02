@@ -206,7 +206,8 @@ void CUNYAIModule::onFrame()
 
     // Performance Qeuery Timer
     // http://www.decompile.com/cpp/faq/windows_timer_api.htm
-    std::chrono::duration<double, std::milli> preamble_time;
+    std::chrono::duration<double, std::milli> map_time;
+    std::chrono::duration<double, std::milli> playermodel_time;
     std::chrono::duration<double, std::milli> larva_time;
     std::chrono::duration<double, std::milli> worker_time;
     std::chrono::duration<double, std::milli> scout_time;
@@ -216,7 +217,7 @@ void CUNYAIModule::onFrame()
     std::chrono::duration<double, std::milli> creepcolony_time;
     std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
 
-    auto start_preamble = std::chrono::high_resolution_clock::now();
+    auto start_playermodel = std::chrono::high_resolution_clock::now();
 
     // Game time;
     int t_game = Broodwar->getFrameCount(); // still need this for mining script.
@@ -267,10 +268,6 @@ void CUNYAIModule::onFrame()
     writePlayerModel(friendly_player_model, "friendly");
     writePlayerModel(enemy_player_model, "enemy");
 
-    //Update posessed minerals. Erase those that are mined out.
-    land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, current_map_inventory);
-    land_inventory.drawMineralRemaining(current_map_inventory);
-
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
         //Initialize model variables. 
         GeneticHistory gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt");
@@ -278,7 +275,7 @@ void CUNYAIModule::onFrame()
         delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
         gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.  
 
-        //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
+                                                //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
         friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter. 
         friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter. 
         friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter. 
@@ -286,6 +283,36 @@ void CUNYAIModule::onFrame()
         win_rate = (1 - gene_history.loss_rate_);
         Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
     }
+
+    //Knee-jerk states: gas, supply.
+    gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
+        (Gas_Outlet() && Broodwar->self()->gas() < 125) || // you need gas to buy things you have already invested in.
+        (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
+        (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
+    supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
+        Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
+
+                                                //This command has passed its diagnostic usefullness.
+                                                //if constexpr (ANALYSIS_MODE) {
+                                                //    if (t_game % (24*10) == 0) {
+                                                //        friendly_player_model.spending_model_.printModelParameters();
+                                                //    }
+                                                //}
+
+    bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
+
+
+    current_map_inventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
+
+    auto end_playermodel = std::chrono::high_resolution_clock::now();
+    playermodel_time = end_playermodel - start_playermodel;
+
+
+    auto start_map = std::chrono::high_resolution_clock::now();
+
+    //Update posessed minerals. Erase those that are mined out.
+    land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, current_map_inventory);
+    land_inventory.drawMineralRemaining(current_map_inventory);
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
     current_map_inventory.updateVision_Count();
@@ -369,32 +396,12 @@ void CUNYAIModule::onFrame()
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
 
-    //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
-        (Gas_Outlet() && Broodwar->self()->gas() < 125) || // you need gas to buy things you have already invested in.
-        (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
-        (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 200); // you need gas because you are tech starved.
-    supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
-                        Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
+    vector<vector<int>> pf_threat = current_map_inventory.createEmptyField();
+    vector<vector<int>> pf_attract = current_map_inventory.createEmptyField();
+    pf_threat = current_map_inventory.createThreatField(pf_threat, enemy_player_model);
+    pf_attract = current_map_inventory.createAttractField(pf_attract, enemy_player_model);
 
-    //This command has passed its diagnostic usefullness.
-    //if constexpr (ANALYSIS_MODE) {
-    //    if (t_game % (24*10) == 0) {
-    //        friendly_player_model.spending_model_.printModelParameters();
-    //    }
-    //}
-
-    bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
-
-    //Unitset enemy_set = getEnemy_Set(enemy_player_model.units_);
-    enemy_player_model.units_.updateUnitInventorySummary();
-    //friendly_player_model.units_.updateUnitInventorySummary(); Redundant with //updateUnitInventory.
-    land_inventory.updateMiners();
-    land_inventory.updateGasCollectors();
-
-    current_map_inventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
-
-
+    //current_map_inventory.DiagnosticField(pf_attract);
     //FAP::FastAPproximation<Stored_Unit*> TESTfap;
     //Unit_Inventory test_inventory_friendly;
     //Unit_Inventory test_inventory_enemy;
@@ -421,6 +428,9 @@ void CUNYAIModule::onFrame()
     //Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
     //Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
     //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
+
+    auto end_map = std::chrono::high_resolution_clock::now();
+    map_time = end_map - start_map;
 
     // Display the game status indicators at the top of the screen    
     if constexpr(DRAWING_MODE) {
@@ -514,14 +524,15 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
 
         Broodwar->drawTextScreen(500, 70, delay_string);
-        Broodwar->drawTextScreen(500, 80, preamble_string);
-        Broodwar->drawTextScreen(500, 90, larva_string);
-        Broodwar->drawTextScreen(500, 100, worker_string);
-        Broodwar->drawTextScreen(500, 110, scouting_string);
-        Broodwar->drawTextScreen(500, 120, combat_string);
-        Broodwar->drawTextScreen(500, 130, detection_string);
-        Broodwar->drawTextScreen(500, 140, upgrade_string);
-        Broodwar->drawTextScreen(500, 150, creep_colony_string);
+        Broodwar->drawTextScreen(500, 80, playermodel_string);
+        Broodwar->drawTextScreen(500, 90, map_string);
+        Broodwar->drawTextScreen(500, 100, larva_string);
+        Broodwar->drawTextScreen(500, 110, worker_string);
+        Broodwar->drawTextScreen(500, 120, scouting_string);
+        Broodwar->drawTextScreen(500, 130, combat_string);
+        Broodwar->drawTextScreen(500, 140, detection_string);
+        Broodwar->drawTextScreen(500, 150, upgrade_string);
+        Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
         for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
             if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
@@ -554,9 +565,6 @@ void CUNYAIModule::onFrame()
         //        }
         //    }
         //} // Pretty to look at!
-        vector<vector<int>> pf_aa = current_map_inventory.createEmptyPotentialField();
-        pf_aa = current_map_inventory.createPotentialField(pf_aa, enemy_player_model);
-        current_map_inventory.DiagnosticPotentialField(pf_aa);
 
         //for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
@@ -610,8 +618,6 @@ void CUNYAIModule::onFrame()
 
     // Prevent spamming by only running our onFrame once every number of latency frames.
     // Latency frames are the number of frames before commands are processed.
-    auto end_preamble = std::chrono::high_resolution_clock::now();
-    preamble_time = end_preamble - start_preamble;
 
     if (t_game % Broodwar->getLatencyFrames() != 0) {
         return;
@@ -1098,7 +1104,7 @@ void CUNYAIModule::onFrame()
 
 
     auto end = std::chrono::high_resolution_clock::now();
-    total_frame_time = end - start_preamble;
+    total_frame_time = end - start_playermodel;
 
     //Clock App
     if (total_frame_time.count() > 55) {
@@ -1120,7 +1126,8 @@ void CUNYAIModule::onFrame()
     if constexpr (DRAWING_MODE) {
         int n;
         n = sprintf(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
-        n = sprintf(preamble_string, "Preamble:      %3.f%%,%3.fms ", preamble_time.count() / static_cast<double>(total_frame_time.count()) * 100, preamble_time.count());
+        n = sprintf(playermodel_string, "Players:      %3.f%%,%3.fms ", playermodel_time.count() / static_cast<double>(total_frame_time.count()) * 100, playermodel_time.count());
+        n = sprintf(map_string, "Maps:      %3.f%%,%3.fms ", map_time.count() / static_cast<double>(total_frame_time.count()) * 100, map_time.count());
         n = sprintf(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / static_cast<double>(total_frame_time.count()) * 100, larva_time.count());
         n = sprintf(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / static_cast<double>(total_frame_time.count()) * 100, worker_time.count());
         n = sprintf(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / static_cast<double>(total_frame_time.count()) * 100, scout_time.count());

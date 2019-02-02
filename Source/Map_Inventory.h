@@ -188,9 +188,11 @@ struct Map_Inventory {
     void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
 
 
-   //Potential field stuff:
-    vector<vector<int>> createEmptyPotentialField();
-    vector<vector<int>> createPotentialField(vector<vector<int>>& pf, Player_Model & enemy_player);
-    void DiagnosticPotentialField(vector<vector<int>>& pf);
+   //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
+    vector<vector<int>> createEmptyField();
+    vector<vector<int>> createThreatField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    vector<vector<int>> createAttractField(vector<vector<int>>& pf, Player_Model & enemy_player);
+
+    void DiagnosticField(vector<vector<int>>& pf);
 
 };
