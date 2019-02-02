@@ -33,7 +33,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
-            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
+            setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
         }
         else {
             Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
@@ -51,12 +51,12 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-            if (u_type.airWeapon() != WeaponTypes::None) setAttraction(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
-            else setAttraction(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
+            if (u_type.airWeapon() != WeaponTypes::None) setAttractionMap(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+            else setAttractionMap(unit, pos, inv, inv.map_out_from_enemy_ground_, inv.enemy_base_ground_);
             pathing_confidently = true;
         }
         else { // Otherwise, return to home.
-            setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
+            setAttractionMap(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
         }
 
         int average_side = ui.unit_inventory_.find(unit)->second.circumference_ / 4;
@@ -281,11 +281,11 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
         // All units seperate from nearby enemy units- threat or not.
         setSeperation(unit, pos, e_squad_threatening);
         // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
-        if (e_unit.is_flying_) setRepulsion(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
-        else setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
+        if (e_unit.is_flying_) setRepulsionMap(unit, pos, inv, inv.map_out_from_enemy_air_, inv.enemy_base_air_);
+        else setAttractionMap(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_);
     }
     else {
-        setAttraction(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        setAttractionMap(unit, pos, inv, inv.map_out_from_safety_, inv.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
     
     //Avoidance vector:
@@ -464,7 +464,7 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inv
 
 
 //Attraction, pull towards map center.
-Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setAttractionMap(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -478,8 +478,9 @@ Position Mobility::setAttraction(const Unit &unit, const Position &pos, const Ma
     return attract_vector_;
 }
 
+
 //Repulsion, pull away from map center. Literally just a negative of the previous.
-Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setRepulsionMap(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &map, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -489,10 +490,27 @@ Position Mobility::setRepulsion(const Unit &unit, const Position &pos, const Map
     }
     else {
         Position direction = getVectorTowardsMap(unit->getPosition(), inv, map);
+        attract_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use, seems buggy!
+    }
+    return attract_vector_;
+}
+
+//Repulsion, pull away from field values. Literally just a negative of the previous.
+Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &field, const Position &map_center) {
+    attract_vector_ = Positions::Origin;
+    if (field.empty()) {
+        int dist_x = map_center.x - pos.x;
+        int dist_y = map_center.y - pos.y;
+        double theta = atan2(dist_y, dist_x);
+        attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric)); // run to (map)!
+    }
+    else {
+        Position direction = getVectorTowardsField(unit->getPosition(), inv, field);
         attract_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use. 
     }
     return attract_vector_;
 }
+
 
 //Seperation from nearby units, search very local neighborhood.
 Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
@@ -786,6 +804,53 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const Map_Inventory 
                 temp_x = spiral.x;
                 temp_y = spiral.y;
                 current_best = map[centralize_x][centralize_y];
+            }
+        }
+    }
+
+    if (temp_y != 0 || temp_x != 0) {
+        theta = atan2(temp_y, temp_x);
+        return_vector = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+    }
+    return  return_vector;
+}
+
+Position Mobility::getVectorTowardsField(const Position &pos, const Map_Inventory &inv, const vector<vector<int>> &field) const {
+    Position return_vector = Positions::Origin;
+    int my_spot = inv.getFieldValue(pos, field);
+    int temp_x = 0;
+    int temp_y = 0;
+    int current_best = INT_MAX;
+    double theta = 0;
+    vector<Position> barrier_points;
+
+    SpiralOut spiral; // don't really need to spiral out here anymore
+
+    // we need to spiral out from the center, stopping if we hit an object.
+    TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
+    for (int i = 0; i <= 64; i++) {
+        spiral.goNext();
+        int centralize_x = TilePosition(pos).x + spiral.x;
+        int centralize_y = TilePosition(pos).y + spiral.y;
+        bool shadow_check = false;
+
+        if (centralize_x < map_dim.x &&
+            centralize_y < map_dim.y &&
+            centralize_x > 0 &&
+            centralize_y > 0 &&
+            centralize_y > 0 &&
+            !shadow_check
+            ) // Is the spot acceptable?
+        {
+            if (field[centralize_x][centralize_y] <= 2) // if it's a barrier (or right on top of one), make a shadow.
+            {
+                barrier_points.push_back(Position(centralize_x, centralize_y));
+            }
+            else if (field[centralize_x][centralize_y] < current_best && field[centralize_x][centralize_y] > 2) // otherwise, if it's an improvement, go directly to the best destination
+            {
+                temp_x = spiral.x;
+                temp_y = spiral.y;
+                current_best = field[centralize_x][centralize_y];
             }
         }
     }

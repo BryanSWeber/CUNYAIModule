@@ -398,8 +398,12 @@ void CUNYAIModule::onFrame()
 
     vector<vector<int>> pf_threat = current_map_inventory.createEmptyField();
     vector<vector<int>> pf_attract = current_map_inventory.createEmptyField();
-    pf_threat = current_map_inventory.createThreatField(pf_threat, enemy_player_model);
-    pf_attract = current_map_inventory.createAttractField(pf_attract, enemy_player_model);
+    vector<vector<int>> pf_aa = current_map_inventory.createEmptyField();
+
+    current_map_inventory.pf_threat_ = current_map_inventory.createThreatField(pf_threat, enemy_player_model);
+    current_map_inventory.pf_attract_ = current_map_inventory.createAttractField(pf_attract, enemy_player_model);
+    current_map_inventory.pf_aa_ = current_map_inventory.createAAField(pf_aa, enemy_player_model);
+    current_map_inventory.DiagnosticField(pf_aa);
 
     //current_map_inventory.DiagnosticField(pf_attract);
     //FAP::FastAPproximation<Stored_Unit*> TESTfap;
