@@ -67,7 +67,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
             }
         }
 
-        e.second.circumference_remaining_ = e.second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
+        if(Broodwar->elapsedTime() % 2 == 0) e.second.circumference_remaining_ = e.second.circumference_; //Every 4 seconds, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
 
         if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
@@ -285,15 +285,15 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
         bool retreating_undetected= unit->canAttack() && ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
         double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
+
         if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_);
         else ma_future_fap_value_ = future_fap_value_; // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
     }
@@ -620,7 +620,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 
     //Get unit's status. Precalculated, precached.
     modified_supply_ = unittype.supplyRequired();
-    modified_min_cost_ = unittype.mineralPrice(); 
+    modified_min_cost_ = unittype.mineralPrice();
     modified_gas_cost_ = unittype.gasPrice();
 
     if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
@@ -630,7 +630,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 
     if (unittype.isSuccessorOf(UnitTypes::Zerg_Creep_Colony) ) {
         modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
-    } 
+    }
 
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
         modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
@@ -846,12 +846,12 @@ auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
         .setAttackerCount(units_inside_object)
         .setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
-        .setShieldUpgrades(shield_upgrades) 
-        .setSpeedUpgrade(speed_tech) 
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
         .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
-        .setRangeUpgrade(range_upgrade) 
+        .setRangeUpgrade(range_upgrade)
         ;
 }
 
@@ -859,7 +859,7 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
     int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating)) +
-        (type_.armorUpgrade() == upgrade); 
+        (type_.armorUpgrade() == upgrade);
 
     int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType())) +
         (type_.groundWeapon().upgradeType() == upgrade || type_.airWeapon().upgradeType() == upgrade);
@@ -899,12 +899,12 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         .setAttackerCount(units_inside_object)
         .setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
-        .setShieldUpgrades(shield_upgrades) 
-        .setSpeedUpgrade(speed_tech) 
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
         .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
-        .setRangeUpgrade(range_upgrade) 
+        .setRangeUpgrade(range_upgrade)
         ;
 }
 
@@ -1049,7 +1049,7 @@ void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
 
     double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
-    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health); 
+    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health);
 
     fap_unit.data->updated_fap_this_frame_ = true;
 }
