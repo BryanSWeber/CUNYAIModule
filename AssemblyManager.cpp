@@ -472,6 +472,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
     bool wasting_larva_soon = true;
+    bool hatch_wants_drones = true;
     int best_sim_score = INT_MIN;
 
     if (CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk) == 0) {
@@ -489,19 +490,24 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
 
     if (is_larva && morph_canidate->getHatchery()) {
         wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3 && inv.min_fields_ > 8; // no longer will spam units when I need a hatchery.
+        Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, morph_canidate->getHatchery()->getPosition(), 250);
+        local_resources.countViableMines();
+        hatch_wants_drones = 2 * local_resources.local_mineral_patches_ + 3 * local_resources.local_refineries_ < local_resources.local_miners_ + local_resources.local_gas_collectors_;
     }
 
-    bool enough_drones = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) > inv.min_fields_ * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) >= 85;
-    bool drone_conditional = CUNYAIModule::econ_starved || CUNYAIModule::tech_starved; // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
+    bool enough_drones_globally = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) > inv.min_fields_ * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) >= 85;
+    bool drone_conditional = (CUNYAIModule::econ_starved || CUNYAIModule::tech_starved); // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
+
+    bool drones_are_needed_somewhere_but_not_right_here = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && !hatch_wants_drones;
 
     //Supply blocked protection 
     if (is_larva && !is_building) is_building = Check_N_Grow(UnitTypes::Zerg_Overlord, morph_canidate, CUNYAIModule::supply_starved);
     // Eco building.
-    if (is_larva && !is_building) is_building = Check_N_Grow(morph_canidate->getType().getRace().getWorker(), morph_canidate, (drone_conditional || wasting_larva_soon) && !enough_drones);
+    if (is_larva && !is_building) is_building = Check_N_Grow(morph_canidate->getType().getRace().getWorker(), morph_canidate, (drone_conditional || wasting_larva_soon) && !enough_drones_globally && hatch_wants_drones);
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
-    is_building = AssemblyManager::buildOptimalUnit(morph_canidate, CUNYAIModule::friendly_player_model.combat_unit_cartridge_);
+    if( !drones_are_needed_somewhere_but_not_right_here ) is_building = AssemblyManager::buildOptimalUnit(morph_canidate, CUNYAIModule::friendly_player_model.combat_unit_cartridge_);
 
 
     return is_building;

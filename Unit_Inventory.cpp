@@ -669,6 +669,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
 
+   
     //Needed for FAP.
         is_flying_ = unit->isFlying();
         elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
