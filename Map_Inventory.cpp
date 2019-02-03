@@ -1604,19 +1604,11 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
 
 
     list<TilePosition> needs_filling;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations.
-            if (pf[tile_x][tile_y] == 0) {
-                needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-                                                                    // Predefine list we will search over.
-            }
-        }
-    }
-
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
         }
     }
 
@@ -1679,25 +1671,17 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
 
 
     list<TilePosition> needs_filling;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations.
-            if (pf[tile_x][tile_y] == 0) {
-                needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-                                                            // Predefine list we will search over.
-            }
-        }
-    }
-
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
         }
     }
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < 90; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
@@ -1754,19 +1738,11 @@ vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &p
     }
 
     list<TilePosition> needs_filling;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations.
-            if (pf[tile_x][tile_y] == 0) {
-                needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-                                                            // Predefine list we will search over.
-            }
-        }
-    }
-
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
         }
     }
 
@@ -1829,25 +1805,17 @@ vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &p
 
 
     list<TilePosition> needs_filling;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations.
-            if (pf[tile_x][tile_y] == 0) {
-                needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-                                                            // Predefine list we will search over.
-            }
-        }
-    }
-
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
         }
     }
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < 30; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
