@@ -51,6 +51,8 @@ public:
     Position getVectorTowardsMap(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map) const;
     // gives a vector that has the direction towards higher values on the field.  returns a direction.
     Position getVectorTowardsField(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field) const;
+    // gives a vector that has the direction towards lower values on the field.  returns a direction.
+    Position getVectorAwayField(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field) const;
 
 
 private:

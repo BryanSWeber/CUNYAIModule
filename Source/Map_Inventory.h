@@ -134,7 +134,7 @@ struct Map_Inventory {
 
     // simply gets the map value at a particular position.
     static int getMapValue(const Position &pos, const vector<vector<int>> &map);
-    static int getFieldValue(const Position & pos, const vector<vector<int>>& map);
+    static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
 
     // Updates the visible map arteries. Only checks buildings.
     //void Map_Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
