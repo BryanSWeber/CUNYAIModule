@@ -198,6 +198,7 @@ struct Map_Inventory {
     vector<vector<int>> createEmptyField();
     vector<vector<int>> createThreatField(vector<vector<int>>& pf, Player_Model & enemy_player);
     vector<vector<int>> createAAField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    vector<vector<int>> completeField(vector<vector<int>>& pf, const int & reduction);
     vector<vector<int>> createExploreField(vector<vector<int>>& pf);
     vector<vector<int>> createAttractField(vector<vector<int>>& pf, Player_Model & enemy_player);
 

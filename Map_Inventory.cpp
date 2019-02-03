@@ -1596,20 +1596,22 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, co
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
+    int max_value = 0;
     list<TilePosition> needs_filling;
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
             needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
+            max_value = max(pf[tile_x][tile_y], max_value);
         }
     }
 
+    
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
         changed_a_value_last_cycle = false;
         for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
@@ -1682,11 +1684,11 @@ vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &p
 
     for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            pf[tile_x][tile_y] += 12 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 24 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
+            pf[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
         }
     }
 
-    pf_explore_ = pf = completeField(pf, 10);
+    pf_explore_ = pf = completeField(pf, 1);
     return pf;
 }
 
