@@ -54,13 +54,15 @@ struct Stored_Unit {
     int health_;
     int shields_;
     bool is_flying_;
+    bool shoots_up_;
+    bool shoots_down_;
     int elevation_;
     int cd_remaining_;
     bool stimmed_;
     bool burrowed_;
     bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
-
+    
     string phase_ = "None";
 
     //Needed commands for workers.

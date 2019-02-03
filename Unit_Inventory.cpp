@@ -615,6 +615,9 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     cd_remaining_ = 0;
     stimmed_ = false;
 
+    shoots_down_ = unittype.groundWeapon() != WeaponTypes::None;
+    shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
+
     //Get unit's status. Precalculated, precached.
     modified_supply_ = unittype.supplyRequired();
     modified_min_cost_ = unittype.mineralPrice(); 
@@ -668,6 +671,9 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
+
+    shoots_down_ = type_.groundWeapon() != WeaponTypes::None;
+    shoots_up_ = type_.airWeapon() != WeaponTypes::None;
 
     //Needed for FAP.
         is_flying_ = unit->isFlying();

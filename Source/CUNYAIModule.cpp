@@ -396,8 +396,8 @@ void CUNYAIModule::onFrame()
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
 
-    vector<vector<int>> pf_threat = current_map_inventory.createEmptyField();
-    vector<vector<int>> pf_attract = current_map_inventory.createEmptyField();
+    //vector<vector<int>> pf_threat = current_map_inventory.createEmptyField();
+    //vector<vector<int>> pf_attract = current_map_inventory.createEmptyField();
     vector<vector<int>> pf_aa = current_map_inventory.createEmptyField();
     vector<vector<int>> pf_explore = current_map_inventory.createEmptyField();
 

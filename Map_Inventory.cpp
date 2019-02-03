@@ -1592,6 +1592,64 @@ vector< vector<int> > Map_Inventory::createEmptyField() {
     return potential_field_;
 }
 
+vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, const int &reduction) {
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    list<TilePosition> needs_filling;
+    vector<int> flattened_potential_fields;
+    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
+        }
+    }
+
+
+    bool changed_a_value_last_cycle = true;
+
+    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
+        changed_a_value_last_cycle = false;
+        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
+                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
+                                                                                                                                              // Repeat untill finished.
+            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
+            int tile_x = position_to_investigate->x;
+            int tile_y = position_to_investigate->y;
+            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
+            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
+
+            if (safety_check) local_grid = std::max({
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
+                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
+                }) - reduction;
+
+            changed_a_value_last_cycle = local_grid > home_value || changed_a_value_last_cycle;
+            flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+
+            ++position_to_investigate;
+        }
+
+        if (changed_a_value_last_cycle == false) break; // if we did nothing last cycle, we don't need to punish ourselves.
+    }
+
+    //Unflatten
+    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y];
+        }
+    }
+
+    return pf;
+}
+
 // IN PROGRESS
 vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf, Player_Model &enemy_player) {
 
@@ -1602,130 +1660,18 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
             pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
     }
 
-
-    list<TilePosition> needs_filling;
-    vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
-            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-        }
-    }
-
-    bool changed_a_value_last_cycle = true;
-
-    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
-        changed_a_value_last_cycle = false;
-        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
-                                                                                                                                              // Repeat untill finished.
-            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate->x;
-            int tile_y = position_to_investigate->y;
-            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
-
-            if (safety_check) local_grid = std::max({ flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
-                });
-
-            int local_grid_decrement = local_grid - 5;
-            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
-
-            //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
-            //else 
-            ++position_to_investigate;
-            //if ( local_grid ) {
-            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator.
-            //}
-            //else {
-            //    ++position_to_investigate;
-            //}
-        }
-
-        if (changed_a_value_last_cycle == false) {
-            pf_threat_ = pf;
-            return pf; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-
-    }
-    pf_threat_ = pf;
+    pf_threat_ = pf = completeField(pf, 10);;
     return pf;
 }
 
 // IN PROGRESS  These don't overwrite each other enough. They may need to be overwritten 2/3 times from multiple directions.
 vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Player_Model &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * (unit.second.type_.airWeapon() != WeaponTypes::None);
+        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
     }
 
-
-    list<TilePosition> needs_filling;
-    vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
-            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-        }
-    }
-
-    bool changed_a_value_last_cycle = true;
-
-    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
-        changed_a_value_last_cycle = false;
-        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
-                                                                                                                                              // Repeat untill finished.
-            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate->x;
-            int tile_y = position_to_investigate->y;
-            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
-
-            if (safety_check) local_grid = std::max({ flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
-                });
-            int local_grid_decrement = local_grid - 5;
-            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
-
-                                                                                                                                   //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
-                                                                                                                                   //else 
-            ++position_to_investigate;
-            //if ( local_grid ) {
-            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator.
-            //}
-            //else {
-            //    ++position_to_investigate;
-            //}
-        }
-
-        if (changed_a_value_last_cycle == false) {
-            pf_aa_ = pf;
-            return pf; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-
-    }
-    pf_aa_ = pf;
+    pf_aa_ = pf = completeField(pf, 5);
     return pf;
 }
 
@@ -1734,70 +1680,14 @@ vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &p
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             pf[tile_x][tile_y] += 12 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 24 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
         }
     }
 
-    list<TilePosition> needs_filling;
-    vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
-            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-        }
-    }
-
-    bool changed_a_value_last_cycle = true;
-
-    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
-        changed_a_value_last_cycle = false;
-        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
-                                                                                                                                              // Repeat untill finished.
-            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate->x;
-            int tile_y = position_to_investigate->y;
-            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
-
-            if (safety_check) local_grid = std::max({ 
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
-                });
-
-            int local_grid_decrement = local_grid - 1;
-
-            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
-
-                                                                                                                                   //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
-                                                                                                                                   //else 
-            ++position_to_investigate;
-            //if ( local_grid ) {
-            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator.
-            //}
-            //else {
-            //    ++position_to_investigate;
-            //}
-        }
-
-        if (changed_a_value_last_cycle == false) {
-            pf_explore_ = pf;
-            return pf; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-
-        pf_explore_ = pf;
-        return pf;
-    }
+    pf_explore_ = pf = completeField(pf, 10);
+    return pf;
 }
 
 vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &pf, Player_Model &enemy_player) {
@@ -1809,62 +1699,7 @@ vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &p
         pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
     }
 
-
-    list<TilePosition> needs_filling;
-    vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
-            needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
-        }
-    }
-
-    bool changed_a_value_last_cycle = true;
-
-    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
-        changed_a_value_last_cycle = false;
-        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
-                                                                                                                                              // Repeat untill finished.
-            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate->x;
-            int tile_y = position_to_investigate->y;
-            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
-
-            if (safety_check) local_grid = std::max({ flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
-                });
-
-            int local_grid_decrement = local_grid - 5;
-            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
-
-                                                                                                                                   //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
-                                                                                                                                   //else 
-            ++position_to_investigate;
-            //if ( local_grid ) {
-            //    std::swap(*position_to_investigate, needs_filling.back()); // note back  - last element vs end - iterator past last element!
-            //    needs_filling.pop_back(); //std::erase preserves order and vectors are contiguous. Erase is then an O(n^2) operator.
-            //}
-            //else {
-            //    ++position_to_investigate;
-            //}
-        }
-
-        if (changed_a_value_last_cycle == false) {
-            pf_attract_ = pf;
-            return pf; // if we did nothing last cycle, we don't need to punish ourselves.
-        }
-
-    }
-    pf_attract_ = pf;
+    pf_attract_ = pf = completeField(pf, 10);
     return pf;
 }
 
