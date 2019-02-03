@@ -406,7 +406,7 @@ void CUNYAIModule::onFrame()
     current_map_inventory.createAAField(pf_aa, enemy_player_model);
     current_map_inventory.createExploreField(pf_explore);
 
-    current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
+    //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
 
     //current_map_inventory.DiagnosticField(pf_attract);
     //FAP::FastAPproximation<Stored_Unit*> TESTfap;

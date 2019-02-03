@@ -32,24 +32,24 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
 
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
-        //if (!ready_to_fight) { // Otherwise, return to safety.
-        //    setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
-        //}
-        //else {
-            //setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
+        if (!ready_to_fight) { // Otherwise, return to safety.
+            setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
+        }
+        else {
+            setRepulsionField(unit, pos, inv, inv.pf_aa_, inv.safe_base_);
             setAttractionField(unit, pos, inv, inv.pf_explore_, inv.safe_base_);
             pathing_confidently = true;
-            //Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
-            //e_neighborhood.updateUnitInventorySummary();
+            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+            e_neighborhood.updateUnitInventorySummary();
 
-            //if (e_neighborhood.stock_shoots_up_ > 0) {
-            //    setSeperationScout(unit, pos, e_neighborhood);
-            //}
-            //else {
-            //    setSeperationScout(unit, pos, local_neighborhood);
-            //    pathing_confidently = true;
-            //}
-        //}
+            if (e_neighborhood.stock_shoots_up_ > 0) {
+                setSeperationScout(unit, pos, e_neighborhood);
+            }
+            else {
+                setSeperationScout(unit, pos, local_neighborhood);
+                pathing_confidently = true;
+            }
+        }
     }
     else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.

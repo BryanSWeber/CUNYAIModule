@@ -1614,7 +1614,7 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < 30; iter++) { // iteration 1 is already done by labling smoothed away.
+    for (int iter = 0; iter < 100; iter++) { // iteration 1 is already done by labling smoothed away.
         changed_a_value_last_cycle = false;
         for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
@@ -1634,8 +1634,10 @@ vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+
+            int local_grid_decrement = local_grid - 5;
+            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
             //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
             //else 
@@ -1701,8 +1703,9 @@ vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Pl
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+            int local_grid_decrement = local_grid - 5;
+            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
                                                                                                                                    //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
                                                                                                                                    //else 
@@ -1769,8 +1772,11 @@ vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &p
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 1) > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 1);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+
+            int local_grid_decrement = local_grid - 1;
+
+            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
                                                                                                                                    //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
                                                                                                                                    //else 
@@ -1835,8 +1841,10 @@ vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &p
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
                 flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
                 });
-            changed_a_value_last_cycle = (local_grid - 5) > home_value || changed_a_value_last_cycle;
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid - 5);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+
+            int local_grid_decrement = local_grid - 5;
+            changed_a_value_last_cycle = local_grid_decrement > home_value || changed_a_value_last_cycle;
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid_decrement);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
                                                                                                                                    //if (local_grid) position_to_investigate = needs_filling.erase(position_to_investigate);
                                                                                                                                    //else 
