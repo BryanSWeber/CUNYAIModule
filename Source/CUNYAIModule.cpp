@@ -401,8 +401,8 @@ void CUNYAIModule::onFrame()
     vector<vector<int>> pf_aa = current_map_inventory.createEmptyField();
     vector<vector<int>> pf_explore = current_map_inventory.createEmptyField();
 
-    current_map_inventory.createThreatField(pf_threat, enemy_player_model);
-    current_map_inventory.createAttractField(pf_attract, enemy_player_model);
+    //current_map_inventory.createThreatField(pf_threat, enemy_player_model);
+    //current_map_inventory.createAttractField(pf_attract, enemy_player_model);
     current_map_inventory.createAAField(pf_aa, enemy_player_model);
     current_map_inventory.createExploreField(pf_explore);
 
