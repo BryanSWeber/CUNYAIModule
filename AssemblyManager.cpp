@@ -791,7 +791,7 @@ bool AssemblyManager::assignUnitAssembly()
                 overlord_larva.addStored_Unit(larva.second);
                 found_noncombat_use = true;
             }
-            if (!found_noncombat_use) combat_creators.addStored_Unit(larva.second);
+            combat_creators.addStored_Unit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
         }
     }
 
@@ -839,6 +839,7 @@ bool AssemblyManager::assignUnitAssembly()
         if (Reactive_BuildFAP(c.first, CUNYAIModule::current_map_inventory, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_)) {
             if (c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
             if (c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
+            if (c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
             return true;
         }
     }
