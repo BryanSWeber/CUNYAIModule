@@ -779,15 +779,15 @@ bool AssemblyManager::assignUnitAssembly()
             bool drones_are_needed_elsewhere = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
 
             bool found_noncombat_use = false;
-            if (drones_are_needed_here || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Drone, true)) {
+            if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first,UnitTypes::Zerg_Drone)) {
                 immediate_drone_larva.addStored_Unit(larva.second);
                 found_noncombat_use = true;
             }
-            if (drones_are_needed_elsewhere || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Drone, true)) {
+            if (drones_are_needed_elsewhere || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
                 transfer_drone_larva.addStored_Unit(larva.second);
                 found_noncombat_use = true;
             }
-            if (CUNYAIModule::supply_starved || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Overlord, true)) {
+            if (CUNYAIModule::supply_starved || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
                 overlord_larva.addStored_Unit(larva.second);
                 found_noncombat_use = true;
             }
