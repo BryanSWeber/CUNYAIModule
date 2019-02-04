@@ -778,12 +778,23 @@ bool AssemblyManager::assignUnitAssembly()
             bool drones_are_needed_here = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
 
-            if (drones_are_needed_here) immediate_drone_larva.addStored_Unit(larva.second);
-            if (drones_are_needed_elsewhere) transfer_drone_larva.addStored_Unit(larva.second);
-            if (CUNYAIModule::supply_starved) overlord_larva.addStored_Unit(larva.second);
-            if (CUNYAIModule::army_starved) combat_creators.addStored_Unit(larva.second);
+            bool found_noncombat_use = false;
+            if (drones_are_needed_here || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Drone, true)) {
+                immediate_drone_larva.addStored_Unit(larva.second);
+                found_noncombat_use = true;
+            }
+            if (drones_are_needed_elsewhere || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Drone, true)) {
+                transfer_drone_larva.addStored_Unit(larva.second);
+                found_noncombat_use = true;
+            }
+            if (CUNYAIModule::supply_starved || CUNYAIModule::checkDesirable(UnitTypes::Zerg_Overlord, true)) {
+                overlord_larva.addStored_Unit(larva.second);
+                found_noncombat_use = true;
+            }
+            if (!found_noncombat_use) combat_creators.addStored_Unit(larva.second);
         }
     }
+
     if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12) {
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_inventory_) {

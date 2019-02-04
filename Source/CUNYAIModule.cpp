@@ -475,15 +475,14 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
         Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
         Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-        Broodwar->drawTextScreen(250, 70, "Enemy Worker Est: %d ", current_map_inventory.estimated_enemy_workers_); // No longer a % with capital-augmenting technology.
-        Broodwar->drawTextScreen(250, 80, "Delta_gas: %4.2f", delta); //
-        Broodwar->drawTextScreen(250, 90, "Gamma_supply: %4.2f", gamma); //
-        Broodwar->drawTextScreen(250, 100, "Time to Completion: %d", my_reservation.building_timer_); //
-        Broodwar->drawTextScreen(250, 110, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 120, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        Broodwar->drawTextScreen(250, 130, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        Broodwar->drawTextScreen(250, 140, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
-        Broodwar->drawTextScreen(250, 150, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
+        Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
+        Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
+        Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
+        Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
+        Broodwar->drawTextScreen(250, 120, "Last Building: %s", buildorder.last_build_order.c_str()); //
+        Broodwar->drawTextScreen(250, 130, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
+        Broodwar->drawTextScreen(250, 140, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
         if (buildorder.isEmptyBuildOrder()) {
             Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
@@ -1153,7 +1152,7 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
-            current_map_inventory.estimated_enemy_workers_--;
+            enemy_player_model.estimated_workers_--;
         }
     }
 
