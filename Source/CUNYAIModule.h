@@ -318,6 +318,8 @@ public:
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
       static bool checkSuperiorFAPForecast2(const Unit & u, const Unit_Inventory & ui, const Unit_Inventory & ei);
+      // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
+      static bool checkUnitTouchable(const Unit & u); 
 
   // Vision Functions
       // returns number of visible tiles.
