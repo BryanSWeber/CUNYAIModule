@@ -2173,3 +2173,29 @@ bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
              ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
+
+bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
+    // Ignore the unit if it no longer exists
+    // Make sure to include this block when handling any Unit pointer!
+    if (!u || !u->exists())
+        return false;
+    // Ignore the unit if it has one of the following status ailments
+    if (u->isLockedDown() ||
+        u->isMaelstrommed() ||
+        u->isStasised())
+        return false;
+    // Ignore the unit if it is in one of the following states
+    if (u->isLoaded() ||
+        !u->isPowered() /*|| u->isStuck()*/)
+        return false;
+    // Ignore the unit if it is incomplete or busy constructing
+    if (!u->isCompleted() ||
+        u->isConstructing())
+        return false;
+
+    if (!CUNYAIModule::spamGuard(u)) {
+        return false;
+    }
+
+    return true;
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include "CUNYAIModule.h"
 #include "Map_Inventory.h"
+#include "Unit_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
 using namespace BWAPI;
@@ -10,7 +11,15 @@ using namespace std;
 
 class AssemblyManager {
 private: 
-    static std::map<UnitType, int> assembly_cycle; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    static Unit_Inventory larva_bank_;
+    static Unit_Inventory hydra_bank_;
+    static Unit_Inventory muta_bank_;
+    static Unit_Inventory builder_bank_;
+    static int last_frame_of_larva_morph_command;
+    static int last_frame_of_hydra_morph_command;
+    static int last_frame_of_muta_morph_command;
+
 public:
     static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
     static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
@@ -32,6 +41,8 @@ public:
     static bool Reactive_BuildFAP(const Unit & morph_canidate, const Map_Inventory & inv, const Unit_Inventory & ui, const Unit_Inventory & ei);
     // print the assembly cycle we're thinking about.
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
+    static void updatePotentialBuilders();
+    static bool assignUnitAssembly();
 };
 
 

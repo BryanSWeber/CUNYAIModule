@@ -327,6 +327,7 @@ void CUNYAIModule::onFrame()
 
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalUnit(friendly_player_model.combat_unit_cartridge_, friendly_player_model.researches_);
+    assemblymanager.updatePotentialBuilders();
     larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
 
     if (buildorder.building_gene_.empty()) {
@@ -615,66 +616,26 @@ void CUNYAIModule::onFrame()
         return;
     }
 
+    //This global check needs a home in the assembly manager!
+    //Evo chamber is required tech for spore colony ... This is a bad place for it!
+    if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !CUNYAIModule::my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
+        CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
+        CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
+    }
+
+    auto start_unit_morphs = std::chrono::high_resolution_clock::now();
+        assemblymanager.assignUnitAssembly();
+    auto end_unit_morphs = std::chrono::high_resolution_clock::now();
+
     // Iterate through all the units that we own
     for (auto &u : Broodwar->self()->getUnits())
     {
-        // Ignore the unit if it no longer exists
-        // Make sure to include this block when handling any Unit pointer!
-        if (!u || !u->exists())
-            continue;
-        // Ignore the unit if it has one of the following status ailments
-        if (u->isLockedDown() ||
-            u->isMaelstrommed() ||
-            u->isStasised())
-            continue;
-        // Ignore the unit if it is in one of the following states
-        if (u->isLoaded() ||
-            !u->isPowered() /*|| u->isStuck()*/)
-            continue;
-        // Ignore the unit if it is incomplete or busy constructing
-        if (!u->isCompleted() ||
-            u->isConstructing())
-            continue;
+        if (!checkUnitTouchable(u)) continue; // can we mess with it at all?
 
-        if (!spamGuard(u)) {
-            continue;
-        }
         UnitType u_type = u->getType();
 
         // Finally make the unit do some stuff!
-
         // Unit creation & Hatchery management loop
-        auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-        // must morph each type seperately, or else (ex) your bot will consider morphing a hydra and then pass on all larva for the frame.
-        if (last_frame_of_larva_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Larva) { 
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition.
-            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                last_frame_of_larva_morph_command = t_game;
-            }
-            continue;
-        }
-            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-        if (last_frame_of_hydra_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Hydralisk && !u->isUnderAttack() && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect))
-        {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                last_frame_of_hydra_morph_command = t_game;
-            }
-            continue;
-        }
-
-            // Only ONE morph this frame. Potential adverse conflict with previous  Reactive_Build calls.
-        if (last_frame_of_muta_morph_command < t_game - 12 && u_type == UnitTypes::Zerg_Mutalisk && !u->isUnderAttack() && Count_Units(UnitTypes::Zerg_Greater_Spire) - Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0)
-        {
-            // Build appropriate units. Check for suppply block, rudimentary checks for enemy composition. Updates if something is found.
-            if (assemblymanager.Reactive_BuildFAP(u, current_map_inventory, friendly_player_model.units_, enemy_player_model.units_)) {
-                last_frame_of_muta_morph_command = t_game;
-            }
-            continue;
-        }
-
-        auto end_unit_morphs = std::chrono::high_resolution_clock::now();
-
 
         // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.  Should happen before combat script or else the units will be 'continued' past;
         auto start_detector = std::chrono::high_resolution_clock::now();
