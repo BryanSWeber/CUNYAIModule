@@ -14,7 +14,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-std::map<UnitType, int> AssemblyManager::assembly_cycle = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } }; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+std::map<UnitType, int> AssemblyManager::assembly_cycle_ = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } }; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 Unit_Inventory AssemblyManager::larva_bank_;
 Unit_Inventory AssemblyManager::hydra_bank_;
 Unit_Inventory AssemblyManager::muta_bank_;
@@ -649,10 +649,10 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
             potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
             buildfap_temp.clear();
 
-            if (assembly_cycle.find(potential_type.first) == assembly_cycle.end()) assembly_cycle[potential_type.first] = potential_type.second;
-            else assembly_cycle[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
+            if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
+            else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
         }
-        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle.find(potential_type.first)->second, assembly_cycle.find(potential_type.first)->first.c_str());
+        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
 
