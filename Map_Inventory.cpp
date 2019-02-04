@@ -1597,7 +1597,7 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, co
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
     int max_value = 0;
-    list<TilePosition> needs_filling;
+    vector<TilePosition> needs_filling;
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
@@ -1613,12 +1613,12 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, co
 
     for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
         changed_a_value_last_cycle = false;
-        for (list<TilePosition>::iterator position_to_investigate = needs_filling.begin(); position_to_investigate != needs_filling.end();) { // not last element !
+        for (auto position_to_investigate : needs_filling) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
                                                                                                                                               // Repeat untill finished.
             int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate->x;
-            int tile_y = position_to_investigate->y;
+            int tile_x = position_to_investigate.x;
+            int tile_y = position_to_investigate.y;
             int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
             bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
 
@@ -1636,7 +1636,6 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, co
             changed_a_value_last_cycle = local_grid > home_value || changed_a_value_last_cycle;
             flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
 
-            ++position_to_investigate;
         }
 
         if (changed_a_value_last_cycle == false) break; // if we did nothing last cycle, we don't need to punish ourselves.
