@@ -25,6 +25,7 @@ void TechManager::updateOptimalTech() {
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 240.0) * score); //moving average over 240 simulations, 10 seconds.
         }
+        else upgrade_cycle[potential_up.first] = 0; //If it's not there, it's zero.
     }
 }
 

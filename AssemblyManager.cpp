@@ -652,6 +652,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
             else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
         }
+        else assembly_cycle_[potential_type.first] = 0; // if it's not there, shrink it to 0.
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
