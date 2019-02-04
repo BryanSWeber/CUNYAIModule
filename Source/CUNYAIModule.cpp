@@ -641,6 +641,8 @@ void CUNYAIModule::onFrame()
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
         assemblymanager.assignUnitAssembly();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
+    larva_time = end_unit_morphs - start_unit_morphs;
+
 
     // Iterate through all the units that we own
     for (auto &u : Broodwar->self()->getUnits())
@@ -1063,7 +1065,6 @@ void CUNYAIModule::onFrame()
         auto end_creepcolony = std::chrono::high_resolution_clock::now();
 
         detector_time += end_detector - start_detector;
-        larva_time += end_unit_morphs - start_unit_morphs;
         worker_time += end_worker - start_worker;
         combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
