@@ -19,6 +19,9 @@ Unit_Inventory AssemblyManager::larva_bank_;
 Unit_Inventory AssemblyManager::hydra_bank_;
 Unit_Inventory AssemblyManager::muta_bank_;
 Unit_Inventory AssemblyManager::builder_bank_;
+int AssemblyManager::last_frame_of_larva_morph_command = 0;
+int AssemblyManager::last_frame_of_hydra_morph_command = 0;
+int AssemblyManager::last_frame_of_muta_morph_command = 0;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
