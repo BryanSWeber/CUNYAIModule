@@ -1061,7 +1061,7 @@ void Stored_Unit::updateFAPvalueDead()
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.ma_future_fap_value_ >= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
+    return unit.ma_future_fap_value_ >= unit.current_stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
 }
 
 bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) const{

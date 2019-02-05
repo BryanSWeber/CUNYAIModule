@@ -636,7 +636,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : combat_types) {
-        if ( CUNYAIModule::checkDesirable(potential_type.first, true) ){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
+        if ( CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first]){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
             buildfap_temp.clear();
             buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
@@ -652,7 +652,6 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
             else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
         }
-        else assembly_cycle_[potential_type.first] = 0; // if it's not there, shrink it to 0.
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 

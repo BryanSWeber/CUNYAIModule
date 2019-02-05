@@ -16,7 +16,7 @@ bool TechManager::tech_avail_ = true;
 void TechManager::updateOptimalTech() {
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
         //if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) > 0 || CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
-        if (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)){
+        if (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true) || upgrade_cycle[potential_up.first]){
             auto buildfap_copy = CUNYAIModule::buildfap;
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -25,7 +25,6 @@ void TechManager::updateOptimalTech() {
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 240.0) * score); //moving average over 240 simulations, 10 seconds.
         }
-        else upgrade_cycle[potential_up.first] = 0; //If it's not there, it's zero.
     }
 }
 
