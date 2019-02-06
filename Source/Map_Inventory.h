@@ -196,11 +196,11 @@ struct Map_Inventory {
 
    //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> createEmptyField();
-    vector<vector<int>> createThreatField(vector<vector<int>>& pf, Player_Model & enemy_player);
-    vector<vector<int>> createAAField(vector<vector<int>>& pf, Player_Model & enemy_player);
-    vector<vector<int>> completeField(vector<vector<int>>& pf, const int & reduction);
-    vector<vector<int>> createExploreField(vector<vector<int>>& pf);
-    vector<vector<int>> createAttractField(vector<vector<int>>& pf, Player_Model & enemy_player);
+    void completeField(vector<vector<int>>& pf, const int & reduction);
+    void createThreatField(Player_Model & enemy_player);
+    void createAAField(Player_Model & enemy_player);
+    void createExploreField();
+    void createAttractField(Player_Model & enemy_player);
 
     void DiagnosticField(vector<vector<int>>& pf);
 

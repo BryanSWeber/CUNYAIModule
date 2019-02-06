@@ -1592,7 +1592,7 @@ vector< vector<int> > Map_Inventory::createEmptyField() {
     return potential_field_;
 }
 
-vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, const int &reduction) {
+void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reduction) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1648,60 +1648,61 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > &pf, co
         }
     }
 
-    return pf;
+    //return pf;
 }
 
 // IN PROGRESS
-vector< vector<int> > Map_Inventory::createThreatField(vector< vector<int> > &pf, Player_Model &enemy_player) {
+void Map_Inventory::createThreatField(Player_Model &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+    pf_threat_ = createEmptyField();
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-            pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
+        pf_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
     }
 
-    pf_threat_ = pf = completeField(pf, 10);;
-    return pf;
+    completeField(pf_threat_, 10);
 }
 
 // IN PROGRESS  These don't overwrite each other enough. They may need to be overwritten 2/3 times from multiple directions.
-vector< vector<int> > Map_Inventory::createAAField(vector< vector<int> > &pf, Player_Model &enemy_player) {
+void Map_Inventory::createAAField(Player_Model &enemy_player) {
+
+    pf_aa_ = createEmptyField();
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
+        pf_aa_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
     }
 
-    pf_aa_ = pf = completeField(pf, 5);
-    return pf;
+    completeField(pf_aa_, 5);
+
 }
 
-vector< vector<int> > Map_Inventory::createExploreField(vector< vector<int> > &pf) {
+void Map_Inventory::createExploreField() {
+
+    pf_explore_ = createEmptyField();
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            pf[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
+            pf_explore_[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
         }
     }
 
-    pf_explore_ = pf = completeField(pf, 1);
-    return pf;
+    completeField(pf_explore_, 1);
+
 }
 
-vector< vector<int> > Map_Inventory::createAttractField(vector< vector<int> > &pf, Player_Model &enemy_player) {
+void Map_Inventory::createAttractField(Player_Model &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+    pf_attract_ = createEmptyField();
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
+        pf_attract_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
     }
 
-    pf_attract_ = pf = completeField(pf, 10);
-    return pf;
+     completeField(pf_attract_, 10);
+
 }
 
 
