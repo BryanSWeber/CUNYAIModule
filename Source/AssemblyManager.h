@@ -43,6 +43,7 @@ public:
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
     static void updatePotentialBuilders();
     static bool assignUnitAssembly();
+    static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
 };
 
 

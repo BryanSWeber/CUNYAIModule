@@ -1579,10 +1579,10 @@ vector< vector<int> > Map_Inventory::createEmptyField() {
 
     // first, define matrixes to recieve the enemy locations for every tile.
     vector< vector<int> > potential_field_;
-    potential_field_.reserve(tile_map_x);
+    potential_field_.reserve(tile_map_x + 1); // note the outer edge of this matrix is 0, which no tileposition will return.
     for (int x = 0; x <= tile_map_x; ++x) {
         vector<int> temp;
-        temp.reserve(tile_map_y);
+        temp.reserve(tile_map_y + 1);
         for (int y = 0; y <= tile_map_y; ++y) {
             temp.push_back(0);
         }

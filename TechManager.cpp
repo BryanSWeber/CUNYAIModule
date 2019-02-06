@@ -16,14 +16,15 @@ bool TechManager::tech_avail_ = true;
 void TechManager::updateOptimalTech() {
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
         //if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) > 0 || CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
-        if (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true) || upgrade_cycle[potential_up.first]){
+        // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found.
+        if (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true) ){
             auto buildfap_copy = CUNYAIModule::buildfap;
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
-            buildfap_copy.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            buildfap_copy.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
             buildfap_copy.clear();
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
-            else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(239.0 / 240.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 240.0) * score); //moving average over 240 simulations, 10 seconds.
+            else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
         }
     }
 }
@@ -179,7 +180,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     map<int, UpgradeType> sorted_list;
 
     for (auto it : upgrade_cycle) {
-        sorted_list.insert({ it.second, it.first });
+        if(it.second > 0) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
@@ -187,4 +188,8 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
             Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", CUNYAIModule::noRaceName(tech_idea->second.c_str()), tech_idea->first);
             another_sort_of_upgrade++;
     }
+}
+
+void TechManager::clearSimulationHistory() {
+    upgrade_cycle = { { UpgradeTypes::Zerg_Carapace, 0 }, { UpgradeTypes::Zerg_Flyer_Carapace, 0 }, { UpgradeTypes::Zerg_Melee_Attacks, 0 }, { UpgradeTypes::Zerg_Missile_Attacks, 0 }, { UpgradeTypes::Zerg_Flyer_Attacks, 0 }, { UpgradeTypes::Antennae, 0 }, { UpgradeTypes::Pneumatized_Carapace, 0 }, { UpgradeTypes::Metabolic_Boost, 0 }, { UpgradeTypes::Adrenal_Glands, 0 }, { UpgradeTypes::Muscular_Augments, 0 }, { UpgradeTypes::Grooved_Spines, 0 }, { UpgradeTypes::Chitinous_Plating, 0 }, { UpgradeTypes::Anabolic_Synthesis, 0 } };
 }

@@ -1362,6 +1362,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             }
         }
     }
+
+    if (CUNYAIModule::checkInCartridge(unit->getType())) techmanager.clearSimulationHistory(); assemblymanager.clearSimulationHistory();
 }
 
 void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
@@ -1403,8 +1405,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         }
     }
 
-
-
+    if ( CUNYAIModule::checkInCartridge(unit->getType())) techmanager.clearSimulationHistory(); assemblymanager.clearSimulationHistory();
 }
 
 void CUNYAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.

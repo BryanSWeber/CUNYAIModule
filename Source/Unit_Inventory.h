@@ -163,7 +163,6 @@ struct Unit_Inventory {
     void drawAllLocations(const Map_Inventory &inv) const;
     void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
 
-    bool squadAliveinFuture(const int & number_of_frames_in_future) const;
 
 
     // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.

@@ -18,4 +18,5 @@ public:
     static void updateOptimalTech();
     static bool checkTechAvail();
     bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
+    static void clearSimulationHistory(); //Clears the MA history. Should run every time a relevant comabat unit is made/destroyed to prevent the MA from having weight in dissimilar situations.
 };

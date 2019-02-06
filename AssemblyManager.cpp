@@ -645,12 +645,12 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-            buildfap_temp.simulate(24 * 20); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            buildfap_temp.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
             buildfap_temp.clear();
 
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
-            else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(239.0 / 240.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 240.0 * potential_type.second) ); //moving average over 240 simulations, 10 seconds.
+            else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second) ); //moving average over 24 simulations, 1 seconds.
         }
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
@@ -716,7 +716,7 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
     int another_sort_of_unit = 0;
     map<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        sorted_list.insert({ it.second, it.first });
+        if(it.second > 0) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
@@ -845,6 +845,11 @@ bool AssemblyManager::assignUnitAssembly()
     }
 
     return false;
+}
+
+void AssemblyManager::clearSimulationHistory()
+{
+    assembly_cycle_ = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } }; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {

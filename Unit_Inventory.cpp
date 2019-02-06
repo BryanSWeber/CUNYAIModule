@@ -1064,10 +1064,6 @@ bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_o
     return unit.ma_future_fap_value_ >= unit.current_stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
 }
 
-bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) const{
-    return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
-}
-
 
 void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
