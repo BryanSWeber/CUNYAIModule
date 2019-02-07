@@ -1575,14 +1575,13 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 vector< vector<int> > Map_Inventory::createEmptyField() {
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-    bool changed_a_value_last_cycle = false;
 
     // first, define matrixes to recieve the enemy locations for every tile.
     vector< vector<int> > potential_field_;
-    potential_field_.reserve(tile_map_x + 1); // note the outer edge of this matrix is 0, which no tileposition will return.
+    //potential_field_.reserve(tile_map_x + 1); // note the outer edge of this matrix is 0, which no tileposition will return.
     for (int x = 0; x <= tile_map_x; ++x) {
         vector<int> temp;
-        temp.reserve(tile_map_y + 1);
+        //temp.reserve(tile_map_y + 1);
         for (int y = 0; y <= tile_map_y; ++y) {
             temp.push_back(0);
         }
