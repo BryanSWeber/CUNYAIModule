@@ -1390,7 +1390,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
             expo_positions_ = expo_positions_complete_;
 
             int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(expo_positions_.size()) && Broodwar->isVisible(TilePosition(start_positions_[0]))) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(expo_positions_.size()) && (start_positions_.empty() || Broodwar->isVisible(TilePosition(start_positions_[0])))) {
                 std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
                 attempts++;
             }
@@ -1653,6 +1653,7 @@ void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reductio
 
 // IN PROGRESS
 void Map_Inventory::createThreatField(Player_Model &enemy_player) {
+    pf_threat_.clear();
 
     pf_threat_ = createEmptyField();
 
@@ -1665,7 +1666,8 @@ void Map_Inventory::createThreatField(Player_Model &enemy_player) {
 
 // IN PROGRESS  These don't overwrite each other enough. They may need to be overwritten 2/3 times from multiple directions.
 void Map_Inventory::createAAField(Player_Model &enemy_player) {
-
+    
+    pf_aa_.clear();
     pf_aa_ = createEmptyField();
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
@@ -1678,6 +1680,7 @@ void Map_Inventory::createAAField(Player_Model &enemy_player) {
 
 void Map_Inventory::createExploreField() {
 
+    pf_explore_.clear();
     pf_explore_ = createEmptyField();
 
     int tile_map_x = Broodwar->mapWidth();
@@ -1694,7 +1697,7 @@ void Map_Inventory::createExploreField() {
 }
 
 void Map_Inventory::createAttractField(Player_Model &enemy_player) {
-
+    pf_attract_.clear();
     pf_attract_ = createEmptyField();
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
