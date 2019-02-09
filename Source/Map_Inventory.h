@@ -204,4 +204,6 @@ struct Map_Inventory {
 
     void DiagnosticField(vector<vector<int>>& pf);
 
+    void DiagnosticTile();
+
 };

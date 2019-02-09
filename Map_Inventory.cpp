@@ -1578,11 +1578,9 @@ vector< vector<int> > Map_Inventory::createEmptyField() {
 
     // first, define matrixes to recieve the enemy locations for every tile.
     vector< vector<int> > potential_field_;
-    //potential_field_.reserve(tile_map_x + 1); // note the outer edge of this matrix is 0, which no tileposition will return.
-    for (int x = 0; x <= tile_map_x; ++x) {
+    for (int x = 0; x < tile_map_x; ++x) { // Careful with map dimensions here. The matrix will record the outer dimensions as 0, while the tilepositions of 1 
         vector<int> temp;
-        //temp.reserve(tile_map_y + 1);
-        for (int y = 0; y <= tile_map_y; ++y) {
+        for (int y = 0; y < tile_map_y; ++y) {
             temp.push_back(0);
         }
         potential_field_.push_back(temp);
@@ -1598,8 +1596,8 @@ void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reductio
     int max_value = 0;
     vector<TilePosition> needs_filling;
     vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
             needs_filling.push_back({ tile_x, tile_y });// if it is walkable, consider it a canidate for a choke.
             max_value = max(pf[tile_x][tile_y], max_value);
@@ -1641,8 +1639,8 @@ void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reductio
     }
 
     //Unflatten
-    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y];
         }
     }
@@ -1685,8 +1683,8 @@ void Map_Inventory::createExploreField() {
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
-    for (int tile_x = 0; tile_x <= tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y <= tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             pf_explore_[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
         }
     }
@@ -1709,13 +1707,30 @@ void Map_Inventory::createAttractField(Player_Model &enemy_player) {
 
 
 void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
-    for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
-        for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
-            if (pf[i][j] > 0) {
+    if (DRAWING_MODE) {
+        for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
+            for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
+                if (pf[i][j] > 0) {
+                    if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_map_inventory.screen_position_)) {
+                        Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
+                    }
+                }
+            }
+        } // Pretty to look at!
+    }
+}
+
+void Map_Inventory::DiagnosticTile() {
+    if (DRAWING_MODE) {
+        int tile_map_x = Broodwar->mapWidth();
+        int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+        for (auto i = 0; i < tile_map_x; ++i) {
+            for (auto j = 0; j < tile_map_y; ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_map_inventory.screen_position_)) {
-                    Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
+                    Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
         }
-    } // Pretty to look at!
+        // Pretty to look at!
+    }
 }
