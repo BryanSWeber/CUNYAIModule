@@ -9,15 +9,14 @@
 
 using namespace BWAPI;
 
-std::map<UpgradeType, int> TechManager::upgrade_cycle = { { UpgradeTypes::Zerg_Carapace, 0 } ,{ UpgradeTypes::Zerg_Flyer_Carapace, 0 },{ UpgradeTypes::Zerg_Melee_Attacks, 0 },{ UpgradeTypes::Zerg_Missile_Attacks, 0 },{ UpgradeTypes::Zerg_Flyer_Attacks, 0 },{ UpgradeTypes::Antennae, 0 },{ UpgradeTypes::Pneumatized_Carapace, 0 },{ UpgradeTypes::Metabolic_Boost, 0 },{ UpgradeTypes::Adrenal_Glands, 0 },{ UpgradeTypes::Muscular_Augments, 0 },{ UpgradeTypes::Grooved_Spines, 0 },{ UpgradeTypes::Chitinous_Plating, 0 },{ UpgradeTypes::Anabolic_Synthesis, 0 } };
+std::map<UpgradeType, int> TechManager::upgrade_cycle = { { UpgradeTypes::None, 0 }, { UpgradeTypes::Zerg_Carapace, 0 } ,{ UpgradeTypes::Zerg_Flyer_Carapace, 0 },{ UpgradeTypes::Zerg_Melee_Attacks, 0 },{ UpgradeTypes::Zerg_Missile_Attacks, 0 },{ UpgradeTypes::Zerg_Flyer_Attacks, 0 },{ UpgradeTypes::Antennae, 0 },{ UpgradeTypes::Pneumatized_Carapace, 0 },{ UpgradeTypes::Metabolic_Boost, 0 },{ UpgradeTypes::Adrenal_Glands, 0 },{ UpgradeTypes::Muscular_Augments, 0 },{ UpgradeTypes::Grooved_Spines, 0 },{ UpgradeTypes::Chitinous_Plating, 0 },{ UpgradeTypes::Anabolic_Synthesis, 0 } };
 bool TechManager::tech_avail_ = true;
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
     for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
-        //if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) > 0 || CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
-        // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found.
-        if (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true) ){
+        // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
+        if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
             auto buildfap_copy = CUNYAIModule::buildfap;
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             buildfap_copy.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -43,7 +42,7 @@ void TechManager::updateTech_Avail() {
 
     updateOptimalTech();
 
-    int best_sim_score = INT_MIN;
+    int best_sim_score = upgrade_cycle[UpgradeTypes::None];// Baseline, an upgrade must be BETTER than null upgrade.
     UpgradeType up_type = UpgradeTypes::None;
 
     for (auto &potential_up : upgrade_cycle) {
