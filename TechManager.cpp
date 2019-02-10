@@ -22,7 +22,7 @@ void TechManager::updateOptimalTech() {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
-            upgradeFAP.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            upgradeFAP.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
@@ -182,7 +182,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     std::multimap<int, UpgradeType> sorted_list;
 
     for (auto it : upgrade_cycle) {
-        if(it.second >= upgrade_cycle[UpgradeTypes::None]) sorted_list.insert({ it.second, it.first });
+        if(it.second > upgrade_cycle[UpgradeTypes::None]) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {

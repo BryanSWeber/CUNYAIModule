@@ -862,8 +862,7 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating)) +
         (type_.armorUpgrade() == upgrade);
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType())) +
-        (type_.groundWeapon().upgradeType() == upgrade || type_.airWeapon().upgradeType() == upgrade);
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade) ;
 
     int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) || upgrade == UpgradeTypes::Protoss_Plasma_Shields); // No tests here.
 
