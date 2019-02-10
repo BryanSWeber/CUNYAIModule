@@ -45,7 +45,6 @@ using namespace std;
     Resource_Inventory CUNYAIModule::land_inventory; // resources.
     Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
     FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
-    FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::buildfap; // attempting to integrate FAP into building decisions.
     TechManager CUNYAIModule::techmanager;
     AssemblyManager CUNYAIModule::assemblymanager;
     Building_Gene CUNYAIModule::buildorder; //
@@ -248,14 +247,10 @@ void CUNYAIModule::onFrame()
     //land_inventory.drawUnreachablePatch(current_map_inventory);
     // Update FAPS with units.
     MCfap.clear();
-    buildfap.clear();
-
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
-    enemy_player_model.units_.addToBuildFAP(buildfap, false, enemy_player_model.researches_);
     enemy_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
-    friendly_player_model.units_.addToBuildFAP(buildfap, true, friendly_player_model.researches_);
     friendly_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
 
     // Let us estimate FAP values.
@@ -353,7 +348,7 @@ void CUNYAIModule::onFrame()
     land_inventory.updateMiners();
 
     techmanager.updateTech_Avail();
-    assemblymanager.updateOptimalUnit(friendly_player_model.researches_);
+    assemblymanager.updateOptimalUnit();
     assemblymanager.updatePotentialBuilders();
     larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
 

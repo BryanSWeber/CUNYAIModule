@@ -182,8 +182,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     std::multimap<int, UpgradeType> sorted_list;
 
     for (auto it : upgrade_cycle) {
-        //if(it.second >= upgrade_cycle[UpgradeTypes::None]) 
-            sorted_list.insert({ it.second, it.first }); // IT COLLIDES BECAUSE THEIR VALUES ARE IDENTICAL.
+        if(it.second >= upgrade_cycle[UpgradeTypes::None]) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {

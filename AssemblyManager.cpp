@@ -627,31 +627,31 @@ UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_type
 }
 
 //Updates the assembly cycle to consider the value of each unit.
-void AssemblyManager::updateOptimalUnit(const Research_Inventory &ri) {
+void AssemblyManager::updateOptimalUnit() {
     bool building_optimal_unit = false;
-    auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
+    //auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     UnitType build_type = UnitTypes::None;
     Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
 
+    FAP::FastAPproximation<Stored_Unit*> buildFAP_test; // attempting to integrate FAP into building decisions.
+    CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP_test, true, CUNYAIModule::friendly_player_model.researches_);
+    CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP_test, false, CUNYAIModule::enemy_player_model.researches_);
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
         //if ( CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] || potential_type.first == UnitTypes::None){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
-            buildfap_temp.clear();
-            buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
-            Stored_Unit su = Stored_Unit(potential_type.first);
-            // enemy units do not change.
-            Unit_Inventory friendly_units_under_consideration; // new every time.
-            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
-            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-            friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
-            buildfap_temp.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-            potential_type.second = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
-            buildfap_temp.clear();
-
-            if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
-            else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second) ); //moving average over 24 simulations, 1 seconds.
-        //}
-        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
+        Stored_Unit su = Stored_Unit(potential_type.first);
+        Unit_Inventory friendly_units_under_consideration; // new every time.
+        auto buildFAP_test_copy = buildFAP_test;
+        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+        friendly_units_under_consideration.addToFAPatPos(buildFAP_test_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
+        
+        buildFAP_test_copy.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+        potential_type.second = CUNYAIModule::getFAPScore(buildFAP_test_copy, true) - CUNYAIModule::getFAPScore(buildFAP_test_copy, false);
+        if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
+        else assembly_cycle_[potential_type.first] = static_cast<int>(static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second)); //moving average over 24 simulations, 1 seconds.
+    //}
+    //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
 
@@ -715,8 +715,7 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
     int another_sort_of_unit = 0;
     multimap<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        //if(it.second >= assembly_cycle_[UnitTypes::None]) 
-        sorted_list.insert({ it.second, it.first });
+        if(it.second >= assembly_cycle_[UnitTypes::None]) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
