@@ -490,7 +490,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
     if (is_building) return is_building; // combat simulations are very costly.
 
     //Let us simulate some combat.
-    is_building = AssemblyManager::buildOptimalUnit(morph_canidate, CUNYAIModule::friendly_player_model.combat_unit_cartridge_);
+    is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
 
 
     return is_building;
@@ -511,7 +511,7 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate) {
     return false;
 }
 
-//contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it.
+//contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it. Passes by copy so I can mutilate the values.
 bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
@@ -604,7 +604,7 @@ bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType,
 }
 
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
-UnitType AssemblyManager::returnOptimalUnit(map<UnitType, int> &combat_types, const Research_Inventory &ri) {
+UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory &ri) {
     int best_sim_score = assembly_cycle_[UnitTypes::None]; // Optimal unit must be better than nothing.
     UnitType build_type = UnitTypes::None;
 
@@ -627,15 +627,15 @@ UnitType AssemblyManager::returnOptimalUnit(map<UnitType, int> &combat_types, co
 }
 
 //Updates the assembly cycle to consider the value of each unit.
-void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const Research_Inventory &ri) {
+void AssemblyManager::updateOptimalUnit(const Research_Inventory &ri) {
     bool building_optimal_unit = false;
     auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     UnitType build_type = UnitTypes::None;
     Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
 
     //add friendly units under consideration to FAP in loop, resetting each time.
-    for (auto &potential_type : combat_types) {
-        if ( CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] || potential_type.first == UnitTypes::None){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
+    for (auto &potential_type : assembly_cycle_) {
+        //if ( CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] || potential_type.first == UnitTypes::None){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
             buildfap_temp.clear();
             buildfap_temp = CUNYAIModule::buildfap; // restore the buildfap temp.
             Stored_Unit su = Stored_Unit(potential_type.first);
@@ -650,7 +650,7 @@ void AssemblyManager::updateOptimalUnit(map<UnitType, int> &combat_types, const 
 
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
             else assembly_cycle_[potential_type.first] = static_cast<int>( static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second) ); //moving average over 24 simulations, 1 seconds.
-        }
+        //}
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
@@ -713,14 +713,15 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
 void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_unit = 0;
-    map<int, UnitType> sorted_list;
+    multimap<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        if(it.second > 0) sorted_list.insert({ it.second, it.first });
+        //if(it.second >= assembly_cycle_[UnitTypes::None]) 
+        sorted_list.insert({ it.second, it.first });
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UnitSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", CUNYAIModule::noRaceName(unit_idea->second.c_str()), unit_idea->first);
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_unit * 10, "%s: %d", unit_idea->second.c_str(), unit_idea->first);
             another_sort_of_unit++;
     }
 }
@@ -848,7 +849,11 @@ bool AssemblyManager::assignUnitAssembly()
 
 void AssemblyManager::clearSimulationHistory()
 {
-    assembly_cycle_ = { { UnitTypes::None, 0 } , { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } }; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    assembly_cycle_ = CUNYAIModule::friendly_player_model.combat_unit_cartridge_;
+    for (auto unit : assembly_cycle_) {
+        unit.second = 0;
+    }
+    assembly_cycle_.insert({ UnitTypes::None, 0 });
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {

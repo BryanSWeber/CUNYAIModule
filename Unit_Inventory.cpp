@@ -642,6 +642,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ = 0;
     }
 
+    modified_supply_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // Lings return 1 supply when they should only return 0.5
 
     stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
@@ -878,10 +879,10 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
     bool range_upgrade = // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::Grooved_Spines));
+        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
@@ -1099,7 +1100,7 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
         if(friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
-        else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri, upgrade));
+        else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
     }
 
     Position pos = positionBuildFap(friendly);

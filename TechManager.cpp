@@ -14,17 +14,20 @@ bool TechManager::tech_avail_ = true;
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
-    for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
+
+
+    for (auto potential_up : upgrade_cycle) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
-            auto buildfap_copy = CUNYAIModule::buildfap;
-            CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildfap_copy, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
-            buildfap_copy.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-            int score = CUNYAIModule::getFAPScore(buildfap_copy, true) - CUNYAIModule::getFAPScore(buildfap_copy, false);
-            buildfap_copy.clear();
+        //if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
+            FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
+            CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
+            CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
+            upgradeFAP.simulate(24 * 10); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
+            upgradeFAP.clear();
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
-        }
+        //}
     }
 }
 
@@ -88,11 +91,11 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
 
-    int best_sim_score = INT_MIN;
+    int best_sim_score = upgrade_cycle[UpgradeTypes::None];// Baseline, an upgrade must be BETTER than null upgrade.
     UpgradeType up_type = UpgradeTypes::None;
     std::map<UpgradeType, int> local_upgrade_cycle = upgrade_cycle;
 
-    for (auto potential_up : CUNYAIModule::friendly_player_model.upgrade_cartridge_) {
+    for (auto potential_up : local_upgrade_cycle) {
         if (!busy) {
             if ( !CUNYAIModule::checkDesirable(building, potential_up.first, true) ) {
                 local_upgrade_cycle.erase(potential_up.first);
@@ -176,19 +179,24 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
 
 void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen_y) {
     int another_sort_of_upgrade = 0;
-    map<int, UpgradeType> sorted_list;
+    std::multimap<int, UpgradeType> sorted_list;
 
     for (auto it : upgrade_cycle) {
-        if(it.second > 0) sorted_list.insert({ it.second, it.first });
+        //if(it.second >= upgrade_cycle[UpgradeTypes::None]) 
+            sorted_list.insert({ it.second, it.first }); // IT COLLIDES BECAUSE THEIR VALUES ARE IDENTICAL.
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
             Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", CUNYAIModule::noRaceName(tech_idea->second.c_str()), tech_idea->first);
+            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", tech_idea->second.c_str(), tech_idea->first);
             another_sort_of_upgrade++;
     }
 }
 
 void TechManager::clearSimulationHistory() {
-    upgrade_cycle = { { UpgradeTypes::Zerg_Carapace, 0 }, { UpgradeTypes::Zerg_Flyer_Carapace, 0 }, { UpgradeTypes::Zerg_Melee_Attacks, 0 }, { UpgradeTypes::Zerg_Missile_Attacks, 0 }, { UpgradeTypes::Zerg_Flyer_Attacks, 0 }, { UpgradeTypes::Antennae, 0 }, { UpgradeTypes::Pneumatized_Carapace, 0 }, { UpgradeTypes::Metabolic_Boost, 0 }, { UpgradeTypes::Adrenal_Glands, 0 }, { UpgradeTypes::Muscular_Augments, 0 }, { UpgradeTypes::Grooved_Spines, 0 }, { UpgradeTypes::Chitinous_Plating, 0 }, { UpgradeTypes::Anabolic_Synthesis, 0 } };
+    upgrade_cycle = CUNYAIModule::friendly_player_model.upgrade_cartridge_;
+    for (auto upgrade : upgrade_cycle) {
+        upgrade.second = 0;
+    }
+    upgrade_cycle.insert({ UpgradeTypes::None, 0 });
 }

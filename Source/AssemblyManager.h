@@ -22,8 +22,8 @@ private:
 
 public:
     static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
-    static UnitType returnOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
-    static void updateOptimalUnit(map<UnitType, int>& combat_types, const Research_Inventory & ri); // evaluates the optimal unit types from a comparison set. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
+    static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
+    static void updateOptimalUnit(const Research_Inventory & ri); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate);
     static bool buildOptimalUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.

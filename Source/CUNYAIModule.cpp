@@ -353,7 +353,7 @@ void CUNYAIModule::onFrame()
     land_inventory.updateMiners();
 
     techmanager.updateTech_Avail();
-    assemblymanager.updateOptimalUnit(friendly_player_model.combat_unit_cartridge_, friendly_player_model.researches_);
+    assemblymanager.updateOptimalUnit(friendly_player_model.researches_);
     assemblymanager.updatePotentialBuilders();
     larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
 
@@ -444,16 +444,17 @@ void CUNYAIModule::onFrame()
         //Print_Cached_Inventory(0, 50);
         assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        Print_Upgrade_Inventory(375, 80);
+        Print_Upgrade_Inventory(375, 90);
         Print_Reservations(250, 190, my_reservation);
-        if (buildorder.isEmptyBuildOrder()) {
-            techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
-            //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
-        }
-        else {
-            Print_Build_Order_Remaining(500, 170, buildorder);
-        }
+        techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        //if (buildorder.isEmptyBuildOrder()) {
+        //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        //    //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+        //    //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
+        //}
+        //else {
+        //    Print_Build_Order_Remaining(500, 170, buildorder);
+        //}
 
         Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
         Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
