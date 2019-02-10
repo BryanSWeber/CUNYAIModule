@@ -638,19 +638,19 @@ void AssemblyManager::updateOptimalUnit() {
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
-        //if ( CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] || potential_type.first == UnitTypes::None){ // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
-        Stored_Unit su = Stored_Unit(potential_type.first);
-        Unit_Inventory friendly_units_under_consideration; // new every time.
-        auto buildFAP_copy = buildFAP;
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
-        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
-        friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
-        
-        buildFAP_copy.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        potential_type.second = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
-        if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
-        else assembly_cycle_[potential_type.first] = static_cast<int>(static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second)); //moving average over 24 simulations, 1 seconds.
-    //}
+        if (CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] != 0 || potential_type.first == UnitTypes::None) { // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
+            Stored_Unit su = Stored_Unit(potential_type.first);
+            Unit_Inventory friendly_units_under_consideration; // new every time.
+            auto buildFAP_copy = buildFAP;
+            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+            friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
+
+            buildFAP_copy.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            potential_type.second = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
+            if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
+            else assembly_cycle_[potential_type.first] = static_cast<int>(static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second)); //moving average over 24 simulations, 1 seconds.
+        }
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 

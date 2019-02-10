@@ -18,7 +18,7 @@ void TechManager::updateOptimalTech() {
 
     for (auto potential_up : upgrade_cycle) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        //if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
+        if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -27,7 +27,7 @@ void TechManager::updateOptimalTech() {
             upgradeFAP.clear();
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
-        //}
+        }
     }
 }
 
