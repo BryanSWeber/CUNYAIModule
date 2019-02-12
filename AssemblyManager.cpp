@@ -605,7 +605,7 @@ bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType,
 
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
 UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory &ri) {
-    int best_sim_score = assembly_cycle_[UnitTypes::None]; // Optimal unit must be better than the others.  Using UnitTypes::None leads to intermittent freezes when the options are collectively bad.
+    int best_sim_score = INT_MIN; // Optimal unit must be better than the others.  Using UnitTypes::None leads to intermittent freezes when the options are collectively bad.
     UnitType build_type = UnitTypes::None;
 
     for (auto &potential_type : combat_types) {
@@ -660,7 +660,7 @@ void AssemblyManager::updateOptimalUnit() {
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
 UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
     bool building_optimal_unit = false;
-    int best_sim_score = assembly_cycle_[UnitTypes::None];
+    int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
     Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
