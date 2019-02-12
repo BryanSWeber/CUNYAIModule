@@ -31,10 +31,10 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateHatcheries();
 
     //Fields:
-    vector< vector<int> > pf_threat_ = { { 0 } };
-    vector< vector<int> > pf_attract_ = { { 0 } };
-    vector< vector<int> > pf_aa_ = { { 0 } };
-    vector< vector<int> > pf_explore_ = { { 0 } };
+    vector< vector<int> > pf_threat_;
+    vector< vector<int> > pf_attract_;
+    vector< vector<int> > pf_aa_;
+    vector< vector<int> > pf_explore_;
 
     //if ( smoothed_barriers_.size() == 0 ) {
 

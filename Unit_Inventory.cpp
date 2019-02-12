@@ -477,6 +477,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
  void Unit_Inventory::updateUnitInventorySummary() {
      //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+     //Set default values to 0;
+     stock_fliers_ = stock_ground_units_ = stock_both_up_and_down_ = stock_shoots_up_ = stock_shoots_down_ = stock_high_ground_ = stock_fighting_total_ = stock_ground_fodder_ = stock_air_fodder_ = stock_total_ = max_range_ = max_cooldown_ = worker_count_ = volume_ = detector_count_ = cloaker_count_ = flyer_count_ = resource_depot_count_ = future_fap_stock_ = moving_average_fap_stock_ = stock_full_health_ = is_shooting_ = is_attacking_ = is_retreating_ = 0;
 
      int fliers = 0;
      int flyer_count = 0;
@@ -867,21 +869,21 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
     int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  + upgrade == UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) + upgrade == UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) + upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) + upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) + upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) + upgrade == UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) + upgrade == UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)   + upgrade == UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  || upgrade == UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)   || upgrade == UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) + upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) + upgrade == UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) + upgrade == UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) + upgrade == UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) + upgrade == UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
@@ -1102,25 +1104,25 @@ void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_ob
             else if (!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
     }
 
-    Position pos = positionBuildFap(friendly);
-    if (friendly) {
-        fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
-        }
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
-        }
-    }
-    else {
-        fap_object.addUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 0, 0 }, ri));
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 0, 0 }, ri));
-        }
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
-        }
-    }
+    // These units are sometimes NAN.
+    //if (friendly) {
+    //    fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //}
+    //else {
+    //    fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Protoss_Nexus).convertToFAPDisabled(Position{ 0, 0 }, ri));
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Terran_Supply_Depot).convertToFAPDisabled(Position{ 0, 0 }, ri));
+    //    }
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //}
 }
 
 //This call seems very inelgant. Check if it can be made better.
