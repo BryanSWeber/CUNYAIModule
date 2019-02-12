@@ -479,19 +479,16 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
 
-    int best_sim_score = INT_MIN;
-
     if (CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk) == 0) {
         CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
         CUNYAIModule::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
-        is_building = true;
+        return true;
     }
 
-    if (is_building) return is_building; // combat simulations are very costly.
-
     //Let us simulate some combat.
-    is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
-
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved) {
+        is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
+    }
 
     return is_building;
 
@@ -827,13 +824,13 @@ bool AssemblyManager::assignUnitAssembly()
         }
     }
     for (auto d : immediate_drone_larva.unit_inventory_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
+        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved )) {
             last_frame_of_larva_morph_command = Broodwar->getFrameCount();
             return true;
         }
     }
     for (auto d : transfer_drone_larva.unit_inventory_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
+        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
             last_frame_of_larva_morph_command = Broodwar->getFrameCount();
             return true;
         }
