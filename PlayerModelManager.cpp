@@ -4,6 +4,7 @@
 #include "Source\Research_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\CobbDouglas.h"
+#include <numeric>
 
 using namespace std;
 using namespace BWAPI;
@@ -33,6 +34,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     evaluateCurrentWorth();
 
     spending_model_.estimateCD(units_.stock_fighting_total_, researches_.research_stock_, estimated_worker_stock);
+    updatePlayerAverageCD();
 };
 
 void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
@@ -197,4 +199,22 @@ void Player_Model::setLockedOpeningValues() {
     upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
     tech_cartridge_ = {  };
     
+}
+
+void Player_Model::updatePlayerAverageCD()
+{
+    army_history_.push_back(spending_model_.alpha_army);
+    econ_history_.push_back(spending_model_.alpha_econ);
+    tech_history_.push_back(spending_model_.alpha_tech);
+    average_army_ = std::accumulate(army_history_.begin(), army_history_.end(), 0.0) / army_history_.size();
+    average_econ_ = std::accumulate(econ_history_.begin(), econ_history_.end(), 0.0) / econ_history_.size();
+    average_tech_ = std::accumulate(tech_history_.begin(), tech_history_.end(), 0.0) / tech_history_.size();
+}
+
+void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)
+{
+            Broodwar->drawTextScreen(screen_x, screen_y, "CD_History:");  //
+            Broodwar->drawTextScreen(screen_x, screen_y + 10, "Army: %.2g", average_army_);
+            Broodwar->drawTextScreen(screen_x, screen_y + 20, "Econ: %.2g", average_econ_);
+            Broodwar->drawTextScreen(screen_x, screen_y + 30, "Tech: %.2g", average_tech_);
 }

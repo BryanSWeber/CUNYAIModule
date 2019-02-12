@@ -31,8 +31,7 @@ public:
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(const Player_Model &target_player);
     void evaluateWorkerCount();
-    void evaluateCurrentWorth();
-    // under development. Currently bugged but of interest.
+    void evaluateCurrentWorth(); // under development. Currently bugged but of interest.
 
     //stored to avoid extensive counting.  
     void updateUnit_Counts();
@@ -52,5 +51,15 @@ public:
     static map<UnitType, int> building_cartridge_;
     static map<UpgradeType, int> upgrade_cartridge_;
     static map<TechType, int> tech_cartridge_;
+
+// Averages for Opponent Modeling
+    void updatePlayerAverageCD();
+    vector<double> tech_history_;
+    vector<double> econ_history_;
+    vector<double> army_history_;
+    double average_army_;
+    double average_econ_;
+    double average_tech_;
+    void Print_Average_CD(const int &screen_x, const int &screen_y);
 };
 

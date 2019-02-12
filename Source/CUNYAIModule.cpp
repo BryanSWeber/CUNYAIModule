@@ -441,7 +441,8 @@ void CUNYAIModule::onFrame()
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 90);
         Print_Reservations(250, 190, my_reservation);
-        techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        enemy_player_model.Print_Average_CD(500, 170);
+        //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //if (buildorder.isEmptyBuildOrder()) {
         //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //    //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
