@@ -18,16 +18,16 @@ void TechManager::updateOptimalTech() {
 
     for (auto potential_up : upgrade_cycle) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true)) || potential_up.first == UpgradeTypes::None){  
+        //if (potential_up.first == UpgradeTypes::None || (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true))){
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
-            upgradeFAP.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            upgradeFAP.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
             else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
-        }
+        //}
     }
 }
 
@@ -45,7 +45,7 @@ void TechManager::updateTech_Avail() {
 
     updateOptimalTech();
 
-    int best_sim_score = upgrade_cycle[UpgradeTypes::None];// Baseline, an upgrade must be BETTER than null upgrade.
+    int best_sim_score = upgrade_cycle[UpgradeTypes::None];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices.
     UpgradeType up_type = UpgradeTypes::None;
 
     for (auto &potential_up : upgrade_cycle) {
@@ -91,12 +91,12 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
 
-    int best_sim_score = upgrade_cycle[UpgradeTypes::None];// Baseline, an upgrade must be BETTER than null upgrade.
+    int best_sim_score = 0;// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
     UpgradeType up_type = UpgradeTypes::None;
     std::map<UpgradeType, int> local_upgrade_cycle = upgrade_cycle;
 
     for (auto potential_up : local_upgrade_cycle) {
-        if (!busy) {
+        if (!busy && potential_up.first) {
             if ( !CUNYAIModule::checkDesirable(building, potential_up.first, true) ) {
                 local_upgrade_cycle.erase(potential_up.first);
             }
@@ -182,7 +182,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     std::multimap<int, UpgradeType> sorted_list;
 
     for (auto it : upgrade_cycle) {
-        if(it.second > upgrade_cycle[UpgradeTypes::None]) sorted_list.insert({ it.second, it.first });
+        sorted_list.insert({ it.second, it.first });
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
@@ -197,5 +197,5 @@ void TechManager::clearSimulationHistory() {
     for (auto upgrade : upgrade_cycle) {
         upgrade.second = 0;
     }
-    upgrade_cycle.insert({ UpgradeTypes::None, 0 });
+    upgrade_cycle[UpgradeTypes::None] = 0;
 }

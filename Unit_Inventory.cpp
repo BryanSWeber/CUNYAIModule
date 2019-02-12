@@ -864,24 +864,24 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
 
     int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade) ;
 
-    int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) || upgrade == UpgradeTypes::Protoss_Plasma_Shields); // No tests here.
+    int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  || upgrade == UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)    || upgrade == UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  + upgrade == UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) + upgrade == UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) + upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) + upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) + upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) + upgrade == UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) + upgrade == UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)   + upgrade == UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) + upgrade == UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) + upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) + upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) + upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) + upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
@@ -1098,16 +1098,13 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
 void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
-        if(friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
-        else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
+            if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
+            else if (!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
     }
 
     Position pos = positionBuildFap(friendly);
     if (friendly) {
         fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
-        }
         for (auto i = 0; i <= 5; i++) {
             fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
         }

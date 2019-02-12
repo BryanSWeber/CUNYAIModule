@@ -30,6 +30,12 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateMin_Possessed( ri );
     updateHatcheries();
 
+    //Fields:
+    vector< vector<int> > pf_threat_ = { { 0 } };
+    vector< vector<int> > pf_attract_ = { { 0 } };
+    vector< vector<int> > pf_aa_ = { { 0 } };
+    vector< vector<int> > pf_explore_ = { { 0 } };
+
     //if ( smoothed_barriers_.size() == 0 ) {
 
     //    updateSmoothPos();
@@ -1573,16 +1579,22 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 
 
 vector< vector<int> > Map_Inventory::createEmptyField() {
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+    int tile_map_x = 1;
+    int tile_map_y = 1; //tile positions are 32x32, walkable checks 8x8 minitiles.
 
+    if (Broodwar->mapHeight()) {
+        tile_map_x = Broodwar->mapWidth();
+        tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+    }
     // first, define matrixes to recieve the enemy locations for every tile.
     vector< vector<int> > potential_field_;
+    vector<int> temp;
+
+    for (int y = 0; y < tile_map_y; ++y) {
+        temp.push_back(0);
+    }
+
     for (int x = 0; x < tile_map_x; ++x) { // Careful with map dimensions here. The matrix will record the outer dimensions as 0, while the tilepositions of 1 
-        vector<int> temp;
-        for (int y = 0; y < tile_map_y; ++y) {
-            temp.push_back(0);
-        }
         potential_field_.push_back(temp);
     }
 
@@ -1660,7 +1672,7 @@ void Map_Inventory::createThreatField(Player_Model &enemy_player) {
     completeField(pf_threat_, 10);
 }
 
-// IN PROGRESS  These don't overwrite each other enough. They may need to be overwritten 2/3 times from multiple directions.
+// IN PROGRESS  
 void Map_Inventory::createAAField(Player_Model &enemy_player) {
     
     pf_aa_ = createEmptyField();

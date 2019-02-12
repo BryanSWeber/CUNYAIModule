@@ -605,7 +605,7 @@ bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType,
 
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
 UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory &ri) {
-    int best_sim_score = assembly_cycle_[UnitTypes::None]; // Optimal unit must be better than nothing.
+    int best_sim_score = assembly_cycle_[UnitTypes::None]; // Optimal unit must be better than the others.  Using UnitTypes::None leads to intermittent freezes when the options are collectively bad.
     UnitType build_type = UnitTypes::None;
 
     for (auto &potential_type : combat_types) {
@@ -630,7 +630,6 @@ UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_type
 void AssemblyManager::updateOptimalUnit() {
     bool building_optimal_unit = false;
     //auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
-    UnitType build_type = UnitTypes::None;
     Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
 
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
@@ -638,7 +637,7 @@ void AssemblyManager::updateOptimalUnit() {
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
-        if (CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] != 0 || potential_type.first == UnitTypes::None) { // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
+        //if (CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] != 0 || potential_type.first == UnitTypes::None) { // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
             Stored_Unit su = Stored_Unit(potential_type.first);
             Unit_Inventory friendly_units_under_consideration; // new every time.
             auto buildFAP_copy = buildFAP;
@@ -646,11 +645,11 @@ void AssemblyManager::updateOptimalUnit() {
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
 
-            buildFAP_copy.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            buildFAP_copy.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             potential_type.second = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = potential_type.second;
             else assembly_cycle_[potential_type.first] = static_cast<int>(static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * potential_type.second)); //moving average over 24 simulations, 1 seconds.
-        }
+        //}
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
@@ -719,7 +718,7 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
     int another_sort_of_unit = 0;
     multimap<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        if(it.second > assembly_cycle_[UnitTypes::None]) sorted_list.insert({ it.second, it.first });
+        if(it.second > 0) sorted_list.insert({ it.second, it.first });
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
@@ -880,7 +879,8 @@ bool CUNYAIModule::checkDesirable(const UpgradeType &ut, const bool &extra_crite
 }
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
-    return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgrade_Desired(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgrade_Desired(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return false;
 }
 
 // checks if player wants the unit, in general.

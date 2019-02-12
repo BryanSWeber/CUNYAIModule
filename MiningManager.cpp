@@ -164,7 +164,18 @@ bool CUNYAIModule::Gas_Outlet() {
         outlet_avail = true;
     } // turns off gas interest when larve are 0.
 
-    if (!buildorder.building_gene_.empty() && (buildorder.building_gene_.front().getResearch().gasPrice() > 0 || buildorder.building_gene_.front().getUnit().gasPrice() > 0 || buildorder.building_gene_.front().getUpgrade().gasPrice() > 0)) outlet_avail = true;
+    if (!buildorder.building_gene_.empty()) {
+        UnitType unit = buildorder.building_gene_.front().getUnit();
+        TechType tech = buildorder.building_gene_.front().getResearch();
+        UpgradeType up = buildorder.building_gene_.front().getUpgrade();
+
+        // Don't write this way:
+        if (unit != UnitTypes::None) if (unit.gasPrice() > 0) outlet_avail = true;
+        if (tech != TechTypes::None) if (tech.gasPrice() > 0) outlet_avail = true;
+        if (up != UpgradeTypes::None) if (up.gasPrice() > 0) outlet_avail = true;
+
+    }
+
 
     return outlet_avail;
 }
