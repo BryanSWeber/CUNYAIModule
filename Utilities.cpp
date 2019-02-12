@@ -2157,7 +2157,7 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 
 //Some safety checks if it can't find FAP objects, say at game start.
 int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
-    if (friendly_player && fap.getState().first) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    if (friendly_player && fap.getState().first)                       return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
     else if(!friendly_player && fap.getState().second)                 return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
     else return 0;
 }
@@ -2171,7 +2171,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
 bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory &ui, const Unit_Inventory &ei) {
     bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
-    return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_) && unit_suiciding) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
+    return  ( ( (ui.stock_total_ - ui.moving_average_fap_stock_) * ei.stock_total_ <= (ei.stock_total_ - ei.moving_average_fap_stock_) * ui.stock_total_) && unit_suiciding) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
              ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }

@@ -691,8 +691,9 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
         buildfap_temp.clear();
         buildfap_temp = buildFAP; // restore the buildfap temp.
         // enemy units do not change.
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
-        friendly_units_under_consideration.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+        Unit_Inventory friendly_units_under_consideration2; // new every time.
+        friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+        friendly_units_under_consideration2.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         air_test_1.at(UnitTypes::Zerg_Spore_Colony) = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
         buildfap_temp.clear();
