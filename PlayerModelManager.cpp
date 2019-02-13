@@ -203,12 +203,12 @@ void Player_Model::setLockedOpeningValues() {
 
 void Player_Model::updatePlayerAverageCD()
 {
-    army_history_.push_back(spending_model_.alpha_army);
-    econ_history_.push_back(spending_model_.alpha_econ);
-    tech_history_.push_back(spending_model_.alpha_tech);
-    average_army_ = std::accumulate(army_history_.begin(), army_history_.end(), 0.0) / army_history_.size();
-    average_econ_ = std::accumulate(econ_history_.begin(), econ_history_.end(), 0.0) / econ_history_.size();
-    average_tech_ = std::accumulate(tech_history_.begin(), tech_history_.end(), 0.0) / tech_history_.size();
+    int time = Broodwar->getFrameCount();
+    if (time > 0) {
+        average_army_ = static_cast<double>(average_army_ * (time - 1) + spending_model_.alpha_army) / static_cast<double>(time);
+        average_econ_ = static_cast<double>(average_econ_ * (time - 1) + spending_model_.alpha_econ) / static_cast<double>(time);
+        average_tech_ = static_cast<double>(average_tech_ * (time - 1) + spending_model_.alpha_tech) / static_cast<double>(time);
+    }
 }
 
 void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)

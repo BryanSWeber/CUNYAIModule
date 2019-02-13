@@ -54,9 +54,6 @@ public:
 
 // Averages for Opponent Modeling
     void updatePlayerAverageCD();
-    vector<double> tech_history_;
-    vector<double> econ_history_;
-    vector<double> army_history_;
     double average_army_;
     double average_econ_;
     double average_tech_;

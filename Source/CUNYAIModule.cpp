@@ -395,8 +395,8 @@ void CUNYAIModule::onFrame()
 
     //current_map_inventory.createThreatField(enemy_player_model);
     //current_map_inventory.createAttractField(enemy_player_model);
-    current_map_inventory.createAAField(enemy_player_model);
     current_map_inventory.createExploreField();
+    current_map_inventory.createAAField(enemy_player_model);
 
     //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
     //current_map_inventory.DiagnosticTile();
@@ -712,7 +712,8 @@ void CUNYAIModule::onFrame()
         {
             Mobility mobility;
 
-            Stored_Unit* e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 1200);
+            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 1200);
+            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 1200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
