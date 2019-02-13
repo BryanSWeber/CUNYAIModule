@@ -1577,31 +1577,7 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
     return return_vector = { 0 };
 }
 
-
-vector< vector<int> > Map_Inventory::createEmptyField() {
-    int tile_map_x = 1;
-    int tile_map_y = 1; //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    if (Broodwar->mapHeight()) {
-        tile_map_x = Broodwar->mapWidth();
-        tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-    }
-    // first, define matrixes to recieve the enemy locations for every tile.
-    vector< vector<int> > potential_field_;
-    vector<int> temp;
-
-    for (int y = 0; y < tile_map_y; ++y) {
-        temp.push_back(0);
-    }
-
-    for (int x = 0; x < tile_map_x; ++x) { // Careful with map dimensions here. The matrix will record the outer dimensions as 0, while the tilepositions of 1 
-        potential_field_.push_back(temp);
-    }
-
-    return potential_field_;
-}
-
-void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reduction) {
+vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, const int &reduction) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1623,7 +1599,7 @@ void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reductio
     for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
         changed_a_value_last_cycle = false;
         for (auto position_to_investigate : needs_filling) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value/2. Then, mark all minitiles touching those points as n+1.
+                                                                                                                                              // Psudocode: Mark every point touching value as value-reduction. Then, mark all minitiles touching those points as n+1.
                                                                                                                                               // Repeat untill finished.
             int local_grid = 0; // further faster since I no longer care about actually generating the veins.
             int tile_x = position_to_investigate.x;
@@ -1657,60 +1633,68 @@ void Map_Inventory::completeField(vector< vector<int> > &pf, const int &reductio
         }
     }
 
-    //return pf;
+    return pf;
 }
 
 // IN PROGRESS
 void Map_Inventory::createThreatField(Player_Model &enemy_player) {
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
-    pf_threat_ = createEmptyField();
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
     }
 
-    completeField(pf_threat_, 10);
+    pf_threat_ = completeField(pf_clear, 10);
 }
 
 // IN PROGRESS  
 void Map_Inventory::createAAField(Player_Model &enemy_player) {
-    
-    pf_aa_ = createEmptyField();
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf_aa_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
     }
 
-    completeField(pf_aa_, 5);
+    pf_aa_ = completeField(pf_clear, 5);
 
 }
 
 void Map_Inventory::createExploreField() {
 
-    pf_explore_ = createEmptyField();
-
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
         for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            pf_explore_[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
+            pf_clear[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
         }
     }
 
-    completeField(pf_explore_, 1);
+    pf_explore_ = completeField(pf_clear, 1);
 
 }
 
 void Map_Inventory::createAttractField(Player_Model &enemy_player) {
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
-    pf_attract_ = createEmptyField();
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
 
     for (auto unit : enemy_player.units_.unit_inventory_) {
-        pf_attract_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
     }
 
-     completeField(pf_attract_, 10);
+     pf_attract_ = completeField(pf_clear, 10);
 
 }
 

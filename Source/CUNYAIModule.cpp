@@ -392,11 +392,12 @@ void CUNYAIModule::onFrame()
     int map_y = Broodwar->mapHeight();
     int map_area = map_x * map_y; // map area in tiles.
 
-
+    if (Broodwar->mapWidth() && Broodwar->mapHeight()) {
     //current_map_inventory.createThreatField(enemy_player_model);
     //current_map_inventory.createAttractField(enemy_player_model);
-    current_map_inventory.createExploreField();
-    current_map_inventory.createAAField(enemy_player_model);
+        current_map_inventory.createExploreField();
+        current_map_inventory.createAAField(enemy_player_model);
+    }
 
     //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
     //current_map_inventory.DiagnosticTile();

@@ -845,14 +845,14 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv )
 
 int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
-    int targetable_e;
+    int targetable_e = 0;
     targetable_e = (u->getType().airWeapon() != WeaponTypes::None) * (enemy_loc.stock_fliers_ + enemy_loc.stock_air_fodder_ ) + (u->getType().groundWeapon() != WeaponTypes::None) * (enemy_loc.stock_ground_units_ + enemy_loc.stock_ground_fodder_);
     return targetable_e;
 }
 
 int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
-    int threatening_e;
+    int threatening_e = 0;
     threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
     return threatening_e;
 }
