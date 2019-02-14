@@ -244,7 +244,10 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
             if (!adjust_lurker_burrow(unit, ui, ei, target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
                 unit->attack(target->bwapi_unit_);
-                if (melee) target->circumference_remaining_ -= widest_dim;
+                if (melee) { 
+                    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target->bwapi_unit_);
+                    permenent_target.circumference_remaining_ -= widest_dim;
+                }
                 CUNYAIModule::Diagnostic_Line(unit->getPosition(), target->pos_, inv.screen_position_, color);
             }
             attack_order_issued = true;
