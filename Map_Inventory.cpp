@@ -1585,7 +1585,7 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, con
     vector<TilePosition> needs_filling;
     vector<int> flattened_potential_fields;
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             flattened_potential_fields.push_back(pf[tile_x][tile_y]);
             needs_filling.push_back(TilePosition({ tile_x, tile_y }));// if it is walkable, consider it a canidate for a choke.
             max_value = max(pf[tile_x][tile_y], max_value);
@@ -1628,7 +1628,7 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, con
 
     //Unflatten
     for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_x; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
             pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y];
         }
     }
