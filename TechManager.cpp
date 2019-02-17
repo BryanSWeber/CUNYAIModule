@@ -93,17 +93,17 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     int best_sim_score = INT_MIN;// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
     UpgradeType up_type = UpgradeTypes::None;
-    std::map<UpgradeType, int> local_upgrade_cycle = upgrade_cycle;
+    std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle);
 
-    for (auto potential_up : local_upgrade_cycle) {
-        if (!busy && potential_up.first) {
-            if ( !CUNYAIModule::checkDesirable(building, potential_up.first, true) ) {
-                local_upgrade_cycle.erase(potential_up.first);
+    for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
+        if (!busy && potential_up->first) {
+            if ( !CUNYAIModule::checkDesirable(building, potential_up->first, true) ) {
+                local_upgrade_cycle.erase(potential_up++);
             }
         }
     }
 
-    for (auto &potential_up : local_upgrade_cycle) {
+    for (auto potential_up : local_upgrade_cycle) {
         if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             best_sim_score = potential_up.second;
             up_type = potential_up.first;
