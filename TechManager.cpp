@@ -122,19 +122,19 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     //should auto upgrade if there is a build order requirement for any of these three types.
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
-        CUNYAIModule::current_map_inventory.hatches_ > 1 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 1 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
         building->getType() == UnitTypes::Zerg_Hatchery);
 
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Hive, building, upgrade_bool &&
-        CUNYAIModule::current_map_inventory.hatches_ > 2 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 2 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Queens_Nest) > 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
 
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, upgrade_bool &&
-        CUNYAIModule::current_map_inventory.hatches_ > 3 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hive) > 0 &&
         building->getType() == UnitTypes::Zerg_Spire &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
