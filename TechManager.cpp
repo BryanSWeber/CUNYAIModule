@@ -45,8 +45,8 @@ void TechManager::updateTech_Avail() {
 
     updateOptimalTech();
 
-    int best_sim_score = INT_MIN;// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
     UpgradeType up_type = UpgradeTypes::None;
+    int best_sim_score = upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
 
     for (auto &potential_up : upgrade_cycle) {
         if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) - CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
@@ -91,9 +91,9 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
 
-    int best_sim_score = INT_MIN;// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
     UpgradeType up_type = UpgradeTypes::None;
     std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle);
+    int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
 
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
         if (!busy && potential_up->first) {
