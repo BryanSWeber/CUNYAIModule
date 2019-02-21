@@ -442,8 +442,8 @@ void CUNYAIModule::onFrame()
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 90);
         Print_Reservations(250, 190, my_reservation);
-        enemy_player_model.Print_Average_CD(500, 170);
-        //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        //enemy_player_model.Print_Average_CD(500, 170);
+        techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //if (buildorder.isEmptyBuildOrder()) {
         //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //    //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
@@ -772,7 +772,7 @@ void CUNYAIModule::onFrame()
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
                     bool grim_trigger_to_go_in = threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking");
                     bool neccessary_attack =
-                        (targetable_stocks > 0 || grim_trigger_to_go_in) && (
+                        (targetable_stocks > 0 /*|| grim_trigger_to_go_in*/) && (
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
