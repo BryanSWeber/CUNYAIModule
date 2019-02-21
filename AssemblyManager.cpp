@@ -635,7 +635,7 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
     int postion_in_line = 0;
     multimap<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        if (it.second > 0) sorted_list.insert({ it.second, it.first });
+        sorted_list.insert({ it.second, it.first }); 
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
