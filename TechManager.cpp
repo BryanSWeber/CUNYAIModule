@@ -128,7 +128,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         building->getType() == UnitTypes::Zerg_Hatchery);
 
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Hive, building, upgrade_bool &&
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 2 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Queens_Nest) > 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
@@ -198,4 +198,21 @@ void TechManager::clearSimulationHistory() {
         upgrade.second = 0;
     }
     upgrade_cycle[UpgradeTypes::None] = 0;
+}
+
+//Simply returns the techtype that is the "best" of a BuildFAP sim.
+int TechManager::returnTechRank(const UpgradeType &ut) {
+    int postion_in_line = 0;
+    multimap<int, UpgradeType> sorted_list;
+    for (auto it : upgrade_cycle) {
+        sorted_list.insert({ it.second, it.first });
+    }
+
+    for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
+        if (unit_idea->second == ut) {
+            return postion_in_line;
+        }
+        else postion_in_line++;
+    }
+    return postion_in_line;
 }
