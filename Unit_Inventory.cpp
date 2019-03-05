@@ -67,7 +67,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
             }
         }
 
-        e.second.circumference_remaining_ = e.second.circumference_; //if we update the unit, give it back its circumfrance. This may lead to every frame the unit being considered unsurrounded.  Tracking every single target and updating is not yet implemented but could be eventually.
+        if(Broodwar->elapsedTime() % 2 == 0) e.second.circumference_remaining_ = e.second.circumference_; //Every 4 seconds, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
 
         if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
@@ -285,15 +285,15 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
         bool retreating_undetected= unit->canAttack() && ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
         double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); 
-        
+        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
+
         if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_);
         else ma_future_fap_value_ = future_fap_value_; // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
     }
@@ -477,8 +477,11 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
  void Unit_Inventory::updateUnitInventorySummary() {
      //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+     //Set default values to 0;
+     stock_fliers_ = stock_ground_units_ = stock_both_up_and_down_ = stock_shoots_up_ = stock_shoots_down_ = stock_high_ground_ = stock_fighting_total_ = stock_ground_fodder_ = stock_air_fodder_ = stock_total_ = max_range_ = max_cooldown_ = worker_count_ = volume_ = detector_count_ = cloaker_count_ = flyer_count_ = resource_depot_count_ = future_fap_stock_ = moving_average_fap_stock_ = stock_full_health_ = is_shooting_ = is_attacking_ = is_retreating_ = 0;
 
      int fliers = 0;
+     int flyer_count = 0;
      int ground_unit = 0;
      int shoots_up = 0;
      int shoots_down = 0;
@@ -524,6 +527,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
                  int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
 
                  fliers += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                 flyer_count = flying_unit * count_of_unit_type;
                  ground_unit += !flying_unit * unit_value_for_all_of_type;
                  shoots_up += up_gun * unit_value_for_all_of_type;
                  shoots_down += down_gun * unit_value_for_all_of_type;
@@ -577,6 +581,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     volume_ = volume;
     detector_count_ = detector_count;
     cloaker_count_ = cloaker_count;
+    flyer_count_ = flyer_count;
     resource_depot_count_ = resource_depots;
     future_fap_stock_ = future_fap_stock;
     moving_average_fap_stock_ = moving_average_fap_stock;
@@ -612,9 +617,12 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     cd_remaining_ = 0;
     stimmed_ = false;
 
+    shoots_down_ = unittype.groundWeapon() != WeaponTypes::None;
+    shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
+
     //Get unit's status. Precalculated, precached.
     modified_supply_ = unittype.supplyRequired();
-    modified_min_cost_ = unittype.mineralPrice(); 
+    modified_min_cost_ = unittype.mineralPrice();
     modified_gas_cost_ = unittype.gasPrice();
 
     if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
@@ -624,7 +632,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 
     if (unittype.isSuccessorOf(UnitTypes::Zerg_Creep_Colony) ) {
         modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
-    } 
+    }
 
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
         modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
@@ -636,6 +644,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ = 0;
     }
 
+    modified_supply_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // Lings return 1 supply when they should only return 0.5
 
     stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
@@ -665,6 +674,9 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
     circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
+
+    shoots_down_ = type_.groundWeapon() != WeaponTypes::None;
+    shoots_up_ = type_.airWeapon() != WeaponTypes::None;
 
     //Needed for FAP.
         is_flying_ = unit->isFlying();
@@ -837,44 +849,46 @@ auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {
         .setAttackerCount(units_inside_object)
         .setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
-        .setShieldUpgrades(shield_upgrades) 
-        .setSpeedUpgrade(speed_tech) 
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
         .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
-        .setRangeUpgrade(range_upgrade) 
+        .setRangeUpgrade(range_upgrade)
         ;
 }
 
-auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri) {
+auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade, const TechType &tech) {
 
     int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
-        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating)) +
+        (type_.armorUpgrade() == upgrade);
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade) ;
+
+    int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  || upgrade == UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)   || upgrade == UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present. // Needs to extend for every race. Needs to include an indicator for self.
 
     return FAP::makeUnit<Stored_Unit*>()
         .setData(this)
@@ -887,16 +901,16 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         .setAttackerCount(units_inside_object)
         .setArmorUpgrades(armor_upgrades)
         .setAttackUpgrades(gun_upgrades)
-        .setShieldUpgrades(shield_upgrades) 
-        .setSpeedUpgrade(speed_tech) 
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
         .setAttackSpeedUpgrade(attack_speed_upgrade)
         .setAttackCooldownRemaining(cd_remaining_)
         .setStimmed(stimmed_)
-        .setRangeUpgrade(range_upgrade) 
+        .setRangeUpgrade(range_upgrade)
         ;
 }
 
-auto Stored_Unit::convertToFAPVegtable(const Position &chosen_pos, const Research_Inventory &ri) {
+auto Stored_Unit::convertToFAPDisabled(const Position &chosen_pos, const Research_Inventory &ri) {
 
     int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
@@ -941,7 +955,76 @@ auto Stored_Unit::convertToFAPVegtable(const Position &chosen_pos, const Researc
         .setAirMinRange(0)
         .setGroundDamageType(0)
         .setAirDamageType(0)
-        .setArmor(1)
+        .setArmor(type_.armor())
+        .setMaxHealth(type_.maxHitPoints())
+        .setMaxShields(type_.maxShields())
+        .setOrganic(type_.isOrganic())
+        .setUnitSize(type_.size())
+        //normal characteristics below..
+        .setPosition(chosen_pos)
+        .setHealth(health_)
+        .setShields(shields_)
+        .setFlying(is_flying_)
+        .setElevation(elevation_)
+        .setAttackerCount(units_inside_object)
+        .setArmorUpgrades(armor_upgrades)
+        .setAttackUpgrades(gun_upgrades)
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
+        .setAttackSpeedUpgrade(attack_speed_upgrade)
+        .setAttackCooldownRemaining(cd_remaining_)
+        .setStimmed(stimmed_)
+        .setRangeUpgrade(range_upgrade)
+        ;
+}
+
+// Unit now can attack up and only attacks up. For the anti-air anti-ground test to have absolute equality.
+auto Stored_Unit::convertToFAPAnitAir(const Position &chosen_pos, const Research_Inventory &ri) {
+
+    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+
+    bool speed_tech = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+
+    bool range_upgrade = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+
+    bool attack_speed_upgrade =  // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+
+    return FAP::makeUnit<Stored_Unit*>()
+        .setData(this)
+        .setOnlyUnitType(type_)
+        //Vegetable characteristics below...
+        .setSpeed(static_cast<float>(type_.topSpeed()))
+        .setAirCooldown(type_.groundWeapon().damageCooldown())
+        .setGroundCooldown(99999)
+        .setAirDamage(type_.groundWeapon().damageAmount())
+        .setGroundDamage(0)
+        .setGroundMaxRange(0)
+        .setAirMaxRange(type_.groundWeapon().maxRange())
+        .setGroundMinRange(0)
+        .setAirMinRange(type_.groundWeapon().minRange())
+        .setGroundDamageType(0)
+        .setAirDamageType(type_.groundWeapon().damageType())
+        .setArmor(type_.armor())
         .setMaxHealth(type_.maxHitPoints())
         .setMaxShields(type_.maxShields())
         .setOrganic(type_.isOrganic())
@@ -968,7 +1051,7 @@ void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
 
     double proportion_health = (fap_unit.health + fap_unit.shields) / static_cast<double>(fap_unit.maxHealth + fap_unit.maxShields);
-    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health); 
+    fap_unit.data->future_fap_value_ = static_cast<int>(fap_unit.data->stock_value_ * proportion_health);
 
     fap_unit.data->updated_fap_this_frame_ = true;
 }
@@ -980,11 +1063,7 @@ void Stored_Unit::updateFAPvalueDead()
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.ma_future_fap_value_ >= unit.stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
-}
-
-bool Unit_Inventory::squadAliveinFuture( const int &number_of_frames_in_future) const{
-    return this->moving_average_fap_stock_ <= this->stock_total_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
+    return unit.ma_future_fap_value_ >= unit.current_stock_value_ * (_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
 }
 
 
@@ -995,10 +1074,17 @@ void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_obj
     }
 }
 
-void Unit_Inventory::addVegtableToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void Unit_Inventory::addDisabledToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_inventory_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+    }
+}
+
+void Unit_Inventory::addAntiAirToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+    for (auto &u : unit_inventory_) {
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPAnitAir(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPAnitAir(pos, ri));
     }
 }
 
@@ -1010,37 +1096,33 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
     }
 }
 
-
 // we no longer build sim against their buildings.
-void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
+void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
     for (auto &u : unit_inventory_) {
         Position pos = positionBuildFap(friendly);
-        if(friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        else if(!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+            if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
+            else if (!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
     }
 
-    Position pos = positionBuildFap(friendly);
-    if (friendly) {
-        fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPVegtable(Position{ 240,240 }, ri));
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 240,240 }, ri));
-        }
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 240,240 }, ri));
-        }
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPVegtable(Position{ 240,240 }, ri));
-        }
-    }
-    else {
-        fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getResourceDepot()).convertToFAPVegtable(Position{ 0, 0 }, ri));
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer2(Stored_Unit(Broodwar->enemy()->getRace().getSupplyProvider()).convertToFAPVegtable(Position{ 0, 0 }, ri));
-        }
-        for (auto i = 0; i <= 5; i++) {
-            fap_object.addIfCombatUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPVegtable(Position{ 240,240 }, ri));
-        }
-    }
+    // These units are sometimes NAN.
+    //if (friendly) {
+    //    fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getResourceDepot()).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer1(Stored_Unit(Broodwar->self()->getRace().getSupplyProvider()).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer1(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //}
+    //else {
+    //    fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Protoss_Nexus).convertToFAPDisabled(Position{ 0, 0 }, ri));
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Terran_Supply_Depot).convertToFAPDisabled(Position{ 0, 0 }, ri));
+    //    }
+    //    for (auto i = 0; i <= 5; i++) {
+    //        fap_object.addUnitPlayer2(Stored_Unit(UnitTypes::Zerg_Overlord).convertToFAPDisabled(Position{ 240,240 }, ri));
+    //    }
+    //}
 }
 
 //This call seems very inelgant. Check if it can be made better.

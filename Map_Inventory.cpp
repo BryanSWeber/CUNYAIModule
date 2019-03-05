@@ -30,6 +30,12 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateMin_Possessed( ri );
     updateHatcheries();
 
+    //Fields:
+    vector< vector<int> > pf_threat_;
+    vector< vector<int> > pf_attract_;
+    vector< vector<int> > pf_aa_;
+    vector< vector<int> > pf_explore_;
+
     //if ( smoothed_barriers_.size() == 0 ) {
 
     //    updateSmoothPos();
@@ -81,14 +87,7 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
 // Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
 void Map_Inventory::updateLn_Supply_Remain() {
 
-    double total = 0;
-    for ( int i = 37; i != 48; i++ )
-    { // iterating through all units.  (including buildings).
-        UnitType u_current = (UnitType)i;
-        total += CUNYAIModule::Stock_Supply( u_current, *this );
-    }
-
-    total = total - Broodwar->self()->supplyUsed();
+    int total = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
 
     if ( total <= 0 ) {
         total = 1;
@@ -422,6 +421,11 @@ int Map_Inventory::getMapValue(const Position & pos, const vector<vector<int>>& 
     return map[startloc.x][startloc.y];
 }
 
+int Map_Inventory::getFieldValue(const Position & pos, const vector<vector<int>>& field)
+{
+    TilePosition startloc = TilePosition(pos);
+    return field[startloc.x][startloc.y];
+}
 
 void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
 
@@ -1370,16 +1374,19 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
     }
 
     if (frames_since_enemy_base_ground_ > 24 * 10) {
-        checked_all_expo_positions_ = false;
 
-        Stored_Unit* center_building = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_army = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if no combat forces!
+        Stored_Unit* center_base = CUNYAIModule::getClosestStoredBuilding(ei, ui.getMeanLocation(),999999); // 
 
-        if (ei.getMeanBuildingLocation() != Positions::Origin && center_building && center_building->pos_ && center_building->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
-            updateMapVeinsOut( center_building->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
+        if (ei.getMeanBuildingLocation() != Positions::Origin && center_army && center_army->pos_ && center_army->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+            updateMapVeinsOut( center_army->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
+        }
+        else if (ei.getMeanBuildingLocation() != Positions::Origin && center_base && center_base->pos_ && center_base->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+            updateMapVeinsOut(center_base->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(start_positions_.size()) ) {
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(start_positions_.size()) && Broodwar->isVisible(TilePosition(start_positions_[0]))) {
                 std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
                 attempts++;
             }
@@ -1387,18 +1394,19 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         }
         else if (!expo_positions_complete_.empty()) { // maybe it's a expansion we havent' seen yet?
             expo_positions_ = expo_positions_complete_;
-            int random_index = rand() % expo_positions_.size(); // random enough for our purposes.
-            checked_all_expo_positions_ = true;
-            expo_positions_ = expo_positions_complete_;
-            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && !expo_positions_.empty() && Broodwar->isVisible(expo_positions_[random_index])) { // Check any expo we're not looking at.
-                random_index = rand() % expo_positions_.size();
-                if (Broodwar->isVisible(expo_positions_[random_index])) {
-                    expo_positions_.erase(expo_positions_.begin() + random_index);
-                }
+
+            int attempts = 0;
+            while (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && attempts < static_cast<int>(expo_positions_.size()) && (start_positions_.empty() || Broodwar->isVisible(TilePosition(start_positions_[0])))) {
+                std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
+                attempts++;
             }
 
-            if (!expo_positions_.empty()) {
+            if (attempts >= static_cast<int>(expo_positions_.size())) {
+                int random_index = rand() % static_cast<int>(expo_positions_.size() - 1); // random enough for our purposes.
                 updateMapVeinsOut(Position(expo_positions_[random_index]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()) , enemy_base_ground_, map_out_from_enemy_ground_);
+            }
+            else { // you can see everything but they have no enemy forces, then let's go smash randomly.
+                updateMapVeinsOut(Position(expo_positions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), enemy_base_ground_, map_out_from_enemy_ground_);
             }
         }
         frames_since_enemy_base_ground_ = 0;
@@ -1567,4 +1575,155 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
     }
 
     return return_vector = { 0 };
+}
+
+vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, const int &reduction) {
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+    int max_value = 0;
+    vector<TilePosition> needs_filling;
+    vector<int> flattened_potential_fields;
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
+            needs_filling.push_back(TilePosition({ tile_x, tile_y }));// if it is walkable, consider it a canidate for a choke.
+            max_value = max(pf[tile_x][tile_y], max_value);
+        }
+    }
+
+    
+
+    bool changed_a_value_last_cycle = true;
+
+    for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
+        changed_a_value_last_cycle = false;
+        for (auto position_to_investigate : needs_filling) { // not last element !
+                                                                                                                                              // Psudocode: Mark every point touching value as value-reduction. Then, mark all minitiles touching those points as n+1.
+                                                                                                                                              // Repeat untill finished.
+            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
+            int tile_x = position_to_investigate.x;
+            int tile_y = position_to_investigate.y;
+            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
+            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
+
+            if (safety_check) local_grid = std::max({
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
+                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
+                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
+                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
+                }) - reduction;
+
+            changed_a_value_last_cycle = local_grid > home_value || changed_a_value_last_cycle;
+            flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
+
+        }
+
+        if (changed_a_value_last_cycle == false) break; // if we did nothing last cycle, we don't need to punish ourselves.
+    }
+
+    //Unflatten
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y];
+        }
+    }
+
+    return pf;
+}
+
+// IN PROGRESS
+void Map_Inventory::createThreatField(Player_Model &enemy_player) {
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
+    for (auto unit : enemy_player.units_.unit_inventory_) {
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
+    }
+
+    pf_threat_ = completeField(pf_clear, 10);
+}
+
+// IN PROGRESS  
+void Map_Inventory::createAAField(Player_Model &enemy_player) {
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
+    for (auto unit : enemy_player.units_.unit_inventory_) {
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
+    }
+
+    pf_aa_ = completeField(pf_clear, 5);
+
+}
+
+void Map_Inventory::createExploreField() {
+
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
+    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
+        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
+            pf_clear[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
+        }
+    }
+
+    pf_explore_ = completeField(pf_clear, 1);
+
+}
+
+void Map_Inventory::createAttractField(Player_Model &enemy_player) {
+    int tile_map_x = Broodwar->mapWidth();
+    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+
+    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+
+
+    for (auto unit : enemy_player.units_.unit_inventory_) {
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
+    }
+
+     pf_attract_ = completeField(pf_clear, 10);
+
+}
+
+
+void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
+    if (DRAWING_MODE) {
+        for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
+            for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
+                if (pf[i][j] > 0) {
+                    if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_map_inventory.screen_position_)) {
+                        Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
+                    }
+                }
+            }
+        } // Pretty to look at!
+    }
+}
+
+void Map_Inventory::DiagnosticTile() {
+    if (DRAWING_MODE) {
+        int tile_map_x = Broodwar->mapWidth();
+        int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
+        for (auto i = 0; i < tile_map_x; ++i) {
+            for (auto j = 0; j < tile_map_y; ++j) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_map_inventory.screen_position_)) {
+                    Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
+                }
+            }
+        }
+        // Pretty to look at!
+    }
 }

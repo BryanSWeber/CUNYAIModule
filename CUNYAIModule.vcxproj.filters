@@ -58,6 +58,9 @@
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
+    <ClInclude Include="Source\TechManager.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

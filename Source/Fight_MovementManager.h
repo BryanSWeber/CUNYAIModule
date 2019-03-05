@@ -30,9 +30,12 @@ public:
     // Causes a unit to be pulled towards others of their kind.
     Position setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
-    Position setAttraction(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
+    Position setAttractionMap(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position &map_center);
+    Position setAttractionField(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field, const Position & map_center);
     // causes a unit to be pushed away from (map) center. Dangerous for ground units, could lead to them running down dead ends.
-    Position setRepulsion(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position & map_center);
+    Position setRepulsionMap(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map, const Position & map_center);
+    Position setRepulsionField(const Unit & unit, const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field, const Position & map_center);
+
     // causes a unit to move directly towards the enemy base.
     Position scoutEnemyBase(const Unit & unit, const Position & pos, Map_Inventory & inv);
     // causes a unit to seperate itself from others.
@@ -44,8 +47,12 @@ public:
     Position setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const Map_Inventory &inv, const vector<vector<int>> &map);
     bool adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
-    // gives a vector that has the direction towards center on (map). Must return a PAIR since it returns a unit vector.
+    // gives a vector that has the direction towards center on (map). returns a direction.
     Position getVectorTowardsMap(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& map) const;
+    // gives a vector that has the direction towards higher values on the field.  returns a direction.
+    Position getVectorTowardsField(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field) const;
+    // gives a vector that has the direction towards lower values on the field.  returns a direction.
+    Position getVectorAwayField(const Position & pos, const Map_Inventory & inv, const vector<vector<int>>& field) const;
 
 
 private:
@@ -56,6 +63,7 @@ private:
     Position centralization_vector_ = Positions::Origin;
     Position seperation_vector_ = Positions::Origin;
     Position attract_vector_ = Positions::Origin;
+    Position repulse_vector_ = Positions::Origin;
     Position retreat_vector_ = Positions::Origin;
     Position walkability_vector_ = Positions::Origin;
 

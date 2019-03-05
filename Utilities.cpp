@@ -845,14 +845,14 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv )
 
 int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
-    int targetable_e;
+    int targetable_e = 0;
     targetable_e = (u->getType().airWeapon() != WeaponTypes::None) * (enemy_loc.stock_fliers_ + enemy_loc.stock_air_fodder_ ) + (u->getType().groundWeapon() != WeaponTypes::None) * (enemy_loc.stock_ground_units_ + enemy_loc.stock_ground_fodder_);
     return targetable_e;
 }
 
 int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
 {
-    int threatening_e;
+    int threatening_e = 0;
     threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
     return threatening_e;
 }
@@ -2155,9 +2155,11 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Chitinous_Plating = 52,
 //Anabolic_Synthesis = 53,
 
+//Some safety checks if it can't find FAP objects, say at game start.
 int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
-    if (friendly_player) return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
-    else return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    if (friendly_player && fap.getState().first && !fap.getState().first->empty())                       return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0,   [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    else if(!friendly_player && fap.getState().second && !fap.getState().second->empty())                return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
+    else return 0;
 }
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
@@ -2165,4 +2167,38 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
     return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ && ui.squadAliveinFuture(24)) || // Proportional win. fixed division by crossmultiplying. Added squadalive in future so the bot is more reasonable in combat situations.
         //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
         ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+}
+
+bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory &ui, const Unit_Inventory &ei) {
+    //bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
+    return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_)) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
+            //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
+             ui.stock_fighting_total_ == ui.moving_average_fap_stock_ || // there are no losses.
+             ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+}
+
+bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
+    // Ignore the unit if it no longer exists
+    // Make sure to include this block when handling any Unit pointer!
+    if (!u || !u->exists())
+        return false;
+    // Ignore the unit if it has one of the following status ailments
+    if (u->isLockedDown() ||
+        u->isMaelstrommed() ||
+        u->isStasised())
+        return false;
+    // Ignore the unit if it is in one of the following states
+    if (u->isLoaded() ||
+        !u->isPowered() /*|| u->isStuck()*/)
+        return false;
+    // Ignore the unit if it is incomplete or busy constructing
+    if (!u->isCompleted() ||
+        u->isConstructing())
+        return false;
+
+    if (!CUNYAIModule::spamGuard(u)) {
+        return false;
+    }
+
+    return true;
 }

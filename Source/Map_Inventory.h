@@ -4,6 +4,7 @@
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
+#include "PlayerModelManager.h"
 
 
 using namespace std;
@@ -54,7 +55,7 @@ struct Map_Inventory {
     vector< vector<int> > unwalkable_barriers_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
-    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise. (disabled) Veins decend from a value of 300.
+    vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
     vector< vector<int> > map_out_from_home_; // distance from our own main. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
@@ -78,6 +79,11 @@ struct Map_Inventory {
     int frames_since_enemy_base_ground_ = 0;
     int frames_since_enemy_base_air_ = 0;
 
+    //Fields:
+    vector< vector<int> > pf_threat_;
+    vector< vector<int> > pf_attract_;
+    vector< vector<int> > pf_aa_;
+    vector< vector<int> > pf_explore_;
 
     // Updates the (safe) log of net investment in technology.
     void updateLn_Tech_Stock(const Unit_Inventory &ui);
@@ -128,6 +134,7 @@ struct Map_Inventory {
 
     // simply gets the map value at a particular position.
     static int getMapValue(const Position &pos, const vector<vector<int>> &map);
+    static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
 
     // Updates the visible map arteries. Only checks buildings.
     //void Map_Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
@@ -185,5 +192,17 @@ struct Map_Inventory {
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
+
+
+   //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
+    vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
+    void createThreatField(Player_Model & enemy_player);
+    void createAAField(Player_Model & enemy_player);
+    void createExploreField();
+    void createAttractField(Player_Model & enemy_player);
+
+    void DiagnosticField(vector<vector<int>>& pf);
+
+    void DiagnosticTile();
 
 };
