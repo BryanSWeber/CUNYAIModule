@@ -18,7 +18,7 @@
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
 
-// CUNYAI V1.00
+// CUNYAI V2.00
 
 using namespace BWAPI;
 using namespace Filter;
