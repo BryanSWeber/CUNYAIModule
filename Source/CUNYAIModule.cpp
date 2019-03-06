@@ -169,8 +169,11 @@ void CUNYAIModule::onEnd( bool isWinner )
         << med_delay << ','
         << long_delay << ','
         << opponent_name << ','
-        << Broodwar->mapFileName().c_str()
-        << ',' << buildorder.initial_building_gene_
+        << Broodwar->mapFileName().c_str() << ','
+		<< enemy_player_model.average_army_ << ','
+		<< enemy_player_model.average_econ_ << ','
+		<< enemy_player_model.average_tech_ << ','
+        << buildorder.initial_building_gene_
         << endl;
     output.close();
 
