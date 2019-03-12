@@ -170,9 +170,9 @@ void CUNYAIModule::onEnd( bool isWinner )
         << long_delay << ','
         << opponent_name << ','
         << Broodwar->mapFileName().c_str() << ','
-		<< enemy_player_model.average_army_ << ','
-		<< enemy_player_model.average_econ_ << ','
-		<< enemy_player_model.average_tech_ << ','
+		<< round(enemy_player_model.average_army_ * 1000000) / 1000000 << ','
+		<< round(enemy_player_model.average_econ_ * 1000000) / 1000000 << ','
+		<< round(enemy_player_model.average_tech_ * 1000000) / 1000000 << ','
         << buildorder.initial_building_gene_
         << endl;
     output.close();
@@ -773,9 +773,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = /*u_type != UnitTypes::Zerg_Drone &&*/
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = unit_death_in_moments || threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking");
-                    bool neccessary_attack =
-                        (targetable_stocks > 0 && (grim_trigger_to_go_in || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone))
+                    bool grim_trigger_to_go_in = unit_death_in_moments || threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -786,7 +784,7 @@ void CUNYAIModule::onFrame()
                             //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
                             //threatening_stocks == 0 ||
                             //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                            );// don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
+                            // don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
                                                    //  bool retreat = u->canMove() && ( // one of the following conditions are true:
                                                    //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
 
@@ -815,7 +813,7 @@ void CUNYAIModule::onFrame()
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
-                    if (neccessary_attack && !force_retreat && !is_spelled && !drone_problem && !kite) {
+                    if (grim_trigger_to_go_in && !force_retreat && !is_spelled && !drone_problem && !kite) {
                         mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange);
                     }
                     else if (is_spelled) {
