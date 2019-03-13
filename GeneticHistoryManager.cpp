@@ -106,14 +106,14 @@ GeneticHistory::GeneticHistory(string file) {
     //vector<string> map_name_total;
     //vector<string> build_order_total;
 
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
 
     vector<double> r_win;
@@ -154,6 +154,9 @@ GeneticHistory::GeneticHistory(string file) {
         int ldelay_total;
         string name_total;
         string map_name_total;
+		double enemy_average_army_;
+		double enemy_average_econ_;
+		double enemy_average_tech_;
         string build_order_total;
 
         getline(input, entry, ',');
@@ -190,11 +193,21 @@ GeneticHistory::GeneticHistory(string file) {
         getline(input, entry, ',');
         map_name_total=entry;
 
+		getline(input, entry, ',');
+		enemy_average_army_ = stod(entry);
+		getline(input, entry, ',');
+		enemy_average_econ_ = stod(entry);
+		getline(input, entry, ',');
+		enemy_average_tech_ = stod(entry);
+
         getline(input, entry); //diff. End of line char, not ','
         build_order_total=entry;
 
-        a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, build_order_total);
+        a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
         game_data.push_back(a_game);
+		Broodwar->sendText("Average Army Was:%d", enemy_average_army_);
+		Broodwar->sendText("Average Econ Was:%d", enemy_average_econ_);
+		Broodwar->sendText("Average Tech Was:%d", enemy_average_tech_);
 
     } // closure for each row
 
@@ -204,7 +217,7 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
-                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
 
         if (std::get<11>(game_data[j]) == e_name) {
@@ -241,8 +254,8 @@ GeneticHistory::GeneticHistory(string file) {
 
 
     // start from most recent and count our way back from there.
-    for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
-        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, opening)
+    for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
         bool conditions_for_inclusion = true;
         int counter = 0;
@@ -263,15 +276,13 @@ GeneticHistory::GeneticHistory(string file) {
         else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] > 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
+		else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] == 0) {
+			conditions_for_inclusion = name_matches && !race_matches && !map_matches;
+		}
         else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] > 0) {
             conditions_for_inclusion = !name_matches && race_matches && map_matches;
         }
-        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
-            conditions_for_inclusion = name_matches && race_matches && !map_matches;
-        }
-        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] == 0) {
-            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
-        }
+
 
         if (conditions_for_inclusion && game_won) {
             game_data_well_matched.push_back(*game_iter);
@@ -292,7 +303,7 @@ GeneticHistory::GeneticHistory(string file) {
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_well_matched.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
         parent_1 = game_data_well_matched[rand_parent_1];
-        string opening_of_choice = std::get<13>(parent_1); // its matching parents must have a similar opening.
+        string opening_of_choice = std::get<16>(parent_1); // its matching parents must have a similar opening.
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
@@ -301,7 +312,7 @@ GeneticHistory::GeneticHistory(string file) {
         if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { // 
             //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_well_matched) {
-                if (std::get<13>(potential_parent) == opening_of_choice) {
+                if (std::get<16>(potential_parent) == opening_of_choice) {
                     game_data_parent_match.push_back(potential_parent);
                 }
             }
@@ -331,7 +342,7 @@ GeneticHistory::GeneticHistory(string file) {
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_partial_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
         parent_1 = game_data_partial_match[rand_parent_1];
-        string opening_of_choice = std::get<13>(parent_1); // its matching parents must have a similar opening.
+        string opening_of_choice = std::get<16>(parent_1); // its matching parents must have a similar opening.
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
@@ -340,7 +351,7 @@ GeneticHistory::GeneticHistory(string file) {
         if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { // 
                                                                                                                     //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_partial_match) {
-                if (std::get<13>(potential_parent) == opening_of_choice) {
+                if (std::get<16>(potential_parent) == opening_of_choice) {
                     game_data_parent_match.push_back(potential_parent);
                 }
             }
