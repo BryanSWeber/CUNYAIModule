@@ -808,7 +808,7 @@ int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 }
 
 // evaluates the value of a stock of unit, in terms of supply added.
-int CUNYAIModule::Stock_Supply( const UnitType &unit, const Map_Inventory &inv ) {
+int CUNYAIModule::Stock_Supply( const UnitType &unit ) {
     int supply = unit.supplyProvided();
     int instances = Count_Units( unit);
     int total_stock = supply * instances;
@@ -1065,14 +1065,14 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
     return return_unit;
 }
 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Map_Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = inv.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
@@ -1084,14 +1084,14 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, Ma
 }
 
 // Allows type -specific- selection. 
-Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, Map_Inventory &inv, const Position &origin) {
+Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,const UnitType type, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Resource* return_unit = nullptr;
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = inv.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
             bool right_type = (type == r->second.type_ || type.isMineralField() && r->second.type_.isMineralField()); //WARNING:: Minerals have 4 types.
             if (temp_dist <= min_dist && right_type ) { 
                 min_dist = temp_dist;
@@ -1103,7 +1103,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
+Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin) {
 
     int min_dist = 999999;
     int temp_dist = 999999;
@@ -1111,7 +1111,7 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
-            temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -1122,14 +1122,14 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin, const Map_Inventory &inv) {
+Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
     if (!ui.unit_inventory_.empty()) {
         for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
-            temp_dist = inv.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -1315,7 +1315,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit
 }
 
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const Map_Inventory &inv, const int &dist) {
+Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     int temp_dist = 999999;
@@ -1332,7 +1332,7 @@ Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
                     temp_dist = unit->getDistance(e->second.pos_);
                 }
                 else {
-                    temp_dist = inv.getRadialDistanceOutFromHome(e->second.pos_);
+                    temp_dist = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e->second.pos_);
                 }
 
                 if (temp_dist <= min_dist) {
@@ -1969,7 +1969,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
     WalkPosition wk_postion = WalkPosition( initial );
     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
 
-    int max_observed = inv.map_veins_[wk_postion.x][wk_postion.y];
+    int max_observed = CUNYAIModule::current_map_inventory.map_veins_[wk_postion.x][wk_postion.y];
     Position nearest_choke; 
 
     for ( auto i = 0; i < 100; ++i ) {
@@ -1985,7 +1985,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
                     testing_x > 0 &&
                     testing_y > 0 ) { // check for being within reference space.
 
-                    int temp = inv.map_veins_[testing_x][testing_y];
+                    int temp = CUNYAIModule::current_map_inventory.map_veins_[testing_x][testing_y];
 
                     if ( temp >= max_observed ) {
                         max_observed = temp;
@@ -2105,12 +2105,12 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
 
 
     if (e_loc.stock_fighting_total_ > 0 && e_closest) {
-        radial_distance_to_closest_enemy = inv.getRadialDistanceOutFromHome(e_closest->pos_);
-        radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
+        radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
+        radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        it_is_home_ = inv.home_base_.getDistance(pos) < 96;
+        it_is_home_ = CUNYAIModule::current_map_inventory.home_base_.getDistance(pos) < 96;
         can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 500 || inv.hatches_ == 1;
+        have_to_save = CUNYAIModule::current_map_inventory.min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }
 
 
@@ -2120,7 +2120,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
-    bool desperate_for_minerals = inv.min_fields_ < 6;
+    bool desperate_for_minerals = CUNYAIModule::current_map_inventory.min_fields_ < 6;
     bool safe_mine = checkOccupiedArea(ui, pos, 250);
     return  safe_mine || desperate_for_minerals;
 }
@@ -2171,7 +2171,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
 bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory &ui, const Unit_Inventory &ei) {
     //bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
-    return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_)) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
+    return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) )) || // If my losses are smaller than theirs..
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
              ui.stock_fighting_total_ <= ui.moving_average_fap_stock_ || // there are no losses.
              ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.

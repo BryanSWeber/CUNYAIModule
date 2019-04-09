@@ -734,7 +734,7 @@ int Map_Inventory::getRadialDistanceOutFromHome( const Position A ) const
 
 
 // This function causes several items to break. In particular, building locations will end up being inside the unwalkable area!
-void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni) {
+void Map_Inventory::updateUnwalkableWithBuildings() {
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
 
@@ -742,7 +742,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
 
     //mark all occupied areas.  IAAUW
 
-    for (auto & u : ui.unit_inventory_) {
+    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_inventory_) {
         if (u.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -766,7 +766,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
         }
     }
 
-    for (auto & e : ei.unit_inventory_) {
+    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_inventory_) {
         if (e.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -790,7 +790,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
         }
     }
 
-    for (auto & n : ni.unit_inventory_) {
+    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_inventory_) {
         if (n.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -814,7 +814,7 @@ void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory &ui, cons
         }
     }
 
-    for (auto & u : ri.resource_inventory_) {
+    for (auto & u : CUNYAIModule::land_inventory.resource_inventory_) {
         // mark the building's current position.
         int max_x = u.second.pos_.x + u.second.type_.dimensionLeft();
         int min_x = u.second.pos_.x - u.second.type_.dimensionRight();
@@ -1308,7 +1308,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
     if (frames_since_unwalkable > 24 * 30) {
 
         getExpoPositions();
-        updateUnwalkableWithBuildings(ui, ei, ri, ni);
+        updateUnwalkableWithBuildings();
         frames_since_unwalkable = 0;
         return;
     }
@@ -1322,13 +1322,13 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
 
     if (frames_since_enemy_base_ground_ > 24 * 10) {
 
-        Stored_Unit* center_army = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if no combat forces!
+        Stored_Unit* center_army = CUNYAIModule::getClosestGroundStored(ei, ui.getMeanLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if no combat forces!
         Stored_Unit* center_base = CUNYAIModule::getClosestStoredBuilding(ei, ui.getMeanLocation(),999999); // 
 
-        if (ei.getMeanBuildingLocation() != Positions::Origin && center_army && center_army->pos_ && center_army->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+        if (center_army && center_army->pos_ && center_army->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut( center_army->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
         }
-        else if (ei.getMeanBuildingLocation() != Positions::Origin && center_base && center_base->pos_ && center_base->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+        else if (center_base && center_base->pos_ && center_base->pos_ != Positions::Origin) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_base->pos_, enemy_base_ground_, map_out_from_enemy_ground_, false); // don't print this one, it could be anywhere and to print all of them would end up filling up our hard drive.
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] !=  Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
@@ -1362,7 +1362,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
 
     if (frames_since_enemy_base_air_ > 24 * 5) {
 
-        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation(), *this); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
         if (ei.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);

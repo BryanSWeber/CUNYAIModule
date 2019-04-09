@@ -125,7 +125,7 @@ struct Map_Inventory {
     // Updates the unwalkable portions of the map.
     void Map_Inventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades. Currently flawed.
-    void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    void Map_Inventory::updateUnwalkableWithBuildings();
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
     void Map_Inventory::updateSmoothPos();

@@ -731,12 +731,14 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility;
-
             Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 1200);
             if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 1200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
+
+            bool draw_retreat_circle = false;
+            int search_radius = 0;
 
             if (e_closest) { // if there are bad guys, search for friends within that area.
 
@@ -744,7 +746,7 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_player_model.units_);
                 int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
-                int search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
+                search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), static_cast<int>CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
                 Unit_Inventory friend_loc;
                 Unit_Inventory enemy_loc;
@@ -793,11 +795,6 @@ void CUNYAIModule::onFrame()
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
 
-                if constexpr (DRAWING_MODE) {
-                    Broodwar->drawCircleMap(e_closest->pos_, enemy_player_model.units_.max_range_, Colors::Red);
-                    Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-                }
-
                 foe_within_radius = distance_to_foe < search_radius;
 
                 if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
@@ -827,7 +824,8 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_) && !home_fight_mandatory) ||
+                        (!grim_trigger_to_go_in) || 
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_)) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -850,13 +848,15 @@ void CUNYAIModule::onFrame()
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
-                    if (grim_trigger_to_go_in && !force_retreat && !is_spelled && !drone_problem && !kite) {
-                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange);
+                    if ((grim_trigger_to_go_in && !force_retreat && !is_spelled && !drone_problem && !kite) || home_fight_mandatory) {
+                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange);
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
-                        if (closest)  mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
-
+                        if (closest) {
+                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
+                            draw_retreat_circle = true;
+                        }
                     }
                     else if (drone_problem) {
                         if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, friend_loc) <= enemy_loc.worker_count_ &&
@@ -864,7 +864,7 @@ void CUNYAIModule::onFrame()
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_moments){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, current_map_inventory, my_reservation);
-                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, current_map_inventory, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
                     else{
@@ -878,8 +878,9 @@ void CUNYAIModule::onFrame()
                             }
                         }
                             Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
-                            if ( closest ) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
-                            else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, current_map_inventory, Colors::White, false);
+                            if ( closest ) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                            else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                            draw_retreat_circle = true;
 
                     }
 
@@ -901,10 +902,19 @@ void CUNYAIModule::onFrame()
                 if ( clear_area && !u_type.isFlyer() ) {
                     short_term_walking = !mobility.BWEM_Movement(u); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
-                if (short_term_walking) mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin, current_map_inventory); // -1 serves to never surround, makes sense if there is no closest enemy.
+                if (short_term_walking) mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
 
             }
+
+            if constexpr (DRAWING_MODE) {
+                if (draw_retreat_circle) {
+                    Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+                    Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+                }
+            }
         }
+
+
         auto end_combat = std::chrono::high_resolution_clock::now();
 
 

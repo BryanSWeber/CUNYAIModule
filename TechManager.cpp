@@ -9,7 +9,7 @@
 
 using namespace BWAPI;
 
-std::map<UpgradeType, int> TechManager::upgrade_cycle = { { UpgradeTypes::None, 0 }, { UpgradeTypes::Zerg_Carapace, 0 } ,{ UpgradeTypes::Zerg_Flyer_Carapace, 0 },{ UpgradeTypes::Zerg_Melee_Attacks, 0 },{ UpgradeTypes::Zerg_Missile_Attacks, 0 },{ UpgradeTypes::Zerg_Flyer_Attacks, 0 },{ UpgradeTypes::Antennae, 0 },{ UpgradeTypes::Pneumatized_Carapace, 0 },{ UpgradeTypes::Metabolic_Boost, 0 },{ UpgradeTypes::Adrenal_Glands, 0 },{ UpgradeTypes::Muscular_Augments, 0 },{ UpgradeTypes::Grooved_Spines, 0 },{ UpgradeTypes::Chitinous_Plating, 0 },{ UpgradeTypes::Anabolic_Synthesis, 0 } };
+std::map<UpgradeType, int> TechManager::upgrade_cycle = CUNYAIModule::friendly_player_model.upgrade_cartridge_; //persistent valuation of upgrades. Start with upgrade cartdrige.
 bool TechManager::tech_avail_ = true;
 
 // updates the upgrade cycle.

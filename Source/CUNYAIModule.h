@@ -219,13 +219,13 @@ public:
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
       static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
-      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory &inv);
-      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory & inv);
+      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin);
+      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Map_Inventory & inv, const Position & origin);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Map_Inventory & inv, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
       //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
@@ -235,7 +235,7 @@ public:
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
       static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
-      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Map_Inventory & inv, const int & dist = 999999);
+      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
 
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
@@ -291,7 +291,7 @@ public:
       // Evaluates stock of allied units in set that can shoot down.
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
-      static int Stock_Supply( const UnitType &unit, const Map_Inventory &inv );
+      static int Stock_Supply( const UnitType &unit );
       // returns both useful stocks if both groups were to have a fight;
       //static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
       // returns the stock of opponants I can actually fight in their local area.
