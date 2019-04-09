@@ -746,37 +746,16 @@ void CUNYAIModule::onFrame()
                 int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
                 int search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
                 //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), static_cast<int>CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
-                Unit_Inventory friend_loc;
-                Unit_Inventory enemy_loc;
 
-                if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 2) {
-                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
+                Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
+                //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
+                Unit_Inventory enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                    friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                }
-                else {
-                    int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-                    int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
-
-                    auto enemy_in_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
-                    auto friendly_in_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
-
-                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_area, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
-
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_area, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                    friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                }
+                Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
+                Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
+                //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
+                Unit_Inventory friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
                 //friend_loc.updateUnitInventorySummary();
                 //enemy_loc.updateUnitInventorySummary();
@@ -787,7 +766,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_inventory_.at(u), 12); // half second.
+                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friend_loc.unit_inventory_.at(u), 12); // half second.
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(u, friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
@@ -810,7 +789,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = /*u_type != UnitTypes::Zerg_Drone &&*/
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
+                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -827,7 +806,7 @@ void CUNYAIModule::onFrame()
 
 
                     bool force_retreat =
-                        (!grim_trigger_to_go_in) || (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_) && !home_fight_mandatory) ||
+                        (!grim_trigger_to_go_in) || ((unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_) && !home_fight_mandatory) ) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||

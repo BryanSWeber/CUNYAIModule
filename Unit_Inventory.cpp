@@ -458,14 +458,6 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      return return_inventory;
  }
 
- Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
-     Unit_Inventory return_inventory;
-     for (const auto &u : this->unit_inventory_) {
-         if (u.second.areaID == areaID && CUNYAIModule::IsFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
-     }
-     return return_inventory;
- }
-
  Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
  {
     Unit_Inventory total = lhs;

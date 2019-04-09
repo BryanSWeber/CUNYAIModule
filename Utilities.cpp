@@ -2173,7 +2173,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory
     //bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
     return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_)) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
-             ui.stock_fighting_total_ <= ui.moving_average_fap_stock_ || // there are no losses.
+             ui.stock_fighting_total_ < ui.moving_average_fap_stock_ || // there are no losses.
              ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

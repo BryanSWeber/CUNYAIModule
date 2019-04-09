@@ -57,7 +57,7 @@ public:
 
 
 private:
-    double distance_metric = 0;
+    int distance_metric = 0;
     Position stutter_vector_ = Positions::Origin;
     Position attune_vector_ = Positions::Origin;
     Position cohesion_vector_ = Positions::Origin;
