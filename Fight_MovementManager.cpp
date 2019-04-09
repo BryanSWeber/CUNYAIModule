@@ -4,7 +4,7 @@
 # include "Source\Fight_MovementManager.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
-# include <math.h>
+# include <math.h> 
 
 #define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0);
 //#define DISTANCE_METRIC (2.760 * 24.0);
@@ -12,8 +12,6 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
-
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
@@ -149,49 +147,6 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
         // This option should never happen! It ought to trigger retreat/attack.
         return;
     }
-}
-
-bool Mobility::BWEM_Movement(const Unit & unit) const
-{
-    Position pos = unit->getPosition();
-    bool pathing_confidently = false;
-    UnitType u_type = unit->getType();
-
-    bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
-    bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
-    bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 * distance_metric / 4));
-
-    auto retreat_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.safe_base_);
-    auto ground_attack_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.enemy_base_ground_);
-    auto air_attack_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.enemy_base_air_);
-
-    bool it_worked = false;
-
-    if (u_type != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
-        // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-
-            if (u_type.airWeapon() != WeaponTypes::None) { 
-                it_worked = move_to_next(air_attack_path, unit);
-            }
-            else it_worked = move_to_next(ground_attack_path, unit);
-            pathing_confidently = true;
-        }
-        else { // Otherwise, return to home.
-            it_worked = move_to_next(retreat_path, unit);
-        }
-
-    }
-
-
-    if (it_worked) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
-        changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-        changing_unit.updateStoredUnit(unit);
-    }
-    return it_worked;
 }
 
 
@@ -951,14 +906,4 @@ Position Mobility::getVectorAwayField(const Position &pos, const Map_Inventory &
         return_vector = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
     }
     return  return_vector;
-}
-
-bool Mobility::move_to_next(const BWEM::CPPath &cpp, const Unit & unit) const
-{
-    if (cpp.size()) {
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit->getPosition()) < 32 * 3;
-        if (too_close && cpp.size() >= 2) return unit->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
-        else if (cpp.size() >= 2) return unit->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
-    }
-    return false;
 }

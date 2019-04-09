@@ -12,11 +12,10 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
-#include "BWEM\include\bwem.h"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Printing records, etc.
+constexpr bool ANALYSIS_MODE = false; // Printing records, etc.
 constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.

@@ -2109,12 +2109,12 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
         radial_distance_to_build_position = inv.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         it_is_home_ = inv.home_base_.getDistance(pos) < 96;
-        can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
+        can_still_save = e_too_close.stock_fighting_total_ > ui.stock_fighting_total_; // can still save it or you don't have a choice.
         have_to_save = inv.min_fields_ <= 12 || radial_distance_to_build_position < 500 || inv.hatches_ == 1;
     }
 
 
-    return it_is_home_ || enemy_has_not_penetrated || can_still_save || have_to_save;
+    return it_is_home_ || (enemy_has_not_penetrated && (can_still_save || have_to_save));
 }
 
 
@@ -2173,7 +2173,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit &u, const Unit_Inventory
     //bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
     return  ( ( (ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_)) || // Proportional win. fixed division by crossmultiplying. Added suicide in future so the bot does not try to save unsaveable units. Practice suggested this worked better.
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
-             ui.stock_fighting_total_ < ui.moving_average_fap_stock_ || // there are no losses.
+             ui.stock_fighting_total_ == ui.moving_average_fap_stock_ || // there are no losses.
              ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

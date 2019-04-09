@@ -65,7 +65,7 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>$(BWAPI_LIB)\BWAPId.lib;$(BWEM_LIB)\BWEM-Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BWAPI_LIB)\BWAPId.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -91,7 +91,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>$(BWAPI_LIB)\BWAPI.lib;$(BWEM_LIB)\BWEM-Release.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(BWAPI_DIR)\lib\BWAPI.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -114,21 +114,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\AssemblyManager.h" />
-    <ClInclude Include="Source\BWEM\include\area.h" />
-    <ClInclude Include="Source\BWEM\include\base.h" />
-    <ClInclude Include="Source\BWEM\include\bwapiExt.h" />
-    <ClInclude Include="Source\BWEM\include\bwem.h" />
-    <ClInclude Include="Source\BWEM\include\cp.h" />
-    <ClInclude Include="Source\BWEM\include\defs.h" />
-    <ClInclude Include="Source\BWEM\include\graph.h" />
-    <ClInclude Include="Source\BWEM\include\gridMap.h" />
-    <ClInclude Include="Source\BWEM\include\map.h" />
-    <ClInclude Include="Source\BWEM\include\mapDrawer.h" />
-    <ClInclude Include="Source\BWEM\include\mapImpl.h" />
-    <ClInclude Include="Source\BWEM\include\mapPrinter.h" />
-    <ClInclude Include="Source\BWEM\include\neutral.h" />
-    <ClInclude Include="Source\BWEM\include\tiles.h" />
-    <ClInclude Include="Source\BWEM\include\utils.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Fight_MovementManager.h" />

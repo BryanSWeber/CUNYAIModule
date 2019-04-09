@@ -2,7 +2,6 @@
 
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
-#include "BWEM\include\bwem.h"
 
 //Movement and Combat Functions
 class Mobility {
@@ -16,7 +15,7 @@ public:
     void Pathing_Movement( const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv );
     //Forces a unit to surround the concerning ei. Does not advance.
     //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
-    bool BWEM_Movement(const Unit &unit) const;
+
 
     Position Output;
 
@@ -70,5 +69,4 @@ private:
 
     int rng_direction_ ; // send unit in a random tilt direction if blocked
 
-    bool move_to_next(const BWEM::CPPath &cpp, const Unit &unit) const;
 };
