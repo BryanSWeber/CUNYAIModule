@@ -5,6 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\PlayerModelManager.h" // needed for cartidges.
+#include "Source\BWEM\include\bwem.h"
 #include <iterator>
 #include <numeric>
 #include <fstream>
@@ -242,26 +243,35 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv) {
     if (CUNYAIModule::checkDesirable(unit, UnitTypes::Zerg_Hatchery, extra_critera)) {
 
-        int expo_score = 99999999;
+        int expo_score = -99999999;
+
         inv.getExpoPositions(); // update the possible expo positions.
         inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
+        
+        //bool safe_worker = CUNYAIModule::enemy_player_model.units_.unit_inventory_.empty() ||
+        //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500) == nullptr ||
+        //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500)->type_.isWorker();
 
-        bool safe_worker = CUNYAIModule::enemy_player_model.units_.unit_inventory_.empty() ||
-            CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500) == nullptr ||
-            CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500)->type_.isWorker();
+        int worker_areaID = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
+
+        bool safe_worker = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(worker_areaID).unit_inventory_.empty();
 
         // Let's build at the safest close canidate position.
         if (safe_worker) {
             for (auto &p : inv.expo_positions_) {
-                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))));
+                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
+                int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
+                auto friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(expo_areaID);
+                auto enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(expo_areaID);
 
-                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p), inv, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory);
+                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p), inv, enemy_area, friendly_area, CUNYAIModule::land_inventory);
 
-                bool occupied_expo = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, Position(p), 500) ||
-                    CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, Position(p), 500) ||
-                    CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, Position(p), 500);
-                bool expansion_is_home = inv.home_base_.getDistance(Position(p)) <= 32;
-                if ((score_temp < expo_score || expansion_is_home) && safe_expo && !occupied_expo) {
+                bool occupied_expo = CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Hatchery, Position(p), 1000) ||
+                                     CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Lair, Position(p), 1000) ||
+                                     CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Hive, Position(p), 1000);
+
+                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
+                if ( score_temp > expo_score && safe_expo && !occupied_expo && path_available) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -316,9 +326,9 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
     bool nearby_enemy = CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
     bool drone_death = false;
     int number_of_evos_wanted =
-        (TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None) +
-        TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None) +
-        TechManager::returnTechRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)); 
+        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
+            static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)) +
+                static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -669,7 +679,6 @@ void AssemblyManager::updateOptimalUnit() {
         //}
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
-
 
 }
 

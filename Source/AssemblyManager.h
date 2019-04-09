@@ -3,11 +3,11 @@
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "BWEM\include\bwem.h"
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-
 
 class AssemblyManager {
 private: 

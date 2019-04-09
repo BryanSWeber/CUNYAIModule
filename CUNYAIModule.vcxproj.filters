@@ -61,6 +61,51 @@
     <ClInclude Include="Source\TechManager.h">
       <Filter>Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="Source\BWEM\include\area.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\base.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\bwapiExt.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\bwem.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\cp.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\defs.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\graph.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\gridMap.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\map.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\mapDrawer.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\mapImpl.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\mapPrinter.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\neutral.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\tiles.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEM\include\utils.h">
+      <Filter>BWEM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
@@ -68,6 +113,9 @@
     </Filter>
     <Filter Include="Utilities\Unused">
       <UniqueIdentifier>{389d313b-a030-43be-a3b4-6475a7d622bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BWEM">
+      <UniqueIdentifier>{0fb35885-e59a-4a5f-8f08-853a0ea32d8d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

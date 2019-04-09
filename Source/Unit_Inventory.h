@@ -62,6 +62,7 @@ struct Stored_Unit {
     bool burrowed_;
     bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
+    int areaID;
     
     string phase_ = "None";
 
@@ -162,6 +163,7 @@ struct Unit_Inventory {
     void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
     void drawAllLocations(const Map_Inventory &inv) const;
     void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
+    Unit_Inventory getInventoryAtArea(const int areaID) const;
 
 
 

@@ -11,6 +11,7 @@
 #include "AssemblyManager.h"
 #include "TechManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "BWEM\include\bwem.h"
 #include <iostream>
 #include <fstream> // for file read/writing
 #include <numeric> // std::accumulate
@@ -23,6 +24,7 @@
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+namespace { auto & bwemMap = BWEM::Map::Instance(); }
 
 //Declare static variables for access in other modules.
     bool CUNYAIModule::army_starved = false;
@@ -52,7 +54,17 @@ using namespace std;
     GeneticHistory CUNYAIModule::gene_history;
 
 void CUNYAIModule::onStart()
-{
+{    
+
+    //Initialize BWEM, must be done FIRST.
+    Broodwar << "Map initialization..." << std::endl;
+
+    bwemMap.Initialize(BWAPI::BroodwarPtr);
+    bwemMap.EnableAutomaticPathAnalysis();
+    bool startingLocationsOK = bwemMap.FindBasesForStartingLocations();
+    //assert(startingLocationsOK);
+
+
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
 
@@ -119,6 +131,8 @@ void CUNYAIModule::onStart()
     //get initial build order.
     buildorder.getInitialBuildOrder( gene_history.build_order_ );
 
+
+
     //update Map Grids
     current_map_inventory.updateBuildablePos();
     current_map_inventory.updateUnwalkable();
@@ -144,6 +158,7 @@ void CUNYAIModule::onStart()
     print_value += gene_history.build_order_;
     output << "Trying Build Order" << print_value << endl;
     output.close();
+
 
 }
 
@@ -200,6 +215,7 @@ void CUNYAIModule::onEnd( bool isWinner )
 
 void CUNYAIModule::onFrame()
 { // Called once every game frame
+   bwemMap.Draw(BWAPI::BroodwarPtr);
 
   // Return if the game is a replay or is paused
 
@@ -773,7 +789,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = /*u_type != UnitTypes::Zerg_Drone &&*/
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = unit_death_in_moments || threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
+                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friend_loc.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -857,8 +873,15 @@ void CUNYAIModule::onFrame()
 
             } // close local examination.
 
-            if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding()){ // if there is nothing to fight, psudo-boids.
-                mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin, current_map_inventory); // -1 serves to never surround, makes sense if there is no closest enemy.
+            if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() && spamGuard(u, 24)){ // if there is nothing to fight, psudo-boids if they are in your BWEM:AREA or use BWEM to get to their position.
+                int areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
+                bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_inventory_.empty();
+                bool short_term_walking = true;
+                if ( clear_area && !u_type.isFlyer() ) {
+                    short_term_walking = !mobility.BWEM_Movement(u); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                }
+                if (short_term_walking) mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin, current_map_inventory); // -1 serves to never surround, makes sense if there is no closest enemy.
+
             }
         }
         auto end_combat = std::chrono::high_resolution_clock::now();

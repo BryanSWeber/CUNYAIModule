@@ -1241,66 +1241,13 @@ void Map_Inventory::getExpoPositions() {
 
     expo_positions_.clear();
 
-    int location_qual_threshold = -999999;
-    //Region home = Broodwar->getRegionAt(Position(center_self));
-    //Regionset neighbors;
-    bool local_maximum = true;
-
-    int map_x = Broodwar->mapWidth();
-    int map_y = Broodwar->mapHeight();
-
-    // if we haven't checked before, start from the beginning.
-    if ( expo_positions_complete_.empty() ) {
-        for (vector<int>::size_type x = 0; x != map_x; ++x) {
-            for (vector<int>::size_type y = 0; y != map_y; ++y) {
-                if (base_values_[x][y] > 1) { // only consider the decent locations please.
-
-                    local_maximum = true;
-
-                    //TilePosition canidate_spot = TilePosition(x + 2, y + 1); // from the true center of the object.
-                    //int walk = Position( canidate_spot ).getDistance( Position( center_self ) ) / 32;
-                    //int net_quality = base_values_[x][y]; //value of location and distance from our center.  Plus some terms so it's positive, we like to look at positive numbers.
-
-                    for (int i = -12; i <= 12; i++) {
-                        for (int j = -12; j <= 12; j++) {
-                            bool safety_check = TilePosition(x + i, y + j).isValid() ; //valid tile position
-                            if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]) {
-                                local_maximum = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (local_maximum) {
-                        expo_positions_.push_back({ static_cast<int>(x), static_cast<int>(y) });
-                    }
-                }
-            } // closure y
-        } // closure x
-    }
-    else { // only check potentially relevant locations.
-        for (TilePosition canidate_spot : expo_positions_complete_) {
-            local_maximum = true;
-
-            int x = canidate_spot.x;
-            int y = canidate_spot.y;
-
-            for (int i = -12; i <= 12; i++) {
-                for (int j = -12; j <= 12; j++) {
-                    bool safety_check = TilePosition(x + i, y + j).isValid(); //valid tile position
-                    if (safety_check && base_values_[x][y] < base_values_[x + i][y + j]) {
-                        local_maximum = false;
-                        break;
-                    }
-                }
-            }
-
-            if (local_maximum) {
-                expo_positions_.push_back(canidate_spot);
-            }
+    std::vector<TilePosition> expo_positions;
+    for (auto & area : BWEM::Map::Instance().Areas()){
+        for (auto & base : area.Bases()){
+            expo_positions.push_back(base.Location());
         }
-
     }
+    expo_positions_ = expo_positions;
 
 
     //From SO, quick conversion into set.
