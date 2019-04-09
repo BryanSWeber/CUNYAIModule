@@ -20,7 +20,7 @@ using namespace std;
 void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos, const Map_Inventory &inv) {
 
     Position pos = unit->getPosition();
-    distance_metric = (int)DISTANCE_METRIC;
+    distance_metric = (double)DISTANCE_METRIC;
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
@@ -30,7 +30,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
     bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = inv.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 *  distance_metric / 4));
+    bool too_far_away_from_front_line = (inv.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3.0 *  distance_metric * 0.25 ));
 
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
@@ -161,7 +161,7 @@ bool Mobility::BWEM_Movement(const Unit & unit) const
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 * distance_metric / 4));
+    bool too_far_away_from_front_line = (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 * distance_metric * 0.25));
 
     auto retreat_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.safe_base_);
     auto ground_attack_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.enemy_base_ground_);
@@ -320,7 +320,7 @@ void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const 
 
 
     int dist = unit->getDistance(e_unit.pos_);
-    distance_metric = (int)DISTANCE_METRIC; // retreating must be done very fast.
+    distance_metric = (double)DISTANCE_METRIC; // retreating must be done very fast.
    
     int e_range = ei.max_range_;
     //int f_range = ui.max_range_;

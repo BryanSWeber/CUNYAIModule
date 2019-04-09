@@ -164,6 +164,7 @@ struct Unit_Inventory {
     void drawAllLocations(const Map_Inventory &inv) const;
     void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
     Unit_Inventory getInventoryAtArea(const int areaID) const;
+    Unit_Inventory getCombatInventoryAtArea(const int areaID) const;
 
 
 
