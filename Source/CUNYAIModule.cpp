@@ -270,7 +270,7 @@ void CUNYAIModule::onFrame()
     friendly_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
 
     // Let us estimate FAP values.
-    MCfap.simulate(); // 96 frames of simulation for us.
+    MCfap.simulate(MOVING_AVERAGE_DURATION); 
     int friendly_fap_score = getFAPScore(MCfap, true);
     int enemy_fap_score = getFAPScore(MCfap, false);
     friendly_player_model.units_.pullFromFAP(*MCfap.getState().first);

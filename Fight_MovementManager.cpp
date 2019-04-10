@@ -297,8 +297,10 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         changing_unit.updateStoredUnit(unit_);
     } 
     else {
-        Retreat_Logic(e_unit, ui, ei, ei, ui, passed_distance, Colors::White, true);
-    }// if I'm not attacking and I'm in range, I MUST retreat, no other options. I may be able to remove the "has path" requirment in some way.
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        changing_unit.phase_ = "Surrounding";
+        changing_unit.updateStoredUnit(unit_);
+    }// if I'm not attacking and I'm in range, I'm 'surrounding'
     return;
 }
 

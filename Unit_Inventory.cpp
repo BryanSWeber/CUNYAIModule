@@ -1,5 +1,4 @@
 #pragma once
-#define _MOVING_AVERAGE_DURATION 96 // set MA duration, usually 96 frames
 
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
@@ -291,7 +290,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     }
     else {
         bool retreating_undetected = unit->canAttack() && ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
-        double weight = (_MOVING_AVERAGE_DURATION - 1) / static_cast<double>(_MOVING_AVERAGE_DURATION);
+        double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
 
@@ -648,29 +647,29 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_min_cost_ += 50;
     }  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
 
-    if (unittype.isSuccessorOf(UnitTypes::Zerg_Creep_Colony) ) {
+    if (unittype == UnitTypes::Zerg_Sunken_Colony || unittype == UnitTypes::Zerg_Spore_Colony ) {
         modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
     }
 
-    if (unittype.isSuccessorOf(UnitTypes::Zerg_Hydralisk)) {
+    if (unittype == UnitTypes::Zerg_Lurker) {
         modified_min_cost_ += UnitTypes::Zerg_Hydralisk.mineralPrice();
         modified_gas_cost_ += UnitTypes::Zerg_Hydralisk.gasPrice();
         modified_supply_ += UnitTypes::Zerg_Hydralisk.supplyRequired();
     }
 
-    if (unittype.isSuccessorOf(UnitTypes::Zerg_Mutalisk)) {
+    if (unittype == UnitTypes::Zerg_Devourer || unittype == UnitTypes::Zerg_Guardian ) {
         modified_min_cost_ += UnitTypes::Zerg_Mutalisk.mineralPrice();
         modified_gas_cost_ += UnitTypes::Zerg_Mutalisk.gasPrice();
         modified_supply_ += UnitTypes::Zerg_Mutalisk.supplyRequired();
     }
 
-    if (unittype.isSuccessorOf(UnitTypes::Protoss_High_Templar)) {
+    if (unittype == UnitTypes::Protoss_Archon) {
         modified_min_cost_ += UnitTypes::Protoss_High_Templar.mineralPrice() * 2;
         modified_gas_cost_ += UnitTypes::Protoss_High_Templar.gasPrice() * 2;
         modified_supply_ += UnitTypes::Protoss_High_Templar.supplyRequired() * 2;
     }
 
-    if (unittype.isSuccessorOf(UnitTypes::Protoss_Dark_Templar)) {
+    if (unittype == UnitTypes::Protoss_Dark_Archon) {
         modified_min_cost_ += UnitTypes::Protoss_Dark_Templar.mineralPrice() * 2;
         modified_gas_cost_ += UnitTypes::Protoss_Dark_Templar.gasPrice() * 2;
         modified_supply_ += UnitTypes::Protoss_Dark_Templar.supplyRequired() * 2;
@@ -1106,7 +1105,7 @@ void Stored_Unit::updateFAPvalueDead()
 }
 
 bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.ma_future_fap_value_ >= unit.current_stock_value_ * static_cast<double>(_MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(_MOVING_AVERAGE_DURATION);
+    return unit.ma_future_fap_value_ >= unit.current_stock_value_ * static_cast<double>(MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(MOVING_AVERAGE_DURATION);
 }
 
 

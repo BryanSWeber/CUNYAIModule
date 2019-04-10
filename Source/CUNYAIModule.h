@@ -22,6 +22,7 @@ constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE fo
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr int MOVING_AVERAGE_DURATION = 96; // set MA duration, usually 96 frames
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -308,8 +309,6 @@ public:
       static bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
-      // Checks if the player UI is weak against air in army ei.
-      static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
 
       static double bindBetween(double x, double lower_bound, double upper_bound);
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
