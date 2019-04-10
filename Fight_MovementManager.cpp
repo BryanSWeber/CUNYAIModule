@@ -21,15 +21,14 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
-    UnitType u_type = unit_->getType();
 
-    bool healthy = unit_->getHitPoints() > 0.25 * u_type.maxHitPoints();
+    bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
 
-    if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
+    if (u_type_ == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
             setRepulsionField(CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
@@ -53,7 +52,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-            if (u_type.airWeapon() != WeaponTypes::None) setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+            if (u_type_.airWeapon() != WeaponTypes::None) setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
             else setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
             pathing_confidently = true;
         }
@@ -63,7 +62,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
 
         int average_side = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos_, 32 + average_side * 2);
-        if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(neighbors);
+        if (u_type_ != UnitTypes::Zerg_Mutalisk) setSeperation(neighbors);
 
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. Overwrites natural seperation.
             setSeperationScout(local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
@@ -78,7 +77,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     Position avoidance_pos = pos_ + avoidance_vector;
 
     //Which way should we avoid objects?
-    if (pathing_confidently && u_type.airWeapon() != WeaponTypes::None) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_);
+    if (pathing_confidently && u_type_.airWeapon() != WeaponTypes::None) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_);
     else if (pathing_confidently) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
     else setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_safety_);
 
@@ -91,7 +90,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     if ( final_pos != pos_ && final_pos.getDistance(e_pos) > passed_distance && pos_.getDistance(e_pos) > passed_distance) {
 
         // lurkers should move when we need them to scout.
-        if (u_type == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
+        if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
             unit_->unburrow();
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
             changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
@@ -151,9 +150,8 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
 bool Mobility::BWEM_Movement() const
 {
     bool pathing_confidently = false;
-    UnitType u_type = unit_->getType();
 
-    bool healthy = unit_->getHitPoints() > 0.25 * u_type.maxHitPoints();
+    bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
@@ -165,10 +163,10 @@ bool Mobility::BWEM_Movement() const
 
     bool it_worked = false;
 
-    if (u_type != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
+    if (u_type_ != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-            if (u_type.airWeapon() != WeaponTypes::None) { 
+            if (u_type_.airWeapon() != WeaponTypes::None) { 
                 it_worked = move_to_next(air_attack_path);
             }
             else it_worked = move_to_next(ground_attack_path);
@@ -194,12 +192,11 @@ bool Mobility::BWEM_Movement() const
 void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
 
 {
-    UnitType u_type = unit_->getType();
     Stored_Unit* target;
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit last_target = unit_->getLastCommand().getTarget();
 
-    int widest_dim = max(u_type.height(), u_type.width());
+    int widest_dim = max(u_type_.height(), u_type_.width());
     int priority = 0;
     //int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
     int helpful_u = ui.moving_average_fap_stock_;
@@ -218,7 +215,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
-            if (CUNYAIModule::Can_Fight(unit_, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
+            if (CUNYAIModule::Can_Fight(unit_, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type_ == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
                 int dist_to_enemy = unit_->getDistance(e->second.pos_);
 
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
@@ -227,7 +224,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     e_type == UnitTypes::Protoss_Carrier ||
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
-                bool lurkers_diving = u_type == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+                bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
                 if (CUNYAIModule::Can_Fight(e->second, unit_) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
                     e_priority = 7;
@@ -356,7 +353,7 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
     bool is_retreating = false;
 
     if ( force || ( retreat_spot && !kiting /*&& !(unit_death_in_moments && squad_death_in_moments && clear_walkable && melee_fight)*/ ) ) {
-        if (unit_->getType() == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && unit_->isDetected() && ei.stock_ground_units_ == 0) {
+        if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && unit_->isDetected() && ei.stock_ground_units_ == 0) {
             unit_->unburrow();
             is_retreating = true;
         }
@@ -408,7 +405,7 @@ Position Mobility::setStutter(const double &n) {
 Position Mobility::setAlignment(const Unit_Inventory &ui) {
     double temp_tot_x = 0;
     double temp_tot_y = 0;
-    double speed = CUNYAIModule::getProperSpeed(unit_->getType());
+    double speed = CUNYAIModule::getProperSpeed(u_type_);
     int flock_count = 0;
     if (!ui.unit_inventory_.empty()) {
         for (auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i) {
@@ -593,10 +590,9 @@ Position Mobility::setSeperation(const Unit_Inventory &ui) {
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
 Position Mobility::setSeperationScout(const Unit_Inventory &ui) {
-    UnitType type = unit_->getType();
-    bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
-    double distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
-    int largest_dim = max(type.height(), type.width());
+    bool overlord_with_upgrades = u_type_ == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
+    double distance = (u_type_.sightRange() + overlord_with_upgrades * 2 * 32);
+    int largest_dim = max(u_type_.height(), u_type_.width());
     Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos_, static_cast<int>(distance * 2.0 + largest_dim));
     int seperation_x = 0;
     int seperation_y = 0;
@@ -740,7 +736,7 @@ bool Mobility::adjust_lurker_burrow(const Unit_Inventory &ui, const Unit_Invento
     int dist_to_threat_or_target = unit_->getDistance(position_of_target);
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
-    if (unit_->getType() == UnitTypes::Zerg_Lurker) {
+    if (u_type_ == UnitTypes::Zerg_Lurker) {
         if ( !unit_->isBurrowed() && dist_condition) {
             unit_->burrow();
             return true;

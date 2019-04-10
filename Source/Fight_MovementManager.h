@@ -59,12 +59,14 @@ public:
     Mobility::Mobility(const Unit &unit) {
         unit_ = unit;
         pos_ = unit->getPosition();
+        u_type_ = unit->getType();
         distance_metric_ = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
     };
 
 private:
     Position pos_;
     Unit unit_;
+    UnitType u_type_;
     double distance_metric_;
     Position stutter_vector_ = Positions::Origin;
     Position attune_vector_ = Positions::Origin;
