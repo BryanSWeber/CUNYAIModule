@@ -382,11 +382,12 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
             return;
         }
     }
-    else { // if that spot will not work for you, prep to die.
-        // if your death is immenent fight back.
-        Tactical_Logic(e_unit, e_squad, u_squad, passed_distance);
+    else {
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        changing_unit.phase_ = "No Retreat.";
+        changing_unit.updateStoredUnit(unit_);
         return;
-    }
+    }// if I'm not retreating, I'm announcing I'm bugged.
 
 }
 
