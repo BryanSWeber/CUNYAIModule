@@ -789,7 +789,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_inventory_.at(u), 12); // half second.
+                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_inventory_.at(u), 24); // half second.
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
@@ -804,9 +804,9 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     Position e_pos = e_closest->pos_;
-                    bool home_fight_mandatory = /*u_type != UnitTypes::Zerg_Drone &&*/
-                                                (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
-                                                current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
+                    bool home_fight_mandatory = false;/*u_type != UnitTypes::Zerg_Drone &&*/
+                                                //(current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
+                                                //current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
                     bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
@@ -825,7 +825,7 @@ void CUNYAIModule::onFrame()
 
                     bool force_retreat =
                         (!grim_trigger_to_go_in) || 
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.333 * friend_loc.stock_fliers_)) ||
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.10 * friend_loc.stock_fliers_) && !home_fight_mandatory) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -842,7 +842,6 @@ void CUNYAIModule::onFrame()
                     bool drone_problem = u_type == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
 
                     bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
-                    //bool too_far_away_from_front_line = (inventory.getRadialDistanceOutFromEnemy(u->getPosition()) >(inventory.closest_radial_distance_enemy_ground_ + 3 * 24 * CUNYAIModule::getProperSpeed(u) / 4));
                     //bool safe_distance_away = distance_to_foe > chargable_distance_enemy;
 
                     bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;

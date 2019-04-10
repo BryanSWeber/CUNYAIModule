@@ -40,7 +40,7 @@ public:
     vector< int > unit_count_;
     vector< int > unit_incomplete_;
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
-    int closest_radial_distance_enemy_ground_ = INT_MAX;
+    int closest_ground_combatant_ = INT_MAX;
 
 // Averages for Opponent Modeling
     void updatePlayerAverageCD();

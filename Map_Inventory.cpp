@@ -1510,13 +1510,15 @@ void Map_Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &c
 }
 
 
-vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map)
+vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map, const bool combat_units)
 {
     vector<int> return_vector;
 
     if (!map.empty() && !ui.unit_inventory_.empty()) {
         for (auto u : ui.unit_inventory_) {
-            return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
+            if (u.second.type_.canAttack()) {
+                return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
+            }
         }
         return return_vector;
     }

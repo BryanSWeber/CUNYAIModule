@@ -158,7 +158,7 @@ struct Map_Inventory {
     void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
     // gets the radial distance of all units to the enemy base.
-    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map);
+    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);
 
     // Returns the position of the weakest base.
     Position Map_Inventory::getWeakestBase(const Unit_Inventory &ei) const;

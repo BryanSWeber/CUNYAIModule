@@ -80,8 +80,8 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     e_relatively_weak_against_air_ = (bool)(CUNYAIModule::assemblymanager.returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian);
 
     //Update map inventory
-    radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
-    closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
+    radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, true);
+    closest_ground_combatant_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
 
 };
 

@@ -315,7 +315,7 @@ public:
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
-      static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
+      //static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
       static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u); 
