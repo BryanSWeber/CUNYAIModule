@@ -676,6 +676,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     }
 
     if (unittype == UnitTypes::Protoss_Interceptor) {
+        modified_min_cost_ = 0;
         modified_gas_cost_ = 0;
         modified_supply_ = 0;
     }
