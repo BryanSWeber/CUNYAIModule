@@ -849,12 +849,12 @@ void CUNYAIModule::onFrame()
                     bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
 
                     if ((grim_trigger_to_go_in && !force_retreat && !is_spelled && !drone_problem && !kite) || home_fight_mandatory) {
-                        mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange);
+                        mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange);
                     }
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
                             draw_retreat_circle = true;
                         }
                     }
@@ -864,7 +864,7 @@ void CUNYAIModule::onFrame()
                             u->getLastCommand().getType() != UnitCommandTypes::Morph &&
                             !unit_death_in_moments){
                             friendly_player_model.units_.purgeWorkerRelations(u, land_inventory, current_map_inventory, my_reservation);
-                            mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
+                            mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
                     else {
@@ -878,8 +878,8 @@ void CUNYAIModule::onFrame()
                             }
                         }
                         Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
-                        if (closest) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
-                        else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                        if (closest) mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                        else mobility.Retreat_Logic(*e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
                         draw_retreat_circle = true;
                     }
 
@@ -899,9 +899,9 @@ void CUNYAIModule::onFrame()
                 bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_inventory_.empty();
                 bool short_term_walking = true;
                 if ( clear_area && !u_type.isFlyer() ) {
-                    short_term_walking = !mobility.BWEM_Movement(u); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                    short_term_walking = !mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
-                if (short_term_walking) mobility.Pathing_Movement(u, -1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
+                if (short_term_walking) mobility.Pathing_Movement(-1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
                 continue;
             }
 
