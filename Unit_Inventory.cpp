@@ -652,6 +652,24 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
     }
 
+    if (unittype.isSuccessorOf(UnitTypes::Zerg_Hydralisk)) {
+        modified_min_cost_ += UnitTypes::Zerg_Hydralisk.mineralPrice();
+        modified_gas_cost_ += UnitTypes::Zerg_Hydralisk.gasPrice();
+        modified_supply_ += UnitTypes::Zerg_Hydralisk.supplyRequired();
+    }
+
+    if (unittype.isSuccessorOf(UnitTypes::Zerg_Mutalisk)) {
+        modified_min_cost_ += UnitTypes::Zerg_Mutalisk.mineralPrice();
+        modified_gas_cost_ += UnitTypes::Zerg_Mutalisk.gasPrice();
+        modified_supply_ += UnitTypes::Zerg_Mutalisk.supplyRequired();
+    }
+
+    if (unittype.isSuccessorOf(UnitTypes::Protoss_High_Templar)) {
+        modified_min_cost_ += UnitTypes::Protoss_High_Templar.mineralPrice() * 2;
+        modified_gas_cost_ += UnitTypes::Protoss_High_Templar.gasPrice() * 2;
+        modified_supply_ += UnitTypes::Protoss_High_Templar.supplyRequired() * 2;
+    }
+
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
         modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
         modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
