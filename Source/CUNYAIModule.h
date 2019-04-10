@@ -4,7 +4,6 @@
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
-#include "Fight_MovementManager.h"
 #include "Research_Inventory.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"

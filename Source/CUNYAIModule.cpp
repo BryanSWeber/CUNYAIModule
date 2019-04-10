@@ -728,7 +728,7 @@ void CUNYAIModule::onFrame()
 
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
-            Mobility mobility;
+            Mobility mobility = Mobility(u);
             Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 1200);
             if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 1200);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
@@ -764,16 +764,19 @@ void CUNYAIModule::onFrame()
                     int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
                     int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
 
-                    auto friendly_in_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
-                    auto enemy_in_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
+                    auto friendly_in_friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
+                    auto friendly_in_enemy_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
 
-                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_area, u->getPosition(), distance_to_foe + search_radius);
+                    auto enemy_in_enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
+                    auto enemy_in_friendly_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
+
+                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_enemy_area, e_closest->pos_, distance_to_foe + search_radius);
+                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_friendly_area, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
                     enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_area, u->getPosition(), distance_to_foe + search_radius);
+                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_friendly_area, e_closest->pos_, distance_to_foe + search_radius);
+                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_enemy_area, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
                     friend_loc = (friend_loc_around_target + friend_loc_around_me);
                 }
@@ -864,21 +867,20 @@ void CUNYAIModule::onFrame()
                             mobility.Tactical_Logic(u, *e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
                         }
                     }
-                    else{
+                    else {
                         if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Positions::Origin)) {
                             if (u_type == UnitTypes::Zerg_Overlord) {
                                 //see unit destruction case. We will replace this overlord, likely a foolish scout.
                             }
                             else {
-                                buildorder.clearRemainingBuildOrder( false ); // Neutralize the build order if something other than a worker scout is happening.
+                                buildorder.clearRemainingBuildOrder(false); // Neutralize the build order if something other than a worker scout is happening.
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                            Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
-                            if ( closest ) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
-                            else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
-                            draw_retreat_circle = true;
-
+                        Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
+                        if (closest) mobility.Retreat_Logic(u, *closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                        else mobility.Retreat_Logic(u, *e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                        draw_retreat_circle = true;
                     }
 
 
@@ -900,7 +902,7 @@ void CUNYAIModule::onFrame()
                     short_term_walking = !mobility.BWEM_Movement(u); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
                 if (short_term_walking) mobility.Pathing_Movement(u, -1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
-
+                continue;
             }
 
             if constexpr (DRAWING_MODE) {

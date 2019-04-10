@@ -23,41 +23,47 @@ public:
     // Causes a unit to match headings with neighboring units.
     Position setAlignment( const Unit &unit, const Unit_Inventory &ui );
     // Causes UNIT to run directly from enemy.
-    Position setDirectRetreat(const Position & pos, const Position &e_pos, const UnitType & type);
+    Position setDirectRetreat(const Position &e_pos, const UnitType & type);
     // Causes a unit to move towards central map veins.
-    Position setCentralize( const Position &pos );
+    Position setCentralize();
     // causes a unit to move about in a random (brownian) fashion.
     Position setStutter( const Unit &unit, const double &n );
     // Causes a unit to be pulled towards others of their kind.
-    Position setCohesion( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
+    Position setCohesion( const Unit &unit, const Unit_Inventory &ui );
     // causes a unit to be pulled towards (map) center.
-    Position setAttractionMap(const Unit & unit, const Position & pos, const vector<vector<int>>& map, const Position &map_center);
-    Position setAttractionField(const Unit & unit, const Position & pos, const vector<vector<int>>& field, const Position & map_center);
+    Position setAttractionMap(const Unit & unit, const vector<vector<int>>& map, const Position &map_center);
+    Position setAttractionField(const Unit & unit, const vector<vector<int>>& field, const Position & map_center);
     // causes a unit to be pushed away from (map) center. Dangerous for ground units, could lead to them running down dead ends.
-    Position setRepulsionMap(const Unit & unit, const Position & pos, const vector<vector<int>>& map, const Position & map_center);
-    Position setRepulsionField(const Unit & unit, const Position & pos, const vector<vector<int>>& field, const Position & map_center);
+    Position setRepulsionMap(const Unit & unit, const vector<vector<int>>& map, const Position & map_center);
+    Position setRepulsionField(const Unit & unit, const vector<vector<int>>& field, const Position & map_center);
 
     // causes a unit to move directly towards the enemy base.
-    Position scoutEnemyBase(const Unit & unit, const Position & pos, Map_Inventory & inv);
+    Position scoutEnemyBase(const Unit & unit, Map_Inventory & inv);
     // causes a unit to seperate itself from others.
-    Position setSeperation( const Unit &unit, const Position &pos, const Unit_Inventory &ui );
+    Position setSeperation( const Unit &unit, const Unit_Inventory &ui );
     // causes a unit to seperate itself from others at a distance of its own vision.
-    Position setSeperationScout(const Unit & unit, const Position & pos, const Unit_Inventory & ui);
+    Position setSeperationScout(const Unit & unit, const Unit_Inventory & ui);
     //void setUnwalkability( const Unit &unit, const Position &pos);
     // Causes a unit to avoid units in its distant future, near future, and immediate position.
     Position setObjectAvoid(const Unit &unit, const Position &current_pos, const Position &future_pos, const vector<vector<int>> &map);
     bool adjust_lurker_burrow(const Unit &unit, const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
 
     // gives a vector that has the direction towards center on (map). returns a direction.
-    Position getVectorTowardsMap(const Position & pos, const vector<vector<int>>& map) const;
+    Position getVectorTowardsMap(const vector<vector<int>>& map) const;
     // gives a vector that has the direction towards higher values on the field.  returns a direction.
-    Position getVectorTowardsField(const Position & pos, const vector<vector<int>>& field) const;
+    Position getVectorTowardsField(const vector<vector<int>>& field) const;
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
-    Position getVectorAwayField(const Position & pos, const vector<vector<int>>& field) const;
+    Position getVectorAwayField(const vector<vector<int>>& field) const;
 
+
+    Mobility::Mobility(const Unit unit) {
+        pos = unit->getPosition();
+        distance_metric = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
+    };
 
 private:
-    double distance_metric = 0;
+    Position pos;
+    double distance_metric;
     Position stutter_vector_ = Positions::Origin;
     Position attune_vector_ = Positions::Origin;
     Position cohesion_vector_ = Positions::Origin;

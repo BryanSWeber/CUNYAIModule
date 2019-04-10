@@ -670,6 +670,12 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ += UnitTypes::Protoss_High_Templar.supplyRequired() * 2;
     }
 
+    if (unittype.isSuccessorOf(UnitTypes::Protoss_Dark_Templar)) {
+        modified_min_cost_ += UnitTypes::Protoss_Dark_Templar.mineralPrice() * 2;
+        modified_gas_cost_ += UnitTypes::Protoss_Dark_Templar.gasPrice() * 2;
+        modified_supply_ += UnitTypes::Protoss_Dark_Templar.supplyRequired() * 2;
+    }
+
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
         modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
         modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));

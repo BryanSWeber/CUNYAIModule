@@ -6,7 +6,6 @@
 # include <numeric>
 # include <math.h>
 
-#define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0); // in pixels
 #define TOO_FAR_FROM_FRONT (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_ground_combatant_ + 3.0 * 0.125 * distance_metric )); //radial distance is in minitiles, distance is in pixels.
 //#define DISTANCE_METRIC (2.760 * 24.0);
 
@@ -15,13 +14,10 @@ using namespace Filter;
 using namespace std;
 
 
-
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
 void Mobility::Pathing_Movement(const Unit &unit, const int &passed_distance, const Position &e_pos) {
 
-    Position pos = unit->getPosition();
-    distance_metric = (double)DISTANCE_METRIC;
     Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
@@ -36,20 +32,20 @@ void Mobility::Pathing_Movement(const Unit &unit, const int &passed_distance, co
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
         if (!ready_to_fight) { // Otherwise, return to safety.
-            setRepulsionField(unit, pos, CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
+            setRepulsionField(unit, CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
         }
         else {
-            setRepulsionField(unit, pos, CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
-            setAttractionField(unit, pos, CUNYAIModule::current_map_inventory.pf_explore_, CUNYAIModule::current_map_inventory.safe_base_);
+            setRepulsionField(unit, CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
+            setAttractionField(unit, CUNYAIModule::current_map_inventory.pf_explore_, CUNYAIModule::current_map_inventory.safe_base_);
             pathing_confidently = true;
             Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, pos, 250);
             e_neighborhood.updateUnitInventorySummary();
 
             if (e_neighborhood.stock_shoots_up_ > 0) {
-                setSeperationScout(unit, pos, e_neighborhood);
+                setSeperationScout(unit,e_neighborhood);
             }
             else {
-                setSeperationScout(unit, pos, local_neighborhood);
+                setSeperationScout(unit, local_neighborhood);
                 pathing_confidently = true;
             }
         }
@@ -57,24 +53,24 @@ void Mobility::Pathing_Movement(const Unit &unit, const int &passed_distance, co
     else {
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-            if (u_type.airWeapon() != WeaponTypes::None) setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
-            else setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+            if (u_type.airWeapon() != WeaponTypes::None) setAttractionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+            else setAttractionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
             pathing_confidently = true;
         }
         else { // Otherwise, return to home.
-            setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
+            setAttractionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
         }
 
         int average_side = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
-        if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
+        if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, neighbors);
 
         if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. Overwrites natural seperation.
-            setSeperationScout(unit, pos, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
+            setSeperationScout(unit, local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
             pathing_confidently = true;
         }
 
-        setCohesion(unit, pos, local_neighborhood);
+        setCohesion(unit, local_neighborhood);
     }
 
     //Avoidance vector:
@@ -154,7 +150,6 @@ void Mobility::Pathing_Movement(const Unit &unit, const int &passed_distance, co
 
 bool Mobility::BWEM_Movement(const Unit & unit) const
 {
-    Position pos = unit->getPosition();
     bool pathing_confidently = false;
     UnitType u_type = unit->getType();
 
@@ -318,26 +313,22 @@ void Mobility::Tactical_Logic(const Unit &unit, const Stored_Unit &e_unit, Unit_
 // Basic retreat logic
 void Mobility::Retreat_Logic(const Unit &unit, const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White, const bool &force = false) {
 
-
     int dist = unit->getDistance(e_unit.pos_);
-    distance_metric = (double)DISTANCE_METRIC; // retreating must be done very fast.
    
     int e_range = ei.max_range_;
     //int f_range = ui.max_range_;
-
-    Position pos = unit->getPosition();
     bool order_sent = false;
     Unit_Inventory e_squad_threatening = CUNYAIModule::getThreateningUnitInventoryInRadius(e_squad, pos, 999, unit->isFlying());
     // If there are bad guys nearby, run from the immediate threat, otherwise run home.
     if (CUNYAIModule::getThreateningStocks(unit, e_squad) > 0) {
         // All units seperate from nearby enemy units- threat or not.
-        setSeperation(unit, pos, e_squad_threatening);
+        setSeperation(unit, e_squad_threatening);
         // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
-        if (e_unit.is_flying_) setRepulsionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
-        else setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
+        if (e_unit.is_flying_) setRepulsionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+        else setAttractionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
     }
     else {
-        setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        setAttractionMap(unit, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
     }
     
     //Avoidance vector:
@@ -441,7 +432,7 @@ Position Mobility::setAlignment(const Unit &unit, const Unit_Inventory &ui) {
     }
 }
 
-Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, const UnitType &type) {
+Position Mobility::setDirectRetreat(const Position &e_pos, const UnitType &type) {
     int dist_x = e_pos.x - pos.x;
     int dist_y = e_pos.y - pos.y;
     double theta = atan2(dist_y, dist_x); // att_y/att_x = tan (theta).
@@ -480,7 +471,7 @@ Position Mobility::setDirectRetreat(const Position &pos, const Position &e_pos, 
 //}
 
 //Cohesion, all units tend to prefer to be together.
-Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setCohesion(const Unit &unit, const Unit_Inventory &ui) {
     cohesion_vector_ = Positions::Origin;
     const Position loc_center = ui.getMeanArmyLocation();
     if (loc_center != Positions::Origin) {
@@ -492,7 +483,7 @@ Position Mobility::setCohesion(const Unit &unit, const Position &pos, const Unit
     return cohesion_vector_;
 }
 
-Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inventory &inv) {
+Position Mobility::scoutEnemyBase(const Unit &unit, Map_Inventory &inv) {
     if (!CUNYAIModule::current_map_inventory.start_positions_.empty() && find(CUNYAIModule::current_map_inventory.start_positions_.begin(), CUNYAIModule::current_map_inventory.start_positions_.end(), unit->getLastCommand().getTargetPosition()) == CUNYAIModule::current_map_inventory.start_positions_.end()) {
         Position possible_base = CUNYAIModule::current_map_inventory.start_positions_[0];
         double dist = static_cast<double>(unit->getDistance(possible_base));
@@ -517,7 +508,7 @@ Position Mobility::scoutEnemyBase(const Unit &unit, const Position &pos, Map_Inv
 
 
 //Attraction, pull towards map center.
-Position Mobility::setAttractionMap(const Unit &unit, const Position &pos, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setAttractionMap(const Unit &unit, const vector<vector<int>> &map, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -526,13 +517,13 @@ Position Mobility::setAttractionMap(const Unit &unit, const Position &pos, const
         attract_vector_ = Position(static_cast<int>(cos(theta) * distance_metric), static_cast<int>(sin(theta) * distance_metric));  // run to (map)!
     }
     else {
-        attract_vector_ = getVectorTowardsMap(unit->getPosition(), map); // move downhill (vector times scalar)
+        attract_vector_ = getVectorTowardsMap(map); // move downhill (vector times scalar)
     }
     return attract_vector_;
 }
 
 //Attraction, pull towards higher values.
-Position Mobility::setAttractionField(const Unit &unit, const Position &pos, const vector<vector<int>> &field, const Position &map_center) {
+Position Mobility::setAttractionField(const Unit &unit, const vector<vector<int>> &field, const Position &map_center) {
     attract_vector_ = Positions::Origin;
     if (field.empty()) {
         int dist_x = map_center.x - pos.x;
@@ -541,13 +532,13 @@ Position Mobility::setAttractionField(const Unit &unit, const Position &pos, con
         attract_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric)); // run to (map)!
     }
     else {
-        attract_vector_ = getVectorTowardsField(pos, field);
+        attract_vector_ = getVectorTowardsField(field);
     }
     return attract_vector_;
 }
 
 //Repulsion, pull away from map center. Literally just a negative of the previous.
-Position Mobility::setRepulsionMap(const Unit &unit, const Position &pos, const vector<vector<int>> &map, const Position &map_center) {
+Position Mobility::setRepulsionMap(const Unit &unit, const vector<vector<int>> &map, const Position &map_center) {
     repulse_vector_ = Positions::Origin;
     if (map.empty() || unit->isFlying()) {
         int dist_x = map_center.x - pos.x;
@@ -556,14 +547,14 @@ Position Mobility::setRepulsionMap(const Unit &unit, const Position &pos, const 
         repulse_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric )); // run to (map)!
     }
     else {
-        Position direction = getVectorTowardsMap(pos, map);
+        Position direction = getVectorTowardsMap(map);
         repulse_vector_ = Position(-direction.x, -direction.y); // move uphill. (invert previous direction) Don't use, seems buggy!
     }
     return repulse_vector_;
 }
 
 //Repulsion, pull away from field values. Literally just a negative of the previous.
-Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, const vector<vector<int>> &field, const Position &map_center) {
+Position Mobility::setRepulsionField(const Unit &unit, const vector<vector<int>> &field, const Position &map_center) {
     repulse_vector_ = Positions::Origin;
     if (field.empty()) {
         int dist_x = map_center.x - pos.x;
@@ -572,14 +563,14 @@ Position Mobility::setRepulsionField(const Unit &unit, const Position &pos, cons
         repulse_vector_ = Position(static_cast<int>(-cos(theta) * distance_metric), static_cast<int>(-sin(theta) * distance_metric)); // run to (map)!
     }
     else {
-        repulse_vector_ = getVectorAwayField(unit->getPosition(), field);
+        repulse_vector_ = getVectorAwayField(field);
     }
     return repulse_vector_;
 }
 
 
 //Seperation from nearby units, search very local neighborhood.
-Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setSeperation(const Unit &unit, const Unit_Inventory &ui) {
     int seperation_x = 0;
     int seperation_y = 0;
     int unit_count = 1;
@@ -601,7 +592,7 @@ Position Mobility::setSeperation(const Unit &unit, const Position &pos, const Un
 }
 
 //Seperation from nearby units, search very local neighborhood of 2 tiles.
-Position Mobility::setSeperationScout(const Unit &unit, const Position &pos, const Unit_Inventory &ui) {
+Position Mobility::setSeperationScout(const Unit &unit, const Unit_Inventory &ui) {
     UnitType type = unit->getType();
     bool overlord_with_upgrades = type == UnitTypes::Zerg_Overlord && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Antennae) > 0;
     double distance = (type.sightRange() + overlord_with_upgrades * 2 * 32);
@@ -828,7 +819,7 @@ public:
     }
 };
 
-Position Mobility::getVectorTowardsMap(const Position &pos, const vector<vector<int>> &map) const {
+Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map) const {
     Position return_vector = Positions::Origin;
     int my_spot = CUNYAIModule::current_map_inventory.getMapValue(pos, map);
     int temp_x = 0;
@@ -880,7 +871,7 @@ Position Mobility::getVectorTowardsMap(const Position &pos, const vector<vector<
     return  return_vector;
 }
 
-Position Mobility::getVectorTowardsField(const Position &pos, const vector<vector<int>> &field) const {
+Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const {
     Position return_vector = Positions::Origin;
     int my_spot = CUNYAIModule::current_map_inventory.getFieldValue(pos, field);
     int temp_x = 0;
@@ -917,7 +908,7 @@ Position Mobility::getVectorTowardsField(const Position &pos, const vector<vecto
     return  return_vector;
 }
 
-Position Mobility::getVectorAwayField(const Position &pos, const vector<vector<int>> &field) const {
+Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     Position return_vector = Positions::Origin;
     int my_spot = CUNYAIModule::current_map_inventory.getFieldValue(pos, field);
     int temp_x = 0;
