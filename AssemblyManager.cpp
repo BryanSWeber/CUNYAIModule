@@ -310,7 +310,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 }
 
 //Creates a new building with DRONE. Does not create units that morph from other buildings: Lairs, Hives, Greater Spires, or sunken/spores.
-bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv, const Unit_Inventory &e_inv) {
+bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_inv) {
     // will send it to do the LAST thing on this list that it can build.
     bool buildings_started = false;
     bool any_macro_problems = CUNYAIModule::current_map_inventory.min_workers_ > CUNYAIModule::current_map_inventory.min_fields_ * 1.75 || CUNYAIModule::current_map_inventory.gas_workers_ > 2 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) || CUNYAIModule::current_map_inventory.min_fields_ < CUNYAIModule::current_map_inventory.hatches_ * 5 || CUNYAIModule::current_map_inventory.workers_distance_mining_ > 0.0625 * CUNYAIModule::current_map_inventory.min_workers_; // 1/16 workers LD mining is too much.
@@ -329,6 +329,11 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
             static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)) +
                 static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
+    int count_tech_buildings = CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern);
+    bool have_idle_evos = false;
+    for (auto evo : CUNYAIModule::friendly_player_model.units_.unit_inventory_) {
+        if (evo.second.type_ == UnitTypes::Zerg_Evolution_Chamber && evo.second.build_type_ && evo.second.phase_ != "Upgrading") have_idle_evos = true;
+    }
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -376,16 +381,6 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
             CUNYAIModule::current_map_inventory.hatches_ > 1);
     }
 
-    if (returnUnitRank(UnitTypes::Zerg_Zergling) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk), returnUnitRank(UnitTypes::Zerg_Scourge) })) {
-
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
-            CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > 1);
-
-    }
-
     //Muta or lurker for main body of units.
     if (max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) })) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
@@ -422,20 +417,14 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Map_Inventory &inv
 
 
     // Always:
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
-            CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 1);
-
-        // >2 bases
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
-            CUNYAIModule::Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Upgrade, Broodwar->self()->getUnits()) == 1 &&
-            CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            CUNYAIModule::Count_Units_Doing(UnitTypes::Zerg_Evolution_Chamber, UnitCommandTypes::Morph, Broodwar->self()->getUnits()) == 0 && //costly, slow.
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-            CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 2);
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
+        Broodwar->self()->gas() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
+        Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
+        CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+        (have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
         Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(drone)->second;
         morphing_unit.updateStoredUnit(drone);

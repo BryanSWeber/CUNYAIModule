@@ -35,8 +35,8 @@ struct Stored_Unit {
     void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
-    UnitType type_;
-    UnitType build_type_;
+    UnitType type_; // the type of the unit.
+    UnitType build_type_; // the type the worker is about to build.
     Position pos_; // in pixels
     Unit locked_mine_;
 
