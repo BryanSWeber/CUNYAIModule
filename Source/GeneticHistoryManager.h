@@ -7,7 +7,8 @@ using namespace std;
 using namespace BWAPI;
 
 struct GeneticHistory {
-    GeneticHistory();
+
+    void initializeHistory();
 
     double delta_out_mutate_;
     double gamma_out_mutate_;
@@ -19,5 +20,4 @@ struct GeneticHistory {
     double loss_rate_;
     string build_order_;
 
-    GeneticHistory( string file );
 };
