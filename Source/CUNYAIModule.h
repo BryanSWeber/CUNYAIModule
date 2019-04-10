@@ -102,7 +102,6 @@ public:
   int last_frame_of_hydra_morph_command = 0;
   int last_frame_of_muta_morph_command = 0;
 
-
   // Assembly Functions
 
       static bool checkInCartridge( const UnitType & ut);

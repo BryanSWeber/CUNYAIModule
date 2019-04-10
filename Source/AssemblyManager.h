@@ -4,6 +4,7 @@
 #include "Unit_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "BWEM\include\bwem.h"
+#include "PlayerModelManager.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -19,7 +20,6 @@ private:
     static int last_frame_of_larva_morph_command;
     static int last_frame_of_hydra_morph_command;
     static int last_frame_of_muta_morph_command;
-
 public:
     static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.

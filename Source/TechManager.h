@@ -6,7 +6,7 @@
 using namespace BWAPI;
 
 class TechManager {
-    static std::map<UpgradeType, int> upgrade_cycle; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    static std::map<UpgradeType, int> upgrade_cycle_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
     static bool tech_avail_;
 public:
     //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.

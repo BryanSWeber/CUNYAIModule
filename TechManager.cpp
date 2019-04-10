@@ -3,20 +3,19 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\TechManager.h"
-#include "Source\PlayerModelManager.h" // needed for cartidges.
+# include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
 
 using namespace BWAPI;
 
-std::map<UpgradeType, int> TechManager::upgrade_cycle = CUNYAIModule::friendly_player_model.upgrade_cartridge_; //persistent valuation of upgrades. Start with upgrade cartdrige.
 bool TechManager::tech_avail_ = true;
+std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::upgrade_cartridge_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
 
-
-    for (auto potential_up : upgrade_cycle) {
+    for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         //if (potential_up.first == UpgradeTypes::None || (CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats() && CUNYAIModule::checkDesirable(potential_up.first, true))){
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
@@ -25,8 +24,8 @@ void TechManager::updateOptimalTech() {
             upgradeFAP.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
-            if (upgrade_cycle.find(potential_up.first) == upgrade_cycle.end()) upgrade_cycle[potential_up.first] = score;
-            else upgrade_cycle[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
+            if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;
+            else upgrade_cycle_[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle_[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
         //}
     }
 }
@@ -46,9 +45,9 @@ void TechManager::updateTech_Avail() {
     updateOptimalTech();
 
     UpgradeType up_type = UpgradeTypes::None;
-    int best_sim_score = upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
+    int best_sim_score = upgrade_cycle_[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
 
-    for (auto &potential_up : upgrade_cycle) {
+    for (auto &potential_up : upgrade_cycle_) {
         if (CUNYAIModule::Count_Units(potential_up.first.whatsRequired()) - CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatsRequired()) > 0) {
             if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
                 best_sim_score = potential_up.second;
@@ -92,7 +91,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, upgrade_bool && (CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) > 0) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0);
 
     UpgradeType up_type = UpgradeTypes::None;
-    std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle);
+    std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
     int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
 
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
@@ -181,7 +180,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     int another_sort_of_upgrade = 0;
     std::multimap<int, UpgradeType> sorted_list;
 
-    for (auto it : upgrade_cycle) {
+    for (auto it : upgrade_cycle_) {
         sorted_list.insert({ it.second, it.first });
     }
 
@@ -193,18 +192,18 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
 }
 
 void TechManager::clearSimulationHistory() {
-    upgrade_cycle = CUNYAIModule::friendly_player_model.upgrade_cartridge_;
-    for (auto upgrade : upgrade_cycle) {
+    upgrade_cycle_ = CUNYAIModule::friendly_player_model.upgrade_cartridge_;
+    for (auto upgrade : upgrade_cycle_) {
         upgrade.second = 0;
     }
-    upgrade_cycle[UpgradeTypes::None] = 0;
+    upgrade_cycle_[UpgradeTypes::None] = 0;
 }
 
 //Simply returns the techtype that is the "best" of a BuildFAP sim.
 int TechManager::returnTechRank(const UpgradeType &ut) {
     int postion_in_line = 0;
     multimap<int, UpgradeType> sorted_list;
-    for (auto it : upgrade_cycle) {
+    for (auto it : upgrade_cycle_) {
         sorted_list.insert({ it.second, it.first });
     }
 
