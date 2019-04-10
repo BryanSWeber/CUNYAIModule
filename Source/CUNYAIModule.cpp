@@ -115,7 +115,8 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    gene_history = GeneticHistory( ".\\bwapi-data\\read\\output.txt" );
+    gene_history = GeneticHistory();
+    gene_history.initializeHistory();
 
     delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
     gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -165,12 +166,8 @@ void CUNYAIModule::onStart()
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
 
-    if constexpr (MOVE_OUTPUT_BACK_TO_READ || SSCAIT_OR_DOCKER) { // don't write to the read folder. But we want the full read contents ready for us to write in.
-        rename(".\\bwapi-data\\read\\output.txt", ".\\bwapi-data\\write\\output.txt");  // Furthermore, rename will fail if there is already an existing file.
-    }
-
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open( ".\\bwapi-data\\write\\output.txt", ios_base::app );
+    output.open( ".\\bwapi-data\\write\\history.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << delta << ","
         << gamma << ','
@@ -193,7 +190,7 @@ void CUNYAIModule::onEnd( bool isWinner )
     output.close();
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        rename(".\\bwapi-data\\write\\output.txt", ".\\bwapi-data\\read\\output.txt"); // Furthermore, rename will fail if there is already an existing file.
+        rename(".\\bwapi-data\\write\\history.txt", ".\\bwapi-data\\read\\history.txt"); // Furthermore, rename will fail if there is already an existing file.
     }
 
     if (!buildorder.isEmptyBuildOrder()) {
@@ -284,7 +281,8 @@ void CUNYAIModule::onFrame()
 
     if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
         //Initialize model variables.
-        GeneticHistory gene_history = GeneticHistory(".\\bwapi-data\\read\\output.txt");
+        gene_history = GeneticHistory();
+        gene_history.initializeHistory();
 
         delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
         gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
