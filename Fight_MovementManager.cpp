@@ -6,7 +6,8 @@
 # include <numeric>
 # include <math.h>
 
-#define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0);
+#define DISTANCE_METRIC (CUNYAIModule::getProperSpeed(unit) * 24.0); // in pixels
+#define TOO_FAR_FROM_FRONT (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3.0 * 0.125 * distance_metric )); //radial distance is in minitiles, distance is in pixels.
 //#define DISTANCE_METRIC (2.760 * 24.0);
 
 using namespace BWAPI;
@@ -27,10 +28,10 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(ui, ei);
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(ui, ei);
     bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3.0 *  distance_metric ));
+    bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
 
     if (u_type == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
 
@@ -161,7 +162,7 @@ bool Mobility::BWEM_Movement(const Unit & unit) const
     bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = (CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(pos) > (CUNYAIModule::friendly_player_model.closest_radial_distance_enemy_ground_ + 3 * distance_metric ));
+    bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
 
     auto retreat_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.safe_base_);
     auto ground_attack_path = BWEM::Map::Instance().GetPath(unit->getPosition(), CUNYAIModule::current_map_inventory.enemy_base_ground_);
@@ -957,7 +958,7 @@ Position Mobility::getVectorAwayField(const Position &pos, const vector<vector<i
 bool Mobility::move_to_next(const BWEM::CPPath &cpp, const Unit & unit) const
 {
     if (cpp.size()) {
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit->getPosition()) < 32 * 3;
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit->getPosition()) < 32 * 4;
         if (too_close && cpp.size() >= 2) return unit->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
         else if (cpp.size() >= 2) return unit->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
     }

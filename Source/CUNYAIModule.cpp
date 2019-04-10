@@ -790,7 +790,7 @@ void CUNYAIModule::onFrame()
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
                 bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_inventory_.at(u), 12); // half second.
-                bool they_take_a_fap_beating = checkSuperiorFAPForecast2(u, friend_loc, enemy_loc);
+                bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
