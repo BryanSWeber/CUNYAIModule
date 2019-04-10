@@ -422,7 +422,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
         Broodwar->self()->gas() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        (!have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
