@@ -751,7 +751,7 @@ void CUNYAIModule::onFrame()
                 Unit_Inventory friend_loc;
                 Unit_Inventory enemy_loc;
 
-                if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 2) {
+                if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 32) {
                     Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                     Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
@@ -766,8 +766,8 @@ void CUNYAIModule::onFrame()
                     int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
                     int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
 
-                    auto enemy_in_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
                     auto friendly_in_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
+                    auto enemy_in_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
 
                     Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_area, e_closest->pos_, distance_to_foe + search_radius);
                     Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_area, u->getPosition(), distance_to_foe + search_radius);
@@ -901,7 +901,7 @@ void CUNYAIModule::onFrame()
                 if ( clear_area && !u_type.isFlyer() ) {
                     short_term_walking = !mobility.BWEM_Movement(u); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
-                if (short_term_walking) mobility.Pathing_Movement(u, friendly_player_model.units_, enemy_player_model.units_, -1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
+                if (short_term_walking) mobility.Pathing_Movement(u, -1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
 
             }
 

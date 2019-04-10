@@ -186,6 +186,7 @@ public:
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
       static double getProperSpeed(const UnitType & type, const Player owner = Broodwar->self() );
+      //range in pixels, including upgrades
       static int getProperRange(const Unit u);
       static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
       static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
@@ -316,7 +317,7 @@ public:
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       //static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
-      static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei);
+      static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u); 
 

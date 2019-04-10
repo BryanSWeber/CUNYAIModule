@@ -1516,14 +1516,13 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 
     if (!map.empty() && !ui.unit_inventory_.empty()) {
         for (auto u : ui.unit_inventory_) {
-            if (u.second.type_.canAttack()) {
+            if (u.second.type_.canAttack() && u.second.phase_ != "Retreating" || !combat_units) {
                 return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
             }
         }
-        return return_vector;
     }
-
-    return return_vector = { 0 };
+    if (!return_vector.empty()) return return_vector;
+    else return return_vector = { 0 };
 }
 
 vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, const int &reduction) {

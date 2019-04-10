@@ -18,18 +18,18 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
-void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const int &passed_distance, const Position &e_pos) {
+void Mobility::Pathing_Movement(const Unit &unit, const int &passed_distance, const Position &e_pos) {
 
     Position pos = unit->getPosition();
     distance_metric = (double)DISTANCE_METRIC;
-    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ui, pos, 250);
+    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos, 250);
     local_neighborhood.updateUnitInventorySummary();
     bool pathing_confidently = false;
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(ui, ei);
-    bool enemy_scouted = ei.getMeanBuildingLocation() != Positions::Origin;
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
+    bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
 
@@ -42,7 +42,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
             setRepulsionField(unit, pos, CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
             setAttractionField(unit, pos, CUNYAIModule::current_map_inventory.pf_explore_, CUNYAIModule::current_map_inventory.safe_base_);
             pathing_confidently = true;
-            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(ei, pos, 250);
+            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, pos, 250);
             e_neighborhood.updateUnitInventorySummary();
 
             if (e_neighborhood.stock_shoots_up_ > 0) {
@@ -65,7 +65,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
             setAttractionMap(unit, pos, CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
         }
 
-        int average_side = ui.unit_inventory_.find(unit)->second.circumference_ / 4;
+        int average_side = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos, 32 + average_side * 2);
         if (u_type != UnitTypes::Zerg_Mutalisk) setSeperation(unit, pos, neighbors);
 
@@ -95,7 +95,7 @@ void Mobility::Pathing_Movement(const Unit &unit, const Unit_Inventory &ui, Unit
     if ( final_pos != pos && final_pos.getDistance(e_pos) > passed_distance && pos.getDistance(e_pos) > passed_distance) {
 
         // lurkers should move when we need them to scout.
-        if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(ei, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), ei.max_range_))) {
+        if (u_type == UnitTypes::Zerg_Lurker && unit->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
             unit->unburrow();
             Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
             changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
@@ -159,7 +159,7 @@ bool Mobility::BWEM_Movement(const Unit & unit) const
     UnitType u_type = unit->getType();
 
     bool healthy = unit->getHitPoints() > 0.25 * unit->getType().maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
@@ -173,7 +173,6 @@ bool Mobility::BWEM_Movement(const Unit & unit) const
     if (u_type != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-
             if (u_type.airWeapon() != WeaponTypes::None) { 
                 it_worked = move_to_next(air_attack_path, unit);
             }
