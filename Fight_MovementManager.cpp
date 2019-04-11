@@ -195,10 +195,11 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     Stored_Unit* target;
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit last_target = unit_->getLastCommand().getTarget();
+    Position targets_pos;
 
     int widest_dim = max(u_type_.height(), u_type_.width());
     int priority = 0;
-    //int chargeable_dist = CUNYAIModule::getChargableDistance(unit, ei);
+
     int helpful_u = ui.moving_average_fap_stock_;
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
@@ -207,11 +208,11 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 8 : 8 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
     for (auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e) {
-        if (e->second.valid_pos_) {
+        if (e->second.valid_pos_) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
@@ -289,6 +290,10 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             }
             attack_order_issued = true;
         }
+        else {
+            targets_pos = target->pos_;
+            unit_->attack(targets_pos);
+        }
     }
 
     if (attack_order_issued) {
@@ -298,7 +303,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     } 
     else {
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
-        changing_unit.phase_ = "Surrounding";
+        changing_unit.phase_ = "Approaching";
         changing_unit.updateStoredUnit(unit_);
     }// if I'm not attacking and I'm in range, I'm 'surrounding'
     return;

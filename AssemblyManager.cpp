@@ -426,6 +426,12 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Queens_Nest) == 0 &&
+        CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+        (CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
+
         Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(drone)->second;
         morphing_unit.updateStoredUnit(drone);
 

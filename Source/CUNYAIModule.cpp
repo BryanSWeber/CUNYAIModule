@@ -212,7 +212,7 @@ void CUNYAIModule::onEnd( bool isWinner )
 
 void CUNYAIModule::onFrame()
 { // Called once every game frame
-   bwemMap.Draw(BWAPI::BroodwarPtr);
+
 
   // Return if the game is a replay or is paused
 
@@ -452,6 +452,8 @@ void CUNYAIModule::onFrame()
 
     // Display the game status indicators at the top of the screen
     if constexpr(DRAWING_MODE) {
+
+        bwemMap.Draw(BWAPI::BroodwarPtr);
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
         //Print_Cached_Inventory(0, 50);
@@ -805,9 +807,9 @@ void CUNYAIModule::onFrame()
                                               //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
                                               //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
                     Position e_pos = e_closest->pos_;
-                    bool home_fight_mandatory = false;/*u_type != UnitTypes::Zerg_Drone &&*/
-                                                //(current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
-                                                //current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
+                    bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
+                                                (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
+                                                current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
                     bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
@@ -826,7 +828,7 @@ void CUNYAIModule::onFrame()
 
                     bool force_retreat =
                         (!grim_trigger_to_go_in) || 
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.10 * friend_loc.stock_fliers_) && !home_fight_mandatory) ||
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() || threatening_stocks > 0.2 * friend_loc.stock_fliers_) && !home_fight_mandatory) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||

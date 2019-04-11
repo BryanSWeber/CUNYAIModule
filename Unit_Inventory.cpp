@@ -289,7 +289,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         ma_future_fap_value_ = shell.stock_value_;
     }
     else {
-        bool retreating_undetected = unit->canAttack() && ( phase_ != "Retreating" || phase_ != "Attacking" || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
+        bool retreating_undetected = unit->canAttack() && ( (phase_ != "Approaching" && phase_ != "Retreating" && phase_ != "Attacking") || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
         double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION);
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
@@ -678,6 +678,11 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
         modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
         modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
+    }
+
+    if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
+        modified_min_cost_ += BWAPI::UnitTypes::Protoss_Scarab.mineralPrice() * (5 + 5 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+        modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
     }
 
     if (unittype == UnitTypes::Protoss_Interceptor) {
