@@ -38,7 +38,7 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     //Update Enemy Units
     //Update friendly unit inventory.
     updateUnit_Counts();
-    if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
+    if (units_.unit_map_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
     units_.purgeUnseenUnits(); //Critical for self!
@@ -111,7 +111,7 @@ void Player_Model::evaluateCurrentWorth()
         int supply_expenditures_ = 0;
 
         //collect how much of the enemy you can see.
-        for (auto i : units_.unit_inventory_) {
+        for (auto i : units_.unit_map_) {
             min_expenditures_ += i.second.modified_min_cost_;
             gas_expenditures_ += i.second.modified_gas_cost_;
             supply_expenditures_ += i.second.modified_supply_;
@@ -132,7 +132,7 @@ void Player_Model::evaluateCurrentWorth()
         int gas_losses_ = 0;
         int supply_losses_ = 0;
 
-        for (auto i : casualties_.unit_inventory_) {
+        for (auto i : casualties_.unit_map_) {
 
             min_losses_ += i.second.modified_min_cost_;
             gas_losses_ += i.second.modified_gas_cost_;
@@ -157,7 +157,7 @@ void Player_Model::updateUnit_Counts() {
     vector <UnitType> already_seen;
     vector <int> unit_count_temp;
     vector <int> unit_incomplete_temp;
-    for (auto const & u_iter : units_.unit_inventory_) { // should only search through unit types not per unit.
+    for (auto const & u_iter : units_.unit_map_) { // should only search through unit types not per unit.
         UnitType u_type = u_iter.second.type_;
         bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
         if (new_unit_type) {

@@ -201,7 +201,7 @@ void CUNYAIModule::Diagnostic_Watch_Expos() {
 // This function limits the drawing that needs to be done by the bot.
 void CUNYAIModule::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
     if constexpr (DRAWING_MODE) {
-        for (auto u : ui.unit_inventory_) {
+        for (auto u : ui.unit_map_) {
             Position fin = u.second.pos_;
             Position start = u.second.bwapi_unit_->getTargetPosition();
             Diagnostic_Line(start, fin, screen_pos, col);
@@ -391,7 +391,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             string inferred_building_type;
 
             //living units - position, type, stock value.
-            for (auto u : player.units_.unit_inventory_) {
+            for (auto u : player.units_.unit_map_) {
 
                 std::stringstream place_translator;
                 place_translator << u.second.pos_;
@@ -417,7 +417,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
 
 
             //dead units - position, type, stock value.
-            for (auto u : player.casualties_.unit_inventory_) {
+            for (auto u : player.casualties_.unit_map_) {
 
                 std::stringstream dead_place_translator;
                 dead_place_translator << u.second.pos_;
@@ -581,7 +581,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
 {
     int count = 0;
 
-    for ( auto & e : ui.unit_inventory_) {
+    for ( auto & e : ui.unit_map_) {
 
         //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
         //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -601,7 +601,7 @@ int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventor
 {
     int count = 0;
 
-    for (auto & e : ui.unit_inventory_) {
+    for (auto & e : ui.unit_map_) {
 
         //if ( e.second.type_ == UnitTypes::Zerg_Egg && e.second.build_type_ == type ) { // Count units under construction
         //    count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -693,7 +693,7 @@ int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
 {
     int count = 0;
-    for (const auto & unit : ui.unit_inventory_)
+    for (const auto & unit : ui.unit_map_)
     {
         if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -713,7 +713,7 @@ int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
 {
     int count = 0;
-    for (const auto & unit : ui.unit_inventory_)
+    for (const auto & unit : ui.unit_map_)
     {
         if (unit.second.type_ == UnitTypes::Zerg_Egg && unit.second.build_type_ == type) { // Count units under construction
             count += type.isTwoUnitsInOneEgg() ? 2 : 1; // this can only be lings or scourge, I believe.
@@ -762,7 +762,7 @@ int CUNYAIModule::Stock_Tech(const TechType &tech) {
 int CUNYAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &ui) {
     int total_stock = 0;
 
-    for ( auto & u : ui.unit_inventory_ ) {
+    for ( auto & u : ui.unit_map_ ) {
         if ( u.second.type_ == unit_type ) {  // if you impose valid_pos here many of YOUR OWN UNITS will not be counted.
             total_stock += u.second.current_stock_value_;
         }
@@ -998,7 +998,7 @@ const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
 //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
 Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
     Unitset e_set;
-    for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+    for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
         if (static_cast<int>((*e).second.pos_.getDistance( origin )) <= dist ) {
             e_set.insert( (*e).second.bwapi_unit_ ); // if we take any distance and they are in inventory.
         }
@@ -1012,8 +1012,8 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if ( !ui.unit_inventory_.empty() ) {
-        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+    if ( !ui.unit_map_.empty() ) {
+        for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
             temp_dist = static_cast<int>((*e).second.pos_.getDistance( origin ));
             if ( temp_dist <= min_dist && e->second.valid_pos_ ) {
                 min_dist = temp_dist;
@@ -1031,8 +1031,8 @@ Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if (e->second.type_ == u_type && e->second.valid_pos_ ){
                 temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist) {
@@ -1109,8 +1109,8 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
             temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
@@ -1127,8 +1127,8 @@ Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Positio
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
             temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
@@ -1146,8 +1146,8 @@ Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Po
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if (e->second.type_.isBuilding()) {
                 temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
                 if (temp_dist <= min_dist && e->second.valid_pos_) {
@@ -1223,8 +1223,8 @@ Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             can_attack = CUNYAIModule::Can_Fight(unit, e->second);
             if (can_attack && e->second.pos_.isValid() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance(unit->getPosition()));
@@ -1246,8 +1246,8 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
     int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
 
-    if ( !ui.unit_inventory_.empty() ) {
-        for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+    if ( !ui.unit_map_.empty() ) {
+        for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
             can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
             can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
@@ -1271,8 +1271,8 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             can_attack = Can_Fight(unit, e->second);
             can_be_attacked_by = Can_Fight(e->second, unit);
 
@@ -1297,8 +1297,8 @@ Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             can_attack = Can_Fight(unit, e->second);
 
             if ( can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
@@ -1323,8 +1323,8 @@ Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
     Position origin = unit->getPosition();
     we_are_a_flyer = unit->getType().isFlyer();
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             can_attack = Can_Fight(unit, e->second);
             can_be_attacked_by = Can_Fight(e->second, unit);
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
@@ -1350,14 +1350,14 @@ Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &u
 Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist, const bool &air_attack ) {
     Unit_Inventory ui_out;
     if (air_attack) {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Overlord)) {
                 ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
             }
         }
     }
     else {
-        for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Drone)) {
                 ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
             }
@@ -1369,7 +1369,7 @@ Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inv
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
 Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const Position &origin, const int &dist) {
     Unit_Inventory ui_out;
-    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_) {
             ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
         }
@@ -1380,7 +1380,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
 Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
     Unit_Inventory ui_out;
-    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+    for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
             ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
         }
@@ -1402,7 +1402,7 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inv
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
 Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
     Unit_Inventory ui_out;
-    for (auto & u = ui.unit_inventory_.begin(); u != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); u++) {
+    for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
         if (u->second.valid_pos_ && ( !(*u).second.bwapi_unit_->canMove() && !(*u).second.bwapi_unit_->isInWeaponRange(target) ) ) {
             ui_out.addStored_Unit((*u).second); // if we take any distance and they are in inventory.
         }
@@ -1413,7 +1413,7 @@ Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
 bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
 
-    for ( auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++ ) {
+    for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
         if( (*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
             (*e).second.pos_.y < origin.y + dist && (*e).second.pos_.y > origin.y - dist ) {
             return true;
@@ -1426,7 +1426,7 @@ bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
 bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
 
-    for (auto & e : ui.unit_inventory_) {
+    for (auto & e : ui.unit_map_) {
         if (e.second.type_ == type) {
             if (e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
                 e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown()) {
@@ -1455,7 +1455,7 @@ bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 //Searches an inventory for buildings. Returns TRUE if the area is occupied. 
 bool CUNYAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
 
-    for ( auto & e : ui.unit_inventory_) {
+    for ( auto & e : ui.unit_map_) {
         if ( e.second.type_.isBuilding() ) {
             if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
                 e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown() ) {

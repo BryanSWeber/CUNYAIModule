@@ -138,7 +138,7 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
-    std::map <Unit, Stored_Unit> unit_inventory_;
+    std::map <Unit, Stored_Unit> unit_map_;
 
     // Updates the count of units.
     void addStored_Unit( const Unit &unit );

@@ -64,7 +64,7 @@ void TechManager::updateTech_Avail() {
         for (auto req : building.first.requiredUnits()) {
             if(CUNYAIModule:: Count_Units(req.first) == 0 || !pass_guard) pass_guard = false;
         }
-        for (auto possessed_unit : CUNYAIModule::friendly_player_model.units_.unit_inventory_) {
+        for (auto possessed_unit : CUNYAIModule::friendly_player_model.units_.unit_map_) {
             if (possessed_unit.second.type_.isSuccessorOf(building.first)) own_successor = true;
         }
         if( pass_guard && CUNYAIModule:: Count_Units(building.first) == 0 && !own_successor) tech_avail_ = true; // If we can make it and don't have it.
@@ -149,7 +149,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
     if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = "Upgrading";
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
@@ -166,7 +166,7 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
     if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit)->second;
+            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = "Researching";
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());

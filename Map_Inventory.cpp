@@ -742,7 +742,7 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 
     //mark all occupied areas.  IAAUW
 
-    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_inventory_) {
+    for (auto & u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -766,7 +766,7 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
         }
     }
 
-    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_inventory_) {
+    for (auto & e : CUNYAIModule::enemy_player_model.units_.unit_map_) {
         if (e.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -790,7 +790,7 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
         }
     }
 
-    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_inventory_) {
+    for (auto & n : CUNYAIModule::neutral_player_model.units_.unit_map_) {
         if (n.second.type_.isBuilding()) {
 
             // mark the building's current position.
@@ -1153,8 +1153,8 @@ void Map_Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Invento
 {
     int clearing_workers_found = 0;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & w = ui.unit_map_.begin(); w != ui.unit_map_.end() && !ui.unit_map_.empty(); w++) {
             if ( w->second.isAssignedClearing(ri) ) {
                 clearing_workers_found ++;
             }
@@ -1167,8 +1167,8 @@ void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resourc
 {
     int long_distance_miners_found = 0;
 
-    if (!ui.unit_inventory_.empty()) {
-        for (auto & w = ui.unit_inventory_.begin(); w != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); w++) {
+    if (!ui.unit_map_.empty()) {
+        for (auto & w = ui.unit_map_.begin(); w != ui.unit_map_.end() && !ui.unit_map_.empty(); w++) {
             if (w->second.isAssignedLongDistanceMining(ri)) {
                 long_distance_miners_found++;
             }
@@ -1514,8 +1514,8 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 {
     vector<int> return_vector;
 
-    if (!map.empty() && !ui.unit_inventory_.empty()) {
-        for (auto u : ui.unit_inventory_) {
+    if (!map.empty() && !ui.unit_map_.empty()) {
+        for (auto u : ui.unit_map_) {
             if (u.second.type_.canAttack() && u.second.phase_ != "Retreating" || !combat_units) {
                 return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
             }
@@ -1591,7 +1591,7 @@ void Map_Inventory::createThreatField(Player_Model &enemy_player) {
 
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
-    for (auto unit : enemy_player.units_.unit_inventory_) {
+    for (auto unit : enemy_player.units_.unit_map_) {
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
     }
 
@@ -1606,7 +1606,7 @@ void Map_Inventory::createAAField(Player_Model &enemy_player) {
 
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
-    for (auto unit : enemy_player.units_.unit_inventory_) {
+    for (auto unit : enemy_player.units_.unit_map_) {
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
     }
 
@@ -1638,7 +1638,7 @@ void Map_Inventory::createAttractField(Player_Model &enemy_player) {
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
 
-    for (auto unit : enemy_player.units_.unit_inventory_) {
+    for (auto unit : enemy_player.units_.unit_map_) {
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
     }
 

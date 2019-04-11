@@ -9,7 +9,7 @@ using namespace std;
 void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inventory &ui) {
 
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     bool building_unit = miner.isAssignedBuilding(land_inventory);
     Resource_Inventory available_fields;
@@ -114,7 +114,7 @@ void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, St
 void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     bool building_unit = miner.isAssignedBuilding(land_inventory);
     Resource_Inventory available_fields;
@@ -136,7 +136,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 {
 
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {

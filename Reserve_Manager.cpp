@@ -126,7 +126,7 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
     for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); ) {
         bool keep = false;
 
-        for ( auto unit_it = ui.unit_inventory_.begin(); unit_it != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); unit_it++ ) {
+        for ( auto unit_it = ui.unit_map_.begin(); unit_it != ui.unit_map_.end() && !ui.unit_map_.empty(); unit_it++ ) {
             if ( res_it->first == unit_it->second.bwapi_unit_->getLastCommand().getTargetTilePosition() || res_it->second == unit_it->second.bwapi_unit_->getBuildType() ) {
                 keep = true;
             }

@@ -627,7 +627,7 @@ void CUNYAIModule::onFrame()
         //    }
         //}
 
-        for (auto & j : friendly_player_model.units_.unit_inventory_) {
+        for (auto & j : friendly_player_model.units_.unit_map_) {
             CUNYAIModule::DiagnosticPhase(j.second,current_map_inventory.screen_position_);
         }
 
@@ -674,7 +674,7 @@ void CUNYAIModule::onFrame()
         bool call_detector = false;
         if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_player_model.units_, u->getPosition(), u_type.sightRange())) {
             Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), u_type.sightRange());
-            for (auto e = e_neighbors.unit_inventory_.begin(); e != e_neighbors.unit_inventory_.end() && !e_neighbors.unit_inventory_.empty(); e++) {
+            for (auto e = e_neighbors.unit_map_.begin(); e != e_neighbors.unit_map_.end() && !e_neighbors.unit_map_.empty(); e++) {
                 if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
                     c = (*e).second.pos_; // then we may to send in some vision.
                     call_detector = true;
@@ -686,7 +686,7 @@ void CUNYAIModule::onFrame()
                 int dist_temp = 0;
                 bool detector_found = false;
                 Stored_Unit detector_of_choice;
-                for (auto d : friendly_player_model.units_.unit_inventory_) {
+                for (auto d : friendly_player_model.units_.unit_map_) {
                     if (d.second.type_ == UnitTypes::Zerg_Overlord &&
                         d.second.bwapi_unit_ &&
                         !d.second.bwapi_unit_->isUnderAttack() &&
@@ -792,7 +792,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_inventory_.at(u), 24); // half second.
+                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_map_.at(u), 24); // half second.
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
@@ -810,7 +810,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < 2 * search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < 2 * search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_inventory_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
+                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -898,7 +898,7 @@ void CUNYAIModule::onFrame()
 
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() && spamGuard(u, 24)){ // if there is nothing to fight, psudo-boids if they are in your BWEM:AREA or use BWEM to get to their position.
                 int areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-                bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_inventory_.empty();
+                bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_map_.empty();
                 bool short_term_walking = true;
                 if ( clear_area && !u_type.isFlyer() ) {
                     short_term_walking = !mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
@@ -941,13 +941,13 @@ void CUNYAIModule::onFrame()
             if (miner.phase_ == "Expoing" && t_game % 14 == 0) {
                 if (Broodwar->isExplored(current_map_inventory.next_expo_) && u->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
-                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(u)->second;
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_map_.find(u)->second;
                     morphing_unit.phase_ = "Expoing";
                     morphing_unit.updateStoredUnit(u);
                 }
                 else if (!Broodwar->isExplored(current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     u->move(Position(current_map_inventory.next_expo_));
-                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_inventory_.find(u)->second;
+                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_map_.find(u)->second;
                     morphing_unit.phase_ = "Expoing";
                     morphing_unit.updateStoredUnit(u);
                     CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Still moving there to check it out.", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
@@ -1213,7 +1213,7 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
                                                                                              //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit eu = Stored_Unit( unit );
 
-        if ( enemy_player_model.units_.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+        if ( enemy_player_model.units_.unit_map_.insert( { unit, eu } ).second ) { // if the insertion succeeded
                                                                                //CUNYAIModule::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else { // the insertion must have failed
@@ -1324,7 +1324,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     if (unit->getPlayer() == Broodwar->self()) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
         auto found_ptr = friendly_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
-            friendly_player_model.units_.unit_inventory_.erase(unit);
+            friendly_player_model.units_.unit_map_.erase(unit);
             friendly_player_model.casualties_.addStored_Unit(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
@@ -1337,7 +1337,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
         if ( found_ptr ) {
             if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
-            enemy_player_model.units_.unit_inventory_.erase( unit );
+            enemy_player_model.units_.unit_map_.erase( unit );
             enemy_player_model.casualties_.addStored_Unit(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
@@ -1349,7 +1349,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     if ( IsMineralField( unit ) ) { // If the unit is a mineral field we have to detach all those poor workers.
 
         // Check for miners who may have been digging at that patch.
-        for ( auto potential_miner = friendly_player_model.units_.unit_inventory_.begin(); potential_miner != friendly_player_model.units_.unit_inventory_.end() && !friendly_player_model.units_.unit_inventory_.empty(); potential_miner++ ) {
+        for ( auto potential_miner = friendly_player_model.units_.unit_map_.begin(); potential_miner != friendly_player_model.units_.unit_map_.end() && !friendly_player_model.units_.unit_map_.empty(); potential_miner++ ) {
 
             if (potential_miner->second.locked_mine_ == unit) {
                 Unit miner_unit = potential_miner->second.bwapi_unit_;
@@ -1392,7 +1392,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     if ( unit->getPlayer()->isNeutral() && !IsMineralField(unit) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
         auto found_ptr = neutral_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
-            neutral_player_model.units_.unit_inventory_.erase(unit);
+            neutral_player_model.units_.unit_map_.erase(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {

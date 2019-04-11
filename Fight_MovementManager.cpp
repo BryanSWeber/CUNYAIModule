@@ -60,7 +60,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
             setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
         }
 
-        int average_side = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second.circumference_ / 4;
+        int average_side = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second.circumference_ / 4;
         Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos_, 32 + average_side * 2);
         if (u_type_ != UnitTypes::Zerg_Mutalisk) setSeperation(neighbors);
 
@@ -92,7 +92,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         // lurkers should move when we need them to scout.
         if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
             unit_->unburrow();
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
             changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
             changing_unit.updateStoredUnit(unit_);
             return;
@@ -124,7 +124,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
         changing_unit.updateStoredUnit(unit_);
         return;
@@ -132,7 +132,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
 
     // If you end too close to the bad guys, hold position.
     if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) > passed_distance) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         unit_->holdPosition();
         changing_unit.phase_ = "Surrounding";
         changing_unit.updateStoredUnit(unit_);
@@ -180,7 +180,7 @@ bool Mobility::BWEM_Movement() const
 
 
     if (it_worked) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
         changing_unit.updateStoredUnit(unit_);
     }
@@ -211,7 +211,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double limit_units_diving = weak_enemy_or_small_armies ? 8 : 8 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
-    for (auto e = ei.unit_inventory_.begin(); e != ei.unit_inventory_.end() && !ei.unit_inventory_.empty(); ++e) {
+    for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->second.valid_pos_) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
@@ -297,12 +297,12 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     if (attack_order_issued) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         changing_unit.phase_ = "Attacking";
         changing_unit.updateStoredUnit(unit_);
     } 
     else {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         changing_unit.phase_ = "Approaching";
         changing_unit.updateStoredUnit(unit_);
     }// if I'm not attacking and I'm in range, I'm 'surrounding'
@@ -379,7 +379,7 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
         }
 
         if (is_retreating) {
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
             changing_unit.phase_ = "Retreating";
             changing_unit.updateStoredUnit(unit_);
             //if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
@@ -388,7 +388,7 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
         }
     }
     else {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_inventory_.find(unit_)->second;
+        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         changing_unit.phase_ = "No Retreat.";
         changing_unit.updateStoredUnit(unit_);
         return;
@@ -415,8 +415,8 @@ Position Mobility::setAlignment(const Unit_Inventory &ui) {
     double temp_tot_y = 0;
     double speed = CUNYAIModule::getProperSpeed(u_type_);
     int flock_count = 0;
-    if (!ui.unit_inventory_.empty()) {
-        for (auto i = ui.unit_inventory_.begin(); i != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); ++i) {
+    if (!ui.unit_map_.empty()) {
+        for (auto i = ui.unit_map_.begin(); i != ui.unit_map_.end() && !ui.unit_map_.empty(); ++i) {
             if (i->second.type_ != UnitTypes::Zerg_Drone && i->second.type_ != UnitTypes::Zerg_Overlord && i->second.type_ != UnitTypes::Buildings) {
                 temp_tot_x += i->second.bwapi_unit_->getVelocityX(); //get the horiz element.
                 temp_tot_y += i->second.bwapi_unit_->getVelocityY(); // get the vertical element. Averaging angles was trickier than I thought. 
@@ -580,7 +580,7 @@ Position Mobility::setSeperation(const Unit_Inventory &ui) {
     int seperation_y = 0;
     int unit_count = 1;
     seperation_vector_ = Positions::Origin;
-    for (auto &u : ui.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
+    for (auto &u : ui.unit_map_) { // don't seperate from yourself, that would be a disaster.
         if (unit_ != u.first && (unit_->isFlying() == u.second.is_flying_) ) { // only seperate if the unit is on the same plane.
             seperation_x += u.second.pos_.x - pos_.x;
             seperation_y += u.second.pos_.y - pos_.y;
@@ -604,7 +604,7 @@ Position Mobility::setSeperationScout(const Unit_Inventory &ui) {
     Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(ui, pos_, static_cast<int>(distance * 2.0 + largest_dim));
     int seperation_x = 0;
     int seperation_y = 0;
-    for (auto &u : neighbors.unit_inventory_) { // don't seperate from yourself, that would be a disaster.
+    for (auto &u : neighbors.unit_map_) { // don't seperate from yourself, that would be a disaster.
         seperation_x += u.second.pos_.x - pos_.x;
         seperation_y += u.second.pos_.y - pos_.y;
     }
