@@ -212,7 +212,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
-        if (e->second.valid_pos_) { // only target observable units.
+        if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
@@ -290,10 +290,6 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             }
             attack_order_issued = true;
         }
-        else {
-            targets_pos = target->pos_;
-            unit_->attack(targets_pos);
-        }
     }
 
     if (attack_order_issued) {
@@ -302,8 +298,17 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         changing_unit.updateStoredUnit(unit_);
     } 
     else {
+        Stored_Unit* closest = CUNYAIModule::getClosestThreatOrTargetStored(ei, unit_);
+        if (closest) {
+            encircle(closest->pos_);
+            unit_->move(pos_ + encircle_vector_);
+            CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around it.
+        }
+        else {
+            unit_->holdPosition();
+        }
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = "Approaching";
+        changing_unit.phase_ = "Surrounding";
         changing_unit.updateStoredUnit(unit_);
     }// if I'm not attacking and I'm in range, I'm 'surrounding'
     return;
@@ -486,6 +491,18 @@ Position Mobility::setCohesion(const Unit_Inventory &ui) {
         cohesion_vector_ = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(sin(theta)) * 0.25 * distance_metric_) );
     }
     return cohesion_vector_;
+}
+
+Position Mobility::encircle(const Position & p) {
+    Position vector_to = p - pos_;
+    double theta = atan2(vector_to.y, vector_to.x);
+    Position encircle_left = Position(static_cast<int>(-sin(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(cos(theta)) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position encircle_right = Position(static_cast<int>(sin(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(-cos(theta)) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+
+    return encircle_vector_ = dis(gen) > 0.5 ? encircle_left : encircle_right; // only one direction for now.
 }
 
 Position Mobility::scoutEnemyBase(Map_Inventory &inv) {

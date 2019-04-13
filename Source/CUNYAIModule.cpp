@@ -731,8 +731,8 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility = Mobility(u);
-            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 1200);
-            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 1200);
+            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 704); // 2x maximum sight distance of 352
+            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 704);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }
@@ -751,7 +751,7 @@ void CUNYAIModule::onFrame()
                 Unit_Inventory friend_loc;
                 Unit_Inventory enemy_loc;
 
-                if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 32) {
+                //if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 32) {
                     Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
                     Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
@@ -761,27 +761,27 @@ void CUNYAIModule::onFrame()
                     Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
                     friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                }
-                else {
-                    int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-                    int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
+                //}
+                //else {
+                //    int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
+                //    int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
 
-                    auto friendly_in_friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
-                    auto friendly_in_enemy_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
+                //    auto friendly_in_friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
+                //    auto friendly_in_enemy_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
 
-                    auto enemy_in_enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
-                    auto enemy_in_friendly_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
+                //    auto enemy_in_enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
+                //    auto enemy_in_friendly_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
 
-                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_enemy_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_friendly_area, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
+                //    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_enemy_area, e_closest->pos_, distance_to_foe + search_radius);
+                //    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_friendly_area, u->getPosition(), distance_to_foe + search_radius);
+                //    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
+                //    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_friendly_area, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_enemy_area, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                    friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                }
+                //    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_friendly_area, e_closest->pos_, distance_to_foe + search_radius);
+                //    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_enemy_area, u->getPosition(), distance_to_foe + search_radius);
+                //    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
+                //    friend_loc = (friend_loc_around_target + friend_loc_around_me);
+                //}
 
                 //friend_loc.updateUnitInventorySummary();
                 //enemy_loc.updateUnitInventorySummary();
@@ -879,7 +879,7 @@ void CUNYAIModule::onFrame()
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                        Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 1200);
+                        Stored_Unit* closest = getClosestThreatStored(enemy_loc, u, 704);
                         if (closest) mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
                         else mobility.Retreat_Logic(*e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
                         draw_retreat_circle = true;

@@ -37,6 +37,9 @@ public:
     Position setRepulsionMap(const vector<vector<int>>& map, const Position & map_center);
     Position setRepulsionField(const vector<vector<int>>& field, const Position & map_center);
 
+    // causes a unit to move to the left or the right of a position.
+    Position encircle(const Position & p);
+
     // causes a unit to move directly towards the enemy base.
     Position scoutEnemyBase(Map_Inventory & inv);
     // causes a unit to seperate itself from others.
@@ -77,6 +80,7 @@ private:
     Position repulse_vector_ = Positions::Origin;
     Position retreat_vector_ = Positions::Origin;
     Position walkability_vector_ = Positions::Origin;
+    Position encircle_vector_ = Positions::Origin;
 
     int rng_direction_ ; // send unit in a random tilt direction if blocked
 

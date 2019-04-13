@@ -1581,7 +1581,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     //    cd_frames = Broodwar->getLatencyFrames();
     //}
 
-    ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames;
+    ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames + Broodwar->getLatencyFrames();
     return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
 }
