@@ -200,6 +200,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int widest_dim = max(u_type_.height(), u_type_.width());
     int priority = 0;
 
+    //auto path = BWEM::Map::Instance().GetPath(pos_, e_unit.pos_); // maybe useful later.
     int helpful_u = ui.moving_average_fap_stock_;
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
@@ -210,6 +211,8 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 10 : 10 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
+
+
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.

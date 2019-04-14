@@ -67,11 +67,12 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
     return ( task_complete || unit->isStuck() ) && !isActiveWorker(unit) && !IsUnderAttack(unit) && spamGuard(unit);
 }
 
-// Did the unit fight in the last 5 seconds?
-bool CUNYAIModule::isRecentCombatant(const Unit &unit) {
-    bool fighting_now = (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (unit->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
-    bool recent_order = unit->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
-    return fighting_now && recent_order;
+// Did the unit fight in the last few moments?
+bool CUNYAIModule::isRecentCombatant(const Stored_Unit &su) {
+    bool fighting_now = (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
+    bool recent_order = su.bwapi_unit_->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
+    bool retreat_or_fight = (su.phase_ == "Retreating" || su.phase_ == "Attacking");
+    return (fighting_now || retreat_or_fight) && recent_order;
 }
 
 // Checks if a unit is a combat unit.

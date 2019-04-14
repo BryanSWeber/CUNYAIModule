@@ -494,7 +494,6 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
     }
 
     //Let us simulate some combat.
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved) {
         is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
     }
 

@@ -107,7 +107,7 @@ void Unit_Inventory::purgeUnseenUnits()
 //}
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -152,6 +152,31 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
         miner.phase_ = "None";
+        miner.updateStoredUnit(unit);
+    }
+    else {
+        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
+    }
+}
+
+// Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
+void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
+{
+    UnitCommand command = unit->getLastCommand();
+    auto found_object = this->unit_map_.find(unit);
+    if (found_object != this->unit_map_.end()) {
+        Stored_Unit& miner = found_object->second;
+
+        miner.stopMine(ri);
+        if (unit->getOrderTargetPosition() != Positions::Origin) {
+            if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
+                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
+            }
+            if (command.getTargetTilePosition() == inv.next_expo_) {
+                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery, true);
+            }
+        }
+        miner.time_of_last_purge_ = Broodwar->getFrameCount();
         miner.updateStoredUnit(unit);
     }
     else {

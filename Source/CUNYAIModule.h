@@ -79,7 +79,7 @@ public:
     static Reservation my_reservation;
     static GeneticHistory gene_history;
 
-   //These measure its clock.
+    //These measure its clock.
     int short_delay;
     int med_delay;
     int long_delay;
@@ -149,7 +149,7 @@ public:
       static bool IsFightingUnit(const UnitType & unittype);
 
       // evaluates if it was order to fight recently.
-      bool isRecentCombatant(const Unit &unit);
+      bool isRecentCombatant(const Stored_Unit &su);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Tiles(const Position & screen_pos, Color col);
