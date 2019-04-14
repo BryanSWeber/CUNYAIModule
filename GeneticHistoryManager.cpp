@@ -218,9 +218,9 @@ void GeneticHistory::initializeHistory() {
 
             a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
             game_data.push_back(a_game);
-		    Broodwar->sendText("Average Army Was:%d", enemy_average_army_);
-		    Broodwar->sendText("Average Econ Was:%d", enemy_average_econ_);
-		    Broodwar->sendText("Average Tech Was:%d", enemy_average_tech_);
+		    Broodwar->sendText("Average Army Was:%4.2f", enemy_average_army_);
+		    Broodwar->sendText("Average Econ Was:%4.2f", enemy_average_econ_);
+		    Broodwar->sendText("Average Tech Was:%4.2f", enemy_average_tech_);
 
         } // closure for each row
     input.close();

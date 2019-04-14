@@ -208,7 +208,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 8 : 8 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 10 : 10 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
@@ -488,7 +488,7 @@ Position Mobility::setCohesion(const Unit_Inventory &ui) {
         double cohesion_x = loc_center.x - pos_.x;
         double cohesion_y = loc_center.y - pos_.y;
         double theta = atan2(cohesion_y, cohesion_x);
-        cohesion_vector_ = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(sin(theta)) * 0.25 * distance_metric_) );
+        cohesion_vector_ = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric_), static_cast<int>(sin(theta) * 0.25 * distance_metric_) );
     }
     return cohesion_vector_;
 }
@@ -496,13 +496,13 @@ Position Mobility::setCohesion(const Unit_Inventory &ui) {
 Position Mobility::encircle(const Position & p) {
     Position vector_to = p - pos_;
     double theta = atan2(vector_to.y, vector_to.x);
-    Position encircle_left = Position(static_cast<int>(-sin(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(cos(theta)) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
-    Position encircle_right = Position(static_cast<int>(sin(theta) * 0.25 * distance_metric_), static_cast<int>(static_cast<int>(-cos(theta)) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position encircle_left = Position(static_cast<int>(-sin(theta) * 0.25 * distance_metric_), static_cast<int>(cos(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position encircle_right = Position(static_cast<int>(sin(theta) * 0.25 * distance_metric_), static_cast<int>(-cos(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    return encircle_vector_ = dis(gen) > 0.5 ? encircle_left : encircle_right; // only one direction for now.
+    return encircle_vector_ = (dis(gen) > 0.5) ? encircle_left : encircle_right; // only one direction for now.
 }
 
 Position Mobility::scoutEnemyBase(Map_Inventory &inv) {
