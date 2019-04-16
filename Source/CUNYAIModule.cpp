@@ -792,7 +792,7 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_map_.at(u), 12); 
+                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_map_.at(u), 24); 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
@@ -810,7 +810,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
+                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || ((u_type == UnitTypes::Zerg_Zergling || u_type == UnitTypes::Zerg_Scourge) && unit_death_in_moments && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
