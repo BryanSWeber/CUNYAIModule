@@ -10,6 +10,10 @@
 #include <fstream>
 
 //Unit_Inventory functions.
+
+std::default_random_engine Unit_Inventory::generator_;  //Will be used to obtain a seed for the random number engine
+
+
 //Creates an instance of the unit inventory class.
 Unit_Inventory::Unit_Inventory(){}
 
@@ -280,6 +284,20 @@ void Unit_Inventory::addStored_Unit( const Unit &unit ) {
 void Unit_Inventory::addStored_Unit( const Stored_Unit &stored_unit ) {
     unit_map_.insert( { stored_unit.bwapi_unit_ , stored_unit } );
 };
+
+Position Unit_Inventory::positionBuildFap(bool friendly) {
+    std::uniform_int_distribution<int> small_map(half_map_ * friendly, half_map_ + half_map_ * friendly);     // default values for output.
+    int rand_x = small_map(generator_);
+    int rand_y = small_map(generator_);
+    return Position(rand_x, rand_y);
+}
+
+Position Unit_Inventory::positionMCFAP(const Stored_Unit & su) {
+    std::uniform_int_distribution<int> small_noise(static_cast<int>(-CUNYAIModule::getProperSpeed(su.type_)) * 4, static_cast<int>(CUNYAIModule::getProperSpeed(su.type_)) * 4);     // default values for output.
+    int rand_x = small_noise(generator_);
+    int rand_y = small_noise(generator_);
+    return Position(rand_x, rand_y) + su.pos_;
+}
 
 void Stored_Unit::updateStoredUnit(const Unit &unit){
 
@@ -1222,6 +1240,7 @@ Stored_Unit* Unit_Inventory::getStoredUnit(const Unit & unit)
     if (find_result != unit_map_.end()) return &find_result->second;
     else return nullptr;
 }
+
 Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
 {
     auto& find_result = unit_map_.find(unit);
@@ -1229,19 +1248,4 @@ Stored_Unit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
     else return nullptr;
 }
 
-Position positionBuildFap(bool friendly) {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    int half_map = 120; // SC Screen size is 680 X 240
-    std::uniform_int_distribution<int> dis(half_map * friendly, half_map + half_map * friendly);     // default values for output.
-    int rand_x = dis(generator);
-    int rand_y = dis(generator);
-    return Position(rand_x, rand_y);
-}
 
-Position positionMCFAP(const Stored_Unit & su) {
-    std::default_random_engine generator;  //Will be used to obtain a seed for the random number engine
-    std::uniform_int_distribution<int> dis(static_cast<int>(-CUNYAIModule::getProperSpeed(su.type_)) * 4, static_cast<int>(CUNYAIModule::getProperSpeed(su.type_)) * 4);     // default values for output.
-    int rand_x = dis(generator);
-    int rand_y = dis(generator);
-    return Position(rand_x, rand_y) + su.pos_;
-}

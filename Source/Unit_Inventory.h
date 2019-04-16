@@ -7,6 +7,7 @@
 #include "Reservation_Manager.h"
 #include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
+#include <random> // C++ base random is low quality.
 
 using namespace std;
 using namespace BWAPI;
@@ -114,6 +115,9 @@ struct Unit_Inventory {
     //what about their upgrades?
     //Other details?
 
+    static const int half_map_ = 120; // SC Screen size is 680 X 240
+    static std::default_random_engine generator_;  //Will be used to obtain a seed for the random number engine
+
     int stock_fliers_;
     int stock_ground_units_;
     int stock_both_up_and_down_;
@@ -190,6 +194,8 @@ struct Unit_Inventory {
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
+    static Position positionMCFAP(const Stored_Unit & su);
+    static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
     void stopMine(Unit u, Resource_Inventory & ri);
@@ -199,7 +205,6 @@ struct Unit_Inventory {
 
 };
 
-Position positionMCFAP(const Stored_Unit & su);
-Position positionBuildFap(bool friendly);
+
 
 

@@ -652,7 +652,7 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
 void AssemblyManager::updateOptimalUnit() {
     bool building_optimal_unit = false;
     //auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
-    Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
     CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
@@ -683,7 +683,7 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
-    Position comparision_spot = positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.

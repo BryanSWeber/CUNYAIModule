@@ -213,7 +213,6 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
 
-
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.
             UnitType e_type = e->second.type_;
@@ -530,7 +529,6 @@ Position Mobility::scoutEnemyBase(Map_Inventory &inv) {
         return attract_vector_ = Position(static_cast<int>(cos(theta) * dist), static_cast<int>(sin(theta) * dist)); // run 100% towards them.
     }
 }
-
 
 //Attraction, pull towards map center.
 Position Mobility::setAttractionMap(const vector<vector<int>> &map, const Position &map_center) {

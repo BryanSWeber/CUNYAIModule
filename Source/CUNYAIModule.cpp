@@ -810,7 +810,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = /*unit_death_in_moments ||*/ threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (targetable_stocks > 0 && friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone);
+                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || (u_type == UnitTypes::Zerg_Scourge && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
