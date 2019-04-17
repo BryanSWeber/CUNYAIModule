@@ -282,7 +282,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
     if ((target_sentinel || target_sentinel_poor_target_atk) && unit_->hasPath(target->pos_) ){
         if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
-            if (!adjust_lurker_burrow(ui, ei, target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
+            if (!adjust_lurker_burrow(target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
                 unit_->attack(target->bwapi_unit_);
                 if (melee) { 
                     Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target->bwapi_unit_);
@@ -758,7 +758,7 @@ Position Mobility::setObjectAvoid(const Position &current_pos, const Position &f
 }
 
 // returns TRUE if the lurker needed fixing. For Attack.
-bool Mobility::adjust_lurker_burrow(const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target) {
+bool Mobility::adjust_lurker_burrow(const Position position_of_target) {
     int dist_to_threat_or_target = unit_->getDistance(position_of_target);
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 

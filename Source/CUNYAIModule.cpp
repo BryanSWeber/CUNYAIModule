@@ -829,6 +829,8 @@ void CUNYAIModule::onFrame()
                     bool force_retreat =
                         (!grim_trigger_to_go_in) || 
                         (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() /*|| threatening_stocks > 0.2 * friend_loc.stock_fliers_*/)) ||
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Guardian && (u->isUnderAttack() /*|| threatening_stocks > 0.2 * friend_loc.stock_fliers_*/)) ||
+
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||

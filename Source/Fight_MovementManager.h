@@ -49,7 +49,8 @@ public:
     //void setUnwalkability( const Unit &unit, const Position &pos);
     // Causes a unit to avoid units in its distant future, near future, and immediate position.
     Position setObjectAvoid(const Position &current_pos, const Position &future_pos, const vector<vector<int>> &map);
-    bool adjust_lurker_burrow(const Unit_Inventory &ui, const Unit_Inventory &ei, const Position position_of_target);
+    bool adjust_lurker_burrow(const Position position_of_target);
+    bool adjust_guardian(const Stored_Unit* target);
 
     // gives a vector that has the direction towards center on (map). returns a direction.
     Position getVectorTowardsMap(const vector<vector<int>>& map) const;
