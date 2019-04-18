@@ -209,7 +209,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 10 : 10 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 8 : 8 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
 
@@ -232,7 +232,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 if (CUNYAIModule::Can_Fight(e->second, unit_) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
                     e_priority = 7;
                 }
-                else if (critical_target) {
+                else if (critical_target && dist_to_enemy <= max_diveable_dist) {
                     e_priority = 6;
                 }
                 else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit_) &&
@@ -302,7 +302,15 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     else {
         Stored_Unit* closest = CUNYAIModule::getClosestThreatOrTargetStored(ei, unit_);
         if (closest) {
-            encircle(closest->pos_);
+            int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
+            int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
+            auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
+
+            if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
+                encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+            }
+            else encircle(closest->pos_);
+
             unit_->move(pos_ + encircle_vector_);
             CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around it.
         }

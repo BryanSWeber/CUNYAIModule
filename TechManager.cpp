@@ -25,7 +25,7 @@ void TechManager::updateOptimalTech() {
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;
-            else upgrade_cycle_[potential_up.first] = static_cast<int>(static_cast<double>(23.0 / 24.0) * upgrade_cycle_[potential_up.first] + static_cast<double>(1.0 / 24.0) * score); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
+            else upgrade_cycle_[potential_up.first] = static_cast<int>((23 * upgrade_cycle_[potential_up.first] + score) / 24); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
         //}
         }
     }

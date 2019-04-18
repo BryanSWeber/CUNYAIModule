@@ -39,7 +39,7 @@ public:
     // Moves all units except for the Stored exeption_unit elsewhere.
     static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
-    static bool Reactive_BuildFAP(const Unit & morph_canidate, const Map_Inventory & inv, const Unit_Inventory & ui, const Unit_Inventory & ei);
+    static bool Reactive_BuildFAP(const Unit & morph_canidate);
     // print the assembly cycle we're thinking about.
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
     static void updatePotentialBuilders();

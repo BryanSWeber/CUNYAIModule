@@ -1960,7 +1960,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
-    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * (MOVING_AVERAGE_DURATION)) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
+    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * MOVING_AVERAGE_DURATION) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
 
 }
 
@@ -2171,12 +2171,20 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 //}
 
 bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool local) {
-    //bool unit_suiciding = ui.unit_inventory_.find(u)!= ui.unit_inventory_.end() && !Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(u), 24);
-    return  ((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
+    int total_surviving_ui = 0;
+    int total_surviving_ei = 0;
+    for (auto u : ui.unit_map_) {
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 12);
+    }
+    for (auto e : ei.unit_map_) {
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 12);
+    }
+    return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
             //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
-            (local && ui.stock_fighting_total_ <= ui.moving_average_fap_stock_) ||// || // there are no losses.
-            ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+        ((ui.stock_fighting_total_ - total_surviving_ui) <= (ei.stock_fighting_total_ - total_surviving_ei)) || // If my losses are smaller than theirs..
+        (local && ui.stock_fighting_total_ <= total_surviving_ui); // || // there are no losses.
+            //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 
 bool CUNYAIModule::checkUnitTouchable(const Unit &u) {

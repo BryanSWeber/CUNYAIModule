@@ -792,14 +792,15 @@ void CUNYAIModule::onFrame()
                 int targetable_stocks = getTargetableStocks(u, enemy_loc);
                 int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
-                bool unit_death_in_moments = !Stored_Unit::unitAliveinFuture(friendly_player_model.units_.unit_map_.at(u), 24); 
+                bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(friendly_player_model.units_.unit_map_.at(u), 6); 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
+                if (unit_death_in_moments) Broodwar->drawCircleMap(u->getPosition(), 5, Colors::Green, true);
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
 
                 foe_within_radius = distance_to_foe < search_radius;
-
+                bool potentially_targetable = distance_to_foe < enemy_player_model.units_.max_range_ + 64;
                 if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
                                               //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
                                               //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
@@ -810,7 +811,7 @@ void CUNYAIModule::onFrame()
                     bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
                                                 (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
                                                 current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || ((u_type == UnitTypes::Zerg_Zergling || u_type == UnitTypes::Zerg_Scourge) && unit_death_in_moments && friendly_player_model.units_.unit_map_.at(u).phase_ == "Attacking") || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
+                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || ((/*u_type == UnitTypes::Zerg_Zergling ||*/ u_type == UnitTypes::Zerg_Scourge) && unit_death_in_moments && potentially_targetable) || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
                             //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
                             //massive_army ||
                             //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
@@ -828,9 +829,8 @@ void CUNYAIModule::onFrame()
 
                     bool force_retreat =
                         (!grim_trigger_to_go_in) || 
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk && (u->isUnderAttack() /*|| threatening_stocks > 0.2 * friend_loc.stock_fliers_*/)) ||
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Guardian && (u->isUnderAttack() /*|| threatening_stocks > 0.2 * friend_loc.stock_fliers_*/)) ||
-
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk /*&& (u->isUnderAttack() || threatening_stocks > 0.2 * friend_loc.stock_fliers_)*/) ||
+                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Guardian /*&& (u->isUnderAttack() || threatening_stocks > 0.2 * friend_loc.stock_fliers_)*/) ||
                         //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
                         //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
                         //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
@@ -841,7 +841,7 @@ void CUNYAIModule::onFrame()
                         //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
                         //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
                         (u_type == UnitTypes::Zerg_Overlord || //overlords should be cowardly not suicidal.
-                        (u_type == UnitTypes::Zerg_Drone && !unit_death_in_moments)); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
+                        (u_type == UnitTypes::Zerg_Drone && unit_death_in_moments)); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
                                                                                                                                       //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
 
                     bool drone_problem = u_type == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;

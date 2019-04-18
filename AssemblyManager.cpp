@@ -341,7 +341,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
     if (nearby_enemy) {
         e_loc = CUNYAIModule::getUnitInventoryInRadius(e_inv, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
         u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-        drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && !Stored_Unit::unitAliveinFuture(u_loc.unit_map_.at(drone), 48); // This may be the only case with a 48 frame death clock (2 seconds).
+        drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 12);
     }
 
     // Trust the build order. If there is a build order and it wants a building, build it!
@@ -478,7 +478,7 @@ void AssemblyManager::clearBuildingObstuctions(const Unit_Inventory &ui, Map_Inv
     }
 }
 
-bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_Inventory &inv, const Unit_Inventory &ui, const Unit_Inventory &ei) {
+bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
     //Am I sending this command to a larva or a hydra?
     UnitType u_type = morph_canidate->getType();
@@ -494,7 +494,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate, const Map_In
     }
 
     //Let us simulate some combat.
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || (!CUNYAIModule::econ_starved && Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || (CUNYAIModule::tech_starved && Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300)) {
         is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
     }
 
@@ -670,7 +670,7 @@ void AssemblyManager::updateOptimalUnit() {
             buildFAP_copy.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
-            else assembly_cycle_[potential_type.first] = static_cast<int>(static_cast<double>(23.0 / 24.0 * assembly_cycle_[potential_type.first]) + static_cast<double>(1.0 / 24.0 * score)); //moving average over 24 simulations, 1 seconds.
+            else assembly_cycle_[potential_type.first] = static_cast<int>( (23.0 * assembly_cycle_[potential_type.first] + score) / 24); //moving average over 24 simulations, 1 seconds.
         //}
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
@@ -841,29 +841,32 @@ bool AssemblyManager::assignUnitAssembly()
     //Unit_Inventory transfer_drone_larva;
     //Unit_Inventory combat_creators;
 
-    for (auto o : overlord_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
+    if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
+        for (auto o : overlord_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
+        }
+        for (auto d : immediate_drone_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
+        }
+        for (auto d : transfer_drone_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
         }
     }
-    for (auto d : immediate_drone_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved )) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
-        }
-    }
-    for (auto d : transfer_drone_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
-        }
-    }
+
     for (auto c : combat_creators.unit_map_) {
-        if (Reactive_BuildFAP(c.first, CUNYAIModule::current_map_inventory, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_)) {
-            if (c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
-            if (c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
-            if (c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+        if (Reactive_BuildFAP(c.first)) {
+            if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
+            if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
+            if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
             return true;
         }
     }

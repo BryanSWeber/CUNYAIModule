@@ -330,16 +330,18 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         ma_future_fap_value_ = shell.stock_value_;
+        count_of_expected_deaths_ = 0;
     }
     else {
         bool retreating_undetected = unit->canAttack() && ( (phase_ != "Retreating" && phase_ != "Attacking") || burrowed_ || !detected_ ); // detected doesn't work for personal units, only enemy units.
-
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         //double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION); // exponential moving average?
         //if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_); // exponential moving average?
-        if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(((MOVING_AVERAGE_DURATION -1) * ma_future_fap_value_ + future_fap_value_) / MOVING_AVERAGE_DURATION); // normal moving average.
+        if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(((MOVING_AVERAGE_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / MOVING_AVERAGE_DURATION); // normal moving average.
         else ma_future_fap_value_ = future_fap_value_; // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
+        if (retreating_undetected || future_fap_value_ > 0 ) count_of_expected_deaths_ = 0;
+        else count_of_expected_deaths_++;
     }
     if ( (phase_ == "Upgrading" || phase_ == "Researching" ) && unit->isIdle()) phase_ = "None"; // adjust units that are no longer upgrading.
 
@@ -1153,8 +1155,9 @@ void Stored_Unit::updateFAPvalueDead()
     updated_fap_this_frame_ = true;
 }
 
-bool Stored_Unit::unitAliveinFuture(const Stored_Unit &unit, const int &number_of_frames_in_future) {
-    return unit.ma_future_fap_value_ <= unit.current_stock_value_ * static_cast<double>(MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(MOVING_AVERAGE_DURATION);
+bool Stored_Unit::unitDeadInFuture(const Stored_Unit &unit, const int &number_of_frames_voted_death) {
+    //return unit.ma_future_fap_value_ < (unit.current_stock_value_ * static_cast<double>(MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(MOVING_AVERAGE_DURATION)); 
+    return unit.count_of_expected_deaths_ >= number_of_frames_voted_death;
 }
 
 

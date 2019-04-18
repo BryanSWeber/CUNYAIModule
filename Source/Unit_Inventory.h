@@ -31,7 +31,7 @@ struct Stored_Unit {
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
 
-    static bool unitAliveinFuture(const Stored_Unit &unit, const int & number_of_frames_in_future); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+    static bool unitDeadInFuture(const Stored_Unit &unit, const int & number_of_frames_voted_death); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
 
     void updateStoredUnit(const Unit &unit);
 
@@ -45,7 +45,7 @@ struct Stored_Unit {
     Order order_;
     UnitCommand command_;
     int time_since_last_command_; // note command != orders.
-    int time_of_last_purge_; //test
+    int time_of_last_purge_; //Mostly for workers
 
     //Unit Movement Information;
     Position attract_;
@@ -95,6 +95,7 @@ struct Stored_Unit {
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
     int ma_future_fap_value_; // A moving average of FAP values.
+    int count_of_expected_deaths_; // the number of sims forcasting the unit's death.
     bool hasTarget_;
 
     int velocity_x_;
