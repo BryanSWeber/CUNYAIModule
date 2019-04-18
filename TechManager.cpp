@@ -21,7 +21,7 @@ void TechManager::updateOptimalTech() {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
-            upgradeFAP.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            upgradeFAP.simulate(MOVING_AVERAGE_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;

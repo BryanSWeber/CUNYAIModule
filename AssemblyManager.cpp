@@ -667,7 +667,7 @@ void AssemblyManager::updateOptimalUnit() {
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
 
-            buildFAP_copy.simulate(24 * 3); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            buildFAP_copy.simulate(MOVING_AVERAGE_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
             else assembly_cycle_[potential_type.first] = static_cast<int>( (23.0 * assembly_cycle_[potential_type.first] + score) / 24); //moving average over 24 simulations, 1 seconds.

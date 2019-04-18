@@ -795,7 +795,7 @@ void CUNYAIModule::onFrame()
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(friendly_player_model.units_.unit_map_.at(u), 6); 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
-                if (unit_death_in_moments) Broodwar->drawCircleMap(u->getPosition(), 5, Colors::Green, true);
+                if (unit_death_in_moments) Diagnostic_Dot(u->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
 
