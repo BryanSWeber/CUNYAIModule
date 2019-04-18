@@ -9,7 +9,7 @@ using namespace std;
 void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inventory &ui) {
 
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     bool building_unit = miner.isAssignedBuilding(land_inventory);
     Resource_Inventory available_fields;
@@ -85,7 +85,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 
 //Ataches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
 void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner) {
-    Stored_Resource* closest = getClosestGroundStored(ri, current_map_inventory, miner.pos_);
+    Stored_Resource* closest = getClosestGroundStored(ri, miner.pos_);
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
         miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding(ri)) {
@@ -114,7 +114,7 @@ void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, St
 void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 {
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     bool building_unit = miner.isAssignedBuilding(land_inventory);
     Resource_Inventory available_fields;
@@ -136,7 +136,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
 {
 
     bool already_assigned = false;
-    Stored_Unit& miner = ui.unit_inventory_.find(unit)->second;
+    Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {

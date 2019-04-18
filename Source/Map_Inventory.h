@@ -125,7 +125,7 @@ struct Map_Inventory {
     // Updates the unwalkable portions of the map.
     void Map_Inventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades. Currently flawed.
-    void Map_Inventory::updateUnwalkableWithBuildings(const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni);
+    void Map_Inventory::updateUnwalkableWithBuildings();
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
     void Map_Inventory::updateSmoothPos();
@@ -158,7 +158,7 @@ struct Map_Inventory {
     void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
 
     // gets the radial distance of all units to the enemy base.
-    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map);
+    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);
 
     // Returns the position of the weakest base.
     Position Map_Inventory::getWeakestBase(const Unit_Inventory &ei) const;

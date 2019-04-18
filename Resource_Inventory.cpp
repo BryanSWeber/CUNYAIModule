@@ -113,7 +113,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                     CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     Stored_Unit eu = Stored_Unit(r->first);
-                    if (ei.unit_inventory_.insert({ r->first, eu }).second) {
+                    if (ei.unit_map_.insert({ r->first, eu }).second) {
                         CUNYAIModule::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
                     }
                 }

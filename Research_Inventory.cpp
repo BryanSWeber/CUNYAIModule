@@ -33,7 +33,7 @@ void Research_Inventory::updateResearchBuildings(const Unit_Inventory &ei) {
     std::set<UnitType> unit_types;
     std::set<UnitType> temp_unit_types;
 
-    for (auto &i:ei.unit_inventory_) {// for every unit type they have.
+    for (auto &i:ei.unit_map_) {// for every unit type they have.
         temp_unit_types.insert(i.second.type_);
     }
 

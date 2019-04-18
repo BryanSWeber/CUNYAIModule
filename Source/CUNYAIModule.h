@@ -4,7 +4,6 @@
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
-#include "Fight_MovementManager.h"
 #include "Research_Inventory.h"
 #include "AssemblyManager.h"
 #include "Reservation_Manager.h"
@@ -15,13 +14,14 @@
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = false; // Printing records, etc.
-constexpr bool DRAWING_MODE = true; // Visualizations, printing records, etc. Should seperate these.
+constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
+constexpr bool DRAWING_MODE = false; //Visualizations, printing records, etc.Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr int MOVING_AVERAGE_DURATION = 96; // set MA duration, usually 96 frames
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -78,7 +78,7 @@ public:
     static Reservation my_reservation;
     static GeneticHistory gene_history;
 
-   //These measure its clock.
+    //These measure its clock.
     int short_delay;
     int med_delay;
     int long_delay;
@@ -100,7 +100,6 @@ public:
   int last_frame_of_larva_morph_command = 0;
   int last_frame_of_hydra_morph_command = 0;
   int last_frame_of_muta_morph_command = 0;
-
 
   // Assembly Functions
 
@@ -149,7 +148,7 @@ public:
       static bool IsFightingUnit(const UnitType & unittype);
 
       // evaluates if it was order to fight recently.
-      bool isRecentCombatant(const Unit &unit);
+      bool isRecentCombatant(const Stored_Unit &su);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Tiles(const Position & screen_pos, Color col);
@@ -186,6 +185,7 @@ public:
       // Returns top speed of unit with upgrades.
       static double getProperSpeed( const Unit u );
       static double getProperSpeed(const UnitType & type, const Player owner = Broodwar->self() );
+      //range in pixels, including upgrades
       static int getProperRange(const Unit u);
       static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
       static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
@@ -211,20 +211,20 @@ public:
       // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
       void Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res );
 
-      //Strips the RACE_ from the front of the unit type string. 
+      //Strips the RACE_ from the front of the unit type string.
       static const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
       static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
-      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory &inv);
-      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin, const Map_Inventory & inv);
+      static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin);
+      static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
       static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
       static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, Map_Inventory & inv, const Position & origin);
-      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, Map_Inventory & inv, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
+      static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
       //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
@@ -234,7 +234,7 @@ public:
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist );
       static Stored_Unit * getClosestThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
       static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
-      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const Map_Inventory & inv, const int & dist = 999999);
+      static Stored_Unit * getMostAdvancedThreatOrTargetStored( Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
 
 
       //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
@@ -243,7 +243,7 @@ public:
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
 
       static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
-      //Overload. Searches for units of a specific type. 
+      //Overload. Searches for units of a specific type.
       static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist );
@@ -290,7 +290,7 @@ public:
       // Evaluates stock of allied units in set that can shoot down.
       static int Stock_Units_ShootDown( const Unit_Inventory &ui );
       // evaluates the value of a stock of unit, in terms of supply added.
-      static int Stock_Supply( const UnitType &unit, const Map_Inventory &inv );
+      static int Stock_Supply( const UnitType &unit );
       // returns both useful stocks if both groups were to have a fight;
       //static vector<int> getUsefulStocks(const Unit_Inventory &friend_loc, const Unit_Inventory &enemy_loc);
       // returns the stock of opponants I can actually fight in their local area.
@@ -308,17 +308,15 @@ public:
       static bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
-      // Checks if the player UI is weak against air in army ei.
-      static bool checkWeakAgainstAir(const Unit_Inventory & ui, const Unit_Inventory & ei);
 
       static double bindBetween(double x, double lower_bound, double upper_bound);
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
-      static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
-      static bool checkSuperiorFAPForecast2(const Unit & u, const Unit_Inventory & ui, const Unit_Inventory & ei);
+      //static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
+      static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
-      static bool checkUnitTouchable(const Unit & u); 
+      static bool checkUnitTouchable(const Unit & u);
 
   // Vision Functions
       // returns number of visible tiles.

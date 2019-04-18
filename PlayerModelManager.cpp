@@ -9,12 +9,6 @@
 using namespace std;
 using namespace BWAPI;
 
-//(while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building(excludes static defense).
-std::map<UnitType, int> Player_Model::combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } };
-std::map<UnitType, int> Player_Model::eco_unit_cartridge_ = { { UnitTypes::Zerg_Drone , 0 },{ UnitTypes::Zerg_Hatchery , 0 },{ UnitTypes::Zerg_Overlord , 0 },{ UnitTypes::Zerg_Extractor, 0 } };
-std::map<UnitType, int> Player_Model::building_cartridge_ = { { UnitTypes::Zerg_Spawning_Pool, 0 } ,{ UnitTypes::Zerg_Evolution_Chamber, 0 },{ UnitTypes::Zerg_Hydralisk_Den, 0 },{ UnitTypes::Zerg_Spire, 0 },{ UnitTypes::Zerg_Queens_Nest , 0 },{ UnitTypes::Zerg_Ultralisk_Cavern, 0 } ,{ UnitTypes::Zerg_Greater_Spire, 0 },{ UnitTypes::Zerg_Hatchery, 0 } ,{ UnitTypes::Zerg_Lair, 0 },{ UnitTypes::Zerg_Hive, 0 },{ UnitTypes::Zerg_Creep_Colony, 0 },{ UnitTypes::Zerg_Sunken_Colony, 0 },{ UnitTypes::Zerg_Spore_Colony, 0 } };
-std::map<UpgradeType, int> Player_Model::upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, 0 } ,{ UpgradeTypes::Zerg_Flyer_Carapace, 0 },{ UpgradeTypes::Zerg_Melee_Attacks, 0 },{ UpgradeTypes::Zerg_Missile_Attacks, 0 },{ UpgradeTypes::Zerg_Flyer_Attacks, 0 },{ UpgradeTypes::Antennae, 0 },{ UpgradeTypes::Pneumatized_Carapace, 0 },{ UpgradeTypes::Metabolic_Boost, 0 },{ UpgradeTypes::Adrenal_Glands, 0 },{ UpgradeTypes::Muscular_Augments, 0 },{ UpgradeTypes::Grooved_Spines, 0 },{ UpgradeTypes::Chitinous_Plating, 0 },{ UpgradeTypes::Anabolic_Synthesis, 0 } };
-std::map<TechType, int> Player_Model::tech_cartridge_ = { { TechTypes::Lurker_Aspect, 0 } };
 
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
@@ -44,7 +38,7 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     //Update Enemy Units
     //Update friendly unit inventory.
     updateUnit_Counts();
-    if (units_.unit_inventory_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
+    if (units_.unit_map_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
     units_.purgeUnseenUnits(); //Critical for self!
@@ -86,8 +80,8 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     e_relatively_weak_against_air_ = (bool)(CUNYAIModule::assemblymanager.returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian);
 
     //Update map inventory
-    radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
-    closest_radial_distance_enemy_ground_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
+    radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, true);
+    closest_ground_combatant_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
 
 };
 
@@ -117,7 +111,7 @@ void Player_Model::evaluateCurrentWorth()
         int supply_expenditures_ = 0;
 
         //collect how much of the enemy you can see.
-        for (auto i : units_.unit_inventory_) {
+        for (auto i : units_.unit_map_) {
             min_expenditures_ += i.second.modified_min_cost_;
             gas_expenditures_ += i.second.modified_gas_cost_;
             supply_expenditures_ += i.second.modified_supply_;
@@ -138,7 +132,7 @@ void Player_Model::evaluateCurrentWorth()
         int gas_losses_ = 0;
         int supply_losses_ = 0;
 
-        for (auto i : casualties_.unit_inventory_) {
+        for (auto i : casualties_.unit_map_) {
 
             min_losses_ += i.second.modified_min_cost_;
             gas_losses_ += i.second.modified_gas_cost_;
@@ -163,7 +157,7 @@ void Player_Model::updateUnit_Counts() {
     vector <UnitType> already_seen;
     vector <int> unit_count_temp;
     vector <int> unit_incomplete_temp;
-    for (auto const & u_iter : units_.unit_inventory_) { // should only search through unit types not per unit.
+    for (auto const & u_iter : units_.unit_map_) { // should only search through unit types not per unit.
         UnitType u_type = u_iter.second.type_;
         bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
         if (new_unit_type) {
@@ -192,12 +186,12 @@ void Player_Model::setLockedOpeningValues() {
      CUNYAIModule::gamma = 0.55;
      CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
 
-    //unit cartridges (while these only are relevant for CUNYBot, they are still  passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building (excludes static defense).
-    combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
+    //This no longer works after declaring the inventories as const.
+    //combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
     //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
-    building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
-    upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
-    tech_cartridge_ = {  };
+    //building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
+    //upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
+    //tech_cartridge_ = {  };
     
 }
 

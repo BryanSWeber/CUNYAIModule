@@ -17,10 +17,10 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-GeneticHistory::GeneticHistory() {};
-
 // Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
-GeneticHistory::GeneticHistory(string file) {
+void GeneticHistory::initializeHistory() {
+    
+    rename(".\\bwapi-data\\read\\history.txt", ".\\bwapi-data\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
 
     //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked. 
 
@@ -127,9 +127,7 @@ GeneticHistory::GeneticHistory(string file) {
     loss_rate_ = 1;
 
     ifstream input; // brings in info;
-    input.open(file, ios::in);
-    // for each row, m8
-
+    input.open(".\\bwapi-data\\write\\history.txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -137,79 +135,95 @@ GeneticHistory::GeneticHistory(string file) {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open(file, ios::in); //ios.in?
+    if (csv_length < 1) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
+        output << "delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening" << endl;
+        output.close();
+    }
 
-    for (int j = 0; j < csv_length; ++j) { // further brute force inelegance.
-        // The ugly tuple.
-        double delta_total;
-        double gamma_total;
-        double a_army_total;
-        double a_econ_total;
-        double a_tech_total;
-        double r_total;
-        string race_total;
-        bool win_total;
-        int sdelay_total;
-        int mdelay_total;
-        int ldelay_total;
-        string name_total;
-        string map_name_total;
-		double enemy_average_army_;
-		double enemy_average_econ_;
-		double enemy_average_tech_;
-        string build_order_total;
+    input.open(".\\bwapi-data\\write\\history.txt", ios::in);   // for each row
+    csv_length = 0;
+    while (getline(input, line)) {
+        ++csv_length;
+    }
+    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-        getline(input, entry, ',');
-        delta_total=stod(entry);
+    input.open(".\\bwapi-data\\write\\history.txt", ios::in); 
+        getline(input, line); //skip the first line of the document.
+        csv_length--; // that means the remaining csv is shorter by 1 line.
+        for (int j = 0; j < csv_length; ++j) { 
+            // The ugly tuple.
+            double delta_total;
+            double gamma_total;
+            double a_army_total;
+            double a_econ_total;
+            double a_tech_total;
+            double r_total;
+            string race_total;
+            bool win_total;
+            int sdelay_total;
+            int mdelay_total;
+            int ldelay_total;
+            string name_total;
+            string map_name_total;
+		    double enemy_average_army_;
+		    double enemy_average_econ_;
+		    double enemy_average_tech_;
+            string build_order_total;
 
-        getline(input, entry, ',');
-        gamma_total=stod(entry);
+            getline(input, entry, ',');
+            delta_total=stod(entry);
 
-        getline(input, entry, ',');
-        a_army_total=stod(entry);
+            getline(input, entry, ',');
+            gamma_total=stod(entry);
 
-        getline(input, entry, ',');
-        a_econ_total=stod(entry);
-        getline(input, entry, ',');
-        a_tech_total=stod(entry);
-        getline(input, entry, ',');
-        r_total=stod(entry);
+            getline(input, entry, ',');
+            a_army_total=stod(entry);
 
-        getline(input, entry, ',');
-        race_total=entry;
+            getline(input, entry, ',');
+            a_econ_total=stod(entry);
+            getline(input, entry, ',');
+            a_tech_total=stod(entry);
+            getline(input, entry, ',');
+            r_total=stod(entry);
 
-        getline(input, entry, ',');
-        win_total=static_cast<bool>(stoi(entry));
+            getline(input, entry, ',');
+            race_total=entry;
 
-        getline(input, entry, ',');
-        sdelay_total=stoi(entry);
-        getline(input, entry, ',');
-        mdelay_total=stoi(entry);
-        getline(input, entry, ',');
-        ldelay_total=stoi(entry);
+            getline(input, entry, ',');
+            win_total=static_cast<bool>(stoi(entry));
 
-        getline(input, entry, ',');
-        name_total=entry;
-        getline(input, entry, ',');
-        map_name_total=entry;
+            getline(input, entry, ',');
+            sdelay_total=stoi(entry);
+            getline(input, entry, ',');
+            mdelay_total=stoi(entry);
+            getline(input, entry, ',');
+            ldelay_total=stoi(entry);
 
-		getline(input, entry, ',');
-		enemy_average_army_ = stod(entry);
-		getline(input, entry, ',');
-		enemy_average_econ_ = stod(entry);
-		getline(input, entry, ',');
-		enemy_average_tech_ = stod(entry);
+            getline(input, entry, ',');
+            name_total=entry;
+            getline(input, entry, ',');
+            map_name_total=entry;
 
-        getline(input, entry); //diff. End of line char, not ','
-        build_order_total=entry;
+		    getline(input, entry, ',');
+		    enemy_average_army_ = stod(entry);
+		    getline(input, entry, ',');
+		    enemy_average_econ_ = stod(entry);
+		    getline(input, entry, ',');
+		    enemy_average_tech_ = stod(entry);
 
-        a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
-        game_data.push_back(a_game);
-		Broodwar->sendText("Average Army Was:%d", enemy_average_army_);
-		Broodwar->sendText("Average Econ Was:%d", enemy_average_econ_);
-		Broodwar->sendText("Average Tech Was:%d", enemy_average_tech_);
+            getline(input, entry); //diff. End of line char, not ','
+            build_order_total=entry;
 
-    } // closure for each row
+            a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
+            game_data.push_back(a_game);
+		    Broodwar->sendText("Average Army Was:%4.2f", enemy_average_army_);
+		    Broodwar->sendText("Average Econ Was:%4.2f", enemy_average_econ_);
+		    Broodwar->sendText("Average Tech Was:%4.2f", enemy_average_tech_);
+
+        } // closure for each row
+    input.close();
 
     string e_name = Broodwar->enemy()->getName().c_str();
     string e_race = Broodwar->enemy()->getRace().c_str();

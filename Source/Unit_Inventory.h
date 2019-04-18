@@ -7,6 +7,7 @@
 #include "Reservation_Manager.h"
 #include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
+#include <random> // C++ base random is low quality.
 
 using namespace std;
 using namespace BWAPI;
@@ -30,13 +31,13 @@ struct Stored_Unit {
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
 
-    static bool unitAliveinFuture(const Stored_Unit &unit, const int & number_of_frames_in_future); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+    static bool unitDeadInFuture(const Stored_Unit &unit, const int & number_of_frames_voted_death); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
 
     void updateStoredUnit(const Unit &unit);
 
     // Critical information not otherwise stored.
-    UnitType type_;
-    UnitType build_type_;
+    UnitType type_; // the type of the unit.
+    UnitType build_type_; // the type the worker is about to build.
     Position pos_; // in pixels
     Unit locked_mine_;
 
@@ -44,7 +45,7 @@ struct Stored_Unit {
     Order order_;
     UnitCommand command_;
     int time_since_last_command_; // note command != orders.
-    int time_of_last_purge_; //test
+    int time_of_last_purge_; //Mostly for workers
 
     //Unit Movement Information;
     Position attract_;
@@ -93,6 +94,7 @@ struct Stored_Unit {
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
     int ma_future_fap_value_; // A moving average of FAP values.
+    int count_of_expected_deaths_; // the number of sims forcasting the unit's death.
     bool hasTarget_;
 
     int velocity_x_;
@@ -112,6 +114,9 @@ struct Unit_Inventory {
 
     //what about their upgrades?
     //Other details?
+
+    static const int half_map_ = 120; // SC Screen size is 680 X 240
+    static std::default_random_engine generator_;  //Will be used to obtain a seed for the random number engine
 
     int stock_fliers_;
     int stock_ground_units_;
@@ -137,7 +142,7 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
-    std::map <Unit, Stored_Unit> unit_inventory_;
+    std::map <Unit, Stored_Unit> unit_map_;
 
     // Updates the count of units.
     void addStored_Unit( const Unit &unit );
@@ -153,8 +158,9 @@ struct Unit_Inventory {
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeAllPhases();
-    void purgeWorkerRelations(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
+    void purgeWorkerRelationsStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
+    void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
     void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
     void drawAllHitPoints(const Map_Inventory & inv) const;
     void drawAllMAFAPaverages(const Map_Inventory & inv) const;
@@ -186,6 +192,8 @@ struct Unit_Inventory {
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
+    static Position positionMCFAP(const Stored_Unit & su);
+    static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
     void stopMine(Unit u, Resource_Inventory & ri);
@@ -195,7 +203,6 @@ struct Unit_Inventory {
 
 };
 
-Position positionMCFAP(const Stored_Unit & su);
-Position positionBuildFap(bool friendly);
+
 
 
