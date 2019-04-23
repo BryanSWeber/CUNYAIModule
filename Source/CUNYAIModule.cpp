@@ -297,7 +297,7 @@ void CUNYAIModule::onFrame()
     }
 
     //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getLn_Gas_Ratio() < delta && Gas_Outlet()) ||
+    gas_starved = (current_map_inventory.getGasRatio() < delta && Gas_Outlet()) ||
         (Gas_Outlet() && Broodwar->self()->gas() < 300) || // you need gas to buy things you have already invested in.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() > 0) ||// you need gas for a required build order item.
         (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 300); // you need gas because you are tech starved.
@@ -331,9 +331,6 @@ void CUNYAIModule::onFrame()
 
     current_map_inventory.updateLn_Supply_Remain();
     current_map_inventory.updateLn_Supply_Total();
-
-    current_map_inventory.updateLn_Gas_Total();
-    current_map_inventory.updateLn_Min_Total();
 
     current_map_inventory.updateGas_Workers();
     current_map_inventory.updateMin_Workers();
@@ -530,7 +527,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
         Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
-        Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getLn_Gas_Ratio());
+        Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
         Broodwar->drawTextScreen(375, 70, "Vision (Pct.): %4.2f", current_map_inventory.vision_tile_count_ / static_cast<double>(map_area));  //
         Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
 
@@ -926,7 +923,7 @@ void CUNYAIModule::onFrame()
             Stored_Unit& miner = *friendly_player_model.units_.getStoredUnit(u);
 
             bool want_gas = gas_starved && (Count_Units(UnitTypes::Zerg_Extractor) - Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) > 0;  // enough gas if (many critera), incomplete extractor, or not enough gas workers for your extractors.
-            bool too_much_gas = current_map_inventory.getLn_Gas_Ratio() > delta;
+            bool too_much_gas = current_map_inventory.getGasRatio() > delta;
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12 && !isRecentCombatant(miner);
 
             // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.

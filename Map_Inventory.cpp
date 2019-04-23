@@ -21,9 +21,6 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateLn_Supply_Remain();
     updateLn_Supply_Total();
 
-    updateLn_Gas_Total();
-    updateLn_Min_Total();
-
     updateGas_Workers();
     updateMin_Workers();
 
@@ -107,33 +104,12 @@ void Map_Inventory::updateLn_Supply_Total() {
     ln_supply_total_ = log( total );
 };
 
-// Updates the (safe) log of our gas total.
-void Map_Inventory::updateLn_Gas_Total() {
-
-    double total = Broodwar->self()->gas();
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_gas_total_ = log( total );
-};
-
-// Updates the (safe) log of our mineral total.
-void Map_Inventory::updateLn_Min_Total() {
-
-    double total = Broodwar->self()->minerals();
-    if ( total <= 0 ) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_min_total_ = log( total );
-};
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
-double Map_Inventory::getLn_Gas_Ratio() {
+double Map_Inventory::getGasRatio() {
     // Normally:
-    if ( ln_min_total_ > 0 || ln_gas_total_ > 0 ) {
-        return ln_gas_total_ / (ln_min_total_ + ln_gas_total_);
+    if ( Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0 ) {
+        return Broodwar->self()->gas() / (Broodwar->self()->minerals() + Broodwar->self()->gas());
     }
     else {
         return 99999;

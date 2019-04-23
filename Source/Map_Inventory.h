@@ -28,8 +28,6 @@ struct Map_Inventory {
 
     double ln_supply_remain_;
     double ln_supply_total_;
-    double ln_gas_total_;
-    double ln_min_total_;
 
     int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
     int min_workers_;
@@ -96,16 +94,12 @@ struct Map_Inventory {
     void updateLn_Supply_Remain();
     // Updates the (safe) log of our supply total.
     void updateLn_Supply_Total();
-    // Updates the (safe) log of our gas total.
-    void updateLn_Gas_Total();
-    // Updates the (safe) log of our min total.
-    void updateLn_Min_Total();
     // Updates the count of our vision total, in tiles
     void updateVision_Count();
     // Updates our screen poisition. A little gratuitous but nevertheless useful.
     void updateScreen_Position();
     // Updates the (safe) log gas ratios, ln(gas)/(ln(min)+ln(gas))
-    double getLn_Gas_Ratio();
+    double getGasRatio();
     // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
     double getLn_Supply_Ratio();
 
