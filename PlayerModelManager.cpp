@@ -94,17 +94,29 @@ void Player_Model::evaluateWorkerCount() {
     else {
         auto areas = BWEM::Map::Instance().Areas();
         int count_of_occupied_bases = 0;
+        int bases_in_start_positions = 0;
         for (auto a : areas) {
-            if (!a.Minerals().empty() && !units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty()) count_of_occupied_bases++;
+            bool found_a_base = false;
+            if (!a.Minerals().empty() && !units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty()) {
+                count_of_occupied_bases++;
+                found_a_base = true;
+            }
+            if (found_a_base) {
+                for (auto start_pos : CUNYAIModule::current_map_inventory.start_positions_) {
+                    if (BWEM::Map::Instance().GetArea(TilePosition(start_pos))->Id() == a.Id()) {
+                        bases_in_start_positions++;
+                    }
+                }
+            }
         }
+        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0 ) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
         count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
-
-        double functional_worker_cap = max(units_.resource_depot_count_ * 21, count_of_occupied_bases * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
-        estimated_workers_ += max(units_.resource_depot_count_, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+        int largest_count_of_bases = max(units_.resource_depot_count_, count_of_occupied_bases);
+        double functional_worker_cap = largest_count_of_bases * 21;// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
+        estimated_workers_ += max(largest_count_of_bases, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
         estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
     }
     estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
-
 }
 
 void Player_Model::evaluateCurrentWorth()
