@@ -92,7 +92,12 @@ void Player_Model::evaluateWorkerCount() {
         estimated_workers_ = 4;
     }
     else {
-        double functional_worker_cap = max(units_.resource_depot_count_ * 21, 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
+        auto areas = BWEM::Map::Instance().Areas();
+        int count_of_occupied_bases = 1;
+        for (auto a : areas) {
+            if (!a.Minerals().empty() && !units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty()) count_of_occupied_bases++;
+        }
+        double functional_worker_cap = max(units_.resource_depot_count_ * 21, count_of_occupied_bases * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
         estimated_workers_ += max(units_.resource_depot_count_, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
         estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
     }
