@@ -300,7 +300,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         changing_unit.updateStoredUnit(unit_);
     } 
     else {
-        Stored_Unit* closest = CUNYAIModule::getClosestThreatOrTargetStored(ei, unit_);
+        Stored_Unit* closest = CUNYAIModule::getClosestThreatStored(ei, unit_, 1200);
         if (closest) {
             int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
             int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
