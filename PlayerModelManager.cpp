@@ -111,9 +111,9 @@ void Player_Model::evaluateWorkerCount() {
         }
         if (bases_in_start_positions == 0 && count_of_occupied_bases > 0 ) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
         count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
-        int largest_count_of_bases = max(units_.resource_depot_count_, count_of_occupied_bases);
-        double functional_worker_cap = largest_count_of_bases * 21;// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
-        estimated_workers_ += max(largest_count_of_bases, 1) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+        double largest_count_of_bases = static_cast<double>(max(units_.resource_depot_count_, count_of_occupied_bases));
+        double functional_worker_cap = static_cast<double>(largest_count_of_bases * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
+        estimated_workers_ += static_cast<double>( max(largest_count_of_bases, 1.0) ) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
         estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
     }
     estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);

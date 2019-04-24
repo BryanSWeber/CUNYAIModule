@@ -1290,7 +1290,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+//Gets pointer to closest threat to unit within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack;
