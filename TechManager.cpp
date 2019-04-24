@@ -12,12 +12,20 @@ using namespace BWAPI;
 bool TechManager::tech_avail_ = true;
 std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::upgrade_cartridge_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 
+bool TechManager::checkBuildingReady(const UpgradeType up) {
+    return CUNYAIModule::Count_Units(up.whatUpgrades()) - CUNYAIModule::Count_Units_In_Progress(up.whatUpgrades()) > 0;
+}
+
+bool TechManager::checkUpgradeFull(const UpgradeType up) {
+    return CUNYAIModule::friendly_player_model.researches_.upgrades_[up] >= up.maxRepeats();
+}
+
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
 
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if (CUNYAIModule::Count_Units(potential_up.first.whatUpgrades()) - CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatUpgrades()) > 0 && CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats()) {
+        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -36,6 +44,8 @@ bool TechManager::checkTechAvail()
     return tech_avail_;
 }
 
+
+
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 void TechManager::updateTech_Avail() {
 
@@ -50,7 +60,7 @@ void TechManager::updateTech_Avail() {
 
     for (auto &potential_up : upgrade_cycle_) {
         int up_level = CUNYAIModule::friendly_player_model.researches_.upgrades_.at(potential_up.first);
-        if (CUNYAIModule::Count_Units(potential_up.first.whatUpgrades()) - CUNYAIModule::Count_Units_In_Progress(potential_up.first.whatUpgrades()) > 0 && CUNYAIModule::friendly_player_model.researches_.upgrades_[potential_up.first] < potential_up.first.maxRepeats()) {
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) ) {
             if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
                 best_sim_score = potential_up.second;
                 up_type = potential_up.first;
