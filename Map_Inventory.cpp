@@ -109,7 +109,7 @@ void Map_Inventory::updateLn_Supply_Total() {
 double Map_Inventory::getGasRatio() {
     // Normally:
     if ( Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0 ) {
-        return Broodwar->self()->gas() / (Broodwar->self()->minerals() + Broodwar->self()->gas());
+        return static_cast<double>(Broodwar->self()->gas()) / static_cast<double>(Broodwar->self()->minerals() + Broodwar->self()->gas());
     }
     else {
         return 99999;
