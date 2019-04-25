@@ -855,7 +855,7 @@ void CUNYAIModule::onFrame()
                     else if (is_spelled) {
                         Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
                         if (closest) {
-                            mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
+                            mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
                             draw_retreat_circle = true;
                         }
                     }
@@ -878,7 +878,7 @@ void CUNYAIModule::onFrame()
                                 CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
                             }
                         }
-                        mobility.Retreat_Logic(*e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, search_radius, Colors::White, false);
+                        mobility.Retreat_Logic(*e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, Colors::White, false);
                         draw_retreat_circle = true;
                     }
 

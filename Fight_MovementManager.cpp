@@ -209,7 +209,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 8 : 8 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
 
 
@@ -330,7 +330,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White, const bool &force = false) {
+void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const Color &color = Colors::White, const bool &force = false) {
 
     int dist = unit_->getDistance(e_unit.pos_);
    
