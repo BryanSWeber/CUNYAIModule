@@ -59,7 +59,6 @@ void TechManager::updateTech_Avail() {
     int best_sim_score = upgrade_cycle_[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
 
     for (auto &potential_up : upgrade_cycle_) {
-        int up_level = CUNYAIModule::friendly_player_model.researches_.upgrades_.at(potential_up.first);
         if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) ) {
             if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
                 best_sim_score = potential_up.second;
