@@ -173,7 +173,7 @@ bool CobbDouglas::evalArmyPossible()
         }
     }
 
-   return (Broodwar->self()->supplyUsed() < 400 && K_over_L < 5 * alpha_army / alpha_tech) && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+   return (Broodwar->self()->supplyUsed() < 400 /*&& K_over_L < 5 * alpha_army / alpha_tech*/) && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
 
 }
 

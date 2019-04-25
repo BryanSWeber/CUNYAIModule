@@ -20,12 +20,19 @@ bool TechManager::checkUpgradeFull(const UpgradeType up) {
     return CUNYAIModule::friendly_player_model.researches_.upgrades_[up] >= up.maxRepeats();
 }
 
+bool TechManager::checkUpgradeUseable(const UpgradeType up) {
+    for (auto u : up.whatUses()) {
+        if (CUNYAIModule::Count_Units(u) > 0) return true;
+    }
+    return false;
+}
+
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
 
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
+        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -59,12 +66,10 @@ void TechManager::updateTech_Avail() {
     int best_sim_score = upgrade_cycle_[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
 
     for (auto &potential_up : upgrade_cycle_) {
-        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) ) {
-            if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) && potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
                 best_sim_score = potential_up.second;
                 up_type = potential_up.first;
                 //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
-            }
         }
     }
     int up_level = CUNYAIModule::friendly_player_model.researches_.upgrades_.at(up_type);

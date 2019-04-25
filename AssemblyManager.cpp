@@ -740,7 +740,7 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
     int another_sort_of_unit = 0;
     multimap<int, UnitType> sorted_list;
     for (auto it : assembly_cycle_) {
-        if(it.second > 0) sorted_list.insert({ it.second, it.first });
+        sorted_list.insert({ it.second, it.first });
     }
 
     for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {

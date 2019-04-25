@@ -364,6 +364,11 @@ void CUNYAIModule::onFrame()
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalUnit();
     assemblymanager.updatePotentialBuilders();
+    if (t_game % MOVING_AVERAGE_DURATION == 0) {
+        techmanager.clearSimulationHistory();
+        assemblymanager.clearSimulationHistory();
+    }// every X seconds reset the simulations.
+
     larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
 
     if (buildorder.building_gene_.empty()) {
@@ -1244,7 +1249,6 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         //}
     }
 
-
 }
 
 void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
@@ -1412,7 +1416,6 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         }
     }
 
-    techmanager.clearSimulationHistory(); assemblymanager.clearSimulationHistory();
 }
 
 void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
@@ -1454,7 +1457,6 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
         }
     }
 
-    if ( CUNYAIModule::checkInCartridge(unit->getType())) techmanager.clearSimulationHistory(); assemblymanager.clearSimulationHistory();
 }
 
 void CUNYAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.

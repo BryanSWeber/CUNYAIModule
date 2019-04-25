@@ -19,6 +19,7 @@ public:
     static bool checkTechAvail();
     static bool checkBuildingReady(const UpgradeType up);
     static bool checkUpgradeFull(const UpgradeType up);
+    static bool checkUpgradeUseable(const UpgradeType up);
     bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
     static void clearSimulationHistory(); //Clears the MA history. Should run every time a relevant comabat unit is made/destroyed to prevent the MA from having weight in dissimilar situations.
     static int returnTechRank(const UpgradeType & ut);
