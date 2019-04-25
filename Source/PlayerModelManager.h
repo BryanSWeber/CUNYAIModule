@@ -14,6 +14,7 @@ private:
 public:
     Player bwapi_player_; // this is a pointer, explicitly.
     double estimated_workers_ = 0;
+    double estimated_bases_ = 0;
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
 
