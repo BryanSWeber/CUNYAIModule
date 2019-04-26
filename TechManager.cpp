@@ -87,9 +87,6 @@ void TechManager::updateTech_Avail() {
         }
         if( pass_guard && CUNYAIModule:: Count_Units(building.first) == 0 && !own_successor) tech_avail_ = true; // If we can make it and don't have it.
     }
-
-    if (tech_avail_) return;
-    else tech_avail_ = false;
 }
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
