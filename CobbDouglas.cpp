@@ -167,9 +167,11 @@ bool CobbDouglas::evalArmyPossible()
 
     // drop all units types I cannot assemble at this time. 
     for(auto unit_selection:combat_types) {
-        if (Broodwar->canMake(unit_selection.first)) {
-            can_build_army = true;
-            break;
+        for (auto u : unit_selection.first.requiredUnits()) {
+            if (CUNYAIModule::Count_Units(u.first) >= u.second) {
+                can_build_army = true;
+                break;
+            }
         }
     }
 
