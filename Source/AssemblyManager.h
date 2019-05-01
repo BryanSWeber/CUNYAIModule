@@ -17,9 +17,13 @@ private:
     static Unit_Inventory hydra_bank_;
     static Unit_Inventory muta_bank_;
     static Unit_Inventory builder_bank_;
+    static Unit_Inventory creep_colony_bank_;
+
     static int last_frame_of_larva_morph_command;
     static int last_frame_of_hydra_morph_command;
     static int last_frame_of_muta_morph_command;
+    static int last_frame_of_creep_command;
+
 public:
     static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
@@ -33,7 +37,7 @@ public:
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
     // Builds the next building you can afford. Area of constant improvement.
-    static bool Building_Begin(const Unit & drone, const Unit_Inventory & e_inv);
+    static bool Building_Begin(const Unit & drone);
     // Returns a tile that is suitable for building.
     static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
     // Moves all units except for the Stored exeption_unit elsewhere.
@@ -43,6 +47,7 @@ public:
     // print the assembly cycle we're thinking about.
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
     static void updatePotentialBuilders();
+    static bool creepColonyInArea(const Position & pos);
     static bool assignUnitAssembly();
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
 };

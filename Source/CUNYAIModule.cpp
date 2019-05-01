@@ -229,7 +229,6 @@ void CUNYAIModule::onFrame()
     std::chrono::duration<double, std::milli> combat_time;
     std::chrono::duration<double, std::milli> detector_time;
     std::chrono::duration<double, std::milli> upgrade_time;
-    std::chrono::duration<double, std::milli> creepcolony_time;
     std::chrono::duration<double, std::milli> total_frame_time; //will use preamble start time.
 
     auto start_playermodel = std::chrono::high_resolution_clock::now();
@@ -668,7 +667,16 @@ void CUNYAIModule::onFrame()
         UnitType u_type = u->getType();
 
         // Finally make the unit do some stuff!
-        // Unit creation & Hatchery management loop
+
+        ////Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
+        //auto start_creepcolony = std::chrono::high_resolution_clock::now();
+
+        //if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
+        //    assemblymanager.buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
+        //}// closure: Creep colony loop
+
+        //auto end_creepcolony = std::chrono::high_resolution_clock::now();
+
 
         // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.  Should happen before combat script or else the units will be 'continued' past;
         auto start_detector = std::chrono::high_resolution_clock::now();
@@ -972,7 +980,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    assemblymanager.Building_Begin(u, enemy_player_model.units_); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    assemblymanager.Building_Begin(u); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
                         miner.stopMine(land_inventory);
                         continue;
@@ -1108,20 +1116,10 @@ void CUNYAIModule::onFrame()
         }
         auto end_upgrade = std::chrono::high_resolution_clock::now();
 
-        //Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
-        auto start_creepcolony = std::chrono::high_resolution_clock::now();
-
-        if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
-            assemblymanager.buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
-        }// closure: Creep colony loop
-
-        auto end_creepcolony = std::chrono::high_resolution_clock::now();
-
         detector_time += end_detector - start_detector;
         worker_time += end_worker - start_worker;
         combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
-        creepcolony_time += end_creepcolony - start_creepcolony;
     } // closure: unit iterator
 
 
@@ -1156,7 +1154,6 @@ void CUNYAIModule::onFrame()
         n = sprintf_s(combat_string,      "Combat:        %3.f%%,%3.fms", combat_time.count() / static_cast<double>(total_frame_time.count()) * 100, combat_time.count());
         n = sprintf_s(detection_string,   "Detection:     %3.f%%,%3.fms", detector_time.count() / static_cast<double>(total_frame_time.count()) * 100, detector_time.count());
         n = sprintf_s(upgrade_string,     "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
-        n = sprintf_s(creep_colony_string,"CreepColonies: %3.f%%,%3.fms", creepcolony_time.count() / static_cast<double>(total_frame_time.count()) * 100, creepcolony_time.count());
     }
 
     //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
