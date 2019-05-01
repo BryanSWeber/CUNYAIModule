@@ -460,4 +460,14 @@ void GeneticHistory::initializeHistory() {
         build_order_ = "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone"; //Standard Opener
 
     }
+    //Otherwise, use random build order and values from above
+    if constexpr (RANDOM_PLAN) {
+        delta_out_mutate_ = delta_out;
+            gamma_out_mutate_ = gamma_out;
+            a_army_out_mutate_ = a_army_out;
+            a_econ_out_mutate_ = 1 - a_army_out;
+            a_tech_out_mutate_ = a_tech_out;
+            r_out_mutate_ = r_out;
+            build_order_ = build_order_list[build_order_rand];
+    }
 }
