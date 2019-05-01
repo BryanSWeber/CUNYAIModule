@@ -65,64 +65,68 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
         else if (unit_can_build_intended_target && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 
-            //Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
+            Unitset base_core = unit->getUnitsInRadius(1, IsBuilding && IsResourceDepot && IsCompleted); // don't want undefined crash.
             TilePosition central_base = TilePositions::Origin;
             TilePosition final_creep_colony_spot = TilePositions::Origin;
 
 
-            ////get all the bases that might need a new creep colony.
-            //for (const auto &u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-            //    if ( u.second.type_ == UnitTypes::Zerg_Hatchery ) {
-            //        base_core.insert(u.second.bwapi_unit_);
-            //    }
-            //    else if (u.second.type_ == UnitTypes::Zerg_Lair) {
-            //        base_core.insert(u.second.bwapi_unit_);
-            //    }
-            //    else if (u.second.type_ == UnitTypes::Zerg_Hive) {
-            //        base_core.insert(u.second.bwapi_unit_);
-            //    }
-            //}
+            //get all the bases that might need a new creep colony.
+            for (const auto &u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+                if (u.second.type_ == UnitTypes::Zerg_Hatchery) {
+                    base_core.insert(u.second.bwapi_unit_);
+                }
+                else if (u.second.type_ == UnitTypes::Zerg_Lair) {
+                    base_core.insert(u.second.bwapi_unit_);
+                }
+                else if (u.second.type_ == UnitTypes::Zerg_Hive) {
+                    base_core.insert(u.second.bwapi_unit_);
+                }
+            }
 
-            // Build by the closest hatchery.
-            Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos);
-            Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos);
-            Unit_Inventory hives = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos);
-            hacheries = hacheries + lairs + hives;
-            Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 9999);
-            if (close_hatch) {
-                central_base = TilePosition(close_hatch->pos_);
-                // Otherwise, let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
-                //else if (CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_.size() != 0 && CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
-                //    if (central_base == TilePositions::Origin) {
-                //        int old_dist = 9999999;
+            bool intended_spore = false;
+            // If you need a spore, any old place will do for now.
+            if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
+                Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos, 500);
+                Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos, 500);
+                Unit_Inventory hives = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos, 500);
+                hacheries = hacheries + lairs + hives;
+                Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 500);
+                if (close_hatch) {
+                    central_base = TilePosition(close_hatch->pos_);
+                }
+                CUNYAIModule::DiagnosticText("Anticipating a spore");
+                intended_spore = true;
+            }
+            // Otherwise, let's find a place for sunkens. They should be at the base closest to the enemy, and should not blook off any paths. Alternatively, the base could be under threat.
+            else if (CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_.size() != 0 && CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(unit_pos) > 0) { // if we have identified the enemy's base, build at the spot closest to them.
+                if (central_base == TilePositions::Origin) {
+                    int old_dist = 9999999;
 
-                //        for (auto base = base_core.begin(); base != base_core.end(); ++base) { // loop over every base.
+                    for (auto base = base_core.begin(); base != base_core.end(); ++base) { // loop over every base.
 
-                //            TilePosition central_base_new = TilePosition((*base)->getPosition());
-                //            if (!BWAPI::Broodwar->hasCreep(central_base_new)) // Skip bases that don't have the creep yet for a sunken
-                //                continue;
-                //            int new_dist =CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
-                //            //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
+                        TilePosition central_base_new = TilePosition((*base)->getPosition());
+                        if (!BWAPI::Broodwar->hasCreep(central_base_new)) // Skip bases that don't have the creep yet for a sunken
+                            continue;
+                        int new_dist = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
+                                                                                                                                  //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
-                //            Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(central_base_new));
-                //            Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(central_base_new));
-                //            bool serious_problem = false;
+                        Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, Position(central_base_new), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+                        Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(central_base_new), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+                        bool serious_problem = false;
 
-                //            if (CUNYAIModule::getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_)) { // if they outnumber us here...
-                //                serious_problem = CUNYAIModule::checkSuperiorFAPForecast2(e_loc,friend_loc);
-                //            }
+                        if (CUNYAIModule::getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_)) { // if they outnumber us here...
+                            serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
+                        }
 
-                //            if ((new_dist <= old_dist || serious_problem) && CUNYAIModule::checkSafeBuildLoc(Position(central_base_new), CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory)) {  // then let's build at that base.
-                //                central_base = central_base_new;
-                //                old_dist = new_dist;
-                //                if (serious_problem) {
-                //                    break;
-                //                }
-                //            }
-                //        }
-                //    } //confirm we have identified a base around which to build.
-                //}
-
+                        if ((new_dist <= old_dist || serious_problem) && CUNYAIModule::checkSafeBuildLoc(Position(central_base_new), CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory)) {  // then let's build at that base.
+                            central_base = central_base_new;
+                            old_dist = new_dist;
+                            if (serious_problem) {
+                                break;
+                            }
+                        }
+                    }
+                } //confirm we have identified a base around which to build.
                 int chosen_base_distance = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(Position(central_base)); // Now let us build around that base.
                 for (int x = -10; x <= 10; ++x) {
                     for (int y = -10; y <= 10; ++y) {
@@ -137,11 +141,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
                             continue;
 
-                        //bool not_blocking_minerals = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, Position(test_loc)).resource_inventory_.empty() || intended_spore;
+                        bool not_blocking_minerals = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, Position(test_loc)).resource_inventory_.empty() || intended_spore;
 
                         if (!(x == 0 && y == 0) &&
                             within_map &&
-                            //not_blocking_minerals &&
+                            not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around other buildings.
                             CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
@@ -677,7 +681,7 @@ void AssemblyManager::updateOptimalUnit() {
 
 
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
-UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
+UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri, const bool &test_for_self_weakness) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
@@ -685,13 +689,25 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
-    CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
-    CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
+
+    Unit_Inventory potentially_weak_team;
+    Unit_Inventory team_creating_problems;
+    if (test_for_self_weakness) {
+        potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
+        team_creating_problems = CUNYAIModule::enemy_player_model.units_;
+    }
+    else {
+        potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
+        team_creating_problems = CUNYAIModule::friendly_player_model.units_;
+    }
+
+    potentially_weak_team.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
+    team_creating_problems.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
 
     map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
     auto buildfap_temp = buildFAP; // restore the buildfap temp.
 
-    if (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0) {
+    if (team_creating_problems.flyer_count_ > 0) {
         // test sunkens
         buildfap_temp.clear();
         buildfap_temp = buildFAP; // restore the buildfap temp.
