@@ -85,7 +85,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
             bool intended_spore = false;
             // If you need a spore, any old place will do for now.
-            if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
+            if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
                 Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos, 500);
                 Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos, 500);
                 Unit_Inventory hives = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos, 500);
@@ -141,7 +141,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
                             continue;
 
-                        bool not_blocking_minerals = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, Position(test_loc)).resource_inventory_.empty() || intended_spore;
+                        bool not_blocking_minerals = intended_spore;
 
                         if (!(x == 0 && y == 0) &&
                             within_map &&
@@ -376,7 +376,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
 
     //Consider an organized build plan.
-    if (CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
+    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
@@ -512,8 +512,8 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate) {
     bool must_make_spore = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
     bool must_make_sunken = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
 
-    if (CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && must_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (!CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && must_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (!CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 
     return false;
 }
@@ -567,14 +567,14 @@ bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType,
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None)  up_shooting_class = true;
         if (potential_type.first.groundWeapon() != WeaponTypes::None )  down_shooting_class = true;
-        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_relatively_weak_against_air_)  flying_class = true;
+        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_)  flying_class = true;
     }
 
     // Identify desirable unit classes prior to simulation.
     for (auto &potential_type : combat_types) {
-        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
-        if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && down_shooting_class)  it_needs_to_shoot_down = true;
-        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_relatively_weak_against_air_ && flying_class) it_needs_to_fly = true;
+        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
+        if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
+        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
         if (potential_type.first == UnitTypes::Zerg_Scourge && CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Scourge) )  too_many_scourge = true;
     }
 
@@ -680,10 +680,12 @@ void AssemblyManager::updateOptimalUnit() {
 }
 
 
-//Simply returns the unittype that is the "best" of a BuildFAP sim.
-UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri, const bool &test_for_self_weakness) {
-    bool building_optimal_unit = false;
-    int best_sim_score = INT_MIN;
+//Returns true if (players) units would do more damage if they only shot up. Player is self (if true) or to the enemy (if false). 
+bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const bool &test_for_self_weakness) {
+
+    int benifit_of_shooting_air_targets = 0;
+    int benifit_of_shooting_ground_targets = 0;
+
     UnitType build_type = UnitTypes::None;
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
@@ -691,20 +693,27 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri, const bo
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
 
     Unit_Inventory potentially_weak_team;
+    Research_Inventory potentially_weak_team_researches;
     Unit_Inventory team_creating_problems;
+    Research_Inventory team_creating_problems_researches;
+
     if (test_for_self_weakness) {
         potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
+        potentially_weak_team_researches = CUNYAIModule::friendly_player_model.researches_;
         team_creating_problems = CUNYAIModule::enemy_player_model.units_;
+        team_creating_problems_researches = CUNYAIModule::enemy_player_model.researches_;
+
     }
     else {
         potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
+        potentially_weak_team_researches = CUNYAIModule::enemy_player_model.researches_;
         team_creating_problems = CUNYAIModule::friendly_player_model.units_;
+        team_creating_problems_researches = CUNYAIModule::friendly_player_model.researches_;
     }
 
-    potentially_weak_team.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
-    team_creating_problems.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
+    potentially_weak_team.addToBuildFAP(buildFAP, true, potentially_weak_team_researches);
+    team_creating_problems.addToBuildFAP(buildFAP, false, team_creating_problems_researches);
 
-    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
     auto buildfap_temp = buildFAP; // restore the buildfap temp.
 
     if (team_creating_problems.flyer_count_ > 0) {
@@ -719,7 +728,7 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri, const bo
         }
         friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        air_test_1.at(UnitTypes::Zerg_Sunken_Colony) = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
+        benifit_of_shooting_ground_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
         buildfap_temp.clear();
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
@@ -734,23 +743,82 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri, const bo
         }
         friendly_units_under_consideration2.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        air_test_1.at(UnitTypes::Zerg_Spore_Colony) = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
+        benifit_of_shooting_air_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
         buildfap_temp.clear();
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
-
-        for (auto &potential_type : air_test_1) {
-            if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-                best_sim_score = potential_type.second;
-                build_type = potential_type.first;
-                //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
-            }
-        }
-
-        return build_type;
     }
 
-    else return UnitTypes::Zerg_Sunken_Colony;
+    return benifit_of_shooting_air_targets >= benifit_of_shooting_ground_targets;
+}
+
+//Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
+bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri, const bool &test_for_self_weakness) {
+    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
+                                                                       //add friendly units under consideration to FAP in loop, resetting each time.
+
+    FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
+    int value_of_flyers = 0;
+    int value_of_ground = 0;
+    Unit_Inventory potentially_weak_team;
+    Research_Inventory potentially_weak_team_researches;
+    Unit_Inventory team_creating_problems;
+    Research_Inventory team_creating_problems_researches;
+
+    if (test_for_self_weakness) {
+        potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
+        potentially_weak_team_researches = CUNYAIModule::friendly_player_model.researches_;
+        team_creating_problems = CUNYAIModule::enemy_player_model.units_;
+        team_creating_problems_researches = CUNYAIModule::enemy_player_model.researches_;
+
+    }
+    else {
+        potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
+        potentially_weak_team_researches = CUNYAIModule::enemy_player_model.researches_;
+        team_creating_problems = CUNYAIModule::friendly_player_model.units_;
+        team_creating_problems_researches = CUNYAIModule::friendly_player_model.researches_;
+    }
+
+    potentially_weak_team.addToBuildFAP(buildFAP, true, potentially_weak_team_researches);
+    team_creating_problems.addToBuildFAP(buildFAP, false, team_creating_problems_researches);
+
+
+    
+    auto buildfap_temp = buildFAP; // restore the buildfap temp.
+
+
+    // test ground hydras.
+    buildfap_temp.clear();
+    buildfap_temp = buildFAP; // restore the buildfap temp.
+    Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Hydralisk);
+    // enemy units do not change.
+    Unit_Inventory friendly_units_under_consideration; // new every time.
+    for (int i = 0; i < 5; ++i) {
+        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+    }
+    friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+    buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+    value_of_ground = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
+    buildfap_temp.clear();
+    //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+
+
+    // test flying hydras.
+    buildfap_temp.clear();
+    buildfap_temp = buildFAP; // restore the buildfap temp.
+                              // enemy units do not change.
+    Unit_Inventory friendly_units_under_consideration2; // new every time.
+    for (int i = 0; i < 5; ++i) {
+        friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+    }
+    friendly_units_under_consideration2.addFlyingToFAPatPos(buildfap_temp, comparision_spot, true, ri);
+    buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+    value_of_flyers = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
+    buildfap_temp.clear();
+    //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+
+
+    return value_of_flyers >= value_of_ground;
 }
 
 // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.

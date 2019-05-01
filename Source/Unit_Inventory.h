@@ -27,6 +27,7 @@ struct Stored_Unit {
     auto convertToFAPPosition(const Position & chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
     auto convertToFAPDisabled(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an immobile unit.
     auto convertToFAPAnitAir(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an anti-air only tool.
+    auto convertToFAPflying(const Position & chosen_pos, const Research_Inventory & ri);
 
     static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
@@ -179,6 +180,7 @@ struct Unit_Inventory {
     void addToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
     void addDisabledToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
     void addAntiAirToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
+    void addFlyingToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
     void addToMCFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
     void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
 

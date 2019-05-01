@@ -524,8 +524,8 @@ void CUNYAIModule::onFrame()
         }
 
         //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_relatively_weak_against_air_ ? "TRUE" : "FALSE"); //
+        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_have_active_air_problem_ ? "TRUE" : "FALSE"); //
+        Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_has_air_vunerability_ ? "TRUE" : "FALSE"); //
 
         //vision belongs here.
         Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
@@ -649,7 +649,7 @@ void CUNYAIModule::onFrame()
 
     //This global check needs a home in the assembly manager!
     //Evo chamber is required tech for spore colony ... This is a bad place for it!
-    if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !CUNYAIModule::my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
+    if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !CUNYAIModule::my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
         CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
         CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
     }

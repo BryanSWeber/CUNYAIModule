@@ -25,7 +25,8 @@ private:
     static int last_frame_of_creep_command;
 
 public:
-    static UnitType testAirWeakness(const Research_Inventory & ri);  // returns spore colony if weak against air. Tests explosive damage.
+    static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
+    static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness);
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
     static int returnUnitRank(const UnitType &ut );
     static void updateOptimalUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).

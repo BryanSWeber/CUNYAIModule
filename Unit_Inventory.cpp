@@ -1154,6 +1154,54 @@ auto Stored_Unit::convertToFAPAnitAir(const Position &chosen_pos, const Research
         ;
 }
 
+auto Stored_Unit::convertToFAPflying(const Position & chosen_pos, const Research_Inventory &ri) {
+    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+
+    bool speed_tech = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+
+    bool range_upgrade = // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+
+    bool attack_speed_upgrade =  // safer to hardcode this.
+        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+
+    return FAP::makeUnit<Stored_Unit*>()
+        .setData(this)
+        .setUnitType(type_)
+        .setPosition(chosen_pos)
+        .setHealth(health_)
+        .setShields(shields_)
+        .setFlying(true)
+        .setElevation(elevation_)
+        .setAttackerCount(units_inside_object)
+        .setArmorUpgrades(armor_upgrades)
+        .setAttackUpgrades(gun_upgrades)
+        .setShieldUpgrades(shield_upgrades)
+        .setSpeedUpgrade(speed_tech)
+        .setAttackSpeedUpgrade(attack_speed_upgrade)
+        .setAttackCooldownRemaining(cd_remaining_)
+        .setStimmed(stimmed_)
+        .setRangeUpgrade(range_upgrade)
+        ;
+}
+
 void Stored_Unit::updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit)
 {
 
@@ -1184,8 +1232,8 @@ void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_obj
 
 void Unit_Inventory::addDisabledToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
-        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
-        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPDisabled(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPDisabled(pos, ri));
     }
 }
 
@@ -1193,6 +1241,13 @@ void Unit_Inventory::addAntiAirToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPAnitAir(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPAnitAir(pos, ri));
+    }
+}
+
+void Unit_Inventory::addFlyingToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+    for (auto &u : unit_map_) {
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPflying(pos, ri));
+        else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPflying(pos, ri));
     }
 }
 

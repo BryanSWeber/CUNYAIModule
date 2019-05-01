@@ -24,8 +24,8 @@ public:
     CobbDouglas spending_model_;
     //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
 
-    bool u_relatively_weak_against_air_; 
-    bool e_relatively_weak_against_air_;
+    bool u_have_active_air_problem_; 
+    bool e_has_air_vunerability_;
 
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(const Player_Model &target_player);

@@ -74,10 +74,8 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     spending_model_.tech_derivative = spending_model_.tech_derivative;
 
     //Update general weaknesses.
-    map<UnitType, int> air_test_1 = { { UnitTypes::Zerg_Sunken_Colony, INT_MIN } ,{ UnitTypes::Zerg_Spore_Colony, INT_MIN } };
-    map<UnitType, int> air_test_2 = { { UnitTypes::Zerg_Guardian, INT_MIN } ,{ UnitTypes::Zerg_Lurker, INT_MIN } }; // Noting there is no such thing as splash damage, these units have identical costs and statistics.
-    u_relatively_weak_against_air_ = (bool)(CUNYAIModule::assemblymanager.testAirWeakness(researches_) == UnitTypes::Zerg_Spore_Colony);
-    e_relatively_weak_against_air_ = (bool)(CUNYAIModule::assemblymanager.returnOptimalUnit(air_test_2, researches_) == UnitTypes::Zerg_Guardian);
+    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) );
+    e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory
     radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, true);
