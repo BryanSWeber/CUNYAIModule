@@ -1390,11 +1390,15 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
+Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
     Resource_Inventory ri_out;
-    for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-        if ((*r).second.pos_.getDistance(origin) <= dist) {
-            ri_out.addStored_Resource( (*r).second ); // if we take any distance and they are in inventory.
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+    if (area) {
+        int area_id = area->Id();
+        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+            if ( r->second.areaID_ == area_id) {
+                ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
+            }
         }
     }
     return ri_out;
@@ -1414,40 +1418,89 @@ Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
 //Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
 Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const Position &origin) {
     Unit_Inventory ui_out;
-    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
-    if (area) {
-        int area_id = area->Id();
-        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (e->second.areaID_ == area_id) {
-                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
-            }
-        }
-    }
-    return ui_out;
-}
-//Searches an enemy inventory for units within a BWAPI Area. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const UnitType ut, const Position &origin) {
-    Unit_Inventory ui_out;
-    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
-    if (area) {
-        int area_id = area->Id();
-        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (e->second.areaID_ == area_id && e->second.type_ == ut) {
-                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+    TilePosition tp = TilePosition(origin);
+    if (tp.isValid()) {
+        auto area = BWEM::Map::Instance().GetArea(tp);
+        if (area) {
+            int area_id = area->Id();
+            for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+                if (e->second.areaID_ == area_id) {
+                    ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                }
             }
         }
     }
     return ui_out;
 }
 
-//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+//Searches an enemy inventory for units within a BWAPI Neighborhood. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInNeighborhood(const Unit_Inventory &ui, const Position &origin) {
+    Unit_Inventory ui_out;
+    TilePosition tp = TilePosition(origin);
+    if (tp.isValid()) {
+        auto area = BWEM::Map::Instance().GetArea(tp);
+        if (area) {
+            int area_id = area->Id();
+            for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+                for (auto & a : area->AccessibleNeighbours()) {
+                    if (e->second.areaID_ == area_id || e->second.areaID_ == a->Id()) {
+                        ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                    }
+                }
+            }
+        }
+    }
+    return ui_out;
+}
+
+//Searches an enemy inventory for units within a BWAPI Area. Returns enemy inventory meeting that critera. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const UnitType ut, const Position &origin) {
+    Unit_Inventory ui_out;
+    TilePosition tp = TilePosition(origin);
+    if (tp.isValid()) {
+        auto area = BWEM::Map::Instance().GetArea(tp);
+        if (area) {
+            int area_id = area->Id();
+            for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+                if (e->second.areaID_ == area_id && e->second.type_ == ut) {
+                    ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                }
+            }
+        }
+    }
+    return ui_out;
+}
+
+//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. 
 bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
-    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
-    if (area) {
-        int area_id = area->Id();
-        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (e->second.areaID_ == area_id) {
-                return true;
+    TilePosition tp = TilePosition(origin);
+    if (tp.isValid()) {
+        auto area = BWEM::Map::Instance().GetArea(tp);
+        if (area) {
+            int area_id = area->Id();
+            for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+                if (e->second.areaID_ == area_id) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+//Searches an inventory for units of within a neighborhood (grouping of areas). Returns TRUE if the neighborhood is occupied. 
+bool CUNYAIModule::checkOccupiedNeighborhood(const Unit_Inventory &ui, const Position &origin) {
+    TilePosition tp = TilePosition(origin);
+    if (tp.isValid()) {
+        auto area = BWEM::Map::Instance().GetArea(tp);
+        if (area) {
+            int area_id = area->Id();
+            for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+                for (auto & a : area->AccessibleNeighbours()) {
+                    if (e->second.areaID_ == area_id || e->second.areaID_ == a->Id()) {
+                        return true;
+                    }
+                }
             }
         }
     }
@@ -1910,7 +1963,7 @@ int CUNYAIModule::getProperRange(const Unit u) {
         base_range += 3 * 32;
     }
     else if ( u_type == UnitTypes::Terran_Barracks ) {
-        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + 32 + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
     }
 
     return base_range;
@@ -2080,24 +2133,28 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
-    Unit_Inventory e_loc = getUnitInventoryInRadius(ei, pos, 750);
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
+    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_map_inventory.home_base_));
+    bool it_is_home_ = false;
+    Unit_Inventory e_loc = getUnitInventoryInNeighborhood(ei, pos);
     Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
     //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
-    Unit_Inventory e_too_close = getUnitInventoryInRadius(ei, pos, 250);
-    Unit_Inventory friend_loc = getUnitInventoryInRadius(ui, pos, 750);
+    Unit_Inventory e_too_close = getUnitInventoryInArea(ei, pos);
+    Unit_Inventory friend_loc = getUnitInventoryInArea(ui, pos);
     int radial_distance_to_closest_enemy = 0;
     int radial_distance_to_build_position = 0;
     bool enemy_has_not_penetrated = true;
     bool can_still_save = true;
     bool have_to_save = false;
-    bool it_is_home_ = true;
 
 
     if (e_loc.stock_fighting_total_ > 0 && e_closest) {
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
-        it_is_home_ = CUNYAIModule::current_map_inventory.home_base_.getDistance(pos) < 96;
+        if (area && area_home) {
+            it_is_home_ = (area == area_home);
+        }
         can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
         have_to_save = CUNYAIModule::current_map_inventory.min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }

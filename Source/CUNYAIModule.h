@@ -243,13 +243,15 @@ public:
       static Unit_Inventory getThreateningUnitInventoryInRadius(const Unit_Inventory & ui, const Position & origin, const int & dist, const bool & air_attack);
       static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
       static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const Position & origin);
+      static Unit_Inventory getUnitInventoryInNeighborhood(const Unit_Inventory & ui, const Position & origin);
       static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const UnitType ut, const Position & origin);
 
-      static Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist);
+      static Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin);
       //Overload. Searches for units of a specific type. 
       static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin );
+      static bool checkOccupiedNeighborhood(const Unit_Inventory & ui, const Position & origin);
       static bool checkOccupiedArea( const Unit_Inventory & ui, const UnitType type, const Position & origin);
       //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
       static bool checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist );

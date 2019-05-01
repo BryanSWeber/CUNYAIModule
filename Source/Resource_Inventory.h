@@ -20,6 +20,7 @@ struct Stored_Resource{
     int current_stock_value_;
     int max_stock_value_;
     int number_of_miners_;
+    int areaID_;
 
     bool occupied_natural_;
     bool full_resource_;

@@ -1159,8 +1159,8 @@ Position Map_Inventory::getWeakestBase( const Unit_Inventory &ei) const
     int stock_current_best = 0;
 
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInRadius(ei, Position(expo), my_portion_of_the_map_);
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInRadius(ei_loc, Position(expo), expo_portion_of_the_map_);
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(ei, Position(expo));
+        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInArea(ei_loc, Position(expo));
         ei_loc.updateUnitInventorySummary();
         ei_tiny.updateUnitInventorySummary();
         if (ei_loc.moving_average_fap_stock_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
@@ -1179,8 +1179,8 @@ Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_I
     int temp_safest_base = INT_MIN;
 
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
-        Unit_Inventory di_loc = CUNYAIModule::getUnitInventoryInRadius(di, Position(expo), my_portion_of_the_map_);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInArea(ui, Position(expo));
+        Unit_Inventory di_loc = CUNYAIModule::getUnitInventoryInNeighborhood(di, Position(expo));
         ui_loc.updateUnitInventorySummary();
         di_loc.updateUnitInventorySummary();
 
@@ -1200,7 +1200,7 @@ Position Map_Inventory::getMostValuedBase(const Unit_Inventory & ui) const
     int temp_valued_base = INT_MIN;
 
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInRadius(ui, Position(expo), expo_portion_of_the_map_);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInArea(ui, Position(expo));
         ui_loc.updateUnitInventorySummary();
 
         if (ui_loc.stock_ground_fodder_ + ui_loc.stock_air_fodder_ > temp_valued_base && ui_loc.resource_depot_count_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!

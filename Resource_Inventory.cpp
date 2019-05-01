@@ -84,10 +84,16 @@ Stored_Resource::Stored_Resource(Unit resource) {
     occupied_natural_ = false;
     valid_pos_ = true;
 
+
     //local_natural_;
     bwapi_unit_ = resource;
     type_ = resource->getType();
     pos_ = resource->getPosition();
+
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(pos_));
+    if (area) {
+        areaID_ = area->Id();
+    }
 }
 
 //void Stored_Resource::addMiner(Stored_Unit miner) {

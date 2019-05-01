@@ -32,7 +32,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         bool unit_can_build_intended_target = unit->canBuild(building);
         bool unit_can_morph_intended_target = unit->canMorph(building);
         //Check simple upgrade into lair/hive.
-        Unit_Inventory local_area = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, unit_pos, 250);
+        Unit_Inventory local_area = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, unit_pos);
         bool hatch_nearby = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
@@ -107,12 +107,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         int new_dist =CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
                         //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
-                        Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, Position(central_base_new),CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-                        Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(central_base_new),CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+                        Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(central_base_new));
+                        Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(central_base_new));
                         bool serious_problem = false;
 
                         if (CUNYAIModule::getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_)) { // if they outnumber us here...
-                            serious_problem = (e_loc.moving_average_fap_stock_ > friend_loc.moving_average_fap_stock_);
+                            serious_problem = CUNYAIModule::checkSuperiorFAPForecast2(e_loc,friend_loc);
                         }
 
                         if ((new_dist <= old_dist || serious_problem) && CUNYAIModule::checkSafeBuildLoc(Position(central_base_new), CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory)) {  // then let's build at that base.
@@ -138,11 +138,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
                             continue;
 
-                        bool not_blocking_minerals = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, Position(test_loc), 96).resource_inventory_.empty() || intended_spore;
+                        //bool not_blocking_minerals = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, Position(test_loc)).resource_inventory_.empty() || intended_spore;
 
                         if (!(x == 0 && y == 0) &&
                             within_map &&
-                            not_blocking_minerals &&
+                            //not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around other buildings.
                             CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
@@ -198,7 +198,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             if (unit_can_build_intended_target && CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64);
 
-                local_area = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(buildPosition), 250);
+                local_area = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(buildPosition));
                 hatch_nearby = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
                     CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
                     CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
@@ -321,7 +321,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
     bool can_upgrade_colonies = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
-    bool nearby_enemy = CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
+    bool nearby_enemy = CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
     bool drone_death = false;
     int number_of_evos_wanted =
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
@@ -792,7 +792,7 @@ bool AssemblyManager::assignUnitAssembly()
 
             if (larva.first->getHatchery()) {
                 wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::current_map_inventory.min_fields_ > 8; // no longer will spam units when I need a hatchery.
-                Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition(), 250);
+                Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
                 local_resources.countViableMines();
                 hatch_wants_drones = 2 * local_resources.local_mineral_patches_ + 3 * local_resources.local_refineries_ > local_resources.local_miners_ + local_resources.local_gas_collectors_;
                 prep_for_transfer = CUNYAIModule::Count_Units_In_Progress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
@@ -824,7 +824,7 @@ bool AssemblyManager::assignUnitAssembly()
     if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12) {
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
-            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first)) continue;
+            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) && potential_lurker.second.phase_ != "Attacking") continue;
             if (!potential_lurker.first->isUnderAttack()) combat_creators.addStored_Unit(potential_lurker.second);
         }
     }
@@ -832,7 +832,7 @@ bool AssemblyManager::assignUnitAssembly()
     if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12) {
         bool endgame_fliers_permissable = CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
-            if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first)) continue;
+            if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) && potential_endgame_flier.second.phase_ != "Attacking" && potential_endgame_flier.second.phase_ != "Retreating") continue;
             if (!potential_endgame_flier.first->isUnderAttack() && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
         }
     }
