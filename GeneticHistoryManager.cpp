@@ -462,12 +462,28 @@ void GeneticHistory::initializeHistory() {
     }
     //Otherwise, use random build order and values from above
     if constexpr (RANDOM_PLAN) {
+
+        delta_out = dis(gen) * 0.6;
+        gamma_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
+                                    // the values below will be normalized to 1.
+        a_army_out = dis(gen);
+        a_econ_out = dis(gen);
+        a_tech_out = dis(gen);
+        //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+        r_out = dis(gen);
+        //No longer used.
+        a_vis_out = dis(gen);
+        std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
+        size_t build_order_rand = rand_bo(gen);
+
+        build_order_out = build_order_list[build_order_rand];
+
         delta_out_mutate_ = delta_out;
-            gamma_out_mutate_ = gamma_out;
-            a_army_out_mutate_ = a_army_out;
-            a_econ_out_mutate_ = 1 - a_army_out;
-            a_tech_out_mutate_ = a_tech_out;
-            r_out_mutate_ = r_out;
-            build_order_ = build_order_list[build_order_rand];
+        gamma_out_mutate_ = gamma_out;
+        a_army_out_mutate_ = a_army_out;
+        a_econ_out_mutate_ = 1 - a_army_out;
+        a_tech_out_mutate_ = a_tech_out;
+        r_out_mutate_ = r_out;
+        build_order_ = build_order_list[build_order_rand];
     }
 }
