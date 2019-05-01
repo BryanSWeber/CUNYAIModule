@@ -140,7 +140,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_, 250) && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_) && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.

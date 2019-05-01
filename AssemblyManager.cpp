@@ -83,11 +83,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             bool intended_spore = false;
             // If you need a spore, any old place will do for now.
             if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && CUNYAIModule::friendly_player_model.u_relatively_weak_against_air_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0 ) {
-                Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos, 500);
-                Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos, 500);
-                Unit_Inventory hives = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos, 500);
+                Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos);
+                Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos);
+                Unit_Inventory hives = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos);
                 hacheries = hacheries + lairs + hives;
-                Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 500);
+                Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 9999);
                 if (close_hatch) {
                     central_base = TilePosition(close_hatch->pos_);
                 }
@@ -321,8 +321,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
     bool can_upgrade_colonies = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool enemy_mostly_ground = e_inv.stock_ground_units_ > e_inv.stock_fighting_total_ * 0.75;
-    bool enemy_lacks_AA = e_inv.stock_shoots_up_ < 0.25 * e_inv.stock_fighting_total_;
-    bool nearby_enemy = CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+    bool nearby_enemy = CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
     bool drone_death = false;
     int number_of_evos_wanted =
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
@@ -338,9 +337,9 @@ bool AssemblyManager::Building_Begin(const Unit &drone, const Unit_Inventory &e_
     Unit_Inventory u_loc;
 
     if (nearby_enemy) {
-        e_loc = CUNYAIModule::getUnitInventoryInRadius(e_inv, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-        u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, drone->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-        drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 12);
+        e_loc = CUNYAIModule::getUnitInventoryInArea(e_inv, drone->getPosition());
+        u_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, drone->getPosition());
+        drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);
     }
 
     // Trust the build order. If there is a build order and it wants a building, build it!
@@ -699,7 +698,9 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
         Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Sunken_Colony);
         // enemy units do not change.
         Unit_Inventory friendly_units_under_consideration; // new every time.
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        for (int i = 0; i < 5; ++i) {
+            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        }
         friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         air_test_1.at(UnitTypes::Zerg_Sunken_Colony) = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
@@ -712,7 +713,9 @@ UnitType AssemblyManager::testAirWeakness(const Research_Inventory &ri) {
         buildfap_temp = buildFAP; // restore the buildfap temp.
         // enemy units do not change.
         Unit_Inventory friendly_units_under_consideration2; // new every time.
-        friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+        for (int i = 0; i < 5; ++i) {
+            friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+        }
         friendly_units_under_consideration2.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         air_test_1.at(UnitTypes::Zerg_Spore_Colony) = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.

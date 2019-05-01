@@ -63,7 +63,7 @@ struct Stored_Unit {
     bool burrowed_;
     bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
-    int areaID;
+    int areaID_;
     
     string phase_ = "None";
 

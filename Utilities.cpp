@@ -1411,31 +1411,62 @@ Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
     return ui_out;
 }
 
-//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
-
-    for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
-        if( (*e).second.pos_.x < origin.x + dist && (*e).second.pos_.x > origin.x - dist &&
-            (*e).second.pos_.y < origin.y + dist && (*e).second.pos_.y > origin.y - dist ) {
-            return true;
+//Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const Position &origin) {
+    Unit_Inventory ui_out;
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+    if (area) {
+        int area_id = area->Id();
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.areaID_ == area_id) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
         }
     }
-
-    return false;
+    return ui_out;
+}
+//Searches an enemy inventory for units within a BWAPI Area. Returns enemy inventory meeting that critera. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const UnitType ut, const Position &origin) {
+    Unit_Inventory ui_out;
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+    if (area) {
+        int area_id = area->Id();
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.areaID_ == area_id && e->second.type_ == ut) {
+                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            }
+        }
+    }
+    return ui_out;
 }
 
-//Searches an inventory for buildings. Returns TRUE if the area is occupied. 
-bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
-
-    for (auto & e : ui.unit_map_) {
-        if (e.second.type_ == type) {
-            if (e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
-                e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown()) {
+//Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
+bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+    if (area) {
+        int area_id = area->Id();
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.areaID_ == area_id) {
                 return true;
             }
         }
     }
+    return false;
+}
 
+//Searches an inventory for units of a type.. Returns TRUE if the area is occupied. 
+bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
+    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+    if (area) {
+        int area_id = area->Id();
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.type_ == type) {
+                if (e->second.areaID_ == area_id) {
+                    return true;
+                }
+            }
+        }
+    }
     return false;
 }
 
@@ -1452,50 +1483,6 @@ bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 //
 //    return false;
 //}
-
-//Searches an inventory for buildings. Returns TRUE if the area is occupied. 
-bool CUNYAIModule::checkBuildingOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
-
-    for ( auto & e : ui.unit_map_) {
-        if ( e.second.type_.isBuilding() ) {
-            if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
-                e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown() ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-//Searches an inventory for a resource
-bool CUNYAIModule::checkResourceOccupiedArea( const Resource_Inventory &ri, const Position &origin ) {
-
-    for ( auto & e : ri.resource_inventory_ ) {
-        if ( e.second.pos_.x < origin.x + e.second.type_.dimensionLeft() && e.second.pos_.x > origin.x - e.second.type_.dimensionRight() &&
-            e.second.pos_.y < origin.y + e.second.type_.dimensionUp() && e.second.pos_.y > origin.y - e.second.type_.dimensionDown() ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-//Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied or nearly so. Checks retangles for performance reasons rather than radius.
-bool CUNYAIModule::checkUnitOccupiesArea( const Unit &unit, const Position &origin, const int & dist ) {
-
-        if ( unit->getType().isBuilding() ) {
-            Position pos = unit->getPosition();
-            UnitType type = unit->getType();
-            if ( pos.x < origin.x + type.dimensionLeft() + dist && pos.x > origin.x - type.dimensionRight() - dist &&
-                pos.y < origin.y + type.dimensionUp() + dist && pos.y > origin.y - type.dimensionDown() - dist ) {
-                return true;
-            }
-        }
-
-
-    return false;
-}
 
 bool CUNYAIModule::isOnScreen( const Position &pos , const Position &screen_pos) {
     bool inrange_x = screen_pos.x < pos.x && screen_pos.x + 640 > pos.x;
@@ -2123,7 +2110,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
     bool desperate_for_minerals = CUNYAIModule::current_map_inventory.min_fields_ < 6;
-    bool safe_mine = checkOccupiedArea(ui, pos, 250);
+    bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }
 

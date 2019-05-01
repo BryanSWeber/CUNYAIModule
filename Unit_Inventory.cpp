@@ -312,7 +312,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
-    areaID = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
+    areaID_ = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
 
     //Needed for FAP.
     is_flying_ = unit->isFlying();
@@ -506,7 +506,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  Unit_Inventory Unit_Inventory::getInventoryAtArea(const int areaID ) const {
      Unit_Inventory return_inventory;
      for (const auto &u : this->unit_map_) {
-         if (u.second.areaID == areaID) { return_inventory.addStored_Unit(u.second); }
+         if (u.second.areaID_ == areaID) { return_inventory.addStored_Unit(u.second); }
      }
      return return_inventory;
  }
@@ -514,7 +514,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
      Unit_Inventory return_inventory;
      for (const auto &u : this->unit_map_) {
-         if (u.second.areaID == areaID && CUNYAIModule::IsFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
+         if (u.second.areaID_ == areaID && CUNYAIModule::IsFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
      }
      return return_inventory;
  }
@@ -522,7 +522,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  Unit_Inventory Unit_Inventory::getBuildingInventoryAtArea(const int areaID) const {
      Unit_Inventory return_inventory;
      for (const auto &u : this->unit_map_) {
-         if (u.second.areaID == areaID && u.second.type_.isBuilding()) { return_inventory.addStored_Unit(u.second); }
+         if (u.second.areaID_ == areaID && u.second.type_.isBuilding()) { return_inventory.addStored_Unit(u.second); }
      }
      return return_inventory;
  }
