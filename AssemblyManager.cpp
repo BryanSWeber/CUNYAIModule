@@ -86,11 +86,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             bool intended_spore = false;
             // If you need a spore, any old place will do for now.
             if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) > 0 && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
-                Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos, 500);
-                Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos, 500);
-                Unit_Inventory hives = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos, 500);
+                Unit_Inventory hacheries = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hatchery, unit_pos);
+                Unit_Inventory lairs = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lair, unit_pos);
+                Unit_Inventory hives = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Hive, unit_pos);
                 hacheries = hacheries + lairs + hives;
-                Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 500);
+                Stored_Unit *close_hatch = CUNYAIModule::getClosestStored(hacheries, unit_pos, 1200);
                 if (close_hatch) {
                     central_base = TilePosition(close_hatch->pos_);
                 }
@@ -110,8 +110,8 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         int new_dist = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy((*base)->getPosition()); // see how far it is from the enemy.
                                                                                                                                   //CUNYAIModule::DiagnosticText("Dist from enemy is: %d", new_dist);
 
-                        Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, Position(central_base_new), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
-                        Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(central_base_new), CUNYAIModule::current_map_inventory.my_portion_of_the_map_);
+                        Unit_Inventory e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(central_base_new));
+                        Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(central_base_new));
                         bool serious_problem = false;
 
                         if (CUNYAIModule::getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, (*base)->getPosition(), CUNYAIModule::current_map_inventory.my_portion_of_the_map_)) { // if they outnumber us here...
@@ -141,11 +141,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         if (!BWAPI::Broodwar->hasCreep(test_loc)) //Only choose spots that have enough creep for the tumor
                             continue;
 
-                        bool not_blocking_minerals = intended_spore;
+                        //bool not_blocking_minerals = intended_spore;
 
                         if (!(x == 0 && y == 0) &&
                             within_map &&
-                            not_blocking_minerals &&
+                            //not_blocking_minerals &&
                             Broodwar->canBuildHere(test_loc, UnitTypes::Zerg_Creep_Colony, unit, false) &&
                             CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(test_loc).x][WalkPosition(test_loc).y] > UnitTypes::Zerg_Creep_Colony.tileWidth() * 4 && // don't wall off please. Wide berth around other buildings.
                             CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(Position(test_loc)) <= chosen_base_distance) // Count all points further from home than we are.
@@ -330,11 +330,18 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
             static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)) +
                 static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
+    int number_of_spires_wanted =
+        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
+            static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
+    int count_of_spire_decendents = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire);
     int count_tech_buildings = CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern);
     bool have_idle_evos = false;
-    bool fight_without_reinforcements = (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved) && CUNYAIModule::army_starved && nearby_enemy;
-    for (auto evo : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (evo.second.type_ == UnitTypes::Zerg_Evolution_Chamber && evo.second.build_type_ && evo.second.phase_ != "Upgrading") have_idle_evos = true;
+    bool have_idle_spires = false;
+    bool fight_without_reinforcements = CUNYAIModule::army_starved && (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved);
+    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == "None") have_idle_evos = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == "None") have_idle_spires = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == "None") have_idle_spires = true;
     }
 
     Unit_Inventory e_loc;
@@ -353,24 +360,24 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
     }
 
+    //Combat Buildings
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death || fight_without_reinforcements) && nearby_enemy && // under attack. ? And?
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
+        can_upgrade_colonies &&
+        // && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
+        CUNYAIModule::current_map_inventory.hatches_ > 1 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+
     //Macro-related Buildings.
     if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, the_only_macro_hatch_case); // only macrohatch if you are short on larvae and can afford to spend.
 
-
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         (CUNYAIModule::current_map_inventory.gas_workers_ >= 2 * (CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Extractor)) && CUNYAIModule::gas_starved) &&
         CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
-    //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death || CUNYAIModule::army_starved) && nearby_enemy && // under attack. ? And?
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
-        can_upgrade_colonies &&
-        (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved) && // Only throw down a sunken if you have no larva floating around, or need the supply, or can't spare the gas.
-        CUNYAIModule::current_map_inventory.hatches_ > 1 &&
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //First Building needed!
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
@@ -425,6 +432,15 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (!have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
+
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&
+        count_of_spire_decendents < number_of_spires_wanted &&
+        Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
+        Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
+        CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+        (!have_idle_spires || count_of_spire_decendents == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -746,10 +762,10 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         benifit_of_shooting_air_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
         buildfap_temp.clear();
         //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
-
+        return benifit_of_shooting_air_targets >= benifit_of_shooting_ground_targets;
     }
 
-    return benifit_of_shooting_air_targets >= benifit_of_shooting_ground_targets;
+    return false;
 }
 
 //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
@@ -782,10 +798,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     potentially_weak_team.addToBuildFAP(buildFAP, true, potentially_weak_team_researches);
     team_creating_problems.addToBuildFAP(buildFAP, false, team_creating_problems_researches);
 
-
-    
     auto buildfap_temp = buildFAP; // restore the buildfap temp.
-
 
     // test ground hydras.
     buildfap_temp.clear();
