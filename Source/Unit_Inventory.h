@@ -97,7 +97,7 @@ struct Stored_Unit {
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // only taken from fap.
     int ma_future_fap_value_; // A moving average of FAP values.
-    int count_of_expected_deaths_; // the number of sims forcasting the unit's death.
+    int count_of_consecutive_predicted_deaths_; // the number of sims forcasting the unit's death.
     bool hasTarget_;
 
     int velocity_x_;
@@ -164,13 +164,15 @@ struct Unit_Inventory {
     void purgeWorkerRelationsStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
     void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
     void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
-    void drawAllVelocities(const Map_Inventory &inv) const; // sometimes causes a lag-out or a crash. Unclear why.
-    void drawAllHitPoints(const Map_Inventory & inv) const;
-    void drawAllMAFAPaverages(const Map_Inventory & inv) const;
-    void drawAllSpamGuards(const Map_Inventory & inv) const;
-    void drawAllWorkerTasks(const Map_Inventory & inv, Resource_Inventory &ri) const;
-    void drawAllLocations(const Map_Inventory &inv) const;
-    void drawAllMisplacedGroundUnits(const Map_Inventory & inv) const;
+    void drawAllVelocities() const; // sometimes causes a lag-out or a crash. Unclear why.
+    void drawAllHitPoints() const;
+    void drawAllMAFAPaverages() const;
+    void drawAllFutureDeaths() const;
+    void drawAllLastDamage() const;
+    void drawAllSpamGuards() const;
+    void drawAllWorkerTasks(Resource_Inventory &ri) const;
+    void drawAllLocations() const;
+    void drawAllMisplacedGroundUnits() const;
     Unit_Inventory getInventoryAtArea(const int areaID) const;
     Unit_Inventory getCombatInventoryAtArea(const int areaID) const;
     Unit_Inventory getBuildingInventoryAtArea(const int areaID) const;

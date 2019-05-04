@@ -154,10 +154,10 @@ void Resource_Inventory::countViableMines() {
         }
     } // find drone minima.
 }
-void Resource_Inventory::drawMineralRemaining(const Map_Inventory &inv) const
+void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        CUNYAIModule::DiagnosticMineralsRemaining(u.second, inv.screen_position_);
+        CUNYAIModule::DiagnosticMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
@@ -166,7 +166,7 @@ void Resource_Inventory::drawUnreachablePatch(const Map_Inventory & inv) const
 {
     if constexpr (DRAWING_MODE) {
         for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-            if (CUNYAIModule::isOnScreen(r->second.pos_, inv.screen_position_)) {
+            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::current_map_inventory.screen_position_)) {
                 if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
                 }

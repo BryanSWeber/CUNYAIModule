@@ -274,6 +274,58 @@ void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_
         }
     }
 }
+void CUNYAIModule::DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
+    if constexpr (DRAWING_MODE) {
+        Position upper_left = unit.pos_;
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0 ) {
+            // Draw the background.
+            upper_left.y = upper_left.y + unit.type_.dimensionUp();
+            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.y = upper_left.y + 5;
+
+            //Overlay the appropriate color above it.
+            lower_right = upper_left;
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.count_of_consecutive_predicted_deaths_ / static_cast<double>(MOVING_AVERAGE_DURATION), 1.0));
+            lower_right.y = upper_left.y + 5;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
+
+            for (int i = 0; i <= static_cast<int>(MOVING_AVERAGE_DURATION / 12); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(MOVING_AVERAGE_DURATION));
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
+                //temp_stock_value -= 15;
+            }
+        }
+    }
+}
+
+void CUNYAIModule::DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
+    if constexpr (DRAWING_MODE) {
+        Position upper_left = unit.pos_;
+        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
+            // Draw the background.
+            upper_left.y = upper_left.y + unit.type_.dimensionUp();
+            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
+
+            Position lower_right = upper_left;
+            lower_right.x = upper_left.x + unit.type_.width();
+            lower_right.y = upper_left.y + 5;
+
+            //Overlay the appropriate color above it.
+            lower_right = upper_left;
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.time_since_last_dmg_ / static_cast<double>(MOVING_AVERAGE_DURATION), 1.0));
+            lower_right.y = upper_left.y + 5;
+            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
+
+            for (int i = 0; i <= static_cast<int>(MOVING_AVERAGE_DURATION / 12); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(MOVING_AVERAGE_DURATION));
+                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
+            }
+        }
+    }
+}
 
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
@@ -2219,20 +2271,21 @@ bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit_Inventory &ui, const Uni
     int total_dying_ui = 0;
     int total_surviving_ei = 0;
     int total_dying_ei = 0;
+
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 12);
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 12) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units.
         total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 12) * CUNYAIModule::IsFightingUnit(u.second);
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ui += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 12);
+        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 12) * CUNYAIModule::IsFightingUnit(e.second);
         total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 12) * CUNYAIModule::IsFightingUnit(e.second);
     }
     return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
             //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
         //(total_surviving_ui > total_surviving_ei) ||
-        ((total_dying_ui) <= total_dying_ui) || // If my losses are smaller than theirs..
-        (local && total_dying_ui == 0); // || // there are no losses.
+        (total_dying_ui <= total_dying_ei); //|| // If my losses are smaller than theirs..
+        //(local && total_dying_ui == 0); // || // there are no losses.
             //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

@@ -348,13 +348,13 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
 
-    if (nearby_enemy) {
+    //if (nearby_enemy) {
         e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
         u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, drone->getPosition()); 
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
         drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);
-    }
+    //}
 
     // Trust the build order. If there is a build order and it wants a building, build it!
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
@@ -364,7 +364,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
     }
 
     //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death || fight_without_reinforcements) && nearby_enemy && // under attack. ? And?
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death /*|| fight_without_reinforcements*/) /*&& nearby_enemy*/ && // under attack. ? And?
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
         can_upgrade_colonies &&
         CUNYAIModule::current_map_inventory.hatches_ > 1 &&
@@ -957,7 +957,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) && potential_lurker.second.phase_ != "Attacking") continue;
-            if (!potential_lurker.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION) combat_creators.addStored_Unit(potential_lurker.second);
+            if (static_cast<bool>(potential_lurker.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION)) combat_creators.addStored_Unit(potential_lurker.second);
         }
     }
 
@@ -965,7 +965,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool endgame_fliers_permissable = CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) && potential_endgame_flier.second.phase_ != "Attacking" && potential_endgame_flier.second.phase_ != "Retreating") continue;
-            if (!potential_endgame_flier.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
+            if (static_cast<bool>(potential_endgame_flier.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION) && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
         }
     }
 

@@ -242,7 +242,7 @@ void CUNYAIModule::onFrame()
     // Update enemy player model. Draw all associated units.
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
     //enemy_player_model.units_.drawAllHitPoints(current_map_inventory);
-    enemy_player_model.units_.drawAllLocations(current_map_inventory);
+    enemy_player_model.units_.drawAllLocations();
 
     //Update neutral units
     Player* neutral_player;
@@ -250,23 +250,25 @@ void CUNYAIModule::onFrame()
         if (p->isNeutral()) neutral_player = &p;
     }
     neutral_player_model.updateOtherOnFrame(*neutral_player);
-    neutral_player_model.units_.drawAllHitPoints(current_map_inventory);
-    neutral_player_model.units_.drawAllLocations(current_map_inventory);
+    neutral_player_model.units_.drawAllHitPoints();
+    neutral_player_model.units_.drawAllLocations();
 
     friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player.
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
-    friendly_player_model.units_.drawAllSpamGuards(current_map_inventory);
+    friendly_player_model.units_.drawAllSpamGuards();
     //friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
     //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_map_inventory);
     //land_inventory.drawUnreachablePatch(current_map_inventory);
     // Update FAPS with units.
     MCfap.clear();
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
-    enemy_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
+    //enemy_player_model.units_.drawAllMAFAPaverages();
+    enemy_player_model.units_.drawAllFutureDeaths();
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
-    friendly_player_model.units_.drawAllMAFAPaverages(current_map_inventory);
+    //friendly_player_model.units_.drawAllMAFAPaverages();
+    friendly_player_model.units_.drawAllFutureDeaths();
 
     // Let us estimate FAP values.
     MCfap.simulate(MOVING_AVERAGE_DURATION); 
@@ -323,7 +325,7 @@ void CUNYAIModule::onFrame()
 
     //Update posessed minerals. Erase those that are mined out.
     land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, current_map_inventory);
-    land_inventory.drawMineralRemaining(current_map_inventory);
+    land_inventory.drawMineralRemaining();
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
     current_map_inventory.updateVision_Count();
@@ -701,7 +703,7 @@ void CUNYAIModule::onFrame()
                 for (auto d : friendly_player_model.units_.unit_map_) {
                     if (d.second.type_ == UnitTypes::Zerg_Overlord &&
                         d.second.bwapi_unit_ &&
-                        !d.second.time_since_last_dmg_ < MOVING_AVERAGE_DURATION &&
+                        !static_cast<bool>(d.second.time_since_last_dmg_ < MOVING_AVERAGE_DURATION) &&
                         d.second.current_hp_ > 0.25 * d.second.type_.maxHitPoints()) { // overlords don't have shields.
                         dist_temp = d.second.bwapi_unit_->getDistance(c);
                         if (dist_temp < dist) {
@@ -807,7 +809,6 @@ void CUNYAIModule::onFrame()
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(friendly_player_model.units_.unit_map_.at(u), 6); 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
-                if (unit_death_in_moments) Diagnostic_Dot(u->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
                 //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
                 //bool we_take_a_fap_beating = false;
 
@@ -1110,7 +1111,7 @@ void CUNYAIModule::onFrame()
 
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
 
-        if (isIdleEmpty(u) && !u->canAttack() && u_type != UnitTypes::Zerg_Larva && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
+        if (isIdleEmpty(u) && !u_type.canAttack() && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
             techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_map_inventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
