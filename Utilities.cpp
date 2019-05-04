@@ -2216,18 +2216,23 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 
 bool CUNYAIModule::checkSuperiorFAPForecast2(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool local) {
     int total_surviving_ui = 0;
+    int total_dying_ui = 0;
     int total_surviving_ei = 0;
+    int total_dying_ei = 0;
     for (auto u : ui.unit_map_) {
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 12);
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 12);
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 12) * CUNYAIModule::IsFightingUnit(u.second);
     }
     for (auto e : ei.unit_map_) {
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 12);
+        total_dying_ui += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 12);
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 12) * CUNYAIModule::IsFightingUnit(e.second);
     }
     return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
             //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
-        ((ui.stock_fighting_total_ - total_surviving_ui) <= (ei.stock_fighting_total_ - total_surviving_ei)) || // If my losses are smaller than theirs..
-        (local && ui.stock_fighting_total_ <= total_surviving_ui); // || // there are no losses.
+        //(total_surviving_ui > total_surviving_ei) ||
+        ((total_dying_ui) <= total_dying_ui) || // If my losses are smaller than theirs..
+        (local && total_dying_ui == 0); // || // there are no losses.
             //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 

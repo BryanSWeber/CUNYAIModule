@@ -20,6 +20,7 @@ Unit_Inventory AssemblyManager::hydra_bank_;
 Unit_Inventory AssemblyManager::muta_bank_;
 Unit_Inventory AssemblyManager::builder_bank_;
 Unit_Inventory AssemblyManager::creep_colony_bank_;
+Unit_Inventory AssemblyManager::production_facility_bank_;
 
 int AssemblyManager::last_frame_of_larva_morph_command = 0;
 int AssemblyManager::last_frame_of_hydra_morph_command = 0;
@@ -350,6 +351,8 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
     if (nearby_enemy) {
         e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
         u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, drone->getPosition()); 
+        e_loc.updateUnitInventorySummary();
+        u_loc.updateUnitInventorySummary();
         drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);
     }
 
@@ -368,7 +371,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case && CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, the_only_macro_hatch_case); // only macrohatch if you are short on larvae and can afford to spend.
@@ -850,11 +853,14 @@ void AssemblyManager::Print_Assembly_FAP_Cycle(const int &screen_x, const int &s
 
 void AssemblyManager::updatePotentialBuilders()
 {
+
     larva_bank_.unit_map_.clear();
     hydra_bank_.unit_map_.clear();
     muta_bank_.unit_map_.clear();
     builder_bank_.unit_map_.clear();
     creep_colony_bank_.unit_map_.clear();
+    production_facility_bank_.unit_map_.clear();
+
 
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Larva) larva_bank_.addStored_Unit(u.second);
@@ -862,6 +868,7 @@ void AssemblyManager::updatePotentialBuilders()
         if (u.second.type_ == UnitTypes::Zerg_Mutalisk) muta_bank_.addStored_Unit(u.second);
         if (u.second.type_ == UnitTypes::Zerg_Creep_Colony) creep_colony_bank_.addStored_Unit(u.second);
         if (u.second.type_ == Broodwar->self()->getRace().getWorker()) builder_bank_.addStored_Unit(u.second);
+        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) production_facility_bank_.addStored_Unit(u.second);
     }
 
     larva_bank_.updateUnitInventorySummary();
@@ -869,6 +876,7 @@ void AssemblyManager::updatePotentialBuilders()
     muta_bank_.updateUnitInventorySummary();
     builder_bank_.updateUnitInventorySummary();
     creep_colony_bank_.updateUnitInventorySummary();
+    production_facility_bank_.updateUnitInventorySummary();
 }
 
 bool AssemblyManager::creepColonyInArea(const Position & pos) {
@@ -884,6 +892,18 @@ bool AssemblyManager::assignUnitAssembly()
     Unit_Inventory immediate_drone_larva;
     Unit_Inventory transfer_drone_larva;
     Unit_Inventory combat_creators;
+
+    for (auto hatch : production_facility_bank_.unit_map_) {
+        auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, hatch.first->getPosition());
+        auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, hatch.first->getPosition());
+        e_loc.updateUnitInventorySummary();
+        u_loc.updateUnitInventorySummary();
+        if (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc)) {
+            CUNYAIModule::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
+            CUNYAIModule::DiagnosticText("Danger, Will Robinson!");
+        }
+    }
+
 
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
@@ -937,7 +957,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) && potential_lurker.second.phase_ != "Attacking") continue;
-            if (!potential_lurker.first->isUnderAttack()) combat_creators.addStored_Unit(potential_lurker.second);
+            if (!potential_lurker.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION) combat_creators.addStored_Unit(potential_lurker.second);
         }
     }
 
@@ -945,7 +965,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool endgame_fliers_permissable = CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) && potential_endgame_flier.second.phase_ != "Attacking" && potential_endgame_flier.second.phase_ != "Retreating") continue;
-            if (!potential_endgame_flier.first->isUnderAttack() && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
+            if (!potential_endgame_flier.second.time_since_last_dmg_ > MOVING_AVERAGE_DURATION && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
         }
     }
 

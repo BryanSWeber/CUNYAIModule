@@ -642,6 +642,7 @@ void CUNYAIModule::onFrame()
 
     // Prevent spamming by only running our onFrame once every number of latency frames.
     // Latency frames are the number of frames before commands are processed.
+    assemblymanager.assignUnitAssembly();
 
     if (t_game % Broodwar->getLatencyFrames() != 0) {
         return;
@@ -700,7 +701,7 @@ void CUNYAIModule::onFrame()
                 for (auto d : friendly_player_model.units_.unit_map_) {
                     if (d.second.type_ == UnitTypes::Zerg_Overlord &&
                         d.second.bwapi_unit_ &&
-                        !d.second.bwapi_unit_->isUnderAttack() &&
+                        !d.second.time_since_last_dmg_ < MOVING_AVERAGE_DURATION &&
                         d.second.current_hp_ > 0.25 * d.second.type_.maxHitPoints()) { // overlords don't have shields.
                         dist_temp = d.second.bwapi_unit_->getDistance(c);
                         if (dist_temp < dist) {

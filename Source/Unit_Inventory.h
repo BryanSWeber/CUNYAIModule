@@ -65,7 +65,8 @@ struct Stored_Unit {
     bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
     int areaID_;
-    
+    int time_since_last_dmg_;
+
     string phase_ = "None";
 
     //Needed commands for workers.
