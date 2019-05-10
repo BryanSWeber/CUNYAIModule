@@ -900,7 +900,7 @@ bool AssemblyManager::assignUnitAssembly()
         u_loc.updateUnitInventorySummary();
         if (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc)) {
             CUNYAIModule::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
-            CUNYAIModule::DiagnosticText("Danger, Will Robinson!");
+            CUNYAIModule::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
         }
     }
 

@@ -138,7 +138,7 @@ void GeneticHistory::initializeHistory() {
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
         output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
-        output << "delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening" << endl;
+        output << "delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, duration" << endl;
         output.close();
     }
 
@@ -213,8 +213,12 @@ void GeneticHistory::initializeHistory() {
 		    getline(input, entry, ',');
 		    enemy_average_tech_ = stod(entry);
 
+            getline(input, entry, ','); 
+            build_order_total = entry;
+
+            //Remaining entries for score and game duration - skip.
+
             getline(input, entry); //diff. End of line char, not ','
-            build_order_total=entry;
 
             a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
             game_data.push_back(a_game);

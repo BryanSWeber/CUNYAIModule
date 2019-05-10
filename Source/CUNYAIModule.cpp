@@ -182,10 +182,15 @@ void CUNYAIModule::onEnd( bool isWinner )
         << long_delay << ','
         << opponent_name << ','
         << Broodwar->mapFileName().c_str() << ','
-		<< round(enemy_player_model.average_army_ * 1000000) / 1000000 << ','
-		<< round(enemy_player_model.average_econ_ * 1000000) / 1000000 << ','
-		<< round(enemy_player_model.average_tech_ * 1000000) / 1000000 << ','
-        << buildorder.initial_building_gene_
+        << round(enemy_player_model.average_army_ * 1000000) / 1000000 << ','
+        << round(enemy_player_model.average_econ_ * 1000000) / 1000000 << ','
+        << round(enemy_player_model.average_tech_ * 1000000) / 1000000 << ','
+        << buildorder.initial_building_gene_ << ","
+        << Broodwar->self()->getBuildingScore() << ','
+        << Broodwar->self()->getKillScore() << ','
+        << Broodwar->self()->getRazingScore() << ','
+        << Broodwar->self()->getUnitScore() << ','
+        << Broodwar->elapsedTime()
         << endl;
     output.close();
 
