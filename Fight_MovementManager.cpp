@@ -301,19 +301,36 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     } 
     else {
         Stored_Unit* closest = CUNYAIModule::getClosestThreatStored(ei, unit_, 1200);
-        if (closest) {
-            int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
-            int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
-            auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
 
-            if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
-                encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+        int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
+        int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
+        auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
+
+        if(closest){
+            std::random_device rd;  //Will be used to obtain a seed for the random number engine
+            std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+            std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+
+            if (pos_.getDistance(closest->pos_) > ei.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.95)) {
+                if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
+                    approach(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+                }
+                else approach(closest->pos_);
+                unit_->move(pos_ + attract_vector_);
+                CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
+                CUNYAIModule::Diagnostic_Line(pos_, closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
             }
-            else encircle(closest->pos_);
+            else {
+                if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
+                    encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+                }
+                else encircle(closest->pos_);
 
-            unit_->move(pos_ + encircle_vector_);
-            CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around it.
-        }
+                unit_->move(pos_ + encircle_vector_);
+                CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
+
+            }
+        } 
         else {
             unit_->holdPosition();
         }
@@ -513,6 +530,14 @@ Position Mobility::encircle(const Position & p) {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     return encircle_vector_ = (dis(gen) > 0.5) ? encircle_left : encircle_right; // only one direction for now.
+}
+
+Position Mobility::approach(const Position & p) {
+    Position vector_to = p - pos_;
+    double theta = atan2(vector_to.y, vector_to.x);
+    Position approach_vector = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric_), static_cast<int>(sin(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+
+    return attract_vector_ = approach_vector; // only one direction for now.
 }
 
 Position Mobility::scoutEnemyBase(Map_Inventory &inv) {

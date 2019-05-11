@@ -39,6 +39,8 @@ public:
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
+    // causes a unit to move towards a position.
+    Position approach(const Position & p);
 
     // causes a unit to move directly towards the enemy base.
     Position scoutEnemyBase(Map_Inventory & inv);
