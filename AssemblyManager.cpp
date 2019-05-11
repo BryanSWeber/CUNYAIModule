@@ -363,12 +363,12 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
     }
 
-    //Combat Buildings
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death /*|| fight_without_reinforcements*/) /*&& nearby_enemy*/ && // under attack. ? And?
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
-        can_upgrade_colonies &&
-        CUNYAIModule::current_map_inventory.hatches_ > 1 &&
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+    ////Combat Buildings
+    //if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone, (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc) || drone_death /*|| fight_without_reinforcements*/) /*&& nearby_enemy*/ && // under attack. ? And?
+    //    CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
+    //    can_upgrade_colonies &&
+    //    CUNYAIModule::current_map_inventory.hatches_ > 1 &&
+    //    CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
 
     //Macro-related Buildings.
     if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case && CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc), CUNYAIModule::current_map_inventory);
@@ -901,6 +901,16 @@ bool AssemblyManager::assignUnitAssembly()
         if (!CUNYAIModule::checkSuperiorFAPForecast2(u_loc, e_loc)) {
             CUNYAIModule::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
             CUNYAIModule::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
+
+            bool can_upgrade_colonies = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
+                (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
+            Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), hatch.second.pos_, 999999);
+            if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
+                Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_,  CUNYAIModule::Count_Units(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
+                    can_upgrade_colonies &&
+                    CUNYAIModule::current_map_inventory.hatches_ > 1 &&
+                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
+            }
         }
     }
 
