@@ -302,11 +302,12 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     else {
         Stored_Unit* closest = CUNYAIModule::getClosestThreatStored(ei, unit_, 1200);
 
-        int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
-        int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
-        auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
-
         if(closest){
+
+            int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
+            int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
+            auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
+
             std::random_device rd;  //Will be used to obtain a seed for the random number engine
             std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
             std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
