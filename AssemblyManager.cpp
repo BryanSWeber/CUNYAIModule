@@ -5,7 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\PlayerModelManager.h" // needed for cartidges.
-#include "Source\BWEM\include\bwem.h"
+#include <bwem.h>
 #include <iterator>
 #include <numeric>
 #include <fstream>

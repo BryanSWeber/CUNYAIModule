@@ -45,6 +45,21 @@
     <ClCompile Include="Map_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Source\BWEB\Block.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\BWEB\BWEB.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\BWEB\PathFind.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\BWEB\Station.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\BWEB\Wall.cpp">
+      <Filter>BWEB</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -106,6 +121,24 @@
     <ClInclude Include="Source\BWEM\include\utils.h">
       <Filter>BWEM</Filter>
     </ClInclude>
+    <ClInclude Include="Source\BWEB\Block.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEB\BWEB.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEB\JPS.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEB\PathFind.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEB\Station.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BWEB\Wall.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
@@ -116,6 +149,9 @@
     </Filter>
     <Filter Include="BWEM">
       <UniqueIdentifier>{0fb35885-e59a-4a5f-8f08-853a0ea32d8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BWEB">
+      <UniqueIdentifier>{a191b572-c4d5-4666-a7f1-b6fe86a15072}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

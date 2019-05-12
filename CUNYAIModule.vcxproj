@@ -43,10 +43,18 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(BWEM_DIR);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(BWEM_LIB);</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;$(BWEM_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;WIN32;_DEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -72,7 +80,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;$(BWEM_DIR)\include;$(BWEM_LIB)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -102,6 +110,11 @@
     <ClCompile Include="Research_Inventory.cpp" />
     <ClCompile Include="Reserve_Manager.cpp" />
     <ClCompile Include="Resource_Inventory.cpp" />
+    <ClCompile Include="Source\BWEB\Block.cpp" />
+    <ClCompile Include="Source\BWEB\BWEB.cpp" />
+    <ClCompile Include="Source\BWEB\PathFind.cpp" />
+    <ClCompile Include="Source\BWEB\Station.cpp" />
+    <ClCompile Include="Source\BWEB\Wall.cpp" />
     <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Unit_Inventory.cpp" />
     <ClCompile Include="GeneticHistoryManager.cpp" />
@@ -114,6 +127,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\AssemblyManager.h" />
+    <ClInclude Include="Source\BWEB\Block.h" />
+    <ClInclude Include="Source\BWEB\BWEB.h" />
+    <ClInclude Include="Source\BWEB\JPS.h" />
+    <ClInclude Include="Source\BWEB\PathFind.h" />
+    <ClInclude Include="Source\BWEB\Station.h" />
+    <ClInclude Include="Source\BWEB\Wall.h" />
     <ClInclude Include="Source\BWEM\include\area.h" />
     <ClInclude Include="Source\BWEM\include\base.h" />
     <ClInclude Include="Source\BWEM\include\bwapiExt.h" />

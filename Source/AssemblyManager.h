@@ -3,7 +3,7 @@
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-#include "BWEM\include\bwem.h"
+#include <bwem.h>
 #include "PlayerModelManager.h"
 
 using namespace BWAPI;

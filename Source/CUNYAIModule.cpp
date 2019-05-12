@@ -11,7 +11,8 @@
 #include "AssemblyManager.h"
 #include "TechManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-#include "BWEM\include\bwem.h"
+#include "BWEB\BWEB.h"
+#include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing
 #include <numeric> // std::accumulate
@@ -62,8 +63,10 @@ void CUNYAIModule::onStart()
     bwemMap.Initialize(BWAPI::BroodwarPtr);
     bwemMap.EnableAutomaticPathAnalysis();
     bool startingLocationsOK = bwemMap.FindBasesForStartingLocations();
-    //assert(startingLocationsOK);
 
+    BWEB::Map::onStart();
+    BWEB::Stations::findStations();
+    BWEB::Blocks::findBlocks();
 
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
@@ -466,7 +469,8 @@ void CUNYAIModule::onFrame()
     // Display the game status indicators at the top of the screen
     if constexpr(DRAWING_MODE) {
 
-        bwemMap.Draw(BWAPI::BroodwarPtr);
+        //bwemMap.Draw(BWAPI::BroodwarPtr);
+        BWEB::Map::draw();
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
         //Print_Cached_Inventory(0, 50);
@@ -1259,6 +1263,8 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         //}
     }
 
+    BWEB::Map::onUnitDiscover(unit);
+
 }
 
 void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
@@ -1425,6 +1431,8 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             }
         }
     }
+
+    BWEB::Map::onUnitDestroy(unit);
 
 }
 
