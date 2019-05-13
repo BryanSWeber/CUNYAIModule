@@ -71,19 +71,19 @@ struct Stored_Unit {
 
     //Needed commands for workers.
     void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
-    void stopMine(Resource_Inventory &ri);
-    Stored_Resource * getMine(Resource_Inventory & ri);
-    bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
-    bool isAssignedLongDistanceMining(Resource_Inventory & ri);
-    bool isAssignedMining(Resource_Inventory & ri); // If the unit is assigned to mine a spot.
-    bool isAssignedGas(Resource_Inventory & ri); // If the unit is assigned to mine gas.
-    bool isAssignedResource(Resource_Inventory  &ri);
-    bool isAssignedBuilding(Resource_Inventory  &ri); // If the unit is assigned to build something.
-    bool isBrokenLock(Resource_Inventory & ri); // If the unit has been distracted somehow.
-    bool isLocallyLocked(Resource_Inventory & ri); // If the unit is properly attached.
+    void stopMine();
+    Stored_Resource * getMine();
+    bool isAssignedClearing();  // If the unit is clearing a spot.
+    bool isAssignedLongDistanceMining(); //If the unit is mining at a distance.
+    bool isAssignedMining(); // If the unit is assigned to mine a spot.
+    bool isAssignedGas(); // If the unit is assigned to mine gas.
+    bool isAssignedResource();
+    bool isAssignedBuilding(); // If the unit is assigned to build something.
+    bool isBrokenLock(); // If the unit has been distracted somehow.
+    bool isLocallyLocked(); // If the unit is properly attached.
     bool isNoLock(); // If the unit has no target. May be broken.
-    bool isLongRangeLock(Resource_Inventory & ri); // if the unit cannot see its target.
-    bool isMovingLock(Resource_Inventory & ri); // if the unit is moving towards its target not gathering.
+    bool isLongRangeLock(); // if the unit cannot see its target.
+    bool isMovingLock(); // if the unit is moving towards its target not gathering.
 
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
@@ -170,7 +170,7 @@ struct Unit_Inventory {
     void drawAllFutureDeaths() const;
     void drawAllLastDamage() const;
     void drawAllSpamGuards() const;
-    void drawAllWorkerTasks(Resource_Inventory &ri) const;
+    void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllMisplacedGroundUnits() const;
     Unit_Inventory getInventoryAtArea(const int areaID) const;
@@ -205,7 +205,7 @@ struct Unit_Inventory {
     static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
-    void stopMine(Unit u, Resource_Inventory & ri);
+    void stopMine(Unit u);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     Unit_Inventory(Unit_Inventory const &) = default;

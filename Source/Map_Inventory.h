@@ -147,9 +147,8 @@ struct Map_Inventory {
     int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
 
     // Marks and scores base locations.
-    void Map_Inventory::updateBaseLoc(const Resource_Inventory &ri);
-    void Map_Inventory::updateWorkersClearing(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers clearing.
-    void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri); // updates number of workers distance mining.
+    void Map_Inventory::updateWorkersClearing(); // updates number of workers clearing.
+    void Map_Inventory::updateWorkersLongDistanceMining(); // updates number of workers distance mining.
 
     // gets the radial distance of all units to the enemy base.
     static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);

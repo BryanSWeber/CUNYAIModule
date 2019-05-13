@@ -144,7 +144,6 @@ void CUNYAIModule::onStart()
     current_map_inventory.updateMapVeins();
     current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.home_base_, current_map_inventory.map_out_from_home_ );
     //inventory.updateMapChokes();
-    current_map_inventory.updateBaseLoc( land_inventory );
     current_map_inventory.getStartPositions();
 
     //update timers.
@@ -351,8 +350,8 @@ void CUNYAIModule::onFrame()
 
     current_map_inventory.updateMin_Possessed(land_inventory);
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
-    current_map_inventory.updateWorkersClearing(friendly_player_model.units_, land_inventory);
-    current_map_inventory.updateWorkersLongDistanceMining(friendly_player_model.units_, land_inventory);
+    current_map_inventory.updateWorkersClearing();
+    current_map_inventory.updateWorkersLongDistanceMining();
     current_map_inventory.my_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(Broodwar->getStartLocations().size()));
     current_map_inventory.expo_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(current_map_inventory.expo_positions_complete_.size()));
     current_map_inventory.updateStartPositions(enemy_player_model.units_);
@@ -364,7 +363,6 @@ void CUNYAIModule::onFrame()
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
-        current_map_inventory.updateBaseLoc(land_inventory);
         current_map_inventory.getExpoPositions(); // prime this once on game start.
     }
 
@@ -957,9 +955,9 @@ void CUNYAIModule::onFrame()
             bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12 && !isRecentCombatant(miner);
 
             // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
-            bool was_gas = miner.isAssignedGas(land_inventory);
-            bool was_mineral = miner.isAssignedMining(land_inventory);
-            bool was_long_mine = miner.isLongRangeLock(land_inventory);
+            bool was_gas = miner.isAssignedGas();
+            bool was_mineral = miner.isAssignedMining();
+            bool was_long_mine = miner.isLongRangeLock();
             Unit old_mineral_patch = nullptr;
             if ((was_mineral || was_gas) && !was_long_mine) {
                 old_mineral_patch = miner.locked_mine_;
@@ -984,7 +982,7 @@ void CUNYAIModule::onFrame()
             }
 
 
-            if (!isRecentCombatant(miner) && !miner.isAssignedClearing(land_inventory) && !miner.isAssignedBuilding(land_inventory) && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.
+            if (!isRecentCombatant(miner) && !miner.isAssignedClearing() && !miner.isAssignedBuilding() && spamGuard(miner.bwapi_unit_)) { //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.
 
                 // Each mineral-related subtask does the following:
                 // Checks if it is doing a task of lower priority.
@@ -994,12 +992,12 @@ void CUNYAIModule::onFrame()
                 // If it is not successfully assigned, return to old task.
 
                 //BUILD-RELATED TASKS:
-                if (isEmptyWorker(u) && miner.isAssignedResource(land_inventory) && !miner.isAssignedGas(land_inventory) && !miner.isAssignedBuilding(land_inventory) && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
+                if (isEmptyWorker(u) && miner.isAssignedResource() && !miner.isAssignedGas() && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
                     assemblymanager.Building_Begin(u); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
-                    if (miner.isAssignedBuilding(land_inventory)) { //Don't purge the building relations here - we just established them!
-                        miner.stopMine(land_inventory);
+                    if (miner.isAssignedBuilding()) { //Don't purge the building relations here - we just established them!
+                        miner.stopMine();
                         continue;
                     }
                     else if (old_mineral_patch) {
@@ -1014,8 +1012,8 @@ void CUNYAIModule::onFrame()
                 if (time_to_start_clearing_a_path && current_map_inventory.workers_clearing_ == 0 && isEmptyWorker(u)) {
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                     Worker_Clear(u, friendly_player_model.units_);
-                    if (miner.isAssignedClearing(land_inventory)) {
-                        current_map_inventory.updateWorkersClearing(friendly_player_model.units_, land_inventory);
+                    if (miner.isAssignedClearing()) {
+                        current_map_inventory.updateWorkersClearing();
                         //continue;
                     }
                     else if (old_mineral_patch) {
@@ -1027,9 +1025,9 @@ void CUNYAIModule::onFrame()
                 //Shall we assign them to gas?
                 land_inventory.countViableMines();
                 bool could_use_another_gas = land_inventory.local_gas_collectors_ * 2 <= land_inventory.local_refineries_ && land_inventory.local_refineries_ > 0 && want_gas;
-                bool worker_bad_gas = (want_gas && miner.isAssignedMining(land_inventory) && could_use_another_gas);
-                bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas(land_inventory));
-                bool unassigned_worker = !miner.isAssignedResource(land_inventory) && !miner.isAssignedBuilding(land_inventory) && !miner.isLongRangeLock(land_inventory) && !miner.isAssignedClearing(land_inventory);
+                bool worker_bad_gas = (want_gas && miner.isAssignedMining() && could_use_another_gas);
+                bool worker_bad_mine = ((!want_gas || too_much_gas) && miner.isAssignedGas());
+                bool unassigned_worker = !miner.isAssignedResource() && !miner.isAssignedBuilding() && !miner.isLongRangeLock() && !miner.isAssignedClearing();
                 // If we need gas, get gas!
                 if ( unassigned_worker || (worker_bad_gas && current_map_inventory.last_gas_check_ < t_game - 3 * 24) || worker_bad_mine && current_map_inventory.last_gas_check_ < t_game - 5 * 24) { //if this is your first worker of the frame consider resetting him.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
@@ -1037,13 +1035,13 @@ void CUNYAIModule::onFrame()
 
                     if (could_use_another_gas) {
                         Worker_Gather(u, UnitTypes::Zerg_Extractor, friendly_player_model.units_); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
-                        if (miner.isAssignedGas(land_inventory)) {
+                        if (miner.isAssignedGas()) {
                             //continue;
                         }
                         else { // default to gathering minerals.
                             friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                             Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_); //assign a worker (minerals)
-                            if (miner.isAssignedMining(land_inventory)) {
+                            if (miner.isAssignedMining()) {
                                 //continue;
                             }
                             else {
@@ -1076,33 +1074,33 @@ void CUNYAIModule::onFrame()
             if (u->isIdle() && no_recent_worker_alteration) {
                 friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation);
                 Worker_Gather(u, UnitTypes::Resource_Mineral_Field, friendly_player_model.units_);
-                if (!miner.isAssignedMining(land_inventory)) {
+                if (!miner.isAssignedMining()) {
                     Worker_Gather(u, UnitTypes::Resource_Vespene_Geyser, friendly_player_model.units_);
                 }
                 miner.updateStoredUnit(u);
             }
 
             // let's leave units in full-mine alone. Miners will be automatically assigned a "return cargo task" by BW upon collecting a mineral from the mine.
-            if (miner.isAssignedResource(land_inventory) && !isEmptyWorker(u) && !u->isIdle()) {
+            if (miner.isAssignedResource() && !isEmptyWorker(u) && !u->isIdle()) {
                 continue;
             }
 
             // Maintain the locks by assigning the worker to their intended mine!
-            bool worker_has_lockable_task = miner.isAssignedClearing(land_inventory) || miner.isAssignedResource(land_inventory);
+            bool worker_has_lockable_task = miner.isAssignedClearing() || miner.isAssignedResource();
 
             if (worker_has_lockable_task && !isEmptyWorker(u) && !u->isIdle()) {
                 continue;
             }
 
-            if (worker_has_lockable_task && ((miner.isBrokenLock(land_inventory) && miner.time_since_last_command_ > 12) || t_game < 5 + Broodwar->getLatencyFrames() || (u->isIdle() && no_recent_worker_alteration))) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
+            if (worker_has_lockable_task && ((miner.isBrokenLock() && miner.time_since_last_command_ > 12) || t_game < 5 + Broodwar->getLatencyFrames() || (u->isIdle() && no_recent_worker_alteration))) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
                 if (!miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 miner.updateStoredUnit(u);
                 continue;
             }
-            else if (worker_has_lockable_task && miner.isLongRangeLock(land_inventory)) {
-                if (!miner.bwapi_unit_->move(miner.getMine(land_inventory)->pos_)) { // reassign him back to work.
+            else if (worker_has_lockable_task && miner.isLongRangeLock()) {
+                if (!miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //If he can't get back to work something's wrong with you and we're resetting you.
                 }
                 miner.updateStoredUnit(u);
@@ -1252,7 +1250,6 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         Stored_Resource* ru = &Stored_Resource(unit);
         ru->max_stock_value_ = ru->current_stock_value_; // its value is what it has now, since it was somehow missing at game start. Must be passed by refrence or it will be forgotten.
         land_inventory.addStored_Resource(*ru);
-        //inventory.updateBaseLoc(land_inventory); // this line breaks the expos? How? Is this even plausible?
     }
 
     //update maps, requires up-to date enemy inventories.
@@ -1371,7 +1368,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
             if (potential_miner->second.locked_mine_ == unit) {
                 Unit miner_unit = potential_miner->second.bwapi_unit_;
 
-                bool was_clearing = potential_miner->second.isAssignedClearing(land_inventory); // Was the mine being cleared with intent?
+                bool was_clearing = potential_miner->second.isAssignedClearing(); // Was the mine being cleared with intent?
 
                 // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
                 friendly_player_model.units_.purgeWorkerRelationsNoStop(miner_unit, land_inventory, current_map_inventory, my_reservation); // reset the worker
@@ -1380,12 +1377,11 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                     auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
                     if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
                         land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
-                        //inventory.updateBaseLoc( land_inventory );
                     }
 
                     CUNYAIModule::Worker_Clear(miner_unit, friendly_player_model.units_); // reassign clearing workers again.
-                    if (potential_miner->second.isAssignedClearing(land_inventory)) {
-                        current_map_inventory.updateWorkersClearing(friendly_player_model.units_, land_inventory);
+                    if (potential_miner->second.isAssignedClearing()) {
+                        current_map_inventory.updateWorkersClearing();
                     }
                 }
                 else {
@@ -1401,7 +1397,6 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit);
         if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
             land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
-                                                            //inventory.updateBaseLoc( land_inventory );
         }
 
     }

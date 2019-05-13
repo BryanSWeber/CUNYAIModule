@@ -11,7 +11,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
-    bool building_unit = miner.isAssignedBuilding(land_inventory);
+    bool building_unit = miner.isAssignedBuilding();
     Resource_Inventory available_fields;
     Resource_Inventory long_dist_fields;
 
@@ -88,7 +88,7 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
     Stored_Resource* closest = getClosestGroundStored(ri, miner.pos_);
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
         miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
-        if (miner.bwapi_unit_ && miner.isAssignedBuilding(ri)) {
+        if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
             my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
         }
         miner.phase_ = "Mining";
@@ -98,7 +98,7 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
 
 void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner) {
     miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second, land_inventory); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
-    if (miner.bwapi_unit_ && miner.isAssignedBuilding(land_inventory)) {
+    if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
         my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
     }
     miner.phase_ = "Mining";
@@ -116,7 +116,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     bool already_assigned = false;
     Stored_Unit& miner = ui.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
-    bool building_unit = miner.isAssignedBuilding(land_inventory);
+    bool building_unit = miner.isAssignedBuilding();
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
