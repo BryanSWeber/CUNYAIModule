@@ -70,7 +70,7 @@ struct Stored_Unit {
     string phase_ = "None";
 
     //Needed commands for workers.
-    void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
+    void startMine(Stored_Resource &new_resource);
     void stopMine();
     Stored_Resource * getMine();
     bool isAssignedClearing();  // If the unit is clearing a spot.

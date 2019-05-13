@@ -831,9 +831,9 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
 
 //Increments the number of miners on a resource.
-void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
+void Stored_Unit::startMine(Stored_Resource &new_resource){
     locked_mine_ = new_resource.bwapi_unit_;
-    ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 //Decrements the number of miners on a resource.

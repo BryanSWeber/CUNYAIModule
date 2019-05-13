@@ -83,10 +83,6 @@ struct Map_Inventory {
     vector< vector<int> > pf_aa_;
     vector< vector<int> > pf_explore_;
 
-    // Updates the (safe) log of net investment in technology.
-    void updateLn_Tech_Stock(const Unit_Inventory &ui);
-    // Updates the (safe) log of our army stock.
-    void updateLn_Army_Stock(const Unit_Inventory &ui);
     // Updates the (safe) log of our worker stock.
     void updateLn_Worker_Stock();
 
@@ -109,7 +105,7 @@ struct Map_Inventory {
     void Map_Inventory::updateMin_Workers();
 
     // Updates the number of mineral fields we "possess".
-    void Map_Inventory::updateMin_Possessed(const Resource_Inventory & ri);
+    void Map_Inventory::updateMin_Possessed();
 
     // Updates the number of hatcheries (and decendents).
     void Map_Inventory::updateHatcheries();

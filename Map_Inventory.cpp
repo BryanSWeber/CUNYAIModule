@@ -24,7 +24,7 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateGas_Workers();
     updateMin_Workers();
 
-    updateMin_Possessed( ri );
+    updateMin_Possessed( );
     updateHatcheries();
 
     //Fields:
@@ -173,10 +173,10 @@ void Map_Inventory::updateMin_Workers() {
 }
 
 // Updates the number of mineral fields we "possess".
-void Map_Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
+void Map_Inventory::updateMin_Possessed() {
 
     int min_fields = 0;
-    for (auto r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); ++r) { //for each mineral
+    for (auto r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++r) { //for each mineral
         if (r->second.occupied_natural_ && r->second.type_.isMineralField() ) {
                 min_fields++; // if there is a base near it, then this mineral counts.
         } // closure for existance check.

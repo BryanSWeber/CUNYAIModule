@@ -348,7 +348,7 @@ void CUNYAIModule::onFrame()
     current_map_inventory.updateGas_Workers();
     current_map_inventory.updateMin_Workers();
 
-    current_map_inventory.updateMin_Possessed(land_inventory);
+    current_map_inventory.updateMin_Possessed();
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
     current_map_inventory.updateWorkersClearing();
     current_map_inventory.updateWorkersLongDistanceMining();

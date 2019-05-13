@@ -87,7 +87,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
 void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner) {
     Stored_Resource* closest = getClosestGroundStored(ri, miner.pos_);
     if (closest /*&& closest->bwapi_unit_ && miner.bwapi_unit_->gather(closest->bwapi_unit_) && checkSafeMineLoc(closest->pos_, ui, inventory)*/) {
-        miner.startMine(*closest, land_inventory); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
+        miner.startMine(*closest); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
         if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
             my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
         }
@@ -97,7 +97,7 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
 }
 
 void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner) {
-    miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second, land_inventory); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
+    miner.startMine(ri.resource_inventory_.find(mine.bwapi_unit_)->second); // go back to your old job.  // Let's not make mistakes by attaching it to "availabile Fields""
     if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
         my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
     }
@@ -106,7 +106,7 @@ void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Invent
 }
 
 void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, Stored_Unit &miner) {
-    miner.startMine(ri.resource_inventory_.find(mine)->second, land_inventory); // Let's not make mistakes by attaching it to "availabile Fields""
+    miner.startMine(ri.resource_inventory_.find(mine)->second); // Let's not make mistakes by attaching it to "availabile Fields""
     miner.phase_ = "Mining";
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
