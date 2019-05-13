@@ -17,6 +17,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();
     units_.updateUnitInventorySummary();
+    casualties_.updateUnitInventorySummary();
 
     //Update Researches
     researches_.updateResearch(other_player, units_);
@@ -43,6 +44,7 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     units_.purgeBrokenUnits();
     units_.purgeUnseenUnits(); //Critical for self!
     units_.updateUnitInventorySummary();
+    casualties_.updateUnitInventorySummary();
 
     //Update Researches
     researches_.updateResearch(Broodwar->self(), units_);
@@ -74,7 +76,7 @@ void Player_Model::updateSelfOnFrame(const Player_Model & target_player)
     spending_model_.tech_derivative = spending_model_.tech_derivative;
 
     //Update general weaknesses.
-    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) );
+    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false)  && CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_> 0)) ;
     e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory

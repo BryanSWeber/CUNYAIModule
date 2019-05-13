@@ -167,8 +167,6 @@ void CUNYAIModule::onStart()
 
 void CUNYAIModule::onEnd( bool isWinner )
 {// Called when the game ends
-    enemy_player_model.casualties_.updateUnitInventorySummary();
-    enemy_player_model.units_.updateUnitInventorySummary();
 
     ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\history.txt", ios_base::app );

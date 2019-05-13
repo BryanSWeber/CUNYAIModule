@@ -83,9 +83,6 @@ struct Map_Inventory {
     vector< vector<int> > pf_aa_;
     vector< vector<int> > pf_explore_;
 
-    // Updates the (safe) log of our worker stock.
-    void updateLn_Worker_Stock();
-
     // Updates the (safe) log of our supply stock.
     void updateLn_Supply_Remain();
     // Updates the (safe) log of our supply total.
