@@ -957,8 +957,8 @@ void AssemblyManager::clearSimulationHistory()
 
 void AssemblyManager::getDefensiveWalls()
 {
-    vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber };
-    vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
+    vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery };
+    vector<UnitType> defenses(8, UnitTypes::Zerg_Sunken_Colony);
     int tick = 0;
     for (auto &area : BWEM::Map::Instance().Areas()) {
         if (tick >= 5) continue;
