@@ -67,18 +67,36 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
-            auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
-            if (closest_wall) {
-                for (auto &tile : closest_wall->getDefenses()) {
-                    if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
-                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                        morphing_unit.phase_ = "Building";
-                        morphing_unit.updateStoredUnit(unit);
-                        return true;
+
+            if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
+                auto closest_station = BWEB::Stations::getClosestStation(unit->getTilePosition());
+                    if (closest_station && closest_station->getDefenseCount() < 4 ) {
+                        for (auto &tile : closest_station->getDefenseLocations()) {
+                            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+                                CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
+                                morphing_unit.phase_ = "Building";
+                                morphing_unit.updateStoredUnit(unit);
+                                return true;
+                            }
+                        }
+                    }
+            }
+            else {
+                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
+                if (closest_wall) {
+                    for (auto &tile : closest_wall->getDefenses()) {
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
+                            morphing_unit.phase_ = "Building";
+                            morphing_unit.updateStoredUnit(unit);
+                            return true;
+                        }
                     }
                 }
             }
+
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
@@ -941,9 +959,9 @@ void AssemblyManager::getDefensiveWalls()
 {
     vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber };
     vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
-
+    int tick = 0;
     for (auto &area : BWEM::Map::Instance().Areas()) {
-
+        if (tick >= 5) continue;
         // Only make walls at gas bases that aren't starting bases
         bool invalidBase = false;
         for (auto &base : area.Bases()) {
@@ -955,14 +973,15 @@ void AssemblyManager::getDefensiveWalls()
 
         const BWEM::ChokePoint * bestChoke = nullptr;
         double distBest = DBL_MAX;
-        for (auto &choke : area.ChokePoints()) {
-            auto dist = Position(choke->Center()).getDistance(BWEM::Map::Instance().Center());
+        for (auto &cp : area.ChokePoints()) {
+            auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
             if (dist < distBest) {
                 distBest = dist;
-                bestChoke = choke;
+                bestChoke = cp;
             }
         }
-        BWEB::Walls::createWall(buildings, BWEB::Map::getNaturalArea(), BWEB::Map::getNaturalChoke(), UnitTypes::None, defenses, true, false);
+        BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
+        tick++;
     }
 }
 
