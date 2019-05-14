@@ -3,6 +3,7 @@
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "BWEB\BWEB.h"
 #include <bwem.h>
 #include "PlayerModelManager.h"
 
@@ -52,6 +53,7 @@ public:
     static bool creepColonyInArea(const Position & pos);
     static bool assignUnitAssembly();
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
+    static void getDefensiveWalls();
 };
 
 

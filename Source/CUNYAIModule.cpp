@@ -66,7 +66,8 @@ void CUNYAIModule::onStart()
 
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
-    BWEB::Blocks::findBlocks();
+    //BWEB::Blocks::findBlocks();
+    assemblymanager.getDefensiveWalls();
 
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
