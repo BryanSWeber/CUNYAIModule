@@ -260,6 +260,7 @@ namespace BWEB::Walls
         bool findSuitableWall(Wall& wall)
         {
             auto start = Map::tConvert(wall.getChokePoint()->Center());
+
             auto movedStart = false;
 
             // Choke angle
@@ -281,7 +282,7 @@ namespace BWEB::Walls
                 for (int x = initialStart.x - 1; x <= initialStart.x + 1; x++) {
                     for (int y = initialStart.y - 1; y <= initialStart.y + 1; y++) {
                         const TilePosition t(x, y);
-                        if (!t.isValid())
+                        if (!t.isValid() || !Map::isPlaceable(UnitTypes::Terran_Missile_Turret,t) ) // If you can't put a missle turret there, throw it out.
                             continue;
 
                         const auto p = Map::pConvert(t);
@@ -305,7 +306,7 @@ namespace BWEB::Walls
 
                 // If we want an open wall and it's not reachable, or we want a closed wall and it is reachable
                 if ((openWall && !newPath.isReachable()) || (!openWall && newPath.isReachable()))
-                    return;
+                    return false;
 
                 // If we need an opening
                 for (auto &tile : newPath.getTiles()) {

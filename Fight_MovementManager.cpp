@@ -92,9 +92,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         // lurkers should move when we need them to scout.
         if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
             unit_->unburrow();
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-            changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-            changing_unit.updateStoredUnit(unit_);
+            pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
             return;
         }
 
@@ -124,9 +122,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-        changing_unit.updateStoredUnit(unit_);
+        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
         return;
     }
 
@@ -134,8 +130,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) > passed_distance) {
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         unit_->holdPosition();
-        changing_unit.phase_ = "Surrounding";
-        changing_unit.updateStoredUnit(unit_);
+        CUNYAIModule::updateUnitPhase(unit_, "Surrounding");
         return;
     }
 
@@ -180,9 +175,7 @@ bool Mobility::BWEM_Movement() const
 
 
     if (it_worked) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = pathing_confidently ? "Pathing Out" : "Pathing Home";
-        changing_unit.updateStoredUnit(unit_);
+        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
     }
     return it_worked;
 }
@@ -295,9 +288,8 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     if (attack_order_issued) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = "Attacking";
-        changing_unit.updateStoredUnit(unit_);
+        CUNYAIModule::updateUnitPhase(unit_, "Attacking");
+
     } 
     else {
         Stored_Unit* closest = CUNYAIModule::getClosestThreatStored(ei, unit_, 1200);
@@ -317,9 +309,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         else {
             unit_->holdPosition();
         }
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = "Surrounding";
-        changing_unit.updateStoredUnit(unit_);
+        CUNYAIModule::updateUnitPhase(unit_, "Surrounding");
     }// if I'm not attacking and I'm in range, I'm 'surrounding'
     return;
 }
@@ -394,18 +384,16 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
         }
 
         if (is_retreating) {
-            Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-            changing_unit.phase_ = "Retreating";
-            changing_unit.updateStoredUnit(unit_);
+            CUNYAIModule::updateUnitPhase(unit_, "Retreating");
             //if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
 
             return;
         }
     }
     else {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        changing_unit.phase_ = "No Retreat.";
-        changing_unit.updateStoredUnit(unit_);
+
+        CUNYAIModule::updateUnitPhase(unit_, "No Retreat.");
+
         return;
     }// if I'm not retreating, I'm announcing I'm bugged.
 

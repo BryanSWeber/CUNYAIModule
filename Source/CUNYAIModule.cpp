@@ -67,7 +67,7 @@ void CUNYAIModule::onStart()
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
     //BWEB::Blocks::findBlocks();
-    assemblymanager.getDefensiveWalls();
+    //assemblymanager.getDefensiveWalls();
 
     // Hello World!
     Broodwar->sendText( "Good luck, have fun!" );
@@ -966,16 +966,12 @@ void CUNYAIModule::onFrame()
             if (miner.phase_ == "Expoing" && t_game % 14 == 0) {
                 if (Broodwar->isExplored(current_map_inventory.next_expo_) && u->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
-                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_map_.find(u)->second;
-                    morphing_unit.phase_ = "Expoing";
-                    morphing_unit.updateStoredUnit(u);
+                    CUNYAIModule::updateUnitPhase(u, "Expoing");
                 }
                 else if (!Broodwar->isExplored(current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     u->move(Position(current_map_inventory.next_expo_));
-                    Stored_Unit& morphing_unit = friendly_player_model.units_.unit_map_.find(u)->second;
-                    morphing_unit.phase_ = "Expoing";
-                    morphing_unit.updateStoredUnit(u);
                     CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Still moving there to check it out.", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
+                    CUNYAIModule::updateUnitPhase(u, "Expoing");
                 }
                 continue;
             }

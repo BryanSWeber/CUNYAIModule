@@ -45,21 +45,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (unit->canMorph(building) && unit->getType().isBuilding()) {
             if (unit->morph(building)) {
                 CUNYAIModule::buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
-                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                morphing_unit.phase_ = "Building";
-                morphing_unit.updateStoredUnit(unit);
-                return true;
+                return CUNYAIModule::updateUnitPhase(unit, "Building");
             }
         }
         else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
         {
             TilePosition buildPosition = getBuildablePosition(unit->getTilePosition(), building, 12);
             if (CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
-                CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                morphing_unit.phase_ = "Building";
-                morphing_unit.updateStoredUnit(unit);
-                return true;
+                return CUNYAIModule::updateUnitPhase(unit, "Building");
             }
             else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
                 CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Freeze here please!...", building.c_str(), buildPosition.x, buildPosition.y);
@@ -74,10 +67,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         for (auto &tile : closest_station->getDefenseLocations()) {
                             if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
                                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                                morphing_unit.phase_ = "Building";
-                                morphing_unit.updateStoredUnit(unit);
-                                return true;
+                                return CUNYAIModule::updateUnitPhase(unit, "Building");
                             }
                         }
                     }
@@ -88,10 +78,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                            morphing_unit.phase_ = "Building";
-                            morphing_unit.updateStoredUnit(unit);
-                            return true;
+                            return CUNYAIModule::updateUnitPhase( unit, "Building");
                         }
                     }
                 }
@@ -106,10 +93,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if ( BWAPI::Broodwar->isVisible(buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                    morphing_unit.phase_ = "Building";
-                    morphing_unit.updateStoredUnit(unit);
-                    return true;
+                    return CUNYAIModule::updateUnitPhase(unit, "Building");
                 } //extractors must have buildings nearby or we shouldn't build them.
                 //else if ( !BWAPI::Broodwar->isVisible(buildPosition) && unit->move(Position(buildPosition)) && my_reservation.addReserveSystem(building, buildPosition)) {
                 //    CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -135,11 +119,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 if ( hatch_nearby && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                    morphing_unit.phase_ = "Building";
-                    morphing_unit.updateStoredUnit(unit);
-
-                    return true;
+                    return CUNYAIModule::updateUnitPhase(unit, "Building");
                 }
                 else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
                     CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
@@ -159,10 +139,7 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
     if (CUNYAIModule::checkDesirable(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(larva)->second;
-            morphing_unit.phase_ = "Morphing";
-            morphing_unit.updateStoredUnit(larva);
-            return true;
+            return CUNYAIModule::updateUnitPhase(larva, "Morphing");
         }
     }
 
@@ -219,18 +196,11 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
             if (Broodwar->isExplored(inv.next_expo_) && unit->build(UnitTypes::Zerg_Hatchery, inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
-                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                morphing_unit.phase_ = "Expoing";
-                morphing_unit.updateStoredUnit(unit);
-                return true;
+                return CUNYAIModule::updateUnitPhase(unit, "Expoing");
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
-                unit->move(Position(inv.next_expo_));
-                Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-                morphing_unit.phase_ = "Expoing";
-                morphing_unit.updateStoredUnit(unit);
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return true;
+                return CUNYAIModule::updateUnitPhase(unit, "Expoing");
             }
             //}
         }
@@ -377,9 +347,6 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
-
-        Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
-        morphing_unit.updateStoredUnit(drone);
 
     return buildings_started;
 };
@@ -810,6 +777,7 @@ bool AssemblyManager::creepColonyInArea(const Position & pos) {
     bool creep_colony_nearby = false;
     Unit_Inventory units_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Creep_Colony, pos);
     creep_colony_nearby = !units_loc.unit_map_.empty();
+    return creep_colony_nearby;
 }
 
 
@@ -958,10 +926,8 @@ void AssemblyManager::clearSimulationHistory()
 void AssemblyManager::getDefensiveWalls()
 {
     vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery };
-    vector<UnitType> defenses(8, UnitTypes::Zerg_Sunken_Colony);
-    int tick = 0;
+    vector<UnitType> defenses(10, UnitTypes::Zerg_Sunken_Colony);
     for (auto &area : BWEM::Map::Instance().Areas()) {
-        if (tick >= 5) continue;
         // Only make walls at gas bases that aren't starting bases
         bool invalidBase = false;
         for (auto &base : area.Bases()) {
@@ -981,7 +947,6 @@ void AssemblyManager::getDefensiveWalls()
             }
         }
         BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
-        tick++;
     }
 }
 

@@ -2314,3 +2314,11 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
 
     return true;
 }
+
+bool CUNYAIModule::updateUnitPhase(const Unit &u, const string str) {
+    Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u)->second;
+    set<string> list_of_phases = {"Building", "Attacking", "Retreating", "Expoing", "PathingOut", "PathingHome", "Surrounding", "NoRetreat.", "Mining", "Distance Mining", "Clearing", "Upgrading", "Researching", "Morphing", "None"};
+    if ( list_of_phases.find(str) == list_of_phases.end() ) return false;
+    morphing_unit.phase_ = str;
+    morphing_unit.updateStoredUnit(u);
+}
