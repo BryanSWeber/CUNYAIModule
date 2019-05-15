@@ -48,17 +48,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 return CUNYAIModule::updateUnitPhase(unit, "Building");
             }
         }
-        //else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
-        //{
-        //    TilePosition buildPosition = getBuildablePosition(unit->getTilePosition(), building, 12);
-        //    if (CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
-        //        return CUNYAIModule::updateUnitPhase(unit, "Building");
-        //    }
-        //    else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-        //        CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Freeze here please!...", building.c_str(), buildPosition.x, buildPosition.y);
-        //        //buildorder.updateRemainingBuildOrder(building); // skips the building.
-        //    }
-        //}
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
                 auto closest_station = BWEB::Stations::getClosestStation(unit->getTilePosition());
@@ -119,32 +108,24 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
         else if (unit->canBuild(building)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
-                map<int,BWEB::Block> viable_blocks;
+                map<int,set<TilePosition>> viable_placements;
 
                 for (auto block : BWEB::Blocks::getBlocks()) {
                     set<TilePosition> placements;
-                    if (building.size() == UnitSizeTypes::Small)
+                    if (building.tileSize() == TilePosition{2,2})
                         placements = block.getSmallTiles();
-                    else if (building.size() == UnitSizeTypes::Medium)
+                    else if (building.tileSize() == TilePosition{ 3 , 2 })
                         placements = block.getMediumTiles();
-                    else if (building.size() == UnitSizeTypes::Large)
+                    else if (building.tileSize() == TilePosition{ 4 , 3 })
                         placements = block.getLargeTiles();
                     if (!placements.empty()) {
-                        viable_blocks.insert({ unit->getTilePosition().getDistance(block.getTilePosition()),block });
+                        viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
                     }
                 }
 
-                for (auto good_block : viable_blocks) { // should automatically search by distance.
-                    set<TilePosition> placements;
-                    if (building.size() == UnitSizeTypes::Small)
-                        placements = good_block.second.getSmallTiles();
-                    else if (building.size() == UnitSizeTypes::Medium)
-                        placements = good_block.second.getMediumTiles();
-                    else if (building.size() == UnitSizeTypes::Large)
-                        placements = good_block.second.getLargeTiles();
-
-                    for (auto &tile : placements) {
-                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+                for (auto good_block : viable_placements) { // should automatically search by distance.
+                    for (auto &tile : good_block.second) {
+                        if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
                             CUNYAIModule::updateUnitPhase(unit, "Building");
                             return true;
@@ -154,6 +135,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
         }
     }
+
+    if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
+        CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
+        //buildorder.updateRemainingBuildOrder(building); // skips the building.
+    }
+
     return false;
 }
 
@@ -164,7 +151,8 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
     if (CUNYAIModule::checkDesirable(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
-            return CUNYAIModule::updateUnitPhase(larva, "Morphing");
+            CUNYAIModule::updateUnitPhase(larva, "Morphing");
+            return true;
         }
     }
 
@@ -225,6 +213,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 return true;
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
+                unit->move(Position(inv.next_expo_));
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
                 CUNYAIModule::updateUnitPhase(unit, "Expoing");
                 return true;
@@ -282,6 +271,7 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
     // Trust the build order. If there is a build order and it wants a building, build it!
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         UnitType next_in_build_order = CUNYAIModule::buildorder.building_gene_.front().getUnit();
+        if (!next_in_build_order.isBuilding()) return false;
         if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::current_map_inventory);
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
     }
@@ -374,6 +364,9 @@ bool AssemblyManager::Building_Begin(const Unit &drone) {
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
+
+        Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
+        morphing_unit.updateStoredUnit(drone); // don't give him a phase.
 
     return buildings_started;
 };

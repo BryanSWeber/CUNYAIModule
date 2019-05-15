@@ -471,20 +471,20 @@ void CUNYAIModule::onFrame()
 
         //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
         //Print_Cached_Inventory(0, 50);
-        assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
+        //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
         Print_Upgrade_Inventory(375, 90);
         Print_Reservations(250, 190, my_reservation);
         //enemy_player_model.Print_Average_CD(500, 170);
-        techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-        //if (buildorder.isEmptyBuildOrder()) {
+        //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        if (buildorder.isEmptyBuildOrder()) {
         //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-        //    //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
         //    //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
-        //}
-        //else {
-        //    Print_Build_Order_Remaining(500, 170, buildorder);
-        //}
+        }
+        else {
+            Print_Build_Order_Remaining(500, 170, buildorder);
+        }
 
         Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
         Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
