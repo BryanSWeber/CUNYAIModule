@@ -469,7 +469,7 @@ void CUNYAIModule::onFrame()
         //bwemMap.Draw(BWAPI::BroodwarPtr);
         BWEB::Map::draw();
 
-        //Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
+        Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
