@@ -67,7 +67,27 @@ struct Stored_Unit {
     int areaID_;
     int time_since_last_dmg_;
 
-    string phase_ = "None";
+    enum Phase
+    {
+        Building = 0, 
+        Attacking = 1, 
+        Retreating = 2, 
+        Expoing = 3, 
+        PathingOut = 4, 
+        PathingHome = 5, 
+        Surrounding = 6, 
+        NoRetreat = 7, 
+        Mining = 8, 
+        DistanceMining = 9, 
+        Clearing = 10, 
+        Upgrading = 11, 
+        Researching = 12, 
+        Morphing = 13, 
+        None = 14
+    };
+    Phase phase_;
+    Stored_Unit(Phase p) : phase_(p) {}
+    operator Phase () const { return phase_; }
 
     //Needed commands for workers.
     void startMine(Stored_Resource &new_resource);
@@ -106,7 +126,10 @@ struct Stored_Unit {
     int circumference_remaining_;
 
     Unit bwapi_unit_;
-
+    private:
+        //prevent automatic conversion for any other built-in types such as bool, int, etc
+        template<typename T>
+        operator T () const;
 };
 
 struct Unit_Inventory {

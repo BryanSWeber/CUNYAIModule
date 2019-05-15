@@ -73,11 +73,11 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
         attachToNearestMine(available_fields, current_map_inventory, miner);
-        miner.phase_ = "Mining";
+        miner.phase_ = Stored_Unit::Mining;
     } 
     else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
         attachToNearestMine(long_dist_fields, current_map_inventory, miner);
-        miner.phase_ = "Distance Mining";
+        miner.phase_ = Stored_Unit::DistanceMining;
     }
     
     miner.updateStoredUnit(unit);
@@ -91,7 +91,7 @@ void CUNYAIModule::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &in
         if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
             my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
         }
-        miner.phase_ = "Mining";
+        miner.phase_ = Stored_Unit::Mining;
     }
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
@@ -101,13 +101,13 @@ void CUNYAIModule::attachToParticularMine(Stored_Resource &mine, Resource_Invent
     if (miner.bwapi_unit_ && miner.isAssignedBuilding()) {
         my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
     }
-    miner.phase_ = "Mining";
+    miner.phase_ = Stored_Unit::Mining;
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
 void CUNYAIModule::attachToParticularMine(Unit &mine, Resource_Inventory &ri, Stored_Unit &miner) {
     miner.startMine(ri.resource_inventory_.find(mine)->second); // Let's not make mistakes by attaching it to "availabile Fields""
-    miner.phase_ = "Mining";
+    miner.phase_ = Stored_Unit::Mining;
     miner.updateStoredUnit(miner.bwapi_unit_);
 }
 
@@ -127,7 +127,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
 
     if (!available_fields.resource_inventory_.empty()) {
         attachToNearestMine(available_fields, current_map_inventory, miner);
-        miner.phase_ = "Clearing";
+        miner.phase_ = Stored_Unit::Clearing;
     }
     miner.updateStoredUnit(unit);
 }

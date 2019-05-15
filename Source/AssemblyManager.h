@@ -40,7 +40,7 @@ public:
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
     // Builds the next building you can afford. Area of constant improvement.
-    static bool Building_Begin(const Unit & drone);
+    static bool buildBuilding(const Unit & drone);
     // Returns a tile that is suitable for building.
     static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
     // Moves all units except for the Stored exeption_unit elsewhere.

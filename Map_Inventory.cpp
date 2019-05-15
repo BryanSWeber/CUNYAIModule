@@ -1384,7 +1384,7 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 
     if (!map.empty() && !ui.unit_map_.empty()) {
         for (auto u : ui.unit_map_) {
-            if (u.second.type_.canAttack() && u.second.phase_ != "Retreating" || !combat_units) {
+            if (u.second.type_.canAttack() && u.second.phase_ != Stored_Unit::Phase::Retreating || !combat_units) {
                 return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
             }
         }

@@ -129,7 +129,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Invento
         }
         unit->stop();
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
-        miner.phase_ = "None";
+        miner.phase_ = Stored_Unit::None;
         miner.updateStoredUnit(unit);
     }
     else {
@@ -155,7 +155,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
-        miner.phase_ = "None";
+        miner.phase_ = Stored_Unit::None;
         miner.updateStoredUnit(unit);
     }
     else {
@@ -353,8 +353,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         count_of_consecutive_predicted_deaths_ = 0;
     }
     else {
-        //bool unit_fighting = type_.canAttack() && phase_ == "Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
-        bool unit_escaped = ((phase_ == "Retreating") || burrowed_) && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
+        //bool unit_fighting = type_.canAttack() && phase_ == Stored_Unit::Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
+        bool unit_escaped = ((phase_ == Stored_Unit::Retreating) || burrowed_) && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
         bool overkilled = (count_of_consecutive_predicted_deaths_ > MOVING_AVERAGE_DURATION && time_since_last_dmg_ > MOVING_AVERAGE_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
@@ -372,7 +372,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             else count_of_consecutive_predicted_deaths_++;
         }
     }
-    if ( (phase_ == "Upgrading" || phase_ == "Researching" ) && unit->isIdle()) phase_ = "None"; // adjust units that are no longer upgrading.
+    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching ) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
 }
 
@@ -610,8 +610,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          future_fap_stock += u_iter.second.future_fap_value_;
          moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
          is_shooting += u_iter.second.cd_remaining_ > 0; //
-         is_attacking += u_iter.second.phase_ == "Attacking";
-         is_retreating += u_iter.second.phase_ == "Retreating";
+         is_attacking += u_iter.second.phase_ == Stored_Unit::Attacking;
+         is_retreating += u_iter.second.phase_ == Stored_Unit::Retreating;
 
          if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 

@@ -963,15 +963,15 @@ void CUNYAIModule::onFrame()
             }
 
             //Workers at their end build location should build there!
-            if (miner.phase_ == "Expoing" && t_game % 14 == 0) {
+            if (miner.phase_ == Stored_Unit::Expoing && t_game % 14 == 0) {
                 if (Broodwar->isExplored(current_map_inventory.next_expo_) && u->build(UnitTypes::Zerg_Hatchery, current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
-                    CUNYAIModule::updateUnitPhase(u, "Expoing");
+                    CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::Expoing);
                 }
                 else if (!Broodwar->isExplored(current_map_inventory.next_expo_) && my_reservation.addReserveSystem(current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
                     u->move(Position(current_map_inventory.next_expo_));
                     CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Still moving there to check it out.", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y);
-                    CUNYAIModule::updateUnitPhase(u, "Expoing");
+                    CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::Expoing);
                 }
                 continue;
             }
@@ -990,7 +990,7 @@ void CUNYAIModule::onFrame()
                 if (isEmptyWorker(u) && miner.isAssignedResource() && !miner.isAssignedGas() && !miner.isAssignedBuilding() && my_reservation.last_builder_sent_ < t_game - Broodwar->getLatencyFrames() - 3 * 24 && !build_check_this_frame) { //only get those that are in line or gathering minerals, but not carrying them or harvesting gas. This always irked me.
                     build_check_this_frame = true;
                     friendly_player_model.units_.purgeWorkerRelationsNoStop(u, land_inventory, current_map_inventory, my_reservation); //Must be disabled or else under some conditions, we "stun" a worker every frame. Usually the exact same one, essentially killing it.
-                    assemblymanager.Building_Begin(u); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
+                    assemblymanager.buildBuilding(u); // something's funny here. I would like to put it in the next line conditional but it seems to cause a crash when no major buildings are left to build.
                     if (miner.isAssignedBuilding()) { //Don't purge the building relations here - we just established them!
                         miner.stopMine();
                         continue;
@@ -1470,6 +1470,7 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
 void CUNYAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.
 {
     onUnitDestroy(unit);
+    onUnitDiscover(unit);
 }
 
 void CUNYAIModule::onSaveGame( std::string gameName )

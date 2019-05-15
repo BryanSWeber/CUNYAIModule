@@ -92,7 +92,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         // lurkers should move when we need them to scout.
         if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
             unit_->unburrow();
-            pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
+            pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
             return;
         }
 
@@ -122,7 +122,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
 
-        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
+        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
         return;
     }
 
@@ -130,7 +130,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) > passed_distance) {
         Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
         unit_->holdPosition();
-        CUNYAIModule::updateUnitPhase(unit_, "Surrounding");
+        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
         return;
     }
 
@@ -175,7 +175,7 @@ bool Mobility::BWEM_Movement() const
 
 
     if (it_worked) {
-        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, "Pathing Out") : CUNYAIModule::updateUnitPhase(unit_, "Pathing Home");
+        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     return it_worked;
 }
@@ -288,7 +288,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     if (attack_order_issued) {
-        CUNYAIModule::updateUnitPhase(unit_, "Attacking");
+        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
 
     } 
     else {
@@ -309,7 +309,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         else {
             unit_->holdPosition();
         }
-        CUNYAIModule::updateUnitPhase(unit_, "Surrounding");
+        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
     }// if I'm not attacking and I'm in range, I'm 'surrounding'
     return;
 }
@@ -384,7 +384,7 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
         }
 
         if (is_retreating) {
-            CUNYAIModule::updateUnitPhase(unit_, "Retreating");
+            CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
             //if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
 
             return;
@@ -392,7 +392,7 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
     }
     else {
 
-        CUNYAIModule::updateUnitPhase(unit_, "No Retreat.");
+        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::NoRetreat);
 
         return;
     }// if I'm not retreating, I'm announcing I'm bugged.

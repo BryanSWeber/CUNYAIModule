@@ -257,6 +257,54 @@ namespace BWEB::Walls
             return posBest;
         }
 
+        // a lazy way to check if buildings are powered(or creeped)
+        bool goodPowerExpand(const TilePosition &here, const UnitType &powersource1, const UnitType &powersource2, const map<TilePosition, UnitType> &currentWall) {
+            for (auto &[tile, type] : currentWall) {
+                if (powersource1.isSuccessorOf(type) || powersource2.isSuccessorOf(type))
+                    continue;
+                if (type.tileWidth() == 4) {
+                    auto powersThis = false;
+                    if (tile.y - here.y == -5 || tile.y - here.y == 4) {
+                        if (tile.x - here.x >= -4 && tile.x - here.x <= 1)
+                            powersThis = true;
+                    }
+                    if (tile.y - here.y == -4 || tile.y - here.y == 3) {
+                        if (tile.x - here.x >= -7 && tile.x - here.x <= 4)
+                            powersThis = true;
+                    }
+                    if (tile.y - here.y == -3 || tile.y - here.y == 2) {
+                        if (tile.x - here.x >= -8 && tile.x - here.x <= 5)
+                            powersThis = true;
+                    }
+                    if (tile.y - here.y >= -2 && tile.y - here.y <= 1) {
+                        if (tile.x - here.x >= -8 && tile.x - here.x <= 6)
+                            powersThis = true;
+                    }
+                    if (!powersThis)
+                        return false;
+                }
+                else {
+                    auto powersThis = false;
+                    if (tile.y - here.y == 4) {
+                        if (tile.x - here.x >= -3 && tile.x - here.x <= 2)
+                            powersThis = true;
+                    }
+                    if (tile.y - here.y == -4 || tile.y - here.y == 3) {
+                        if (tile.x - here.x >= -6 && tile.x - here.x <= 5)
+                            powersThis = true;
+                    }
+                    if (tile.y - here.y >= -3 && tile.y - here.y <= 2) {
+                        if (tile.x - here.x >= -7 && tile.x - here.x <= 6)
+                            powersThis = true;
+                    }
+                    if (!powersThis)
+                        return false;
+                }
+                return true;
+            }
+            return false;//if there's no currentwall, we got a problem, flag false.
+        }
+
         bool findSuitableWall(Wall& wall)
         {
             auto start = Map::tConvert(wall.getChokePoint()->Center());
@@ -339,54 +387,20 @@ namespace BWEB::Walls
             const auto goodPower = [&](TilePosition here) {
                 const auto t = *typeIterator;
 
-                if (t != UnitTypes::Protoss_Pylon)
-                    return true;
+                    if (t != UnitTypes::Protoss_Pylon)
+                        return true;
 
-                // TODO: Create a generic BWEB function that takes 2 tiles and tells you if the 1st tile will power the 2nd tile
-                for (auto &[tile, type] : currentWall) {
-                    if (type == UnitTypes::Protoss_Pylon)
-                        continue;
+                    // TODO: Create a generic BWEB function that takes 2 tiles and tells you if the 1st tile will power the 2nd tile
+                    switch (t.getRace())
+                    {
+                    case Races::Protoss:
+                        return goodPowerExpand(here, UnitTypes::Protoss_Pylon, UnitTypes::None, currentWall); //Protoss only get power from pylons.
+                    case Races::Zerg:
+                        return goodPowerExpand(here, UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Creep_Colony, currentWall); //Zerg get "power" aka creep from Hatcheries or creep colonies. Checks decendants.
+                    default:
+                        break;
+                    }
 
-                    if (type.tileWidth() == 4) {
-                        auto powersThis = false;
-                        if (tile.y - here.y == -5 || tile.y - here.y == 4) {
-                            if (tile.x - here.x >= -4 && tile.x - here.x <= 1)
-                                powersThis = true;
-                        }
-                        if (tile.y - here.y == -4 || tile.y - here.y == 3) {
-                            if (tile.x - here.x >= -7 && tile.x - here.x <= 4)
-                                powersThis = true;
-                        }
-                        if (tile.y - here.y == -3 || tile.y - here.y == 2) {
-                            if (tile.x - here.x >= -8 && tile.x - here.x <= 5)
-                                powersThis = true;
-                        }
-                        if (tile.y - here.y >= -2 && tile.y - here.y <= 1) {
-                            if (tile.x - here.x >= -8 && tile.x - here.x <= 6)
-                                powersThis = true;
-                        }
-                        if (!powersThis)
-                            return false;
-                    }
-                    else {
-                        auto powersThis = false;
-                        if (tile.y - here.y == 4) {
-                            if (tile.x - here.x >= -3 && tile.x - here.x <= 2)
-                                powersThis = true;
-                        }
-                        if (tile.y - here.y == -4 || tile.y - here.y == 3) {
-                            if (tile.x - here.x >= -6 && tile.x - here.x <= 5)
-                                powersThis = true;
-                        }
-                        if (tile.y - here.y >= -3 && tile.y - here.y <= 2) {
-                            if (tile.x - here.x >= -7 && tile.x - here.x <= 6)
-                                powersThis = true;
-                        }
-                        if (!powersThis)
-                            return false;
-                    }
-                }
-                return true;
             };
 
             const auto goodPlacement = [&](TilePosition here) {

@@ -164,7 +164,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-            morphing_unit.phase_ = "Upgrading";
+            morphing_unit.phase_ = Stored_Unit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
@@ -181,7 +181,7 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
         if (unit->research(tech)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-            morphing_unit.phase_ = "Researching";
+            morphing_unit.phase_ = Stored_Unit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
             CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());
             return true;
