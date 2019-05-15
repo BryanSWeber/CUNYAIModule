@@ -48,42 +48,52 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 return CUNYAIModule::updateUnitPhase(unit, "Building");
             }
         }
-        else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
-        {
-            TilePosition buildPosition = getBuildablePosition(unit->getTilePosition(), building, 12);
-            if (CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
-                return CUNYAIModule::updateUnitPhase(unit, "Building");
-            }
-            else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-                CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Freeze here please!...", building.c_str(), buildPosition.x, buildPosition.y);
-                //buildorder.updateRemainingBuildOrder(building); // skips the building.
-            }
-        }
+        //else if (unit->canBuild(building) && building != UnitTypes::Zerg_Creep_Colony && building != UnitTypes::Zerg_Extractor && building != UnitTypes::Zerg_Hatchery)
+        //{
+        //    TilePosition buildPosition = getBuildablePosition(unit->getTilePosition(), building, 12);
+        //    if (CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && hatch_nearby && unit->build(building, buildPosition) ) {
+        //        return CUNYAIModule::updateUnitPhase(unit, "Building");
+        //    }
+        //    else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
+        //        CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Freeze here please!...", building.c_str(), buildPosition.x, buildPosition.y);
+        //        //buildorder.updateRemainingBuildOrder(building); // skips the building.
+        //    }
+        //}
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
-
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
                 auto closest_station = BWEB::Stations::getClosestStation(unit->getTilePosition());
-                    if (closest_station && closest_station->getDefenseCount() < 4 ) {
-                        for (auto &tile : closest_station->getDefenseLocations()) {
-                            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
-                                CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                return CUNYAIModule::updateUnitPhase(unit, "Building");
-                            }
-                        }
-                    }
-            }
-            else {
-                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
-                if (closest_wall) {
-                    for (auto &tile : closest_wall->getDefenses()) {
+                if (closest_station && closest_station->getDefenseCount() < 4) {
+                    for (auto &tile : closest_station->getDefenseLocations()) {
                         if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase( unit, "Building");
+                            return CUNYAIModule::updateUnitPhase(unit, "Building");
                         }
                     }
                 }
             }
-
+            //else {
+            //    auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
+            //    if (closest_wall) {
+            //        for (auto &tile : closest_wall->getDefenses()) {
+            //            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+            //                CUNYAIModule::buildorder.announceBuildingAttempt(building);
+            //                return CUNYAIModule::updateUnitPhase( unit, "Building");
+            //            }
+            //        }
+            //    }
+            //}
+            else {
+                auto closest_block = BWEB::Blocks::getClosestBlock(unit->getTilePosition());
+                if (closest_block) {
+                    for (auto &tile : closest_block->getSmallTiles()) {
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            
+                            return CUNYAIModule::updateUnitPhase(unit, "Building");
+                        }
+                    }
+                }
+            }
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
@@ -107,24 +117,39 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
 
         }
-        else if (unit->canBuild(building) && building == UnitTypes::Zerg_Hatchery) {
+        else if (unit->canBuild(building)) {
+            if (CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
+                map<int,BWEB::Block> viable_blocks;
 
-            if (unit->canBuild(building) && CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
-                TilePosition buildPosition = Broodwar->getBuildLocation(building, unit->getTilePosition(), 64);
-
-                local_area = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(buildPosition));
-                hatch_nearby = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
-                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
-                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0;
-
-                if ( hatch_nearby && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
-                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitPhase(unit, "Building");
+                for (auto block : BWEB::Blocks::getBlocks()) {
+                    set<TilePosition> placements;
+                    if (building.size() == UnitSizeTypes::Small)
+                        placements = block.getSmallTiles();
+                    else if (building.size() == UnitSizeTypes::Medium)
+                        placements = block.getMediumTiles();
+                    else if (building.size() == UnitSizeTypes::Large)
+                        placements = block.getLargeTiles();
+                    if (!placements.empty()) {
+                        viable_blocks.insert({ unit->getTilePosition().getDistance(block.getTilePosition()),block });
+                    }
                 }
-                else if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
-                    //buildorder.updateRemainingBuildOrder(building); // skips the building.
-                    //buildorder.clearRemainingBuildOrder();
+
+                for (auto good_block : viable_blocks) { // should automatically search by distance.
+                    set<TilePosition> placements;
+                    if (building.size() == UnitSizeTypes::Small)
+                        placements = good_block.second.getSmallTiles();
+                    else if (building.size() == UnitSizeTypes::Medium)
+                        placements = good_block.second.getMediumTiles();
+                    else if (building.size() == UnitSizeTypes::Large)
+                        placements = good_block.second.getLargeTiles();
+
+                    for (auto &tile : placements) {
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
+                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            CUNYAIModule::updateUnitPhase(unit, "Building");
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -196,11 +221,13 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
             if (Broodwar->isExplored(inv.next_expo_) && unit->build(UnitTypes::Zerg_Hatchery, inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, "Expoing");
+                CUNYAIModule::updateUnitPhase(unit, "Expoing");
+                return true;
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, "Expoing");
+                CUNYAIModule::updateUnitPhase(unit, "Expoing");
+                return true;
             }
             //}
         }
