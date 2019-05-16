@@ -330,7 +330,7 @@ void CUNYAIModule::DiagnosticLastDamage(const Stored_Unit unit, const Position &
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = resource.pos_;
-        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) ) {
+        if (isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
             // Draw the orange background.
             upper_left.y = upper_left.y + resource.type_.dimensionUp();
             upper_left.x = upper_left.x - resource.type_.dimensionLeft();

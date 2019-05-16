@@ -41,7 +41,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
 
-        if ( mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_natural_ && current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
+        if ( mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
             low_drone = r.second.number_of_miners_;
             found_low_occupied_mine = true;
         }
@@ -64,7 +64,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
         if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) ) {
             long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
 
-            if (r.second.occupied_natural_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
+            if (r.second.occupied_resource_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r.second);
             }
         }

@@ -85,7 +85,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
-            if (closest_gas && closest_gas->occupied_natural_ && closest_gas->bwapi_unit_ ) {
+            if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_ ) {
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
@@ -764,7 +764,6 @@ void AssemblyManager::updatePotentialBuilders()
     builder_bank_.unit_map_.clear();
     creep_colony_bank_.unit_map_.clear();
     production_facility_bank_.unit_map_.clear();
-
 
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Larva) larva_bank_.addStored_Unit(u.second);

@@ -177,7 +177,7 @@ void Map_Inventory::updateMin_Possessed() {
 
     int min_fields = 0;
     for (auto r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++r) { //for each mineral
-        if (r->second.occupied_natural_ && r->second.type_.isMineralField() ) {
+        if (r->second.occupied_resource_ && r->second.type_.isMineralField() ) {
                 min_fields++; // if there is a base near it, then this mineral counts.
         } // closure for existance check.
     } // closure: for each mineral

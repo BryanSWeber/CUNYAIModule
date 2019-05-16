@@ -5,6 +5,7 @@
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Map_Inventory.h"
+#include <bwem.h>
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
@@ -81,7 +82,7 @@ Stored_Resource::Stored_Resource(Unit resource) {
     }
     number_of_miners_ = 0;
     full_resource_ = false;
-    occupied_natural_ = false;
+    occupied_resource_ = false;
     valid_pos_ = true;
 
 
@@ -104,19 +105,49 @@ Stored_Resource::Stored_Resource(Unit resource) {
 //}
 
 void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Map_Inventory &inv) {
+    // Update "My Bases"
+    Unit_Inventory hatches;
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted() ) hatches.addStored_Unit(u.second);
+    }
+    vector<Position> my_bases_;
+
+    vector<Position> resources_spots;
+    for (auto & area : BWEM::Map::Instance().Areas()) {
+        for (auto & base : area.Bases()) {
+            for (auto h : hatches.unit_map_) {
+                if (h.second.pos_ == base.Center()) {
+                    my_bases_.push_back(Position(base.Location()));
+                    for (auto resource : base.Minerals()) {
+                        resources_spots.push_back(resource->Pos());
+                    }
+                    for (auto resource : base.Geysers()) {
+                        resources_spots.push_back(resource->Pos());
+                    }
+                }
+            }
+        }
+    }
+
     for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty();) {
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
+
+
 
         if (Broodwar->isVisible(resource_pos)) {
             if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists()) {
                 r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
                 r->second.valid_pos_ = true;
                 r->second.type_ = r->second.bwapi_unit_->getType();
-                Unit_Inventory local_area = CUNYAIModule::getUnitInventoryInRadius(ui, r->second.pos_, 320 );
-                r->second.occupied_natural_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
-                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair, local_area) > 0 ||
-                    CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive, local_area) > 0; // is there a resource depot in 10 tiles of it?
+                auto bwemMin = BWEM::Map::Instance().GetMineral(r->second.bwapi_unit_);
+                bwemMin ? r->second.blocking_mineral_ = bwemMin->Blocking() : r->second.blocking_mineral_ = false;
+
+                r->second.occupied_resource_ = false;
+                for (auto bwem_r_spot : resources_spots) {
+                    if (bwem_r_spot == r->second.pos_) r->second.occupied_resource_ = true;
+                }
+
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     Stored_Unit eu = Stored_Unit(r->first);
                     if (ei.unit_map_.insert({ r->first, eu }).second) {
