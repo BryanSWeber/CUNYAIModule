@@ -118,7 +118,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Invento
     if (found_object != this->unit_map_.end()) {
         Stored_Unit& miner = found_object->second;
 
-        miner.stopMine(ri);
+        miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
@@ -129,7 +129,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Invento
         }
         unit->stop();
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
-        miner.phase_ = "None";
+        miner.phase_ = Stored_Unit::None;
         miner.updateStoredUnit(unit);
     }
     else {
@@ -145,7 +145,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
     if (found_object != this->unit_map_.end()) {
         Stored_Unit& miner = found_object->second;
 
-        miner.stopMine(ri);
+        miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
@@ -155,7 +155,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
-        miner.phase_ = "None";
+        miner.phase_ = Stored_Unit::None;
         miner.updateStoredUnit(unit);
     }
     else {
@@ -171,7 +171,7 @@ void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Invento
     if (found_object != this->unit_map_.end()) {
         Stored_Unit& miner = found_object->second;
 
-        miner.stopMine(ri);
+        miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
@@ -235,24 +235,24 @@ void Unit_Inventory::drawAllSpamGuards() const
     }
 }
 
-void Unit_Inventory::drawAllWorkerTasks(Resource_Inventory &ri) const
+void Unit_Inventory::drawAllWorkerTasks() const
 {
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
-            if (u.second.locked_mine_ && !u.second.isAssignedResource(ri) && !u.second.isAssignedClearing(ri)) {
+            if (u.second.locked_mine_ && !u.second.isAssignedResource() && !u.second.isAssignedClearing()) {
                 CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::White);
             }
-            else if (u.second.isAssignedMining(ri)) {
+            else if (u.second.isAssignedMining()) {
                 CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
             }
-            else if (u.second.isAssignedGas(ri)) {
+            else if (u.second.isAssignedGas()) {
                 CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Brown);
             }
-            else if (u.second.isAssignedClearing(ri)) {
+            else if (u.second.isAssignedClearing()) {
                 CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);
             }
 
-            if (u.second.isAssignedBuilding(ri)) {
+            if (u.second.isAssignedBuilding()) {
                 CUNYAIModule::Diagnostic_Dot(u.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple);
             }
         }
@@ -353,8 +353,8 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         count_of_consecutive_predicted_deaths_ = 0;
     }
     else {
-        //bool unit_fighting = type_.canAttack() && phase_ == "Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
-        bool unit_escaped = ((phase_ == "Retreating") || burrowed_) && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
+        //bool unit_fighting = type_.canAttack() && phase_ == Stored_Unit::Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
+        bool unit_escaped = ((phase_ == Stored_Unit::Retreating) || burrowed_) && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
         bool overkilled = (count_of_consecutive_predicted_deaths_ > MOVING_AVERAGE_DURATION && time_since_last_dmg_ > MOVING_AVERAGE_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
@@ -372,7 +372,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             else count_of_consecutive_predicted_deaths_++;
         }
     }
-    if ( (phase_ == "Upgrading" || phase_ == "Researching" ) && unit->isIdle()) phase_ = "None"; // adjust units that are no longer upgrading.
+    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching ) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
 }
 
@@ -610,8 +610,8 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          future_fap_stock += u_iter.second.future_fap_value_;
          moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
          is_shooting += u_iter.second.cd_remaining_ > 0; //
-         is_attacking += u_iter.second.phase_ == "Attacking";
-         is_retreating += u_iter.second.phase_ == "Retreating";
+         is_attacking += u_iter.second.phase_ == Stored_Unit::Attacking;
+         is_retreating += u_iter.second.phase_ == Stored_Unit::Retreating;
 
          if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 
@@ -691,10 +691,10 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     is_retreating_ = is_retreating;
 }
 
-void Unit_Inventory::stopMine(Unit u, Resource_Inventory& ri) {
+void Unit_Inventory::stopMine(Unit u) {
     if (u->getType().isWorker()) {
         Stored_Unit& miner = unit_map_.find(u)->second;
-        miner.stopMine(ri);
+        miner.stopMine();
     }
 }
 
@@ -831,34 +831,34 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
 
 
 //Increments the number of miners on a resource.
-void Stored_Unit::startMine(Stored_Resource &new_resource, Resource_Inventory &ri){
+void Stored_Unit::startMine(Stored_Resource &new_resource){
     locked_mine_ = new_resource.bwapi_unit_;
-    ri.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+    CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
 //Decrements the number of miners on a resource.
-void Stored_Unit::stopMine(Resource_Inventory &ri){
+void Stored_Unit::stopMine(){
     if (locked_mine_){
-        if (getMine(ri)) {
-            getMine(ri)->number_of_miners_ = max(getMine(ri)->number_of_miners_ - 1, 0);
+        if (getMine()) {
+            getMine()->number_of_miners_ = max(getMine()->number_of_miners_ - 1, 0);
         }
     }
     locked_mine_ = nullptr;
 }
 
 //finds mine- Will return true something even if the mine DNE.
-Stored_Resource* Stored_Unit::getMine(Resource_Inventory &ri) {
+Stored_Resource* Stored_Unit::getMine() {
     Stored_Resource* tenative_resource = nullptr;
-    if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
-        tenative_resource = &ri.resource_inventory_.find(locked_mine_)->second;
+    if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+        tenative_resource = &CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second;
     }
     return tenative_resource;
 }
 
 //checks if mine started with less than 8 resource
-bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
+bool Stored_Unit::isAssignedClearing() {
     if ( locked_mine_ ) {
-        if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
+        if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
             return mine_of_choice->max_stock_value_ <= 8;
         }
     }
@@ -866,9 +866,9 @@ bool Stored_Unit::isAssignedClearing( Resource_Inventory &ri ) {
 }
 
 //checks if mine started with less than 8 resource
-bool Stored_Unit::isAssignedLongDistanceMining(Resource_Inventory &ri) {
+bool Stored_Unit::isAssignedLongDistanceMining() {
     if (locked_mine_) {
-        if (Stored_Resource* mine_of_choice = this->getMine(ri)) { // if it has an associated mine.
+        if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
             return mine_of_choice->max_stock_value_ >= 8 && !mine_of_choice->local_natural_;
         }
     }
@@ -876,36 +876,36 @@ bool Stored_Unit::isAssignedLongDistanceMining(Resource_Inventory &ri) {
 }
 
 //checks if worker is assigned to a mine that started with more than 8 resources (it is a proper mine).
-bool Stored_Unit::isAssignedMining(Resource_Inventory &ri) {
+bool Stored_Unit::isAssignedMining() {
     if (locked_mine_) {
-        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
-            Stored_Resource* mine_of_choice = this->getMine(ri);
+        if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine();
             return mine_of_choice->max_stock_value_ >= 8 && mine_of_choice->type_.isMineralField();
         }
     }
     return false;
 }
 
-bool Stored_Unit::isAssignedGas(Resource_Inventory &ri) {
+bool Stored_Unit::isAssignedGas() {
     if (locked_mine_) {
-        if (ri.resource_inventory_.find(locked_mine_) != ri.resource_inventory_.end()) {
-            Stored_Resource* mine_of_choice = this->getMine(ri);
+        if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+            Stored_Resource* mine_of_choice = this->getMine();
             return mine_of_choice->type_.isRefinery();
         }
     }
     return false;
 }
 
-bool Stored_Unit::isAssignedResource(Resource_Inventory  &ri) {
+bool Stored_Unit::isAssignedResource() {
 
-    return Stored_Unit::isAssignedMining(ri) || Stored_Unit::isAssignedGas(ri);
+    return Stored_Unit::isAssignedMining() || Stored_Unit::isAssignedGas();
 
 }
 
 // Warning- depends on unit being updated.
-bool Stored_Unit::isAssignedBuilding(Resource_Inventory  &ri) {
+bool Stored_Unit::isAssignedBuilding() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph) && time_since_last_command_ < 30 * 24 && !isAssignedResource(ri);
+    bool building_sent = (build_type_.isBuilding() || order_ == Orders::Move || order_ == Orders::ZergBuildingMorph || command_.getType() == UnitCommandTypes::Build || command_.getType() == UnitCommandTypes::Morph) && time_since_last_command_ < 30 * 24 && !isAssignedResource();
 
     return building_sent;
 }
@@ -917,27 +917,27 @@ bool Stored_Unit::isNoLock(){
 }
 
 //if the miner is not mining his target. Target must be visible.
-bool Stored_Unit::isBrokenLock(Resource_Inventory &ri) {
+bool Stored_Unit::isBrokenLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    Stored_Resource* target_mine = this->getMine(ri); // target mine must be visible to be broken. Otherwise it is a long range lock.
-    return !(isLongRangeLock(ri) || isLocallyLocked(ri)); // Or its order target is not the mine, then we have a broken lock.
+    Stored_Resource* target_mine = this->getMine(); // target mine must be visible to be broken. Otherwise it is a long range lock.
+    return !(isLongRangeLock() || isLocallyLocked()); // Or its order target is not the mine, then we have a broken lock.
 }
 
-bool Stored_Unit::isLocallyLocked(Resource_Inventory &ri) {
+bool Stored_Unit::isLocallyLocked() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     return  locked_mine_ && bwapi_unit_->getOrderTarget() && bwapi_unit_->getOrderTarget() == locked_mine_; // Everything must be visible and properly assigned.
 }
 
 //prototypeing
-bool Stored_Unit::isLongRangeLock(Resource_Inventory &ri) {
+bool Stored_Unit::isLongRangeLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    Stored_Resource* target_mine = this->getMine(ri);
+    Stored_Resource* target_mine = this->getMine();
     return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
 }
 
-bool Stored_Unit::isMovingLock(Resource_Inventory &ri) {
+bool Stored_Unit::isMovingLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    Stored_Resource* target_mine = this->getMine(ri);
+    Stored_Resource* target_mine = this->getMine();
     bool contents_of_long_range_lock_without_visiblity = bwapi_unit_ && target_mine && target_mine->pos_;
     return  contents_of_long_range_lock_without_visiblity && Broodwar->isVisible(TilePosition(target_mine->pos_));
 }

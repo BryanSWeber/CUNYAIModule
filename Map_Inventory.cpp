@@ -24,7 +24,7 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateGas_Workers();
     updateMin_Workers();
 
-    updateMin_Possessed( ri );
+    updateMin_Possessed( );
     updateHatcheries();
 
     //Fields:
@@ -51,7 +51,6 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
 
     if ( ri.resource_inventory_.size() == 0 ) {
         updateBuildablePos();
-        updateBaseLoc( ri );
         int buildable_ct = 0;
         for ( vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i ) {
             for ( vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j ) {
@@ -174,11 +173,11 @@ void Map_Inventory::updateMin_Workers() {
 }
 
 // Updates the number of mineral fields we "possess".
-void Map_Inventory::updateMin_Possessed(const Resource_Inventory &ri) {
+void Map_Inventory::updateMin_Possessed() {
 
     int min_fields = 0;
-    for (auto r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); ++r) { //for each mineral
-        if (r->second.occupied_natural_ && r->second.type_.isMineralField() ) {
+    for (auto r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++r) { //for each mineral
+        if (r->second.occupied_resource_ && r->second.type_.isMineralField() ) {
                 min_fields++; // if there is a base near it, then this mineral counts.
         } // closure for existance check.
     } // closure: for each mineral
@@ -1018,120 +1017,13 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 
 
 
-void Map_Inventory::updateBaseLoc( const Resource_Inventory &ri ) {
-
-    int map_x = Broodwar->mapWidth();
-    int map_y = Broodwar->mapHeight();
-    int location_quality = 0;
-    int residual_sq = 0;
-    int resources_stored = 0;
-    int search_field = 8;
-
-    // first, define matrixes to recieve the base locations. 0 if unbuildable, 1 if buildable.
-    if ( base_values_.empty() ) {
-        for ( int x = 0; x <= map_x; ++x ) {
-            vector<int> temp;
-            for ( int y = 0; y <= map_y; ++y ) {
-                temp.push_back( static_cast<int>(Broodwar->isBuildable( x, y )) ); // explicit converion.
-            }
-            base_values_.push_back( temp );
-        }
-    }
-
-    for ( auto p = ri.resource_inventory_.begin(); p != ri.resource_inventory_.end(); ++p ) { // search for closest resource group. They are our potential expos.
-
-        TilePosition min_pos_t = TilePosition( p->second.pos_ );
-
-        //if (p->second.type_.isMineralField()){
-        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
-        //}
-        //else {
-        //    int centralized_resource_x = p->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-        //    int centralized_resource_y = p->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-        //    min_pos_t = TilePosition(Position(centralized_resource_x, centralized_resource_y));
-        //}
-
-        for ( auto possible_base_tile_x = min_pos_t.x - 8; possible_base_tile_x != min_pos_t.x + 8; ++possible_base_tile_x ) {
-            for ( auto possible_base_tile_y = min_pos_t.y - 8; possible_base_tile_y != min_pos_t.y + 8; ++possible_base_tile_y ) { // Check wide area of possible build locations around each mineral.
-
-                if ( possible_base_tile_x >= 0 && possible_base_tile_x <= map_x &&
-                    possible_base_tile_y >= 0 && possible_base_tile_y <= map_y ) { // must be in the map bounds
-
-                    TilePosition prosepective_location_upper_left = { possible_base_tile_x , possible_base_tile_y }; // The build location is upper left tile of the building. T
-                    TilePosition prosepective_location_upper_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y };
-                    TilePosition prosepective_location_lower_left = { possible_base_tile_x , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
-                    TilePosition prosepective_location_lower_right = { possible_base_tile_x + UnitTypes::Zerg_Hatchery.tileWidth() , possible_base_tile_y + UnitTypes::Zerg_Hatchery.tileHeight() };
-
-                    if ( (p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ) <= 4 * 32 ||
-                        p->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ) <= 4 * 32) &&
-                        Broodwar->canBuildHere( prosepective_location_upper_left, UnitTypes::Zerg_Hatchery, false ) &&
-                        (CUNYAIModule::isClearRayTrace(Position(prosepective_location_upper_left), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
-                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_upper_right), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
-                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_lower_left), Position(min_pos_t), this->unwalkable_barriers_, 1) ||
-                         CUNYAIModule::isClearRayTrace(Position(prosepective_location_lower_right), Position(min_pos_t), this->unwalkable_barriers_, 1) ) ) { // if it is 3 away from the resource, and has clear vision to the resource, eg not up a wall or something.
-
-                        int local_min = 0;
-
-                        for ( auto j = ri.resource_inventory_.begin(); j != ri.resource_inventory_.end(); ++j ) {
-
-                            //TilePosition tile_resource_position;
-
-                            //if (j->second.type_.isMineralField()){
-                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Mineral_Field.width();
-                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Mineral_Field.height();
-                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
-                            //}
-                            //else {
-                            //    int local_resource_x = j->second.pos_.x + 0.5 * UnitTypes::Resource_Vespene_Geyser.width();
-                            //    int local_resource_y = j->second.pos_.y + 0.5 * UnitTypes::Resource_Vespene_Geyser.height();
-                            //    tile_resource_position = TilePosition(Position(local_resource_x, local_resource_y));
-                            //}
-
-                            int long_condition = min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_left ) ),
-                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_lower_right ) ),
-                                                 min( j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_left ) ),
-                                                j->second.bwapi_unit_->getDistance( Position( prosepective_location_upper_right ) ) ) ) );
-
-                            if ( long_condition <= 5 * 32 ) {
-                                //residual_sq += pow(Position( TilePosition(possible_base_tile_x, possible_base_tile_y) ).getDistance(Position(tile_resource_position)) / 32, 2); //in minitiles of distance
-                                resources_stored += j->second.current_stock_value_ - long_condition;
-                                ++local_min;
-                            }
-
-                        }
-
-                        if ( local_min >= 5 ) {
-                            location_quality = resources_stored;
-                        }
-
-                    }
-                    else {
-                        location_quality = 0; // redundant, defaults to 0 - but clear.
-                    } // if it's invalid for some reason return 0.
-
-                    base_values_[possible_base_tile_x][possible_base_tile_y] = location_quality;
-
-                    residual_sq = 0; // clear so i don't over-aggregate
-                    resources_stored = 0;
-
-                } // closure in bounds
-
-            }
-        }
-    }
-}
-
-void Map_Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Inventory & ri )
+void Map_Inventory::updateWorkersClearing( )
 {
     int clearing_workers_found = 0;
 
-    if (!ui.unit_map_.empty()) {
-        for (auto & w = ui.unit_map_.begin(); w != ui.unit_map_.end() && !ui.unit_map_.empty(); w++) {
-            if ( w->second.isAssignedClearing(ri) ) {
+    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
+        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
+            if ( w->second.isAssignedClearing() ) {
                 clearing_workers_found ++;
             }
         }
@@ -1139,13 +1031,13 @@ void Map_Inventory::updateWorkersClearing( Unit_Inventory & ui, Resource_Invento
     workers_clearing_ = clearing_workers_found;
 }
 
-void Map_Inventory::updateWorkersLongDistanceMining(Unit_Inventory & ui, Resource_Inventory & ri)
+void Map_Inventory::updateWorkersLongDistanceMining()
 {
     int long_distance_miners_found = 0;
 
-    if (!ui.unit_map_.empty()) {
-        for (auto & w = ui.unit_map_.begin(); w != ui.unit_map_.end() && !ui.unit_map_.empty(); w++) {
-            if (w->second.isAssignedLongDistanceMining(ri)) {
+    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
+        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
+            if (w->second.isAssignedLongDistanceMining()) {
                 long_distance_miners_found++;
             }
         }
@@ -1492,7 +1384,7 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 
     if (!map.empty() && !ui.unit_map_.empty()) {
         for (auto u : ui.unit_map_) {
-            if (u.second.type_.canAttack() && u.second.phase_ != "Retreating" || !combat_units) {
+            if (u.second.type_.canAttack() && u.second.phase_ != Stored_Unit::Phase::Retreating || !combat_units) {
                 return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
             }
         }

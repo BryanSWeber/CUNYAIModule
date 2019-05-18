@@ -71,7 +71,7 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 bool CUNYAIModule::isRecentCombatant(const Stored_Unit &su) {
     bool fighting_now = (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
     bool recent_order = su.bwapi_unit_->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
-    bool retreat_or_fight = (su.phase_ == "Retreating" || su.phase_ == "Attacking");
+    bool retreat_or_fight = (su.phase_ == Stored_Unit::Retreating || su.phase_ == Stored_Unit::Attacking);
     return (fighting_now || retreat_or_fight) && recent_order;
 }
 
@@ -330,7 +330,7 @@ void CUNYAIModule::DiagnosticLastDamage(const Stored_Unit unit, const Position &
 void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
     if constexpr (DRAWING_MODE) {
         Position upper_left = resource.pos_;
-        if (isOnScreen(upper_left, screen_pos) && resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) ) {
+        if (isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
             // Draw the orange background.
             upper_left.y = upper_left.y + resource.type_.dimensionUp();
             upper_left.x = upper_left.x - resource.type_.dimensionLeft();
@@ -389,9 +389,24 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
+        map<Stored_Unit::Phase, string> enum_to_string = { {Stored_Unit::Phase::Building,"Building"},
+        { Stored_Unit::Phase::Attacking,"Attacking"},
+        { Stored_Unit::Phase::Retreating,"Retreating"},
+        { Stored_Unit::Phase::Expoing,"Expoing"},
+        { Stored_Unit::Phase::PathingOut,"PathingOut"},
+        { Stored_Unit::Phase::PathingHome,"PathingHome"},
+        { Stored_Unit::Phase::Surrounding,"Surrounding"},
+        { Stored_Unit::Phase::NoRetreat,"NoRetreat"},
+        { Stored_Unit::Phase::Mining,"Mining"},
+        { Stored_Unit::Phase::DistanceMining,"DistanceMining"},
+        { Stored_Unit::Phase::Clearing,"Clearing"},
+        { Stored_Unit::Phase::Upgrading,"Upgrading"},
+        { Stored_Unit::Phase::Researching,"Researching"},
+        { Stored_Unit::Phase::Morphing,"Morphing"},
+        { Stored_Unit::Phase::None,"None"} };
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
-            Broodwar->drawTextMap(unit.pos_, unit.phase_.c_str() );
+            Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());
         }
     }
 }
@@ -2313,4 +2328,15 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     }
 
     return true;
+}
+
+bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+        Stored_Unit& morphing_unit = found_item->second;
+        morphing_unit.phase_ = phase;
+        morphing_unit.updateStoredUnit(u);
+        return true;
+    }
+    return false;
 }

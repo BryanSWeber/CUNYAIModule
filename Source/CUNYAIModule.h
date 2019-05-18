@@ -11,7 +11,8 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
-#include "BWEM\include\bwem.h"
+#include <bwem.h>
+#include "BWEB\BWEB.h"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = true; // must be off for proper game close in SC-docker
@@ -318,7 +319,9 @@ public:
       //static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
       static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
-      static bool checkUnitTouchable(const Unit & u); 
+      static bool checkUnitTouchable(const Unit & u);
+      static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
+
 
   // Vision Functions
       // returns number of visible tiles.

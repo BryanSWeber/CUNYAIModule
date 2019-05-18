@@ -2,7 +2,7 @@
 
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
-#include "BWEM\include\bwem.h"
+#include <bwem.h>
 
 //Movement and Combat Functions
 class Mobility {

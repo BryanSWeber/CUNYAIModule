@@ -67,23 +67,43 @@ struct Stored_Unit {
     int areaID_;
     int time_since_last_dmg_;
 
-    string phase_ = "None";
+    enum Phase
+    {
+        Building = 0, 
+        Attacking = 1, 
+        Retreating = 2, 
+        Expoing = 3, 
+        PathingOut = 4, 
+        PathingHome = 5, 
+        Surrounding = 6, 
+        NoRetreat = 7, 
+        Mining = 8, 
+        DistanceMining = 9, 
+        Clearing = 10, 
+        Upgrading = 11, 
+        Researching = 12, 
+        Morphing = 13, 
+        None = 14
+    };
+    Phase phase_;
+    Stored_Unit(Phase p) : phase_(p) {}
+    operator Phase () const { return phase_; }
 
     //Needed commands for workers.
-    void startMine(Stored_Resource &new_resource, Resource_Inventory &ri);
-    void stopMine(Resource_Inventory &ri);
-    Stored_Resource * getMine(Resource_Inventory & ri);
-    bool isAssignedClearing( Resource_Inventory &ri);  // If the unit is clearing a spot.
-    bool isAssignedLongDistanceMining(Resource_Inventory & ri);
-    bool isAssignedMining(Resource_Inventory & ri); // If the unit is assigned to mine a spot.
-    bool isAssignedGas(Resource_Inventory & ri); // If the unit is assigned to mine gas.
-    bool isAssignedResource(Resource_Inventory  &ri);
-    bool isAssignedBuilding(Resource_Inventory  &ri); // If the unit is assigned to build something.
-    bool isBrokenLock(Resource_Inventory & ri); // If the unit has been distracted somehow.
-    bool isLocallyLocked(Resource_Inventory & ri); // If the unit is properly attached.
+    void startMine(Stored_Resource &new_resource);
+    void stopMine();
+    Stored_Resource * getMine();
+    bool isAssignedClearing();  // If the unit is clearing a spot.
+    bool isAssignedLongDistanceMining(); //If the unit is mining at a distance.
+    bool isAssignedMining(); // If the unit is assigned to mine a spot.
+    bool isAssignedGas(); // If the unit is assigned to mine gas.
+    bool isAssignedResource();
+    bool isAssignedBuilding(); // If the unit is assigned to build something.
+    bool isBrokenLock(); // If the unit has been distracted somehow.
+    bool isLocallyLocked(); // If the unit is properly attached.
     bool isNoLock(); // If the unit has no target. May be broken.
-    bool isLongRangeLock(Resource_Inventory & ri); // if the unit cannot see its target.
-    bool isMovingLock(Resource_Inventory & ri); // if the unit is moving towards its target not gathering.
+    bool isLongRangeLock(); // if the unit cannot see its target.
+    bool isMovingLock(); // if the unit is moving towards its target not gathering.
 
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
@@ -106,7 +126,10 @@ struct Stored_Unit {
     int circumference_remaining_;
 
     Unit bwapi_unit_;
-
+    private:
+        //prevent automatic conversion for any other built-in types such as bool, int, etc
+        template<typename T>
+        operator T () const;
 };
 
 struct Unit_Inventory {
@@ -170,7 +193,7 @@ struct Unit_Inventory {
     void drawAllFutureDeaths() const;
     void drawAllLastDamage() const;
     void drawAllSpamGuards() const;
-    void drawAllWorkerTasks(Resource_Inventory &ri) const;
+    void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllMisplacedGroundUnits() const;
     Unit_Inventory getInventoryAtArea(const int areaID) const;
@@ -205,7 +228,7 @@ struct Unit_Inventory {
     static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
-    void stopMine(Unit u, Resource_Inventory & ri);
+    void stopMine(Unit u);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     Unit_Inventory(Unit_Inventory const &) = default;

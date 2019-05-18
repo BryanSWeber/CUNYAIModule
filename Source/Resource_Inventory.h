@@ -4,6 +4,7 @@
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
 #include "Map_Inventory.h"
+#include <bwem.h>
 
 using namespace std;
 using namespace BWAPI;
@@ -22,9 +23,10 @@ struct Stored_Resource{
     int number_of_miners_;
     int areaID_;
 
-    bool occupied_natural_;
+    bool occupied_resource_;
     bool full_resource_;
     bool valid_pos_;
+    bool blocking_mineral_;
 
     Position local_natural_;
     Unit bwapi_unit_;
@@ -76,4 +78,5 @@ struct Resource_Inventory {
 
     void updateMiners();
     void updateGasCollectors();
+
 };
