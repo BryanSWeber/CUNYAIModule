@@ -95,7 +95,7 @@ namespace BWEB::Blocks
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && creepOnCorners(tile, 5, 4) && canAddBlock(tile, 5, 4, true)))) {
+                        || (race == Races::Zerg && creepOnCorners(tile, 3, 8) && canAddBlock(tile, 3, 8, true)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -153,8 +153,9 @@ namespace BWEB::Blocks
             else if (tileBest.isValid()) {
 
                 // TODO: Add T/Z mirroring
-                if (race == Races::Zerg)
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+                if (race == Races::Zerg) {
+                    pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
+                }
                 else if (race == Races::Terran)
                     pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
                 else if (race == Races::Protoss) {
@@ -178,7 +179,8 @@ namespace BWEB::Blocks
 
         void findMainDefenseBlock()
         {
-            // Added a block that allows a good shield battery placement or bunker placement
+            // Added a block that allows a good shield battery placement or bunker placement. Zerg only require sunkens.
+            const auto  race = Broodwar->self()->getRace();
             auto tileBest = TilePositions::Invalid;
             auto start = TilePosition(Map::getMainChoke()->Center());
             auto distBest = DBL_MAX;
@@ -191,7 +193,7 @@ namespace BWEB::Blocks
 
                     const auto blockCenter = Position(tile) + Position(80, 32);
                     const auto dist = (blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
-                    if (dist < distBest && canAddBlock(tile, 5, 2)) {
+                    if (dist < distBest && (race != Races::Zerg && canAddBlock(tile, 5, 2) || race == Races::Zerg && canAddBlock(tile,6,2)) ) {
                         tileBest = tile;
                         distBest = dist;
                     }
@@ -199,7 +201,12 @@ namespace BWEB::Blocks
             }
 
             if (tileBest.isValid())
-                insertBlock(tileBest, { Piece::Small, Piece::Medium });
+                if (race == Races::Zerg) {
+                    insertBlock(tileBest, { Piece::Small, Piece::Small, Piece::Small });
+                }
+                else {
+                    insertBlock(tileBest, { Piece::Small, Piece::Medium });
+                }
         }
 
         void findProductionBlocks()

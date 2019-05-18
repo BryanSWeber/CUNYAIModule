@@ -2331,8 +2331,12 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
 }
 
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
-    Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u)->second;
-    morphing_unit.phase_ = phase;
-    morphing_unit.updateStoredUnit(u);
-    return true;
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+        Stored_Unit& morphing_unit = found_item->second;
+        morphing_unit.phase_ = phase;
+        morphing_unit.updateStoredUnit(u);
+        return true;
+    }
+    return false;
 }

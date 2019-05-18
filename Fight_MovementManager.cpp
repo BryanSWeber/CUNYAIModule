@@ -128,10 +128,10 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
 
     // If you end too close to the bad guys, hold position.
     if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) > passed_distance) {
-        Stored_Unit& changing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second;
-        unit_->holdPosition();
-        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
-        return;
+        if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding)) {
+            unit_->holdPosition();
+            return;
+        }
     }
 
     // If you start too close to the bad guys, we have other issues.

@@ -66,7 +66,7 @@ void CUNYAIModule::onStart()
 
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
-    //assemblymanager.getDefensiveWalls();
+    //assemblymanager.getDefensiveWalls(); //needs work.
     BWEB::Blocks::findBlocks();
 
     // Hello World!
@@ -756,8 +756,8 @@ void CUNYAIModule::onFrame()
         if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
         {
             Mobility mobility = Mobility(u);
-            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 704); // 2x maximum sight distance of 352
-            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 704);
+            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 400);
             if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
                 e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
             }

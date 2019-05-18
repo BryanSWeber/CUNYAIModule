@@ -53,32 +53,47 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 auto closest_block = BWEB::Blocks::getClosestBlock(unit->getTilePosition());
                 if (closest_block) {
                     for (auto &tile : closest_block->getSmallTiles()) {
-                        if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                                if (unit->build(building, tile)) {
+                                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                                }
+                                else {
+                                    CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
+                                }
+                            }
+                    }
+                }
+            }
+            else {
+                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
+                if (closest_wall) {
+                    for (auto &tile : closest_wall->getDefenses()) {
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                            if (unit->build(building, tile)) {
+                                CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            }
+                            else {
+                                CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
+                            }
                         }
                     }
                 }
             }
-            //else {
-            //    auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
-            //    if (closest_wall) {
-            //        for (auto &tile : closest_wall->getDefenses()) {
-            //            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building) && unit->build(building, tile)) {
-            //                CUNYAIModule::buildorder.announceBuildingAttempt(building);
-            //                return CUNYAIModule::updateUnitPhase( unit, Stored_Unit::Phase::Building);
-            //            }
-            //        }
-            //    }
-            //}
 
             // simply attempt this if the previous did not find.
             auto closest_station = BWEB::Stations::getClosestStation(unit->getTilePosition());
             if (closest_station && closest_station->getDefenseCount() < 4) {
                 for (auto &tile : closest_station->getDefenseLocations()) {
-                    if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                    if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                        if (unit->build(building, tile)) {
+                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        }
+                        else {
+                            CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
+                        }
                     }
                 }
             }
@@ -89,9 +104,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-                if ( BWAPI::Broodwar->isVisible(buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building) && unit->build(building, buildPosition)) {
-                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                if (BWAPI::Broodwar->isVisible(buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building)) {
+                    if (unit->build(building, buildPosition)) {
+                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                    }
+                    else {
+                        CUNYAIModule::my_reservation.removeReserveSystem(buildPosition, building, false);
+                    }
                 } //extractors must have buildings nearby or we shouldn't build them.
                 //else if ( !BWAPI::Broodwar->isVisible(buildPosition) && unit->move(Position(buildPosition)) && my_reservation.addReserveSystem(building, buildPosition)) {
                 //    CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -107,8 +127,35 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
         else if (unit->canBuild(building)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
+                
                 map<int,set<TilePosition>> viable_placements;
 
+                //check walls first
+                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
+                if (closest_wall) {
+                    set<TilePosition> placements;
+                    if (building.tileSize() == TilePosition{ 2,2 })
+                        placements = closest_wall->getSmallTiles();
+                    else if (building.tileSize() == TilePosition{ 3 , 2 })
+                        placements = closest_wall->getMediumTiles();
+                    else if (building.tileSize() == TilePosition{ 4 , 3 })
+                        placements = closest_wall->getLargeTiles();
+                    if (!placements.empty()) {
+                        for (auto &tile : placements) {
+                            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                                if (unit->build(building, tile)) {
+                                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                                }
+                                else {
+                                    CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //Otherwise, use blocks.
                 for (auto block : BWEB::Blocks::getBlocks()) {
                     set<TilePosition> placements;
                     if (building.tileSize() == TilePosition{2,2})
@@ -124,9 +171,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 for (auto good_block : viable_placements) { // should automatically search by distance.
                     for (auto &tile : good_block.second) {
-                        if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                            if (unit->build(building, tile)) {
+                                CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            }
+                            else {
+                                CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
+                            }
                         }
                     }
                 }
@@ -934,29 +986,30 @@ void AssemblyManager::clearSimulationHistory()
 
 void AssemblyManager::getDefensiveWalls()
 {
-    vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery };
-    vector<UnitType> defenses(10, UnitTypes::Zerg_Sunken_Colony);
-    for (auto &area : BWEM::Map::Instance().Areas()) {
-        // Only make walls at gas bases that aren't starting bases
-        bool invalidBase = false;
-        for (auto &base : area.Bases()) {
-            if (base.Starting())
-                invalidBase = true;
-        }
-        if (invalidBase)
-            continue;
-
-        const BWEM::ChokePoint * bestChoke = nullptr;
-        double distBest = DBL_MAX;
-        for (auto &cp : area.ChokePoints()) {
-            auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
-            if (dist < distBest) {
-                distBest = dist;
-                bestChoke = cp;
-            }
-        }
-        BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
-    }
+//    vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
+//    vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
+//    for (auto &area : BWEM::Map::Instance().Areas()) {
+//        // Only make walls at gas bases that aren't starting bases
+//        bool invalidBase = false;
+//        for (auto &base : area.Bases()) {
+//            if (base.Starting())
+//                invalidBase = true;
+//        }
+//        if (invalidBase)
+//            continue;
+//
+//        const BWEM::ChokePoint * bestChoke = nullptr;
+//        double distBest = DBL_MAX;
+//        for (auto &cp : area.ChokePoints()) {
+//            auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
+//            if (dist < distBest) {
+//                distBest = dist;
+//                bestChoke = cp;
+//            }
+//        }
+//        BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
+//    }
+    BWEB::Walls::createZSimCity();
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
