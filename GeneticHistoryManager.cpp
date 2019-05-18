@@ -19,10 +19,10 @@ using namespace std;
 
 // Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
 void GeneticHistory::initializeHistory() {
-    
+
     rename(".\\bwapi-data\\read\\history.txt", ".\\bwapi-data\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
 
-    //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked. 
+    //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked.
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
@@ -43,7 +43,7 @@ void GeneticHistory::initializeHistory() {
     // drone drone drone drone drone overlord pool extractor// overpool
     // drone pool ling ling ling // 5-pool.
     // drone drone drone drone drone overlord drone drone drone hatch pool extract ling lair drone drone drone drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta // 12 hatch into muta.
-    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta: 
+    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta:
     // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
 
     string build_order_out;
@@ -149,10 +149,10 @@ void GeneticHistory::initializeHistory() {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open(".\\bwapi-data\\write\\history.txt", ios::in); 
+    input.open(".\\bwapi-data\\write\\history.txt", ios::in);
         getline(input, line); //skip the first line of the document.
         csv_length--; // that means the remaining csv is shorter by 1 line.
-        for (int j = 0; j < csv_length; ++j) { 
+        for (int j = 0; j < csv_length; ++j) {
             // The ugly tuple.
             double delta_total;
             double gamma_total;
@@ -213,7 +213,7 @@ void GeneticHistory::initializeHistory() {
 		    getline(input, entry, ',');
 		    enemy_average_tech_ = stod(entry);
 
-            getline(input, entry, ','); 
+            getline(input, entry, ',');
             build_order_total = entry;
 
             //Remaining entries for score, dectectors , game duration - skip.
@@ -235,7 +235,7 @@ void GeneticHistory::initializeHistory() {
 
 
         if (std::get<11>(game_data[j]) == e_name) {
-            if (std::get<7>(game_data[j]) == 1) { 
+            if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[0]++;
             }
@@ -323,7 +323,7 @@ void GeneticHistory::initializeHistory() {
 
         //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { // 
+        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { //
             //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_well_matched) {
                 if (std::get<16>(potential_parent) == opening_of_choice) {
@@ -347,7 +347,7 @@ void GeneticHistory::initializeHistory() {
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
             r_out      = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
-        else { // we must need diversity.  
+        else { // we must need diversity.
             // use the random values we have determined in the beginning and the random opening.
         }
 
@@ -362,7 +362,7 @@ void GeneticHistory::initializeHistory() {
 
                                      //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { // 
+        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { //
                                                                                                                     //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_partial_match) {
                 if (std::get<16>(potential_parent) == opening_of_choice) {
@@ -386,7 +386,7 @@ void GeneticHistory::initializeHistory() {
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
             r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
-        else { // we must need diversity.  
+        else { // we must need diversity.
                // use the random values we have determined in the beginning and the random opening.
         }
     }
@@ -449,7 +449,7 @@ void GeneticHistory::initializeHistory() {
 
     // Overwrite whatever you previously wanted if we're using "test mode".
     if constexpr (TEST_MODE) {
-        // Values altered 
+        // Values altered
         delta_out_mutate_ = 0.3021355;
         gamma_out_mutate_ = 0.35;
         a_army_out_mutate_ = 0.511545;
@@ -466,7 +466,7 @@ void GeneticHistory::initializeHistory() {
 
         delta_out = dis(gen) * 0.6;
         gamma_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
-                                           // the values below will be normalized to 1.
+                                    // the values below will be normalized to 1.
         a_army_out = dis(gen);
         a_econ_out = dis(gen);
         a_tech_out = dis(gen);
