@@ -12,7 +12,7 @@ public:
     void Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const Color &color, const bool &force);
     // Tells the unit to fight. If it can attack both air and ground.
     void Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
-    //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something.
+    //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     void Pathing_Movement(const int &passed_distance, const Position &e_pos );
     //Forces a unit to surround the concerning ei. Does not advance.
     //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);

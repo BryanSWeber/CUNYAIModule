@@ -930,11 +930,11 @@ void CUNYAIModule::onFrame()
             if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() && spamGuard(u, 24)){ // if there is nothing to fight, psudo-boids if they are in your BWEM:AREA or use BWEM to get to their position.
                 int areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
                 bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_map_.empty();
-                bool short_term_walking = true;
+                bool long_term_walking = true;
                 if ( clear_area && !u_type.isFlyer() ) {
-                    short_term_walking = !mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                    long_term_walking = mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
-                if (short_term_walking) mobility.Pathing_Movement(-1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
+                if (!long_term_walking) mobility.Pathing_Movement(-1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
                 continue;
             }
 

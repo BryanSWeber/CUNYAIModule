@@ -23,7 +23,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     bool pathing_confidently = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
+    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty(); //CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
@@ -147,7 +147,7 @@ bool Mobility::BWEM_Movement() const
     bool pathing_confidently = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
+    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty();
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
@@ -168,14 +168,15 @@ bool Mobility::BWEM_Movement() const
             pathing_confidently = true;
         }
         else { // Otherwise, return to home.
-            it_worked = move_to_next(retreat_path);
+            //it_worked = move_to_next(retreat_path);
+            unit_->holdPosition();
         }
 
     }
 
 
     if (it_worked) {
-        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::NoRetreat);
     }
     return it_worked;
 }
@@ -355,13 +356,18 @@ void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_
         else setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
     }
     else {
-        setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        //setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
+        auto retreat_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.safe_base_);
+        move_to_next(retreat_path);
+        if(CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
     }
     
+
+
     //Avoidance vector:
     Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_ + retreat_vector_;
     Position avoidance_pos = pos_ + avoidance_vector;
-    setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_safety_);
+    if(!unit_->isFlying()) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_safety_);
 
     //final vector
     Position final_vector = avoidance_vector - walkability_vector_;
@@ -993,8 +999,8 @@ bool Mobility::move_to_next(const BWEM::CPPath &cpp) const
 {
     if (cpp.size()) {
         bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 4;
-        if (too_close && cpp.size() >= 2) return unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
-        else if (cpp.size() >= 2) return unit_->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
+        if (too_close && cpp.size() > 1 ) return unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
+        else if (cpp.size() > 1) return unit_->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
     }
     return false;
 }
