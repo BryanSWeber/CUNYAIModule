@@ -66,7 +66,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 }
             }
 
-            // I prefer this for air problems.
+            // simply attempt this if the previous did not find.
             auto closest_station = BWEB::Stations::getClosestStation(build_tile);
             if (closest_station && closest_station->getDefenseCount() > 3) {
                 for (auto &tile : closest_station->getDefenseLocations()) {

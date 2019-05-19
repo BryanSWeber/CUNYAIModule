@@ -189,10 +189,10 @@ namespace BWEB::Stations {
         }
     }
 
-    const Station * getClosestStation(TilePosition here)
+    Station * getClosestStation(TilePosition here)
     {
         auto distBest = DBL_MAX;
-        const Station* bestStation = nullptr;
+        Station* bestStation = nullptr;
         for (auto &station : stations) {
             const auto dist = here.getDistance(station.getBWEMBase()->Location());
 
