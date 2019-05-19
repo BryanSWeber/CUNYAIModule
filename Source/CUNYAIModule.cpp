@@ -786,133 +786,18 @@ void CUNYAIModule::onFrame()
                     Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
                     //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
                     friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                //}
-                //else {
-                //    int f_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-                //    int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
-
-                //    auto friendly_in_friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
-                //    auto friendly_in_enemy_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(f_areaID);
-
-                //    auto enemy_in_enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
-                //    auto enemy_in_friendly_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(e_areaID);
-
-                //    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_in_enemy_area, e_closest->pos_, distance_to_foe + search_radius);
-                //    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_in_friendly_area, u->getPosition(), distance_to_foe + search_radius);
-                //    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                //    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
-
-                //    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_in_friendly_area, e_closest->pos_, distance_to_foe + search_radius);
-                //    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_in_enemy_area, u->getPosition(), distance_to_foe + search_radius);
-                //    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                //    friend_loc = (friend_loc_around_target + friend_loc_around_me);
-                //}
-
-                //friend_loc.updateUnitInventorySummary();
-                //enemy_loc.updateUnitInventorySummary();
-
-                //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(friend_loc, enemy_loc);
-                //int helpful_u = useful_stocks[0];
-                //int helpful_e = useful_stocks[1]; // both forget value of psi units.
-                int targetable_stocks = getTargetableStocks(u, enemy_loc);
-                int threatening_stocks = getThreateningStocks(u, enemy_loc);
 
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(friendly_player_model.units_.unit_map_.at(u), 6); 
                 bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
-                //bool we_take_a_fap_beating = (friendly_player_model.units_.stock_total_ - friendly_player_model.units_.future_fap_stock_) * enemy_player_model.units_.stock_total_ > (enemy_player_model.units_.stock_total_ - enemy_player_model.units_.future_fap_stock_) * friendly_player_model.units_.stock_total_; // attempt to see if unit stuttering is a result of this.
-                //bool we_take_a_fap_beating = false;
-
                 foe_within_radius = distance_to_foe < search_radius;
                 bool potentially_targetable = distance_to_foe < enemy_player_model.units_.max_range_ + 64;
                 if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
-                                              //double minimum_enemy_surface = 2 * 3.1416 * sqrt( (double)enemy_loc.volume_ / 3.1414 );
-                                              //double minimum_friendly_surface = 2 * 3.1416 * sqrt( (double)friend_loc.volume_ / 3.1414 );
-                                              //double unusable_surface_area_f = max( (minimum_friendly_surface - minimum_enemy_surface) / minimum_friendly_surface, 0.0 );
-                                              //double unusable_surface_area_e = max( (minimum_enemy_surface - minimum_friendly_surface) / minimum_enemy_surface, 0.0 );
-                                              //double portion_blocked = min(pow(minimum_occupied_radius / search_radius, 2), 1.0); // the volume ratio (equation reduced by cancelation of 2*pi )
-                    Position e_pos = e_closest->pos_;
-                    bool home_fight_mandatory = u_type != UnitTypes::Zerg_Drone &&
-                                                (current_map_inventory.home_base_.getDistance(e_pos) < search_radius || // Force fight at home base.
-                                                current_map_inventory.safe_base_.getDistance(e_pos) < search_radius); // Force fight at safe base.
-                    bool grim_trigger_to_go_in = targetable_stocks > 0 && (threatening_stocks == 0 || they_take_a_fap_beating || home_fight_mandatory || ((/*u_type == UnitTypes::Zerg_Zergling ||*/ u_type == UnitTypes::Zerg_Scourge) && unit_death_in_moments && potentially_targetable) || (friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone));
-                            //helpful_e <= helpful_u * 0.95 || // attack if you outclass them and your boys are ready to fight. Equality for odd moments of matching 0,0 helpful forces.
-                            //massive_army ||
-                            //friend_loc.is_attacking_ > (friend_loc.unit_inventory_.size() / 2) || // attack by vote. Will cause herd problems.
-                            //inventory.est_enemy_stock_ < 0.75 * exp( inventory.ln_army_stock_ ) || // attack you have a global advantage (very very rare, global army strength is vastly overestimated for them).
-                            //!army_starved || // fight your army is appropriately sized.
-                            //(friend_loc.worker_count_ > 0 && u_type != UnitTypes::Zerg_Drone) //Don't run if drones are present.
-                            //(Count_Units(UnitTypes::Zerg_Sunken_Colony, friend_loc) > 0 && enemy_loc.stock_ground_units_ > 0) || // Don't run if static d is present.
-                            //(!IsFightingUnit(e_closest->bwapi_unit_) && 64 > enemy_loc.max_range_) || // Don't run from noncombat junk.
-                            //threatening_stocks == 0 ||
-                            //( 32 > enemy_loc.max_range_ && friend_loc.max_range_ > 32 && helpful_e * (1 - unusable_surface_area_e) < 0.75 * helpful_u)  || Note: a hydra and a ling have the same surface area. But 1 hydra can be touched by 9 or so lings.  So this needs to be reconsidered.
-                            // don't run if they're in range and you're done for. Melee is <32, not 0. Hugely benifits against terran, hurts terribly against zerg. Lurkers vs tanks?; Just added this., hugely impactful. Not inherently in a good way, either.
-                                                   //  bool retreat = u->canMove() && ( // one of the following conditions are true:
-                                                   //(u_type.isFlyer() && enemy_loc.stock_shoots_up_ > 0.25 * friend_loc.stock_fliers_) || //  Run if fliers face more than token resistance.
-
-
-                    bool force_retreat =
-                        (!grim_trigger_to_go_in) || 
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Mutalisk /*&& (u->isUnderAttack() || threatening_stocks > 0.2 * friend_loc.stock_fliers_)*/) ||
-                        (unit_death_in_moments && u_type == UnitTypes::Zerg_Guardian /*&& (u->isUnderAttack() || threatening_stocks > 0.2 * friend_loc.stock_fliers_)*/) ||
-                        //!unit_likes_forecast || // don't run just because you're going to die. Silly units, that's what you're here for.
-                        //(targetable_stocks == 0 && threatening_stocks > 0 && !grim_distance_trigger) ||
-                        //(u_type == UnitTypes::Zerg_Overlord && threatening_stocks > 0) ||
-                        //(u_type.isFlyer() && u_type != UnitTypes::Zerg_Scourge && ((u->isUnderAttack() && u->getHitPoints() < 0.5 * u->getInitialHitPoints()) || enemy_loc.stock_shoots_up_ > friend_loc.stock_fliers_)) || // run if you are flying (like a muta) and cannot be practical.
-                        //(e_closest->bwapi_unit_ && !e_closest->bwapi_unit_->isDetected()) ||  // Run if they are cloaked. Must be visible to know if they are cloaked. Might cause problems with bwapiunits.
-                        //helpful_u < helpful_e * 0.50 || // Run if they have local advantage on you
-                        //(!getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 7 * 32 + search_radius).unit_inventory_.empty() && getUnitInventoryInRadius(friend_loc, UnitTypes::Zerg_Sunken_Colony, e_closest->pos_, 7 * 32).unit_inventory_.empty() && enemy_loc.max_range_ < 7 * 32) ||
-                        //(friend_loc.max_range_ >= enemy_loc.max_range_ && friend_loc.max_range_> 32 && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ && getUnitInventoryInRadius(friend_loc, e_closest->pos_, friend_loc.max_range_ - 32).max_range_ < friend_loc.max_range_ ) || // retreat if sunken is nearby but not in range.
-                        //(friend_loc.max_range_ < enemy_loc.max_range_ || 32 > friend_loc.max_range_ ) && (1 - unusable_surface_area_f) * 0.75 * helpful_u < helpful_e || // trying to do something with these surface areas.
-                        (u_type == UnitTypes::Zerg_Overlord || //overlords should be cowardly not suicidal.
-                        (u_type == UnitTypes::Zerg_Drone && unit_death_in_moments)); // Run if drone and (we have forces elsewhere or the drone is injured).  Drones don't have shields.
-                                                                                                                                      //(helpful_u == 0 && helpful_e > 0); // run if this is pointless. Should not happen because of search for attackable units? Should be redudnent in necessary_attack line one.
-
-                    bool drone_problem = u_type == UnitTypes::Zerg_Drone && enemy_loc.worker_count_ > 0;
-
-                    bool is_spelled = u->isUnderStorm() || u->isUnderDisruptionWeb() || u->isUnderDarkSwarm() || u->isIrradiated(); // Run if spelled.
-                    //bool safe_distance_away = distance_to_foe > chargable_distance_enemy;
-
-                    bool cooldown = u->getGroundWeaponCooldown() > 0 || u->getAirWeaponCooldown() > 0;
-                    bool kite = cooldown && distance_to_foe < 64 && getProperRange(u) > 64 && getProperRange(e_closest->bwapi_unit_) < 64 && !u->isBurrowed() && Can_Fight(*e_closest, u); //kiting?- /*&& getProperSpeed(e_closest->bwapi_unit_) <= getProperSpeed(u)*/
-
-                    if ((grim_trigger_to_go_in && !force_retreat && !is_spelled && !drone_problem && !kite) || (home_fight_mandatory && u_type.canAttack())) {
-                        mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange);
-                    }
-                    else if (is_spelled) {
-                        Stored_Unit* closest = getClosestThreatOrTargetStored(friendly_player_model.units_, u, 128);
-                        if (closest) {
-                            mobility.Retreat_Logic(*closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, Colors::Blue, true); // this is not explicitly getting out of storm. It is simply scattering.
-                            draw_retreat_circle = true;
-                        }
-                    }
-                    else if (drone_problem) {
-                        if (Count_Units_Doing(UnitTypes::Zerg_Drone, UnitCommandTypes::Attack_Unit, friend_loc) <= enemy_loc.worker_count_ &&
-                            friend_loc.getMeanBuildingLocation() != Positions::Origin &&
-                            u->getLastCommand().getType() != UnitCommandTypes::Morph &&
-                            !unit_death_in_moments){
-                            friendly_player_model.units_.purgeWorkerRelationsStop(u, land_inventory, current_map_inventory, my_reservation);
-                            mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::Orange); // move towards enemy untill tactical logic takes hold at about 150 range.
-                        }
+                    if (they_take_a_fap_beating && u_type != UnitTypes::Zerg_Overlord) {
+                        mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White );
                     }
                     else {
-                        if (!buildorder.ever_clear_ && ((!e_closest->type_.isWorker() && e_closest->type_.canAttack()) || enemy_loc.worker_count_ > 2) && (!u_type.canAttack() || u_type == UnitTypes::Zerg_Drone || friend_loc.getMeanBuildingLocation() != Positions::Origin)) {
-                            if (u_type == UnitTypes::Zerg_Overlord) {
-                                //see unit destruction case. We will replace this overlord, likely a foolish scout.
-                            }
-                            else {
-                                buildorder.clearRemainingBuildOrder(false); // Neutralize the build order if something other than a worker scout is happening.
-                                CUNYAIModule::DiagnosticText("Clearing Build Order, board state is dangerous.");
-                            }
-                        }
-                        mobility.Retreat_Logic(*e_closest, friend_loc, enemy_loc, enemy_player_model.units_, friendly_player_model.units_, Colors::White, false);
-                        draw_retreat_circle = true;
-                    }
-
-
-                    // workers tasks should be reset.
-                    if (u_type.isWorker()) {
-                        friendly_player_model.units_.purgeWorkerRelationsOnly(u, land_inventory, current_map_inventory, my_reservation);
+                        mobility.Retreat_Logic();
                     }
 
                     if constexpr (DRAWING_MODE) {
@@ -931,7 +816,7 @@ void CUNYAIModule::onFrame()
                 int areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
                 bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_map_.empty();
                 bool long_term_walking = true;
-                if ( clear_area && !u_type.isFlyer() ) {
+                if ( clear_area ) {
                     long_term_walking = mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
                 }
                 if (!long_term_walking) mobility.Pathing_Movement(-1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.

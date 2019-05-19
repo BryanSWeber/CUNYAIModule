@@ -100,18 +100,6 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
         Position last_out2 = Positions::Origin;
 
-        //#include <iostream>
-        //using namespace std;
-        //int sample_fun(int X, int Y) { return X + Y; };
-        //int main()
-        //{
-        //    cout << "Hello World";
-        //    int Z = 4;
-        //    int out = sample_fun(Z, Z += 1);
-        //    cout << " We got:"; // 10. So it redefines first.
-        //    cout << out;
-        //}
-
 
         CUNYAIModule::Diagnostic_Line(pos_, last_out1 = pos_ + retreat_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run directly away
         CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Alignment
@@ -126,25 +114,11 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         return;
     }
 
-    // If you end too close to the bad guys, hold position.
-    if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) > passed_distance) {
-        if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding)) {
-            unit_->holdPosition();
-            return;
-        }
-    }
-
-    // If you start too close to the bad guys, we have other issues.
-    if (final_pos != pos_ && final_pos.getDistance(e_pos) < passed_distance && pos_.getDistance(e_pos) < passed_distance) {
-        CUNYAIModule::DiagnosticText("We've been overtaken...");
-        // This option should never happen! It ought to trigger retreat/attack.
-        return;
-    }
 }
 
 bool Mobility::BWEM_Movement() const
 {
-    bool pathing_confidently = false;
+    bool pathing_outward = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
     bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty();
@@ -152,31 +126,33 @@ bool Mobility::BWEM_Movement() const
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
 
-    auto retreat_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.safe_base_);
-    auto ground_attack_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
-    auto air_attack_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
 
     bool it_worked = false;
+    int plength = -1; // will return -1 if it is a null path.
 
-    if (u_type_ != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
+    //if (u_type_ != UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
         // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
         if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
             if (u_type_.airWeapon() != WeaponTypes::None) { 
-                it_worked = move_to_next(air_attack_path);
+                auto air_attack_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, &plength);
+                it_worked = move_to_next(air_attack_path, plength);
             }
-            else it_worked = move_to_next(ground_attack_path);
-            pathing_confidently = true;
+            else {
+                auto ground_attack_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, &plength);
+                it_worked = move_to_next(ground_attack_path, plength);
+            }
+            pathing_outward = true;
         }
         else { // Otherwise, return to home.
-            //it_worked = move_to_next(retreat_path);
-            unit_->holdPosition();
+            auto home_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.home_base_, &plength);
+            it_worked = move_to_next(home_path, plength);
         }
 
-    }
+    //}
 
 
     if (it_worked) {
-        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::NoRetreat);
+        pathing_outward ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     return it_worked;
 }
@@ -339,87 +315,18 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-void Mobility::Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const Color &color = Colors::White, const bool &force = false) {
+void Mobility::Retreat_Logic() {
 
-    int dist = unit_->getDistance(e_unit.pos_);
-   
-    int e_range = ei.max_range_;
-    //int f_range = ui.max_range_;
-    bool order_sent = false;
-    Unit_Inventory e_squad_threatening = CUNYAIModule::getThreateningUnitInventoryInRadius(e_squad, pos_, 999, unit_->isFlying());
-    // If there are bad guys nearby, run from the immediate threat, otherwise run home.
-    if (CUNYAIModule::getThreateningStocks(unit_, e_squad) > 0) {
-        // All units seperate from nearby enemy units- threat or not.
-        setSeperation(e_squad_threatening);
-        // flying units repulse from their air units since they can kite nearly indefinently, ground units head to the safest possible place.
-        if (e_unit.is_flying_) setRepulsionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
-        else setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
+    // lurkers should move when we need them to scout.
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
+        unit_->unburrow();
+        if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
     }
-    else {
-        //setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_); // otherwise a flying unit will be saticated by simply not having a dangerous weapon directly under them.
-        auto retreat_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.safe_base_);
-        move_to_next(retreat_path);
-        if(CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
-    }
-    
 
-
-    //Avoidance vector:
-    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + centralization_vector_ + retreat_vector_;
-    Position avoidance_pos = pos_ + avoidance_vector;
-    if(!unit_->isFlying()) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_safety_);
-
-    //final vector
-    Position final_vector = avoidance_vector - walkability_vector_;
-
-    //Make sure the end destination is one suitable for you.
-    Position retreat_spot = pos_ + final_vector; //attract is zero when it's not set.
-
-    //bool clear_walkable = retreat_spot.isValid() &&
-    //    (unit->isFlying() || // can I fly, rendering the idea of walkablity moot?
-    //        CUNYAIModule::isClearRayTrace(pos, retreat_spot, CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_, 1)); //or does it cross an unwalkable position? Includes buildings.
-    bool cooldown = unit_->getGroundWeaponCooldown() > 0 || unit_->getAirWeaponCooldown() > 0;
-    bool kiting = !cooldown && dist < 64 && CUNYAIModule::getProperRange(unit_) > 64 && CUNYAIModule::getProperRange(e_unit.bwapi_unit_) < 64 && CUNYAIModule::Can_Fight(e_unit, unit_); // only kite if he's in range,
-
-    //bool scourge_retreating = unit->getType() == UnitTypes::Zerg_Scourge && dist < e_range;
-    //bool unit_death_in_moments = Stored_Unit::unitAliveinFuture(ui.unit_inventory_.at(unit), 96); 
-    //bool squad_death_in_moments = u_squad.squadAliveinFuture(96); 
-    //bool never_suicide = unit->getType() == UnitTypes::Zerg_Mutalisk || unit->getType() == UnitTypes::Zerg_Overlord || unit->getType() == UnitTypes::Zerg_Drone;
-    bool melee_fight = CUNYAIModule::getProperRange(unit_) < 64 && e_squad.max_range_ < 64;
-    bool is_retreating = false;
-
-    if ( force || ( retreat_spot && !kiting /*&& !(unit_death_in_moments && squad_death_in_moments && clear_walkable && melee_fight)*/ ) ) {
-        if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && unit_->isDetected() && ei.stock_ground_units_ == 0) {
-            unit_->unburrow();
-            is_retreating = true;
-        }
-        else if (unit_->move(retreat_spot)) { //run away.  Don't need immobile units retreating.
-            Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
-            Position last_out2 = Positions::Origin;
-
-            CUNYAIModule::Diagnostic_Line(pos_, last_out1 = pos_ + retreat_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run directly away
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Alignment
-            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue); // Centraliziation.
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple); // Cohesion
-            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-            CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-            CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different 
-            is_retreating = true;
-        }
-
-        if (is_retreating) {
-            CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
-            //if (retreat_spot.getDistance(pos) < 32) CUNYAIModule::DiagnosticText("Hey, this was a very small retreat order!");
-
-            return;
-        }
-    }
-    else {
-
-        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::NoRetreat);
-
-        return;
-    }// if I'm not retreating, I'm announcing I'm bugged.
+    int plength = -1; // will return -1 if it is a null path.
+    auto home_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.home_base_, &plength);
+    move_to_next(home_path, plength);
+    if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
 
 }
 
@@ -995,12 +902,13 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     return  return_vector;
 }
 
-bool Mobility::move_to_next(const BWEM::CPPath &cpp) const
+bool Mobility::move_to_next(const BWEM::CPPath &cpp, const int &plength) const
 {
-    if (cpp.size()) {
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 4;
+    if (cpp.empty()) return false;
+    bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 4;
+
         if (too_close && cpp.size() > 1 ) return unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
-        else if (cpp.size() > 1) return unit_->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
-    }
+        else return unit_->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
+
     return false;
 }

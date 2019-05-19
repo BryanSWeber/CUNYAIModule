@@ -9,7 +9,7 @@ class Mobility {
 
 public:
     // Basic retreat logic
-    void Retreat_Logic(const Stored_Unit &e_unit, const Unit_Inventory &u_squad, Unit_Inventory &e_squad, Unit_Inventory &ei, const Unit_Inventory &ui, const Color &color, const bool &force);
+    void Retreat_Logic();
     // Tells the unit to fight. If it can attack both air and ground.
     void Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
@@ -61,17 +61,26 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
+    bool move_to_next(const BWEM::CPPath & cpp, const int & plength) const;
+
 
     Mobility::Mobility(const Unit &unit) {
         unit_ = unit;
         pos_ = unit->getPosition();
         u_type_ = unit->getType();
+
+        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit);
+        if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+            stored_unit_ = &found_item->second;
+        }
+
         distance_metric_ = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
     };
 
 private:
     Position pos_;
     Unit unit_;
+    Stored_Unit* stored_unit_;
     UnitType u_type_;
     double distance_metric_;
     Position stutter_vector_ = Positions::Origin;
@@ -87,5 +96,4 @@ private:
 
     int rng_direction_ ; // send unit in a random tilt direction if blocked
 
-    bool move_to_next(const BWEM::CPPath &cpp) const;
 };
