@@ -49,7 +49,7 @@ namespace BWEB {
         std::vector<Station>& getStations();
 
         /// <summary> Returns the closest BWEB::Station to the given TilePosition. </summary>
-        const Station * getClosestStation(BWAPI::TilePosition);
+        Station * getClosestStation(BWAPI::TilePosition);
 
     }
 }
