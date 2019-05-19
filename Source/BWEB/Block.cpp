@@ -12,9 +12,19 @@ namespace BWEB::Blocks
         vector<Piece> whichPieces(int width, int height)
         {
             vector<Piece> pieces;
+            const auto  race = Broodwar->self()->getRace();
+
             if (height == 2) {
-                if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium };
+                if (race != Races::Zerg) {
+                    if (width == 5)
+                        pieces = { Piece::Small, Piece::Medium };
+                }
+                else {
+                    if (width == 6)
+                        pieces = { Piece::Medium, Piece::Medium };
+                    if (width == 8)
+                        pieces = { Piece::Small, Piece::Small, Piece::Small, Piece::Small };
+                }
             }
             else if (height == 4) {
                 if (width == 5)
@@ -25,16 +35,24 @@ namespace BWEB::Blocks
                     pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
             }
             else if (height == 6) {
-                if (width == 10)
-                    pieces ={ Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
+                if (race != Races::Zerg) {
+                    if (width == 10)
+                        pieces = { Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
+                }
+                else {
+                    if (width == 2)
+                        pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
+                }
                 if (width == 18)
                     pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
             }
             else if (height == 8) {
                 if (width == 8)
                     pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
-                if (width == 5)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+                if (race != Races::Zerg) {
+                    if (width == 5)
+                        pieces = { Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+                }
             }
             return pieces;
         }
@@ -301,6 +319,32 @@ namespace BWEB::Blocks
             const auto dist = here.getDistance(tile);
 
             if (dist < distBest) {
+                distBest = dist;
+                bestBlock = &block;
+            }
+        }
+        return bestBlock;
+    }
+
+    Block * getClosestBlockWithOpen(TilePosition here, int width, int height)
+    {
+        auto distBest = DBL_MAX;
+        Block * bestBlock = nullptr;
+        bool small_block = false;
+        bool med_block = false;
+        bool large_block = false;
+        if (width == 2 && height == 2)
+            small_block = true;
+        if (width == 2 && height == 3)
+            med_block = true;
+        if (width == 3 && height == 4)
+            large_block = true;
+
+        for (auto &block : allBlocks) {
+            const auto tile = block.getTilePosition() + TilePosition(block.width() / 2, block.height() / 2);
+            const auto dist = here.getDistance(tile);
+
+            if (dist < distBest && (small_block && !block.getSmallTiles().empty() || med_block && !block.getMediumTiles().empty() || large_block && !block.getLargeTiles().empty())) {
                 distBest = dist;
                 bestBlock = &block;
             }

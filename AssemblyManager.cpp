@@ -49,24 +49,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
+            auto danger_hatch = CUNYAIModule::getClosestStored(production_facility_bank_, CUNYAIModule::current_map_inventory.enemy_base_ground_, 9999999);
+            auto build_tile = CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ? TilePosition(danger_hatch->pos_) : unit->getTilePosition();
+
             if (!CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                auto closest_block = BWEB::Blocks::getClosestBlock(unit->getTilePosition());
-                if (closest_block) {
-                    for (auto &tile : closest_block->getSmallTiles()) {
-                            if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                                if (unit->build(building, tile)) {
-                                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
-                                }
-                                else {
-                                    CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
-                                }
-                            }
-                    }
-                }
-            }
-            else {
-                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
+                auto closest_wall = BWEB::Walls::getClosestWall(build_tile);
                 if (closest_wall) {
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
@@ -74,29 +61,46 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
                                 return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
                             }
-                            else {
-                                CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
-                            }
                         }
                     }
                 }
             }
 
-            // simply attempt this if the previous did not find.
-            auto closest_station = BWEB::Stations::getClosestStation(unit->getTilePosition());
-            if (closest_station && closest_station->getDefenseCount() < 4) {
+            // I prefer this for air problems.
+            auto closest_station = BWEB::Stations::getClosestStation(build_tile);
+            if (closest_station && closest_station->getDefenseCount() > 3) {
                 for (auto &tile : closest_station->getDefenseLocations()) {
+                    if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                        if (unit->build(building, tile)) {
+                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            //closest_station->setDefenseCount(closest_station->getDefenseCount() - 1);
+                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        }
+                    }
+                }
+            }
+
+            map<int, set<TilePosition>> viable_placements;
+            //Otherwise, use blocks.
+            for (auto block : BWEB::Blocks::getBlocks()) {
+                set<TilePosition> placements;
+                if (building.tileSize() == TilePosition{ 2,2 })
+                    placements = block.getSmallTiles();
+                if (!placements.empty()) {
+                    viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
+                }
+            }
+            for (auto good_block : viable_placements) { // should automatically search by distance.
+                for (auto &tile : good_block.second) {
                     if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
                         if (unit->build(building, tile)) {
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
                             return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
                         }
-                        else {
-                            CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
-                        }
                     }
                 }
             }
+
         }
         else if (unit->canBuild(building) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
@@ -109,18 +113,10 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
                         return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
                     }
-                    else {
-                        CUNYAIModule::my_reservation.removeReserveSystem(buildPosition, building, false);
-                    }
                 } //extractors must have buildings nearby or we shouldn't build them.
-                //else if ( !BWAPI::Broodwar->isVisible(buildPosition) && unit->move(Position(buildPosition)) && my_reservation.addReserveSystem(building, buildPosition)) {
-                //    CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                //    return true;
-                //} //extractors must have buildings nearby or we shouldn't build them.
+
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) && CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
                     CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
-                    //buildorder.updateRemainingBuildOrder(building); // skips the building.
-                    //buildorder.clearRemainingBuildOrder();
                 }
             }
 
@@ -147,9 +143,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
                                     return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
                                 }
-                                else {
-                                    CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
-                                }
                             }
                         }
                     }
@@ -175,9 +168,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                             if (unit->build(building, tile)) {
                                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
                                 return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
-                            }
-                            else {
-                                CUNYAIModule::my_reservation.removeReserveSystem(tile, building, false);
                             }
                         }
                     }
