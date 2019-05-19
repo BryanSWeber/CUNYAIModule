@@ -11,6 +11,7 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
+#include "../CombatManager.h"
 #include <bwem.h>
 #include "BWEB\BWEB.h"
 #include <chrono> // for in-game frame clock.
@@ -71,6 +72,7 @@ public:
     static Player_Model friendly_player_model;
     static Player_Model enemy_player_model;
     static Player_Model neutral_player_model;
+    static CombatManager Combat_Manager;
     static Resource_Inventory land_inventory; // resources.
     static Map_Inventory current_map_inventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
