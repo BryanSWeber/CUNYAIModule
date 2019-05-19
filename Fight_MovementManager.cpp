@@ -17,102 +17,40 @@ using namespace std;
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
 void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_pos) {
-
-    Unit_Inventory local_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, 250);
-    local_neighborhood.updateUnitInventorySummary();
-    bool pathing_confidently = false;
-
-    bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty(); //CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
-    bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
-    bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
-
-    if (u_type_ == UnitTypes::Zerg_Overlord) { // If you are an overlord float about as safely as possible.
-
-        if (!ready_to_fight) { // Otherwise, return to safety.
-            setRepulsionField(CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
-        }
-        else {
-            setRepulsionField(CUNYAIModule::current_map_inventory.pf_aa_, CUNYAIModule::current_map_inventory.safe_base_);
-            setAttractionField(CUNYAIModule::current_map_inventory.pf_explore_, CUNYAIModule::current_map_inventory.safe_base_);
-            pathing_confidently = true;
-            Unit_Inventory e_neighborhood = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, pos_, 250);
-            e_neighborhood.updateUnitInventorySummary();
-
-            if (e_neighborhood.stock_shoots_up_ > 0) {
-                setSeperationScout(e_neighborhood);
-            }
-            else {
-                setSeperationScout(local_neighborhood);
-                pathing_confidently = true;
-            }
-        }
-    }
-    else {
-        // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-        if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
-            if (u_type_.airWeapon() != WeaponTypes::None) setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_air_, CUNYAIModule::current_map_inventory.enemy_base_air_);
-            else setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
-            pathing_confidently = true;
-        }
-        else { // Otherwise, return to home.
-            setAttractionMap(CUNYAIModule::current_map_inventory.map_out_from_safety_, CUNYAIModule::current_map_inventory.safe_base_);
-        }
-
-        int average_side = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit_)->second.circumference_ / 4;
-        Unit_Inventory neighbors = CUNYAIModule::getUnitInventoryInRadius(local_neighborhood, pos_, 32 + average_side * 2);
-        if (u_type_ != UnitTypes::Zerg_Mutalisk) setSeperation(neighbors);
-
-        if (healthy && scouting_returned_nothing) { // If they don't exist, then wander about searching. Overwrites natural seperation.
-            setSeperationScout(local_neighborhood); //This is triggering too often and your army is scattering, not everything else.  
-            pathing_confidently = true;
-        }
-
-        setCohesion(local_neighborhood);
-    }
-
-    //Avoidance vector:
-    Position avoidance_vector = stutter_vector_ + cohesion_vector_ - seperation_vector_ + attune_vector_ - walkability_vector_ + attract_vector_ + repulse_vector_ + centralization_vector_;
-    Position avoidance_pos = pos_ + avoidance_vector;
-
-    //Which way should we avoid objects?
-    if (pathing_confidently && u_type_.airWeapon() != WeaponTypes::None) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_air_);
-    else if (pathing_confidently) setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_);
-    else setObjectAvoid(pos_, avoidance_pos, CUNYAIModule::current_map_inventory.map_out_from_safety_);
-
-    //Move to the final position.
-    Position final_vector = avoidance_vector - walkability_vector_;
-    //Make sure the end destination is one suitable for you.
-    Position final_pos = pos_ + final_vector; //attract is zero when it's not set.
-    
-    //If you're not starting or ending too close to the "bad guys" you can continue to path.
-    if ( final_pos != pos_ && final_pos.getDistance(e_pos) > passed_distance && pos_.getDistance(e_pos) > passed_distance) {
-
-        // lurkers should move when we need them to scout.
-        if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
-            unit_->unburrow();
-            pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
-            return;
-        }
-
-        unit_->move(final_pos);
-        Position last_out1 = Positions::Origin; // Could be a better way to do this, but here's a nice test case of the problem:
-        Position last_out2 = Positions::Origin;
-
-
-        CUNYAIModule::Diagnostic_Line(pos_, last_out1 = pos_ + retreat_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run directly away
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + attune_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Alignment
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + centralization_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue); // Centraliziation.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + cohesion_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple); // Cohesion
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Green); //Attraction towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 + repulse_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Black); //Repulsion towards attackable enemies or home base.
-        CUNYAIModule::Diagnostic_Line(last_out2, last_out1 = last_out2 - seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Orange); // Seperation, does not apply to fliers.
-        CUNYAIModule::Diagnostic_Line(last_out1, last_out2 = last_out1 - walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Cyan); // Push from unwalkability, different unwalkability, different 
-
-        pathing_confidently ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+    // lurkers should move when we need them to scout.
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
+        unit_->unburrow();
+        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
         return;
     }
+
+
+        int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
+        int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_pos))->Id();
+        auto attack_path = BWEM::Map::Instance().GetPath(e_pos, pos_);
+
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+        std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+
+        if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.95)) {
+            if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
+                approach(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+            }
+            else approach(e_pos);
+            unit_->move(pos_ + attract_vector_);
+            CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
+            CUNYAIModule::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
+        }
+        else {
+            if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
+                encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
+            }
+            else encircle(e_pos);
+
+            unit_->move(pos_ + encircle_vector_);
+            CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
+        }
 
 }
 
