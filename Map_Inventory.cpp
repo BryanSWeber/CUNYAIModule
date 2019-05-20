@@ -1336,7 +1336,7 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     std::ostringstream merged_holding_vector;
     // Convert all but the last element to avoid a trailing ","
     std::copy(holding_vector.begin(), holding_vector.end() - 1,
-        std::ostream_iterator<int>(merged_holding_vector, "\n"));
+        std::ostream_iterator<int>(merged_holding_vector, ","));
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 
@@ -1358,7 +1358,7 @@ void Map_Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &c
 {
     std::stringstream ss;
     ss << center;
-    int number;
+    string number;
     string base = ss.str();
     mapin.clear();
 
@@ -1369,8 +1369,8 @@ void Map_Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &c
         {
             mapin.push_back(std::vector<int>());
             for (int j = 0; j < Broodwar->mapHeight() * 4; j++) {
-                newMap >> number;
-                mapin[i].push_back(number);
+                getline(newMap, number, ',');
+                mapin[i].push_back(stoi(number));
             }
         }
     }
