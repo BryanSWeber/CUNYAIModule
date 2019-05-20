@@ -94,6 +94,7 @@
     <ClInclude Include="Source\BWEB\Wall.h">
       <Filter>BWEB</Filter>
     </ClInclude>
+    <ClInclude Include="CombatManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
