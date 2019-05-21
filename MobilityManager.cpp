@@ -24,7 +24,6 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
         return;
     }
 
-
         int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
         int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_pos))->Id();
         auto attack_path = BWEM::Map::Instance().GetPath(e_pos, pos_);
@@ -84,6 +83,7 @@ bool Mobility::BWEM_Movement() const
         else { // Otherwise, return to home.
             auto home_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.home_base_, &plength);
             it_worked = move_to_next(home_path, plength);
+            pathing_outward = false;
         }
 
     //}
