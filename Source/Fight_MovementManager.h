@@ -8,6 +8,19 @@
 class Mobility {
 
 public:
+    //When we think about moving a unit, don't do it yourself, use the mobility wrapper.
+    Mobility::Mobility(const Unit &unit) {
+        unit_ = unit;
+        pos_ = unit->getPosition();
+        u_type_ = unit->getType();
+        distance_metric_ = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
+
+        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit);
+        if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+            stored_unit_ = &found_item->second;
+        }
+    };
+
     // Basic retreat logic
     void Retreat_Logic();
     // Tells the unit to fight. If it can attack both air and ground.
@@ -18,41 +31,12 @@ public:
     //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
     bool BWEM_Movement() const;
 
-    Position Output;
-
-    // Causes a unit to match headings with neighboring units.
-    Position setAlignment(const Unit_Inventory &ui );
-    // Causes UNIT to run directly from enemy.
-    Position setDirectRetreat(const Position &e_pos);
-    // Causes a unit to move towards central map veins. "High Altitude in BWEM"
-    //Position setCentralize();
-    // causes a unit to move about in a random (brownian) fashion.
-    Position setStutter(const double &n);
-    // Causes a unit to be pulled towards others of their kind.
-    Position setCohesion(const Unit_Inventory &ui);
-    // causes a unit to be pulled towards (map) center.
-    Position setAttractionMap(const vector<vector<int>>& map, const Position &map_center);
-    Position setAttractionField(const vector<vector<int>>& field, const Position & map_center);
-    // causes a unit to be pushed away from (map) center. Dangerous for ground units, could lead to them running down dead ends.
-    Position setRepulsionMap(const vector<vector<int>>& map, const Position & map_center);
-    Position setRepulsionField(const vector<vector<int>>& field, const Position & map_center);
-
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
     // causes a unit to move towards a position.
     Position approach(const Position & p);
 
-    // causes a unit to move directly towards the enemy base.
-    Position scoutEnemyBase(Map_Inventory & inv);
-    // causes a unit to seperate itself from others.
-    Position setSeperation(const Unit_Inventory &ui );
-    // causes a unit to seperate itself from others at a distance of its own vision.
-    Position setSeperationScout(const Unit_Inventory & ui);
-    //void setUnwalkability( const Unit &unit, const Position &pos);
-    // Causes a unit to avoid units in its distant future, near future, and immediate position.
-    Position setObjectAvoid(const Position &current_pos, const Position &future_pos, const vector<vector<int>> &map);
     bool adjust_lurker_burrow(const Position position_of_target);
-    bool adjust_guardian(const Stored_Unit* target);
 
     // gives a vector that has the direction towards center on (map). returns a direction.
     Position getVectorTowardsMap(const vector<vector<int>>& map) const;
@@ -62,20 +46,6 @@ public:
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     bool move_to_next(const BWEM::CPPath & cpp, const int & plength) const;
-
-
-    Mobility::Mobility(const Unit &unit) {
-        unit_ = unit;
-        pos_ = unit->getPosition();
-        u_type_ = unit->getType();
-
-        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit);
-        if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-            stored_unit_ = &found_item->second;
-        }
-
-        distance_metric_ = CUNYAIModule::getProperSpeed(unit) * 24.0; // in pixels
-    };
 
 private:
     Position pos_;

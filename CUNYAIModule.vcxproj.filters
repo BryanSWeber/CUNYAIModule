@@ -60,6 +60,7 @@
     <ClCompile Include="Source\BWEB\Wall.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
+    <ClCompile Include="CombatManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />

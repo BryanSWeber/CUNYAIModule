@@ -20,8 +20,8 @@ class CombatManager {
         Unit_Inventory detector_squad_;
 
     public:
-        bool identifyTargets();
-        bool identifyWeaknesses();
+        //bool identifyTargets();
+        //bool identifyWeaknesses();
         bool addAntiAir(const Unit &u);
         bool addAntiGround(const Unit &u);
         bool addUniversal(const Unit &u);

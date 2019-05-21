@@ -570,14 +570,13 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(500, 150, upgrade_string);
         Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-        for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-            if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-            }
-        }
-
+        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
+        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
+        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
+        //    }
+        //}
 
         //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
         //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
@@ -655,17 +654,8 @@ void CUNYAIModule::onFrame()
 
     // Prevent spamming by only running our onFrame once every number of latency frames.
     // Latency frames are the number of frames before commands are processed.
-    assemblymanager.assignUnitAssembly();
-
     if (t_game % Broodwar->getLatencyFrames() != 0) {
         return;
-    }
-
-    //This global check needs a home in the assembly manager!
-    //Evo chamber is required tech for spore colony ... This is a bad place for it!
-    if (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 && !CUNYAIModule::my_reservation.checkTypeInReserveSystem(UnitTypes::Zerg_Evolution_Chamber) && !CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Evolution_Chamber) && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.stock_fliers_ > 0) {
-        CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Evolution_Chamber); // force in an evo chamber if they have Air.
-        CUNYAIModule::DiagnosticText("Reactionary Evo Chamber");
     }
 
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
