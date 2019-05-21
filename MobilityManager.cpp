@@ -1,7 +1,7 @@
 #pragma once
 
 # include "Source\CUNYAIModule.h"
-# include "Source\Fight_MovementManager.h"
+# include "Source\MobilityManager.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
 # include <math.h>
@@ -267,38 +267,6 @@ void Mobility::Retreat_Logic() {
     if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
 
 }
-
-
-//Centralization, all units prefer sitting along map veins to edges.
-//void Mobility::setCentralize(const Position &pos, const Map_Inventory &inv) {
-//    double temp_centralization_dx_ = 0;
-//    double temp_centralization_dy_ = 0;
-//    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
-//    for (int x = -5; x <= 5; ++x) {
-//        for (int y = -5; y <= 5; ++y) {
-//            int mini_x = WalkPosition(pos).x;
-//            int mini_y = WalkPosition(pos).y;
-//            double centralize_x = mini_x + x;
-//            double centralize_y = mini_y + y;
-//            if (!(x == 0 && y == 0) &&
-//                centralize_x < map_dim.x &&
-//                centralize_y < map_dim.y &&
-//                centralize_x > 0 &&
-//                centralize_y > 0 &&
-//                (inventory.map_veins_[centralize_x][centralize_y] > inventory.map_veins_[mini_x][mini_y] /*|| inventory.map_veins_[centralize_x][centralize_y] > 20*/))
-//            {
-//                double theta = atan2(y, x);
-//                temp_centralization_dx_ += static_cast<int>(cos(theta));
-//                temp_centralization_dy_ += static_cast<int>(sin(theta));
-//            }
-//        }
-//    }
-//    if (temp_centralization_dx_ != 0 && temp_centralization_dy_ != 0) {
-//        double theta = atan2(temp_centralization_dy_, temp_centralization_dx_);
-//        centralization_dx_ = cos(theta) * distance_metric * 0.125;
-//        centralization_dy_ = sin(theta) * distance_metric * 0.125;
-//    }
-//}
 
 Position Mobility::encircle(const Position & p) {
     Position vector_to = p - pos_;

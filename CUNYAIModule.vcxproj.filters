@@ -17,9 +17,6 @@
     <ClCompile Include="VisionManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Fight_MovementManager.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="CobbDouglas.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -61,13 +58,15 @@
       <Filter>BWEB</Filter>
     </ClCompile>
     <ClCompile Include="CombatManager.cpp" />
+    <ClCompile Include="MobilityManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
-    <ClInclude Include="Source\Fight_MovementManager.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
@@ -96,6 +95,7 @@
       <Filter>BWEB</Filter>
     </ClInclude>
     <ClInclude Include="CombatManager.h" />
+    <ClInclude Include="Source\MobilityManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

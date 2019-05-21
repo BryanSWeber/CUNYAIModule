@@ -123,7 +123,7 @@
     <ClCompile Include="VisionManager.cpp" />
     <ClCompile Include="MiningManager.cpp" />
     <ClCompile Include="Utilities.cpp" />
-    <ClCompile Include="Fight_MovementManager.cpp" />
+    <ClCompile Include="MobilityManager.cpp" />
     <ClCompile Include="Source\Dll.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -137,7 +137,7 @@
     <ClInclude Include="Source\BWEB\Wall.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
-    <ClInclude Include="Source\Fight_MovementManager.h" />
+    <ClInclude Include="Source\MobilityManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\Research_Inventory.h" />

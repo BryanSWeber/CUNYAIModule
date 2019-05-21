@@ -22,6 +22,7 @@ class CombatManager {
     public:
         //bool identifyTargets();
         //bool identifyWeaknesses();
+        static bool combatScript(const Unit &u);
         bool addAntiAir(const Unit &u);
         bool addAntiGround(const Unit &u);
         bool addUniversal(const Unit &u);

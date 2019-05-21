@@ -7,8 +7,9 @@
 #include "Resource_Inventory.h"
 #include "Research_Inventory.h"
 #include "GeneticHistoryManager.h"
-#include "Fight_MovementManager.h"
+#include "MobilityManager.h"
 #include "AssemblyManager.h"
+#include "..\CombatManager.h"
 #include "TechManager.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "BWEB\BWEB.h"
@@ -47,6 +48,7 @@ namespace { auto & bwemMap = BWEM::Map::Instance(); }
     Player_Model CUNYAIModule::neutral_player_model;
     Resource_Inventory CUNYAIModule::land_inventory; // resources.
     Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
+    CombatManager CUNYAIModule::combat_manager;
     FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
     TechManager CUNYAIModule::techmanager;
     AssemblyManager CUNYAIModule::assemblymanager;
@@ -741,81 +743,11 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground.
         auto start_combat = std::chrono::high_resolution_clock::now();
-        bool foe_within_radius = false;
 
-        if (((u_type != UnitTypes::Zerg_Larva && u_type.canAttack()) || u_type == UnitTypes::Zerg_Overlord) && spamGuard(u))
-        {
-            Mobility mobility = Mobility(u);
-            Stored_Unit* e_closest = getClosestThreatStored(enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
-            if (!e_closest) e_closest = getClosestAttackableStored(enemy_player_model.units_, u, 400);
-            if (u_type == UnitTypes::Zerg_Drone || u_type == UnitTypes::Zerg_Overlord) {
-                e_closest = getClosestThreatOrTargetStored(enemy_player_model.units_, u, 256);
-            }
-
-            bool draw_retreat_circle = false;
-            int search_radius = 0;
-
-            if (e_closest) { // if there are bad guys, search for friends within that area.
-
-                int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
-                int chargable_distance_self = CUNYAIModule::getChargableDistance(u, enemy_player_model.units_);
-                int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, friendly_player_model.units_);
-                int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
-                search_radius = max(chargable_distance_max + 64, enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
-                //CUNYAIModule::DiagnosticText("%s, range:%d, spd:%d,max_cd:%d, charge:%d", u_type.c_str(), CUNYAIModule::getProperRange(u), static_cast<int>CUNYAIModule::getProperSpeed(u), enemy_player_model.units_.max_cooldown_, chargable_distance_net);
-                Unit_Inventory friend_loc;
-                Unit_Inventory enemy_loc;
-
-                //if (u_type.isFlyer() || CUNYAIModule::getProperRange(u) > 32) {
-                    Unit_Inventory enemy_loc_around_target = getUnitInventoryInRadius(enemy_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory enemy_loc_around_self = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory enemy_loc_out_of_reach = getUnitsOutOfReach(enemy_player_model.units_, u);
-                    enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
-
-                    Unit_Inventory friend_loc_around_target = getUnitInventoryInRadius(friendly_player_model.units_, e_closest->pos_, distance_to_foe + search_radius);
-                    Unit_Inventory friend_loc_around_me = getUnitInventoryInRadius(friendly_player_model.units_, u->getPosition(), distance_to_foe + search_radius);
-                    //Unit_Inventory friend_loc_out_of_reach = getUnitsOutOfReach(friendly_player_model.units_, u);
-                    friend_loc = (friend_loc_around_target + friend_loc_around_me);
-
-                bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(friendly_player_model.units_.unit_map_.at(u), 6); 
-                bool they_take_a_fap_beating = checkSuperiorFAPForecast2(friend_loc, enemy_loc);
-
-                foe_within_radius = distance_to_foe < search_radius;
-                bool potentially_targetable = distance_to_foe < enemy_player_model.units_.max_range_ + 64;
-                if (e_closest->valid_pos_ && foe_within_radius ) {  // Must have a valid postion on record to attack.
-                    if (they_take_a_fap_beating && u_type != UnitTypes::Zerg_Overlord) {
-                        mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White );
-                    }
-                    else {
-                        mobility.Retreat_Logic();
-                    }
-
-                    if constexpr (DRAWING_MODE) {
-                        if (draw_retreat_circle) {
-                            Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-                            Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-                        }
-                    }
-
-                    continue; // this unit is finished.
-                }
-
-            } // close local examination.
-
-            if (u_type != UnitTypes::Zerg_Drone && u_type != UnitTypes::Zerg_Larva && !u_type.isBuilding() && spamGuard(u, 24)){ // if there is nothing to fight, psudo-boids if they are in your BWEM:AREA or use BWEM to get to their position.
-                int areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-                bool clear_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(areaID).unit_map_.empty();
-                bool long_term_walking = true;
-                if ( clear_area ) {
-                    long_term_walking = mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
-                }
-                if (!long_term_walking) mobility.Pathing_Movement(-1, Positions::Origin); // -1 serves to never surround, makes sense if there is no closest enemy.
-                continue;
-            }
-
+        if (u_type.canMove() && u_type.canAttack() && !u_type.isWorker()) {
+            combat_manager.combatScript(u);
         }
-
-
+        
         auto end_combat = std::chrono::high_resolution_clock::now();
 
 
