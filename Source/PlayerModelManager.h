@@ -17,6 +17,7 @@ public:
     double estimated_bases_ = 0;
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
+    double estimated_resources_per_frame_ = 0;
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;

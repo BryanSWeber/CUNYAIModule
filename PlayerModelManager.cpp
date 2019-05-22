@@ -160,14 +160,16 @@ void Player_Model::evaluateCurrentWorth()
         }
 
         //Find the relative rates at which the opponent has been spending these resources.
-        double min_proportion = (min_expenditures_ + min_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //minerals per each unit of resources mined.
-        double supply_proportion = (supply_expenditures_ + supply_losses_) / static_cast<double>(gas_expenditures_ + gas_losses_ + min_expenditures_ + min_losses_); //Supply bought resource collected- very rough.
-        double resources_collected_this_frame = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
+        double min_spent = min_expenditures_ + min_losses_; //minerals per each unit of resources mined.
+        double gas_spent = gas_expenditures_ + gas_losses_;
+        double supply_spent = supply_expenditures_ + supply_losses_; //Supply bought resource collected- very rough.
+        double min_proportion = min_spent / (gas_spent + min_spent);
+        estimated_resources_per_frame_ += 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
-        estimated_cumulative_worth_ += resources_collected_this_frame + resources_collected_this_frame * supply_proportion * 25; // 
+        estimated_cumulative_worth_ += estimated_resources_per_frame_; // 
 
         int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-        double observed_current_worth = units_.stock_fighting_total_ + researches_.research_stock_ + units_.worker_count_ * worker_value;
+        double observed_current_worth = min_expenditures_ + gas_expenditures_ * 1.25;
         estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ - supply_losses_);
     }
 }

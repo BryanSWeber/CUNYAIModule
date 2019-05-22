@@ -546,7 +546,7 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
         Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
-        Broodwar->drawTextScreen(375, 70, "Vision (Pct.): %4.2f", current_map_inventory.vision_tile_count_ / static_cast<double>(map_area));  //
+        Broodwar->drawTextScreen(375, 70, "Enemy Worth (est): %4.2f", enemy_player_model.estimated_net_worth_);  //
         Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
 
         //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //

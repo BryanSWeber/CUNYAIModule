@@ -56,9 +56,9 @@ bool TechManager::checkTechAvail()
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 void TechManager::updateTech_Avail() {
 
-    for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
-        if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  tech_avail_ = true; // If we can make it and don't have it yet, we have tech we can make.
-    }
+    //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
+    //    if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  tech_avail_ = true; // If we can make it and don't have it yet, we have tech we can make.
+    //}
 
     updateOptimalTech();
 
