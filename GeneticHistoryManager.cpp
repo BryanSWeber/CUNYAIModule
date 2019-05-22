@@ -206,12 +206,12 @@ void GeneticHistory::initializeHistory() {
             getline(input, entry, ',');
             map_name_total=entry;
 
-		    getline(input, entry, ',');
-		    enemy_average_army_ = stod(entry);
-		    getline(input, entry, ',');
-		    enemy_average_econ_ = stod(entry);
-		    getline(input, entry, ',');
-		    enemy_average_tech_ = stod(entry);
+            getline(input, entry, ',');
+            enemy_average_army_ = stod(entry);
+            getline(input, entry, ',');
+            enemy_average_econ_ = stod(entry);
+            getline(input, entry, ',');
+            enemy_average_tech_ = stod(entry);
 
             getline(input, entry, ',');
             build_order_total = entry;

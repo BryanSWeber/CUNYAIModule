@@ -29,7 +29,6 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
-
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {

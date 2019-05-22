@@ -26,10 +26,9 @@ public:
     // Tells the unit to fight. If it can attack both air and ground.
     void Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    void Pathing_Movement(const int &passed_distance, const Position &e_pos );
-    //Forces a unit to surround the concerning ei. Does not advance.
-    //void Surrounding_Movement(const Unit &unit, const Unit_Inventory &ui, Unit_Inventory &ei, const Map_Inventory &inv);
-    bool BWEM_Movement() const;
+    bool local_pathing(const int &passed_distance, const Position &e_pos );
+    // Uses choke points when outside of local area, otherwise uses basic rules of attraction.
+    bool BWEM_Movement();
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
@@ -45,7 +44,7 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
-    bool move_to_next(const BWEM::CPPath & cpp, const int & plength) const;
+    bool move_to(const Position & start, const Position & finish);
 
 private:
     Position pos_;

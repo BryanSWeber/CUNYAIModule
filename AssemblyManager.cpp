@@ -721,7 +721,6 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
         potentially_weak_team_researches = CUNYAIModule::friendly_player_model.researches_;
         team_creating_problems = CUNYAIModule::enemy_player_model.units_;
         team_creating_problems_researches = CUNYAIModule::enemy_player_model.researches_;
-
     }
     else {
         potentially_weak_team = CUNYAIModule::enemy_player_model.units_;
