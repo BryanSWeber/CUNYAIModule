@@ -26,26 +26,19 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
 
     int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
     int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_pos))->Id();
-    auto attack_path = BWEM::Map::Instance().GetPath(e_pos, pos_);
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.95)) {
-        if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
-            approach(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
-        }
-        else approach(e_pos);
+    if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.75 || unit_->isFlying())) {
+        approach(e_pos);
         unit_->move(pos_ + attract_vector_);
         CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
         CUNYAIModule::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
     }
     else {
-        if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
-            encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
-        }
-        else encircle(e_pos);
+        encircle(e_pos);
 
         unit_->move(pos_ + encircle_vector_);
         CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
@@ -57,7 +50,7 @@ bool Mobility::BWEM_Movement() {
     bool pathing_outward = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty();
+    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::friendly_player_model.estimated_net_worth_ > CUNYAIModule::enemy_player_model.estimated_net_worth_ ;
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;

@@ -65,7 +65,6 @@ bool CombatManager::combatScript(const Unit & u)
 
         // If there was no enemy to attack didn't trigger, try to approach.
         long_term_walking = mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
-        if (!long_term_walking && e_closest) long_term_walking = long_term_walking || mobility.local_pathing(-1, e_closest->pos_); // -1 serves to never surround, makes sense if there is no closest enemy.
         return long_term_walking;
     }
     return false;
