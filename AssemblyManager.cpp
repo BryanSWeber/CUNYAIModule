@@ -210,12 +210,12 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
                 auto friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(expo_areaID);
                 auto enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(expo_areaID);
-
                 bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p), inv, enemy_area, friendly_area, CUNYAIModule::land_inventory);
+                bool occupied_expo = false;
+                auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
+                if (nearby_resource && nearby_resource->occupied_resource_)
+                    occupied_expo = true;
 
-                bool occupied_expo = CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Hatchery, Position(p), 1000) ||
-                                     CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Lair, Position(p), 1000) ||
-                                     CUNYAIModule::getClosestStored(friendly_area, UnitTypes::Zerg_Hive, Position(p), 1000);
 
                 bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
                 if ( score_temp > expo_score && safe_expo && !occupied_expo && path_available) {
