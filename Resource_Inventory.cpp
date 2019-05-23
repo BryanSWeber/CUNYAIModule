@@ -95,6 +95,8 @@ Stored_Resource::Stored_Resource(Unit resource) {
     if (area) {
         areaID_ = area->Id();
     }
+    auto bwemMin = BWEM::Map::Instance().GetMineral(resource);
+    bwemMin ? blocking_mineral_ = bwemMin->Blocking() : blocking_mineral_ = false;
 }
 
 //void Stored_Resource::addMiner(Stored_Unit miner) {

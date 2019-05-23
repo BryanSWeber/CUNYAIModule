@@ -35,7 +35,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     for (auto r : land_inventory.resource_inventory_) {
 
         if (mine_minerals) {
-            mine_is_right_type = r.second.type_.isMineralField() && r.second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
@@ -55,7 +55,7 @@ void CUNYAIModule::Worker_Gather(const Unit &unit, const UnitType mine, Unit_Inv
     for (auto r : land_inventory.resource_inventory_) {
 
         if (mine_minerals) {
-            mine_is_right_type = r.second.type_.isMineralField() && r.second.max_stock_value_ >= 8; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
@@ -120,7 +120,7 @@ void CUNYAIModule::Worker_Clear( const Unit & unit, Unit_Inventory & ui )
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if ( r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && current_map_inventory.home_base_.getDistance(r->second.pos_) < current_map_inventory.my_portion_of_the_map_ ) {
+        if (!r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && current_map_inventory.home_base_.getDistance(r->second.pos_) < current_map_inventory.my_portion_of_the_map_ ) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
@@ -140,7 +140,7 @@ bool CUNYAIModule::Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & 
     Resource_Inventory available_fields;
 
     for (auto& r = land_inventory.resource_inventory_.begin(); r != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.max_stock_value_ <= 8 && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_) && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !checkOccupiedArea(enemy_player_model.units_, r->second.pos_) && current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.
