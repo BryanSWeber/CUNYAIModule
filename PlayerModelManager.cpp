@@ -169,8 +169,8 @@ void Player_Model::evaluateCurrentWorth()
         estimated_cumulative_worth_ += estimated_resources_per_frame_; // 
 
         int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-        double observed_current_worth = min_expenditures_ + gas_expenditures_ * 1.25 - min_losses_ - gas_losses_ * 1.25;
-        estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ * 1.25);
+        double observed_current_worth = min_spent + gas_spent * 1.25 + supply_spent * 25;
+        estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ * 1.25 + supply_spent * 25);
     }
 }
 
