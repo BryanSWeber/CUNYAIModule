@@ -103,8 +103,10 @@ struct Building_Gene {
     Building_Gene();
     Building_Gene( string s );
 
-    vector<Build_Order_Object> building_gene_;  // how many of each of these do we want? Base build is going to be rushing mutalisk.
+    vector<Build_Order_Object> building_gene_;  // how many of each of these do we want?
     string initial_building_gene_;
+
+    map<UnitType, int> goal_units;
 
     bool ever_clear_ = false;
     UnitType last_build_order;
