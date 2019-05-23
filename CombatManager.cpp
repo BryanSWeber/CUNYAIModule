@@ -42,9 +42,7 @@ bool CombatManager::combatScript(const Unit & u)
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
                 bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast2(friend_loc, enemy_loc);
 
-                bool foe_within_radius = distance_to_foe < search_radius;
-                bool potentially_targetable = distance_to_foe < CUNYAIModule::enemy_player_model.units_.max_range_ + 64;
-                if (e_closest->valid_pos_ && foe_within_radius) {  // Must have a valid postion on record to attack.
+                if (e_closest->valid_pos_) {  // Must have a valid postion on record to attack.
                     if (they_take_a_fap_beating /*&& u_type != UnitTypes::Zerg_Overlord*/) {
                         mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
@@ -64,7 +62,14 @@ bool CombatManager::combatScript(const Unit & u)
         }
 
         // If there was no enemy to attack didn't trigger, try to approach.
-        long_term_walking = mobility.BWEM_Movement(); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::friendly_player_model.estimated_net_worth_ > CUNYAIModule::enemy_player_model.estimated_net_worth_;
+        if (ready_to_fight) {
+            long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        }
+        else {
+            long_term_walking = mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        }
+
         return long_term_walking;
     }
     return false;

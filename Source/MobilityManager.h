@@ -27,8 +27,9 @@ public:
     void Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     bool local_pathing(const int &passed_distance, const Position &e_pos );
-    // Uses choke points when outside of local area, otherwise uses basic rules of attraction.
-    bool BWEM_Movement();
+    // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
+    bool BWEM_Movement(const int & in_or_out);
+
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);

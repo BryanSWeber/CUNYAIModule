@@ -24,14 +24,11 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
 
-    int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
-    int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_pos))->Id();
-
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.75 || unit_->isFlying())) {
+    if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + distance_metric_) {
         approach(e_pos);
         unit_->move(pos_ + attract_vector_);
         CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
@@ -39,46 +36,31 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
     }
     else {
         encircle(e_pos);
-
         unit_->move(pos_ + encircle_vector_);
         CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
     }
     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
 }
 
-bool Mobility::BWEM_Movement() {
-    bool pathing_outward = false;
-
-    bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::friendly_player_model.estimated_net_worth_ > CUNYAIModule::enemy_player_model.estimated_net_worth_ ;
-    bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
-    bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
-    bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
-
-
+bool Mobility::BWEM_Movement(const int &in_or_out) {
     bool it_worked = false;
-    int plength = -1; // will return -1 if it is a null path.
 
-        // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-    if (healthy && (ready_to_fight || too_far_away_from_front_line)) {
+    // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
+    if (in_or_out > 0) {
         if (u_type_.airWeapon() != WeaponTypes::None) {
             it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
         }
         else {
             it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
         }
-        pathing_outward = true;
     }
     else { // Otherwise, return to home.
-        auto home_path = BWEM::Map::Instance().GetPath(pos_, CUNYAIModule::current_map_inventory.home_base_, &plength);
         it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.home_base_);
-        pathing_outward = false;
     }
-
 
 
     if (it_worked) {
-        pathing_outward ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+        in_or_out > 0 ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     else {
         CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::None);
@@ -195,46 +177,10 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
     if (attack_order_issued) {
         CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
-
     } 
     else {
-        Stored_Unit* closest = CUNYAIModule::getClosestThreatStored(ei, unit_, 1200);
-
-        if(closest){
-
-            int f_areaID = BWEM::Map::Instance().GetNearestArea(unit_->getTilePosition())->Id();
-            int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(closest->pos_))->Id();
-            auto attack_path = BWEM::Map::Instance().GetPath(closest->pos_, pos_);
-
-            std::random_device rd;  //Will be used to obtain a seed for the random number engine
-            std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-            std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
-
-            if (pos_.getDistance(closest->pos_) > ei.max_range_ + 0.25 * distance_metric_ && (dis(gen) > 0.95)) {
-                if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
-                    approach(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
-                }
-                else approach(closest->pos_);
-                unit_->move(pos_ + attract_vector_);
-                CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
-                CUNYAIModule::Diagnostic_Line(pos_, closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
-            }
-            else {
-                if (!unit_->isFlying() && f_areaID != e_areaID && attack_path.size() >= 1) {
-                    encircle(Position(attack_path[0]->Center())); // encircle the upcoming choke instead.
-                }
-                else encircle(closest->pos_);
-
-                unit_->move(pos_ + encircle_vector_);
-                CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
-
-            }
-        } 
-        else {
-            unit_->holdPosition();
-        }
-        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
-    }// if I'm not attacking and I'm in range, I'm 'surrounding'
+        BWEM_Movement(1);
+    }// if I'm not attacking and I'm in range, let's try the default action.
     return;
 }
 
@@ -251,8 +197,7 @@ void Mobility::Retreat_Logic() {
         unit_->unburrow();
         if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
     }
-
-    int plength = -1; // will return -1 if it is a null path.
+   
     move_to(pos_, CUNYAIModule::current_map_inventory.home_base_);
     if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
 
@@ -261,8 +206,8 @@ void Mobility::Retreat_Logic() {
 Position Mobility::encircle(const Position & p) {
     Position vector_to = p - pos_;
     double theta = atan2(vector_to.y, vector_to.x);
-    Position encircle_left = Position(static_cast<int>(-sin(theta) * 0.25 * distance_metric_), static_cast<int>(cos(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
-    Position encircle_right = Position(static_cast<int>(sin(theta) * 0.25 * distance_metric_), static_cast<int>(-cos(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position encircle_left = Position(static_cast<int>(-sin(theta) * distance_metric_), static_cast<int>(cos(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position encircle_right = Position(static_cast<int>(sin(theta) * distance_metric_), static_cast<int>(-cos(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
@@ -273,7 +218,7 @@ Position Mobility::encircle(const Position & p) {
 Position Mobility::approach(const Position & p) {
     Position vector_to = p - pos_;
     double theta = atan2(vector_to.y, vector_to.x);
-    Position approach_vector = Position(static_cast<int>(cos(theta) * 0.25 * distance_metric_), static_cast<int>(sin(theta) * 0.25 * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+    Position approach_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
 
     return attract_vector_ = approach_vector; // only one direction for now.
 }
@@ -456,8 +401,9 @@ bool Mobility::move_to(const Position &start, const Position &finish)
     if (!cpp.empty() && !unit_->isFlying()) {
         bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 4;
         // first try traveling with CPP.
+        if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
-        else unit_sent = unit_->move(Position(cpp[0]->Center())); //Otherwise, go to the next choke point.
+        //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
     }
 
     // then try traveling with local travel.
