@@ -95,11 +95,13 @@ bool CombatManager::addUniversal(const Unit & u)
 
 bool CombatManager::addLiablitity(const Unit & u)
 {
-    return false;
+    liabilities_squad_.addStored_Unit(u);
+    liabilities_squad_.updateUnitInventorySummary();
 }
 
 bool CombatManager::addScout(const Unit & u)
 {
-    return false;
+    scout_squad_.addStored_Unit(u);
+    scout_squad_.updateUnitInventorySummary();
 }
 

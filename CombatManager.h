@@ -22,10 +22,18 @@ class CombatManager {
     public:
         //bool identifyTargets();
         //bool identifyWeaknesses();
+
+        // Runs basic combat script, and if there is no combat, it defaults to the movement manager.
         static bool combatScript(const Unit &u);
+
+        //Adds to appropriate inventory. May move differently.
         bool addAntiAir(const Unit &u);
+        //Adds to appropriate inventory. May move differently.
         bool addAntiGround(const Unit &u);
+        //Adds to appropriate inventory. May move differently.
         bool addUniversal(const Unit &u);
+        //Adds to appropriate inventory. May move differently.
         bool addLiablitity(const Unit &u);
+        //Adds to appropriate inventory. May move differently.
         bool addScout(const Unit &u);
 };

@@ -248,7 +248,6 @@ bool Mobility::adjust_lurker_burrow(const Position position_of_target) {
     return false;
 }
 
-
 class SpiralOut { // from SO
 protected:
     unsigned layer;
