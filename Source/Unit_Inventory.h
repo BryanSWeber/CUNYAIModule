@@ -72,18 +72,19 @@ struct Stored_Unit {
         Building = 0, 
         Attacking = 1, 
         Retreating = 2, 
-        Expoing = 3, 
+        Prebuilding = 3, 
         PathingOut = 4, 
         PathingHome = 5, 
         Surrounding = 6, 
         NoRetreat = 7, 
-        Mining = 8, 
-        DistanceMining = 9, 
-        Clearing = 10, 
-        Upgrading = 11, 
-        Researching = 12, 
-        Morphing = 13, 
-        None = 14
+        MiningMin = 8, 
+        MiningGas = 9,
+        DistanceMining = 10, 
+        Clearing = 11, 
+        Upgrading = 12, 
+        Researching = 13, 
+        Morphing = 14, 
+        None = 15
     };
     Phase phase_;
     Stored_Unit(Phase p) : phase_(p) {}
@@ -184,8 +185,8 @@ struct Unit_Inventory {
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeAllPhases();
-    void purgeWorkerRelationsStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res);
-    void purgeWorkerRelationsNoStop(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
+    void purgeWorkerRelationsStop(const Unit & unit);
+    void purgeWorkerRelationsNoStop(const Unit & unit);
     void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
     void drawAllVelocities() const; // sometimes causes a lag-out or a crash. Unclear why.
     void drawAllHitPoints() const;

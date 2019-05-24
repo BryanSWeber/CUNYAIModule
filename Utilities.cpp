@@ -38,10 +38,6 @@ bool CUNYAIModule::isInLine(const Unit &unit){
     return passive;
 }
 
-bool CUNYAIModule::isEmptyWorker(const Unit &unit) {
-    bool laden_worker = unit->isCarryingGas() || unit->isCarryingMinerals();
-    return !laden_worker;
-}
 // An improvement on existing idle scripts. Returns true if stuck or finished with most recent task.
 bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 
@@ -392,12 +388,13 @@ void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & scre
         map<Stored_Unit::Phase, string> enum_to_string = { {Stored_Unit::Phase::Building,"Building"},
         { Stored_Unit::Phase::Attacking,"Attacking"},
         { Stored_Unit::Phase::Retreating,"Retreating"},
-        { Stored_Unit::Phase::Expoing,"Expoing"},
+        { Stored_Unit::Phase::Prebuilding,"Prebuilding"},
         { Stored_Unit::Phase::PathingOut,"PathingOut"},
         { Stored_Unit::Phase::PathingHome,"PathingHome"},
         { Stored_Unit::Phase::Surrounding,"Surrounding"},
         { Stored_Unit::Phase::NoRetreat,"NoRetreat"},
-        { Stored_Unit::Phase::Mining,"Mining"},
+        { Stored_Unit::Phase::MiningMin,"Gather Min"},
+        { Stored_Unit::Phase::MiningGas,"Gather Gas"},
         { Stored_Unit::Phase::DistanceMining,"DistanceMining"},
         { Stored_Unit::Phase::Clearing,"Clearing"},
         { Stored_Unit::Phase::Upgrading,"Upgrading"},

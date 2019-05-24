@@ -236,13 +236,13 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
             if (Broodwar->isExplored(inv.next_expo_) && unit->build(UnitTypes::Zerg_Hatchery, inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Expoing);
+                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
 
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 unit->move(Position(inv.next_expo_));
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Expoing);
+                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
             }
         }
     } // closure affordablity.
@@ -424,8 +424,8 @@ void AssemblyManager::clearBuildingObstuctions(const Unit_Inventory &ui, Map_Inv
     Unit_Inventory obstructions = CUNYAIModule::getUnitInventoryInRadius(ui, Position(inv.next_expo_), 3 * 32);
     for (auto u = obstructions.unit_map_.begin(); u != obstructions.unit_map_.end() && !obstructions.unit_map_.empty(); u++) {
         if (u->second.bwapi_unit_ && u->second.bwapi_unit_ != exception_unit ) {
-            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_, CUNYAIModule::land_inventory, inv, CUNYAIModule::my_reservation);
-            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_, CUNYAIModule::land_inventory, inv, CUNYAIModule::my_reservation);
+            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_);
+            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_);
             u->second.bwapi_unit_->move({ Position(inv.next_expo_).x + (rand() % 200 - 100) * 4 * 32, Position(inv.next_expo_).y + (rand() % 200 - 100) * 4 * 32 });
         }
     }
@@ -869,7 +869,7 @@ bool AssemblyManager::assignUnitAssembly()
             if (larva.first->getHatchery()) {
                 wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::current_map_inventory.min_fields_ > 8; // no longer will spam units when I need a hatchery.
                 Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
-                local_resources.countViableMines();
+                local_resources.updateMines();
                 hatch_wants_drones = 2 * local_resources.local_mineral_patches_ + 3 * local_resources.local_refineries_ > local_resources.local_miners_ + local_resources.local_gas_collectors_;
                 prep_for_transfer = CUNYAIModule::Count_Units_In_Progress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
             }

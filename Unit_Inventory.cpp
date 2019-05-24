@@ -111,7 +111,7 @@ void Unit_Inventory::purgeUnseenUnits()
 //}
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -121,10 +121,10 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Invento
         miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
+                CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
-            if (command.getTargetTilePosition() == inv.next_expo_) {
-                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery, true);
+            if (command.getTargetTilePosition() == CUNYAIModule::current_map_inventory.next_expo_) {
+                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         unit->stop();
@@ -138,7 +138,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit, Resource_Invento
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -148,10 +148,10 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit, Resource_Inven
         miner.stopMine();
         if (unit->getOrderTargetPosition() != Positions::Origin) {
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
-                res.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
+                CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
-            if (command.getTargetTilePosition() == inv.next_expo_) {
-                res.removeReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery, true);
+            if (command.getTargetTilePosition() == CUNYAIModule::current_map_inventory.next_expo_) {
+                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
@@ -859,7 +859,7 @@ Stored_Resource* Stored_Unit::getMine() {
 bool Stored_Unit::isAssignedClearing() {
     if ( locked_mine_ ) {
         if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
-            return mine_of_choice->max_stock_value_ <= 8;
+            return mine_of_choice->blocking_mineral_;
         }
     }
     return false;
@@ -869,7 +869,7 @@ bool Stored_Unit::isAssignedClearing() {
 bool Stored_Unit::isAssignedLongDistanceMining() {
     if (locked_mine_) {
         if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
-            return mine_of_choice->max_stock_value_ >= 8 && !mine_of_choice->local_natural_;
+            return !mine_of_choice->blocking_mineral_ && !mine_of_choice->local_natural_;
         }
     }
     return false;
@@ -880,7 +880,7 @@ bool Stored_Unit::isAssignedMining() {
     if (locked_mine_) {
         if (CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
             Stored_Resource* mine_of_choice = this->getMine();
-            return mine_of_choice->max_stock_value_ >= 8 && mine_of_choice->type_.isMineralField();
+            return !mine_of_choice->blocking_mineral_ && mine_of_choice->type_.isMineralField();
         }
     }
     return false;

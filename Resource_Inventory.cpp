@@ -165,12 +165,12 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
             r++;
         }
     }
-    countViableMines();
+    updateMines();
 }
 
 
 // scrape over every resource to determine the lowest number of miners. Only looks at COMPLETED mines.
-void Resource_Inventory::countViableMines() {
+void Resource_Inventory::updateMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
     local_miners_ = 0;
