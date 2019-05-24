@@ -52,8 +52,9 @@ bool TechManager::checkTechAvail()
 
 
 
-// Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-void TechManager::updateTech_Avail() {
+
+    // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
+bool TechManager::updateTech_Avail() {
 
     //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
     //    if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  tech_avail_ = true; // If we can make it and don't have it yet, we have tech we can make.
@@ -66,27 +67,38 @@ void TechManager::updateTech_Avail() {
 
     for (auto &potential_up : upgrade_cycle_) {
         if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) && potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-                best_sim_score = potential_up.second;
-                up_type = potential_up.first;
-                //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
+            best_sim_score = potential_up.second;
+            up_type = potential_up.first;
+            //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
         }
     }
     int up_level = CUNYAIModule::friendly_player_model.researches_.upgrades_.at(up_type);
 
-    if (up_type != UpgradeTypes::None) tech_avail_ = true; // If we can make it and don't have it.
+    if (up_type != UpgradeTypes::None) {
+        tech_avail_ = true; // If we can make it and don't have it.
+        return tech_avail_;
+    }
 
     for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.building_cartridge_) {
         bool pass_guard = true;
         bool own_successor = false;
         for (auto req : building.first.requiredUnits()) {
-            if(CUNYAIModule:: Count_Units(req.first) == 0 || !pass_guard) pass_guard = false;
+            if (CUNYAIModule::Count_Units(req.first) == 0 || !pass_guard) pass_guard = false;
         }
         for (auto possessed_unit : CUNYAIModule::friendly_player_model.units_.unit_map_) {
             if (possessed_unit.second.type_.isSuccessorOf(building.first)) own_successor = true;
         }
-        if( pass_guard && CUNYAIModule:: Count_Units(building.first) == 0 && !own_successor) tech_avail_ = true; // If we can make it and don't have it.
+        if (pass_guard && CUNYAIModule::Count_Units(building.first) == 0 && !own_successor) {
+            tech_avail_ = true; // If we can make it and don't have it.
+            return tech_avail_;
+        }
     }
+
+    //Otherwise, nothing's available.
+    tech_avail_ = false;
+    return tech_avail_;
 }
+
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
 bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv) {
