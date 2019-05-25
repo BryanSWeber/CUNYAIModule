@@ -602,7 +602,6 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
 //Updates the assembly cycle to consider the value of each unit.
 void AssemblyManager::updateOptimalUnit() {
     bool building_optimal_unit = false;
-    //auto buildfap_temp = CUNYAIModule::buildfap; // contains everything we're looking for except for the mock units. Keep this copy around so we don't destroy the original.
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
     FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
@@ -617,12 +616,10 @@ void AssemblyManager::updateOptimalUnit() {
             friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
             friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
-
             buildFAP_copy.simulate(MOVING_AVERAGE_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
             if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
             else assembly_cycle_[potential_type.first] = static_cast<int>( (23.0 * assembly_cycle_[potential_type.first] + score) / 24); //moving average over 24 simulations, 1 seconds.
-        //}
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
@@ -967,29 +964,29 @@ void AssemblyManager::clearSimulationHistory()
 
 void AssemblyManager::getDefensiveWalls()
 {
-//    vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
-//    vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
-//    for (auto &area : BWEM::Map::Instance().Areas()) {
-//        // Only make walls at gas bases that aren't starting bases
-//        bool invalidBase = false;
-//        for (auto &base : area.Bases()) {
-//            if (base.Starting())
-//                invalidBase = true;
-//        }
-//        if (invalidBase)
-//            continue;
-//
-//        const BWEM::ChokePoint * bestChoke = nullptr;
-//        double distBest = DBL_MAX;
-//        for (auto &cp : area.ChokePoints()) {
-//            auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
-//            if (dist < distBest) {
-//                distBest = dist;
-//                bestChoke = cp;
-//            }
-//        }
-//        BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
-//    }
+    //vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
+    //vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);
+    //for (auto &area : BWEM::Map::Instance().Areas()) {
+    //    // Only make walls at gas bases that aren't starting bases
+    //    bool invalidBase = false;
+    //    for (auto &base : area.Bases()) {
+    //        if (base.Starting())
+    //            invalidBase = true;
+    //    }
+    //    if (invalidBase)
+    //        continue;
+
+    //    const BWEM::ChokePoint * bestChoke = nullptr;
+    //    double distBest = DBL_MAX;
+    //    for (auto &cp : area.ChokePoints()) {
+    //        auto dist = Position(cp->Center()).getDistance(BWEM::Map::Instance().Center());
+    //        if (dist < distBest) {
+    //            distBest = dist;
+    //            bestChoke = cp;
+    //        }
+    //    }
+    //    BWEB::Walls::createWall(buildings, &area, bestChoke, UnitTypes::None, defenses, true, false);
+    //}
     BWEB::Walls::createZSimCity();
 }
 

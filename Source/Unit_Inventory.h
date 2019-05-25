@@ -106,7 +106,6 @@ struct Stored_Unit {
     bool isLocallyLocked(); // If the unit is properly attached.
     bool isNoLock(); // If the unit has no target. May be broken.
     bool isLongRangeLock(); // if the unit cannot see its target.
-    bool isMovingLock(); // if the unit is moving towards its target not gathering.
 
     int current_hp_;
     bool valid_pos_; // good suggestion by Hannes Brandenburg. Know to alter unit data when we see that they are not present.
