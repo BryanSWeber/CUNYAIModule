@@ -51,8 +51,10 @@ public:
     static bool Reactive_BuildFAP(const Unit & morph_canidate);
     // print the assembly cycle we're thinking about.
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
+    // Updates all units that might build something at this time.
     static void updatePotentialBuilders();
     static bool creepColonyInArea(const Position & pos);
+    // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
     static bool assignUnitAssembly();
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
     static void getDefensiveWalls();

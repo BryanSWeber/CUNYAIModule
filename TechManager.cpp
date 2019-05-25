@@ -11,6 +11,7 @@ using namespace BWAPI;
 
 bool TechManager::tech_avail_ = true;
 std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::upgrade_cartridge_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+int TechManager::max_gas_value_ = 0;
 
 bool TechManager::checkBuildingReady(const UpgradeType up) {
     return CUNYAIModule::Count_Units(up.whatUpgrades()) - CUNYAIModule::Count_Units_In_Progress(up.whatUpgrades()) > 0;
@@ -33,6 +34,7 @@ void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {
+            max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_);
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -41,7 +43,6 @@ void TechManager::updateOptimalTech() {
             upgradeFAP.clear();
             if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;
             else upgrade_cycle_[potential_up.first] = static_cast<int>((23 * upgrade_cycle_[potential_up.first] + score) / 24); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
-        //}
         }
     }
 }
@@ -240,4 +241,9 @@ int TechManager::returnTechRank(const UpgradeType &ut) {
         else postion_in_line++;
     }
     return postion_in_line;
+}
+
+int TechManager::getMaxGas()
+{
+    return max_gas_value_;
 }

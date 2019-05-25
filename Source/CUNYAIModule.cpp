@@ -311,9 +311,9 @@ void CUNYAIModule::onFrame()
 
     //Knee-jerk states: gas, supply.
     gas_starved = (current_map_inventory.getGasRatio() < delta && workermanager.checkGasOutlet()) ||
-        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < 300) || // you need gas to buy things you have already invested in.
-        (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0) ||// you need gas for a required build order item.
-        (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 300); // you need gas because you are tech starved.
+        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ Count_Units(UnitTypes::Zerg_Extractor) * 100, CUNYAIModule::techmanager.getMaxGas(), 100 })) || // you need gas to buy things.
+        (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0);// you need gas for a required build order item.
+
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
@@ -463,7 +463,7 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 60, "Xtra Gas Avail: %s", workermanager.excess_gas_capacity_ ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", workermanager.excess_gas_capacity_ ? "TRUE" : "FALSE");  //
 
 
         //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //

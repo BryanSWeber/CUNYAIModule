@@ -8,6 +8,7 @@ using namespace BWAPI;
 class TechManager {
     static std::map<UpgradeType, int> upgrade_cycle_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
     static bool tech_avail_;
+    static int max_gas_value_;
 public:
     //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera.
     static bool Check_N_Upgrade(const UpgradeType & ups, const Unit & unit, const bool & extra_critera);
@@ -16,11 +17,17 @@ public:
     static void Print_Upgrade_FAP_Cycle(const int & screen_x, const int & screen_y);
     static bool updateTech_Avail();
     static void updateOptimalTech();
+    // Return True if there's something I might want to make that is a tech building.
     static bool checkTechAvail();
+    // Check if building is made and complete.
     static bool checkBuildingReady(const UpgradeType up);
+    // Check if I can get another copy of an upgrade, ex. melee damage +1 to +2 or +3.
     static bool checkUpgradeFull(const UpgradeType up);
+    // Check if I have a unit that could use this upgrade, ex melee damage with only hydras.
     static bool checkUpgradeUseable(const UpgradeType up);
     bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
     static void clearSimulationHistory(); //Clears the MA history. Should run every time a relevant comabat unit is made/destroyed to prevent the MA from having weight in dissimilar situations.
     static int returnTechRank(const UpgradeType & ut);
+    // Returns the most expensive piece of Tech we've considered making.
+    static int getMaxGas();
 };
