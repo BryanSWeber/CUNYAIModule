@@ -276,10 +276,10 @@ bool WorkerManager::workerWork(const Unit &u) {
     switch (miner.phase_)
     {
     case Stored_Unit::MiningGas:
-        if (!isEmptyWorker(u) && u->isVisible()) { //auto return.
+        if (!isEmptyWorker(u) && u->isVisible()) { // If he's not in the refinery, auto return.
             task_guard = workersReturn(u);
         }
-        else if (u->isVisible() && CUNYAIModule::spamGuard(u, 14) && miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
+        else if (u->isVisible() && CUNYAIModule::spamGuard(u, 14) && miner.bwapi_unit_->gather(miner.locked_mine_)) { // If he's not in the refinery, reassign him back to work.
             miner.updateStoredUnit(u);
             task_guard = true;
         }
@@ -300,13 +300,13 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u); // mark worker as returning.
         }
-        else if (u->isVisible() && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
             if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
-        else if (miner.isLongRangeLock() && CUNYAIModule::spamGuard(u, 14)) {
+        else if (miner.isLongRangeLock() && CUNYAIModule::spamGuard(u, 14)) { // Otherwise walk to that mineral.
             if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
