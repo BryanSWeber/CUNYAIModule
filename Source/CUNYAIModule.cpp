@@ -139,8 +139,6 @@ void CUNYAIModule::onStart()
     //get initial build order.
     buildorder.getInitialBuildOrder( gene_history.build_order_ );
 
-
-
     //update Map Grids
     current_map_inventory.updateBuildablePos();
     current_map_inventory.updateUnwalkable();
@@ -698,7 +696,7 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground.
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if (u_type.canMove() && u_type.canAttack() && !u_type.isWorker()) {
+        if (u_type.canMove() || u_type.canAttack()) {
             combat_manager.combatScript(u);
         }
         auto end_combat = std::chrono::high_resolution_clock::now();

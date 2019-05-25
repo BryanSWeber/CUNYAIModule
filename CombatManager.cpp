@@ -61,16 +61,17 @@ bool CombatManager::combatScript(const Unit & u)
             } // close local examination.
         }
 
-        // If there was no enemy to attack didn't trigger, try to approach.
-        bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::friendly_player_model.estimated_net_worth_ > CUNYAIModule::enemy_player_model.estimated_net_worth_;
-        if (ready_to_fight) {
-            long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        if (!u->getType().isWorker() && u->canMove()) {
+            // If there was no enemy to attack didn't trigger, try to approach.
+            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::friendly_player_model.estimated_net_worth_ > CUNYAIModule::enemy_player_model.estimated_net_worth_;
+            if (ready_to_fight) {
+                long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+            }
+            else {
+                long_term_walking = mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+            }
+            return long_term_walking;
         }
-        else {
-            long_term_walking = mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
-        }
-
-        return long_term_walking;
     }
     return false;
 }
