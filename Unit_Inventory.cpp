@@ -372,7 +372,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             else count_of_consecutive_predicted_deaths_++;
         }
     }
-    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching ) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
+    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || phase_ == Stored_Unit::Building) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
 }
 
@@ -954,13 +954,6 @@ bool Stored_Unit::isLongRangeLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     Stored_Resource* target_mine = this->getMine();
     return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
-}
-
-bool Stored_Unit::isMovingLock() {
-    this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
-    Stored_Resource* target_mine = this->getMine();
-    bool contents_of_long_range_lock_without_visiblity = bwapi_unit_ && target_mine && target_mine->pos_;
-    return  contents_of_long_range_lock_without_visiblity && Broodwar->isVisible(TilePosition(target_mine->pos_));
 }
 
 auto Stored_Unit::convertToFAP(const Research_Inventory &ri) {

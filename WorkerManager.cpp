@@ -137,10 +137,10 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 
       // mine from the closest mine with a base nearby.
     if (!available_fields.resource_inventory_.empty()) {
-        assignment_complete = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner, false); // phase is already updated.
+        assignment_complete = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner); // phase is already updated.
     }
     else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
-        assignment_complete = attachToNearestMine(long_dist_fields, CUNYAIModule::current_map_inventory, miner, true); // phase is already updated.
+        assignment_complete = attachToNearestMine(long_dist_fields, CUNYAIModule::current_map_inventory, miner); // phase is already updated.
     }
 
     if (!assignment_complete && old_mineral_patch) {
@@ -151,7 +151,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 } // closure worker mine
 
   //Attaches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
-bool WorkerManager::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner, bool distance) {
+bool WorkerManager::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner) {
     Stored_Resource* closest = CUNYAIModule::getClosestGroundStored(ri, miner.pos_);
     if (closest) {
         miner.startMine(*closest); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
@@ -159,7 +159,7 @@ bool WorkerManager::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &i
             CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(miner.bwapi_unit_->getOrderTargetPosition()), miner.bwapi_unit_->getBuildType(), true);
         }
         miner.phase_ = closest->type_.isNeutral() ? Stored_Unit::MiningMin : Stored_Unit::MiningGas; // is it gas or mineral?
-        miner.phase_ = distance ? Stored_Unit::DistanceMining : miner.phase_; // is it distance?
+        miner.phase_ = !closest->occupied_resource_ ? Stored_Unit::DistanceMining : miner.phase_; // is it distance?
         miner.updateStoredUnit(miner.bwapi_unit_);
         return true;
     }
@@ -196,7 +196,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty()) {
-        assignment_worked = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner, false);
+        assignment_worked = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner);
         if (assignment_worked) {
             miner.phase_ = Stored_Unit::Clearing; //oof we have to manually edit the command to clear, it's a rare case.
             miner.updateStoredUnit(miner.bwapi_unit_);
@@ -300,14 +300,14 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u); // mark worker as returning.
         }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
-            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
+        else if (!miner.getMine()->bwapi_unit_ && CUNYAIModule::spamGuard(u, 14)) { // Otherwise walk to that mineral.
+            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
-        else if (miner.isLongRangeLock() && CUNYAIModule::spamGuard(u, 14)) { // Otherwise walk to that mineral.
-            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
+        else if (miner.getMine()->bwapi_unit_ && miner.isBrokenLock() && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
