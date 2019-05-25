@@ -79,12 +79,13 @@ struct Stored_Unit {
         NoRetreat = 7, 
         MiningMin = 8, 
         MiningGas = 9,
-        DistanceMining = 10, 
-        Clearing = 11, 
-        Upgrading = 12, 
-        Researching = 13, 
-        Morphing = 14, 
-        None = 15
+        Returning = 10,
+        DistanceMining = 11, 
+        Clearing = 12, 
+        Upgrading = 13, 
+        Researching = 14, 
+        Morphing = 15, 
+        None = 16
     };
     Phase phase_;
     Stored_Unit(Phase p) : phase_(p) {}
@@ -237,5 +238,6 @@ struct Unit_Inventory {
 };
 
 
-
+void stopMine(const Unit &resource);
+Stored_Resource* getMine(const Unit &resource);
 

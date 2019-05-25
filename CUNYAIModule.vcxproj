@@ -120,13 +120,12 @@
     <ClCompile Include="GeneticHistoryManager.cpp" />
     <ClCompile Include="TechManager.cpp" />
     <ClCompile Include="VisionManager.cpp" />
-    <ClCompile Include="MiningManager.cpp" />
+    <ClCompile Include="WorkerManager.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="Fight_MovementManager.cpp" />
     <ClCompile Include="Source\Dll.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CombatManager.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\BWEB\Block.h" />
     <ClInclude Include="Source\BWEB\BWEB.h" />
@@ -145,6 +144,7 @@
     <ClInclude Include="Source\TechManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
+    <ClInclude Include="WorkerManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

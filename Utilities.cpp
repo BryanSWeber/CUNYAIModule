@@ -395,6 +395,7 @@ void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & scre
         { Stored_Unit::Phase::NoRetreat,"NoRetreat"},
         { Stored_Unit::Phase::MiningMin,"Gather Min"},
         { Stored_Unit::Phase::MiningGas,"Gather Gas"},
+        { Stored_Unit::Phase::Returning,"Returning" },
         { Stored_Unit::Phase::DistanceMining,"DistanceMining"},
         { Stored_Unit::Phase::Clearing,"Clearing"},
         { Stored_Unit::Phase::Upgrading,"Upgrading"},

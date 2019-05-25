@@ -53,7 +53,7 @@ namespace { auto & bwemMap = BWEM::Map::Instance(); }
     Building_Gene CUNYAIModule::buildorder; //
     Reservation CUNYAIModule::my_reservation;
     GeneticHistory CUNYAIModule::gene_history;
-    MiningManager CUNYAIModule::minemanager;
+    WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {    
@@ -310,8 +310,8 @@ void CUNYAIModule::onFrame()
     }
 
     //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getGasRatio() < delta && minemanager.checkGasOutlet()) ||
-        (minemanager.checkGasOutlet() && Broodwar->self()->gas() < 300) || // you need gas to buy things you have already invested in.
+    gas_starved = (current_map_inventory.getGasRatio() < delta && workermanager.checkGasOutlet()) ||
+        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < 300) || // you need gas to buy things you have already invested in.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0) ||// you need gas for a required build order item.
         (tech_starved && techmanager.checkTechAvail() && Broodwar->self()->gas() < 300); // you need gas because you are tech starved.
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
@@ -486,97 +486,97 @@ void CUNYAIModule::onFrame()
             Print_Build_Order_Remaining(500, 170, buildorder);
         }
 
-        Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
-        Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
-        Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", land_inventory.total_miners_, land_inventory.total_gas_);  //
+        //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
+        //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
+        //Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", land_inventory.total_miners_, land_inventory.total_gas_);  //
 
         Broodwar->drawTextScreen(0, 30, "Active Miners: %d", current_map_inventory.min_workers_);
         Broodwar->drawTextScreen(0, 40, "Active Gas Miners: %d", current_map_inventory.gas_workers_);
 
-        Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
+        //Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
+        //Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
+        //Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
 
-        Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
-        Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
-        Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", minemanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
+        //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
+        //Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
+        //Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
 
 
-        Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
-        Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", friendly_player_model.spending_model_.getlnY()); //
+        //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
+        //Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", friendly_player_model.spending_model_.getlnY()); //
 
-        Broodwar->drawTextScreen(125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60); //
-        Broodwar->drawTextScreen(125, 110, "Win Rate: %1.2f", win_rate); //
-        Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
-        Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
-        Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
-        Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
-        Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
+        //Broodwar->drawTextScreen(125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60); //
+        //Broodwar->drawTextScreen(125, 110, "Win Rate: %1.2f", win_rate); //
+        //Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
+        //Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
+        //Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
+        //Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
+        //Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
 
-        Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
-        Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
-        Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
-        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
-        Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
-        Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
-        Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-        Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
-        Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
-        Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
-        Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        Broodwar->drawTextScreen(250, 120, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        Broodwar->drawTextScreen(250, 130, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
-        Broodwar->drawTextScreen(250, 140, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
+        //Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
+        //Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
+        //Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
+        //Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
+        //Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
+        //Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
+        //Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
+        //Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
+        //Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
+        //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
+        //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
+        //Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
+        //Broodwar->drawTextScreen(250, 120, "Last Building: %s", buildorder.last_build_order.c_str()); //
+        //Broodwar->drawTextScreen(250, 130, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
+        //Broodwar->drawTextScreen(250, 140, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
-        if (buildorder.isEmptyBuildOrder()) {
-            Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
-        }
-        else {
-            Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
-        }
+        //if (buildorder.isEmptyBuildOrder()) {
+        //    Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
+        //}
+        //else {
+        //    Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
+        //}
 
-        //Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_have_active_air_problem_ ? "TRUE" : "FALSE"); //
-        Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_has_air_vunerability_ ? "TRUE" : "FALSE"); //
+        ////Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
+        //Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_have_active_air_problem_ ? "TRUE" : "FALSE"); //
+        //Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_has_air_vunerability_ ? "TRUE" : "FALSE"); //
 
-        //vision belongs here.
-        Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
-        Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
-        Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-        Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
-        Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
-        Broodwar->drawTextScreen(375, 70, "Enemy Worth (est): %4.2f", enemy_player_model.estimated_net_worth_);  //
-        Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
+        ////vision belongs here.
+        //Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
+        //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
+        //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
+        //Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
+        //Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
+        //Broodwar->drawTextScreen(375, 70, "Enemy Worth (est): %4.2f", enemy_player_model.estimated_net_worth_);  //
+        //Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
 
-        //Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
-        //Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
-        //Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
+        ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
+        ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
+        ////Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
 
-        Broodwar->drawTextScreen(500, 20, "Performance:");  //
-        Broodwar->drawTextScreen(500, 30, "APM: %d", Broodwar->getAPM());  //
-        Broodwar->drawTextScreen(500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS());  //
-        Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  //
-        Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
+        //Broodwar->drawTextScreen(500, 20, "Performance:");  //
+        //Broodwar->drawTextScreen(500, 30, "APM: %d", Broodwar->getAPM());  //
+        //Broodwar->drawTextScreen(500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS());  //
+        //Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  //
+        //Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
 
-        Broodwar->drawTextScreen(500, 70, delay_string);
-        Broodwar->drawTextScreen(500, 80, playermodel_string);
-        Broodwar->drawTextScreen(500, 90, map_string);
-        Broodwar->drawTextScreen(500, 100, larva_string);
-        Broodwar->drawTextScreen(500, 110, worker_string);
-        Broodwar->drawTextScreen(500, 120, scouting_string);
-        Broodwar->drawTextScreen(500, 130, combat_string);
-        Broodwar->drawTextScreen(500, 140, detection_string);
-        Broodwar->drawTextScreen(500, 150, upgrade_string);
-        Broodwar->drawTextScreen(500, 160, creep_colony_string);
+        //Broodwar->drawTextScreen(500, 70, delay_string);
+        //Broodwar->drawTextScreen(500, 80, playermodel_string);
+        //Broodwar->drawTextScreen(500, 90, map_string);
+        //Broodwar->drawTextScreen(500, 100, larva_string);
+        //Broodwar->drawTextScreen(500, 110, worker_string);
+        //Broodwar->drawTextScreen(500, 120, scouting_string);
+        //Broodwar->drawTextScreen(500, 130, combat_string);
+        //Broodwar->drawTextScreen(500, 140, detection_string);
+        //Broodwar->drawTextScreen(500, 150, upgrade_string);
+        //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-        for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-            if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-            }
-        }
+        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
+        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
+        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
+        //    }
+        //}
 
 
         //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
@@ -647,7 +647,7 @@ void CUNYAIModule::onFrame()
         }
 
         //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
-        //Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
+        Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
         //Diagnostic_Watch_Expos();
     }// close analysis mode
 
@@ -946,7 +946,7 @@ void CUNYAIModule::onFrame()
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
-            minemanager.workerWork(u);
+           if(u->getType().isWorker()) workermanager.workerWork(u);
         auto end_worker = std::chrono::high_resolution_clock::now();
 
         //Upgrade loop:
@@ -1210,7 +1210,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
                         land_inventory.resource_inventory_.erase(unit); //Clear that mine from the resource inventory.
                     }
 
-                    minemanager.workerClear(miner_unit); // reassign clearing workers again.
+                    workermanager.assignClear(miner_unit); // reassign clearing workers again.
                     if (potential_miner->second.isAssignedClearing()) {
                         current_map_inventory.updateWorkersClearing();
                     }

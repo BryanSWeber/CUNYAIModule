@@ -164,7 +164,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
 
     if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-        CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
+        //CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
         //buildorder.updateRemainingBuildOrder(building); // skips the building.
     }
 

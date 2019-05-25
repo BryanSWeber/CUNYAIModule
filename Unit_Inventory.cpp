@@ -836,7 +836,7 @@ void Stored_Unit::startMine(Stored_Resource &new_resource){
     CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
 
-//Decrements the number of miners on a resource.
+//Decrements the number of miners on a resource, if possible.
 void Stored_Unit::stopMine(){
     if (locked_mine_){
         if (getMine()) {
@@ -844,6 +844,12 @@ void Stored_Unit::stopMine(){
         }
     }
     locked_mine_ = nullptr;
+}
+//Decrements the number of miners on a resource, if possible.
+void stopMine(const Unit &resource) {
+    if (getMine(resource)) {
+        getMine(resource)->number_of_miners_ = max(getMine(resource)->number_of_miners_ - 1, 0);
+    }
 }
 
 //finds mine- Will return true something even if the mine DNE.
@@ -854,6 +860,16 @@ Stored_Resource* Stored_Unit::getMine() {
     }
     return tenative_resource;
 }
+
+//finds mine- Will return true null if the mine DNE.
+Stored_Resource* getMine(const Unit &resource) {
+    Stored_Resource* tenative_resource = nullptr;
+    if (CUNYAIModule::land_inventory.resource_inventory_.find(resource) != CUNYAIModule::land_inventory.resource_inventory_.end()) {
+        tenative_resource = &CUNYAIModule::land_inventory.resource_inventory_.find(resource)->second;
+    }
+    return tenative_resource;
+}
+
 
 //checks if mine started with less than 8 resource
 bool Stored_Unit::isAssignedClearing() {

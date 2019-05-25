@@ -16,10 +16,11 @@ struct Reservation {
     int last_builder_sent_;
     map<TilePosition, UnitType> reservation_map_;
 
-    // Updates mineral, gas, and time reserves for a particular unit. 
+    // Updates mineral, gas, and time reserves for a particular unit. Will return FALSE if it is already present. This functionality is taken advantage of in some cases.
     bool Reservation::addReserveSystem( TilePosition tile, UnitType type );
-    void Reservation::removeReserveSystem( TilePosition tile, UnitType type, bool retry_this_building);
-
+    // Removes an item from the reserve system. Will return FALSE if it is not there.
+    bool Reservation::removeReserveSystem( TilePosition tile, UnitType type, bool retry_this_building);
+    // Checks if an item of type is in reserve system.
     bool checkTypeInReserveSystem(UnitType type);
 
     // Decrements the clock. Simple but works.

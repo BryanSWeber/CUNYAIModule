@@ -11,7 +11,7 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
-#include "..\MiningManager.h"
+#include "..\WorkerManager.h"
 #include <bwem.h>
 #include "BWEB\BWEB.h"
 #include <chrono> // for in-game frame clock.
@@ -80,7 +80,7 @@ public:
     static Building_Gene buildorder; //
     static Reservation my_reservation;
     static GeneticHistory gene_history;
-    static MiningManager minemanager;
+    static WorkerManager workermanager;
 
     //These measure its clock.
     int short_delay;
