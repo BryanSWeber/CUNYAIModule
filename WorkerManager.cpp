@@ -418,7 +418,7 @@ void WorkerManager::updateWorkersLongDistanceMining()
 
     if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
         for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
-            if (w->second.isAssignedLongDistanceMining()) {
+            if (w->second.phase_ == Stored_Unit::DistanceMining) {
                 long_distance_miners_found++;
             }
         }
