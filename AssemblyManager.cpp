@@ -27,6 +27,9 @@ int AssemblyManager::last_frame_of_larva_morph_command = 0;
 int AssemblyManager::last_frame_of_hydra_morph_command = 0;
 int AssemblyManager::last_frame_of_muta_morph_command = 0;
 int AssemblyManager::last_frame_of_creep_command = 0;
+bool AssemblyManager::have_idle_evos_ = false;
+bool AssemblyManager::have_idle_spires_ = false;
+
 std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_unit_cartridge_;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
@@ -164,7 +167,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
 
     if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-        CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
+        //CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
         //buildorder.updateRemainingBuildOrder(building); // skips the building.
     }
 
@@ -236,13 +239,13 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
             if (Broodwar->isExplored(inv.next_expo_) && unit->build(UnitTypes::Zerg_Hatchery, inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 CUNYAIModule::DiagnosticText("Expoing at ( %d , %d ).", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Expoing);
+                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
 
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 unit->move(Position(inv.next_expo_));
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Expoing);
+                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
             }
         }
     } // closure affordablity.
@@ -273,14 +276,9 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
     int count_of_spire_decendents = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire);
     int count_tech_buildings = CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern);
-    bool have_idle_evos = false;
-    bool have_idle_spires = false;
+
     bool fight_without_reinforcements = CUNYAIModule::army_starved && (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved);
-    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires = true;
-    }
+
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -366,7 +364,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Broodwar->self()->gas() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        (!have_idle_evos_ || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -375,7 +373,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
         Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_spires || count_of_spire_decendents == 0) &&
+        (!have_idle_spires_ || count_of_spire_decendents == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -424,8 +422,8 @@ void AssemblyManager::clearBuildingObstuctions(const Unit_Inventory &ui, Map_Inv
     Unit_Inventory obstructions = CUNYAIModule::getUnitInventoryInRadius(ui, Position(inv.next_expo_), 3 * 32);
     for (auto u = obstructions.unit_map_.begin(); u != obstructions.unit_map_.end() && !obstructions.unit_map_.empty(); u++) {
         if (u->second.bwapi_unit_ && u->second.bwapi_unit_ != exception_unit ) {
-            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_, CUNYAIModule::land_inventory, inv, CUNYAIModule::my_reservation);
-            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_, CUNYAIModule::land_inventory, inv, CUNYAIModule::my_reservation);
+            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_);
+            CUNYAIModule::friendly_player_model.units_.purgeWorkerRelationsNoStop(u->second.bwapi_unit_);
             u->second.bwapi_unit_->move({ Position(inv.next_expo_).x + (rand() % 200 - 100) * 4 * 32, Position(inv.next_expo_).y + (rand() % 200 - 100) * 4 * 32 });
         }
     }
@@ -628,6 +626,13 @@ void AssemblyManager::updateOptimalUnit() {
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
+    have_idle_evos_ = false;
+    have_idle_spires_ = false;
+    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+    }
 }
 
 
@@ -868,7 +873,7 @@ bool AssemblyManager::assignUnitAssembly()
             if (larva.first->getHatchery()) {
                 wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::current_map_inventory.min_fields_ > 8; // no longer will spam units when I need a hatchery.
                 Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
-                local_resources.countViableMines();
+                local_resources.updateMines();
                 hatch_wants_drones = 2 * local_resources.local_mineral_patches_ + 3 * local_resources.local_refineries_ > local_resources.local_miners_ + local_resources.local_gas_collectors_;
                 prep_for_transfer = CUNYAIModule::Count_Units_In_Progress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
             }

@@ -5,9 +5,6 @@
     <ClCompile Include="Utilities.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="MiningManager.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="GeneticHistoryManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -32,7 +29,6 @@
     <ClCompile Include="Reserve_Manager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Research_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -57,8 +53,10 @@
     <ClCompile Include="Source\BWEB\Wall.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
-    <ClCompile Include="CombatManager.cpp" />
-    <ClCompile Include="MobilityManager.cpp">
+    <ClCompile Include="WorkerManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\CUNYAIModule.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
   </ItemGroup>
@@ -73,9 +71,6 @@
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
-    <ClInclude Include="Source\TechManager.h">
-      <Filter>Utilities</Filter>
-    </ClInclude>
     <ClInclude Include="Source\BWEB\Block.h">
       <Filter>BWEB</Filter>
     </ClInclude>
@@ -94,8 +89,8 @@
     <ClInclude Include="Source\BWEB\Wall.h">
       <Filter>BWEB</Filter>
     </ClInclude>
-    <ClInclude Include="CombatManager.h" />
-    <ClInclude Include="Source\MobilityManager.h" />
+    <ClInclude Include="Source\TechManager.h" />
+    <ClInclude Include="WorkerManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

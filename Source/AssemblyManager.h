@@ -20,6 +20,8 @@ private:
     static Unit_Inventory builder_bank_;
     static Unit_Inventory creep_colony_bank_;
     static Unit_Inventory production_facility_bank_;
+    static bool have_idle_evos_;
+    static bool have_idle_spires_;
 
     static int last_frame_of_larva_morph_command;
     static int last_frame_of_hydra_morph_command;

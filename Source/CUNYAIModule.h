@@ -11,7 +11,8 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
-#include "../CombatManager.h"
+#include "..\WorkerManager.h"
+
 #include <bwem.h>
 #include "BWEB\BWEB.h"
 #include <chrono> // for in-game frame clock.
@@ -81,6 +82,7 @@ public:
     static Building_Gene buildorder; //
     static Reservation my_reservation;
     static GeneticHistory gene_history;
+    static WorkerManager workermanager;
 
     //These measure its clock.
     int short_delay;
@@ -117,24 +119,11 @@ public:
       static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
       // checks if ut is required and can be built by unit at this time.
       static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
+      // checks if up is required and can be built by unit at this time.
       static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);
 
-  // Mining Functions
       //Forces selected unit (drone, hopefully!) to expo:
       static bool Expo( const Unit &unit , const bool &extra_critera, Map_Inventory &inv);
-      // Checks all Mines of type for undersaturation. Goes to any undersaturated location, preference for local mine.
-      void Worker_Gather(const Unit & unit, const UnitType mine, Unit_Inventory & ui);
-      // attaches the miner to the nearest mine in the inventory, and updates the stored_unit.
-      void attachToNearestMine(Resource_Inventory & ri, Map_Inventory & inv, Stored_Unit & miner);
-      // attaches the miner to the particular mine and updates the stored unit.
-      void attachToParticularMine(Stored_Resource & mine, Resource_Inventory & ri, Stored_Unit & miner);
-      // attaches the miner to the particular mine and updates the stored unit.
-      void attachToParticularMine(Unit & mine, Resource_Inventory & ri, Stored_Unit & miner);
-      // Clears nearly-empty minerals. Check if area is threatened before clearing.
-      void Worker_Clear( const Unit &unit, Unit_Inventory &ui );
-      bool Nearby_Blocking_Minerals(const Unit & unit, Unit_Inventory & ui);
-      // Checks if there is a way to spend gas.
-      bool Gas_Outlet();
 
   // Utility Functions
       // Prints unit's last error directly onto it.
@@ -145,14 +134,13 @@ public:
       bool isIdleEmpty(const Unit &unit);
       // When should we reset the lock?
       bool isInLine(const Unit &unit);
-      bool isEmptyWorker(const Unit & unit); // Checks if it is carrying.
       // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
       static bool IsFightingUnit(const Unit &unit);
       static bool IsFightingUnit(const Stored_Unit & unit);
       static bool IsFightingUnit(const UnitType & unittype);
 
       // evaluates if it was order to fight recently.
-      bool isRecentCombatant(const Stored_Unit &su);
+      static bool isRecentCombatant(const Stored_Unit &su);
       // Draws a line if diagnostic mode is TRUE.
       static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col );
       static void Diagnostic_Tiles(const Position & screen_pos, Color col);
@@ -217,7 +205,7 @@ public:
       // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
       void Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res );
 
-      //Strips the RACE_ from the front of the unit type string. 
+      //Strips the RACE_ from the front of the unit type string.
       static const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
@@ -252,7 +240,7 @@ public:
       static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const UnitType ut, const Position & origin);
 
       static Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin);
-      //Overload. Searches for units of a specific type. 
+      //Overload. Searches for units of a specific type.
       static Unit_Inventory getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist);
       //Searches an inventory for units of within a range. Returns TRUE if the area is occupied.
       static bool checkOccupiedArea( const Unit_Inventory &ui, const Position &origin );

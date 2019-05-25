@@ -31,17 +31,15 @@ bool Reservation::addReserveSystem( TilePosition pos, UnitType type) {
     return safe;
 }
 
-void Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
+bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end() && !reservation_map_.empty()) {
         if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_building) CUNYAIModule::buildorder.retryBuildOrderElement(type);
         if(it->second.mineralPrice()) min_reserve_ -= it->second.mineralPrice();
         if(it->second.gasPrice())gas_reserve_ -= it->second.gasPrice();
-        reservation_map_.erase(pos);
+        return reservation_map_.erase(pos);
     }
-    else {
-        CUNYAIModule::DiagnosticText("We're trying to remove %s at tilepostion (%d, %d) from the reservation queue but it's not stored here.", type.c_str(), pos.x, pos.y);
-    }
+    return false;
 };
 
 bool Reservation::checkTypeInReserveSystem(UnitType type) {

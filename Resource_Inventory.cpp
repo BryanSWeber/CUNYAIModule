@@ -165,19 +165,19 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
             r++;
         }
     }
-    countViableMines();
+    updateMines();
 }
 
 
 // scrape over every resource to determine the lowest number of miners. Only looks at COMPLETED mines.
-void Resource_Inventory::countViableMines() {
+void Resource_Inventory::updateMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
     local_miners_ = 0;
     local_gas_collectors_ = 0;
 
     for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-        if (r->second.type_.isMineralField() && r->second.max_stock_value_ >= 8) {
+        if (r->second.type_.isMineralField() && !r->second.blocking_mineral_) {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
         }
@@ -217,7 +217,7 @@ void Resource_Inventory::updateMiners()
 {
     total_miners_ = 0;
     for (auto& r = this->resource_inventory_.begin(); r != this->resource_inventory_.end() && !this->resource_inventory_.empty(); r++) {
-        if ( r->second.pos_.isValid() && r->second.type_.isMineralField() ) {
+        if ( r->second.pos_.isValid() && r->second.type_.isMineralField() && !r->second.blocking_mineral_) {
             total_miners_ += r->second.number_of_miners_;
         }
     } // find drone minima.
