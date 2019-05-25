@@ -6,7 +6,6 @@
 class WorkerManager {
 private:
 
-
 public:
     // Checks all Mines of type for undersaturation and assigns Gather. Goes to any undersaturated location, preference for local mine. Returns true on success.
     bool assignGather(const Unit & unit, const UnitType mine);
@@ -34,5 +33,22 @@ public:
     bool workersClear(const Unit &unit);
     // Workers should return cargo and forget about their original mine.
     bool workersReturn(const Unit &unit);
+
+    int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
+    int min_workers_;
+    int workers_clearing_;
+    int workers_distance_mining_;
+    bool excess_gas_capacity_;
+
+    // Updates the count of our gas workers.
+    void WorkerManager::updateGas_Workers();
+    // Updates the count of our min workers.
+    void WorkerManager::updateMin_Workers();
+    // Updates the count of clearing workers
+    void WorkerManager::updateWorkersClearing();
+    // Updates the count of mining workers
+    void WorkerManager::updateWorkersLongDistanceMining();
+    // Updates the if gas has excess capacity. NOTE: Does not check if we WANT that capacity atm.
+    void WorkerManager::updateExcessCapacity();
 };
 

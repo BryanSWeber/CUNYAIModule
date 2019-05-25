@@ -338,13 +338,14 @@ void CUNYAIModule::onFrame()
     current_map_inventory.updateLn_Supply_Remain();
     current_map_inventory.updateLn_Supply_Total();
 
-    current_map_inventory.updateGas_Workers();
-    current_map_inventory.updateMin_Workers();
+    workermanager.updateGas_Workers();
+    workermanager.updateMin_Workers();
+    workermanager.updateWorkersClearing();
+    workermanager.updateWorkersLongDistanceMining();
+    workermanager.updateExcessCapacity();
 
     current_map_inventory.updateMin_Possessed();
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
-    current_map_inventory.updateWorkersClearing();
-    current_map_inventory.updateWorkersLongDistanceMining();
     current_map_inventory.my_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(Broodwar->getStartLocations().size()));
     current_map_inventory.expo_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(current_map_inventory.expo_positions_complete_.size()));
     current_map_inventory.updateStartPositions(enemy_player_model.units_);
@@ -362,9 +363,6 @@ void CUNYAIModule::onFrame()
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
     current_map_inventory.drawExpoPositions();
     //current_map_inventory.drawBasePositions();
-
-    land_inventory.updateGasCollectors();
-    land_inventory.updateMiners();
 
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalUnit();
@@ -454,9 +452,9 @@ void CUNYAIModule::onFrame()
 
         //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
         //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
-        Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", land_inventory.total_miners_, land_inventory.total_gas_);  //
-        Broodwar->drawTextScreen(0, 30, "Active Miners: %d", current_map_inventory.min_workers_);
-        Broodwar->drawTextScreen(0, 40, "Active Gas Miners: %d", current_map_inventory.gas_workers_);
+        Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", workermanager.min_workers_, workermanager.gas_workers_);  //
+        Broodwar->drawTextScreen(0, 30, "Active Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
+        Broodwar->drawTextScreen(0, 40, "Active Gas Gathers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
 
         //Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
         //Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
@@ -465,6 +463,7 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 60, "Xtra Gas Avail: %s", workermanager.excess_gas_capacity_ ? "TRUE" : "FALSE");  //
 
 
         //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
@@ -1166,7 +1165,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
                     workermanager.assignClear(miner_unit); // reassign clearing workers again.
                     if (potential_miner->second.isAssignedClearing()) {
-                        current_map_inventory.updateWorkersClearing();
+                        workermanager.updateWorkersClearing();
                     }
                 }
                 else {

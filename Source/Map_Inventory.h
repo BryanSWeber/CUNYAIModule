@@ -29,8 +29,6 @@ struct Map_Inventory {
     double ln_supply_remain_;
     double ln_supply_total_;
 
-    int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
-    int min_workers_;
     int min_fields_;
     int hatches_;
     int last_gas_check_;
@@ -67,8 +65,6 @@ struct Map_Inventory {
     TilePosition next_expo_;
     bool cleared_all_start_positions_;
     bool checked_all_expo_positions_ = false;
-    int workers_clearing_;
-    int workers_distance_mining_;
 
     int frames_since_unwalkable = 0;
     int frames_since_map_veins = 0;
@@ -95,11 +91,6 @@ struct Map_Inventory {
     double getGasRatio();
     // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
     double getLn_Supply_Ratio();
-
-    // Updates the count of our gas workers.
-    void Map_Inventory::updateGas_Workers();
-    // Updates the count of our min workers.
-    void Map_Inventory::updateMin_Workers();
 
     // Updates the number of mineral fields we "possess".
     void Map_Inventory::updateMin_Possessed();
@@ -138,10 +129,6 @@ struct Map_Inventory {
     int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const;
     bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const;
     int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
-
-    // Marks and scores base locations.
-    void Map_Inventory::updateWorkersClearing(); // updates number of workers clearing.
-    void Map_Inventory::updateWorkersLongDistanceMining(); // updates number of workers distance mining.
 
     // gets the radial distance of all units to the enemy base.
     static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);
