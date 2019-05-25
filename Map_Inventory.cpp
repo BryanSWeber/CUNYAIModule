@@ -21,9 +21,6 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateLn_Supply_Remain();
     updateLn_Supply_Total();
 
-    updateGas_Workers();
-    updateMin_Workers();
-
     updateMin_Possessed( );
     updateHatcheries();
 
@@ -125,52 +122,6 @@ double Map_Inventory::getLn_Supply_Ratio() {
         return 0;
     } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. Just in case- Define as ~~infty, not 0.
 };
-
-// Updates the count of our gas workers.
-void Map_Inventory::updateGas_Workers() {
-    // Get worker tallies.
-    int gas_workers = 0;
-
-    Unitset myUnits = Broodwar->self()->getUnits(); // out of my units  Probably easier than searching the map for them.
-    if ( !myUnits.empty() ) { // make sure this object is valid!
-        for ( auto u = myUnits.begin(); u != myUnits.end() && !myUnits.empty(); ++u )
-        {
-            if ( (*u) && (*u)->exists() ) {
-                if ( (*u)->getType().isWorker() ) {
-                    if ( (*u)->isGatheringGas() || (*u)->isCarryingGas() ) // implies exists and isCompleted
-                    {
-                        ++gas_workers;
-                    }
-                } // closure: Only investigate closely if they are drones.
-            } // Closure: only investigate on existance of unit..
-        } // closure: count all workers
-    }
-
-    gas_workers_ = gas_workers;
-}
-
-// Updates the count of our mineral workers.
-void Map_Inventory::updateMin_Workers() {
-    // Get worker tallies.
-    int min_workers = 0;
-
-    Unitset myUnits = Broodwar->self()->getUnits(); // out of my units  Probably easier than searching the map for them.
-    if ( !myUnits.empty() ) { // make sure this object is valid!
-        for ( auto u = myUnits.begin(); u != myUnits.end() && !myUnits.empty(); ++u )
-        {
-            if ( (*u) && (*u)->exists() ) {
-                if ( (*u)->getType().isWorker() ) {
-                    if ( (*u)->isGatheringMinerals() || (*u)->isCarryingMinerals() ) // implies exists and isCompleted
-                    {
-                        ++min_workers;
-                    }
-                } // closure: Only investigate closely if they are drones.
-            } // Closure: only investigate on existance of unit..
-        } // closure: count all workers
-    }
-
-    min_workers_ = min_workers;
-}
 
 // Updates the number of mineral fields we "possess".
 void Map_Inventory::updateMin_Possessed() {
@@ -1014,36 +965,6 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 //    //}
 //}
 //
-
-
-
-void Map_Inventory::updateWorkersClearing( )
-{
-    int clearing_workers_found = 0;
-
-    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
-        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
-            if ( w->second.isAssignedClearing() ) {
-                clearing_workers_found ++;
-            }
-        }
-    }
-    workers_clearing_ = clearing_workers_found;
-}
-
-void Map_Inventory::updateWorkersLongDistanceMining()
-{
-    int long_distance_miners_found = 0;
-
-    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
-        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
-            if (w->second.isAssignedLongDistanceMining()) {
-                long_distance_miners_found++;
-            }
-        }
-    }
-    workers_distance_mining_ = long_distance_miners_found ;
-}
 
 Position Map_Inventory::getWeakestBase( const Unit_Inventory &ei) const
 {

@@ -169,21 +169,22 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
 }
 
 
-// scrape over every resource to determine the lowest number of miners. Only looks at COMPLETED mines.
+// scrape over every resource to determine how many of them are actually  occupied.
 void Resource_Inventory::updateMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
+
     local_miners_ = 0;
     local_gas_collectors_ = 0;
-
     for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-        if (r->second.type_.isMineralField() && !r->second.blocking_mineral_) {
+        if (r->second.type_.isMineralField() && !r->second.blocking_mineral_ && r->second.local_natural_) {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
         }
-        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
+        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.local_natural_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
             local_refineries_++;
-            local_miners_ += r->second.number_of_miners_;
+            local_gas_collectors_ += r->second.number_of_miners_;
+
         }
     } // find drone minima.
 }
@@ -211,28 +212,48 @@ void Resource_Inventory::drawUnreachablePatch(const Map_Inventory & inv) const
     }
 }
 
+int Resource_Inventory::getLocalMiners()
+{
+    return local_miners_;
+}
+
+int Resource_Inventory::getLocalGasCollectors()
+{
+    return local_gas_collectors_;
+}
+
+int Resource_Inventory::getLocalMinPatches()
+{
+    return local_mineral_patches_;
+}
+
+int Resource_Inventory::getLocalRefineries()
+{
+    return local_refineries_;
+}
+
 
 //how many workers are mining?
-void Resource_Inventory::updateMiners()
-{
-    total_miners_ = 0;
-    for (auto& r = this->resource_inventory_.begin(); r != this->resource_inventory_.end() && !this->resource_inventory_.empty(); r++) {
-        if ( r->second.pos_.isValid() && r->second.type_.isMineralField() && !r->second.blocking_mineral_) {
-            total_miners_ += r->second.number_of_miners_;
-        }
-    } // find drone minima.
-}
-
-//how many workers are gathering gas?
-void Resource_Inventory::updateGasCollectors()
-{
-    total_gas_ = 0;
-    for (auto& r = this->resource_inventory_.begin(); r != this->resource_inventory_.end() && !this->resource_inventory_.empty(); r++) {
-        if ( r->second.bwapi_unit_ && r->second.pos_.isValid() && r->second.type_.isRefinery() ) {
-            total_gas_ += r->second.number_of_miners_;
-        }
-    } 
-}
+//void Resource_Inventory::updateMiners()
+//{
+//    total_miners_ = 0;
+//    for (auto& r = this->resource_inventory_.begin(); r != this->resource_inventory_.end() && !this->resource_inventory_.empty(); r++) {
+//        if ( r->second.pos_.isValid() && r->second.type_.isMineralField() && !r->second.blocking_mineral_) {
+//            total_miners_ += r->second.number_of_miners_;
+//        }
+//    } // find drone minima.
+//}
+//
+////how many workers are gathering gas?
+//void Resource_Inventory::updateGasCollectors()
+//{
+//    total_gas_ = 0;
+//    for (auto& r = this->resource_inventory_.begin(); r != this->resource_inventory_.end() && !this->resource_inventory_.empty(); r++) {
+//        if ( r->second.bwapi_unit_ && r->second.pos_.isValid() && r->second.type_.isRefinery() ) {
+//            total_gas_ += r->second.number_of_miners_;
+//        }
+//    } 
+//}
 
 Resource_Inventory operator+(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
 {

@@ -29,8 +29,7 @@ bool WorkerManager::workersCollect(const Unit & unit)
 {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     
-    bool could_use_another_gas = CUNYAIModule::land_inventory.local_gas_collectors_ * 2 <= CUNYAIModule::land_inventory.local_refineries_ && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;
-    if (could_use_another_gas) {
+    if (excess_gas_capacity_ && CUNYAIModule::gas_starved) {
         if (assignGather(unit, UnitTypes::Zerg_Extractor)) {
             return true;
         }
@@ -50,9 +49,9 @@ bool WorkerManager::workersClear(const Unit & unit)
 
     //Workers need to clear empty patches.
     bool time_to_start_clearing_a_path = CUNYAIModule::current_map_inventory.hatches_ >= 2 && checkBlockingMinerals(unit, CUNYAIModule::friendly_player_model.units_);
-    if (time_to_start_clearing_a_path && CUNYAIModule::current_map_inventory.workers_clearing_ == 0 && isEmptyWorker(unit)) {
+    if (time_to_start_clearing_a_path && CUNYAIModule::workermanager.workers_clearing_ == 0 && isEmptyWorker(unit)) {
         if (assignClear(unit)) {
-            CUNYAIModule::current_map_inventory.updateWorkersClearing();
+            CUNYAIModule::workermanager.updateWorkersClearing();
             return true;
         }
     } // clear those empty mineral patches that block paths.
@@ -318,26 +317,21 @@ bool WorkerManager::workerWork(const Unit &u) {
             break;
         case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
             if (isEmptyWorker(u)) {
-                bool could_use_another_gas = CUNYAIModule::land_inventory.local_gas_collectors_ * 2 <= CUNYAIModule::land_inventory.local_refineries_ && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;
                 if (miner.locked_mine_) {
-                    if (miner.locked_mine_->getType().isMineralField() && could_use_another_gas) {
+                    if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
                         workersCollect(u);
                     }
                     else if (miner.locked_mine_->getType().isRefinery() && !CUNYAIModule::gas_starved) {
                         workersCollect(u);
                     }
-                    else if ((miner.locked_mine_->getType().isMineralField() && !could_use_another_gas) || (miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved)) {
+                    else if ((miner.locked_mine_->getType().isMineralField() && !excess_gas_capacity_) || ( miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved )) {
                         task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u));
                         if (!task_guard && CUNYAIModule::spamGuard(u, 14)) {
                             if (miner.locked_mine_->getType().isRefinery()) {
-                                miner.phase_ = Stored_Unit::MiningGas;
-                                miner.updateStoredUnit(u);
-                                task_guard = true;
+                                task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningGas);
                             }
                             else if (miner.locked_mine_->getType().isMineralField()) {
-                                miner.phase_ = Stored_Unit::MiningMin;
-                                miner.updateStoredUnit(u);
-                                task_guard = true;
+                                task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningMin);
                             }
                         }
                     }
@@ -356,3 +350,84 @@ bool WorkerManager::workerWork(const Unit &u) {
         else return false;
     //}
 };
+
+// Updates the count of our gas workers.
+void WorkerManager::updateGas_Workers() {
+    // Get worker tallies.
+    int gas_workers = 0;
+
+    Unitset myUnits = Broodwar->self()->getUnits(); // out of my units  Probably easier than searching the map for them.
+    if (!myUnits.empty()) { // make sure this object is valid!
+        for (auto u = myUnits.begin(); u != myUnits.end() && !myUnits.empty(); ++u)
+        {
+            if ((*u) && (*u)->exists()) {
+                if ((*u)->getType().isWorker()) {
+                    if ((*u)->isGatheringGas() || (*u)->isCarryingGas()) // implies exists and isCompleted
+                    {
+                        ++gas_workers;
+                    }
+                } // closure: Only investigate closely if they are drones.
+            } // Closure: only investigate on existance of unit..
+        } // closure: count all workers
+    }
+
+    gas_workers_ = gas_workers;
+}
+
+// Updates the count of our mineral workers.
+void WorkerManager::updateMin_Workers() {
+    // Get worker tallies.
+    int min_workers = 0;
+
+    Unitset myUnits = Broodwar->self()->getUnits(); // out of my units  Probably easier than searching the map for them.
+    if (!myUnits.empty()) { // make sure this object is valid!
+        for (auto u = myUnits.begin(); u != myUnits.end() && !myUnits.empty(); ++u)
+        {
+            if ((*u) && (*u)->exists()) {
+                if ((*u)->getType().isWorker()) {
+                    if ((*u)->isGatheringMinerals() || (*u)->isCarryingMinerals()) // implies exists and isCompleted
+                    {
+                        ++min_workers;
+                    }
+                } // closure: Only investigate closely if they are drones.
+            } // Closure: only investigate on existance of unit..
+        } // closure: count all workers
+    }
+
+    min_workers_ = min_workers;
+}
+
+void WorkerManager::updateWorkersClearing()
+{
+    int clearing_workers_found = 0;
+
+    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
+        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
+            if (w->second.isAssignedClearing()) {
+                clearing_workers_found++;
+            }
+        }
+    }
+    workers_clearing_ = clearing_workers_found;
+}
+
+void WorkerManager::updateWorkersLongDistanceMining()
+{
+    int long_distance_miners_found = 0;
+
+    if (!CUNYAIModule::friendly_player_model.units_.unit_map_.empty()) {
+        for (auto & w = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); w != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); w++) {
+            if (w->second.isAssignedLongDistanceMining()) {
+                long_distance_miners_found++;
+            }
+        }
+    }
+    workers_distance_mining_ = long_distance_miners_found;
+}
+
+void WorkerManager::updateExcessCapacity()
+{
+    //excess_gas_capacity_ = CUNYAIModule::land_inventory.local_gas_collectors_ <= CUNYAIModule::land_inventory.local_refineries_ * 2 && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;
+    excess_gas_capacity_ = (gas_workers_ <= CUNYAIModule::land_inventory.getLocalRefineries() * 2) && CUNYAIModule::land_inventory.getLocalRefineries() > 0;
+
+}

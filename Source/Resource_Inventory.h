@@ -35,8 +35,17 @@ struct Stored_Resource{
 
 };
 
-struct Resource_Inventory {
+class Resource_Inventory {
+private:
+    // For only occupied patches.
+    int local_mineral_patches_ = 0;
+    int local_refineries_ = 0;
 
+    //Note: Now depreciated in favor of WorkerManager's tallies. Only use for LOCAL values.
+    int local_miners_ = 0;
+    int local_gas_collectors_ = 0;
+
+public:
     //Creates an instance of the Resource inventory class.
     Resource_Inventory(); // for blank construction.
     Resource_Inventory(const Unitset &unit_set);
@@ -56,8 +65,6 @@ struct Resource_Inventory {
     //Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
     Position getMeanLocation() const;
-    Position getMeanBuildingLocation() const;
-    Position getMeanCombatLocation() const;
 
     void updateResourceInventory( Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
     void updateMines(); //counts number of viable gas mines and local mineral patches.
@@ -66,17 +73,11 @@ struct Resource_Inventory {
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
 
-    //for all patches, long distance or otherwise.
-    int total_miners_ = 0;
-    int total_gas_ = 0;
-
-    // For only local patches.
-    int local_mineral_patches_ = 0;
-    int local_refineries_ = 0;
-    int local_miners_ = 0;
-    int local_gas_collectors_ = 0;
-
-    void updateMiners();
-    void updateGasCollectors();
+    // This command sometimes is inaccurate depending on the latancy. 
+    int getLocalMiners(); 
+    // This command sometimes is inaccurate depending on the latancy. 
+    int getLocalGasCollectors(); 
+    int getLocalMinPatches();
+    int getLocalRefineries();
 
 };
