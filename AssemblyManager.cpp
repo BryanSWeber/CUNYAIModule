@@ -27,6 +27,9 @@ int AssemblyManager::last_frame_of_larva_morph_command = 0;
 int AssemblyManager::last_frame_of_hydra_morph_command = 0;
 int AssemblyManager::last_frame_of_muta_morph_command = 0;
 int AssemblyManager::last_frame_of_creep_command = 0;
+bool AssemblyManager::have_idle_evos_ = false;
+bool AssemblyManager::have_idle_spires_ = false;
+
 std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_unit_cartridge_;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
@@ -273,14 +276,9 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
     int count_of_spire_decendents = CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire);
     int count_tech_buildings = CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern);
-    bool have_idle_evos = false;
-    bool have_idle_spires = false;
+
     bool fight_without_reinforcements = CUNYAIModule::army_starved && (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved);
-    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires = true;
-    }
+
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -366,7 +364,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Broodwar->self()->gas() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_evos || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        (!have_idle_evos_ || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -375,7 +373,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
         Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_spires || count_of_spire_decendents == 0) &&
+        (!have_idle_spires_ || count_of_spire_decendents == 0) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -628,6 +626,13 @@ void AssemblyManager::updateOptimalUnit() {
     //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
+    have_idle_evos_ = false;
+    have_idle_spires_ = false;
+    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+    }
 }
 
 
