@@ -317,13 +317,6 @@ void CUNYAIModule::onFrame()
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
-                                                //This command has passed its diagnostic usefullness.
-                                                //if constexpr (ANALYSIS_MODE) {
-                                                //    if (t_game % (24*10) == 0) {
-                                                //        friendly_player_model.spending_model_.printModelParameters();
-                                                //    }
-                                                //}
-
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
 
@@ -432,33 +425,6 @@ void CUNYAIModule::onFrame()
     //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
     //current_map_inventory.DiagnosticTile();
 
-    //current_map_inventory.DiagnosticField(pf_attract);
-    //FAP::FastAPproximation<Stored_Unit*> TESTfap;
-    //Unit_Inventory test_inventory_friendly;
-    //Unit_Inventory test_inventory_enemy;
-    //test_inventory_friendly.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Sunken_Colony));
-    //Broodwar->sendText("The value of the sunken before a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-    //test_inventory_enemy.addStored_Unit(Stored_Unit(UnitTypes::Terran_Wraith));
-    //TESTfap.clear();
-    //test_inventory_friendly.addToFAPatPos(TESTfap, Position(100, 100),true, friendly_player_model.researches_);
-    //test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
-    //TESTfap.simulate(-1);
-    //test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
-    //Broodwar->sendText("The value of the sunken after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-    //Broodwar->sendText("The sunken is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
-    //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
-
-    //Unit_Inventory test_inventory_friendly2;
-    //TESTfap.clear();
-    //test_inventory_friendly2.addStored_Unit(Stored_Unit(UnitTypes::Zerg_Spore_Colony));
-    //Broodwar->sendText("The value of the spore before a fight is: %d", test_inventory_friendly2.unit_inventory_.begin()->second.future_fap_value_);
-    //test_inventory_friendly2.addToFAPatPos(TESTfap, Position(100, 100), true, friendly_player_model.researches_);
-    //test_inventory_enemy.addToFAPatPos(TESTfap, Position(120, 120), false, friendly_player_model.researches_);
-    //TESTfap.simulate(-1);
-    //test_inventory_friendly.pullFromFAP(*TESTfap.getState().first);
-    //Broodwar->sendText("The value of the spore after a fight is: %d", test_inventory_friendly.unit_inventory_.begin()->second.future_fap_value_);
-    //Broodwar->sendText("The spore is believed to be %s", TESTfap.getState().first->empty() ? "DEAD" : "ALIVE");
-    //Broodwar->sendText("The wraith is believed to be %s", TESTfap.getState().second->empty() ? "DEAD" : "ALIVE");
 
     auto end_map = std::chrono::high_resolution_clock::now();
     map_time = end_map - start_map;
@@ -488,8 +454,7 @@ void CUNYAIModule::onFrame()
 
         //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
         //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
-        //Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", land_inventory.total_miners_, land_inventory.total_gas_);  //
-
+        Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", land_inventory.total_miners_, land_inventory.total_gas_);  //
         Broodwar->drawTextScreen(0, 30, "Active Miners: %d", current_map_inventory.min_workers_);
         Broodwar->drawTextScreen(0, 40, "Active Gas Miners: %d", current_map_inventory.gas_workers_);
 
@@ -498,8 +463,8 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
 
         //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
-        //Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
-        //Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
+        Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
 
 
         //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
@@ -570,13 +535,13 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(500, 150, upgrade_string);
         //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-        //    }
-        //}
+        for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
+            if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
+                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
+            }
+        }
 
 
         //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
@@ -682,16 +647,6 @@ void CUNYAIModule::onFrame()
         UnitType u_type = u->getType();
 
         // Finally make the unit do some stuff!
-
-        ////Creep Colony upgrade loop.  We are more willing to upgrade them than to build them, since the units themselves are useless in the base state.
-        //auto start_creepcolony = std::chrono::high_resolution_clock::now();
-
-        //if (u_type == UnitTypes::Zerg_Creep_Colony && spamGuard(u)) {
-        //    assemblymanager.buildStaticDefence(u); // checks globally but not bad, info is mostly already there.
-        //}// closure: Creep colony loop
-
-        //auto end_creepcolony = std::chrono::high_resolution_clock::now();
-
 
         // Detectors are called for cloaked units. Only if you're not supply starved, because we only have overlords for detectors.  Should happen before combat script or else the units will be 'continued' past;
         auto start_detector = std::chrono::high_resolution_clock::now();
@@ -939,7 +894,6 @@ void CUNYAIModule::onFrame()
             }
 
         }
-
 
         auto end_combat = std::chrono::high_resolution_clock::now();
 

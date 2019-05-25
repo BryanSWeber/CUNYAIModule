@@ -93,6 +93,7 @@ struct Stored_Unit {
 
     //Needed commands for workers.
     void startMine(Stored_Resource &new_resource);
+    void startMine(Unit & new_resource);
     void stopMine();
     Stored_Resource * getMine();
     bool isAssignedClearing();  // If the unit is clearing a spot.

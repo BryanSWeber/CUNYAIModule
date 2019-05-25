@@ -835,6 +835,11 @@ void Stored_Unit::startMine(Stored_Resource &new_resource){
     locked_mine_ = new_resource.bwapi_unit_;
     CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
+//Increments the number of miners on a resource.
+void Stored_Unit::startMine(Unit &new_resource) {
+    locked_mine_ = new_resource;
+    CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
+}
 
 //Decrements the number of miners on a resource, if possible.
 void Stored_Unit::stopMine(){
