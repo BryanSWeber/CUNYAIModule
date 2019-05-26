@@ -38,7 +38,8 @@ struct Stored_Unit {
 
     // Critical information not otherwise stored.
     UnitType type_; // the type of the unit.
-    UnitType build_type_; // the type the worker is about to build.
+    UnitType build_type_; // the type the worker is about to build. (found in bwapi, has build order already sent.)
+    UnitType intended_build_type_; // the type the builder plans to build. (Not found in bwapi, build order has yet to be sent.
     Position pos_; // in pixels
     Unit locked_mine_;
 

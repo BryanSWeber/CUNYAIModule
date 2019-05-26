@@ -457,9 +457,9 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
         Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
 
-        //Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
-        //Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
-        //Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
 
         //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");

@@ -7,6 +7,12 @@ class WorkerManager {
 private:
 
 public:
+    int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
+    int min_workers_;
+    int workers_clearing_;
+    int workers_distance_mining_;
+    bool excess_gas_capacity_;
+
     // Checks all Mines of type for undersaturation and assigns Gather. Goes to any undersaturated location, preference for local mine. Returns true on success.
     bool assignGather(const Unit & unit, const UnitType mine);
     // Clears blocking minerals (as determined by BWEB). Check if area is threatened before clearing.  Returns true on success.
@@ -33,13 +39,6 @@ public:
     bool workersClear(const Unit &unit);
     // Workers should return cargo and forget about their original mine.
     bool workersReturn(const Unit &unit);
-
-    int gas_workers_; // sometimes this count may be off by one when units are in the geyser.
-    int min_workers_;
-    int workers_clearing_;
-    int workers_distance_mining_;
-    bool excess_gas_capacity_;
-
     // Updates the count of our gas workers.
     void WorkerManager::updateGas_Workers();
     // Updates the count of our min workers.

@@ -2324,7 +2324,7 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     return true;
 }
 
-void CUNYAIModule::diagnosticTrack(const Unit &u) {
+void CUNYAIModule::DiagnosticTrack(const Unit &u) {
     Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
 }
 
@@ -2333,6 +2333,18 @@ bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
         Stored_Unit& morphing_unit = found_item->second;
         morphing_unit.phase_ = phase;
+        morphing_unit.updateStoredUnit(u);
+        return true;
+    }
+    return false;
+}
+
+bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type) {
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+        Stored_Unit& morphing_unit = found_item->second;
+        morphing_unit.phase_ = Stored_Unit::Prebuilding;
+        morphing_unit.intended_build_type_ = intended_build_type;
         morphing_unit.updateStoredUnit(u);
         return true;
     }

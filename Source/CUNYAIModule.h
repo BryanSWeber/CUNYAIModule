@@ -308,8 +308,9 @@ public:
       static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u);
-      static void diagnosticTrack(const Unit & u);
+      static void DiagnosticTrack(const Unit & u);
       static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
+      static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type); // finds the unit in friendly unit inventory and updates its phase to prebuild and its intended build type to Type. Function updates that the unit has been touched.
 
 
   // Vision Functions

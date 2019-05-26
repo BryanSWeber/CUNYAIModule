@@ -61,7 +61,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building);
                         }
                     }
                 }
@@ -73,7 +73,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building);
                     }
                 }
             }
@@ -92,7 +92,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : good_block.second) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building);
                     }
                 }
             }
@@ -106,14 +106,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if (BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building)) { // bug is here, need to build and reserve at the same time.
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
+                    return CUNYAIModule::updateUnitBuildIntent(unit, building);
                 } //extractors must have buildings nearby or we shouldn't build them.
 
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) ) {
                     CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
                 }
             }
-
         }
         else if (unit->canBuild(building)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos) ) {
@@ -134,7 +133,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         for (auto &tile : placements) {
                             if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                                    return CUNYAIModule::updateUnitBuildIntent(unit, building);
                             }
                         }
                     }
@@ -158,7 +157,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : good_block.second) {
                         if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::checkSafeBuildLoc(Position(tile)) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building);
                         }
                     }
                 }
@@ -651,9 +650,9 @@ void AssemblyManager::updateOptimalCombatUnit() {
     have_idle_evos_ = false;
     have_idle_spires_ = false;
     for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
     }
 }
 
