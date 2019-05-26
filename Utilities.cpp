@@ -2,7 +2,6 @@
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
 #include <fstream>
-#include "Utilities.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -524,7 +523,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 }
             }
             // Research-sort Buildings, includes inferred ones.
-            for (auto u : player.researches_.buildings_) {
+            for (auto u : player.researches_.tech_buildings_) {
                 inferred_building_type = u.first.c_str();
                 if (u.second > 0) {
                     smashed_inferred_building_types += inferred_building_type + ", ";
@@ -990,7 +989,7 @@ void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &scre
 
     int another_row_of_printing_buildings = another_row_of_printing_research + 1;
 
-    for (auto r : ri.buildings_)
+    for (auto r : ri.tech_buildings_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //
@@ -2198,35 +2197,31 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 }
 
 // checks if a location is safe and doesn't block minerals.
-bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
+bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
     auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_map_inventory.home_base_));
     bool it_is_home_ = false;
-    Unit_Inventory e_loc = getUnitInventoryInNeighborhood(ei, pos);
-    Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
-    //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
-    Unit_Inventory e_too_close = getUnitInventoryInArea(ei, pos);
-    Unit_Inventory friend_loc = getUnitInventoryInArea(ui, pos);
+    Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
+    Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
+    Stored_Unit* e_closest = getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, pos, 9999999);
+
     int radial_distance_to_closest_enemy = 0;
     int radial_distance_to_build_position = 0;
     bool enemy_has_not_penetrated = true;
-    bool can_still_save = true;
     bool have_to_save = false;
 
-
-    if (e_loc.stock_fighting_total_ > 0 && e_closest) {
+    if (!checkSuperiorFAPForecast2(friend_loc, e_neighborhood)) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
         have_to_save = CUNYAIModule::current_map_inventory.possessed_min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }
 
 
-    return it_is_home_ || enemy_has_not_penetrated || can_still_save || have_to_save;
+    return it_is_home_ || enemy_has_not_penetrated || have_to_save;
 }
 
 

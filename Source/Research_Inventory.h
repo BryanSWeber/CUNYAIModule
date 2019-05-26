@@ -10,7 +10,7 @@ struct Research_Inventory {
 
     map<UpgradeType, int> upgrades_;
     map<TechType, bool> tech_;
-    map<UnitType, int> buildings_;
+    map<UnitType, int> tech_buildings_;
     int tech_stock_ = 0;
     int upgrade_stock_ = 0;
     int research_stock_ = 0;
@@ -19,7 +19,7 @@ struct Research_Inventory {
     void updateUpgradeStock();
     void updateTechTypes(const Player & player);
     void updateTechStock();
-    void updateResearchBuildings(const Unit_Inventory &ei); // This function can be trimmed up a lot.
+    void updateResearchBuildings(const Player & player, const Unit_Inventory &ei); // This function can be trimmed up a lot.
     void updateBuildingStock();
     void updateResearch(const Player & player, const Unit_Inventory &ei);
 

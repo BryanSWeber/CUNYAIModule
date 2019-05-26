@@ -144,7 +144,6 @@
     <ClInclude Include="Source\TechManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
-    <ClInclude Include="Utilities.h" />
     <ClInclude Include="WorkerManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

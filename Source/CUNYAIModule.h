@@ -296,7 +296,7 @@ public:
       // Returns the actual center of a unit.
       static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
-      static bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      static bool checkSafeBuildLoc(const Position pos);;
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
 

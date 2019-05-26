@@ -116,7 +116,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
         }
         else if (unit->canBuild(building)) {
-            if (CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
+            if (CUNYAIModule::checkSafeBuildLoc(unit_pos) ) {
                 
                 map<int,set<TilePosition>> viable_placements;
 
@@ -156,7 +156,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 for (auto good_block : viable_placements) { // should automatically search by distance.
                     for (auto &tile : good_block.second) {
-                        if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::checkSafeBuildLoc(Position(tile)) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
                             return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
                         }
@@ -213,7 +213,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
                 auto friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(expo_areaID);
                 auto enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(expo_areaID);
-                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p), inv, enemy_area, friendly_area, CUNYAIModule::land_inventory);
+                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
                 bool occupied_expo = false;
                 auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
                 if (nearby_resource && nearby_resource->occupied_resource_)

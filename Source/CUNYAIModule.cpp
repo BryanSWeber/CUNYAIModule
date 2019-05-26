@@ -266,7 +266,7 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllHitPoints();
     neutral_player_model.units_.drawAllLocations();
 
-    friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player.
+    friendly_player_model.updateSelfOnFrame(); // So far, mimics the only other enemy player.
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
     friendly_player_model.units_.drawAllSpamGuards();
@@ -444,8 +444,8 @@ void CUNYAIModule::onFrame()
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         if (buildorder.isEmptyBuildOrder()) {
         //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-            Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
-        //    //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
+            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
         }
         else {
             Print_Build_Order_Remaining(500, 170, buildorder);
@@ -454,8 +454,8 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
         //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
         Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", workermanager.min_workers_, workermanager.gas_workers_);  //
-        Broodwar->drawTextScreen(0, 30, "Active Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
-        Broodwar->drawTextScreen(0, 40, "Active Gas Gathers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
+        Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
+        Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
 
         //Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
         //Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //

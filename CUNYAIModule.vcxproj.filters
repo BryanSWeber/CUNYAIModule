@@ -95,7 +95,6 @@
     </ClInclude>
     <ClInclude Include="Source\TechManager.h" />
     <ClInclude Include="WorkerManager.h" />
-    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
