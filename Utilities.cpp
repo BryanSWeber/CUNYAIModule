@@ -385,23 +385,23 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
-        map<Stored_Unit::Phase, string> enum_to_string = { {Stored_Unit::Phase::Building,"Building"},
-        { Stored_Unit::Phase::Attacking,"Attacking"},
-        { Stored_Unit::Phase::Retreating,"Retreating"},
-        { Stored_Unit::Phase::Prebuilding,"Prebuilding"},
-        { Stored_Unit::Phase::PathingOut,"PathingOut"},
-        { Stored_Unit::Phase::PathingHome,"PathingHome"},
-        { Stored_Unit::Phase::Surrounding,"Surrounding"},
-        { Stored_Unit::Phase::NoRetreat,"NoRetreat"},
-        { Stored_Unit::Phase::MiningMin,"Gather Min"},
-        { Stored_Unit::Phase::MiningGas,"Gather Gas"},
+        map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
+        { Stored_Unit::Phase::Attacking,"Attacking" },
+        { Stored_Unit::Phase::Retreating,"Retreating" },
+        { Stored_Unit::Phase::Prebuilding,"Prebuilding" },
+        { Stored_Unit::Phase::PathingOut,"PathingOut" },
+        { Stored_Unit::Phase::PathingHome,"PathingHome" },
+        { Stored_Unit::Phase::Surrounding,"Surrounding" },
+        { Stored_Unit::Phase::NoRetreat,"NoRetreat" },
+        { Stored_Unit::Phase::MiningMin,"Gather Min" },
+        { Stored_Unit::Phase::MiningGas,"Gather Gas" },
         { Stored_Unit::Phase::Returning,"Returning" },
-        { Stored_Unit::Phase::DistanceMining,"DistanceMining"},
-        { Stored_Unit::Phase::Clearing,"Clearing"},
-        { Stored_Unit::Phase::Upgrading,"Upgrading"},
-        { Stored_Unit::Phase::Researching,"Researching"},
-        { Stored_Unit::Phase::Morphing,"Morphing"},
-        { Stored_Unit::Phase::None,"None"} };
+        { Stored_Unit::Phase::DistanceMining,"DistanceMining" },
+        { Stored_Unit::Phase::Clearing,"Clearing" },
+        { Stored_Unit::Phase::Upgrading,"Upgrading" },
+        { Stored_Unit::Phase::Researching,"Researching" },
+        { Stored_Unit::Phase::Morphing,"Morphing" },
+        { Stored_Unit::Phase::Building,"Building" } };
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());
@@ -2317,9 +2317,9 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
         !u->isPowered() /*|| u->isStuck()*/)
         return false;
     // Ignore the unit if it is incomplete or busy constructing
-    if (!u->isCompleted() ||
-        u->isConstructing())
-        return false;
+    //if (!u->isCompleted() ||
+    //    u->isConstructing())
+    //    return false;
 
     if (!CUNYAIModule::spamGuard(u)) {
         return false;

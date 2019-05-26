@@ -256,8 +256,6 @@ bool WorkerManager::workerWork(const Unit &u) {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(u); // we will want DETAILED information about this unit.
     int t_game = Broodwar->getFrameCount();
 
-    bool too_much_gas = CUNYAIModule::current_map_inventory.getGasRatio() > CUNYAIModule::delta;
-    bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
     // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
     bool was_gas = miner.isAssignedGas();
@@ -297,7 +295,6 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::DistanceMining: // does the same as...
-        Broodwar->setScreenPosition(u->getPosition() - Position{320,200});
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u); // mark worker as returning.
         }
@@ -315,6 +312,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
+        Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
         task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
@@ -341,9 +339,13 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::None:
-        task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
+        if (!isEmptyWorker(u)) { //auto return if needed.
+            task_guard = workersReturn(u); // mark worker as returning.
+        }
+        else task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
         break;
     case Stored_Unit::Building:
+        Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
         }

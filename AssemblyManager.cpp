@@ -61,7 +61,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
                         }
                     }
                 }
@@ -73,7 +73,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
                     }
                 }
             }
@@ -92,7 +92,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : good_block.second) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
                     }
                 }
             }
@@ -106,7 +106,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if (BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building)) { // bug is here, need to build and reserve at the same time.
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
                 } //extractors must have buildings nearby or we shouldn't build them.
 
                 else if ( BWAPI::Broodwar->isVisible(buildPosition) ) {

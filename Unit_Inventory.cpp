@@ -372,7 +372,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
             else count_of_consecutive_predicted_deaths_++;
         }
     }
-    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || phase_ == Stored_Unit::Building) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
+    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || (phase_ == Stored_Unit::Building && unit->isCompleted() && type_.isBuilding()) ) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
 }
 

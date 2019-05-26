@@ -69,7 +69,7 @@ struct Stored_Unit {
 
     enum Phase
     {
-        Building = 0, 
+        None = 0, 
         Attacking = 1, 
         Retreating = 2, 
         Prebuilding = 3, 
@@ -85,7 +85,7 @@ struct Stored_Unit {
         Upgrading = 13, 
         Researching = 14, 
         Morphing = 15, 
-        None = 16
+        Building = 16
     };
     Phase phase_;
     Stored_Unit(Phase p) : phase_(p) {}
