@@ -312,7 +312,6 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
-        Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
         task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
@@ -345,7 +344,6 @@ bool WorkerManager::workerWork(const Unit &u) {
         else task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
         break;
     case Stored_Unit::Building:
-        Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
         }

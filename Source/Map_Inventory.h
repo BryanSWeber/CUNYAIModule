@@ -29,7 +29,8 @@ struct Map_Inventory {
     double ln_supply_remain_;
     double ln_supply_total_;
 
-    int min_fields_;
+    int possessed_min_fields_;
+    int existing_min_fields_;
     int hatches_;
     int last_gas_check_;
     int my_portion_of_the_map_;

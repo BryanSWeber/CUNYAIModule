@@ -2,6 +2,7 @@
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
 #include <fstream>
+#include "Utilities.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -2221,7 +2222,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
             it_is_home_ = (area == area_home);
         }
         can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = CUNYAIModule::current_map_inventory.min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::current_map_inventory.possessed_min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }
 
 
@@ -2231,7 +2232,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &in
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
-    bool desperate_for_minerals = CUNYAIModule::current_map_inventory.min_fields_ < 6;
+    bool desperate_for_minerals = CUNYAIModule::current_map_inventory.possessed_min_fields_ < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }
@@ -2326,6 +2327,10 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     }
 
     return true;
+}
+
+void CUNYAIModule::diagnosticTrack(const Unit &u) {
+    Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
 }
 
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {

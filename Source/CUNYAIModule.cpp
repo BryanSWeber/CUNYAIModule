@@ -366,7 +366,7 @@ void CUNYAIModule::onFrame()
     //current_map_inventory.drawBasePositions();
 
     techmanager.updateTech_Avail();
-    assemblymanager.updateOptimalUnit();
+    assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
     if (t_game % MOVING_AVERAGE_DURATION == 0) {
         techmanager.clearSimulationHistory();
