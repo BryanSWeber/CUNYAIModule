@@ -13,7 +13,10 @@ using namespace std;
 
 class AssemblyManager {
 private: 
-    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
+    static std::map<UnitType, int> specialization_buildings_; // persistent set of intended buildings.
+
     static Unit_Inventory larva_bank_;
     static Unit_Inventory hydra_bank_;
     static Unit_Inventory muta_bank_;
