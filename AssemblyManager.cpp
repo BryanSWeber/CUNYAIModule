@@ -69,7 +69,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
             // simply attempt this if the previous did not find.
             auto closest_station = BWEB::Stations::getClosestStation(build_tile);
-            if (closest_station && closest_station->getDefenseCount() > 3) {
+            if (closest_station && (closest_station->getDefenseCount() > 1 || CUNYAIModule::friendly_player_model.u_have_active_air_problem_) ) {
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -387,28 +387,28 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         morphing_unit.updateStoredUnit(drone); // don't give him a phase.
 
 
-        std::map<UnitType, int> local_map;
-        int sustainable_tech = min( CUNYAIModule::current_map_inventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
-        std::map<UnitType, int> local_map;
-        switch (sustainable_tech) {
-        case 0:
-            local_map = { { UnitTypes::Zerg_Hatchery, 2 },{ UnitTypes::Zerg_Extractor, 1 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-        case 1:
-            local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 1 }, { UnitTypes::Zerg_Extractor, 2 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-        case 2:
-            local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 4 }, { UnitTypes::Zerg_Extractor, 3 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-        case 3:
-            local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 6 }, { UnitTypes::Zerg_Extractor, 4 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
-        default:
-            local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 8 }, { UnitTypes::Zerg_Extractor, 6 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
-        }
-        local_map.merge(core_buildings_);
-        local_map.swap(core_buildings_); // should put all elements into intended buildings with overwrite.
+        //std::map<UnitType, int> local_map;
+        //int sustainable_tech = min( CUNYAIModule::current_map_inventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
 
-        switch (returnOptimalUnit(CUNYAIModule::friendly_player_model.combat_unit_cartridge_, CUNYAIModule::friendly_player_model.researches_)) {
-        
-        
-        }
+        //switch (sustainable_tech) {
+        //case 0:
+        //    local_map = { { UnitTypes::Zerg_Hatchery, 2 },{ UnitTypes::Zerg_Extractor, 1 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 1:
+        //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 1 }, { UnitTypes::Zerg_Extractor, 2 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 2:
+        //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 4 }, { UnitTypes::Zerg_Extractor, 3 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 3:
+        //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 6 }, { UnitTypes::Zerg_Extractor, 4 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
+        //default:
+        //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 8 }, { UnitTypes::Zerg_Extractor, 6 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
+        //}
+        //local_map.merge(core_buildings_);
+        //local_map.swap(core_buildings_); // should put all elements into intended buildings with overwrite.
+
+        //switch (returnOptimalUnit(CUNYAIModule::friendly_player_model.combat_unit_cartridge_, CUNYAIModule::friendly_player_model.researches_)) {
+        //
+        //
+        //}
 
 
     return buildings_started;

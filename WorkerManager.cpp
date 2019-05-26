@@ -297,16 +297,17 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::DistanceMining: // does the same as...
+        Broodwar->setScreenPosition(u->getPosition() - Position{320,200});
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u); // mark worker as returning.
         }
-        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && CUNYAIModule::spamGuard(u, 14)) { // Otherwise walk to that mineral.
+        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { // Otherwise walk to that mineral.
             if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && miner.isBrokenLock() && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ( (miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle() ) ) { //If there is a mineral and we can see it, mine it.
             if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
@@ -341,6 +342,11 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case Stored_Unit::None:
         task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
+        break;
+    case Stored_Unit::Building:
+        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
+        }
         break;
     default:
         task_guard = workersCollect(u);
