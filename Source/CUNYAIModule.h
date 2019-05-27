@@ -310,7 +310,7 @@ public:
       static bool checkUnitTouchable(const Unit & u);
       static void DiagnosticTrack(const Unit & u);
       static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
-      static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type); // finds the unit in friendly unit inventory and updates its phase to prebuild and its intended build type to Type. Function updates that the unit has been touched.
+      static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type, const TilePosition & intended_build_tile); // finds the unit in friendly unit inventory and updates its phase to prebuild , its intended build type to Type, and its intended build tile to the listed tileposition. Function updates that the unit has been touched.
 
 
   // Vision Functions

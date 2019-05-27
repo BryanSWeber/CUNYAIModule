@@ -40,6 +40,7 @@ struct Stored_Unit {
     UnitType type_; // the type of the unit.
     UnitType build_type_; // the type the worker is about to build. (found in bwapi, has build order already sent.)
     UnitType intended_build_type_; // the type the builder plans to build. (Not found in bwapi, build order has yet to be sent.
+    TilePosition intended_build_tile_; // the tileposition at which the builder plans to build. (Not found in bwapi, build order has yet to be sent.
     Position pos_; // in pixels
     Unit locked_mine_;
 

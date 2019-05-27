@@ -46,8 +46,6 @@ public:
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
     // Builds the next building you can afford. Area of constant improvement.
     static bool buildBuilding(const Unit & drone);
-    // Returns a tile that is suitable for building.
-    static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
     // Moves all units except for the Stored exeption_unit elsewhere.
     static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.

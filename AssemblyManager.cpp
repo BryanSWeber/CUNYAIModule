@@ -61,7 +61,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                         }
                     }
                 }
@@ -73,7 +73,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                     }
                 }
             }
@@ -92,7 +92,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : good_block.second) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                     }
                 }
             }
@@ -103,14 +103,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_ ) {
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
-                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-                if (BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building)) { // bug is here, need to build and reserve at the same time.
+                TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
+                if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                    return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                 } //extractors must have buildings nearby or we shouldn't build them.
 
-                else if ( BWAPI::Broodwar->isVisible(buildPosition) ) {
-                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                else if ( BWAPI::Broodwar->isVisible(tile) ) {
+                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), tile.x, tile.y);
                 }
             }
         }
@@ -133,7 +133,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         for (auto &tile : placements) {
                             if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                    return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                                    return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                             }
                         }
                     }
@@ -157,7 +157,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : good_block.second) {
                         if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::checkSafeBuildLoc(Position(tile)) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitBuildIntent(unit, building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                         }
                     }
                 }
@@ -242,9 +242,8 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
             }
             else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
-                unit->move(Position(inv.next_expo_));
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
+                return CUNYAIModule::updateUnitBuildIntent(unit, UnitTypes::Zerg_Hatchery, inv.next_expo_);
             }
         }
     } // closure affordablity.
@@ -412,34 +411,6 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     return buildings_started;
 };
-
-// Cannot use for extractors, they are "too close" to the geyser.
-TilePosition AssemblyManager::getBuildablePosition( const TilePosition target_pos, const UnitType build_type, const int tile_grid_size ) {
-
-    TilePosition canidate_return_position = TilePosition (0,0);
-    int widest_dim_in_minitiles = 4 * max(build_type.tileHeight(), build_type.tileWidth());
-    int width = Broodwar->mapWidth();
-    int height = Broodwar->mapHeight();
-    for (int x = -tile_grid_size; x <= tile_grid_size; ++x) {
-        for (int y = -tile_grid_size; y <= tile_grid_size; ++y) {
-            int centralize_x = target_pos.x + x;
-            int centralize_y = target_pos.y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < width &&
-                centralize_y < height &&
-                centralize_x > 0 &&
-                centralize_y > 0 &&
-                Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), build_type) &&
-                CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
-            ) {
-                canidate_return_position = TilePosition(centralize_x, centralize_y);
-                break;
-            }
-        }
-    }
-
-    return canidate_return_position;
-}
 
 // clears all blocking units in the area excluding EXCEPTION_UNIT.  Purges all the worker relations for the scattered units.
 void AssemblyManager::clearBuildingObstuctions(const Unit_Inventory &ui, Map_Inventory &inv,const Unit &exception_unit ) {

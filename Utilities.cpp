@@ -2339,12 +2339,14 @@ bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase
     return false;
 }
 
-bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type) {
+bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type, const TilePosition &intended_build_tile) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
         Stored_Unit& morphing_unit = found_item->second;
+        morphing_unit.stopMine();
         morphing_unit.phase_ = Stored_Unit::Prebuilding;
         morphing_unit.intended_build_type_ = intended_build_type;
+        morphing_unit.intended_build_tile_ = intended_build_tile;
         morphing_unit.updateStoredUnit(u);
         return true;
     }

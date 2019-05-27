@@ -14,16 +14,15 @@ bool WorkerManager::isEmptyWorker(const Unit &unit) {
 bool WorkerManager::workerPrebuild(const Unit & unit)
 {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
-    TilePosition target = TilePosition(unit->getOrderTargetPosition());
 
-    if (Broodwar->isExplored(target) && unit->build(miner.intended_build_type_, target) && CUNYAIModule::my_reservation.addReserveSystem( target, miner.intended_build_type_)) {
-        CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", target.x, target.y);
-        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+    if (unit->build(miner.intended_build_type_, miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+        CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
     }
-    else if (!Broodwar->isVisible(TilePosition(unit->getOrderTargetPosition())) && CUNYAIModule::my_reservation.addReserveSystem(TilePosition(unit->getOrderTargetPosition()), miner.intended_build_type_)) {
-        unit->move(Position(unit->getOrderTargetPosition()));
-        CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", target.x, target.y);
-        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
+    else if (!Broodwar->isVisible(miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+        unit->move(Position(miner.intended_build_tile_));
+        CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     return false;
 }
@@ -316,7 +315,9 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case Stored_Unit::Prebuilding:
         CUNYAIModule::DiagnosticTrack(u);
-        task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
+        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
+        }
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
         if (isEmptyWorker(u)) {
