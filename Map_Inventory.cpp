@@ -127,16 +127,11 @@ double Map_Inventory::getLn_Supply_Ratio() {
 void Map_Inventory::updateMin_Possessed() {
 
     int possessed_min_fields_ = 0;
-    int existing_min_fields_ = 0;
     for (auto r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++r) { //for each mineral
         if (r->second.occupied_resource_ && r->second.type_.isMineralField() ) {
             possessed_min_fields_++; // if there is a base near it, then this mineral counts.
         } // closure for existance check.
-        if (r->second.type_.isMineralField()) {
-            existing_min_fields_++;
-        }
     } // closure: for each mineral
-
 }
 
 // Updates the count of our vision total, in tiles
