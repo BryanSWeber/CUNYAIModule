@@ -266,7 +266,7 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllHitPoints();
     neutral_player_model.units_.drawAllLocations();
 
-    friendly_player_model.updateSelfOnFrame(enemy_player_model); // So far, mimics the only other enemy player.
+    friendly_player_model.updateSelfOnFrame(); // So far, mimics the only other enemy player.
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
     friendly_player_model.units_.drawAllSpamGuards();
@@ -345,7 +345,6 @@ void CUNYAIModule::onFrame()
     workermanager.updateWorkersLongDistanceMining();
     workermanager.updateExcessCapacity();
 
-    current_map_inventory.updateMin_Possessed();
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
     current_map_inventory.my_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(Broodwar->getStartLocations().size()));
     current_map_inventory.expo_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(current_map_inventory.expo_positions_complete_.size()));
@@ -366,14 +365,14 @@ void CUNYAIModule::onFrame()
     //current_map_inventory.drawBasePositions();
 
     techmanager.updateTech_Avail();
-    assemblymanager.updateOptimalUnit();
+    assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
     if (t_game % MOVING_AVERAGE_DURATION == 0) {
         techmanager.clearSimulationHistory();
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
 
-    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery);
+    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery)/2;
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -444,22 +443,21 @@ void CUNYAIModule::onFrame()
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         if (buildorder.isEmptyBuildOrder()) {
         //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-            Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
-        //    //Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
+            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
         }
         else {
             Print_Build_Order_Remaining(500, 170, buildorder);
         }
 
-        //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
-        //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
+        Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", land_inventory.getLocalMinPatches());
         Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", workermanager.min_workers_, workermanager.gas_workers_);  //
-        Broodwar->drawTextScreen(0, 30, "Active Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
-        Broodwar->drawTextScreen(0, 40, "Active Gas Gathers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
+        Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
+        Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
 
-        //Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
-        //Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
-        //Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
+        Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
 
         //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
         Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
@@ -509,7 +507,7 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
         //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
         //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-        //Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
+        Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
         //Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
         //Broodwar->drawTextScreen(375, 70, "Enemy Worth (est): %4.2f", enemy_player_model.estimated_net_worth_);  //
         //Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //

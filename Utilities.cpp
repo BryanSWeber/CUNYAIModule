@@ -385,23 +385,23 @@ void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & 
 void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
 {
     if constexpr(DRAWING_MODE) {
-        map<Stored_Unit::Phase, string> enum_to_string = { {Stored_Unit::Phase::Building,"Building"},
-        { Stored_Unit::Phase::Attacking,"Attacking"},
-        { Stored_Unit::Phase::Retreating,"Retreating"},
-        { Stored_Unit::Phase::Prebuilding,"Prebuilding"},
-        { Stored_Unit::Phase::PathingOut,"PathingOut"},
-        { Stored_Unit::Phase::PathingHome,"PathingHome"},
-        { Stored_Unit::Phase::Surrounding,"Surrounding"},
-        { Stored_Unit::Phase::NoRetreat,"NoRetreat"},
-        { Stored_Unit::Phase::MiningMin,"Gather Min"},
-        { Stored_Unit::Phase::MiningGas,"Gather Gas"},
+        map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
+        { Stored_Unit::Phase::Attacking,"Attacking" },
+        { Stored_Unit::Phase::Retreating,"Retreating" },
+        { Stored_Unit::Phase::Prebuilding,"Prebuilding" },
+        { Stored_Unit::Phase::PathingOut,"PathingOut" },
+        { Stored_Unit::Phase::PathingHome,"PathingHome" },
+        { Stored_Unit::Phase::Surrounding,"Surrounding" },
+        { Stored_Unit::Phase::NoRetreat,"NoRetreat" },
+        { Stored_Unit::Phase::MiningMin,"Gather Min" },
+        { Stored_Unit::Phase::MiningGas,"Gather Gas" },
         { Stored_Unit::Phase::Returning,"Returning" },
-        { Stored_Unit::Phase::DistanceMining,"DistanceMining"},
-        { Stored_Unit::Phase::Clearing,"Clearing"},
-        { Stored_Unit::Phase::Upgrading,"Upgrading"},
-        { Stored_Unit::Phase::Researching,"Researching"},
-        { Stored_Unit::Phase::Morphing,"Morphing"},
-        { Stored_Unit::Phase::None,"None"} };
+        { Stored_Unit::Phase::DistanceMining,"DistanceMining" },
+        { Stored_Unit::Phase::Clearing,"Clearing" },
+        { Stored_Unit::Phase::Upgrading,"Upgrading" },
+        { Stored_Unit::Phase::Researching,"Researching" },
+        { Stored_Unit::Phase::Morphing,"Morphing" },
+        { Stored_Unit::Phase::Building,"Building" } };
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());
@@ -523,7 +523,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 }
             }
             // Research-sort Buildings, includes inferred ones.
-            for (auto u : player.researches_.buildings_) {
+            for (auto u : player.researches_.tech_buildings_) {
                 inferred_building_type = u.first.c_str();
                 if (u.second > 0) {
                     smashed_inferred_building_types += inferred_building_type + ", ";
@@ -989,7 +989,7 @@ void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &scre
 
     int another_row_of_printing_buildings = another_row_of_printing_research + 1;
 
-    for (auto r : ri.buildings_)
+    for (auto r : ri.tech_buildings_)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //
@@ -2197,41 +2197,37 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 }
 
 // checks if a location is safe and doesn't block minerals.
-bool CUNYAIModule::checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei,const Unit_Inventory &ui, Resource_Inventory &ri) {
+bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
     auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_map_inventory.home_base_));
     bool it_is_home_ = false;
-    Unit_Inventory e_loc = getUnitInventoryInNeighborhood(ei, pos);
-    Stored_Unit* e_closest = getClosestThreatOrTargetStored(e_loc, UnitTypes::Zerg_Drone, pos, 750);
-    //Stored_Resource* r_closest = getClosestStored(ri,pos, 128); //note this is not from center of unit, it's from upper left.
-    Unit_Inventory e_too_close = getUnitInventoryInArea(ei, pos);
-    Unit_Inventory friend_loc = getUnitInventoryInArea(ui, pos);
+    Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
+    Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
+    Stored_Unit* e_closest = getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, pos, 9999999);
+
     int radial_distance_to_closest_enemy = 0;
     int radial_distance_to_build_position = 0;
     bool enemy_has_not_penetrated = true;
-    bool can_still_save = true;
     bool have_to_save = false;
 
-
-    if (e_loc.stock_fighting_total_ > 0 && e_closest) {
+    if (!checkSuperiorFAPForecast2(friend_loc, e_neighborhood)) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        can_still_save = e_too_close.stock_fighting_total_ < ui.stock_fighting_total_; // can still save it or you don't have a choice.
-        have_to_save = CUNYAIModule::current_map_inventory.min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::land_inventory.getLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }
 
 
-    return it_is_home_ || enemy_has_not_penetrated || can_still_save || have_to_save;
+    return it_is_home_ || enemy_has_not_penetrated || have_to_save;
 }
 
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
-    bool desperate_for_minerals = CUNYAIModule::current_map_inventory.min_fields_ < 6;
+    bool desperate_for_minerals = CUNYAIModule::land_inventory.getLocalMinPatches() < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }
@@ -2317,9 +2313,9 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
         !u->isPowered() /*|| u->isStuck()*/)
         return false;
     // Ignore the unit if it is incomplete or busy constructing
-    if (!u->isCompleted() ||
-        u->isConstructing())
-        return false;
+    //if (!u->isCompleted() ||
+    //    u->isConstructing())
+    //    return false;
 
     if (!CUNYAIModule::spamGuard(u)) {
         return false;
@@ -2328,11 +2324,29 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     return true;
 }
 
+void CUNYAIModule::DiagnosticTrack(const Unit &u) {
+    Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
+}
+
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
         Stored_Unit& morphing_unit = found_item->second;
         morphing_unit.phase_ = phase;
+        morphing_unit.updateStoredUnit(u);
+        return true;
+    }
+    return false;
+}
+
+bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type, const TilePosition &intended_build_tile) {
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+        Stored_Unit& morphing_unit = found_item->second;
+        morphing_unit.stopMine();
+        morphing_unit.phase_ = Stored_Unit::Prebuilding;
+        morphing_unit.intended_build_type_ = intended_build_type;
+        morphing_unit.intended_build_tile_ = intended_build_tile;
         morphing_unit.updateStoredUnit(u);
         return true;
     }

@@ -61,7 +61,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : closest_wall->getDefenses()) {
                         if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                         }
                     }
                 }
@@ -69,11 +69,11 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
             // simply attempt this if the previous did not find.
             auto closest_station = BWEB::Stations::getClosestStation(build_tile);
-            if (closest_station && closest_station->getDefenseCount() > 3) {
+            if (closest_station && (closest_station->getDefenseCount() > 1 || CUNYAIModule::friendly_player_model.u_have_active_air_problem_) ) {
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                     }
                 }
             }
@@ -92,7 +92,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 for (auto &tile : good_block.second) {
                     if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                     }
                 }
             }
@@ -103,20 +103,19 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_ ) {
                 //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
-                TilePosition buildPosition = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
-                if (BWAPI::Broodwar->isVisible(buildPosition) && unit->build(building, buildPosition) && CUNYAIModule::my_reservation.addReserveSystem(buildPosition, building)) { // bug is here, need to build and reserve at the same time.
+                TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
+                if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                    return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                 } //extractors must have buildings nearby or we shouldn't build them.
 
-                else if ( BWAPI::Broodwar->isVisible(buildPosition) ) {
-                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), buildPosition.x, buildPosition.y);
+                else if ( BWAPI::Broodwar->isVisible(tile) ) {
+                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), tile.x, tile.y);
                 }
             }
-
         }
         else if (unit->canBuild(building)) {
-            if (CUNYAIModule::checkSafeBuildLoc(unit_pos, CUNYAIModule::current_map_inventory, CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_, CUNYAIModule::land_inventory) ) {
+            if (CUNYAIModule::checkSafeBuildLoc(unit_pos) ) {
                 
                 map<int,set<TilePosition>> viable_placements;
 
@@ -134,7 +133,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         for (auto &tile : placements) {
                             if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                    return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                                    return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                             }
                         }
                     }
@@ -156,9 +155,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 for (auto good_block : viable_placements) { // should automatically search by distance.
                     for (auto &tile : good_block.second) {
-                        if (BWAPI::Broodwar->isVisible(tile) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
+                        if (BWAPI::Broodwar->isVisible(tile) && CUNYAIModule::checkSafeBuildLoc(Position(tile)) && unit->build(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                         }
                     }
                 }
@@ -213,7 +212,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
                 auto friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(expo_areaID);
                 auto enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(expo_areaID);
-                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p), inv, enemy_area, friendly_area, CUNYAIModule::land_inventory);
+                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
                 bool occupied_expo = false;
                 auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
                 if (nearby_resource && nearby_resource->occupied_resource_)
@@ -242,10 +241,10 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
 
             }
-            else if (!Broodwar->isExplored(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
+            else if (!Broodwar->isVisible(inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, UnitTypes::Zerg_Hatchery)) {
                 unit->move(Position(inv.next_expo_));
                 CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Moving there to check it out.", inv.next_expo_.x, inv.next_expo_.y);
-                return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
+                return CUNYAIModule::updateUnitBuildIntent(unit, UnitTypes::Zerg_Hatchery, inv.next_expo_);
             }
         }
     } // closure affordablity.
@@ -386,36 +385,33 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
         morphing_unit.updateStoredUnit(drone); // don't give him a phase.
 
+
+        //std::map<UnitType, int> local_map;
+        //int sustainable_tech = min( CUNYAIModule::current_map_inventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
+
+        //switch (sustainable_tech) {
+        //case 0:
+        //    local_map = { { UnitTypes::Zerg_Hatchery, 2 },{ UnitTypes::Zerg_Extractor, 1 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 1:
+        //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 1 }, { UnitTypes::Zerg_Extractor, 2 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 2:
+        //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 4 }, { UnitTypes::Zerg_Extractor, 3 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
+        //case 3:
+        //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 6 }, { UnitTypes::Zerg_Extractor, 4 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
+        //default:
+        //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 8 }, { UnitTypes::Zerg_Extractor, 6 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
+        //}
+        //local_map.merge(core_buildings_);
+        //local_map.swap(core_buildings_); // should put all elements into intended buildings with overwrite.
+
+        //switch (returnOptimalUnit(CUNYAIModule::friendly_player_model.combat_unit_cartridge_, CUNYAIModule::friendly_player_model.researches_)) {
+        //
+        //
+        //}
+
+
     return buildings_started;
 };
-
-// Cannot use for extractors, they are "too close" to the geyser.
-TilePosition AssemblyManager::getBuildablePosition( const TilePosition target_pos, const UnitType build_type, const int tile_grid_size ) {
-
-    TilePosition canidate_return_position = TilePosition (0,0);
-    int widest_dim_in_minitiles = 4 * max(build_type.tileHeight(), build_type.tileWidth());
-    int width = Broodwar->mapWidth();
-    int height = Broodwar->mapHeight();
-    for (int x = -tile_grid_size; x <= tile_grid_size; ++x) {
-        for (int y = -tile_grid_size; y <= tile_grid_size; ++y) {
-            int centralize_x = target_pos.x + x;
-            int centralize_y = target_pos.y + y;
-            if (!(x == 0 && y == 0) &&
-                centralize_x < width &&
-                centralize_y < height &&
-                centralize_x > 0 &&
-                centralize_y > 0 &&
-                Broodwar->canBuildHere(TilePosition(centralize_x, centralize_y), build_type) &&
-                CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(TilePosition(centralize_x, centralize_y)).x][WalkPosition(TilePosition(centralize_x, centralize_y)).y] > widest_dim_in_minitiles // don't wall off please. Wide berth around blue veins.
-            ) {
-                canidate_return_position = TilePosition(centralize_x, centralize_y);
-                break;
-            }
-        }
-    }
-
-    return canidate_return_position;
-}
 
 // clears all blocking units in the area excluding EXCEPTION_UNIT.  Purges all the worker relations for the scattered units.
 void AssemblyManager::clearBuildingObstuctions(const Unit_Inventory &ui, Map_Inventory &inv,const Unit &exception_unit ) {
@@ -446,7 +442,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
     //Let us simulate some combat.
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || (CUNYAIModule::tech_starved && Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300)) {
-        is_building = AssemblyManager::buildOptimalUnit(morph_canidate, assembly_cycle_);
+        is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 
     return is_building;
@@ -468,7 +464,7 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate) {
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it. Passes by copy so I can mutilate the values.
-bool AssemblyManager::buildOptimalUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
+bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
@@ -600,7 +596,7 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
 }
 
 //Updates the assembly cycle to consider the value of each unit.
-void AssemblyManager::updateOptimalUnit() {
+void AssemblyManager::updateOptimalCombatUnit() {
     bool building_optimal_unit = false;
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
@@ -626,9 +622,9 @@ void AssemblyManager::updateOptimalUnit() {
     have_idle_evos_ = false;
     have_idle_spires_ = false;
     for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire && upgrader.second.build_type_ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
     }
 }
 
@@ -868,14 +864,14 @@ bool AssemblyManager::assignUnitAssembly()
             bool prep_for_transfer = true;
 
             if (larva.first->getHatchery()) {
-                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::current_map_inventory.min_fields_ > 8; // no longer will spam units when I need a hatchery.
+                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
                 Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
                 local_resources.updateMines();
                 hatch_wants_drones = 2 * local_resources.getLocalMinPatches() + 3 * local_resources.getLocalRefineries() > local_resources.getLocalMiners() + local_resources.getLocalGasCollectors();
                 prep_for_transfer = CUNYAIModule::Count_Units_In_Progress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
             }
 
-            bool enough_drones_globally = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) > CUNYAIModule::current_map_inventory.min_fields_ * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) >= 85;
+            bool enough_drones_globally = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) >= 85;
             bool drone_conditional = (CUNYAIModule::econ_starved || CUNYAIModule::tech_starved); // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
 
             bool drones_are_needed_here = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && hatch_wants_drones;

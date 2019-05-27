@@ -299,7 +299,7 @@ public:
       // Returns the actual center of a unit.
       static Position getUnit_Center(Unit unit);
       // checks if it is safe to build, uses heuristic critera.
-      static bool checkSafeBuildLoc(const Position pos, const Map_Inventory &inv, const Unit_Inventory &ei, const Unit_Inventory &ui, Resource_Inventory &ri);
+      static bool checkSafeBuildLoc(const Position pos);;
       // Checks if it is safe to mine, uses heuristic critera.
       bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
 
@@ -311,7 +311,9 @@ public:
       static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u);
+      static void DiagnosticTrack(const Unit & u);
       static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
+      static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type, const TilePosition & intended_build_tile); // finds the unit in friendly unit inventory and updates its phase to prebuild , its intended build type to Type, and its intended build tile to the listed tileposition. Function updates that the unit has been touched.
 
 
   // Vision Functions

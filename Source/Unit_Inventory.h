@@ -38,7 +38,9 @@ struct Stored_Unit {
 
     // Critical information not otherwise stored.
     UnitType type_; // the type of the unit.
-    UnitType build_type_; // the type the worker is about to build.
+    UnitType build_type_; // the type the worker is about to build. (found in bwapi, has build order already sent.)
+    UnitType intended_build_type_; // the type the builder plans to build. (Not found in bwapi, build order has yet to be sent.
+    TilePosition intended_build_tile_; // the tileposition at which the builder plans to build. (Not found in bwapi, build order has yet to be sent.
     Position pos_; // in pixels
     Unit locked_mine_;
 
@@ -69,7 +71,7 @@ struct Stored_Unit {
 
     enum Phase
     {
-        Building = 0, 
+        None = 0, 
         Attacking = 1, 
         Retreating = 2, 
         Prebuilding = 3, 
@@ -85,7 +87,7 @@ struct Stored_Unit {
         Upgrading = 13, 
         Researching = 14, 
         Morphing = 15, 
-        None = 16
+        Building = 16
     };
     Phase phase_;
     Stored_Unit(Phase p) : phase_(p) {}

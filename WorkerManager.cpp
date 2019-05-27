@@ -13,14 +13,16 @@ bool WorkerManager::isEmptyWorker(const Unit &unit) {
 }
 bool WorkerManager::workerPrebuild(const Unit & unit)
 {
-    if (Broodwar->isExplored(CUNYAIModule::current_map_inventory.next_expo_) && unit->build(UnitTypes::Zerg_Hatchery, CUNYAIModule::current_map_inventory.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
-        CUNYAIModule::DiagnosticText("Continuing to Expo at ( %d , %d ).", CUNYAIModule::current_map_inventory.next_expo_.x, CUNYAIModule::current_map_inventory.next_expo_.y);
-        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+    Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
+
+    if (unit->build(miner.intended_build_type_, miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+        CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
     }
-    else if (!Broodwar->isExplored(CUNYAIModule::current_map_inventory.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery)) {
-        unit->move(Position(CUNYAIModule::current_map_inventory.next_expo_));
-        CUNYAIModule::DiagnosticText("Unexplored Expo at ( %d , %d ). Still moving there to check it out.", CUNYAIModule::current_map_inventory.next_expo_.x, CUNYAIModule::current_map_inventory.next_expo_.y);
-        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Prebuilding);
+    else if (!Broodwar->isVisible(miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+        unit->move(Position(miner.intended_build_tile_));
+        CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     return false;
 }
@@ -256,8 +258,6 @@ bool WorkerManager::workerWork(const Unit &u) {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(u); // we will want DETAILED information about this unit.
     int t_game = Broodwar->getFrameCount();
 
-    bool too_much_gas = CUNYAIModule::current_map_inventory.getGasRatio() > CUNYAIModule::delta;
-    bool no_recent_worker_alteration = miner.time_of_last_purge_ < t_game - 12 && miner.time_since_last_command_ > 12;
 
     // Identify old mineral task. If there's no new better job, put them back on this without disturbing them.
     bool was_gas = miner.isAssignedGas();
@@ -300,13 +300,13 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u); // mark worker as returning.
         }
-        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && CUNYAIModule::spamGuard(u, 14)) { // Otherwise walk to that mineral.
+        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { // Otherwise walk to that mineral.
             if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && miner.isBrokenLock() && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ( (miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle() ) ) { //If there is a mineral and we can see it, mine it.
             if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
@@ -314,7 +314,10 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
-        task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
+        CUNYAIModule::DiagnosticTrack(u);
+        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
+        }
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
         if (isEmptyWorker(u)) {
@@ -340,7 +343,15 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::None:
-        task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
+        if (!isEmptyWorker(u)) { //auto return if needed.
+            task_guard = workersReturn(u); // mark worker as returning.
+        }
+        else task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
+        break;
+    case Stored_Unit::Building:
+        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
+        }
         break;
     default:
         task_guard = workersCollect(u);

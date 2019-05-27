@@ -13,7 +13,10 @@ using namespace std;
 
 class AssemblyManager {
 private: 
-    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
+    static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
+    static std::map<UnitType, int> specialization_buildings_; // persistent set of intended buildings.
+
     static Unit_Inventory larva_bank_;
     static Unit_Inventory hydra_bank_;
     static Unit_Inventory muta_bank_;
@@ -33,9 +36,9 @@ public:
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness);
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
     static int returnUnitRank(const UnitType &ut );
-    static void updateOptimalUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
+    static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate);
-    static bool buildOptimalUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
+    static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera);
     // Check and grow a unit using larva.
@@ -43,8 +46,6 @@ public:
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
     // Builds the next building you can afford. Area of constant improvement.
     static bool buildBuilding(const Unit & drone);
-    // Returns a tile that is suitable for building.
-    static TilePosition getBuildablePosition(const TilePosition target_pos, const UnitType build_type, const int tile_grid_size);
     // Moves all units except for the Stored exeption_unit elsewhere.
     static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.

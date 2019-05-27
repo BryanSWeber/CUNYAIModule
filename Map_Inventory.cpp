@@ -21,7 +21,6 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     updateLn_Supply_Remain();
     updateLn_Supply_Total();
 
-    updateMin_Possessed( );
     updateHatcheries();
 
     //Fields:
@@ -122,19 +121,6 @@ double Map_Inventory::getLn_Supply_Ratio() {
         return 0;
     } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. Just in case- Define as ~~infty, not 0.
 };
-
-// Updates the number of mineral fields we "possess".
-void Map_Inventory::updateMin_Possessed() {
-
-    int min_fields = 0;
-    for (auto r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++r) { //for each mineral
-        if (r->second.occupied_resource_ && r->second.type_.isMineralField() ) {
-                min_fields++; // if there is a base near it, then this mineral counts.
-        } // closure for existance check.
-    } // closure: for each mineral
-
-    min_fields_ = min_fields;
-}
 
 // Updates the count of our vision total, in tiles
 void Map_Inventory::updateVision_Count() {

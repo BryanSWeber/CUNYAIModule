@@ -29,7 +29,7 @@ public:
     bool e_has_air_vunerability_;
 
     void updateOtherOnFrame(const Player &other_player);
-    void updateSelfOnFrame(const Player_Model &target_player);
+    void updateSelfOnFrame();
     void evaluateWorkerCount();
     void evaluateCurrentWorth(); // under development. Currently bugged but of interest.
 
