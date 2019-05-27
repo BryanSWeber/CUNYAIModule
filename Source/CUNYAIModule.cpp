@@ -316,7 +316,7 @@ void CUNYAIModule::onFrame()
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0);// you need gas for a required build order item.
 
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
-        Broodwar->self()->supplyTotal() < 400); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
+        Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
@@ -509,7 +509,7 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
         //Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
-        //Broodwar->drawTextScreen(375, 70, "Enemy Worth (est): %4.2f", enemy_player_model.estimated_net_worth_);  //
+        Broodwar->drawTextScreen(375, 70, "Net Worth (est.): E:%4.2f, F:%4.2f", enemy_player_model.estimated_net_worth_, friendly_player_model.estimated_net_worth_);  //
         //Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
 
         ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //

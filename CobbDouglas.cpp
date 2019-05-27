@@ -175,7 +175,7 @@ bool CobbDouglas::evalArmyPossible()
         }
     }
 
-   return Broodwar->self()->supplyUsed() < 400 && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
+   return Broodwar->self()->supplyUsed() < 399 && can_build_army; // can't be army starved if you are maxed out (or close to it), Or if you have a wild K/L ratio. Or if you have nothing in production? These seem like freezers.
 
 }
 
@@ -183,7 +183,7 @@ bool CobbDouglas::evalEconPossible()
 {
     bool not_enough_miners = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3);
     bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.estimated_workers_ + 12);
-    return (not_enough_miners || not_enough_workers) && Broodwar->self()->supplyUsed() < 400 && CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+    return (not_enough_miners || not_enough_workers) && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
 
