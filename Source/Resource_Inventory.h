@@ -28,7 +28,6 @@ struct Stored_Resource{
     bool valid_pos_;
     bool blocking_mineral_;
 
-    Position local_natural_;
     Unit bwapi_unit_;
     UnitType type_;
     Position pos_;

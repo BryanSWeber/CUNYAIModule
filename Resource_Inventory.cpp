@@ -86,7 +86,6 @@ Stored_Resource::Stored_Resource(Unit resource) {
     valid_pos_ = true;
 
 
-    //local_natural_;
     bwapi_unit_ = resource;
     type_ = resource->getType();
     pos_ = resource->getPosition();
@@ -177,11 +176,11 @@ void Resource_Inventory::updateMines() {
     local_miners_ = 0;
     local_gas_collectors_ = 0;
     for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-        if (r->second.type_.isMineralField() && !r->second.blocking_mineral_ && r->second.local_natural_) {
+        if (r->second.type_.isMineralField() && !r->second.blocking_mineral_ && r->second.occupied_resource_) {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
         }
-        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.local_natural_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
+        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.occupied_resource_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
             local_refineries_++;
             local_gas_collectors_ += r->second.number_of_miners_;
 

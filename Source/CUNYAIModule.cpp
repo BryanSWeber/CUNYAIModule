@@ -345,7 +345,6 @@ void CUNYAIModule::onFrame()
     workermanager.updateWorkersLongDistanceMining();
     workermanager.updateExcessCapacity();
 
-    current_map_inventory.updateMin_Possessed();
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
     current_map_inventory.my_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(Broodwar->getStartLocations().size()));
     current_map_inventory.expo_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(current_map_inventory.expo_positions_complete_.size()));
@@ -451,8 +450,7 @@ void CUNYAIModule::onFrame()
             Print_Build_Order_Remaining(500, 170, buildorder);
         }
 
-        //Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", current_map_inventory.min_fields_);
-        //Broodwar->drawTextScreen(0, 10, "Active Workers: %d", current_map_inventory.gas_workers_ + current_map_inventory.min_workers_);
+        Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", land_inventory.getLocalMinPatches());
         Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", workermanager.min_workers_, workermanager.gas_workers_);  //
         Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
         Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.

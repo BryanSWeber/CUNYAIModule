@@ -29,7 +29,6 @@ struct Map_Inventory {
     double ln_supply_remain_;
     double ln_supply_total_;
 
-    int possessed_min_fields_;
     int hatches_;
     int last_gas_check_;
     int my_portion_of_the_map_;
@@ -91,9 +90,6 @@ struct Map_Inventory {
     double getGasRatio();
     // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
     double getLn_Supply_Ratio();
-
-    // Updates the number of mineral fields we "possess".
-    void Map_Inventory::updateMin_Possessed();
 
     // Updates the number of hatcheries (and decendents).
     void Map_Inventory::updateHatcheries();

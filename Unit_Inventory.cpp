@@ -890,7 +890,7 @@ bool Stored_Unit::isAssignedClearing() {
 bool Stored_Unit::isAssignedLongDistanceMining() {
     if (locked_mine_) {
         if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
-            return !mine_of_choice->blocking_mineral_ && !mine_of_choice->local_natural_;
+            return !mine_of_choice->blocking_mineral_ && !mine_of_choice->occupied_resource_;
         }
     }
     return false;

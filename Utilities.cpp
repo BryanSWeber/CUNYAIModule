@@ -2217,7 +2217,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        have_to_save = CUNYAIModule::current_map_inventory.possessed_min_fields_ <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::land_inventory.getLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_map_inventory.hatches_ == 1;
     }
 
 
@@ -2227,7 +2227,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv) {
 
-    bool desperate_for_minerals = CUNYAIModule::current_map_inventory.possessed_min_fields_ < 6;
+    bool desperate_for_minerals = CUNYAIModule::land_inventory.getLocalMinPatches() < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }
