@@ -2,6 +2,7 @@
 #include "Source\CUNYAIModule.h"
 #include "WorkerManager.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\AssemblyManager.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -14,16 +15,27 @@ bool WorkerManager::isEmptyWorker(const Unit &unit) {
 bool WorkerManager::workerPrebuild(const Unit & unit)
 {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
+    AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
 
-    if (unit->build(miner.intended_build_type_, miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+    if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
+        CUNYAIModule::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
+
+    //if we can build it with an offical build order, and it is in the reserve system, do so now.
+    if (unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
         CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
     }
-    else if (!Broodwar->isVisible(miner.intended_build_tile_) && CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) {
+    // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
+    else if (!AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_)) {
         unit->move(Position(miner.intended_build_tile_));
         CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
+    else if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
+        CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
+        CUNYAIModule::updateUnitPhase(unit, Stored_Unit::None);
+    }
+
     return false;
 }
 
@@ -314,8 +326,8 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
-        CUNYAIModule::DiagnosticTrack(u);
-        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+        //CUNYAIModule::DiagnosticTrack(u);
+        if (CUNYAIModule::spamGuard(u, 14) /*&& u->isIdle()*/) {
             task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         }
         break;
@@ -350,7 +362,12 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case Stored_Unit::Building:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
+                CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
+                CUNYAIModule::updateUnitPhase(u, Stored_Unit::None);
+            }
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
+
         }
         break;
     default:
