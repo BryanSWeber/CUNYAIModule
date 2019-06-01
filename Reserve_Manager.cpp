@@ -77,7 +77,7 @@ bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
 }
 
 bool Reservation::checkAffordablePurchase( const UnitType type ) { 
-    bool affordable = Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
+    bool affordable = Broodwar->self()->minerals() + 0.046 * CUNYAIModule::workermanager.min_workers_ * 5 * 24 - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() + 0.069 * CUNYAIModule::workermanager.gas_workers_ * 5 * 24 - gas_reserve_ >= type.gasPrice();
     bool already_making_one = false;
     for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
         if (it->second == type) {
