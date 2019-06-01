@@ -37,5 +37,6 @@ struct Reservation {
     bool Reservation::checkAffordablePurchase( const TechType type );
     bool Reservation::checkAffordablePurchase( const UpgradeType type );
 
-    void Reservation::confirmOngoingReservations( const Unit_Inventory &ui);
+    void Reservation::confirmOngoingReservations();
+
 };

@@ -403,7 +403,7 @@ void CUNYAIModule::onFrame()
     }
 
     my_reservation.decrementReserveTimer();
-    my_reservation.confirmOngoingReservations(friendly_player_model.units_);
+    my_reservation.confirmOngoingReservations();
     DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
 
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
@@ -609,7 +609,7 @@ void CUNYAIModule::onFrame()
             CUNYAIModule::DiagnosticPhase(j.second,current_map_inventory.screen_position_);
         }
 
-        //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
+        Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
         Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
         //Diagnostic_Watch_Expos();
     }// close analysis mode

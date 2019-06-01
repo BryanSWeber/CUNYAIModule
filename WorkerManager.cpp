@@ -362,10 +362,10 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case Stored_Unit::Building:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
-            if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
-                CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
-                CUNYAIModule::updateUnitPhase(u, Stored_Unit::None);
-            }
+            //if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
+            //    CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
+            //    CUNYAIModule::updateUnitPhase(u, Stored_Unit::None);
+            //}
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
 
         }

@@ -222,7 +222,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
 
                 bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
-                if ( score_temp > expo_score && safe_expo && !occupied_expo && path_available) {
+                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && !occupied_expo && path_available) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -235,7 +235,9 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
         // If we found -something-
         if (inv.next_expo_ && inv.next_expo_ != TilePositions::Origin) {
-            if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_) && CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, Broodwar->self()->getRace().getResourceDepot())) {
+            if (!isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_))
+                CUNYAIModule::DiagnosticText("Ahh I can't place an expo at %d,%d", inv.next_expo_.x, inv.next_expo_.y);
+            if (CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, Broodwar->self()->getRace().getResourceDepot())) {
                 CUNYAIModule::buildorder.announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
                 return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_);
             }
@@ -434,7 +436,7 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
 
         if (creepCheck) {
             TilePosition tile(x, location.y + 2);
-            if (!Broodwar->hasCreep(tile))
+            if (!Broodwar->hasCreep(tile) || !Broodwar->hasCreep(location))
                 return false;
         }
 

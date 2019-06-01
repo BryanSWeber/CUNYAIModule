@@ -116,7 +116,7 @@ bool Reservation::checkAffordablePurchase( const UpgradeType type ) {
     return Broodwar->self()->minerals() - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() - gas_reserve_ >= type.gasPrice();
 }
 
-void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
+void Reservation::confirmOngoingReservations() {
 
     min_reserve_ = 0;
     gas_reserve_ = 0;
@@ -124,10 +124,11 @@ void Reservation::confirmOngoingReservations( const Unit_Inventory &ui) {
     for (auto res_it = reservation_map_.begin(); res_it != reservation_map_.end() && !reservation_map_.empty(); ) {
         bool keep = false;
 
-        for ( auto unit_it = ui.unit_map_.begin(); unit_it != ui.unit_map_.end() && !ui.unit_map_.empty(); unit_it++ ) {
-            if ( res_it->first == unit_it->second.bwapi_unit_->getLastCommand().getTargetTilePosition() || res_it->second == unit_it->second.bwapi_unit_->getBuildType() ) {
+        for ( auto unit_it = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); unit_it != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); unit_it++ ) {
+            Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit_it->first); // we will want DETAILED information about this unit.
+            if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first)
                 keep = true;
-            }
+                
         } // check if we have a unit building it.
 
         if ( keep ) {
