@@ -351,6 +351,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                         }
                     }
                 }
+                else task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
             }
         }
         break;

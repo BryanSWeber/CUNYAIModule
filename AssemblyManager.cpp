@@ -1153,7 +1153,7 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 }
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, 3 + 10 * ut == Broodwar->self()->getRace().getResourceDepot()) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkDesirable(const UpgradeType &ut, const bool &extra_criteria) {
