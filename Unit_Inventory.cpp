@@ -768,7 +768,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
     }
 
-    if (unittype == UnitTypes::Protoss_Interceptor) {
+    if (unittype == UnitTypes::Protoss_Interceptor || unittype.isSpell()) {
         modified_min_cost_ = 0;
         modified_gas_cost_ = 0;
         modified_supply_ = 0;

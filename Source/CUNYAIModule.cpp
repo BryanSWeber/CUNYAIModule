@@ -403,7 +403,7 @@ void CUNYAIModule::onFrame()
     }
 
     my_reservation.decrementReserveTimer();
-    my_reservation.confirmOngoingReservations(friendly_player_model.units_);
+    my_reservation.confirmOngoingReservations();
     DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
 
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.

@@ -39,7 +39,7 @@ public:
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate);
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
-    //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building.
+    //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building.
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera);
     // Check and grow a unit using larva.
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);
@@ -47,7 +47,13 @@ public:
     // Builds the next building you can afford. Area of constant improvement.
     static bool buildBuilding(const Unit & drone);
     // Moves all units except for the Stored exeption_unit elsewhere.
-    static void clearBuildingObstuctions(const Unit_Inventory & ui, Map_Inventory & inv, const Unit & exception_unit);
+    static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit);
+    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
+    static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);
+    // Checks if a build position is occupied.
+    static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);
+    // Checks if I can see every tile in a build location. 
+    static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
     static bool Reactive_BuildFAP(const Unit & morph_canidate);
     // print the assembly cycle we're thinking about.
@@ -59,6 +65,8 @@ public:
     static bool assignUnitAssembly();
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
     static void getDefensiveWalls();
+    // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
+    static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
 };
 
 
