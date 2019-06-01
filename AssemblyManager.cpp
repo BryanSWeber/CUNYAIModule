@@ -215,14 +215,15 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 auto friendly_area = CUNYAIModule::friendly_player_model.units_.getInventoryAtArea(expo_areaID);
                 auto enemy_area = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(expo_areaID);
                 bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
-                bool occupied_expo = false;
-                auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
-                if (nearby_resource && nearby_resource->occupied_resource_)
-                    occupied_expo = true;
+                //bool occupied_expo = false;
+                //auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
+                //if (nearby_resource && nearby_resource->occupied_resource_)
+                //    occupied_expo = true;
 
 
                 bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
-                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && !occupied_expo && path_available) {
+
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -235,8 +236,6 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
         // If we found -something-
         if (inv.next_expo_ && inv.next_expo_ != TilePositions::Origin) {
-            if (!isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_))
-                CUNYAIModule::DiagnosticText("Ahh I can't place an expo at %d,%d", inv.next_expo_.x, inv.next_expo_.y);
             if (CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, Broodwar->self()->getRace().getResourceDepot())) {
                 CUNYAIModule::buildorder.announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
                 return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_);
@@ -420,14 +419,8 @@ void AssemblyManager::clearBuildingObstuctions(const UnitType &ut, const TilePos
 
 bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location)
 {
-    auto units_in_area = Broodwar->getUnitsInRectangle(Position(location), Position(location) + Position(type.width(), type.height()));
-    if (!units_in_area.empty()) {
-        for (auto u : units_in_area) {
-            if(!u->getType().canMove())
-                return false;
-        }
-    }
-
+    if (isOccupiedBuildLocation(type, location))
+        return false;
     // Modifies BWEB's isPlaceable()
     // Placeable is valid if buildable and not overlapping neutrals
     // Note: Must check neutrals due to the terrain below them technically being buildable
@@ -445,8 +438,6 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
             if (!tile.isValid()
                 || !Broodwar->isBuildable(tile)
                 || !Broodwar->isWalkable(WalkPosition(tile))
-                //|| BWEB::Maps::usedGrid[x][y] != UnitTypes::None
-                //|| BWEB::Maps::reserveGrid[x][y] > 0
                 || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
                 return false;
         }
@@ -455,7 +446,16 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
     return true;
 
 }
-
+bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePosition &location) {
+    auto units_in_area = Broodwar->getUnitsInRectangle(Position(location), Position(location) + Position(type.width(), type.height()));
+    if (!units_in_area.empty()) {
+        for (auto u : units_in_area) {
+            if (!u->getType().canMove())
+                return true;
+        }
+    }
+    return false;
+}
 bool AssemblyManager::isFullyVisibleBuildLocation(const UnitType &type, const TilePosition &location) {
     for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
         for (auto y = location.y; y < location.y + type.tileHeight(); y++) {

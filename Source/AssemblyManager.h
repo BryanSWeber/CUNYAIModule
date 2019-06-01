@@ -50,6 +50,8 @@ public:
     static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit);
     // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
     static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);
+    // Checks if a build position is occupied.
+    static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);
     // Checks if I can see every tile in a build location. 
     static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);
     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
