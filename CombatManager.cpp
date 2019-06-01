@@ -26,7 +26,7 @@ bool CombatManager::combatScript(const Unit & u)
                 int chargable_distance_self = CUNYAIModule::getChargableDistance(u, CUNYAIModule::enemy_player_model.units_);
                 int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, CUNYAIModule::friendly_player_model.units_);
                 int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
-                search_radius = max(chargable_distance_max + 64, CUNYAIModule::enemy_player_model.units_.max_range_ + 64); // expanded radius because of units intermittently suiciding against static D.
+                search_radius = min(max({ chargable_distance_max + 64, CUNYAIModule::enemy_player_model.units_.max_range_ + 64 }), 400); // expanded radius because of units intermittently suiciding against static D.
 
                 Unit_Inventory friend_loc;
                 Unit_Inventory enemy_loc;
