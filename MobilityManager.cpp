@@ -48,14 +48,14 @@ bool Mobility::BWEM_Movement(const int &in_or_out) {
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (in_or_out > 0) {
         if (u_type_.airWeapon() != WeaponTypes::None) {
-            it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
         }
         else {
-            it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
         }
     }
     else { // Otherwise, return to home.
-        it_worked = move_to(pos_, CUNYAIModule::current_map_inventory.home_base_);
+        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.home_base_);
     }
 
 
@@ -198,7 +198,7 @@ void Mobility::Retreat_Logic() {
         if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
     }
    
-    move_to(pos_, CUNYAIModule::current_map_inventory.home_base_);
+    moveTo(pos_, CUNYAIModule::current_map_inventory.home_base_);
     if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
 
 }
@@ -391,14 +391,14 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     return  return_vector;
 }
 
-bool Mobility::move_to(const Position &start, const Position &finish)
+bool Mobility::moveTo(const Position &start, const Position &finish)
 {
     int plength = 0;
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
 
     if (!cpp.empty() && !unit_->isFlying()) {
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 4;
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 3;
         // first try traveling with CPP.
         if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!

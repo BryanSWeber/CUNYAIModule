@@ -40,7 +40,7 @@ bool CombatManager::combatScript(const Unit & u)
                 friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
-                bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast2(friend_loc, enemy_loc);
+                bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
 
                 //if (e_closest->valid_pos_) {  // Must have a valid postion on record to attack. This actually returns FALSE sometimes inappropriately.
                     if (they_take_a_fap_beating) {
@@ -63,7 +63,7 @@ bool CombatManager::combatScript(const Unit & u)
 
         if (!u->getType().isWorker() && u->canMove()) {
             // If there was no enemy to attack didn't trigger, try to approach.
-            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
+            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_);
             if (ready_to_fight) {
                 long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
             }

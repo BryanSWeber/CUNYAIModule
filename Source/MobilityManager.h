@@ -45,7 +45,7 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
-    bool move_to(const Position & start, const Position & finish);
+    bool moveTo(const Position & start, const Position & finish);
 
 private:
     Position pos_;
