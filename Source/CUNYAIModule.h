@@ -305,11 +305,14 @@ public:
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
       static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
-      // Tells the size of the losses after a fight. + means the ui team are winning and this is the estimated damage they inflict, - means the ui team are losing and this is their estimated losses. The fodder setting also includes the results of destroying the units that cannot defend themselves, such as a nexus.
-      static int getFAPDamageDifferentialForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
+      // Tells the size of the losses after a fight. The fodder setting also includes the results of destroying the units that cannot defend themselves, such as a nexus.
+      static int getFAPDamageForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
+      // Tells the size of the surviving forces after a fight. The fodder setting also includes the results of surviving units that cannot defend themselves, such as a nexus.
+      static int getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u);
       static void DiagnosticTrack(const Unit & u);
+      static void DiagnosticTrack(const Position & p);
       static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
       static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type, const TilePosition & intended_build_tile); // finds the unit in friendly unit inventory and updates its phase to prebuild , its intended build type to Type, and its intended build tile to the listed tileposition. Function updates that the unit has been touched.
 

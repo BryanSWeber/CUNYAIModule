@@ -2210,6 +2210,9 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     bool enemy_has_not_penetrated = true;
     bool have_to_save = false;
 
+    e_neighborhood.updateUnitInventorySummary();
+    friend_loc.updateUnitInventorySummary();
+
     if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood)) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
@@ -2298,7 +2301,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
             //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 
-int CUNYAIModule::getFAPDamageDifferentialForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool fodder) {
+int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool fodder) {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
     int total_surviving_ui_down = 0;
@@ -2322,15 +2325,47 @@ int CUNYAIModule::getFAPDamageDifferentialForecast(const Unit_Inventory &ui, con
     }
 
     // Calculate if the surviving side can destroy the fodder:
-    if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
-    if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
-
     if (total_surviving_ei_up > 0) total_dying_ui += ui.stock_air_fodder_;
     if (total_surviving_ei_down > 0) total_dying_ui += ui.stock_ground_fodder_;
 
-    //Return the damage differential. This may not always accurately resemble the victor, however.  
+    //Return the damage prediction. This may not always accurately resemble the victor, however.  
     //FAP should follow lancaster's laws for ranged and melee combat but doesn't accurately reflect the blend of the two, since melee units create space for ranged, surrounds are less helpful if surface area is not a factor in combat, etc.
-    return total_dying_ei - total_dying_ui;
+    //It's also not clear the fodder is going to die.
+    return total_dying_ui;
+}
+
+int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder)
+{
+    int total_surviving_ui = 0;
+    int total_surviving_ui_up = 0;
+    int total_surviving_ui_down = 0;
+    int total_dying_ui = 0;
+    int total_surviving_ei = 0;
+    int total_surviving_ei_up = 0;
+    int total_surviving_ei_down = 0;
+    int total_dying_ei = 0;
+
+    for (auto u : ui.unit_map_) {
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units.
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_down_;
+    }
+    for (auto e : ei.unit_map_) {
+        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_down_;
+    }
+
+    // Calculate if the surviving side can destroy the fodder:
+    if (total_surviving_ei_up == 0) total_surviving_ui += ui.stock_air_fodder_;
+    if (total_surviving_ei_down == 0) total_surviving_ui += ui.stock_ground_fodder_;
+
+    //Return the survival differential. This may not always accurately resemble the victor, however.  
+    //FAP should follow lancaster's laws for ranged and melee combat but doesn't accurately reflect the blend of the two, since melee units create space for ranged, surrounds are less helpful if surface area is not a factor in combat, etc.
+    //It's also not clear the fodder is going to die.
+    return total_surviving_ui;
 }
 
 bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
@@ -2361,6 +2396,10 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
 
 void CUNYAIModule::DiagnosticTrack(const Unit &u) {
     Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
+}
+
+void CUNYAIModule::DiagnosticTrack(const Position &p) {
+    Broodwar->setScreenPosition(p - Position{ 320,200 });
 }
 
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {

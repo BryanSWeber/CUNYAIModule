@@ -23,7 +23,7 @@ void Mobility::Pathing_Movement(const int &passed_distance, const Position &e_po
     bool pathing_confidently = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
@@ -147,7 +147,7 @@ bool Mobility::BWEM_Movement() const
     bool pathing_confidently = false;
 
     bool healthy = unit_->getHitPoints() > 0.25 * u_type_.maxHitPoints();
-    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast2(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
+    bool ready_to_fight = CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_, false);
     bool enemy_scouted = CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin;
     bool scouting_returned_nothing = CUNYAIModule::current_map_inventory.checked_all_expo_positions_ && !enemy_scouted;
     bool too_far_away_from_front_line = TOO_FAR_FROM_FRONT;
