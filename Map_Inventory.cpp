@@ -960,12 +960,15 @@ Position Map_Inventory::getWeakestBase(const bool &friendly, const bool &fodder)
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
         Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
+        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
         ei_loc.updateUnitInventorySummary();
         ui_loc.updateUnitInventorySummary();
+        ui_mini.updateUnitInventorySummary();
+
         if(friendly)  sample_damage = CUNYAIModule::getFAPDamageForecast(ui_loc, ei_loc, true);
         else  sample_damage = CUNYAIModule::getFAPDamageForecast(ei_loc, ui_loc, true);
 
-        if (sample_damage > current_best_damage) { // let's go to the place that is having the most damage done to it!
+        if (sample_damage > current_best_damage && ui_mini.stock_ground_fodder_ > 0) { // let's go to the place that is having the most damage done to it!
             current_best_damage = sample_damage;
             weakest_base = Position(expo);
         }
@@ -982,12 +985,14 @@ Position Map_Inventory::getStrongestBase(const bool &friendly, const bool &fodde
     for (auto expo : expo_positions_complete_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
         Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
+        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
         ei_loc.updateUnitInventorySummary();
         ui_loc.updateUnitInventorySummary();
+        ui_mini.updateUnitInventorySummary();
         if (friendly)  sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ui_loc, ei_loc, fodder);
         else  sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ei_loc, ui_loc, fodder);
 
-        if (sample_surviving > current_best_surviving) { // let's go to the place that is dishing out the most defensive damage.
+        if (sample_surviving > current_best_surviving && ui_mini.stock_ground_fodder_ > 0) { // let's go to the place that is dishing out the most defensive damage.
             current_best_surviving = sample_surviving;
             strongest_base = Position(expo);
         }
