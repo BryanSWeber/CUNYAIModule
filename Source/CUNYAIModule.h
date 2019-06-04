@@ -304,8 +304,9 @@ public:
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
-      //static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
-      static bool checkSuperiorFAPForecast2(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
+      static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
+      // Tells the size of the losses after a fight. + means the ui team are winning and this is the estimated damage they inflict, - means the ui team are losing and this is their estimated losses. The fodder setting also includes the results of destroying the units that cannot defend themselves, such as a nexus.
+      static int getFAPDamageDifferentialForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
       // Mostly a check if the unit can be touched. Includes spamguard, much of this is a holdover from the Examplebot.
       static bool checkUnitTouchable(const Unit & u);
       static void DiagnosticTrack(const Unit & u);

@@ -129,17 +129,17 @@ struct Map_Inventory {
     // gets the radial distance of all units to the enemy base.
     static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);
 
-    // Returns the position of the weakest base.
-    Position Map_Inventory::getWeakestBase(const Unit_Inventory &ei) const;
-    // Returns the Position of the strongest base.
-    //Position Map_Inventory::getStrongestBase(const Unit_Inventory & ei) const;
+    // Returns the position of the weakest base. Friendly is true (by default) to checking -yourself- for the weakest base.
+    Position Map_Inventory::getWeakestBase(const bool &friendly = true) const;
+    // Returns the Position of the strongest base. Friendly is true (by default) to checking -yourself- for the strongest base.
+    Position Map_Inventory::getStrongestBase(const bool &friendly = true) const;
     // Returns the Position of a base with heaviest set of attackers...
     //Position Map_Inventory::getAttackedBase(const Unit_Inventory & ei, const Unit_Inventory &ui) const;
     //Position getBaseWithMostAttackers(const Unit_Inventory & ei, const Unit_Inventory & ui) const;
     // Returns the position of a base with the least casualties...
-    Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
+    //Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory &di) const;
     // Returns the position of a base with the most fodder at it...
-    Position getMostValuedBase(const Unit_Inventory & ui) const;
+    //Position getMostValuedBase(const Unit_Inventory & ui) const;
 
     // updates the next target expo.
     void Map_Inventory::getExpoPositions();

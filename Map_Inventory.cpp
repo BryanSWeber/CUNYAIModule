@@ -952,18 +952,19 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 //}
 //
 
-Position Map_Inventory::getWeakestBase( const Unit_Inventory &ei) const
+Position Map_Inventory::getWeakestBase(const bool &friendly) const
 {
     Position weakest_base = Positions::Origin;
-    int stock_current_best = 0;
-
+    int current_best_damage = 0;
+    int sample_damage = 0;
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(ei, Position(expo));
-        Unit_Inventory ei_tiny = CUNYAIModule::getUnitInventoryInArea(ei_loc, Position(expo));
-        ei_loc.updateUnitInventorySummary();
-        ei_tiny.updateUnitInventorySummary();
-        if (ei_loc.moving_average_fap_stock_ < stock_current_best && ei_loc.stock_ground_fodder_ > 0 && ei_tiny.stock_ground_fodder_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
-            stock_current_best = ei_loc.moving_average_fap_stock_;
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
+        if(friendly)  sample_damage = CUNYAIModule::getFAPDamageDifferentialForecast(ui_loc, ei_loc, true);
+        else  sample_damage = CUNYAIModule::getFAPDamageDifferentialForecast(ei_loc, ui_loc, true);
+
+        if (sample_damage < current_best_damage) { // if they have fodder (buildings) and it is weaker, target that place!
+            current_best_damage = sample_damage;
             weakest_base = Position(expo);
         }
     }
@@ -971,46 +972,25 @@ Position Map_Inventory::getWeakestBase( const Unit_Inventory &ei) const
     return weakest_base;
 }
 
-
-Position Map_Inventory::getNonCombatBase(const Unit_Inventory & ui, const Unit_Inventory & di) const
+Position Map_Inventory::getStrongestBase(const bool &friendly) const
 {
-    Position quiet_base = Positions::Origin;
-    int temp_safest_base = INT_MIN;
-
+    Position strongest_base = Positions::Origin;
+    int current_best_damage = 0;
+    int sample_damage = 0;
     for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInArea(ui, Position(expo));
-        Unit_Inventory di_loc = CUNYAIModule::getUnitInventoryInNeighborhood(di, Position(expo));
-        ui_loc.updateUnitInventorySummary();
-        di_loc.updateUnitInventorySummary();
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
+        if (friendly)  sample_damage = CUNYAIModule::getFAPDamageDifferentialForecast(ui_loc, ei_loc, true);
+        else  sample_damage = CUNYAIModule::getFAPDamageDifferentialForecast(ei_loc, ui_loc, true);
 
-        if ( ui_loc.stock_fighting_total_ - di_loc.stock_total_ > temp_safest_base && ui_loc.resource_depot_count_ > 0 ) { // if they have fodder (buildings) and it is weaker, target that place!
-            temp_safest_base = ui_loc.stock_fighting_total_ - di_loc.stock_total_;
-            quiet_base = Position(expo);
+        if (sample_damage > current_best_damage) { // if they have fodder (buildings) and it is weaker, target that place!
+            current_best_damage = sample_damage;
+            strongest_base = Position(expo);
         }
     }
 
-    return quiet_base;
+    return strongest_base;
 }
-
-
-Position Map_Inventory::getMostValuedBase(const Unit_Inventory & ui) const
-{
-    Position valued_base = Positions::Origin;
-    int temp_valued_base = INT_MIN;
-
-    for (auto expo : expo_positions_complete_) {
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInArea(ui, Position(expo));
-        ui_loc.updateUnitInventorySummary();
-
-        if (ui_loc.stock_ground_fodder_ + ui_loc.stock_air_fodder_ > temp_valued_base && ui_loc.resource_depot_count_ > 0) { // if they have fodder (buildings) and it is weaker, target that place!
-            temp_valued_base = ui_loc.stock_ground_fodder_ + ui_loc.stock_air_fodder_;
-            valued_base = Position(expo);
-        }
-    }
-
-    return valued_base;
-}
-
 
 void Map_Inventory::getExpoPositions() {
 
@@ -1157,7 +1137,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         Position suspected_friendly_base = Positions::Origin;
 
         if (ei.stock_fighting_total_ > 0) {
-            suspected_friendly_base = getMostValuedBase(ui);
+            suspected_friendly_base = getWeakestBase(true);
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
@@ -1172,7 +1152,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         //otherwise go to your safest base - the one with least deaths near it and most units.
         Position suspected_safe_base = Positions::Origin;
 
-        suspected_safe_base = getNonCombatBase(ui, di); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on building. Which we are trying to make it that way.
+        suspected_safe_base = getStrongestBase(true); 
 
         if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
