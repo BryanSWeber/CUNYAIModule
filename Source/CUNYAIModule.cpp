@@ -362,7 +362,7 @@ void CUNYAIModule::onFrame()
 
     current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
     current_map_inventory.drawExpoPositions();
-    //current_map_inventory.drawBasePositions();
+    current_map_inventory.drawBasePositions();
 
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalCombatUnit();
