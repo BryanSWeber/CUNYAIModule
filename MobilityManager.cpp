@@ -110,6 +110,8 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
                 bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
+                bool matching_area = e->second.areaID_ == stored_unit_->areaID_ || dist_to_enemy < 32;
+
                 if (CUNYAIModule::Can_Fight(e->second, unit_) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
                     e_priority = 7;
                 }
@@ -142,7 +144,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 }
 
 
-                if (e_priority >= priority && e_priority >= 3 && dist_to_enemy < max_dist) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
+                if (e_priority >= priority && e_priority >= 3 && dist_to_enemy < max_dist && (matching_area || !melee) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
                     target_sentinel = true;
                     priority = e_priority;
                     max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
