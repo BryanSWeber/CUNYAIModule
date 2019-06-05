@@ -318,7 +318,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                 task_guard = true;
             }
         }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ( (miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle() ) ) { //If there is a mineral and we can see it, mine it.
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
             if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
@@ -333,25 +333,22 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
         if (isEmptyWorker(u)) {
-            if (miner.locked_mine_) {
-                if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
-                    workersCollect(u);
-                }
-                else if (miner.locked_mine_->getType().isRefinery() && !CUNYAIModule::gas_starved) {
-                    workersCollect(u);
-                }
-                else if ((miner.locked_mine_->getType().isMineralField() && !excess_gas_capacity_) || (miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved)) {
-                    task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u));
-                    if (!task_guard && CUNYAIModule::spamGuard(u, 14)) {
-                        if (miner.locked_mine_->getType().isRefinery()) {
-                            task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningGas);
-                        }
-                        else if (miner.locked_mine_->getType().isMineralField()) {
-                            task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningMin);
-                        }
+            if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
+                workersCollect(u);
+            }
+            else if (miner.locked_mine_->getType().isRefinery() && !CUNYAIModule::gas_starved) {
+                workersCollect(u);
+            }
+            else if ((miner.locked_mine_->getType().isMineralField() && !excess_gas_capacity_) || (miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved)) {
+                task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u));
+                if (!task_guard && CUNYAIModule::spamGuard(u, 14)) {
+                    if (miner.locked_mine_->getType().isRefinery()) {
+                        task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningGas);
+                    }
+                    else if (miner.locked_mine_->getType().isMineralField()) {
+                        task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::MiningMin);
                     }
                 }
-                else task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
             }
             else task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
         }
