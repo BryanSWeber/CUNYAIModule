@@ -2280,18 +2280,33 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 
 bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool local) {
     int total_surviving_ui = 0;
+    int total_surviving_ui_up = 0;
+    int total_surviving_ui_down = 0;
     int total_dying_ui = 0;
     int total_surviving_ei = 0;
+    int total_surviving_ei_up = 0;
+    int total_surviving_ei_down = 0;
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
         total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units.
         total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_down_;
     }
     for (auto e : ei.unit_map_) {
         total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
         total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_down_;
     }
+
+    // Calculate if the surviving side can destroy the fodder:
+    if (total_surviving_ei_up > 0) total_dying_ui += ui.stock_air_fodder_;
+    if (total_surviving_ei_down > 0) total_dying_ui += ui.stock_ground_fodder_;
+    if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
+    if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
+
     return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
             //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.

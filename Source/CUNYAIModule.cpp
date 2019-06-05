@@ -69,7 +69,7 @@ void CUNYAIModule::onStart()
 
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
-    BWEB::Walls::createZSimCity();
+    //BWEB::Walls::createZSimCity();
     //assemblymanager.getDefensiveWalls(); //needs work.
     BWEB::Blocks::findBlocks();
 

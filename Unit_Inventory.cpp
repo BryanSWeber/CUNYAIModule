@@ -57,20 +57,19 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
                     break;
                 }
             }
-            if (!present && e.second.valid_pos_) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+            if (!present) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
                 Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
                 if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
                     e.second.valid_pos_ = false;
                 }
-                else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) &&
-                    (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                else if ( potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot))) ) {
                     e.second.pos_ = potential_running_spot;
                     e.second.valid_pos_ = true;
                 }
             }
         }
 
-        if(Broodwar->elapsedTime() % 2 == 0) e.second.circumference_remaining_ = e.second.circumference_; //Every 4 seconds, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
+        if(e.second.time_since_last_dmg_ > 6) e.second.circumference_remaining_ = e.second.circumference_; //Every 6 frames, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
 
         if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
@@ -354,7 +353,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     }
     else {
         //bool unit_fighting = type_.canAttack() && phase_ == Stored_Unit::Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
-        bool unit_escaped = ((phase_ == Stored_Unit::Retreating) || burrowed_) && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
+        bool unit_escaped = burrowed_ && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
         bool overkilled = (count_of_consecutive_predicted_deaths_ > MOVING_AVERAGE_DURATION && time_since_last_dmg_ > MOVING_AVERAGE_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
@@ -368,7 +367,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         }
         else {
             ma_future_fap_value_ = overkilled ? current_stock_value_ : static_cast<int>(((MOVING_AVERAGE_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / MOVING_AVERAGE_DURATION); // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
-            if (future_fap_value_ > 0 || overkilled) count_of_consecutive_predicted_deaths_ = 0;
+            if (future_fap_value_ > 0 ) count_of_consecutive_predicted_deaths_ = 0;
             else count_of_consecutive_predicted_deaths_++;
         }
     }

@@ -110,7 +110,7 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
                 bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
-                bool matching_area = e->second.areaID_ == stored_unit_->areaID_ || dist_to_enemy < 32;
+                bool matching_area = e->second.areaID_ == stored_unit_->areaID_ || dist_to_enemy < max_diveable_dist;
 
                 if (CUNYAIModule::Can_Fight(e->second, unit_) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
                     e_priority = 7;
@@ -400,8 +400,9 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
     auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
 
     if (!cpp.empty() && !unit_->isFlying()) {
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 3;
+
         // first try traveling with CPP.
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 5;
         if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.

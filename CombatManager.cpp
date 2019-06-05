@@ -19,6 +19,7 @@ bool CombatManager::combatScript(const Unit & u)
         int search_radius = 0;
         bool long_term_walking = true;
 
+
         if (e_closest) { // if there are bad guys, fight
             int e_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(e_closest->pos_))->Id();
             if (e_areaID == u_areaID || CUNYAIModule::getProperRange(u) > 64) { // if you are fighting.
@@ -41,29 +42,29 @@ bool CombatManager::combatScript(const Unit & u)
 
                 bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
                 bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
+                auto found_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
 
-                //if (e_closest->valid_pos_) {  // Must have a valid postion on record to attack. This actually returns FALSE sometimes inappropriately.
-                    if (they_take_a_fap_beating) {
-                        mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
-                    }
-                    else {
-                        mobility.Retreat_Logic();
-                    }
+                if (they_take_a_fap_beating) {
+                    mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+                }
+                else {
+                    mobility.Retreat_Logic();
+                }
 
-                    if constexpr (DRAWING_MODE) {
-                        if (draw_retreat_circle) {
-                            Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-                            Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-                        }
+                if constexpr (DRAWING_MODE) {
+                    if (draw_retreat_circle) {
+                        Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+                        Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
                     }
-                    return true; // this unit is finished.
-                //}
+                }
+                return true; // this unit is finished.
+
             } // close local examination.
         }
 
         if (!u->getType().isWorker() && u->canMove()) {
             // If there was no enemy to attack didn't trigger, try to approach.
-            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::checkSuperiorFAPForecast(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::enemy_player_model.units_) || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
             if (ready_to_fight) {
                 long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
             }
