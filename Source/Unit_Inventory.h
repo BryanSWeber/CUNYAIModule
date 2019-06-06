@@ -87,7 +87,8 @@ struct Stored_Unit {
         Upgrading = 13, 
         Researching = 14, 
         Morphing = 15, 
-        Building = 16
+        Building = 16,
+        Detecting = 17
     };
     Phase phase_;
     Stored_Unit(Phase p) : phase_(p) {}

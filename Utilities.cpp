@@ -401,7 +401,8 @@ void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & scre
         { Stored_Unit::Phase::Upgrading,"Upgrading" },
         { Stored_Unit::Phase::Researching,"Researching" },
         { Stored_Unit::Phase::Morphing,"Morphing" },
-        { Stored_Unit::Phase::Building,"Building" } };
+        { Stored_Unit::Phase::Building,"Building" },
+        { Stored_Unit::Phase::Detecting,"Detecting" } };
         Position upper_left = unit.pos_;
         if (isOnScreen(upper_left, screen_pos)) {
             Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());

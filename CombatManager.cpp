@@ -74,24 +74,26 @@ bool CombatManager::combatScript(const Unit & u)
 
 bool CombatManager::scoutScript(const Unit & u)
 {
-    if (CUNYAIModule::spamGuard(u)) {
-        Mobility mobility = Mobility(u);
-        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != Stored_Unit::Phase::Detecting) {
+        if ( CUNYAIModule::spamGuard(u) ) {
+            Mobility mobility = Mobility(u);
+            Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
 
-        if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
-            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
-            if (ready_to_fight) {
-                return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+            if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
+                bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+                if (ready_to_fight) {
+                    return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                }
+                else {
+                    return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                }
             }
             else {
-                return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                return mobility.Retreat_Logic();
             }
         }
-        else {
-            return mobility.Retreat_Logic();
-        }
     }
-
     return false;
 }
 

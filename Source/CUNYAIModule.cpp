@@ -643,7 +643,7 @@ void CUNYAIModule::onFrame()
         if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_player_model.units_, u->getPosition())) {
             Unit_Inventory e_neighbors = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), u_type.sightRange());
             for (auto e = e_neighbors.unit_map_.begin(); e != e_neighbors.unit_map_.end() && !e_neighbors.unit_map_.empty(); e++) {
-                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable()) {
+                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || (*e).second.type_.isBurrowable() && CUNYAIModule::enemy_player_model.researches_.tech_[TechTypes::Burrowing]) {
                     c = (*e).second.pos_; // then we may to send in some vision.
                     call_detector = true;
                     break;
@@ -676,7 +676,7 @@ void CUNYAIModule::onFrame()
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
                         }
-                        detector_of_choice.updateStoredUnit(detector_of_choice.bwapi_unit_);
+                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
@@ -684,7 +684,7 @@ void CUNYAIModule::onFrame()
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostic_Line(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
                         }
-                        detector_of_choice.updateStoredUnit(detector_of_choice.bwapi_unit_);
+                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
 
                 }
