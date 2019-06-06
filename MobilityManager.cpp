@@ -192,17 +192,16 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-void Mobility::Retreat_Logic() {
+bool Mobility::Retreat_Logic() {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
         unit_->unburrow();
-        if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
    
     moveTo(pos_, CUNYAIModule::current_map_inventory.home_base_);
-    if (CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating)) return;
-
+    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
 }
 
 Position Mobility::encircle(const Position & p) {

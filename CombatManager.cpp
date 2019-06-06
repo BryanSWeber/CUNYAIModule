@@ -12,7 +12,7 @@ bool CombatManager::combatScript(const Unit & u)
     {
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
         Mobility mobility = Mobility(u);
-        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
         if (!e_closest) e_closest = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, 400);
 
         bool draw_retreat_circle = false;
@@ -44,21 +44,17 @@ bool CombatManager::combatScript(const Unit & u)
                 bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
                 auto found_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
 
-                if (they_take_a_fap_beating) {
+                if ( they_take_a_fap_beating || friend_loc.stock_ground_fodder_ > 0 ) {
                     mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+                    return true;
                 }
                 else {
-                    mobility.Retreat_Logic();
-                }
-
-                if constexpr (DRAWING_MODE) {
-                    if (draw_retreat_circle) {
+                    if constexpr (DRAWING_MODE) {
                         Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
                         Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
                     }
+                    return mobility.Retreat_Logic();
                 }
-                return true; // this unit is finished.
-
             } // close local examination.
         }
 
@@ -66,14 +62,36 @@ bool CombatManager::combatScript(const Unit & u)
             // If there was no enemy to attack didn't trigger, try to approach.
             bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
             if (ready_to_fight) {
-                long_term_walking = mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
             }
             else {
-                long_term_walking = mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
             }
-            return long_term_walking;
         }
     }
+    return false;
+}
+
+bool CombatManager::scoutScript(const Unit & u)
+{
+    if (CUNYAIModule::spamGuard(u)) {
+        Mobility mobility = Mobility(u);
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+
+        if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
+            bool ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnY() < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+            if (ready_to_fight) {
+                return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+            }
+            else {
+                return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+            }
+        }
+        else {
+            return mobility.Retreat_Logic();
+        }
+    }
+
     return false;
 }
 

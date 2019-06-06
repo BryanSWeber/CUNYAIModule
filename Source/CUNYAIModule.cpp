@@ -476,15 +476,15 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
         //Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
 
-        //Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
-        //Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
-        //Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
-        //Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
-        //Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
-        //Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
-        //Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-        //Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
-        //Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
+        Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
+        Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
+        Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
+        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
+        Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
+        Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
+        Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
+        Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
+        Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
         //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
         //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
         //Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
@@ -696,6 +696,9 @@ void CUNYAIModule::onFrame()
         auto start_combat = std::chrono::high_resolution_clock::now();
         if (u_type.canAttack()) {
             combat_manager.combatScript(u);
+        }
+        if (u_type.canMove() && !u_type.canAttack()) {
+            combat_manager.scoutScript(u);
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
 

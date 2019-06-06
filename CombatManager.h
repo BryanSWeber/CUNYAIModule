@@ -25,7 +25,8 @@ class CombatManager {
 
         // Runs basic combat script, and if there is no combat, it defaults to the movement manager.
         static bool combatScript(const Unit &u);
-
+        // Runs a basic scouting script, primarily for overlords but valid for non-overlords.
+        static bool scoutScript(const Unit &u);
         //Adds to appropriate inventory. May move differently.
         bool addAntiAir(const Unit &u);
         //Adds to appropriate inventory. May move differently.
