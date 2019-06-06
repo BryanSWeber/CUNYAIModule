@@ -332,7 +332,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
-        if (isEmptyWorker(u)) {
+        if (isEmptyWorker(u) && miner.locked_mine_) {
             if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
                 workersCollect(u);
             }
