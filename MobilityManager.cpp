@@ -70,10 +70,9 @@ bool Mobility::BWEM_Movement(const int &in_or_out) {
 
 
 // This is basic combat logic for nonspellcasting units.
-void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
+bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
 
 {
-    Stored_Unit* target;
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
     Unit last_target = unit_->getLastCommand().getTarget();
     Position targets_pos;
@@ -92,98 +91,93 @@ void Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
+    
 
+    // Let us bin all potentially interesting units.
+    Unit_Inventory HighPriority;
+    Unit_Inventory ThreatPriority;
+    Unit_Inventory LowPriority;
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
-            if (CUNYAIModule::Can_Fight(unit_, e->second) && can_continue_to_surround && !(e_type == UnitTypes::Protoss_Interceptor && u_type_ == UnitTypes::Zerg_Scourge)) { // if we can fight this enemy, do not suicide into cheap units.
-                int dist_to_enemy = unit_->getDistance(e->second.pos_);
 
-                bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
-                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
-                    (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
-                    e_type == UnitTypes::Protoss_Carrier ||
-                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
-                    e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
-                bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+            bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
+                (e_type.isSpellcaster() && !e_type.isBuilding()) ||
+                (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
+                e_type == UnitTypes::Protoss_Carrier ||
+                (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
+                e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-                bool matching_area = e->second.areaID_ == stored_unit_->areaID_ || dist_to_enemy < max_diveable_dist;
-
-                if (CUNYAIModule::Can_Fight(e->second, unit_) && critical_target && dist_to_enemy <= max_diveable_dist && !lurkers_diving) {
-                    e_priority = 7;
-                }
-                else if (critical_target && dist_to_enemy <= max_diveable_dist) {
-                    e_priority = 6;
-                }
-                else if (e->second.bwapi_unit_ && CUNYAIModule::Can_Fight(e->second, unit_) &&
-                    dist_to_enemy < 32 &&
-                    last_target &&
-                    (last_target == e->second.bwapi_unit_ || (e->second.type_ == last_target->getType() && e->second.current_hp_ < last_target->getHitPoints()))) {
-                    e_priority = 5;
-                }
-                else if (CUNYAIModule::Can_Fight(e->second, unit_)) {
-                    e_priority = 4;
-                }
-                else if (e_type.isWorker()) {
-                    e_priority = 3;
-                }
-                else if (e_type.isResourceDepot()) {
-                    e_priority = 2;
-                }
-                else if (CUNYAIModule::IsFightingUnit(e->second) || e_type.spaceProvided() > 0) {
-                    e_priority = 1;
-                }
-                else if (e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) {
-                    e_priority = 0; // or if they cant fight back we'll get those last.
-                }
-                else {
-                    e_priority = -1; // should leave stuff like larvae and eggs in here. Low, low priority.
-                }
-
-
-                if (e_priority >= priority && e_priority >= 3 && dist_to_enemy < max_dist && (matching_area || !melee) ) { // closest target of equal priority, or target of higher priority. Don't hop to enemies across the map when there are undefended things to destroy here.
-                    target_sentinel = true;
-                    priority = e_priority;
-                    max_dist = dist_to_enemy; // now that we have one within range, let's tighten our existing range.
-                    target = &e->second;
-                }
-                else if (e_priority >= priority && e_priority < 3 && dist_to_enemy < max_dist_no_priority && target_sentinel == false) {
-                    target_sentinel_poor_target_atk = true;
-                    max_dist_no_priority = dist_to_enemy; // then we will get the closest of these.
-                    target = &e->second;
-                }
-
+            if (e_type.isWorker() || critical_target) {
+                HighPriority.addStored_Unit(e->second);
+            }
+            else if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
+                ThreatPriority.addStored_Unit(e->second);
+            }
+            else if (e->second.type_.mineralPrice() > 25 && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
+                LowPriority.addStored_Unit(e->second);
             }
         }
     }
 
-    bool attack_order_issued = false;
-    //bool target_is_on_wrong_plane = target && target->bwapi_unit_ && target->elevation_ != ui.getStoredUnitValue(unit).elevation_ && melee && !ui.getStoredUnitValue(unit).is_flying_; // keeps crashing from nullptr target.
+    double dist_to_enemy = max_diveable_dist;
+    Unit target = nullptr;
 
-    if ((target_sentinel || target_sentinel_poor_target_atk) && unit_->hasPath(target->pos_) ){
-        if (target->bwapi_unit_ && target->bwapi_unit_->exists()) {
-            if (!adjust_lurker_burrow(target->pos_) ) {// adjust lurker if neccesary, otherwise attack.
-                unit_->attack(target->bwapi_unit_);
-                if (melee) { 
-                    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target->bwapi_unit_);
-                    permenent_target.circumference_remaining_ -= widest_dim;
-                }
-                CUNYAIModule::Diagnostic_Line(unit_->getPosition(), target->pos_, CUNYAIModule::current_map_inventory.screen_position_, color);
+    HighPriority.updateUnitInventorySummary();
+    ThreatPriority.updateUnitInventorySummary();
+    LowPriority.updateUnitInventorySummary();
+
+    for (auto h : HighPriority.unit_map_) {
+        dist_to_enemy = unit_->getDistance(h.second.pos_);
+        bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && melee;
+        if (dist_to_enemy < max_diveable_dist && !diving_uphill && !lurkers_diving && CUNYAIModule::Can_Fight_Type(u_type_, h.second.type_) && h.first &&  h.first->exists()) {
+            max_diveable_dist = dist_to_enemy;
+            target = h.first;
+        }
+    }
+    
+    if (!target) { // repeated calls should be functionalized.
+        max_diveable_dist = INT_MAX;
+        for (auto t : ThreatPriority.unit_map_) {
+            dist_to_enemy = unit_->getDistance(t.second.pos_);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee;
+            if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
+                max_diveable_dist = dist_to_enemy;
+                target = t.first;
             }
-            attack_order_issued = true;
         }
     }
 
-    if (attack_order_issued) {
-        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
-    } 
-    else {
-        BWEM_Movement(1);
-    }// if I'm not attacking and I'm in range, let's try the default action.
-    return;
+    if (!target) { // repeated calls should be functionalized.
+        max_diveable_dist = INT_MAX;
+        for (auto l : LowPriority.unit_map_) {
+            dist_to_enemy = unit_->getDistance(l.second.pos_);
+            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && melee;
+            if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, l.second.type_) && l.first && l.first->exists()) {
+                max_diveable_dist = dist_to_enemy;
+                target = l.first;
+            }
+        }
+    }
+
+    if (target && target->exists()) {
+        if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
+            unit_->attack(target);
+            if (melee) {
+                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+                permenent_target.circumference_remaining_ -= widest_dim;
+            }
+            CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
+            return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
+        }
+    }
+
+
+    return false; // no target, we got a falsehood.
 }
 
 

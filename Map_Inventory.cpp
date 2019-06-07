@@ -1160,7 +1160,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         Position suspected_friendly_base = Positions::Origin;
 
         if (ei.stock_fighting_total_ > 0) {
-            suspected_friendly_base = getStrongestBase(true, true);
+            suspected_friendly_base = getWeakestBase(true, true);
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {

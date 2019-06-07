@@ -23,8 +23,8 @@ public:
 
     // Basic retreat logic
     bool Retreat_Logic();
-    // Tells the unit to fight. If it can attack both air and ground.
-    void Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
+    // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
+    bool Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     bool local_pathing(const int &passed_distance, const Position &e_pos );
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.

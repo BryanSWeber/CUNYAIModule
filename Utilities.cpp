@@ -633,6 +633,15 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     }
 }
 
+// Returns True if UnitType UT can attack anything in Unit_Inventory ENEMY; 
+bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory enemy) {
+    bool shooting_up = ut.airWeapon() != WeaponTypes::None && (enemy.stock_air_fodder_ + enemy.stock_fliers_ > 0);
+    bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver) && (enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0);
+    bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen;
+
+    return shooting_up || shooting_down || shoots_without_weapons;
+}
+
 bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 {
     bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
