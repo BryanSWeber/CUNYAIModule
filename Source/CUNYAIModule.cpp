@@ -322,6 +322,7 @@ void CUNYAIModule::onFrame()
 
 
     current_map_inventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
+    combat_manager.updateReadiness();
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
     playermodel_time = end_playermodel - start_playermodel;

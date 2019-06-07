@@ -102,7 +102,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
-            bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
+            //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
 
             bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                 (e_type.isSpellcaster() && !e_type.isBuilding()) ||
@@ -133,7 +133,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     for (auto h : HighPriority.unit_map_) {
         dist_to_enemy = unit_->getDistance(h.second.pos_);
         bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
-        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && melee;
+        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && melee && (stored_unit_->elevation_ != h.second.elevation_ && stored_unit_->elevation_ % 2 != 0); // they are on different elevations and my unit is not on a doodad (ramp, tunnel, etc.)
         if (dist_to_enemy < max_diveable_dist && !diving_uphill && !lurkers_diving && CUNYAIModule::Can_Fight_Type(u_type_, h.second.type_) && h.first &&  h.first->exists()) {
             max_diveable_dist = dist_to_enemy;
             target = h.first;
@@ -141,10 +141,10 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
     
     if (!target) { // repeated calls should be functionalized.
-        max_diveable_dist = INT_MAX;
+        max_diveable_dist = 9999;
         for (auto t : ThreatPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee;
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
             if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 max_diveable_dist = dist_to_enemy;
                 target = t.first;
@@ -153,10 +153,10 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     if (!target) { // repeated calls should be functionalized.
-        max_diveable_dist = INT_MAX;
+        max_diveable_dist = 9999;
         for (auto l : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(l.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && melee;
+            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && melee && (stored_unit_->elevation_ != l.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
             if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, l.second.type_) && l.first && l.first->exists()) {
                 max_diveable_dist = dist_to_enemy;
                 target = l.first;
@@ -167,15 +167,16 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (target && target->exists()) {
         if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
             unit_->attack(target);
-            if (melee) {
-                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
-                permenent_target.circumference_remaining_ -= widest_dim;
-            }
+            //if (melee) {
+            //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+            //    permenent_target.circumference_remaining_ -= widest_dim;
+            //}
             CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
             return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
         }
     }
 
+    Broodwar->sendText("No target found");
 
     return false; // no target, we got a falsehood.
 }
@@ -394,7 +395,8 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
 
     if (!cpp.empty() && !unit_->isFlying()) {
         // first try traveling with CPP.
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * cpp.front()->IsPseudo());
+        bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad());
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item );
         if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
