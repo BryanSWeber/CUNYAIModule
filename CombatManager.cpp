@@ -7,6 +7,7 @@
 #include <bwem.h>
 
 bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+Unit_Inventory CombatManager::scout_squad_;
 
 bool CombatManager::combatScript(const Unit & u)
 {
@@ -71,22 +72,36 @@ bool CombatManager::combatScript(const Unit & u)
 
 bool CombatManager::scoutScript(const Unit & u)
 {
-    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != Stored_Unit::Phase::Detecting) {
-        if ( CUNYAIModule::spamGuard(u) ) {
-            Mobility mobility = Mobility(u);
-            Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
-            if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
-                if (ready_to_fight) {
-                    return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+    auto scouting_unit = scout_squad_.unit_map_.find(u);
+    if (scout_squad_.unit_map_.empty() || scouting_unit != scout_squad_.unit_map_.end()) { // if the scout squad is empty or this unit is in it.
+        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+        if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != Stored_Unit::Phase::Detecting) {
+            if (CUNYAIModule::spamGuard(u)) {
+                scout_squad_.addStored_Unit(u);
+                Mobility mobility = Mobility(u);
+                Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+                if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
+                    if (ready_to_fight) {
+                        return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                    }
+                    else {
+                        return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                    }
                 }
                 else {
-                    return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+                    return mobility.Retreat_Logic();
                 }
             }
-            else {
-                return mobility.Retreat_Logic();
-            }
+        }
+    }
+    else {
+        Mobility mobility = Mobility(u);
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        if (!e_closest) { // if there are no bad guys nearby, feel free to go home.
+           return mobility.BWEM_Movement(-1);
+        }
+        else { // if bad guys are nearby, run.
+            return mobility.Retreat_Logic();
         }
     }
     return false;
@@ -119,6 +134,12 @@ bool CombatManager::addLiablitity(const Unit & u)
 bool CombatManager::addScout(const Unit & u)
 {
     scout_squad_.addStored_Unit(u);
+    scout_squad_.updateUnitInventorySummary();
+}
+
+void CombatManager::removeScout(const Unit & u)
+{
+    scout_squad_.removeStored_Unit(u);
     scout_squad_.updateUnitInventorySummary();
 }
 

@@ -15,7 +15,7 @@ class CombatManager {
         //Squad only gets hurt. Overlords, low energy psions...
         Unit_Inventory liabilities_squad_;
         //Squad scouts
-        Unit_Inventory scout_squad_;
+        static Unit_Inventory scout_squad_;
         //Squad detects
         Unit_Inventory detector_squad_;
 
@@ -36,6 +36,8 @@ class CombatManager {
         bool addLiablitity(const Unit &u);
         //Adds to appropriate inventory. May move differently.
         bool addScout(const Unit &u);
+        //Removes from appropriate inventory. May move differently.
+        void removeScout(const Unit & u);
         // Some conditions for advancing units in or back.
         static bool ready_to_fight;
         // Updating those conditions:

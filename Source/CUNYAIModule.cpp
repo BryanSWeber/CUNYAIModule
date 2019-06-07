@@ -698,7 +698,7 @@ void CUNYAIModule::onFrame()
         if (u_type.canAttack()) {
             combat_manager.combatScript(u);
         }
-        if (u_type.canMove() && !u_type.canAttack()) {
+        if (u_type.canMove() && !u_type.canAttack() && u_type != UnitTypes::Zerg_Larva) {
             combat_manager.scoutScript(u);
         }
         auto end_combat = std::chrono::high_resolution_clock::now();
@@ -936,6 +936,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         else {
             //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
+        combat_manager.removeScout(unit);
     }
 
     if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
