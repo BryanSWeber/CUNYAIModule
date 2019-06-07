@@ -393,9 +393,8 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
     auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
 
     if (!cpp.empty() && !unit_->isFlying()) {
-
         // first try traveling with CPP.
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * 5;
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * cpp.front()->IsPseudo());
         if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
