@@ -68,6 +68,20 @@ double CobbDouglas::getlnY() const
     return ln_Y;
 }
 
+// Protected from failure in divide by 0 case.
+double CobbDouglas::getlnY(const double alpha_army, const double alpha_tech) const
+{
+    double ln_Y = 0;
+    try {
+        //ln_Y = alpha_army * log( army_stock ) + alpha_tech * log( tech_stock ) + alpha_econ * log( worker_stock ); //Analog to GDP
+        ln_Y = alpha_army * log(army_stock) + alpha_army * alpha_tech * log(tech_stock) + alpha_tech * log(worker_stock); //Analog to GDP
+    }
+    catch (...) {
+        BWAPI::Broodwar->sendText("Uh oh. We are out of something critical...");
+    };
+    return ln_Y;
+}
+
 //Identifies priority type
 bool CobbDouglas::army_starved()
 {

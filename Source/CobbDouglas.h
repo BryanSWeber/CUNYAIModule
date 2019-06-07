@@ -32,6 +32,7 @@ struct CobbDouglas
 
     double getlny() const;
     double getlnY() const;
+    double getlnYusing(const double alpha_army, const double alpha_tech) const;
 
     bool army_starved();
     bool econ_starved();

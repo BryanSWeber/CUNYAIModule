@@ -31,7 +31,7 @@ public:
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame();
     void evaluateWorkerCount();
-    void evaluateCurrentWorth(); // under development. Currently bugged but of interest.
+    void evaluateCurrentWorth(); // under development. 
 
     //stored to avoid extensive counting.  
     void updateUnit_Counts();
