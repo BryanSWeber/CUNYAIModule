@@ -55,7 +55,7 @@ bool Mobility::BWEM_Movement(const int &in_or_out) {
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.home_base_);
+        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base);
     }
 
 
@@ -126,9 +126,13 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double dist_to_enemy = max_diveable_dist;
     Unit target = nullptr;
 
+    ThreatPriority.unit_map_.insert(HighPriority.unit_map_.begin(), HighPriority.unit_map_.end());
+    LowPriority.unit_map_.insert(ThreatPriority.unit_map_.begin(), ThreatPriority.unit_map_.end());
+
     HighPriority.updateUnitInventorySummary();
     ThreatPriority.updateUnitInventorySummary();
     LowPriority.updateUnitInventorySummary();
+
 
     for (auto h : HighPriority.unit_map_) {
         dist_to_enemy = unit_->getDistance(h.second.pos_);
@@ -194,8 +198,13 @@ bool Mobility::Retreat_Logic() {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
-   
-    moveTo(pos_, CUNYAIModule::current_map_inventory.home_base_);
+    
+    if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
+        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base);
+    }
+    else {
+        moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_);
+    }
     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
 }
 

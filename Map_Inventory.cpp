@@ -1163,8 +1163,8 @@ void Map_Inventory::updateBasePositions() {
             suspected_friendly_base = getWeakestBase(true, true);
         }
 
-        if (suspected_friendly_base.isValid() && suspected_friendly_base != home_base_ && suspected_friendly_base !=  Positions::Origin) {
-            updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), home_base_, map_out_from_home_);
+        if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base && suspected_friendly_base !=  Positions::Origin) {
+            updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), front_line_base, map_out_from_home_);
         }
         frames_since_home_base = 0;
         return;
@@ -1181,7 +1181,7 @@ void Map_Inventory::updateBasePositions() {
             updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
         }
         else {
-            safe_base_ = home_base_;
+            safe_base_ = front_line_base;
             map_out_from_safety_ = map_out_from_home_;
         }
 
@@ -1223,7 +1223,7 @@ void Map_Inventory::drawBasePositions() const
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
         Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
 
-        Broodwar->drawCircleMap(home_base_, 15, Colors::Green, true);
+        Broodwar->drawCircleMap(front_line_base, 15, Colors::Green, true);
 
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
         Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);

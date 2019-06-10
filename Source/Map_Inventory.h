@@ -42,7 +42,7 @@ struct Map_Inventory {
     vector<TilePosition> expo_positions_complete_;
     Position enemy_base_ground_;
     Position enemy_base_air_;
-    Position home_base_;
+    Position front_line_base;
     Position safe_base_;
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
@@ -161,7 +161,6 @@ struct Map_Inventory {
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateBasePositions();
-
 
    //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
