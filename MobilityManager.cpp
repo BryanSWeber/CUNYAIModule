@@ -111,7 +111,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                 e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-            if (e_type.isWorker() || critical_target) {
+            if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui)) ) {
                 HighPriority.addStored_Unit(e->second);
             }
             else if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
