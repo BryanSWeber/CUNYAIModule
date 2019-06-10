@@ -1071,7 +1071,7 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, const Resource_Inventory &ri, const Unit_Inventory &ni, const Unit_Inventory &di) {
+void Map_Inventory::updateBasePositions() {
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
@@ -1140,9 +1140,9 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
 
     if (frames_since_enemy_base_air_ > 24 * 5) {
 
-        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(ei, ui.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
-        if (ei.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+        if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
         }
         else {
@@ -1159,7 +1159,7 @@ void Map_Inventory::updateBasePositions(Unit_Inventory &ui, Unit_Inventory &ei, 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
-        if (ei.stock_fighting_total_ > 0) {
+        if (CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ > 0) {
             suspected_friendly_base = getWeakestBase(true, true);
         }
 

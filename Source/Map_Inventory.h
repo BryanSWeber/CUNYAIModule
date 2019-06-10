@@ -160,7 +160,7 @@ struct Map_Inventory {
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateBasePositions(Unit_Inventory & ui, Unit_Inventory & ei, const Resource_Inventory & ri, const Unit_Inventory & ni, const Unit_Inventory &di);
+    void updateBasePositions();
 
 
    //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.

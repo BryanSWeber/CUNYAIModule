@@ -361,7 +361,7 @@ void CUNYAIModule::onFrame()
         current_map_inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    current_map_inventory.updateBasePositions(friendly_player_model.units_, enemy_player_model.units_, land_inventory, neutral_player_model.units_, friendly_player_model.casualties_);
+    current_map_inventory.updateBasePositions();
     current_map_inventory.drawExpoPositions();
     current_map_inventory.drawBasePositions();
 
