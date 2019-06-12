@@ -67,7 +67,7 @@ struct Map_Inventory {
 
     int frames_since_unwalkable = 0;
     int frames_since_map_veins = 0;
-    int frames_since_home_base = 0;
+    int frames_since_front_line_base = 0;
     int frames_since_safe_base = 0;
     int frames_since_enemy_base_ground_ = 0;
     int frames_since_enemy_base_air_ = 0;

@@ -695,12 +695,7 @@ void CUNYAIModule::onFrame()
 
         //Combat Logic. Has some sophistication at this time. Makes retreat/attack decision.  Only retreat if your army is not up to snuff. Only combat units retreat. Only retreat if the enemy is near. Lings only attack ground.
         auto start_combat = std::chrono::high_resolution_clock::now();
-        if (u_type.canAttack()) {
-            combat_manager.combatScript(u);
-        }
-        if (u_type.canMove() && !u_type.canAttack() && u_type != UnitTypes::Zerg_Larva) {
-            combat_manager.scoutScript(u);
-        }
+        combat_manager.grandStrategyScript(u);
         auto end_combat = std::chrono::high_resolution_clock::now();
 
 

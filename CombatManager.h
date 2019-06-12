@@ -22,10 +22,14 @@ class CombatManager {
     public:
         //bool identifyTargets();
         //bool identifyWeaknesses();
-        // Runs basic combat script, and if there is no combat, it defaults to the movement manager.
+        // Runs all movement script for nonworker units. Priortizes combat when needed and pathing otherwise.
+        bool grandStrategyScript(const Unit & u);
+        // Runs basic combat script, and if there is no combat, it returns false.
         static bool combatScript(const Unit &u);
         // Runs a basic scouting script, primarily for overlords but valid for non-overlords.
         static bool scoutScript(const Unit &u);
+        // Runs a basic pathing script. Home if concerned, out if safe.
+        static bool pathingScript(const Unit &u);
         //Adds to appropriate inventory. May move differently.
         bool addAntiAir(const Unit &u);
         //Adds to appropriate inventory. May move differently.

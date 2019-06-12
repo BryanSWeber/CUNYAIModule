@@ -1080,7 +1080,7 @@ void Map_Inventory::updateBasePositions() {
     // every frame this is incremented.
     frames_since_enemy_base_ground_++;
     frames_since_enemy_base_air_++;
-    frames_since_home_base++;
+    frames_since_front_line_base++;
     frames_since_map_veins++;
     frames_since_safe_base++;
     frames_since_unwalkable++;
@@ -1154,7 +1154,7 @@ void Map_Inventory::updateBasePositions() {
 
     }
 
-    if (frames_since_home_base > 24 * 10) {
+    if (frames_since_front_line_base > 24 * 10) {
 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
@@ -1166,7 +1166,7 @@ void Map_Inventory::updateBasePositions() {
         if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base && suspected_friendly_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), front_line_base, map_out_from_home_);
         }
-        frames_since_home_base = 0;
+        frames_since_front_line_base = 0;
         return;
     }
 
