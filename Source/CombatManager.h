@@ -18,18 +18,25 @@ class CombatManager {
         static Unit_Inventory scout_squad_;
         //Squad detects
         Unit_Inventory detector_squad_;
+        // Some conditions for advancing units in or back.
+        static bool ready_to_fight;
 
     public:
         //bool identifyTargets();
         //bool identifyWeaknesses();
+
         // Runs all movement script for nonworker units. Priortizes combat when needed and pathing otherwise.
         bool grandStrategyScript(const Unit & u);
+
+        //Subroutines:
         // Runs basic combat script, and if there is no combat, it returns false.
         static bool combatScript(const Unit &u);
         // Runs a basic scouting script, primarily for overlords but valid for non-overlords.
         static bool scoutScript(const Unit &u);
         // Runs a basic pathing script. Home if concerned, out if safe.
         static bool pathingScript(const Unit &u);
+
+        //Grouping for inventories, mostly unused.
         //Adds to appropriate inventory. May move differently.
         bool addAntiAir(const Unit &u);
         //Adds to appropriate inventory. May move differently.
@@ -42,8 +49,8 @@ class CombatManager {
         bool addScout(const Unit &u);
         //Removes from appropriate inventory. May move differently.
         void removeScout(const Unit & u);
-        // Some conditions for advancing units in or back.
-        static bool ready_to_fight;
-        // Updating those conditions:
+
+
+        // Updating advance/retreat conditions:
         void updateReadiness();
 };

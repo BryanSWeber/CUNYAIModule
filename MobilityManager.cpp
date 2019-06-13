@@ -24,29 +24,20 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
 
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
-
-    if (pos_.getDistance(e_pos) > CUNYAIModule::enemy_player_model.units_.max_range_ + distance_metric_) {
-        approach(e_pos);
-        unit_->move(pos_ + attract_vector_);
+    approach(e_pos);
+    if (unit_->move(pos_ + attract_vector_)) {
         CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
         CUNYAIModule::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
-    else {
-        encircle(e_pos);
-        unit_->move(pos_ + encircle_vector_);
-        CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run around 
-    }
-    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+    return false;
 }
 
-bool Mobility::BWEM_Movement(const int &in_or_out) {
+bool Mobility::BWEM_Movement(const bool &in_or_out) {
     bool it_worked = false;
 
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-    if (in_or_out > 0) {
+    if (in_or_out) {
         if (u_type_.airWeapon() != WeaponTypes::None) {
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
         }
@@ -60,12 +51,23 @@ bool Mobility::BWEM_Movement(const int &in_or_out) {
 
 
     if (it_worked) {
-        in_or_out > 0 ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+        in_or_out ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     else {
         CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::None);
     }
     return it_worked;
+}
+
+bool Mobility::surround(const Position & pos)
+{
+    encircle(pos);
+    if (unit_->move(pos_ + encircle_vector_)) {
+        CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're running around it
+        CUNYAIModule::Diagnostic_Line(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+    }
+    return false;
 }
 
 

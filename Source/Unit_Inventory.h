@@ -90,7 +90,7 @@ struct Stored_Unit {
         Building = 16,
         Detecting = 17
     };
-    Phase phase_;
+    Phase phase_ = Phase::None;
     Stored_Unit(Phase p) : phase_(p) {}
     operator Phase () const { return phase_; }
 
@@ -173,6 +173,25 @@ struct Unit_Inventory {
     int is_shooting_;
     int is_attacking_;
     int is_retreating_;
+    map<Stored_Unit::Phase, int > count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
+    { Stored_Unit::Phase::Attacking, 0 },
+    { Stored_Unit::Phase::Retreating, 0 },
+    { Stored_Unit::Phase::Prebuilding, 0 },
+    { Stored_Unit::Phase::PathingOut, 0 },
+    { Stored_Unit::Phase::PathingHome, 0 },
+    { Stored_Unit::Phase::Surrounding, 0 },
+    { Stored_Unit::Phase::NoRetreat, 0 },
+    { Stored_Unit::Phase::MiningMin, 0 },
+    { Stored_Unit::Phase::MiningGas, 0 },
+    { Stored_Unit::Phase::Returning, 0 },
+    { Stored_Unit::Phase::DistanceMining, 0 },
+    { Stored_Unit::Phase::Clearing, 0 },
+    { Stored_Unit::Phase::Upgrading, 0 },
+    { Stored_Unit::Phase::Researching, 0 },
+    { Stored_Unit::Phase::Morphing, 0 },
+    { Stored_Unit::Phase::Building, 0 },
+    { Stored_Unit::Phase::Detecting, 0 } };
+
     std::map <Unit, Stored_Unit> unit_map_;
 
     // Updates the count of units.
@@ -188,7 +207,6 @@ struct Unit_Inventory {
     void updateUnitsControlledBy(const Player & Player);
     void purgeBrokenUnits();
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
-    void purgeAllPhases();
     void purgeWorkerRelationsStop(const Unit & unit);
     void purgeWorkerRelationsNoStop(const Unit & unit);
     void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);

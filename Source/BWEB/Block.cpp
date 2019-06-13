@@ -22,8 +22,8 @@ namespace BWEB::Blocks
                 else {
                     if (width == 6)
                         pieces = { Piece::Medium, Piece::Medium };
-                    if (width == 8)
-                        pieces = { Piece::Small, Piece::Small, Piece::Small, Piece::Small };
+                    if (width == 4)
+                        pieces = { Piece::Small, Piece::Small };
                 }
             }
             else if (height == 4) {
@@ -32,7 +32,7 @@ namespace BWEB::Blocks
             }
             else if (height == 5) {
                 if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
+                    pieces ={ Piece::Small, Piece::Small , Piece::Row, Piece::Large };
             }
             else if (height == 6) {
                 if (race != Races::Zerg) {

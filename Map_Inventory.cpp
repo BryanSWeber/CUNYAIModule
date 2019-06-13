@@ -952,7 +952,7 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 //}
 //
 
-Position Map_Inventory::getWeakestBase(const bool &friendly, const bool &fodder) const
+Position Map_Inventory::getBaseWithMostCausalties(const bool &friendly, const bool &fodder) const
 {
     Position weakest_base = Positions::Origin;
     int current_best_damage = 0; // damage must be bigger than 0 or else it's not really a base.
@@ -989,7 +989,7 @@ Position Map_Inventory::getWeakestBase(const bool &friendly, const bool &fodder)
     return weakest_base;
 }
 
-Position Map_Inventory::getStrongestBase(const bool &friendly, const bool &fodder) const
+Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const bool &fodder) const
 {
     Position strongest_base = Positions::Origin;
     int current_best_surviving = 0; // surviving units must be bigger than 0 or else it's not really a base.
@@ -1111,7 +1111,7 @@ void Map_Inventory::updateBasePositions() {
         Position suspected_enemy_base = Positions::Origin;
 
         if (CUNYAIModule::enemy_player_model.units_.stock_total_ > 0) { // let's go to the strongest enemy base if we've seen them!
-            suspected_enemy_base = getStrongestBase(false); 
+            suspected_enemy_base = getBaseWithMostSurvivors(false); 
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
@@ -1160,7 +1160,7 @@ void Map_Inventory::updateBasePositions() {
         Position suspected_friendly_base = Positions::Origin;
 
         if (CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ > 0) {
-            suspected_friendly_base = getWeakestBase(true, true);
+            suspected_friendly_base = getBaseWithMostCausalties(true, true);
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base && suspected_friendly_base !=  Positions::Origin) {
@@ -1175,7 +1175,7 @@ void Map_Inventory::updateBasePositions() {
         //otherwise go to your safest base - the one with least deaths near it and most units.
         Position suspected_safe_base = Positions::Origin;
 
-        suspected_safe_base = getStrongestBase(true, false); 
+        suspected_safe_base = getBaseWithMostSurvivors(true, false); 
 
         if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);

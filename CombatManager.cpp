@@ -17,17 +17,13 @@ bool CombatManager::combatScript(const Unit & u)
         Mobility mobility = Mobility(u);
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
 
-        bool draw_retreat_circle = false;
-        int search_radius = 0;
-        bool long_term_walking = true;
-
-
         if (e_closest) { // if there are bad guys, fight
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
             int chargable_distance_self = CUNYAIModule::getChargableDistance(u, CUNYAIModule::enemy_player_model.units_);
             int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, CUNYAIModule::friendly_player_model.units_);
             int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
-            search_radius = min(max({ chargable_distance_max + 64, CUNYAIModule::enemy_player_model.units_.max_range_ + 64 }), 400); // expanded radius because of units intermittently suiciding against static D.
+            int threat_radius = max({ chargable_distance_max + 32, CUNYAIModule::enemy_player_model.units_.max_range_ + 32 });
+            int search_radius = min(threat_radius, 400); // expanded radius because of units intermittently suiciding against static D.
 
             Unit_Inventory friend_loc;
             Unit_Inventory enemy_loc;
@@ -42,9 +38,13 @@ bool CombatManager::combatScript(const Unit & u)
 
             bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
-            auto found_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
 
-            if (they_take_a_fap_beating || friend_loc.stock_ground_fodder_ > 0) {
+            bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > 0 && distance_to_foe > CUNYAIModule::enemy_player_model.units_.max_range_ + 32;
+            
+            if (prepping_attack) {
+                return mobility.surround(e_closest->pos_);
+            }
+            else if (they_take_a_fap_beating || friend_loc.stock_ground_fodder_ > 0) {
                 return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
             }
             else {
@@ -102,10 +102,10 @@ bool CombatManager::pathingScript(const Unit & u)
 {
     Mobility mobility = Mobility(u);
     if (ready_to_fight) {
-        return mobility.BWEM_Movement(1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        return mobility.BWEM_Movement(true); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
     }
     else {
-        return mobility.BWEM_Movement(-1); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
+        return mobility.BWEM_Movement(false); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
     }
 
     return false;

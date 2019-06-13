@@ -599,8 +599,6 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int moving_average_fap_stock = 0;
      int stock_full_health = 0;
      int is_shooting = 0;
-     int is_attacking = 0;
-     int is_retreating = 0;
 
      vector<UnitType> already_seen_types;
 
@@ -608,9 +606,10 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
          future_fap_stock += u_iter.second.future_fap_value_;
          moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
-         is_shooting += u_iter.second.cd_remaining_ > 0; //
-         is_attacking += u_iter.second.phase_ == Stored_Unit::Attacking;
-         is_retreating += u_iter.second.phase_ == Stored_Unit::Retreating;
+         is_shooting += u_iter.second.cd_remaining_ > 0; 
+
+         count_of_each_phase_.at(u_iter.second.phase_)++;
+
 
          if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 
@@ -635,10 +634,6 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
 
                  max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
                  range = (range_temp > range) * range_temp + !(range_temp > range) * range;
-
-                 //if (u_iter.second.type_ == UnitTypes::Terran_Bunker && 7 * 32 < range) {
-                 //    range = 7 * 32; // depends on upgrades and unit contents.
-                 //}
 
              }
              else {
@@ -686,8 +681,6 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     moving_average_fap_stock_ = moving_average_fap_stock;
     stock_full_health_ = stock_full_health;
     is_shooting_ = is_shooting;
-    is_attacking_ = is_attacking;
-    is_retreating_ = is_retreating;
 }
 
 void Unit_Inventory::stopMine(Unit u) {

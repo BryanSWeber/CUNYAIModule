@@ -28,8 +28,9 @@ public:
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     bool local_pathing(const int &passed_distance, const Position &e_pos );
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
-    bool BWEM_Movement(const int & in_or_out);
-
+    bool BWEM_Movement(const bool & in_or_out);
+    // Surrounds position of choice slowly.
+    bool surround(const Position &pos);
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
