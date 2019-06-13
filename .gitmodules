@@ -1,3 +1,6 @@
 [submodule "Source/FAP"]
 	path = Source/FAP
 	url = https://github.com/N00byEdge/FAP.git
+[submodule "Source/BrawlSim"]
+	path = Source/BrawlSim
+	url = https://github.com/JohnWJackson/BrawlSimLib.git
