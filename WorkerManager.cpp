@@ -210,13 +210,10 @@ bool WorkerManager::assignClear(const Unit & unit)
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty()) {
-        assignment_worked = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner);
-        if (assignment_worked) {
-            miner.phase_ = Stored_Unit::Clearing; //oof we have to manually edit the command to clear, it's a rare case.
-            miner.updateStoredUnit(miner.bwapi_unit_);
-        }
+        attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner);
+        return CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, Stored_Unit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
     }
-    return assignment_worked;
+    return false;
 }
 
 bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui)
@@ -296,36 +293,30 @@ bool WorkerManager::workerWork(const Unit &u) {
             task_guard = true;
         }
         break;
-    case Stored_Unit::MiningMin: // does the same as...
-    case Stored_Unit::Clearing: // does the same as...
+    case Stored_Unit::MiningMin: 
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u);
         }
-        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { // Otherwise walk to that mineral.
-            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
-                miner.updateStoredUnit(u);
-                task_guard = true;
-            }
-        }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+        else if ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle()) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
             if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
         break;
-    case Stored_Unit::DistanceMining: // does the same as...
+    case Stored_Unit::Clearing: // does the same thing as...
+    case Stored_Unit::DistanceMining: 
         if (!isEmptyWorker(u)) { //auto return if needed.
-            task_guard = workersReturn(u); // mark worker as returning.
+            task_guard = workersReturn(u);
         }
-        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { // Otherwise walk to that mineral.
-            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && miner.getMine()->bwapi_unit_->isVisible() && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }
         }
-        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
-            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
+        else if (miner.getMine() && (!miner.getMine()->bwapi_unit_ || !miner.getMine()->bwapi_unit_->isVisible()) && (CUNYAIModule::spamGuard(u, 14) || u->isIdle())) { // Otherwise walk to that mineral.
+            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
                 task_guard = true;
             }

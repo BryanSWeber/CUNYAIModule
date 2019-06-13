@@ -462,6 +462,7 @@ bool AssemblyManager::isFullyVisibleBuildLocation(const UnitType &type, const Ti
                 return false;
         }
     }
+    return true;
 }
 
 
