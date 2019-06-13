@@ -69,7 +69,7 @@ double CobbDouglas::getlnY() const
 }
 
 // Protected from failure in divide by 0 case.
-double CobbDouglas::getlnY(const double alpha_army, const double alpha_tech) const
+double CobbDouglas::getlnYusing(const double alpha_army, const double alpha_tech) const
 {
     double ln_Y = 0;
     try {
