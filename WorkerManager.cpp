@@ -301,10 +301,16 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u);
         }
-        else if ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle()) { //5 frame pause needed on gamestart or else the workers derp out. Can't go to 3.
-            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
-                task_guard = true;
+        else if (miner.getMine() && !miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { // Otherwise walk to that mineral.
+            if (miner.bwapi_unit_->move(miner.getMine()->pos_)) { // reassign him back to work.
                 miner.updateStoredUnit(u);
+                task_guard = true;
+            }
+        }
+        else if (miner.getMine() && miner.getMine()->bwapi_unit_ && ((miner.isBrokenLock() && CUNYAIModule::spamGuard(u, 14)) || u->isIdle())) { //If there is a mineral and we can see it, mine it.
+            if (miner.bwapi_unit_->gather(miner.locked_mine_)) { // reassign him back to work.
+                miner.updateStoredUnit(u);
+                task_guard = true;
             }
         }
         break;

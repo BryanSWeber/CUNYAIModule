@@ -16,6 +16,7 @@
 
 #include <bwem.h>
 #include "BWEB\BWEB.h"
+//#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
 #include <chrono> // for in-game frame clock.
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker

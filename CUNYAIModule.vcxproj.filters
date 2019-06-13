@@ -104,9 +104,6 @@
     <Filter Include="Utilities">
       <UniqueIdentifier>{ae3b5eee-3528-4e8c-8c7b-f31c4f42621e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Utilities\Unused">
-      <UniqueIdentifier>{389d313b-a030-43be-a3b4-6475a7d622bd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="BWEB">
       <UniqueIdentifier>{a191b572-c4d5-4666-a7f1-b6fe86a15072}</UniqueIdentifier>
     </Filter>
