@@ -1,7 +1,7 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
 
-# include "Source\CUNYAIModule.h"
+# include "CUNYAIModule.h"
 
 class WorkerManager {
 private:

@@ -106,6 +106,7 @@
     <ClCompile Include="AssemblyManager.cpp" />
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="CombatManager.cpp" />
+    <ClCompile Include="CUNYAIModule.cpp" />
     <ClCompile Include="Map_Inventory.cpp" />
     <ClCompile Include="PlayerModelManager.cpp" />
     <ClCompile Include="Research_Inventory.cpp" />
@@ -116,7 +117,6 @@
     <ClCompile Include="Source\BWEB\PathFind.cpp" />
     <ClCompile Include="Source\BWEB\Station.cpp" />
     <ClCompile Include="Source\BWEB\Wall.cpp" />
-    <ClCompile Include="Source\CUNYAIModule.cpp" />
     <ClCompile Include="Unit_Inventory.cpp" />
     <ClCompile Include="GeneticHistoryManager.cpp" />
     <ClCompile Include="TechManager.cpp" />
@@ -135,6 +135,7 @@
     <ClInclude Include="Source\BWEB\Station.h" />
     <ClInclude Include="Source\BWEB\Wall.h" />
     <ClInclude Include="Source\CobbDouglas.h" />
+    <ClInclude Include="Source\CombatManager.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\MobilityManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
@@ -145,7 +146,7 @@
     <ClInclude Include="Source\TechManager.h" />
     <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\GeneticHistoryManager.h" />
-    <ClInclude Include="WorkerManager.h" />
+    <ClInclude Include="Source\WorkerManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

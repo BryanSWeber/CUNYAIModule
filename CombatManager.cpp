@@ -3,7 +3,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
-#include "CombatManager.h"
+#include "Source\CombatManager.h"
 #include <bwem.h>
 
 bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY();

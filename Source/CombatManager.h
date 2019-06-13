@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Source\CUNYAIModule.h"
-#include "Source\Unit_Inventory.h"
+#include "CUNYAIModule.h"
+#include "Unit_Inventory.h"
 #include <bwem.h>
 
 class CombatManager {

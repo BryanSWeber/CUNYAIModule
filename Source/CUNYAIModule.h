@@ -11,8 +11,8 @@
 #include "FAP\FAP\include\FAP.hpp"
 #include "GeneticHistoryManager.h"
 #include "TechManager.h"
-#include "..\WorkerManager.h"
-#include "..\CombatManager.h"
+#include "WorkerManager.h"
+#include "CombatManager.h"
 
 #include <bwem.h>
 #include "BWEB\BWEB.h"

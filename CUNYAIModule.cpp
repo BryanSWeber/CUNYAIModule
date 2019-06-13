@@ -1,18 +1,18 @@
 #pragma once
 
-#include "CUNYAIModule.h"
-#include "CobbDouglas.h"
-#include "Map_Inventory.h"
-#include "Unit_Inventory.h"
-#include "Resource_Inventory.h"
-#include "Research_Inventory.h"
-#include "GeneticHistoryManager.h"
-#include "MobilityManager.h"
-#include "AssemblyManager.h"
-#include "..\CombatManager.h"
-#include "TechManager.h"
-#include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-#include "BWEB\BWEB.h"
+#include "Source\CUNYAIModule.h"
+#include "Source\CobbDouglas.h"
+#include "Source\Map_Inventory.h"
+#include "Source\Unit_Inventory.h"
+#include "Source\Resource_Inventory.h"
+#include "Source\Research_Inventory.h"
+#include "Source\GeneticHistoryManager.h"
+#include "Source\MobilityManager.h"
+#include "Source\AssemblyManager.h"
+#include "Source\\CombatManager.h"
+#include "Source\TechManager.h"
+#include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
+#include "Source\BWEB\BWEB.h"
 #include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing

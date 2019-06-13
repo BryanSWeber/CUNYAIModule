@@ -56,7 +56,13 @@
     <ClCompile Include="WorkerManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Source\CUNYAIModule.cpp">
+    <ClCompile Include="CombatManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="MobilityManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="CUNYAIModule.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
   </ItemGroup>
@@ -90,7 +96,9 @@
       <Filter>BWEB</Filter>
     </ClInclude>
     <ClInclude Include="Source\TechManager.h" />
-    <ClInclude Include="WorkerManager.h" />
+    <ClInclude Include="Source\MobilityManager.h" />
+    <ClInclude Include="Source\WorkerManager.h" />
+    <ClInclude Include="Source\CombatManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
