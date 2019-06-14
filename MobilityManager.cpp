@@ -177,9 +177,9 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
             //    permenent_target.circumference_remaining_ -= widest_dim;
             //}
-            CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
-            return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
         }
+        CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
 
     Broodwar->sendText("No target found");

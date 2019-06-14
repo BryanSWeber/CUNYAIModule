@@ -842,10 +842,17 @@ void Stored_Unit::stopMine(){
     }
     locked_mine_ = nullptr;
 }
+
 //Decrements the number of miners on a resource, if possible.
-void stopMine(const Unit &resource) {
-    if (getMine(resource)) {
-        getMine(resource)->number_of_miners_ = max(getMine(resource)->number_of_miners_ - 1, 0);
+void stopMine(const Unit &unit) {
+    auto found_worker = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit);
+    if (found_worker != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
+        if (found_worker->second.locked_mine_) {
+            if (found_worker->second.getMine()) {
+                found_worker->second.getMine()->number_of_miners_ = max(found_worker->second.getMine()->number_of_miners_ - 1, 0);
+            }
+        }
+        found_worker->second.locked_mine_ = nullptr;
     }
 }
 

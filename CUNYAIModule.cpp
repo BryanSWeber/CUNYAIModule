@@ -922,6 +922,20 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
     }
 
     if (unit->getPlayer() == Broodwar->self()) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
+
+        if (unit->getType().isWorker()) {
+            friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
+        }
+
+        if (!buildorder.ever_clear_) {
+            if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
+                buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
+            }
+            else if (unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing()) {
+                //buildorder.clearRemainingBuildOrder( false );
+            }
+        }
+
         auto found_ptr = friendly_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
             friendly_player_model.units_.unit_map_.erase(unit);
@@ -931,6 +945,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         else {
             //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
+
         combat_manager.removeScout(unit);
     }
 
@@ -996,21 +1011,6 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         }
         else {
             //CUNYAIModule::DiagnosticText( "Killed a %s. But it wasn't in inventory, size %d.", unit->getType().c_str(), enemy_player_model.units_.unit_inventory_.size() );
-        }
-    }
-
-    if (unit->getPlayer() == Broodwar->self()) {
-        if (unit->getType().isWorker()) {
-            friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
-        }
-
-        if (!buildorder.ever_clear_) {
-            if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
-                buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
-            }
-            else if ( unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing() ) {
-                //buildorder.clearRemainingBuildOrder( false );
-            }
         }
     }
 

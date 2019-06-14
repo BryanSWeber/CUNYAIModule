@@ -61,7 +61,7 @@ bool WorkerManager::workersClear(const Unit & unit)
 {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
 
-                                                                                          //Workers need to clear empty patches.
+     //Workers need to clear empty patches.
     bool time_to_start_clearing_a_path = CUNYAIModule::current_map_inventory.hatches_ >= 2 && checkBlockingMinerals(unit, CUNYAIModule::friendly_player_model.units_);
     if (time_to_start_clearing_a_path && CUNYAIModule::workermanager.workers_clearing_ == 0 && isEmptyWorker(unit)) {
         if (assignClear(unit)) {
@@ -159,7 +159,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 
     if (!assignment_complete && old_mineral_patch) {
         miner.startMine(old_mineral_patch);
-        miner.updateStoredUnit(unit);
+        old_mineral_patch->getType().isRefinery() ? CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningGas) : CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningMin);
     }
     return assignment_complete;
 } // closure worker mine
@@ -197,10 +197,11 @@ void WorkerManager::attachToParticularMine(Unit &mine, Resource_Inventory &ri, S
 
 bool WorkerManager::assignClear(const Unit & unit)
 {
-    bool already_assigned = false;
     Stored_Unit& miner = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-    bool assignment_worked = false;
-    bool building_unit = miner.isAssignedBuilding();
+    Unit old_mineral_patch = nullptr;
+    old_mineral_patch = miner.locked_mine_;
+    bool assignment_complete = false;
+
     Resource_Inventory available_fields;
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
@@ -210,10 +211,15 @@ bool WorkerManager::assignClear(const Unit & unit)
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty()) {
-        attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner);
-        return CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, Stored_Unit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
+        assignment_complete = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner);
+        CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, Stored_Unit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
     }
-    return false;
+    if (!assignment_complete && old_mineral_patch) {
+        miner.startMine(old_mineral_patch);
+        miner.updateStoredUnit(unit);
+    }
+
+    return assignment_complete;
 }
 
 bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui)

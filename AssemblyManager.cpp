@@ -106,8 +106,8 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if (CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
-                    unit->stop();
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                    unit->stop();
                     return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                 } //extractors must have buildings nearby or we shouldn't build them.
 
@@ -159,6 +159,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     for (auto &tile : good_block.second) {
                         if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
                             CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                            unit->stop();
                             return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                         }
                     }
