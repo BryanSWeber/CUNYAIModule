@@ -35,22 +35,26 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
 
 bool Mobility::BWEM_Movement(const bool &in_or_out) {
     bool it_worked = false;
-
+    Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (in_or_out) {
         if (u_type_.airWeapon() != WeaponTypes::None) {
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+            target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
         }
         else {
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+            target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base);
+        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
+        target_pos = CUNYAIModule::current_map_inventory.front_line_base_;
     }
 
 
-    if (it_worked) {
+    if (it_worked && target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange()) {
+        if (stored_unit_->type_ == UnitTypes::Zerg_Lurker) adjust_lurker_burrow(target_pos);
         in_or_out ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     else {
@@ -135,7 +139,6 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     ThreatPriority.updateUnitInventorySummary();
     LowPriority.updateUnitInventorySummary();
 
-
     for (auto h : HighPriority.unit_map_) {
         dist_to_enemy = unit_->getDistance(h.second.pos_);
         bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
@@ -202,7 +205,7 @@ bool Mobility::Retreat_Logic() {
     }
     
     if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
-        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base);
+        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
     }
     else {
         moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_);

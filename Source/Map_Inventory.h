@@ -42,7 +42,7 @@ struct Map_Inventory {
     vector<TilePosition> expo_positions_complete_;
     Position enemy_base_ground_;
     Position enemy_base_air_;
-    Position front_line_base;
+    Position front_line_base_;
     Position safe_base_;
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.

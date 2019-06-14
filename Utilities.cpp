@@ -2209,7 +2209,7 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
-    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_map_inventory.front_line_base));
+    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_map_inventory.front_line_base_));
     bool it_is_home_ = false;
     Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
     Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);

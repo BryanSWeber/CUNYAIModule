@@ -145,7 +145,7 @@ void CUNYAIModule::onStart()
     current_map_inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
     current_map_inventory.updateMapVeins();
-    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base, current_map_inventory.map_out_from_home_ );
+    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_ );
     //inventory.updateMapChokes();
     current_map_inventory.getStartPositions();
 
