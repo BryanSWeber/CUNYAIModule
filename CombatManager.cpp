@@ -39,7 +39,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool they_take_a_fap_beating = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
 
-            bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > 0 && distance_to_foe > CUNYAIModule::enemy_player_model.units_.max_range_ + 32;
+            bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && distance_to_foe > CUNYAIModule::enemy_player_model.units_.max_range_ + 32; // overlords path out and may prevent attacking.
             
             if (prepping_attack) {
                 return mobility.surround(e_closest->pos_);
@@ -60,16 +60,20 @@ bool CombatManager::combatScript(const Unit & u)
 }
 
 bool CombatManager::grandStrategyScript(const Unit & u) {
+    
+    bool task_assigned = false;
 
     if (CUNYAIModule::spamGuard(u)) {
-        if (u->canAttack() && combatScript(u))
-            return true;
+        if (!task_assigned && u->canAttack() && combatScript(u))
+            task_assigned = true;
+        if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && scoutScript(u))
+            task_assigned = true;
+        if (!task_assigned && !u->getType().isWorker() && u->canMove() && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
+            task_assigned = true;
+    }
 
-        if (u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && scoutScript(u))
-            return true;
-
-        if (!u->getType().isWorker() && u->canMove() && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
-            return true;
+    if (task_assigned && u->getType() == Broodwar->self()->getRace().getWorker()) {
+        stopMine(u);
     }
 
     return false;
