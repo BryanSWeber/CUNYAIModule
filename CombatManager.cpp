@@ -37,13 +37,13 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
-
+            bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && distance_to_foe > CUNYAIModule::enemy_player_model.units_.max_range_ + 32; // overlords path out and may prevent attacking.
             
-            if (prepping_attack) {
+            if (fight_looks_good && prepping_attack) {
                 return mobility.surround(e_closest->pos_);
             }
-            else if (CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) || friend_loc.stock_ground_fodder_ > 0) {
+            else if (fight_looks_good || friend_loc.stock_ground_fodder_ > 0) {
                 return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
             }
             else {
