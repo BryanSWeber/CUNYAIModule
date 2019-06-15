@@ -1105,7 +1105,7 @@ void Map_Inventory::updateBasePositions() {
         return;
     }
 
-    if (frames_since_enemy_base_ground_ > 24 * 10) {
+    if (frames_since_enemy_base_ground_ > 24 * 5) {
 
         //otherwise go to their weakest base.
         Position suspected_enemy_base = Positions::Origin;
