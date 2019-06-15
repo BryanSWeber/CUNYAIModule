@@ -281,7 +281,7 @@ bool WorkerManager::workerWork(const Unit &u) {
     }
     bool task_guard = false;
 
-    bool build_check_this_frame_ = (t_game % 24 == 0);
+    bool build_check_this_frame_ = (t_game % 12 == 0);
 
     //if (CUNYAIModule::spamGuard(miner.bwapi_unit_)) { // careful about interactions between spam guards.
     //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.

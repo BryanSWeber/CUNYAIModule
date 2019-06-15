@@ -353,20 +353,20 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     }
     else {
         //bool unit_fighting = type_.canAttack() && phase_ == Stored_Unit::Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
-        bool unit_escaped = burrowed_ && time_since_last_dmg_ > MOVING_AVERAGE_DURATION; // can't still be getting shot if we're setting its assesment to 0.
-        bool overkilled = (count_of_consecutive_predicted_deaths_ > MOVING_AVERAGE_DURATION && time_since_last_dmg_ > MOVING_AVERAGE_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
+        bool unit_escaped = burrowed_ && time_since_last_dmg_ > FAP_SIM_DURATION; // can't still be getting shot if we're setting its assesment to 0.
+        bool overkilled = (count_of_consecutive_predicted_deaths_ > FAP_SIM_DURATION && time_since_last_dmg_ > FAP_SIM_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
  
         //double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION); // exponential moving average?
         //if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_); // exponential moving average?
         if (unit->getPlayer() == Broodwar->self()) {
-            ma_future_fap_value_ = unit_escaped ? current_stock_value_ : static_cast<int>(((MOVING_AVERAGE_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / MOVING_AVERAGE_DURATION); // normal moving average.
+            ma_future_fap_value_ = unit_escaped ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // normal moving average.
             if (future_fap_value_ > 0 || unit_escaped ) count_of_consecutive_predicted_deaths_ = 0;
             else count_of_consecutive_predicted_deaths_++;
         }
         else {
-            ma_future_fap_value_ = overkilled ? current_stock_value_ : static_cast<int>(((MOVING_AVERAGE_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / MOVING_AVERAGE_DURATION); // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
+            ma_future_fap_value_ = overkilled ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
             if (future_fap_value_ > 0 ) count_of_consecutive_predicted_deaths_ = 0;
             else count_of_consecutive_predicted_deaths_++;
         }

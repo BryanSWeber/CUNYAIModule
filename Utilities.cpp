@@ -284,12 +284,12 @@ void CUNYAIModule::DiagnosticDeath(const Stored_Unit unit, const Position &scree
 
             //Overlay the appropriate color above it.
             lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.count_of_consecutive_predicted_deaths_ / static_cast<double>(MOVING_AVERAGE_DURATION), 1.0));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.count_of_consecutive_predicted_deaths_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
-            for (int i = 0; i <= static_cast<int>(MOVING_AVERAGE_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(MOVING_AVERAGE_DURATION));
+            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
                 //temp_stock_value -= 15;
             }
@@ -311,12 +311,12 @@ void CUNYAIModule::DiagnosticLastDamage(const Stored_Unit unit, const Position &
 
             //Overlay the appropriate color above it.
             lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.time_since_last_dmg_ / static_cast<double>(MOVING_AVERAGE_DURATION), 1.0));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.time_since_last_dmg_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 
-            for (int i = 0; i <= static_cast<int>(MOVING_AVERAGE_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(MOVING_AVERAGE_DURATION));
+            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
+                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
                 Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
             }
         }
@@ -2075,7 +2075,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
-    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * MOVING_AVERAGE_DURATION) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
+    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * FAP_SIM_DURATION) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
 
 }
 
@@ -2223,7 +2223,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     e_neighborhood.updateUnitInventorySummary();
     friend_loc.updateUnitInventorySummary();
 
-    if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood)) { // if they could overrun us if they organized and we did not.
+    if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood) && e_closest) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
         radial_distance_to_build_position = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;

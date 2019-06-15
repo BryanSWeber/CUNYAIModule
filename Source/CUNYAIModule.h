@@ -27,7 +27,7 @@ constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE fo
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
-constexpr int MOVING_AVERAGE_DURATION = 24*5; // set MA duration, usually 96 frames
+constexpr int FAP_SIM_DURATION = 24*5; // set FAP sim durations.
 constexpr bool RANDOM_PLAN = true;
 // Remember not to use "Broodwar" in any global class constructor!
 

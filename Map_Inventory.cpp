@@ -1109,9 +1109,10 @@ void Map_Inventory::updateBasePositions() {
 
         //otherwise go to their weakest base.
         Position suspected_enemy_base = Positions::Origin;
+        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
-        if (CUNYAIModule::enemy_player_model.units_.stock_total_ > 0) { // let's go to the strongest enemy base if we've seen them!
-            suspected_enemy_base = getBaseWithMostSurvivors(false); 
+        if (center_ground) { // let's go to the strongest enemy base if we've seen them!
+            suspected_enemy_base = center_ground->pos_;
         }
         else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
             int attempts = 0;
@@ -1131,7 +1132,7 @@ void Map_Inventory::updateBasePositions() {
         }
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ground_ && suspected_enemy_base != Positions::Origin) { // if it's there.
-            updateMapVeinsOut(suspected_enemy_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), enemy_base_ground_, map_out_from_enemy_ground_);
+            updateMapVeinsOut(suspected_enemy_base, enemy_base_ground_, map_out_from_enemy_ground_, false);
         }
 
         frames_since_enemy_base_ground_ = 0;

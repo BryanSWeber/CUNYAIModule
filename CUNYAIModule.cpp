@@ -69,7 +69,7 @@ void CUNYAIModule::onStart()
 
     BWEB::Map::onStart();
     BWEB::Stations::findStations();
-    //BWEB::Walls::createZSimCity();
+    BWEB::Walls::createZSimCity();
     //assemblymanager.getDefensiveWalls(); //needs work.
     BWEB::Blocks::findBlocks();
 
@@ -284,7 +284,7 @@ void CUNYAIModule::onFrame()
     friendly_player_model.units_.drawAllFutureDeaths();
 
     // Let us estimate FAP values.
-    MCfap.simulate(MOVING_AVERAGE_DURATION);
+    MCfap.simulate(FAP_SIM_DURATION);
     int friendly_fap_score = getFAPScore(MCfap, true);
     int enemy_fap_score = getFAPScore(MCfap, false);
     friendly_player_model.units_.pullFromFAP(*MCfap.getState().first);
@@ -368,7 +368,7 @@ void CUNYAIModule::onFrame()
     techmanager.updateTech_Avail();
     assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
-    if (t_game % MOVING_AVERAGE_DURATION == 0) {
+    if (t_game % FAP_SIM_DURATION == 0) {
         techmanager.clearSimulationHistory();
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
@@ -658,7 +658,7 @@ void CUNYAIModule::onFrame()
                 for (auto d : friendly_player_model.units_.unit_map_) {
                     if (d.second.type_ == UnitTypes::Zerg_Overlord &&
                         d.second.bwapi_unit_ &&
-                        !static_cast<bool>(d.second.time_since_last_dmg_ < MOVING_AVERAGE_DURATION) &&
+                        !static_cast<bool>(d.second.time_since_last_dmg_ < FAP_SIM_DURATION) &&
                         d.second.current_hp_ > 0.25 * d.second.type_.maxHitPoints()) { // overlords don't have shields.
                         dist_temp = d.second.bwapi_unit_->getDistance(c);
                         if (dist_temp < dist) {

@@ -15,44 +15,34 @@ namespace BWEB::Blocks
             const auto  race = Broodwar->self()->getRace();
 
             if (height == 2) {
-                if (race != Races::Zerg) {
-                    if (width == 5)
-                        pieces = { Piece::Small, Piece::Medium };
-                }
-                else {
-                    if (width == 6)
-                        pieces = { Piece::Medium, Piece::Medium };
-                    if (width == 4)
-                        pieces = { Piece::Small, Piece::Small };
-                }
+                if (width == 6)
+                    pieces = { Piece::Medium, Piece::Medium };
+                if (width == 4)
+                    pieces = { Piece::Small, Piece::Small };
             }
             else if (height == 4) {
+                if (width == 3)
+                    pieces = { Piece::Medium, Piece::Row, Piece::Medium };
                 if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
             }
             else if (height == 5) {
                 if (width == 4)
                     pieces ={ Piece::Small, Piece::Small , Piece::Row, Piece::Large };
+                if (width == 8)
+                    pieces = { Piece::Medium, Piece::Small, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
             }
             else if (height == 6) {
-                if (race != Races::Zerg) {
-                    if (width == 10)
-                        pieces = { Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
-                }
-                else {
-                    if (width == 2)
-                        pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
-                }
-                if (width == 18)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
+                if (width == 2)
+                    pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
+                if (width == 5)
+                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium, Piece::Row };
             }
             else if (height == 8) {
+                if (width == 2)
+                    pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
                 if (width == 8)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
-                if (race != Races::Zerg) {
-                    if (width == 5)
-                        pieces = { Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
-                }
+                    pieces = { Piece::Large, Piece::Large, Piece::Row, Piece::Row, Piece::Row, Piece::Large, Piece::Large };
             }
             return pieces;
         }
@@ -113,7 +103,7 @@ namespace BWEB::Blocks
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && creepOnCorners(tile, 3, 8) && canAddBlock(tile, 3, 8, true)))) {
+                        || (race == Races::Zerg && creepOnCorners(tile, 6, 4) && canAddBlock(tile, 6, 4, true)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -172,7 +162,18 @@ namespace BWEB::Blocks
 
                 // TODO: Add T/Z mirroring
                 if (race == Races::Zerg) {
-                    pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
+                    if (blockFacesLeft) {
+                        if (blockFacesUp)
+                            pieces = { Piece::Medium, Piece::Small, Piece::Row, Piece::Medium, Piece::Medium };
+                        else
+                            pieces = { Piece::Medium, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+                    }
+                    else {
+                        if (blockFacesUp)
+                            pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Medium };
+                        else
+                            pieces = { Piece::Medium, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                    }
                 }
                 else if (race == Races::Terran)
                     pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
