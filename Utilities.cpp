@@ -637,7 +637,7 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
 bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory enemy) {
     bool shooting_up = ut.airWeapon() != WeaponTypes::None && (enemy.stock_air_fodder_ + enemy.stock_fliers_ > 0);
     bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver) && (enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0);
-    bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen || ut == UnitTypes::Terran_Medic;
+    bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Terran_Science_Vessel || ut == UnitTypes::Terran_Medic || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Archon || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen;
 
     return shooting_up || shooting_down || shoots_without_weapons;
 }
