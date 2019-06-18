@@ -94,7 +94,7 @@ namespace BWEB::Blocks
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5, true))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5, true))
-                        || (race == Races::Zerg && creepOnCorners(tile, 6, 4) && canAddBlock(tile, 6, 4, true)))) {
+                        || (race == Races::Zerg && creepOnCorners(tile, 3, 6) && canAddBlock(tile, 3, 6, true)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -115,7 +115,7 @@ namespace BWEB::Blocks
 
                         const auto blockCenter = Position(tile) + Position(128, 80);
                         const auto dist = blockCenter.getDistance(Map::getMainPosition()) + blockCenter.getDistance(Position(Map::getMainChoke()->Center()));
-                        if ( dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)) || (race == Races::Zerg && creepOnCorners(tile, 6, 4) && canAddBlock(tile, 6, 4, true))) ) {
+                        if ( dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)) || (race == Races::Zerg && creepOnCorners(tile, 3, 6) && canAddBlock(tile, 3, 6, true))) ) {
                             tileBest = tile;
                             distBest = dist;
 
@@ -155,15 +155,15 @@ namespace BWEB::Blocks
                 if (race == Races::Zerg) {
                     if (blockFacesLeft) {
                         if (blockFacesUp)
-                            pieces = { Piece::Medium, Piece::Small, Piece::Row, Piece::Medium, Piece::Medium };
+                            pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
                         else
-                            pieces = { Piece::Medium, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+                            pieces = { Piece::Small, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium };
                     }
                     else {
                         if (blockFacesUp)
-                            pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Medium };
+                            pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
                         else
-                            pieces = { Piece::Medium, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                            pieces = { Piece::Small, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium };
                     }
                 }
                 else if (race == Races::Terran)
@@ -211,12 +211,8 @@ namespace BWEB::Blocks
             }
 
             if (tileBest.isValid())
-                if (race == Races::Zerg) {
-                    insertBlock(tileBest, { Piece::Small, Piece::Small, Piece::Small });
-                }
-                else {
-                    insertBlock(tileBest, { Piece::Small, Piece::Medium });
-                }
+               insertBlock(tileBest, { Piece::Small, Piece::Medium });
+
         }
 
         void findProductionBlocks()
