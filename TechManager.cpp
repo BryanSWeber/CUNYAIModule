@@ -11,10 +11,16 @@ using namespace BWAPI;
 
 bool TechManager::tech_avail_ = true;
 std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::upgrade_cartridge_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+std::map<TechType, int> TechManager::tech_cycle_ = Player_Model::tech_cartridge_; // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
+
 int TechManager::max_gas_value_ = 0;
 
 bool TechManager::checkBuildingReady(const UpgradeType up) {
     return CUNYAIModule::Count_Units(up.whatUpgrades()) - CUNYAIModule::Count_Units_In_Progress(up.whatUpgrades()) > 0;
+}
+
+bool TechManager::checkBuildingReady(const TechType tech) {
+    return CUNYAIModule::Count_Units(tech.whatResearches()) - CUNYAIModule::Count_Units_In_Progress(tech.whatResearches()) > 0;
 }
 
 bool TechManager::checkUpgradeFull(const UpgradeType up) {
@@ -33,7 +39,6 @@ void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {
-            max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_);
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -46,12 +51,24 @@ void TechManager::updateOptimalTech() {
     }
 }
 
+void TechManager::updateMaxGas() {
+    max_gas_value_ = 0;
+    for (auto potential_up : upgrade_cycle_) {
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first)) {
+            max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
+        }
+    }
+    for (auto potential_tech : tech_cycle_) {
+        if (checkBuildingReady(potential_tech.first) && !Broodwar->self()->hasResearched(potential_tech.first) ) {
+            max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
+        }
+    }
+}
+
 bool TechManager::checkTechAvail()
 {
     return tech_avail_;
 }
-
-
 
 
     // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
@@ -62,6 +79,7 @@ bool TechManager::updateTech_Avail() {
     //}
 
     updateOptimalTech();
+    updateMaxGas();
 
     UpgradeType up_type = UpgradeTypes::None;
     int best_sim_score = upgrade_cycle_[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
