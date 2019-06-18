@@ -323,13 +323,15 @@ namespace BWEB::Walls
             else
                 sort(wall.getRawBuildings().begin(), wall.getRawBuildings().end());
 
-            // If the start position isn't buildable, move closer to the middle of the area until it is
-            while (!Broodwar->isBuildable(start)) {
+            // If the start position isn't buildable, move closer to the middle of the area until it is, or you have tested 100 locations.
+            int attempts = 0;
+            while (!Broodwar->isBuildable(start) && attempts <= 100) {
                 auto distBest = DBL_MAX;
                 const auto initialStart = start;
                 for (int x = initialStart.x - 1; x <= initialStart.x + 1; x++) {
                     for (int y = initialStart.y - 1; y <= initialStart.y + 1; y++) {
                         const TilePosition t(x, y);
+                        attempts++;
                         if (!t.isValid() || !Map::isPlaceable(UnitTypes::Terran_Missile_Turret,t) ) // If you can't put a missle turret there, throw it out.
                             continue;
 

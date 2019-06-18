@@ -424,19 +424,13 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
     // Note: Must check neutrals due to the terrain below them technically being buildable
         const bool creepCheck = type.requiresCreep();
     for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
-
-        if (creepCheck) {
-            TilePosition tile(x, location.y + 2);
-            if (!Broodwar->hasCreep(tile) || !Broodwar->hasCreep(location))
-                return false;
-        }
-
         for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
             TilePosition tile(x, y);
             if (!tile.isValid()
                 || !Broodwar->isBuildable(tile)
                 || !Broodwar->isWalkable(WalkPosition(tile))
-                || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
+                || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type))
+                || (!Broodwar->hasCreep(tile) && creepCheck))
                 return false;
         }
     }
@@ -907,8 +901,10 @@ bool AssemblyManager::assignUnitAssembly()
             if (larva.first->getHatchery()) {
                 wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
                 Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
-                local_resources.updateMines();
-                hatch_wants_drones = 2 * local_resources.getLocalMinPatches() + 3 * local_resources.getLocalRefineries() > local_resources.getLocalMiners() + local_resources.getLocalGasCollectors();
+                if (!local_resources.resource_inventory_.empty()) {
+                    local_resources.updateMines();
+                    hatch_wants_drones = 2 * local_resources.getLocalMinPatches() + 3 * local_resources.getLocalRefineries() > local_resources.getLocalMiners() + local_resources.getLocalGasCollectors();
+                }
                 prep_for_transfer = CUNYAIModule::Count_Units_In_Progress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
             }
 

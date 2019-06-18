@@ -13,36 +13,27 @@ namespace BWEB::Blocks
         {
             vector<Piece> pieces;
             const auto  race = Broodwar->self()->getRace();
-
-            if (height == 2) {
-                if (width == 6)
-                    pieces = { Piece::Medium, Piece::Medium };
-                if (width == 4)
-                    pieces = { Piece::Small, Piece::Small };
+            if (height == 2){
+                if (width == 2)
+                    pieces = { Piece::Small };
+                if (width == 3)
+                    pieces = { Piece::Medium };
             }
             else if (height == 4) {
-                if (width == 3)
-                    pieces = { Piece::Medium, Piece::Row, Piece::Medium };
                 if (width == 5)
                     pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
             }
             else if (height == 5) {
-                if (width == 4)
-                    pieces ={ Piece::Small, Piece::Small , Piece::Row, Piece::Large };
                 if (width == 8)
                     pieces = { Piece::Medium, Piece::Small, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
             }
             else if (height == 6) {
-                if (width == 2)
-                    pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
                 if (width == 5)
-                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium, Piece::Row };
+                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium };
             }
             else if (height == 8) {
-                if (width == 2)
-                    pieces = { Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small, Piece::Row, Piece::Small };
-                if (width == 8)
-                    pieces = { Piece::Large, Piece::Large, Piece::Row, Piece::Row, Piece::Row, Piece::Large, Piece::Large };
+                if (width == 5)
+                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
             }
             return pieces;
         }
@@ -124,7 +115,7 @@ namespace BWEB::Blocks
 
                         const auto blockCenter = Position(tile) + Position(128, 80);
                         const auto dist = blockCenter.getDistance(Map::getMainPosition()) + blockCenter.getDistance(Position(Map::getMainChoke()->Center()));
-                        if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
+                        if ( dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5)) || (race == Races::Terran && canAddBlock(tile, 6, 5)) || (race == Races::Zerg && creepOnCorners(tile, 6, 4) && canAddBlock(tile, 6, 4, true))) ) {
                             tileBest = tile;
                             distBest = dist;
 
