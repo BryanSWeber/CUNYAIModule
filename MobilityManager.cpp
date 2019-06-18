@@ -52,9 +52,9 @@ bool Mobility::BWEM_Movement(const bool &in_or_out) {
         target_pos = CUNYAIModule::current_map_inventory.front_line_base_;
     }
 
+    if (target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange() && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = adjust_lurker_burrow(target_pos) || it_worked;
 
     if (it_worked && target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange()) {
-        if (stored_unit_->type_ == UnitTypes::Zerg_Lurker) adjust_lurker_burrow(target_pos);
         in_or_out ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     else {

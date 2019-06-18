@@ -28,7 +28,7 @@ bool CombatManager::combatScript(const Unit & u)
             Unit_Inventory friend_loc;
             Unit_Inventory enemy_loc;
 
-            Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_,  search_radius);
+            Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_, search_radius);
             Unit_Inventory enemy_loc_around_self = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
             enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
 
