@@ -184,6 +184,9 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
+    else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
+        unit_->unburrow();
+    }
 
     Broodwar->sendText("No target found");
 
@@ -239,11 +242,11 @@ bool Mobility::adjust_lurker_burrow(const Position position_of_target) {
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
     if (u_type_ == UnitTypes::Zerg_Lurker) {
-        if ( !unit_->isBurrowed() && dist_condition) {
+        if ( !unit_->isBurrowed() && dist_condition ) {
             unit_->burrow();
             return true;
         }
-        else if ( unit_->isBurrowed() && !dist_condition) {
+        else if ( unit_->isBurrowed() && !dist_condition ) {
             unit_->unburrow();
             return true;
         }
