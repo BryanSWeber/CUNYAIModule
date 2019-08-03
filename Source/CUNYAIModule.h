@@ -258,6 +258,7 @@ public:
       static int Count_Units( const UnitType &type, const Unitset &unit_set );
       // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
       static int Count_Units( const UnitType &type, const Unit_Inventory &ei );
+      static bool Contains_Unit(const UnitType & type, const Unit_Inventory & ui);
       static int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
       // Counts the tally of a particular unit type in a reservation queue.
       static int Count_Units( const UnitType &type, const Reservation &res );
