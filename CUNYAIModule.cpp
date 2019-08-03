@@ -509,9 +509,9 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
         //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
-        //Broodwar->drawTextScreen(375, 60, "Gas (Pct. Ln.): %4.2f", current_map_inventory.getGasRatio());
+        Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f", enemy_player_model.estimated_resources_per_frame_, enemy_player_model.estimated_unseen_expenditures_per_frame_);
         Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", enemy_player_model.spending_model_.getlnYusing(friendly_player_model.spending_model_.alpha_army, friendly_player_model.spending_model_.alpha_tech), friendly_player_model.spending_model_.getlnY());  //
-        //Broodwar->drawTextScreen(375, 80, "Unexplored Starts: %d", static_cast<int>(current_map_inventory.start_positions_.size()));  //
+        Broodwar->drawTextScreen(375, 80, "Est. Unseen: %4.2f", enemy_player_model.estimated_unseen_expenditures_);  //
 
         ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
@@ -622,6 +622,7 @@ void CUNYAIModule::onFrame()
         return;
     }
 
+    // Assemble units when needed.
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
         assemblymanager.assignUnitAssembly();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
@@ -706,9 +707,8 @@ void CUNYAIModule::onFrame()
 
         //Upgrade loop:
         auto start_upgrade = std::chrono::high_resolution_clock::now();
-
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
-
+        //Upgrades only occur on a specific subtype of units.
         if (isIdleEmpty(u) && !u_type.canAttack() && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
             techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_map_inventory);

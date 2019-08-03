@@ -47,8 +47,9 @@ struct Stored_Unit {
     // Unit Orders
     Order order_;
     UnitCommand command_;
-    int time_since_last_command_; // note command != orders.
-    int time_of_last_purge_; //Mostly for workers
+    int time_since_last_command_ = 0; // note command != orders.
+    int time_of_last_purge_ = 0; //Mostly for workers
+    int time_since_last_seen_ = 0; //Enemy produciton estimates depend on this.
 
     //Unit Movement Information;
     Position attract_;

@@ -26,9 +26,10 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
     //if (other_player->isEnemy(Broodwar->self())) Broodwar->printf("%3.0f, %3.3f", estimated_bases_, estimated_workers_);
-    evaluateCurrentWorth();
+    evaluatePotentialExpenditures(); // how much is being bought?
+    evaluateCurrentWorth(); // how much do they appear to have?
 
-    spending_model_.estimateCD(units_.stock_fighting_total_, researches_.research_stock_, estimated_worker_stock);
+    spending_model_.estimateCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_expenditures_), researches_.research_stock_, estimated_worker_stock);
     updatePlayerAverageCD();
 };
 
@@ -120,40 +121,103 @@ void Player_Model::evaluateWorkerCount() {
     estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
 }
 
+void Player_Model::evaluatePotentialExpenditures() {
+    double min_possible_ = 0;
+    double gas_possible_ = 0;
+    double supply_possible_ = 0;
+
+    double min_possible_per_frame_ = 0;
+    double gas_possible_per_frame_ = 0;
+    double supply_possible_per_frame_ = 0;
+
+    //collect how much of the enemy you can see.
+    for (auto i : units_.unit_map_) {
+
+        double m_holder_ = 0;
+        double g_holder_ = 0;
+        double s_holder_ = 0;
+
+        // These are possible expenditures.
+        if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
+            continue;   
+        }
+        else if (i.second.type_.producesLarva()) {
+            for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
+                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                    m_holder_ = max(m_holder_, p.mineralPrice() / static_cast<double>(p.buildTime()));
+                    g_holder_ = max(g_holder_, p.gasPrice() / static_cast<double>(p.buildTime()));
+                    s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
+                }
+            }
+            min_possible_per_frame_ += m_holder_;
+            gas_possible_per_frame_ += g_holder_;
+            supply_possible_per_frame_ += s_holder_;
+
+            min_possible_ += m_holder_ * i.second.time_since_last_seen_;
+            gas_possible_ += g_holder_ * i.second.time_since_last_seen_;
+            supply_possible_ += s_holder_ * i.second.time_since_last_seen_;
+        }
+        else {
+            for (auto p : i.second.type_.buildsWhat()) {
+                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                    m_holder_ = max(m_holder_, p.mineralPrice() / static_cast<double>(p.buildTime()));
+                    g_holder_ = max(g_holder_, p.gasPrice() / static_cast<double>(p.buildTime()));
+                    s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
+                }
+            }
+            min_possible_per_frame_ += m_holder_;
+            gas_possible_per_frame_ += g_holder_;
+            supply_possible_per_frame_ += s_holder_;
+
+            min_possible_ += m_holder_ * i.second.time_since_last_seen_;
+            gas_possible_ += g_holder_ * i.second.time_since_last_seen_;
+            supply_possible_ += s_holder_ * i.second.time_since_last_seen_;
+        }
+    }
+
+    estimated_unseen_expenditures_ = min_possible_ + gas_possible_ * 1.25 + supply_possible_ * 25;
+    estimated_unseen_expenditures_per_frame_ = min_possible_per_frame_ + gas_possible_per_frame_ * 1.25 + supply_possible_per_frame_ * 25;
+}
+
 void Player_Model::evaluateCurrentWorth()
 {
     if (Broodwar->getFrameCount() == 0) {
         estimated_cumulative_worth_ = 50;
     }
     else { // what is the net worth of everything he has bought so far and has reasonably collected?
+
+        //Collect how much of the enemy that has been bought.
         int min_expenditures_ = 0;
         int gas_expenditures_ = 0;
         int supply_expenditures_ = 0;
-
-        //collect how much of the enemy you can see.
-        for (auto i : units_.unit_map_) {
-            min_expenditures_ += i.second.modified_min_cost_;
-            gas_expenditures_ += i.second.modified_gas_cost_;
-            supply_expenditures_ += i.second.modified_supply_;
-        }
-
-        for (auto i : researches_.upgrades_ ) {
-            int number_of_times_factor_triggers = (i.second * (i.second + 1)) / 2 - 1;
-            min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
-            gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
-        }
-        for (auto i : researches_.tech_) {
-            min_expenditures_ += i.first.mineralPrice() * i.second;
-            gas_expenditures_ += i.first.gasPrice() * i.second;
-        }
+        double min_proportion = 0.0;
 
         // collect how much of the enemy has died.
         int min_losses_ = 0;
         int gas_losses_ = 0;
         int supply_losses_ = 0;
 
-        for (auto i : casualties_.unit_map_) {
+        //collect how much of the enemy you can see.
+        for (auto i : units_.unit_map_) {
+            // These have been observed.
+            min_expenditures_ += i.second.modified_min_cost_;
+            gas_expenditures_ += i.second.modified_gas_cost_;
+            supply_expenditures_ += i.second.modified_supply_;
+        }
 
+        for (auto i : researches_.upgrades_ ) {
+            int number_of_times_factor_triggers = max((i.second * (i.second + 1)) / 2 - 1, 0);
+            min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
+            gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
+        }
+
+        for (auto i : researches_.tech_) {
+            min_expenditures_ += i.first.mineralPrice() * i.second;
+            gas_expenditures_ += i.first.gasPrice() * i.second;
+        }
+
+
+        for (auto i : casualties_.unit_map_) {
             min_losses_ += i.second.modified_min_cost_;
             gas_losses_ += i.second.modified_gas_cost_;
             supply_losses_ += i.second.modified_supply_;
@@ -163,15 +227,31 @@ void Player_Model::evaluateCurrentWorth()
         double min_spent = min_expenditures_ + min_losses_; //minerals per each unit of resources mined.
         double gas_spent = gas_expenditures_ + gas_losses_;
         double supply_spent = supply_expenditures_ + supply_losses_; //Supply bought resource collected- very rough.
-        double min_proportion = min_spent / (gas_spent + min_spent);
-        estimated_resources_per_frame_ = 0.045 * estimated_workers_ * min_proportion + 0.07 * estimated_workers_ * (1 - min_proportion) * 1.25; // If we assign them in the same way they have been assigned over the course of this game...
-        // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
-        estimated_cumulative_worth_ += estimated_resources_per_frame_; // 
 
-        int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-        double observed_current_worth = min_spent + gas_spent * 1.25 + supply_spent * 25;
-        estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ * 1.25 + supply_spent * 25);
+        if ((gas_spent + min_spent) != 0) min_proportion = min_spent / (gas_spent + min_spent);
+
+        estimated_resources_per_frame_ = estimated_workers_  * (0.045 * min_proportion + 0.07 * (1 - min_proportion) * 1.25); // If we assign them in the same way they have been assigned over the course of this game...
+        // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
+        estimated_cumulative_worth_ += max(estimated_resources_per_frame_, estimated_unseen_expenditures_per_frame_); // 
+
+        double min_on_field = min_expenditures_ - min_losses_;
+        double gas_on_field = gas_expenditures_ - gas_losses_;
+        double supply_on_field = supply_expenditures_ - supply_losses_;
+
+        double observed_current_worth = min_on_field + gas_on_field * 1.25 + supply_on_field * 25;
+
+        estimated_net_worth_ = max(observed_current_worth, estimated_cumulative_worth_ - min_losses_ - gas_losses_ * 1.25 - supply_spent * 25);
     }
+}
+
+bool Player_Model::opponentHasRequirements(const UnitType &ut)
+{
+    // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
+    if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
+    for (auto u : ut.requiredUnits()) {
+        if (u.first != UnitTypes::Zerg_Larva && CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) < u.second) return false;
+    }
+    return true;
 }
 
 // Tallies up my units for rapid counting.

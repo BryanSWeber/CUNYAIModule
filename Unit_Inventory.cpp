@@ -45,26 +45,29 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
             e.second.updateStoredUnit(e.second.bwapi_unit_);
         }
-        else if (Broodwar->isVisible(TilePosition(e.second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
+        else {
+            e.second.time_since_last_seen_++;
+            if (Broodwar->isVisible(TilePosition(e.second.pos_))) {  // if you can see the tile it SHOULD be at Burned down buildings will pose a problem in future.
 
-            bool present = false;
+                bool present = false;
 
-            Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_));  // Confirm it is present.  Main use: Addons convert to neutral if their main base disappears, extractors.
-            for (auto &et : enemies_tile) {
-                present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
-                if (present && et->getPlayer() == player) {
-                    e.second.updateStoredUnit(et);
-                    break;
+                Unitset enemies_tile = Broodwar->getUnitsOnTile(TilePosition(e.second.pos_));  // Confirm it is present.  Main use: Addons convert to neutral if their main base disappears, extractors.
+                for (auto &et : enemies_tile) {
+                    present = et->getID() == e.second.unit_ID_ /*|| (*et)->isCloaked() || (*et)->isBurrowed()*/;
+                    if (present && et->getPlayer() == player) {
+                        e.second.updateStoredUnit(et);
+                        break;
+                    }
                 }
-            }
-            if (!present) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
-                Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
-                if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
-                    e.second.valid_pos_ = false;
-                }
-                else if ( potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot))) ) {
-                    e.second.pos_ = potential_running_spot;
-                    e.second.valid_pos_ = true;
+                if (!present) { // If the last known position is visible, and the unit is not there, then they have an unknown position.  Note a variety of calls to e->first cause crashes here. Let us make a linear projection of their position 24 frames (1sec) into the future.
+                    Position potential_running_spot = Position(e.second.pos_.x + e.second.velocity_x_, e.second.pos_.y + e.second.velocity_y_);
+                    if (!potential_running_spot.isValid() || Broodwar->isVisible(TilePosition(potential_running_spot))) {
+                        e.second.valid_pos_ = false;
+                    }
+                    else if (potential_running_spot.isValid() && !Broodwar->isVisible(TilePosition(potential_running_spot)) && (e.second.type_.isFlyer() || Broodwar->isWalkable(WalkPosition(potential_running_spot)))) {
+                        e.second.pos_ = potential_running_spot;
+                        e.second.valid_pos_ = true;
+                    }
                 }
             }
         }
@@ -74,6 +77,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
         if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
         }
+
     }
 }
 
@@ -332,6 +336,9 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     command_ = unit->getLastCommand();
     areaID_ = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+
+    if (unit->isVisible()) time_since_last_seen_ = 0;
+    else time_since_last_seen_++;
 
     //Needed for FAP.
     is_flying_ = unit->isFlying();
