@@ -40,18 +40,23 @@ bool CombatManager::combatScript(const Unit & u)
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             //bool is_on_doodad = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u) && CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->elevation_ % 2 != 0 && !u->isFlying();
-            if (fight_looks_good && prepping_attack ) {
-                return mobility.surround(e_closest->pos_);
-            }
-            else if (fight_looks_good || friend_loc.stock_ground_fodder_ > 0) {
-                return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
-            }
-            else {
-                if constexpr (DRAWING_MODE) {
-                    Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-                    Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+
+            bool worker_may_fight = (friend_loc.stock_ground_fodder_ > 0 || CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, u->getPosition(), search_radius));
+
+            if (!u->getType().isWorker() || (u->getType().isWorker() && worker_may_fight)) { // workers don't need to fight all the time.
+                if (fight_looks_good && prepping_attack) {
+                    return mobility.surround(e_closest->pos_);
                 }
-                return mobility.Retreat_Logic();
+                else if (fight_looks_good || friend_loc.stock_ground_fodder_ > 0) {
+                    return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+                }
+                else {
+                    if constexpr (DRAWING_MODE) {
+                        Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+                        Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+                    }
+                    return mobility.Retreat_Logic();
+                }
             }
         }
     }
