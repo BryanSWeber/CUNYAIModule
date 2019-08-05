@@ -6,7 +6,10 @@
 #include "Source\CombatManager.h"
 #include <bwem.h>
 
-bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved || CUNYAIModule::enemy_player_model.units_.unit_map_.empty() || CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved ||
+CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ||
+CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY();
+
 Unit_Inventory CombatManager::scout_squad_;
 
 bool CombatManager::combatScript(const Unit & u)
@@ -72,7 +75,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
             task_assigned = true;
         if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && scoutScript(u))
             task_assigned = true;
-        if (!task_assigned && !u->getType().isWorker() && u->canMove() && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
+        if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed()) ) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
             task_assigned = true;
     }
 
