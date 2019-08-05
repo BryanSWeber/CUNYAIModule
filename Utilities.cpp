@@ -1300,7 +1300,6 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Un
     return return_unit;
 }
 
-
 //Gets pointer to closest attackable unit from unit in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
 Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;

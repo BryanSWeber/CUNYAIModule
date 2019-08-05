@@ -123,20 +123,14 @@ void Player_Model::evaluateWorkerCount() {
 }
 
 void Player_Model::evaluatePotentialArmyExpenditures() {
-    double min_possible_ = 0;
-    double gas_possible_ = 0;
-    double supply_possible_ = 0;
+    double value_possible_ = 0;
 
-    double min_possible_per_frame_ = 0;
-    double gas_possible_per_frame_ = 0;
-    double supply_possible_per_frame_ = 0;
+    double value_possible_per_frame_ = 0;
 
     //collect how much of the enemy you can see.
     for (auto i : units_.unit_map_) {
 
-        double m_holder_ = 0;
-        double g_holder_ = 0;
-        double s_holder_ = 0;
+        double value_holder_ = 0;
 
         // These are possible troop expenditures.
         if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
@@ -145,41 +139,27 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         else if (i.second.type_.producesLarva()) {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
-                    m_holder_ = max(m_holder_, p.mineralPrice() / static_cast<double>(p.buildTime()));
-                    g_holder_ = max(g_holder_, p.gasPrice() / static_cast<double>(p.buildTime()));
-                    s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
+                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
+
                 }
             }
 
-            min_possible_per_frame_ += m_holder_;
-            gas_possible_per_frame_ += g_holder_;
-            supply_possible_per_frame_ += s_holder_;
-
-            min_possible_ += m_holder_ * i.second.time_since_last_seen_;
-            gas_possible_ += g_holder_ * i.second.time_since_last_seen_;
-            supply_possible_ += s_holder_ * i.second.time_since_last_seen_;
+            value_possible_per_frame_ += value_holder_;
+            value_possible_ += value_holder_ * i.second.time_since_last_seen_;
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
-                    m_holder_ = max(m_holder_, p.mineralPrice() / static_cast<double>(p.buildTime()));
-                    g_holder_ = max(g_holder_, p.gasPrice() / static_cast<double>(p.buildTime()));
-                    s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
+                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) ); // assume the largest of these. (worst for me, risk averse).
                 }
             }
-
-            min_possible_per_frame_ += m_holder_;
-            gas_possible_per_frame_ += g_holder_;
-            supply_possible_per_frame_ += s_holder_;
-
-            min_possible_ += m_holder_ * i.second.time_since_last_seen_;
-            gas_possible_ += g_holder_ * i.second.time_since_last_seen_;
-            supply_possible_ += s_holder_ * i.second.time_since_last_seen_;
+            value_possible_per_frame_ += value_holder_;
+            value_possible_ += value_holder_ * i.second.time_since_last_seen_;
         }
     }
 
-    estimated_unseen_army_ = min_possible_ + gas_possible_ * 1.25 + supply_possible_ * 25;
-    estimated_unseen_army_per_frame_ = min_possible_per_frame_ + gas_possible_per_frame_ * 1.25 + supply_possible_per_frame_ * 25;
+    estimated_unseen_army_ = value_possible_;
+    estimated_unseen_army_per_frame_ = value_possible_per_frame_;
 }
 
 void Player_Model::evaluatePotentialTechExpenditures() {
@@ -193,19 +173,18 @@ void Player_Model::evaluatePotentialTechExpenditures() {
     //collect how much of the enemy you can see.
     for (auto i : units_.unit_map_) {
 
-        double m_holder_up_ = 0;
-        double g_holder_up_ = 0;
+        double value_holder_up_ = 0;
         int time_since_last_benificiary_seen_up_ = INT_MAX;
         bool benificiary_exists_up_ = true;
         int oldest_up_class = 0;
 
 
-        double m_holder_tech_ = 0;
-        double g_holder_tech_ = 0;
+        double value_holder_tech_ = 0;
         bool benificiary_exists_tech_ = false;
         int time_since_last_benificiary_seen_tech_ = INT_MAX;
         int oldest_tech_class_ = 0;
 
+        int max_duration = 0;
         // These are possible upgrade expenditures.
         for (auto p : i.second.type_.upgradesWhat()) {
             if (opponentHasRequirements(p)) { // can they upgrade?
@@ -216,10 +195,9 @@ void Player_Model::evaluatePotentialTechExpenditures() {
 
                         int level = 0;
                         if (CUNYAIModule::enemy_player_model.researches_.upgrades_.find(p) != CUNYAIModule::enemy_player_model.researches_.upgrades_.end()) level = CUNYAIModule::enemy_player_model.researches_.upgrades_[p];
-                        m_holder_up_ = max(m_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
-                        g_holder_up_ = max(g_holder_up_, p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
-
+                        value_holder_up_ = max( value_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor())) + 1.25 * (p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()) );
                         oldest_up_class = max(oldest_up_class, time_since_last_benificiary_seen_up_ * benificiary_exists_up_); // we want the youngest benificiary from the oldest class of units.
+                        max_duration = max(p.upgradeTime() + level * p.upgradeTimeFactor(), max_duration);
                     };
                 }
             }
@@ -234,10 +212,9 @@ void Player_Model::evaluatePotentialTechExpenditures() {
                             benificiary_exists_tech_ = true;
                             time_since_last_benificiary_seen_tech_ = min(time_since_last_benificiary_seen_tech_, j.second.time_since_last_seen_);
 
-                            m_holder_tech_ = max(m_holder_tech_, p.mineralPrice() / static_cast<double>(p.researchTime()));
-                            g_holder_tech_ = max(g_holder_tech_, p.gasPrice() / static_cast<double>(p.researchTime()));
-
+                            value_holder_tech_ = max(value_holder_tech_, p.mineralPrice() / static_cast<double>(p.researchTime()) + 1.25 * ( p.gasPrice() / static_cast<double>( p.researchTime() ) ) );
                             oldest_tech_class_ = max(oldest_tech_class_, time_since_last_benificiary_seen_tech_ * benificiary_exists_tech_); // we want the youngest benificiary from the oldest class of units.
+                            max_duration = max(p.researchTime(), max_duration);
                         }; 
                     }
                 }
@@ -247,8 +224,8 @@ void Player_Model::evaluatePotentialTechExpenditures() {
         if (!benificiary_exists_tech_) oldest_tech_class_ = 0; // if they've never been seen, they're probably not getting made.
         if (!benificiary_exists_up_) oldest_up_class = 0;
 
-        value_possible_per_frame_ += max(m_holder_up_ + g_holder_up_ * 1.25, m_holder_tech_ + g_holder_tech_ * 1.25);
-        value_possible_per_unit_ += max((m_holder_up_ + g_holder_up_ * 1.25) * oldest_up_class, (m_holder_tech_ + g_holder_tech_ * 1.25) * oldest_tech_class_);
+        value_possible_per_frame_ += max(value_holder_up_, value_holder_tech_);
+        value_possible_per_unit_ += max(value_holder_up_ * oldest_up_class , value_holder_tech_ * oldest_tech_class_);
     }
 
     estimated_unseen_tech_ = value_possible_per_unit_;

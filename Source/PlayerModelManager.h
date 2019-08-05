@@ -35,8 +35,8 @@ public:
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(); 
     void evaluateWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
-    void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress.
-    void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress.
+    void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
+    void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
     void evaluateCurrentWorth(); // under development. 
 
     bool opponentHasRequirements(const UnitType &ut);
