@@ -22,7 +22,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     //Update Researches
     researches_.updateResearch(other_player, units_);
 
-    evaluateWorkerCount();
+    evaluatePotentialWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
     //if (other_player->isEnemy(Broodwar->self())) Broodwar->printf("%3.0f, %3.3f", estimated_bases_, estimated_workers_);
@@ -88,7 +88,7 @@ void Player_Model::updateSelfOnFrame()
 };
 
 
-void Player_Model::evaluateWorkerCount() {
+void Player_Model::evaluatePotentialWorkerCount() {
 
     if (Broodwar->getFrameCount() == 0) {
         estimated_workers_ = 4;
@@ -145,7 +145,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             }
 
             value_possible_per_frame_ += value_holder_;
-            value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
@@ -154,12 +154,12 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
                 }
             }
             value_possible_per_frame_ += value_holder_;
-            value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
         }
     }
 
-    estimated_unseen_army_ = value_possible_;
     estimated_unseen_army_per_frame_ = value_possible_per_frame_;
+    estimated_unseen_army_ += value_possible_per_frame_;
 }
 
 void Player_Model::evaluatePotentialTechExpenditures() {
@@ -302,7 +302,7 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
     for (auto u : ut.requiredUnits()) {
-        if (u.first != UnitTypes::Zerg_Larva && CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) < u.second) return false;
+        if (u.first != UnitTypes::Zerg_Larva && !u.first.isResourceDepot() && CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) < u.second) return false;
     }
     return true;
 }

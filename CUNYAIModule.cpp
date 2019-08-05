@@ -824,6 +824,11 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
             enemy_player_model.estimated_workers_--;
         }
+
+        if (IsFightingUnit(unit->getType())) {
+            enemy_player_model.estimated_unseen_army_ -= eu.stock_value_;
+            enemy_player_model.estimated_unseen_army_ = max(enemy_player_model.estimated_unseen_army_, 0.0);
+        }
     }
 
     if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.
