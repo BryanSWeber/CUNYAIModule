@@ -438,7 +438,7 @@ void CUNYAIModule::onFrame()
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        Print_Upgrade_Inventory(375, 90);
+        Print_Upgrade_Inventory(375, 100);
         Print_Reservations(250, 190, my_reservation);
         //enemy_player_model.Print_Average_CD(500, 170);
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
@@ -509,9 +509,10 @@ void CUNYAIModule::onFrame()
         //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
         //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
         Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
-        Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f", enemy_player_model.estimated_resources_per_frame_, enemy_player_model.estimated_unseen_expenditures_per_frame_);
+        Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", enemy_player_model.estimated_resources_per_frame_, enemy_player_model.estimated_unseen_army_per_frame_, enemy_player_model.estimated_unseen_tech_per_frame_);
         Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", enemy_player_model.spending_model_.getlnYusing(friendly_player_model.spending_model_.alpha_army, friendly_player_model.spending_model_.alpha_tech), friendly_player_model.spending_model_.getlnY());  //
-        Broodwar->drawTextScreen(375, 80, "Est. Unseen: %4.2f", enemy_player_model.estimated_unseen_expenditures_);  //
+        Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", enemy_player_model.estimated_unseen_army_);  //
+        Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", enemy_player_model.estimated_unseen_tech_);  //
 
         ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //

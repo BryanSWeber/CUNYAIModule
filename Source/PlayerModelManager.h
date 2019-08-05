@@ -18,8 +18,10 @@ public:
     double estimated_cumulative_worth_ = 0;
     double estimated_net_worth_ = 0;
     double estimated_resources_per_frame_ = 0;
-    double estimated_unseen_expenditures_per_frame_ = 0;
-    double estimated_unseen_expenditures_ = 0;
+    double estimated_unseen_army_per_frame_ = 0;
+    double estimated_unseen_tech_per_frame_ = 0;
+    double estimated_unseen_army_ = 0;
+    double estimated_unseen_tech_ = 0;
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;
@@ -33,10 +35,13 @@ public:
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(); 
     void evaluateWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
-    void evaluatePotentialExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress.
+    void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress.
+    void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress.
     void evaluateCurrentWorth(); // under development. 
 
     bool opponentHasRequirements(const UnitType &ut);
+    bool opponentHasRequirements(const UpgradeType & up);
+    bool opponentHasRequirements(const TechType & tech);
     //stored to avoid extensive counting.  
     void updateUnit_Counts();
 

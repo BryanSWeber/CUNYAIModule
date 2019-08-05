@@ -26,10 +26,11 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
     //if (other_player->isEnemy(Broodwar->self())) Broodwar->printf("%3.0f, %3.3f", estimated_bases_, estimated_workers_);
-    evaluatePotentialExpenditures(); // how much is being bought?
+    evaluatePotentialArmyExpenditures(); // how much is being bought?
+    evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
     evaluateCurrentWorth(); // how much do they appear to have?
 
-    spending_model_.estimateCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_expenditures_), researches_.research_stock_, estimated_worker_stock);
+    spending_model_.estimateCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock);
     updatePlayerAverageCD();
 };
 
@@ -121,7 +122,7 @@ void Player_Model::evaluateWorkerCount() {
     estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
 }
 
-void Player_Model::evaluatePotentialExpenditures() {
+void Player_Model::evaluatePotentialArmyExpenditures() {
     double min_possible_ = 0;
     double gas_possible_ = 0;
     double supply_possible_ = 0;
@@ -137,7 +138,7 @@ void Player_Model::evaluatePotentialExpenditures() {
         double g_holder_ = 0;
         double s_holder_ = 0;
 
-        // These are possible expenditures.
+        // These are possible troop expenditures.
         if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
             continue;   
         }
@@ -149,6 +150,7 @@ void Player_Model::evaluatePotentialExpenditures() {
                     s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
                 }
             }
+
             min_possible_per_frame_ += m_holder_;
             gas_possible_per_frame_ += g_holder_;
             supply_possible_per_frame_ += s_holder_;
@@ -165,6 +167,7 @@ void Player_Model::evaluatePotentialExpenditures() {
                     s_holder_ = max(s_holder_, p.supplyRequired() / static_cast<double>(p.buildTime())); // assume the worst of these.
                 }
             }
+
             min_possible_per_frame_ += m_holder_;
             gas_possible_per_frame_ += g_holder_;
             supply_possible_per_frame_ += s_holder_;
@@ -175,8 +178,81 @@ void Player_Model::evaluatePotentialExpenditures() {
         }
     }
 
-    estimated_unseen_expenditures_ = min_possible_ + gas_possible_ * 1.25 + supply_possible_ * 25;
-    estimated_unseen_expenditures_per_frame_ = min_possible_per_frame_ + gas_possible_per_frame_ * 1.25 + supply_possible_per_frame_ * 25;
+    estimated_unseen_army_ = min_possible_ + gas_possible_ * 1.25 + supply_possible_ * 25;
+    estimated_unseen_army_per_frame_ = min_possible_per_frame_ + gas_possible_per_frame_ * 1.25 + supply_possible_per_frame_ * 25;
+}
+
+void Player_Model::evaluatePotentialTechExpenditures() {
+    double min_possible_ = 0;
+    double gas_possible_ = 0;
+    double supply_possible_ = 0;
+
+    double value_possible_per_frame_ = 0;
+    double value_possible_per_unit_ = 0;
+
+    //collect how much of the enemy you can see.
+    for (auto i : units_.unit_map_) {
+
+        double m_holder_up_ = 0;
+        double g_holder_up_ = 0;
+        int time_since_last_benificiary_seen_up_ = INT_MAX;
+        bool benificiary_exists_up_ = true;
+        int oldest_up_class = 0;
+
+
+        double m_holder_tech_ = 0;
+        double g_holder_tech_ = 0;
+        bool benificiary_exists_tech_ = false;
+        int time_since_last_benificiary_seen_tech_ = INT_MAX;
+        int oldest_tech_class_ = 0;
+
+        // These are possible upgrade expenditures.
+        for (auto p : i.second.type_.upgradesWhat()) {
+            if (opponentHasRequirements(p)) { // can they upgrade?
+                for (auto j : units_.unit_map_) { 
+                    if (j.second.type_.upgrades().contains(p)) { // is there a benifitiary in their inventory?  upgrade does not depend on time last seen but time last dependent unit was seen. 
+                        benificiary_exists_up_ = true;
+                        time_since_last_benificiary_seen_up_ = min(time_since_last_benificiary_seen_up_, j.second.time_since_last_seen_);
+
+                        int level = 0;
+                        if (CUNYAIModule::enemy_player_model.researches_.upgrades_.find(p) != CUNYAIModule::enemy_player_model.researches_.upgrades_.end()) level = CUNYAIModule::enemy_player_model.researches_.upgrades_[p];
+                        m_holder_up_ = max(m_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
+                        g_holder_up_ = max(g_holder_up_, p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
+
+                        oldest_up_class = max(oldest_up_class, time_since_last_benificiary_seen_up_ * benificiary_exists_up_); // we want the youngest benificiary from the oldest class of units.
+                    };
+                }
+            }
+        }
+
+        // These are possible tech expenditures.
+        for (auto p : i.second.type_.researchesWhat()) {
+            if (opponentHasRequirements(p)) {
+                for (auto j : units_.unit_map_) {
+                    for (auto flagged_unit_type : p.whatUses()) {
+                        if (j.second.type_ == flagged_unit_type) {
+                            benificiary_exists_tech_ = true;
+                            time_since_last_benificiary_seen_tech_ = min(time_since_last_benificiary_seen_tech_, j.second.time_since_last_seen_);
+
+                            m_holder_tech_ = max(m_holder_tech_, p.mineralPrice() / static_cast<double>(p.researchTime()));
+                            g_holder_tech_ = max(g_holder_tech_, p.gasPrice() / static_cast<double>(p.researchTime()));
+
+                            oldest_tech_class_ = max(oldest_tech_class_, time_since_last_benificiary_seen_tech_ * benificiary_exists_tech_); // we want the youngest benificiary from the oldest class of units.
+                        }; 
+                    }
+                }
+            }
+        }
+
+        if (!benificiary_exists_tech_) oldest_tech_class_ = 0; // if they've never been seen, they're probably not getting made.
+        if (!benificiary_exists_up_) oldest_up_class = 0;
+
+        value_possible_per_frame_ += max(m_holder_up_ + g_holder_up_ * 1.25, m_holder_tech_ + g_holder_tech_ * 1.25);
+        value_possible_per_unit_ += max((m_holder_up_ + g_holder_up_ * 1.25) * oldest_up_class, (m_holder_tech_ + g_holder_tech_ * 1.25) * oldest_tech_class_);
+    }
+
+    estimated_unseen_tech_ = value_possible_per_unit_;
+    estimated_unseen_tech_per_frame_ = value_possible_per_frame_;
 }
 
 void Player_Model::evaluateCurrentWorth()
@@ -232,7 +308,7 @@ void Player_Model::evaluateCurrentWorth()
 
         estimated_resources_per_frame_ = estimated_workers_  * (0.045 * min_proportion + 0.07 * (1 - min_proportion) * 1.25); // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
-        estimated_cumulative_worth_ += max(estimated_resources_per_frame_, estimated_unseen_expenditures_per_frame_); // 
+        estimated_cumulative_worth_ += max(estimated_resources_per_frame_, estimated_unseen_army_per_frame_ + estimated_unseen_tech_per_frame_); // 
 
         double min_on_field = min_expenditures_ - min_losses_;
         double gas_on_field = gas_expenditures_ - gas_losses_;
@@ -253,6 +329,26 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     }
     return true;
 }
+
+bool Player_Model::opponentHasRequirements(const UpgradeType &up)
+{
+    // If they don't have it or it could be further created...
+    if (!CUNYAIModule::enemy_player_model.researches_.upgrades_[up] || CUNYAIModule::enemy_player_model.researches_.upgrades_[up] < up.maxRepeats()) {
+        return true;
+    }
+    return false;
+}
+
+bool Player_Model::opponentHasRequirements(const TechType &tech)
+{
+    // If they have it, they're not building it...
+    if (CUNYAIModule::enemy_player_model.researches_.tech_[tech]) {
+        return false;
+    }
+    return true;
+}
+
+
 
 // Tallies up my units for rapid counting.
 void Player_Model::updateUnit_Counts() {
