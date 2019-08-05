@@ -98,7 +98,6 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
     double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
     
-
     // Let us bin all potentially interesting units.
     Unit_Inventory HighPriority;
     Unit_Inventory ThreatPriority;
@@ -185,7 +184,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
     else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-        unit_->unburrow();
+        if(unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
 
     Broodwar->sendText("No target found");
