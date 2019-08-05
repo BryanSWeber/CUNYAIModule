@@ -105,7 +105,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     Unit_Inventory LowPriority;
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
-        if (e->second.valid_pos_ && e->first && e->first->exists()) { // only target observable units.
+        if (e->second.valid_pos_ && e->first && e->first->exists() && e->first->isDetected()) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);

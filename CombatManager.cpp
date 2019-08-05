@@ -15,7 +15,7 @@ bool CombatManager::combatScript(const Unit & u)
     {
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
         Mobility mobility = Mobility(u);
-        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
 
         if (e_closest) { // if there are bad guys, fight
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));

@@ -1374,6 +1374,32 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
     return return_unit;
 }
 
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui, const UnitType ut, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+            can_be_attacked_by = Can_Fight(e->second, unit);
+
+            if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && e->second.type_ != ut) {
+                temp_dist = static_cast<int>(e->second.pos_.getDistance(origin));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest threat to unit within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
