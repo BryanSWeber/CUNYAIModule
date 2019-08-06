@@ -438,7 +438,7 @@ void CUNYAIModule::onFrame()
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        Print_Upgrade_Inventory(375, 100);
+        Print_Unit_Inventory(375, 100, enemy_player_model.imputedUnits_);
         Print_Reservations(250, 190, my_reservation);
         //enemy_player_model.Print_Average_CD(500, 170);
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
@@ -825,10 +825,8 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
             enemy_player_model.estimated_workers_--;
         }
 
-        if (IsFightingUnit(unit->getType())) {
-            enemy_player_model.estimated_unseen_army_ -= eu.stock_value_;
-            enemy_player_model.estimated_unseen_army_ = max(enemy_player_model.estimated_unseen_army_, 0.0);
-        }
+        enemy_player_model.imputeUnits(unit);
+
     }
 
     if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.

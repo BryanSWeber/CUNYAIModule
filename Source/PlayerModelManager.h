@@ -25,6 +25,7 @@ public:
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;
+    Unit_Inventory imputedUnits_; // Note this map will be {unit triggering imputation, imputeded unit}, a shift from the previous standard.
     Research_Inventory researches_;
     CobbDouglas spending_model_;
     //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
@@ -34,14 +35,17 @@ public:
 
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame(); 
+    void imputeUnits(const Unit &unit);
     void evaluatePotentialWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
     void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
     void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
     void evaluateCurrentWorth(); // under development. 
 
     bool opponentHasRequirements(const UnitType &ut);
-    bool opponentHasRequirements(const UpgradeType & up);
     bool opponentHasRequirements(const TechType & tech);
+    bool opponentHasRequirements(const UpgradeType & up);
+    bool opponentCouldBeUpgrading(const UpgradeType & up);
+    bool opponentCouldBeTeching(const TechType & tech);
     //stored to avoid extensive counting.  
     void updateUnit_Counts();
 

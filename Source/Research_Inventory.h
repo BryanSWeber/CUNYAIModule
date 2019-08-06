@@ -19,8 +19,8 @@ struct Research_Inventory {
     void updateUpgradeStock();
     void updateTechTypes(const Player & player);
     void updateTechStock();
-    void updateResearchBuildings(const Player & player, const Unit_Inventory &ei); // This function can be trimmed up a lot.
+    void updateResearchBuildings(const Player & player); // This function can be trimmed up a lot. Should add directly into imputed units.
     void updateBuildingStock();
-    void updateResearch(const Player & player, const Unit_Inventory &ei);
+    void updateResearch(const Player & player);
 
 };

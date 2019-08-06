@@ -30,12 +30,22 @@ void Research_Inventory::updateTechTypes(const Player &player) {
     }
 }
 
-void Research_Inventory::updateResearchBuildings(const Player & player, const Unit_Inventory &ei) {
+void Research_Inventory::updateResearchBuildings(const Player & player) {
 
     std::set<UnitType> unit_types;
     std::set<UnitType> temp_unit_types;
 
-    for (auto &i:ei.unit_map_) {// for every unit type they have.
+    Player_Model player_model_to_compare;
+    if (player == Broodwar->self())
+        player_model_to_compare = CUNYAIModule::friendly_player_model;
+    else
+        player_model_to_compare = CUNYAIModule::enemy_player_model;
+
+
+    for (auto &i:player_model_to_compare.units_.unit_map_) {// for every unit type they have or have imputed.
+        temp_unit_types.insert(i.second.type_);
+    }
+    for (auto &i : player_model_to_compare.imputedUnits_.unit_map_) {// for every unit type I have imputed.
         temp_unit_types.insert(i.second.type_);
     }
 
@@ -53,25 +63,22 @@ void Research_Inventory::updateResearchBuildings(const Player & player, const Un
         n++;
     }
 
-    Player_Model player_model_to_compare;
-    if (player == Broodwar->self())
-        player_model_to_compare = CUNYAIModule::friendly_player_model;
-    else 
-        player_model_to_compare = CUNYAIModule::enemy_player_model;
-
     for (auto u : unit_types) {
-        if (u.isBuilding() && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u != UnitTypes::Zerg_Hatchery) tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_), 1 - CUNYAIModule::Count_Units(u, player_model_to_compare.casualties_)); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
+        if (u.isBuilding() && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u != UnitTypes::Zerg_Hatchery) 
+            tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_), 1 - CUNYAIModule::Count_Units(u, player_model_to_compare.casualties_)); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
     for (auto i : upgrades_) {
-        if (i.second > 0) tech_buildings_[i.first.whatsRequired(i.second)] = (i.first.whatsRequired(i.second) != UnitTypes::None); // requirements might be "none".
+        if (i.second > 0) 
+            tech_buildings_[i.first.whatsRequired(i.second)] = (i.first.whatsRequired(i.second) != UnitTypes::None); // requirements might be "none".
     }
     for (auto i : tech_) {
-        if ( i.second ) tech_buildings_[i.first.whatResearches()] = (i.first.whatResearches() != UnitTypes::None); // requirements might be "none".
+        if ( i.second ) 
+            tech_buildings_[i.first.whatResearches()] = (i.first.whatResearches() != UnitTypes::None); // requirements might be "none".
     }
 
     for (auto &i : tech_buildings_) {// for every unit type they have.
-        i.second = max(CUNYAIModule::Count_Units(i.first, ei), i.second);
+        i.second = max(CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_), i.second);
     }
 
 }
@@ -108,11 +115,11 @@ void Research_Inventory::updateBuildingStock() {
 }
 
 
-void Research_Inventory::updateResearch(const Player & player, const Unit_Inventory &ei)
+void Research_Inventory::updateResearch(const Player & player)
 {
     updateUpgradeTypes(player);
     updateTechTypes(player);
-    updateResearchBuildings(player, ei);
+    updateResearchBuildings(player);
     updateUpgradeStock();
     updateTechStock();
     updateBuildingStock();
