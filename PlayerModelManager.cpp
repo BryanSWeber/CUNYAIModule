@@ -22,15 +22,17 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     //Update Researches
     researches_.updateResearch(other_player, units_);
 
+    evaluatePotentialArmyExpenditures(); // how much is being bought?
+    evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
     evaluatePotentialWorkerCount();
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
     int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
     //if (other_player->isEnemy(Broodwar->self())) Broodwar->printf("%3.0f, %3.3f", estimated_bases_, estimated_workers_);
-    evaluatePotentialArmyExpenditures(); // how much is being bought?
-    evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
     evaluateCurrentWorth(); // how much do they appear to have?
 
-    spending_model_.estimateCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock);
+    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock);
+    spending_model_.storeStocks(units_.stock_fighting_total_, researches_.research_stock_, estimated_worker_stock);
+
     updatePlayerAverageCD();
 };
 

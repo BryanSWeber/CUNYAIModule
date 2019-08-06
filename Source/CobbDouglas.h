@@ -38,7 +38,8 @@ struct CobbDouglas
     bool econ_starved();
     bool tech_starved();
 
-    void estimateCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
+    void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
+    void storeStocks(int e_army_stock, int e_tech_stock, int e_worker_stock);
     void enemy_mimic(const Player_Model &enemy, const double adaptation_rate);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
