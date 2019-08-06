@@ -22,8 +22,8 @@ bool CombatManager::combatScript(const Unit & u)
 
         if (e_closest) { // if there are bad guys, fight
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
-            int chargable_distance_self = CUNYAIModule::getChargableDistance(u, CUNYAIModule::enemy_player_model.units_);
-            int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_, CUNYAIModule::friendly_player_model.units_);
+            int chargable_distance_self = CUNYAIModule::getChargableDistance(u);
+            int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_);
             int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
             int threat_radius = max({ chargable_distance_max + 32, CUNYAIModule::enemy_player_model.units_.max_range_ + 32 });
             int search_radius = min(threat_radius, 400); // expanded radius because of units intermittently suiciding against static D.

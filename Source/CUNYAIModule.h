@@ -185,7 +185,7 @@ public:
       //range in pixels, including upgrades
       static int getProperRange(const Unit u);
       static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self() );
-      static int getChargableDistance(const Unit &u, const Unit_Inventory &ei_loc);
+      static int getChargableDistance(const Unit &u);
 
       //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
       static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);

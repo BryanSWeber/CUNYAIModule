@@ -2106,7 +2106,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
 }
 
 //How far can the unit move in one MAFAP sim (96 frames)?
-int CUNYAIModule::getChargableDistance(const Unit & u, const Unit_Inventory & ei_loc)
+int CUNYAIModule::getChargableDistance(const Unit & u)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
     return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * FAP_SIM_DURATION) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.

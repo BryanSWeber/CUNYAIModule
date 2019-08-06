@@ -128,7 +128,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         }
     }
 
-    double dist_to_enemy = max_diveable_dist;
+    double dist_to_enemy = passed_distance;
     Unit target = nullptr;
 
     ThreatPriority.unit_map_.insert(HighPriority.unit_map_.begin(), HighPriority.unit_map_.end());
@@ -138,35 +138,36 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     ThreatPriority.updateUnitInventorySummary();
     LowPriority.updateUnitInventorySummary();
 
+    double temp_max_divable = max_diveable_dist;
     for (auto h : HighPriority.unit_map_) {
         dist_to_enemy = unit_->getDistance(h.second.pos_);
         bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
-        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && melee && (stored_unit_->elevation_ != h.second.elevation_ && stored_unit_->elevation_ % 2 != 0); // they are on different elevations and my unit is not on a doodad (ramp, tunnel, etc.)
-        if (dist_to_enemy < max_diveable_dist && !diving_uphill && !lurkers_diving && CUNYAIModule::Can_Fight_Type(u_type_, h.second.type_) && h.first &&  h.first->exists()) {
-            max_diveable_dist = dist_to_enemy;
+        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && (melee || !h.first) && (stored_unit_->elevation_ != h.second.elevation_ && stored_unit_->elevation_ % 2 != 0); // they are on different elevations and my unit is not on a doodad (ramp, tunnel, etc.)
+        if (dist_to_enemy < temp_max_divable && !diving_uphill && !lurkers_diving && CUNYAIModule::Can_Fight_Type(u_type_, h.second.type_) && h.first &&  h.first->exists()) {
+            temp_max_divable = dist_to_enemy;
             target = h.first;
         }
     }
-    
+
+    temp_max_divable = CUNYAIModule::getChargableDistance(unit_)  / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
     if (!target) { // repeated calls should be functionalized.
-        max_diveable_dist = 9999;
         for (auto t : ThreatPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
-            if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
-                max_diveable_dist = dist_to_enemy;
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (melee || !t.first) && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
+                temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
         }
     }
 
+    temp_max_divable = 99999;
     if (!target) { // repeated calls should be functionalized.
-        max_diveable_dist = 9999;
         for (auto l : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(l.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && melee && (stored_unit_->elevation_ != l.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
-            if (dist_to_enemy < max_diveable_dist && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, l.second.type_) && l.first && l.first->exists()) {
-                max_diveable_dist = dist_to_enemy;
+            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && (melee || !l.first) && (stored_unit_->elevation_ != l.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, l.second.type_) && l.first && l.first->exists()) {
+                temp_max_divable = dist_to_enemy;
                 target = l.first;
             }
         }
