@@ -44,7 +44,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             //bool is_on_doodad = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u) && CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->elevation_ % 2 != 0 && !u->isFlying();
 
-            bool worker_may_fight = (friend_loc.stock_ground_fodder_ > 0 || CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, u->getPosition(), search_radius));
+            bool worker_may_fight = (friend_loc.stock_ground_fodder_ > 0 || CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, u->getPosition(), search_radius)) && friend_loc.getStoredUnit(u) && !Stored_Unit::unitDeadInFuture(*friend_loc.getStoredUnit(u), 6); // Worker is expected to live.
 
             if (!u->getType().isWorker() || (u->getType().isWorker() && worker_may_fight)) { // workers don't need to fight all the time.
                 if (fight_looks_good && prepping_attack) {
@@ -71,6 +71,8 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     bool task_assigned = false;
 
     if (CUNYAIModule::spamGuard(u)) {
+        if (!task_assigned && u->getType().canMove() && u->isUnderStorm() && Mobility(u).Scatter_Logic());
+            task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
         if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && scoutScript(u))

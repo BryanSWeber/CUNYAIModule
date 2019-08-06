@@ -96,11 +96,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
-    double max_diveable_dist = passed_distance / static_cast<double>(limit_units_diving);
     
     // Let us bin all potentially interesting units.
     Unit_Inventory HighPriority;
     Unit_Inventory ThreatPriority;
+    Unit_Inventory MediumPriority;
     Unit_Inventory LowPriority;
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
@@ -119,8 +119,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui)) ) {
                 HighPriority.addStored_Unit(e->second);
             }
-            else if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
+            else if (CUNYAIModule::Can_Fight(e_type, unit_)) {
                 ThreatPriority.addStored_Unit(e->second);
+            }
+            else if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
+                MediumPriority.addStored_Unit(e->second);
             }
             else if ( (e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
                 LowPriority.addStored_Unit(e->second);
@@ -132,28 +135,46 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     Unit target = nullptr;
 
     ThreatPriority.unit_map_.insert(HighPriority.unit_map_.begin(), HighPriority.unit_map_.end());
-    LowPriority.unit_map_.insert(ThreatPriority.unit_map_.begin(), ThreatPriority.unit_map_.end());
+    MediumPriority.unit_map_.insert(ThreatPriority.unit_map_.begin(), ThreatPriority.unit_map_.end());
+    LowPriority.unit_map_.insert(MediumPriority.unit_map_.begin(), MediumPriority.unit_map_.end());
 
     HighPriority.updateUnitInventorySummary();
     ThreatPriority.updateUnitInventorySummary();
+    MediumPriority.updateUnitInventorySummary();
     LowPriority.updateUnitInventorySummary();
 
-    double temp_max_divable = max_diveable_dist;
-    for (auto h : HighPriority.unit_map_) {
-        dist_to_enemy = unit_->getDistance(h.second.pos_);
-        bool lurkers_diving = u_type_ == UnitTypes::Zerg_Lurker && dist_to_enemy > UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
-        bool diving_uphill = stored_unit_->areaID_ != h.second.areaID_ && (melee || !h.first) && (stored_unit_->elevation_ != h.second.elevation_ && stored_unit_->elevation_ % 2 != 0); // they are on different elevations and my unit is not on a doodad (ramp, tunnel, etc.)
-        if (dist_to_enemy < temp_max_divable && !diving_uphill && !lurkers_diving && CUNYAIModule::Can_Fight_Type(u_type_, h.second.type_) && h.first &&  h.first->exists()) {
-            temp_max_divable = dist_to_enemy;
-            target = h.first;
+    // Dive some modest distance if they're critical to kill.
+    double temp_max_divable = CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
+    if (!target) { // repeated calls should be functionalized.
+        for (auto t : HighPriority.unit_map_) {
+            dist_to_enemy = unit_->getDistance(t.second.pos_);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
+                temp_max_divable = dist_to_enemy;
+                target = t.first;
+            }
         }
     }
 
-    temp_max_divable = CUNYAIModule::getChargableDistance(unit_)  / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
+    // Shoot closest threat if they can shoot you or vis versa.
+    temp_max_divable = 99999;
     if (!target) { // repeated calls should be functionalized.
         for (auto t : ThreatPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (melee || !t.first) && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(CUNYAIModule::getProperRange(t.second.type_, Broodwar->enemy()), CUNYAIModule::getProperRange(unit_)) && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
+                temp_max_divable = dist_to_enemy;
+                target = t.first;
+            }
+        }
+    }
+
+    // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
+    temp_max_divable = CUNYAIModule::getChargableDistance(unit_)  / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
+    if (!target) { // repeated calls should be functionalized.
+        for (auto t : MediumPriority.unit_map_) {
+            dist_to_enemy = unit_->getDistance(t.second.pos_);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -163,12 +184,12 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
     temp_max_divable = 99999;
     if (!target) { // repeated calls should be functionalized.
-        for (auto l : LowPriority.unit_map_) {
-            dist_to_enemy = unit_->getDistance(l.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != l.second.areaID_ && (melee || !l.first) && (stored_unit_->elevation_ != l.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
-            if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, l.second.type_) && l.first && l.first->exists()) {
+        for (auto t : LowPriority.unit_map_) {
+            dist_to_enemy = unit_->getDistance(t.second.pos_);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
-                target = l.first;
+                target = t.first;
             }
         }
     }
@@ -214,6 +235,31 @@ bool Mobility::Retreat_Logic() {
         moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_);
     }
     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+}
+
+bool Mobility::Scatter_Logic()
+{
+    // lurkers should move when we need them to scout.
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
+        unit_->unburrow();
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+    }
+
+    Bulletset bullets = Broodwar->getBullets();
+    Position storm_pos = Positions::Origin;
+    int current_distance = 999999;
+    for (auto s : bullets) {
+        if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
+            storm_pos = s->getPosition();
+            current_distance = s->getPosition().getDistance(pos_);
+        }
+    }
+
+    approach(storm_pos);
+    if (unit_->move(pos_ - attract_vector_))
+        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+    else
+        return false;
 }
 
 Position Mobility::encircle(const Position & p) {
