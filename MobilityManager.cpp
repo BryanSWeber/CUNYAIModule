@@ -247,7 +247,7 @@ bool Mobility::Scatter_Logic()
 
     Bulletset bullets = Broodwar->getBullets();
     Position storm_pos = Positions::Origin;
-    int current_distance = 999999;
+    double current_distance = 999999;
     for (auto s : bullets) {
         if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
             storm_pos = s->getPosition();

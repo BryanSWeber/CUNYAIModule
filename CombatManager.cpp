@@ -71,7 +71,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     bool task_assigned = false;
 
     if (CUNYAIModule::spamGuard(u)) {
-        if (!task_assigned && u->getType().canMove() && u->isUnderStorm() && Mobility(u).Scatter_Logic());
+        if (!task_assigned && u->getType().canMove() && u->isUnderStorm() && Mobility(u).Scatter_Logic())
             task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
