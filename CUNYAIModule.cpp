@@ -438,7 +438,7 @@ void CUNYAIModule::onFrame()
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
-        Print_Unit_Inventory(375, 100, enemy_player_model.imputedUnits_);
+        Print_Unit_Inventory(375, 130, enemy_player_model.imputedUnits_);
         Print_Reservations(250, 190, my_reservation);
         //enemy_player_model.Print_Average_CD(500, 170);
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
@@ -513,6 +513,8 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", enemy_player_model.spending_model_.getlnYusing(friendly_player_model.spending_model_.alpha_army, friendly_player_model.spending_model_.alpha_tech), friendly_player_model.spending_model_.getlnY());  //
         Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", enemy_player_model.estimated_unseen_army_);  //
         Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", enemy_player_model.estimated_unseen_tech_);  //
+        Broodwar->drawTextScreen(375, 100, "Unseen Flyer: %4.2f", enemy_player_model.estimated_unseen_flyers_);  //
+        Broodwar->drawTextScreen(375, 110, "Unseen Ground: %4.2f", enemy_player_model.estimated_unseen_ground_);  //
 
         ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
         ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //

@@ -102,6 +102,8 @@ void Player_Model::imputeUnits(const Unit &unit)
 
     if (CUNYAIModule::IsFightingUnit(unit->getType())) {
         estimated_unseen_army_ -= eu.stock_value_;
+        estimated_unseen_ground_ -= eu.stock_value_ * !eu.is_flying_;
+        estimated_unseen_flyers_ -= eu.stock_value_ * eu.is_flying_;
     }
 
     if (estimated_unseen_army_ < 0) {
@@ -109,11 +111,15 @@ void Player_Model::imputeUnits(const Unit &unit)
         UnitType expected_producer = UnitTypes::None;
 
         if (eu.type_.whatBuilds().first.isBuilding()) {
-            imputedUnits_.unit_map_.insert({ unit , Stored_Unit(eu.type_.whatBuilds().first) }); // note this map is not how I typically create them!
+            Stored_Unit imputed_unit = Stored_Unit(eu.type_.whatBuilds().first);
+            imputed_unit.time_first_observed_ = eu.type_.buildTime(); // it must be at least old enough to build it.
+            imputedUnits_.unit_map_.insert({ unit , imputed_unit }); // note this map is not how I typically create them!
             expected_producer = eu.type_.whatBuilds().first;
         }
         if (eu.type_.whatBuilds().first == UnitTypes::Zerg_Larva) {
-            imputedUnits_.unit_map_.insert({ unit ,  Stored_Unit(UnitTypes::Zerg_Hatchery) });
+            Stored_Unit imputed_unit = UnitTypes::Zerg_Hatchery;
+            imputed_unit.time_first_observed_ = eu.type_.buildTime();
+            imputedUnits_.unit_map_.insert({ unit ,  imputed_unit });
             expected_producer = UnitTypes::Zerg_Hatchery;
         }
 
@@ -135,7 +141,8 @@ void Player_Model::imputeUnits(const Unit &unit)
     }
 
     estimated_unseen_army_ = max(estimated_unseen_army_, 0.0);
-
+    estimated_unseen_flyers_ = max(estimated_unseen_flyers_, 0.0);
+    estimated_unseen_ground_ = max(estimated_unseen_ground_, 0.0);
 }
 
 
@@ -175,13 +182,15 @@ void Player_Model::evaluatePotentialWorkerCount() {
 
 void Player_Model::evaluatePotentialArmyExpenditures() {
     double value_possible_ = 0;
-
     double value_possible_per_frame_ = 0;
+    double value_possible_fliers_ = 0;
+    double value_possible_fliers_per_frame_ = 0;
 
     //consider how much of the enemy you can see.
     for (auto i : units_.unit_map_) {
 
         double value_holder_ = 0;
+        double value_holder_flyer_ = 0;
 
         // These are possible troop expenditures.
         if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
@@ -191,7 +200,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-
+                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
                 }
             }
 
@@ -202,17 +211,19 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) ); // assume the largest of these. (worst for me, risk averse).
+                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
                 }
             }
             value_possible_per_frame_ += value_holder_;
-            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            value_possible_fliers_per_frame_ += value_holder_flyer_;
         }
     }
 
-    //consider how much of the enemy you imagine. Note you cannot combine these two maps since the KEY for the imputed units is the unit which triggered the imputation.
+    //consider how much of the enemy you imagine. Note you cannot combine these two maps since the KEY for the imputed units is the unit which triggered the imputation and deletions may occur.
     for (auto i : imputedUnits_.unit_map_) {
 
         double value_holder_ = 0;
+        double value_holder_flyer_ = 0;
 
         // These are possible troop expenditures.
         if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
@@ -222,7 +233,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-
+                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
                 }
             }
 
@@ -233,16 +244,20 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
+                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
                 }
             }
             value_possible_per_frame_ += value_holder_;
-            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            value_possible_fliers_per_frame_ += value_holder_flyer_;
         }
     }
 
     estimated_unseen_army_per_frame_ = value_possible_per_frame_;
     estimated_unseen_army_ += value_possible_per_frame_;
-    //estimated_unseen_army_ = min(estimated_unseen_army_, 100 * 150.0); //max army plasible is perhaps about 150 dragoons. Ad-hoc.
+    estimated_unseen_flyers_ += value_possible_fliers_per_frame_;
+    estimated_unseen_ground_ += value_possible_per_frame_ - value_possible_fliers_per_frame_;
+
+    estimated_unseen_army_ = min(estimated_unseen_army_, max(units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_), 0.0)); //Their unseen army can't be bigger than their leftovers, or less than 0.
 }
 
 void Player_Model::evaluatePotentialTechExpenditures() {

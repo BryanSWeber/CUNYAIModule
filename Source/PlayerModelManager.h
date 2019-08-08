@@ -21,6 +21,8 @@ public:
     double estimated_unseen_army_per_frame_ = 0;
     double estimated_unseen_tech_per_frame_ = 0;
     double estimated_unseen_army_ = 0;
+    double estimated_unseen_flyers_ = 0; // a subset of estimated army.
+    double estimated_unseen_ground_ = 0; // a subset of estimated army.
     double estimated_unseen_tech_ = 0;
 
     Unit_Inventory units_;

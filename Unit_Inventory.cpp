@@ -584,7 +584,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  void Unit_Inventory::updateUnitInventorySummary() {
      //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
      //Set default values to 0;
-     stock_fliers_ = stock_ground_units_ = stock_both_up_and_down_ = stock_shoots_up_ = stock_shoots_down_ = stock_high_ground_ = stock_fighting_total_ = stock_ground_fodder_ = stock_air_fodder_ = stock_total_ = max_range_ = max_cooldown_ = worker_count_ = volume_ = detector_count_ = cloaker_count_ = flyer_count_ = resource_depot_count_ = future_fap_stock_ = moving_average_fap_stock_ = stock_full_health_ = is_shooting_ = is_attacking_ = is_retreating_ = 0;
+     stock_fliers_ = stock_ground_units_ = stock_both_up_and_down_ = stock_shoots_up_ = stock_shoots_down_ = stock_high_ground_ = stock_fighting_total_ = stock_ground_fodder_ = stock_air_fodder_ = stock_total_ = total_supply_ = max_range_ = max_cooldown_ = worker_count_ = volume_ = detector_count_ = cloaker_count_ = flyer_count_ = resource_depot_count_ = future_fap_stock_ = moving_average_fap_stock_ = stock_full_health_ = is_shooting_ = is_attacking_ = is_retreating_ = 0;
 
      int fliers = 0;
      int flyer_count = 0;
@@ -606,6 +606,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int moving_average_fap_stock = 0;
      int stock_full_health = 0;
      int is_shooting = 0;
+     int supply = 0;
 
      vector<UnitType> already_seen_types;
 
@@ -614,7 +615,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          future_fap_stock += u_iter.second.future_fap_value_;
          moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
          is_shooting += u_iter.second.cd_remaining_ > 0; 
-
+         supply += u_iter.second.type_.supplyRequired();
          count_of_each_phase_.at(u_iter.second.phase_)++;
 
 
@@ -676,6 +677,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     stock_ground_fodder_ = ground_fodder;
     stock_air_fodder_ = air_fodder;
     stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
+    total_supply_ = supply;
     max_range_ = range;
     max_cooldown_ = max_cooldown;
     worker_count_ = worker_count;

@@ -40,7 +40,7 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc = (friend_loc_around_target + friend_loc_around_me);
 
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
-            bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
+            bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc);
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             //bool is_on_doodad = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u) && CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->elevation_ % 2 != 0 && !u->isFlying();
 
@@ -75,7 +75,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
             task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
-        if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && scoutScript(u))
+        if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && !u->isBlind() && scoutScript(u))
             task_assigned = true;
         if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed()) ) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
             task_assigned = true;
