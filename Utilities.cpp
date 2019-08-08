@@ -107,7 +107,7 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
 // Checks if a stored unit is a combat unit.
 bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
 {
-    if (!unit.valid_pos_)
+    if (!unit.valid_pos_ || unit.type_ == UnitTypes::Spell_Scanner_Sweep)
     {
         return false;
     }
