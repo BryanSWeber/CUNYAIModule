@@ -148,7 +148,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : HighPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -161,7 +161,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : ThreatPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0);
             if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(CUNYAIModule::getProperRange(t.second.type_, Broodwar->enemy()), CUNYAIModule::getProperRange(unit_)) && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -174,7 +174,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : MediumPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -186,7 +186,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0);
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && melee && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
