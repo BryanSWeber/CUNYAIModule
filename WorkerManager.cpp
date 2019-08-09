@@ -121,8 +121,8 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
-
-        if (mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_)) { //occupied natural -> resource is close to a base
+        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
+        if (mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied) { //occupied natural -> resource is close to a base
             low_drone = r.second.number_of_miners_;
             found_low_occupied_mine = true;
         }
@@ -140,8 +140,8 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
-
-        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone &&  CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_)) {
+        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
+        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone &&  CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied) {
             long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
             if (r.second.occupied_resource_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r.second);

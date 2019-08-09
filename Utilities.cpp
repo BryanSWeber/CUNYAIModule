@@ -2256,6 +2256,8 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
 
     e_neighborhood.updateUnitInventorySummary();
     friend_loc.updateUnitInventorySummary();
+    
+    if (e_neighborhood.stock_ground_fodder_ > 0) return false; // don't build where they have buildings.
 
     if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood) && e_closest) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
