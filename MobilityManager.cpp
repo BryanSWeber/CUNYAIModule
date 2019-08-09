@@ -38,13 +38,23 @@ bool Mobility::BWEM_Movement(const bool &in_or_out) {
     Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (in_or_out) {
-        if (u_type_.airWeapon() != WeaponTypes::None) {
+        if (u_type_.airWeapon() == WeaponTypes::None) { // if you can't help air go ground.
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+            target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
+        }
+        else if (u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
         }
-        else {
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
-            target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
+        else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
+            if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+                target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
+            }
+            else {
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+                target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
+            }
         }
     }
     else { // Otherwise, return to home.
