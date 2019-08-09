@@ -146,7 +146,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     LowPriority.updateUnitInventorySummary();
 
     // Dive some modest distance if they're critical to kill.
-    double temp_max_divable = CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
+    double temp_max_divable = max( CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving) , static_cast<double>(CUNYAIModule::getProperRange(unit_)) );
     if (!target) { // repeated calls should be functionalized.
         for (auto t : DiveableTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
@@ -172,7 +172,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = CUNYAIModule::getChargableDistance(unit_)  / static_cast<double>(limit_units_diving) + CUNYAIModule::getProperRange(unit_);
+    temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
     if (!target) { // repeated calls should be functionalized.
         for (auto t : SecondOrderThreats.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
@@ -247,17 +247,32 @@ bool Mobility::Scatter_Logic()
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
 
-    Bulletset bullets = Broodwar->getBullets();
-    Position storm_pos = Positions::Origin;
-    double current_distance = 999999;
-    for (auto s : bullets) {
-        if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
-            storm_pos = s->getPosition();
-            current_distance = s->getPosition().getDistance(pos_);
+    Position problem_pos = Positions::Origin;
+
+    if (unit_->isUnderStorm()) {
+        double current_distance = 999999;
+        for (auto s : Broodwar->getBullets()) {
+            if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
+                problem_pos = s->getPosition();
+                current_distance = s->getPosition().getDistance(pos_);
+            }
+        }
+    }
+    if (unit_->isUnderDisruptionWeb()) {
+        double current_distance = 999999;
+        for (auto s : Broodwar->getAllUnits()) {
+            if (s->getType() == UnitTypes::Spell_Disruption_Web  && s->getPosition().getDistance(pos_) < current_distance) {
+                problem_pos = s->getPosition();
+                current_distance = s->getPosition().getDistance(pos_);
+            }
         }
     }
 
-    approach(storm_pos);
+    if (unit_->isIrradiated()) {
+        problem_pos = unit_->getClosestUnit()->getPosition();
+    }
+
+    approach(problem_pos);
     if (unit_->move(pos_ - attract_vector_))
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     else

@@ -2,6 +2,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Research_Inventory.h"
+#include "Source\PlayerModelManager.h"
 #include "Source\Unit_Inventory.h"
 #include <set>
 
@@ -64,7 +65,14 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto u : unit_types) {
-        if (u.isBuilding() && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u != UnitTypes::Zerg_Hatchery) 
+        bool permits_new_unit = false;
+        for (auto possible_new_unit : u.buildsWhat()) { // a building allows new units if it produces something and is not a duplicate.
+            if (CUNYAIModule::Count_Units(possible_new_unit, player_model_to_compare.units_) == 0 && CUNYAIModule::Count_Units(u, player_model_to_compare.units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
+                permits_new_unit = true;
+                break;
+            }
+        }
+        if ( (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty() || permits_new_unit) && u != UnitTypes::Zerg_Hatchery)
             tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_), 1 - CUNYAIModule::Count_Units(u, player_model_to_compare.casualties_)); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
@@ -78,7 +86,8 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto &i : tech_buildings_) {// for every unit type they have.
-        i.second = max(CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_), i.second);
+        i.second = max(CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_), i.second); // we update the count of them that we hve seen so far.
+        //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(Stored_Unit(i.first));
     }
 
 }

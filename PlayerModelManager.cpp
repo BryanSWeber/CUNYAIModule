@@ -257,7 +257,9 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
     estimated_unseen_flyers_ += value_possible_fliers_per_frame_;
     estimated_unseen_ground_ += value_possible_per_frame_ - value_possible_fliers_per_frame_;
 
-    estimated_unseen_army_ = min(estimated_unseen_army_, max(units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_), 0.0)); //Their unseen army can't be bigger than their leftovers, or less than 0.
+    estimated_unseen_army_ = max(min(estimated_unseen_army_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
+
+    //estimated_unseen_army_ = max(estimated_unseen_army_, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
 }
 
 void Player_Model::evaluatePotentialTechExpenditures() {
@@ -268,8 +270,8 @@ void Player_Model::evaluatePotentialTechExpenditures() {
     double value_possible_per_frame_ = 0;
     double value_possible_per_unit_ = 0;
 
-    //collect how much of the enemy you can see.
-    for (auto i : units_.unit_map_) {
+    //Estimate the tech benifit from research buildings.
+    for (auto i : researches_.tech_buildings_) {// includes imputed buildings.
 
         double value_holder_up_ = 0;
         int time_since_last_benificiary_seen_up_ = INT_MAX;
@@ -282,27 +284,28 @@ void Player_Model::evaluatePotentialTechExpenditures() {
         int time_since_last_benificiary_seen_tech_ = INT_MAX;
         int oldest_tech_class_ = 0;
 
-        int max_duration = 0;
+        double value_holder_building_ = 0;
+        int slowest_building_class_ = 0;
+
         // These are possible upgrade expenditures.
-        for (auto p : i.second.type_.upgradesWhat()) {
+        for (auto p : i.first.upgradesWhat()) {
             if (opponentCouldBeUpgrading(p)) { // can they upgrade?
-                for (auto j : units_.unit_map_) { 
+                for (auto j : units_.unit_map_) {
                     if (j.second.type_.upgrades().contains(p)) { // is there a benifitiary in their inventory?  upgrade does not depend on time last seen but time last dependent unit was seen. 
                         benificiary_exists_up_ = true;
                         time_since_last_benificiary_seen_up_ = min(time_since_last_benificiary_seen_up_, j.second.time_since_last_seen_);
 
                         int level = 0;
                         if (CUNYAIModule::enemy_player_model.researches_.upgrades_.find(p) != CUNYAIModule::enemy_player_model.researches_.upgrades_.end()) level = CUNYAIModule::enemy_player_model.researches_.upgrades_[p];
-                        value_holder_up_ = max( value_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor())) + 1.25 * (p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()) );
-                        oldest_up_class = min( max(oldest_up_class, time_since_last_benificiary_seen_up_ * benificiary_exists_up_), p.upgradeTime() + level * p.upgradeTimeFactor() ); // we want the youngest benificiary from the oldest class of units, and they couldn't be working on the upgrade longer than it takes to complete.
-                        max_duration = max(p.upgradeTime() + level * p.upgradeTimeFactor(), max_duration);
+                        value_holder_up_ = max(value_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor())) + 1.25 * (p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
+                        oldest_up_class = min(max(oldest_up_class, time_since_last_benificiary_seen_up_ * benificiary_exists_up_), p.upgradeTime() + level * p.upgradeTimeFactor()); // we want the youngest benificiary from the oldest class of units, and they couldn't be working on the upgrade longer than it takes to complete.
                     };
                 }
             }
         }
 
         // These are possible tech expenditures.
-        for (auto p : i.second.type_.researchesWhat()) {
+        for (auto p : i.first.researchesWhat()) {
             if (opponentCouldBeTeching(p)) {
                 for (auto j : units_.unit_map_) {
                     for (auto flagged_unit_type : p.whatUses()) {
@@ -310,20 +313,33 @@ void Player_Model::evaluatePotentialTechExpenditures() {
                             benificiary_exists_tech_ = true;
                             time_since_last_benificiary_seen_tech_ = min(time_since_last_benificiary_seen_tech_, j.second.time_since_last_seen_);
 
-                            value_holder_tech_ = max(value_holder_tech_, p.mineralPrice() / static_cast<double>(p.researchTime()) + 1.25 * ( p.gasPrice() / static_cast<double>( p.researchTime() ) ) );
+                            value_holder_tech_ = max(value_holder_tech_, p.mineralPrice() / static_cast<double>(p.researchTime()) + 1.25 * (p.gasPrice() / static_cast<double>(p.researchTime())));
                             oldest_tech_class_ = min(max(oldest_tech_class_, time_since_last_benificiary_seen_tech_ * benificiary_exists_tech_), p.researchTime()); // we want the youngest benificiary from the oldest class of units, and they couldn't be working on the research longer than it takes to complete.
-                            max_duration = max(p.researchTime(), max_duration);
-                        }; 
+                        };
                     }
                 }
+            }
+        }
+
+        for (auto p : UnitTypes::allUnitTypes() ) {
+            bool permits_new_unit = false;
+            for (auto possible_new_unit : p.buildsWhat()) { // a building allows new units if it produces something and is not a duplicate.
+                if (CUNYAIModule::Count_Units(possible_new_unit, units_) == 0 && CUNYAIModule::Count_Units(p, units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
+                    permits_new_unit = true;
+                    break;
+                }
+            }
+            if (opponentHasRequirements(p) && !CUNYAIModule::IsFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.tech_buildings_[p]) {
+                value_holder_building_ = max(value_holder_building_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
+                slowest_building_class_ = max(p.buildTime(), slowest_building_class_); // is the priciest unit a flier?
             }
         }
 
         if (!benificiary_exists_tech_) oldest_tech_class_ = 0; // if they've never been seen, they're probably not getting made.
         if (!benificiary_exists_up_) oldest_up_class = 0;
 
-        value_possible_per_frame_ += max(value_holder_up_, value_holder_tech_);
-        value_possible_per_unit_ += max(value_holder_up_ * oldest_up_class , value_holder_tech_ * oldest_tech_class_);
+        value_possible_per_frame_ += value_holder_up_ + value_holder_tech_ + value_holder_building_;
+        value_possible_per_unit_ += value_holder_up_ * oldest_up_class + value_holder_tech_ * oldest_tech_class_ + value_holder_building_ * slowest_building_class_;
     }
 
     estimated_unseen_tech_ = value_possible_per_unit_;

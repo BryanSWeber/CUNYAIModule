@@ -197,9 +197,10 @@ bool CobbDouglas::evalArmyPossible()
 
 bool CobbDouglas::evalEconPossible()
 {
-    bool not_enough_miners = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3);
+    bool enough_mines_exist = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= Broodwar->getMinerals().size() * 2 + Broodwar->getGeysers().size() * 3 + 1;
+    bool not_enough_miners_for_mines = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3);
     bool not_enough_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.estimated_workers_ + 12);
-    return (not_enough_miners || not_enough_workers) && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+    return enough_mines_exist * (not_enough_miners_for_mines || not_enough_workers) && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
 
