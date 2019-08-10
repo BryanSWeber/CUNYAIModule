@@ -602,6 +602,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int ground_fodder = 0;
      int air_fodder = 0;
      int resource_depots = 0;
+     int psion_stock = 0;
      int future_fap_stock = 0;
      int moving_average_fap_stock = 0;
      int stock_full_health = 0;
@@ -639,6 +640,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
                  shoots_down += down_gun * unit_value_for_all_of_type;
                  shoots_both += (up_gun && down_gun) * unit_value_for_all_of_type;
                  cloaker_count += cloaker * count_of_unit_type;
+                 psion_stock += (u_iter.second.type_.maxEnergy() > 0 * unit_value_for_all_of_type);
 
                  max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
                  range = (range_temp > range) * range_temp + !(range_temp > range) * range;
@@ -677,6 +679,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
     stock_ground_fodder_ = ground_fodder;
     stock_air_fodder_ = air_fodder;
     stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
+    stock_psion_ = psion_stock;
     total_supply_ = supply;
     max_range_ = range;
     max_cooldown_ = max_cooldown;

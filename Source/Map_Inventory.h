@@ -38,7 +38,7 @@ struct Map_Inventory {
     int map_y;
 
     vector<Position> start_positions_;
-    vector<TilePosition> expo_positions_;
+    vector<TilePosition> expo_tilepositions_;
     vector<TilePosition> expo_positions_complete_;
     Position enemy_base_ground_;
     Position enemy_base_air_;

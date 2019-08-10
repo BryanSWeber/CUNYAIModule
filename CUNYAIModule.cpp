@@ -431,7 +431,7 @@ void CUNYAIModule::onFrame()
     // Display the game status indicators at the top of the screen
     if constexpr(DRAWING_MODE) {
 
-        //bwemMap.Draw(BWAPI::BroodwarPtr);
+        bwemMap.Draw(BWAPI::BroodwarPtr);
         BWEB::Map::draw();
 
         Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );

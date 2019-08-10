@@ -162,6 +162,7 @@ struct Unit_Inventory {
     int stock_air_fodder_;
     int stock_total_;
     int stock_full_health_;
+    int stock_psion_;
     int total_supply_;
     int max_range_;
     int max_cooldown_;

@@ -176,6 +176,7 @@ public:
       static bool Can_Fight( Stored_Unit unit, Stored_Unit enemy);
       static bool Can_Fight( Stored_Unit unit, Unit enemy );
       static bool canContributeToFight(const UnitType & ut, const Unit_Inventory enemy);
+      static bool isInDanger(const UnitType & ut, const Unit_Inventory enemy);
       // Can_Fight_Type does NOT check cloaked status.
       static bool Can_Fight_Type( UnitType unittype, UnitType enemytype);
 
@@ -310,8 +311,9 @@ public:
       static double bindBetween(double x, double lower_bound, double upper_bound);
       // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
       static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
+      static bool checkMiniFAPForecast(Unit_Inventory & ui, Unit_Inventory & ei);
       // Tells if we will be dealing more damage than we recieve, proportionally or total.
-      static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool local = true);
+      static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
       // Tells the size of the losses after a fight. The fodder setting also includes the results of destroying the units that cannot defend themselves, such as a nexus.
       static int getFAPDamageForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
       // Tells the size of the surviving forces after a fight. The fodder setting also includes the results of surviving units that cannot defend themselves, such as a nexus.

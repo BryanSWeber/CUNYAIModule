@@ -2,6 +2,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\WorkerManager.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
 
 using namespace BWAPI;
@@ -95,7 +96,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
     old_mineral_patch = miner.locked_mine_;
     bool assignment_complete = false;
     miner.stopMine();// will reassign later.
-
+    Mobility drone_pathing_options = Mobility(unit);
     int low_drone = 0;
     int max_drone = 3;
     bool mine_minerals = mine.isMineralField();
@@ -115,14 +116,17 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
     // scrape over every resource to determine the lowest number of miners.
     for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
         bool mine_is_right_type = false;
+        bool safe = drone_pathing_options.checkSafePath(r.second.pos_);
+
         if (mine_minerals) {
             mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
+
         bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
-        if (mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied) { //occupied natural -> resource is close to a base
+        if (mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied && safe) { //occupied natural -> resource is close to a base
             low_drone = r.second.number_of_miners_;
             found_low_occupied_mine = true;
         }
@@ -134,14 +138,16 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 
     for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
         bool mine_is_right_type = false;
+        bool safe = drone_pathing_options.checkSafePath(r.second.pos_);
+        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
+
         if (mine_minerals) {
             mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
         else {
             mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
         }
-        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
-        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone &&  CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied) {
+        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone &&  CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied && safe) {
             long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
             if (r.second.occupied_resource_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
                 available_fields.addStored_Resource(r.second);

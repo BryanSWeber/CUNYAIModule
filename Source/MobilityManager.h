@@ -39,6 +39,8 @@ public:
     // causes a unit to move towards a position.
     Position approach(const Position & p);
 
+    bool checkSafePath(const Position & finish);
+
     bool adjust_lurker_burrow(const Position position_of_target);
 
     // gives a vector that has the direction towards center on (map). returns a direction.

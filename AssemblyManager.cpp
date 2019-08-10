@@ -3,6 +3,7 @@
 #include "Source\Map_Inventory.h"
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
+#include "Source\MobilityManager.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\PlayerModelManager.h" // needed for cartidges.
 #include "Source\BWEB\BWEB.h"
@@ -207,10 +208,11 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
         int worker_areaID = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
 
         bool safe_worker = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(worker_areaID).unit_map_.empty();
+        Mobility drone_pathing_options = Mobility(unit);
 
         // Let's build at the safest close canidate position.
         if (safe_worker) {
-            for (auto &p : inv.expo_positions_) {
+            for (auto &p : inv.expo_tilepositions_) {
                 int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
                 bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
@@ -220,7 +222,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 //    occupied_expo = true;
 
 
-                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
+                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p));
 
                 if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available) {
                     expo_score = score_temp;
@@ -308,7 +310,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
 
     //Consider an organized build plan.
-    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
+    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
@@ -859,12 +861,29 @@ bool AssemblyManager::assignUnitAssembly()
     Unit_Inventory transfer_drone_larva;
     Unit_Inventory combat_creators;
 
+    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+
+    alarming_enemy_ground.updateUnitInventorySummary();
+    alarming_enemy_air.updateUnitInventorySummary();
+
+    bool they_are_moving_out = alarming_enemy_ground.stock_ground_fodder_ == 0;
+    int distance_to_alarming_ground = INT_MAX;
+    int distance_to_alarming_air = INT_MAX;
+
+    for (auto hatch : production_facility_bank_.unit_map_) {
+        distance_to_alarming_ground = min(CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
+        distance_to_alarming_air = min( static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
+    }
+
     for (auto hatch : production_facility_bank_.unit_map_) {
         auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, hatch.first->getPosition());
         auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, hatch.first->getPosition());
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
-        if (!CUNYAIModule::checkSuperiorFAPForecast(u_loc, e_loc)) {
+        bool this_is_the_closest_base = (distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_)) || distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+
+        if ( !CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc) || (they_are_moving_out && this_is_the_closest_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground)) ) {
             CUNYAIModule::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
             //CUNYAIModule::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
 

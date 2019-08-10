@@ -1026,7 +1026,7 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
 
 void Map_Inventory::getExpoPositions() {
 
-    expo_positions_.clear();
+    expo_tilepositions_.clear();
 
     std::vector<TilePosition> expo_positions;
     for (auto & area : BWEM::Map::Instance().Areas()){
@@ -1034,13 +1034,13 @@ void Map_Inventory::getExpoPositions() {
             expo_positions.push_back(base.Location());
         }
     }
-    expo_positions_ = expo_positions;
+    expo_tilepositions_ = expo_positions;
 
 
     //From SO, quick conversion into set.
     set<TilePosition> s;
-    int size = expo_positions_.size();
-    for (int i = 0; i < size; ++i) s.insert(expo_positions_[i]);
+    int size = expo_tilepositions_.size();
+    for (int i = 0; i < size; ++i) s.insert(expo_tilepositions_[i]);
     expo_positions_complete_.assign(s.begin(), s.end());
 }
 
@@ -1122,13 +1122,13 @@ void Map_Inventory::updateBasePositions() {
             }
             suspected_enemy_base = start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
         }
-        else if (!expo_positions_.empty() && expo_positions_[0] && expo_positions_[0] != TilePositions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
+        else if (!expo_tilepositions_.empty() && expo_tilepositions_[0] && expo_tilepositions_[0] != TilePositions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
             int attempts = 0;
-            while (attempts < static_cast<int>(expo_positions_.size()) && !Broodwar->isVisible(expo_positions_[0])) {
-                std::rotate(expo_positions_.begin(), expo_positions_.begin() + 1, expo_positions_.end());
+            while (attempts < static_cast<int>(expo_tilepositions_.size()) && !Broodwar->isVisible(expo_tilepositions_[0])) {
+                std::rotate(expo_tilepositions_.begin(), expo_tilepositions_.begin() + 1, expo_tilepositions_.end());
                 attempts++;
             }
-            suspected_enemy_base = Position(expo_positions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+            suspected_enemy_base = Position(expo_tilepositions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
         }
 
         if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ground_ && suspected_enemy_base != Positions::Origin) { // if it's there.

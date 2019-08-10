@@ -642,6 +642,15 @@ bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory
     return shooting_up || shooting_down || shoots_without_weapons;
 }
 
+// Returns True if UnitType UT is in danger from anything in Unit_Inventory ENEMY. Excludes Psions; 
+bool CUNYAIModule::isInDanger(const UnitType &ut, const Unit_Inventory enemy) {
+    bool shooting_up = ut.isFlyer() && enemy.stock_shoots_up_ > 0;
+    bool shooting_down = !ut.isFlyer() && enemy.stock_shoots_down_ > 0;
+    bool shoots_without_weapons = enemy.stock_psion_ > 0;
+
+    return shooting_up || shooting_down || shoots_without_weapons;
+}
+
 bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
 {
     bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
@@ -2324,7 +2333,19 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 //        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 //}
 
-bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool local) {
+bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei) {
+    FAP::FastAPproximation<Stored_Unit*> MiniFap; // integrating FAP into combat with a produrbation.
+    ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
+    ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
+    MiniFap.simulate(FAP_SIM_DURATION);
+    ui.pullFromFAP(*MiniFap.getState().first);
+    ei.pullFromFAP(*MiniFap.getState().second);
+    ui.updateUnitInventorySummary();
+    ei.updateUnitInventorySummary();
+    return checkSuperiorFAPForecast(ui, ei);
+}
+
+bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
     int total_surviving_ui_down = 0;
