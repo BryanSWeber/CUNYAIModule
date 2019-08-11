@@ -200,18 +200,18 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
+                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
             }
 
             value_possible_per_frame_ += value_holder_;
-            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            value_possible_fliers_per_frame_ += value_holder_flyer_;
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) ); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
+                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
             }
             value_possible_per_frame_ += value_holder_;
@@ -233,18 +233,18 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
+                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
             }
 
             value_possible_per_frame_ += value_holder_;
-            //value_possible_ += value_holder_ * i.second.time_since_last_seen_;
+            value_possible_fliers_per_frame_ += value_holder_flyer_;
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = value_holder_ * p.isFlyer(); // is the priciest unit a flier?
+                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
             }
             value_possible_per_frame_ += value_holder_;
@@ -416,7 +416,8 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
     for (auto u : ut.requiredUnits()) {
-        if (u.first != UnitTypes::Zerg_Larva && !u.first.isResourceDepot() && CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) < u.second) return false;
+        bool has_necessity = (CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) + CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.imputedUnits_) < u.second);
+        if (u.first != UnitTypes::Zerg_Larva && !u.first.isResourceDepot() && has_necessity) return false;
     }
     return true;
 }
