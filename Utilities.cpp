@@ -2373,8 +2373,8 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
     }
 
     // Calculate if the surviving side can destroy the fodder:
-    if (total_surviving_ei_up > 0) total_dying_ui += ui.stock_air_fodder_;
-    if (total_surviving_ei_down > 0) total_dying_ui += ui.stock_ground_fodder_;
+    //if (total_surviving_ei_up > 0) total_dying_ui += ui.stock_air_fodder_;
+    //if (total_surviving_ei_down > 0) total_dying_ui += ui.stock_ground_fodder_;
     if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
     if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
 
