@@ -44,13 +44,11 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc.updateUnitInventorySummary();
 
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
-            bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc);
+            bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) ;
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
-            //bool is_on_doodad = CUNYAIModule::friendly_player_model.units_.getStoredUnit(u) && CUNYAIModule::friendly_player_model.units_.getStoredUnit(u)->elevation_ % 2 != 0 && !u->isFlying();
+            bool worker_may_fight = (enemy_loc.worker_count_ > friend_loc.worker_count_ || !fight_looks_good) && !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
 
-            bool worker_may_fight = (friend_loc.stock_ground_fodder_ > 0 && CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, u->getPosition(), 400)) && !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
-
-            if (!u->getType().isWorker() || (u->getType().isWorker() && worker_may_fight)) { // workers don't need to fight all the time.
+            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && worker_may_fight))) { // workers don't need to fight all the time.
                 if (fight_looks_good && prepping_attack) {
                     return mobility.surround(e_closest->pos_);
                 }
