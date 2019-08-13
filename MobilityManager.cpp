@@ -176,7 +176,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             dist_to_enemy = unit_->getDistance(t.second.pos_);
             int altitude = 2 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
             bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude > 0.5 * CUNYAIModule::getProperRange(unit_);
-            if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(CUNYAIModule::getProperRange(t.second.type_, Broodwar->enemy()), CUNYAIModule::getProperRange(unit_)) && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
+            if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(ei.max_range_, CUNYAIModule::getProperRange(unit_)) && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
