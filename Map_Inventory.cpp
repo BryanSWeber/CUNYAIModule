@@ -1024,6 +1024,22 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
     return strongest_base;
 }
 
+Position Map_Inventory::getBaseNearest() {
+    int plength = 0;
+    int shortest_path = INT_MAX;
+    Position closest_base = Positions::Origin;
+    for (auto expo : expo_positions_complete_) {
+        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
+        ui_mini.updateUnitInventorySummary();
+        auto cpp = BWEM::Map::Instance().GetPath(Position(expo), enemy_base_ground_, &plength);
+        if (plength && plength < shortest_path && ui_mini.stock_ground_fodder_ > 0) {
+            shortest_path = plength;
+            closest_base = Position(expo);
+        }
+    }
+    return closest_base;
+}
+
 void Map_Inventory::getExpoPositions() {
 
     expo_tilepositions_.clear();
@@ -1155,13 +1171,13 @@ void Map_Inventory::updateBasePositions() {
 
     }
 
-    if (frames_since_front_line_base > 24 * 10) {
+    if (frames_since_front_line_base > 24 * 5) {
 
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
         if (CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ > 0) {
-            suspected_friendly_base = getBaseWithMostCausalties(true, true);
+            suspected_friendly_base = getBaseNearest();
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base !=  Positions::Origin) {

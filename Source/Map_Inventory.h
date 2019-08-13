@@ -134,6 +134,8 @@ struct Map_Inventory {
     // Returns the Position of the base with the most surviving units. Friendly is true (by default) to checking -yourself- for the strongest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
     Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;
 
+    Position getBaseNearest();
+
 
     // updates the next target expo.
     void Map_Inventory::getExpoPositions();
