@@ -464,7 +464,7 @@ void GeneticHistory::initializeHistory() {
     //Otherwise, use random build order and values from above
     if constexpr (RANDOM_PLAN) {
 
-        gas_proportion_out = dis(gen) * 0.6;
+        gas_proportion_out = dis(gen);
         supply_ratio_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
                                     // the values below will be normalized to 1.
         a_army_out = dis(gen);
