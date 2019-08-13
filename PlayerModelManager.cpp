@@ -485,8 +485,8 @@ void Player_Model::setLockedOpeningValues() {
      spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
      spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
 
-     CUNYAIModule::delta = 0.00;
-     CUNYAIModule::gamma = 0.55;
+     CUNYAIModule::gas_proportion = 0.00;
+     CUNYAIModule::supply_ratio = 0.55;
      CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
 
     //This no longer works after declaring the inventories as const.

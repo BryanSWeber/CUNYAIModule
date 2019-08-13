@@ -17,7 +17,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-// Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { delta_out, gamma_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
+// Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { gas_proportion_out, supply_ratio_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
 void GeneticHistory::initializeHistory() {
 
     rename(".\\bwapi-data\\read\\history.txt", ".\\bwapi-data\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
@@ -28,8 +28,8 @@ void GeneticHistory::initializeHistory() {
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    double delta_out = dis(gen) * 0.6;
-    double gamma_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
+    double gas_proportion_out = dis(gen);
+    double supply_ratio_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis(gen);
     double a_econ_out = dis(gen);
@@ -91,8 +91,8 @@ void GeneticHistory::initializeHistory() {
 
     string entry; // entered string from stream
     //std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>;  // all stats for the game.
-    //vector<double> delta_total;
-    //vector<double> gamma_total;
+    //vector<double> gas_proportion_total;
+    //vector<double> supply_ratio_total;
     //vector<double> a_army_total;
     //vector<double> a_econ_total;
     //vector<double> a_tech_total;
@@ -106,14 +106,14 @@ void GeneticHistory::initializeHistory() {
     //vector<string> map_name_total;
     //vector<string> build_order_total;
 
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> a_game; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_1; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_2; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> a_game; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_1; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_2; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data; //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_well_matched;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_partial_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_well_matched;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_partial_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
 
     vector<double> r_win;
@@ -138,7 +138,7 @@ void GeneticHistory::initializeHistory() {
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
         output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
-        output << "delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
+        output << "gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
         output.close();
     }
 
@@ -154,8 +154,8 @@ void GeneticHistory::initializeHistory() {
         csv_length--; // that means the remaining csv is shorter by 1 line.
         for (int j = 0; j < csv_length; ++j) {
             // The ugly tuple.
-            double delta_total;
-            double gamma_total;
+            double gas_proportion_total;
+            double supply_ratio_total;
             double a_army_total;
             double a_econ_total;
             double a_tech_total;
@@ -173,10 +173,10 @@ void GeneticHistory::initializeHistory() {
             string build_order_total;
 
             getline(input, entry, ',');
-            delta_total=stod(entry);
+            gas_proportion_total=stod(entry);
 
             getline(input, entry, ',');
-            gamma_total=stod(entry);
+            supply_ratio_total=stod(entry);
 
             getline(input, entry, ',');
             a_army_total=stod(entry);
@@ -220,7 +220,7 @@ void GeneticHistory::initializeHistory() {
 
             getline(input, entry); //diff. End of line char, not ','
 
-            a_game = std::make_tuple(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
+            a_game = std::make_tuple(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
             game_data.push_back(a_game);
         } // closure for each row
     input.close();
@@ -231,7 +231,7 @@ void GeneticHistory::initializeHistory() {
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
-                                           //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+                                           //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
 
         if (std::get<11>(game_data[j]) == e_name) {
@@ -269,7 +269,7 @@ void GeneticHistory::initializeHistory() {
 
     // start from most recent and count our way back from there.
     for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
-        //(delta_total, gamma_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+        //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
         bool conditions_for_inclusion = true;
         int counter = 0;
@@ -340,8 +340,8 @@ void GeneticHistory::initializeHistory() {
                 parent_2 = parent_1;
             }
 
-            delta_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
-            gamma_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
+            gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
+            supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
             a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
             a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
@@ -379,8 +379,8 @@ void GeneticHistory::initializeHistory() {
                 parent_2 = parent_1;
             }
 
-            delta_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
-            gamma_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
+            gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
+            supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
             a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
             a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
@@ -409,8 +409,8 @@ void GeneticHistory::initializeHistory() {
     // Chance of mutation.
     if (dis(gen) > 0.95 || selected_win_count < 10) {
         // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
-        delta_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(delta_out + mutation, 0., 1.) : delta_out;
-        gamma_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(gamma_out + mutation, 0., 1.) : gamma_out;
+        gas_proportion_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
+        supply_ratio_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
         a_army_out_mutate_ = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_out_mutate_ = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
         a_tech_out_mutate_ = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
@@ -419,8 +419,8 @@ void GeneticHistory::initializeHistory() {
     }
     else {
 
-        delta_out_mutate_ = delta_out;
-        gamma_out_mutate_ = gamma_out;
+        gas_proportion_out_mutate_ = gas_proportion_out;
+        supply_ratio_out_mutate_ = supply_ratio_out;
         a_army_out_mutate_ = a_army_out;
         a_econ_out_mutate_ = a_econ_out;
         a_tech_out_mutate_ = a_tech_out;
@@ -442,7 +442,7 @@ void GeneticHistory::initializeHistory() {
     build_order_ = build_order_out;
 
     //if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
-    //    && delta_out_mutate_ < 0.55 && delta_out_mutate_ > 0.40 && gamma_out_mutate_ < 0.55 && gamma_out_mutate_ > 0.20) {
+    //    && gas_proportion_out_mutate_ < 0.55 && gas_proportion_out_mutate_ > 0.40 && supply_ratio_out_mutate_ < 0.55 && supply_ratio_out_mutate_ > 0.20) {
     //    break; // if we have an interior solution, let's use it, if not, we try again.
     //}
     //}
@@ -450,8 +450,8 @@ void GeneticHistory::initializeHistory() {
     // Overwrite whatever you previously wanted if we're using "test mode".
     if constexpr (TEST_MODE) {
         // Values altered
-        delta_out_mutate_ = 0.3021355;
-        gamma_out_mutate_ = 0.35;
+        gas_proportion_out_mutate_ = 0.3021355;
+        supply_ratio_out_mutate_ = 0.35;
         a_army_out_mutate_ = 0.511545;
         a_econ_out_mutate_ = 0.488455;
         a_tech_out_mutate_ = 0.52895;
@@ -464,8 +464,8 @@ void GeneticHistory::initializeHistory() {
     //Otherwise, use random build order and values from above
     if constexpr (RANDOM_PLAN) {
 
-        delta_out = dis(gen) * 0.6;
-        gamma_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
+        gas_proportion_out = dis(gen) * 0.6;
+        supply_ratio_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
                                     // the values below will be normalized to 1.
         a_army_out = dis(gen);
         a_econ_out = dis(gen);
@@ -479,8 +479,8 @@ void GeneticHistory::initializeHistory() {
 
         build_order_out = build_order_list[build_order_rand];
 
-        delta_out_mutate_ = delta_out;
-        gamma_out_mutate_ = gamma_out;
+        gas_proportion_out_mutate_ = gas_proportion_out;
+        supply_ratio_out_mutate_ = supply_ratio_out;
         a_army_out_mutate_ = a_army_out;
         a_econ_out_mutate_ = 1 - a_army_out;
         a_tech_out_mutate_ = a_tech_out;

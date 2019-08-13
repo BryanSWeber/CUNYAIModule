@@ -10,8 +10,8 @@ struct GeneticHistory {
 
     void initializeHistory();
 
-    double delta_out_mutate_;
-    double gamma_out_mutate_;
+    double gas_proportion_out_mutate_;
+    double supply_ratio_out_mutate_;
     double a_army_out_mutate_;
     double a_vis_out_mutate_;
     double a_econ_out_mutate_; 

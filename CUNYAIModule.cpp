@@ -35,14 +35,14 @@ namespace { auto & bwemMap = BWEM::Map::Instance(); }
     bool CUNYAIModule::supply_starved = false;
     bool CUNYAIModule::gas_starved = false;
     bool CUNYAIModule::larva_starved = false;
-    double gamma = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
-    double delta = 0; // for gas levels. Gas is critical for spending but will be matched with supply.
+    double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
+    double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
     double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
     double CUNYAIModule::alpha_army_original = 0;
     double CUNYAIModule::alpha_tech_original = 0;
     double CUNYAIModule::alpha_econ_original = 0;
-    double CUNYAIModule::gamma; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
-    double CUNYAIModule::delta; // for gas levels. Gas is critical for spending but will be matched with supply.
+    double CUNYAIModule::supply_ratio; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+    double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spending but will be matched with supply.
     Player_Model CUNYAIModule::friendly_player_model;
     Player_Model CUNYAIModule::enemy_player_model;
     Player_Model CUNYAIModule::neutral_player_model;
@@ -126,8 +126,8 @@ void CUNYAIModule::onStart()
     gene_history = GeneticHistory();
     gene_history.initializeHistory();
 
-    delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
-    gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
+    gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
+    supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
     //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
     alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
@@ -174,8 +174,8 @@ void CUNYAIModule::onEnd( bool isWinner )
     ofstream output; // Prints to brood war file while in the WRITE file.
     output.open( ".\\bwapi-data\\write\\history.txt", ios_base::app );
     string opponent_name = Broodwar->enemy()->getName().c_str();
-    output << delta << ","
-        << gamma << ','
+    output << gas_proportion << ","
+        << supply_ratio << ','
         << alpha_army_original << ','
         << alpha_econ_original << ','
         << alpha_tech_original << ','
@@ -298,8 +298,8 @@ void CUNYAIModule::onFrame()
         gene_history = GeneticHistory();
         gene_history.initializeHistory();
 
-        delta = gene_history.delta_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < delta;  Higher is more gas.
-        gamma = gene_history.gamma_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < gamma; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
+        gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
+        supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
                                                 //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
         friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
@@ -311,11 +311,11 @@ void CUNYAIModule::onFrame()
     }
 
     //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getGasRatio() < delta && workermanager.checkGasOutlet()) ||
+    gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) ||
         (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ Count_Units(UnitTypes::Zerg_Extractor) * 100, CUNYAIModule::techmanager.getMaxGas(), 100 })) || // you need gas to buy things.
         (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0);// you need gas for a required build order item.
 
-    supply_starved = (current_map_inventory.getLn_Supply_Ratio() < gamma  &&   //If your supply is disproportionately low, then you are supply starved, unless
+    supply_starved = (current_map_inventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
@@ -484,8 +484,8 @@ void CUNYAIModule::onFrame()
         Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
         Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
         Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-        Broodwar->drawTextScreen(250, 70, "Delta_gas: %4.2f", delta); //
-        Broodwar->drawTextScreen(250, 80, "Gamma_supply: %4.2f", gamma); //
+        Broodwar->drawTextScreen(250, 70, "gas_proportion_gas: %4.2f", gas_proportion); //
+        Broodwar->drawTextScreen(250, 80, "supply_ratio_supply: %4.2f", supply_ratio); //
         //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
         //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
         //Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);

@@ -26,19 +26,22 @@ bool CombatManager::combatScript(const Unit & u)
             int chargable_distance_self = CUNYAIModule::getChargableDistance(u);
             int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_);
             int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
-            int threat_radius = max({ chargable_distance_max + 32, CUNYAIModule::enemy_player_model.units_.max_range_ + 32 });
-            int search_radius = min(threat_radius, 400); // expanded radius because of units intermittently suiciding against static D.
+            int threat_radius = chargable_distance_max + CUNYAIModule::enemy_player_model.units_.max_range_;
+            int search_radius = threat_radius; // expanded radius because of units intermittently suiciding against static D.
 
             Unit_Inventory friend_loc;
             Unit_Inventory enemy_loc;
 
-            Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_, search_radius);
+            //Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_, search_radius);
             Unit_Inventory enemy_loc_around_self = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
-            enemy_loc = (enemy_loc_around_target + enemy_loc_around_self);
+            enemy_loc = (/*enemy_loc_around_target +*/ enemy_loc_around_self);
 
-            Unit_Inventory friend_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius);
+            //Unit_Inventory friend_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius);
             Unit_Inventory friend_loc_around_me = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
-            friend_loc = (friend_loc_around_target + friend_loc_around_me);
+            friend_loc = (/*friend_loc_around_target +*/ friend_loc_around_me);
+
+            enemy_loc.updateUnitInventorySummary();
+            friend_loc.updateUnitInventorySummary();
 
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc);
@@ -51,17 +54,17 @@ bool CombatManager::combatScript(const Unit & u)
                 if (fight_looks_good && prepping_attack) {
                     return mobility.surround(e_closest->pos_);
                 }
-                else if (fight_looks_good || friend_loc.stock_ground_fodder_ > 0) {
+                else if (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc))) {
                     return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                 }
-                else {
-                    if constexpr (DRAWING_MODE) {
-                        Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-                        Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-                    }
-                    return mobility.Retreat_Logic();
-                }
             }
+
+            if constexpr (DRAWING_MODE) {
+                Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+                Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
+            }
+            return mobility.Retreat_Logic();
+
         }
     }
     return false;

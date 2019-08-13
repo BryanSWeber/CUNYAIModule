@@ -101,11 +101,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     int max_dist = passed_distance; // copy, to be modified later.
-    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 150);
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
     
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
@@ -160,8 +160,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : DiveableTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            int altitude = 4 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude < 0.5 * CUNYAIModule::getProperRange(unit_);
+            int altitude = 2 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude > 0.5 * CUNYAIModule::getProperRange(unit_);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -174,8 +174,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : ThreateningTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            int altitude = 4 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude < 0.5 * CUNYAIModule::getProperRange(unit_);
+            int altitude = 2 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude > 0.5 * CUNYAIModule::getProperRange(unit_);
             if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(CUNYAIModule::getProperRange(t.second.type_, Broodwar->enemy()), CUNYAIModule::getProperRange(unit_)) && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -188,8 +188,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : SecondOrderThreats.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            int altitude = 4 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude < 0.5 * CUNYAIModule::getProperRange(unit_);
+            int altitude = 2 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude > 0.5 * CUNYAIModule::getProperRange(unit_);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -201,8 +201,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            int altitude = 4 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
-            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude < 0.5 * CUNYAIModule::getProperRange(unit_);
+            int altitude = 2 * BWEM::Map::Instance().GetMiniTile(WalkPosition(t.second.pos_)).Altitude();
+            bool diving_uphill = stored_unit_->areaID_ != t.second.areaID_ && (stored_unit_->elevation_ != t.second.elevation_ && stored_unit_->elevation_ % 2 != 0 && t.second.elevation_ % 2 != 0) && altitude > 0.5 * CUNYAIModule::getProperRange(unit_);
             if (dist_to_enemy < temp_max_divable && !diving_uphill && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_) && t.first &&  t.first->exists()) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
