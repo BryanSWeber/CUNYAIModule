@@ -452,7 +452,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
      int count = 0;
      int standard_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
      for (const auto &u : this->unit_map_) {
-         if (CUNYAIModule::IsFightingUnit(u.second) && u.second.valid_pos_) {
+         if (CUNYAIModule::isFightingUnit(u.second) && u.second.valid_pos_) {
              int remaining_stock = u.second.current_stock_value_;
                  while (remaining_stock > 0) {
                      x_sum += u.second.pos_.x;
@@ -543,7 +543,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
      Unit_Inventory return_inventory;
      for (const auto &u : this->unit_map_) {
-         if (u.second.areaID_ == areaID && CUNYAIModule::IsFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
+         if (u.second.areaID_ == areaID && CUNYAIModule::isFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
      }
      return return_inventory;
  }
@@ -626,7 +626,7 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
              int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
              int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
 
-             if (CUNYAIModule::IsFightingUnit(u_iter.second)) {
+             if (CUNYAIModule::isFightingUnit(u_iter.second)) {
 
                  bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
                  bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;

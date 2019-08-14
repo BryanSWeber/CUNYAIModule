@@ -100,7 +100,7 @@ void Player_Model::imputeUnits(const Unit &unit)
         }
     }
 
-    if (CUNYAIModule::IsFightingUnit(unit->getType())) {
+    if (CUNYAIModule::isFightingUnit(unit->getType())) {
         estimated_unseen_army_ -= eu.stock_value_;
         estimated_unseen_ground_ -= eu.stock_value_ * !eu.is_flying_;
         estimated_unseen_flyers_ -= eu.stock_value_ * eu.is_flying_;
@@ -198,7 +198,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         }
         else if (i.second.type_.producesLarva()) {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                     value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
@@ -209,7 +209,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) ); // assume the largest of these. (worst for me, risk averse).
                     value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
@@ -231,7 +231,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         }
         else if (i.second.type_.producesLarva()) {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                     value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
@@ -242,7 +242,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         }
         else {
             for (auto p : i.second.type_.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::IsFightingUnit(p)) {
+                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
                     value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                     value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
@@ -329,7 +329,7 @@ void Player_Model::evaluatePotentialTechExpenditures() {
                     break;
                 }
             }
-            if (opponentHasRequirements(p) && !CUNYAIModule::IsFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.tech_buildings_[p]) {
+            if (opponentHasRequirements(p) && !CUNYAIModule::isFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.tech_buildings_[p]) {
                 value_holder_building_ = max(value_holder_building_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                 slowest_building_class_ = max(p.buildTime(), slowest_building_class_); // is the priciest unit a flier?
             }

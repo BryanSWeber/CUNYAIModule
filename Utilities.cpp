@@ -72,7 +72,7 @@ bool CUNYAIModule::isRecentCombatant(const Stored_Unit &su) {
 }
 
 // Checks if a unit is a combat unit.
-bool CUNYAIModule::IsFightingUnit(const Unit &unit)
+bool CUNYAIModule::isFightingUnit(const Unit &unit)
 {
     if ( !unit )
     {
@@ -105,7 +105,7 @@ bool CUNYAIModule::IsFightingUnit(const Unit &unit)
 }
 
 // Checks if a stored unit is a combat unit.
-bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
+bool CUNYAIModule::isFightingUnit(const Stored_Unit &unit)
 {
     if (!unit.valid_pos_ || unit.type_ == UnitTypes::Spell_Scanner_Sweep)
     {
@@ -137,7 +137,7 @@ bool CUNYAIModule::IsFightingUnit(const Stored_Unit &unit)
 }
 
 // Checks if a stored unit is a combat unit.
-bool CUNYAIModule::IsFightingUnit(const UnitType &unittype)
+bool CUNYAIModule::isFightingUnit(const UnitType &unittype)
 {
 
     // no workers, overlords, or larva...
@@ -2357,18 +2357,18 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second);
-            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_up_;
-            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_down_;
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
+            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
+            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
         }
     }
     for (auto e : ei.unit_map_) {
         if (!e.first || !e.first->isBeingConstructed()) { // don't count constructing units.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-            total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-            total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_up_;
-            total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_down_;
+            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+            total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+            total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+            total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
         }
     }
 
@@ -2398,16 +2398,16 @@ int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inve
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second);
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_up_;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_down_;
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:
@@ -2432,16 +2432,16 @@ int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_I
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second); // remember, FAP ignores non-fighting units.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second);
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_up_;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::IsFightingUnit(u.second) * u.second.shoots_down_;
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::IsFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:

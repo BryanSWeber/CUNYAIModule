@@ -65,15 +65,8 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto u : unit_types) {
-        bool permits_new_unit = false;
-        for (auto possible_new_unit : u.buildsWhat()) { // a building allows new units if it produces something and is not a duplicate.
-            if (CUNYAIModule::Count_Units(possible_new_unit, player_model_to_compare.units_) == 0 && CUNYAIModule::Count_Units(u, player_model_to_compare.units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
-                permits_new_unit = true;
-                break;
-            }
-        }
-        if ( (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty() || permits_new_unit) && u != UnitTypes::Zerg_Hatchery)
-            tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_), 1 - CUNYAIModule::Count_Units(u, player_model_to_compare.casualties_)); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
+        if ( (u.isBuilding() || u.isAddon()) && !CUNYAIModule::isFightingUnit(u) && u != UnitTypes::Zerg_Creep_Colony && u != UnitTypes::Protoss_Pylon && u != UnitTypes::Terran_Supply_Depot && u != UnitTypes::Protoss_Nexus && u != UnitTypes::Terran_Command_Center && u != UnitTypes::Zerg_Hatchery)
+            tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_) + CUNYAIModule::Count_Units(u, player_model_to_compare.imputedUnits_), 1); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
     for (auto i : upgrades_) {

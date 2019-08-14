@@ -1433,7 +1433,7 @@ void Map_Inventory::createAttractField(Player_Model &enemy_player) {
 
 
     for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::IsFightingUnit(unit.second.type_);
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::isFightingUnit(unit.second.type_);
     }
 
      pf_attract_ = completeField(pf_clear, 10);
