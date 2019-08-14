@@ -69,7 +69,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
             // simply attempt this if the previous did not find.
             auto closest_station = BWEB::Stations::getClosestStation(build_tile);
-            if (closest_station && (closest_station->getDefenseCount() > 1 || CUNYAIModule::friendly_player_model.u_have_active_air_problem_) ) {
+            if (closest_station && (closest_station->getDefenseLocations().size() > 1 || CUNYAIModule::friendly_player_model.u_have_active_air_problem_) ) {
                 for (auto &tile : closest_station->getDefenseLocations()) {
                     if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
                         unit->stop();
@@ -79,25 +79,25 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 }
             }
 
-            map<int, set<TilePosition>> viable_placements;
-            //Otherwise, use blocks.
-            for (auto block : BWEB::Blocks::getBlocks()) {
-                set<TilePosition> placements;
-                if (building.tileSize() == TilePosition{ 2,2 })
-                    placements = block.getSmallTiles();
-                if (!placements.empty()) {
-                    viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
-                }
-            }
-            for (auto good_block : viable_placements) { // should automatically search by distance.
-                for (auto &tile : good_block.second) {
-                    if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
-                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        unit->stop();
-                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                    }
-                }
-            }
+            //map<int, set<TilePosition>> viable_placements;
+            ////Otherwise, use blocks.
+            //for (auto block : BWEB::Blocks::getBlocks()) {
+            //    set<TilePosition> placements;
+            //    if (building.tileSize() == TilePosition{ 2,2 })
+            //        placements = block.getSmallTiles();
+            //    if (!placements.empty()) {
+            //        viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
+            //    }
+            //}
+            //for (auto good_block : viable_placements) { // should automatically search by distance.
+            //    for (auto &tile : good_block.second) {
+            //        if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
+            //            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+            //            unit->stop();
+            //            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
+            //        }
+            //    }
+            //}
 
         }
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
