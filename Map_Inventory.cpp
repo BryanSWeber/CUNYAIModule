@@ -1209,8 +1209,8 @@ void Map_Inventory::updateBasePositions() {
         return;
     }
 
-    if (Broodwar->isVisible(TilePosition(scouting_base_))) {
-        //otherwise go to their weakest base.
+    if ((frames_since_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(scouting_base_))) || scouting_base_ == Positions::Origin) {
+        //Scout a base that's determined at random based on distance from their assumed main.
         Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
         if (!center_ground) { // if they don't exist yet use the starting location proceedure we've established earlier.
             updateMapVeinsOut(enemy_base_ground_, scouting_base_, map_out_from_scouting_, false);
