@@ -49,7 +49,8 @@ class CombatManager {
         bool addScout(const Unit &u);
         //Removes from appropriate inventory. May move differently.
         void removeScout(const Unit & u);
-
+        //Checks if a particular unit is stored in scout.
+        static bool isScout(const Unit &u);
 
         // Updating advance/retreat conditions:
         void updateReadiness();

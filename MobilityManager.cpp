@@ -33,16 +33,20 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
     return false;
 }
 
-bool Mobility::BWEM_Movement(const bool &in_or_out) {
+bool Mobility::BWEM_Movement(const bool &forward_movement) {
     bool it_worked = false;
     Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
-    if (in_or_out) {
-        if (u_type_.airWeapon() == WeaponTypes::None) { // if you can't help air go ground.
+    if (forward_movement) {
+        if(CUNYAIModule::combat_manager.isScout(unit_)){
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_);
+            target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
+        }
+        else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
         }
-        else if (u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
+        else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
         }
@@ -65,7 +69,7 @@ bool Mobility::BWEM_Movement(const bool &in_or_out) {
     if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = adjust_lurker_burrow(target_pos) || it_worked;
 
     if (it_worked && target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange()) {
-        in_or_out ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+        forward_movement ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
     }
     else {
         CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::None);

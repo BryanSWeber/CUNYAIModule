@@ -9,6 +9,7 @@
 #include <fstream>
 #include <ostream>
 #include <set>
+#include <tuple>
 
 using namespace std;
 
@@ -1100,6 +1101,7 @@ void Map_Inventory::updateBasePositions() {
     frames_since_map_veins++;
     frames_since_safe_base++;
     frames_since_unwalkable++;
+    frames_since_scouting_base_++;
 
     //every 10 sec check if we're sitting at our destination.
     //if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && Broodwar->getFrameCount() % (24 * 5) == 0) {
@@ -1176,13 +1178,14 @@ void Map_Inventory::updateBasePositions() {
         //otherwise go to your weakest base.
         Position suspected_friendly_base = Positions::Origin;
 
-        if (CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ > 0) {
+        if (enemy_base_ground_ != Positions::Origin) {
             suspected_friendly_base = getBaseNearest();
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base !=  Positions::Origin) {
             updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), front_line_base_, map_out_from_home_);
         }
+
         frames_since_front_line_base = 0;
         return;
     }
@@ -1203,6 +1206,56 @@ void Map_Inventory::updateBasePositions() {
         }
 
         frames_since_safe_base = 0;
+        return;
+    }
+
+    if (Broodwar->isVisible(TilePosition(scouting_base_))) {
+        //otherwise go to their weakest base.
+        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        if (!center_ground) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            updateMapVeinsOut(enemy_base_ground_, scouting_base_, map_out_from_scouting_, false);
+        }
+        else {
+            //From Dolphin Bot 2018 (with paraphrasing):
+            double total_distance = 0;
+            double sum_log_p = 0;
+
+            vector<tuple<double, Position>> scout_expo_vector;
+            // Create a map <log(distance), Position> of all base locations on map
+            for (const auto& tilepos : expo_positions_complete_) {
+                int base_distance = getRadialDistanceOutFromEnemy(Position(tilepos));
+                if (base_distance != 0 && !Broodwar->isVisible(tilepos)) {
+                    total_distance += base_distance;
+                    scout_expo_vector.push_back({ base_distance, Position(tilepos) });
+                }
+            }
+
+            for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
+                sum_log_p += log(get<0>(*itr) / total_distance);
+            }
+
+            // Assign scout locations
+            bool found_base = false;
+            std::random_device rd;  //Will be used to obtain a seed for the random number engine
+            std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+            std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+            int attempts = 0;
+
+            while (!scout_expo_vector.empty() && !found_base && attempts < 100) {
+                for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
+                    Position potential_scout_target = get<1>(*itr);
+                    double weighted_p_of_selection = log(get<0>(*itr) / total_distance) / sum_log_p; // sums to one, actually.
+                   
+                    if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr))) ) {
+                        updateMapVeinsOut(potential_scout_target, scouting_base_, map_out_from_scouting_, false);
+                        found_base = true;
+                    }
+                }
+                attempts++;
+            }
+        }
+
+        frames_since_scouting_base_ = 0;
         return;
     }
 }
@@ -1244,6 +1297,9 @@ void Map_Inventory::drawBasePositions() const
 
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
         Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);
+
+        Broodwar->drawCircleMap(scouting_base_, 25, Colors::White, false);
+
     }
 }
 
