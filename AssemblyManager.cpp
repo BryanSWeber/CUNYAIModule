@@ -338,7 +338,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             (CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     } 
-    else if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
+    
+    if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) == 0 &&
             CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive) >= 0 &&
