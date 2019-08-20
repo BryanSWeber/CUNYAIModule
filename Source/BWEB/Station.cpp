@@ -6,10 +6,10 @@ using namespace BWAPI;
 namespace BWEB::Stations {
 
     namespace {
-        vector<Station> stations;
+        std::vector<Station> stations;
     }
 
-    set<TilePosition> stationDefenses(TilePosition here, bool mirrorHorizontal, bool mirrorVertical)
+    set<TilePosition> stationDefenses(const TilePosition here, const bool mirrorHorizontal, const bool mirrorVertical)
     {
         set<TilePosition> defenses;
 
@@ -117,7 +117,7 @@ namespace BWEB::Stations {
 
         // Add overlap
         for (auto &tile : defenses)
-            Map::addReserve(tile, 2, 2);
+            Map::addOverlap(tile, 2, 2);
 
         return defenses;
     }
@@ -132,7 +132,7 @@ namespace BWEB::Stations {
                     if (!t.isValid())
                         continue;
                     if (t.getDistance(start) <= 4)
-                        Map::addReserve(t, 1, 1);
+                        Map::addOverlap(t, 1, 1);
                 }
             }
         };
@@ -164,18 +164,18 @@ namespace BWEB::Stations {
                 v = base.Center().y < sCenter.y;
 
                 for (auto &m : base.Minerals())
-                    Map::addReserve(m->TopLeft(), 2, 1);
+                    Map::addOverlap(m->TopLeft(), 2, 1);
 
                 for (auto &g : base.Geysers())
-                    Map::addReserve(g->TopLeft(), 4, 2);
+                    Map::addOverlap(g->TopLeft(), 4, 2);
 
-                Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
+                const Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
                 stations.push_back(newStation);
-                Map::addReserve(base.Location(), 4, 3);
+                Map::addOverlap(base.Location(), 4, 3);
                 addResourceOverlap(genCenter);
 
                 if (Broodwar->self()->getRace() == Races::Zerg)
-                    Map::addReserve(base.Location() - TilePosition(1,1), 6, 5);
+                    Map::addOverlap(base.Location() - TilePosition(1,1), 6, 5);
             }
         }
     }

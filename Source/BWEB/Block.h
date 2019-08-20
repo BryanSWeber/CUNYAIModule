@@ -13,17 +13,13 @@ namespace BWEB {
         int w = 0, h = 0;
         BWAPI::TilePosition t;
         std::set <BWAPI::TilePosition> smallTiles, mediumTiles, largeTiles;
-        bool proxy = false;
-        bool defensive = false;
     public:
         Block() : w(0), h(0) {};
-        Block(const BWAPI::TilePosition tile, std::vector<Piece> pieces, bool proxyBlock = false, bool defensiveBlock = false) {
+        Block(const BWAPI::TilePosition tile, std::vector<Piece> pieces) {
             t = tile;
             BWAPI::TilePosition here = tile;
             int rowHeight = 0;
             int rowWidth = 0;
-            proxy = proxyBlock;
-            defensive = defensiveBlock;
 
             for (auto &p : pieces) {
                 if (p == Piece::Small) {
@@ -66,8 +62,6 @@ namespace BWEB {
 
         int width() const { return w; }
         int height() const { return h; }
-        bool isProxy() const { return proxy; }
-        bool isDefensive() const { return defensive; }
 
         /// Returns the top left tile position of this block
         BWAPI::TilePosition getTilePosition() const { return t; }
