@@ -46,13 +46,13 @@ bool CombatManager::combatScript(const Unit & u)
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc) ;
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
-            bool worker_may_fight = (enemy_loc.worker_count_ > friend_loc.worker_count_ || !fight_looks_good) && !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
+            bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
 
-            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && worker_may_fight))) { // workers don't need to fight all the time.
+            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive))) { // workers don't need to fight all the time.
                 if (fight_looks_good && prepping_attack) {
                     return mobility.surround(e_closest->pos_);
                 }
-                else if (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc))) {
+                else if (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && unit_will_survive)) {
                     return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                 }
             }
@@ -77,7 +77,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
             task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
-        if (!task_assigned && u->getType().canMove() && !u->getType().canAttack() && u->getType() != UnitTypes::Zerg_Larva && !u->isBlind() && scoutScript(u))
+        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord || u->getType() == UnitTypes::Zerg_Zergling) && !u->isBlind() && scoutScript(u))
             task_assigned = true;
         if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed()) ) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
             task_assigned = true;
@@ -160,6 +160,13 @@ void CombatManager::removeScout(const Unit & u)
 {
     scout_squad_.removeStored_Unit(u);
     scout_squad_.updateUnitInventorySummary();
+}
+
+bool CombatManager::isScout(const Unit & u)
+{
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) return true;
+    return false;
 }
 
 void CombatManager::updateReadiness()
