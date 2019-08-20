@@ -250,9 +250,15 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 //Creates a new building with DRONE. Does not create units that morph from other buildings: Lairs, Hives, Greater Spires, or sunken/spores.
 bool AssemblyManager::buildBuilding(const Unit &drone) {
     // will send it to do the LAST thing on this list that it can build.
+    Mobility drone_pathing_options = Mobility(drone);
+    bool path_available = false;
+    for (auto &p : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+        path_available = path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p));
+    }
+
     bool buildings_started = false;
     bool any_macro_problems = CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible() || CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
-    bool the_only_macro_hatch_case = (CUNYAIModule::larva_starved && !any_macro_problems && !CUNYAIModule::econ_starved);
+    bool the_only_macro_hatch_case = (CUNYAIModule::larva_starved && (!any_macro_problems && !CUNYAIModule::econ_starved));
     bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) - CUNYAIModule::Count_Units_In_Progress(UnitTypes::Zerg_Hatchery);
@@ -272,7 +278,6 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     int count_tech_buildings = CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::Count_Units(UnitTypes::Zerg_Ultralisk_Cavern);
 
     bool fight_without_reinforcements = CUNYAIModule::army_starved && (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved);
-
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
@@ -296,7 +301,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && !the_only_macro_hatch_case && CUNYAIModule::checkSuperiorFAPForecast(u_loc, e_loc), CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && path_available && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, the_only_macro_hatch_case); // only macrohatch if you are short on larvae and can afford to spend.
