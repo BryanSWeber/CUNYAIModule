@@ -71,6 +71,11 @@ bool CombatManager::combatScript(const Unit & u)
 bool CombatManager::grandStrategyScript(const Unit & u) {
     
     bool task_assigned = false;
+    if (isScout(u)) {
+        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+        bool found_and_detecting = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ == Stored_Unit::Phase::Detecting;
+        if (u->isBlind() || found_and_detecting) removeScout(u);
+    }
 
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
@@ -92,8 +97,8 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
 
 bool CombatManager::scoutScript(const Unit & u)
 {
-    auto scouting_unit = scout_squad_.unit_map_.find(u);
-    if (scout_squad_.unit_map_.empty() || scouting_unit != scout_squad_.unit_map_.end()) { // if the scout squad is empty or this unit is in it.
+
+    if (scout_squad_.unit_map_.empty() || isScout(u)) { // if the scout squad is empty or this unit is in it.
         auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
         if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != Stored_Unit::Phase::Detecting) {
                 scout_squad_.addStored_Unit(u);
@@ -116,7 +121,7 @@ bool CombatManager::scoutScript(const Unit & u)
 bool CombatManager::pathingScript(const Unit & u)
 {
     Mobility mobility = Mobility(u);
-    if (ready_to_fight) {
+    if (ready_to_fight || isScout(u)) {
         return mobility.BWEM_Movement(true); // if this process didn't work, then you need to do your default walking. The distance is too short or there are enemies in your area. Or you're a flyer.
     }
     else {
@@ -164,8 +169,8 @@ void CombatManager::removeScout(const Unit & u)
 
 bool CombatManager::isScout(const Unit & u)
 {
-    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-    if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) return true;
+    auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end() ) return true;
     return false;
 }
 

@@ -1222,11 +1222,11 @@ void Map_Inventory::updateBasePositions() {
 
             vector<tuple<double, Position>> scout_expo_vector;
             // Create a map <log(distance), Position> of all base locations on map
-            for (const auto& tilepos : expo_positions_complete_) {
-                int base_distance = getRadialDistanceOutFromEnemy(Position(tilepos));
-                if (base_distance != 0 && !Broodwar->isVisible(tilepos)) {
+            for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
+                int base_distance = getRadialDistanceOutFromEnemy(r.second.pos_);
+                if (base_distance != 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
                     total_distance += base_distance;
-                    scout_expo_vector.push_back({ base_distance, Position(tilepos) });
+                    scout_expo_vector.push_back({ base_distance, r.second.pos_ });
                 }
             }
 
