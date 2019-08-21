@@ -31,7 +31,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     evaluateCurrentWorth(); // how much do they appear to have?
 
     spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock);
-    spending_model_.storeStocks(units_.stock_fighting_total_, researches_.research_stock_, estimated_worker_stock);
+    spending_model_.storeStocks(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_* worker_value);
 
     updatePlayerAverageCD();
 };
