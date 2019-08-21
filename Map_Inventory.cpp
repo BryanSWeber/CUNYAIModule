@@ -1212,7 +1212,8 @@ void Map_Inventory::updateBasePositions() {
     if ((frames_since_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(scouting_base_))) || scouting_base_ == Positions::Origin) {
         //Scout a base that's determined at random based on distance from their assumed main.
         Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
-        if (!center_ground) { // if they don't exist yet use the starting location proceedure we've established earlier.
+        CUNYAIModule::enemy_player_model.casualties_.updateUnitInventorySummary();
+        if (!center_ground && CUNYAIModule::enemy_player_model.casualties_.stock_total_ == 0) { // if they don't exist yet use the starting location proceedure we've established earlier.
             updateMapVeinsOut(enemy_base_ground_, scouting_base_, map_out_from_scouting_, false);
         }
         else {

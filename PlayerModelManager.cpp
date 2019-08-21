@@ -258,6 +258,8 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
     estimated_unseen_ground_ += value_possible_per_frame_ - value_possible_fliers_per_frame_;
 
     estimated_unseen_army_ = max(min(estimated_unseen_army_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
+    estimated_unseen_flyers_ = max(min(estimated_unseen_flyers_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
+    estimated_unseen_ground_ = max(min(estimated_unseen_ground_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
 
     //estimated_unseen_army_ = max(estimated_unseen_army_, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
 }
