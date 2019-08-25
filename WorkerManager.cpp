@@ -383,10 +383,12 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Attacking:
+    case Stored_Unit::Retreating:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
-            bool fight_plausible = ( CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), 400).stock_ground_fodder_ > 0 || CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, u->getPosition(), 400) );
-            bool enemy_exists = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, 400);
-            if (!fight_plausible || !enemy_exists) {
+            auto local_ui = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
+            local_ui.updateUnitInventorySummary();
+            bool enemy_exists = local_ui.stock_shoots_down_ > 0;
+            if (!enemy_exists) {
                 task_guard = workersCollect(u);
             }
         }

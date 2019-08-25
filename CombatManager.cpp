@@ -49,7 +49,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
 
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive))) { // workers don't need to fight all the time.
-                if (fight_looks_good && prepping_attack) {
+                if (fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                     return mobility.surround(e_closest->pos_);
                 }
                 else if (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && unit_will_survive)) {
@@ -71,11 +71,15 @@ bool CombatManager::combatScript(const Unit & u)
 bool CombatManager::grandStrategyScript(const Unit & u) {
     
     bool task_assigned = false;
+
+    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+    bool found_and_detecting = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ == Stored_Unit::Phase::Detecting;
+
     if (isScout(u)) {
-        auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-        bool found_and_detecting = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ == Stored_Unit::Phase::Detecting;
         if (u->isBlind() || found_and_detecting) removeScout(u);
     }
+
+    if (found_and_detecting && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
 
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
