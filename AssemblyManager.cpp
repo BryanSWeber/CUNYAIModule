@@ -79,25 +79,25 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 }
             }
 
-            //map<int, set<TilePosition>> viable_placements;
-            ////Otherwise, use blocks.
-            //for (auto block : BWEB::Blocks::getBlocks()) {
-            //    set<TilePosition> placements;
-            //    if (building.tileSize() == TilePosition{ 2,2 })
-            //        placements = block.getSmallTiles();
-            //    if (!placements.empty()) {
-            //        viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
-            //    }
-            //}
-            //for (auto good_block : viable_placements) { // should automatically search by distance.
-            //    for (auto &tile : good_block.second) {
-            //        if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
-            //            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-            //            unit->stop();
-            //            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-            //        }
-            //    }
-            //}
+            map<int, set<TilePosition>> viable_placements;
+            //Otherwise, use blocks.
+            for (auto block : BWEB::Blocks::getBlocks()) {
+                set<TilePosition> placements;
+                if (building.tileSize() == TilePosition{ 2,2 })
+                    placements = block.getSmallTiles();
+                if (!placements.empty()) {
+                    viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
+                }
+            }
+            for (auto good_block : viable_placements) { // should automatically search by distance.
+                for (auto &tile : good_block.second) {
+                    if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
+                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                        unit->stop();
+                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
+                    }
+                }
+            }
 
         }
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
