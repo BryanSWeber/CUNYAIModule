@@ -469,7 +469,7 @@ void GeneticHistory::initializeHistory() {
                                     // the values below will be normalized to 1.
         a_army_out = dis(gen);
         a_econ_out = dis(gen);
-        a_tech_out = dis(gen);
+        a_tech_out = dis(gen) * 3;
         //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
         r_out = dis(gen);
         //No longer used.
