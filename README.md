@@ -6,5 +6,6 @@ CUNYBot (City University of New York) is a C++ bot that plays a full game of Sta
 Link to complete bot description here: https://ieeexplore.ieee.org/document/8490444
 
 Recent Development Notes: 
+(9-26-2018) Incorperated FAP fully, BWEB and BWEM are now used for pathing and movement. Several functions have been deeply refactored (particularly workers) and combat has been deeply streamlined for student use. 
 
 (9-6-2018) Current drafts of CUNYBot are responding to opponent's choice of *t* as well, and the overall observed behavior remains a tit-for-tat style.  Technology has been closely integrated and better improved in current versions, but have not yet released these to SSCAIT. Tasks at hand are generally production choices, and reducing waste in combat.  To that end, FAP has been added as a combat simulator. It also serves as an agnostic method of choosing which units to produce, with some caveats.
