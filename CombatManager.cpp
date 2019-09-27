@@ -137,32 +137,47 @@ bool CombatManager::pathingScript(const Unit & u)
 
 bool CombatManager::addAntiAir(const Unit & u)
 {
-    anti_air_squad_.addStored_Unit(u);
-    anti_air_squad_.updateUnitInventorySummary();
+	if (anti_air_squad_.addStored_Unit(u)) {
+		anti_air_squad_.updateUnitInventorySummary();
+		return true;
+	}
+	return false;
 }
 
 bool CombatManager::addAntiGround(const Unit & u)
 {
-    anti_ground_squad_.addStored_Unit(u);
-    anti_ground_squad_.updateUnitInventorySummary();
+	if (anti_ground_squad_.addStored_Unit(u)) {
+		anti_ground_squad_.updateUnitInventorySummary();
+		return true;
+	}
+	return false;
 }
 
 bool CombatManager::addUniversal(const Unit & u)
 {
-    universal_squad_.addStored_Unit(u);
-    universal_squad_.updateUnitInventorySummary();
+	if (universal_squad_.addStored_Unit(u)) {
+		universal_squad_.updateUnitInventorySummary();
+		return true;
+	}
+	return false;
 }
 
 bool CombatManager::addLiablitity(const Unit & u)
 {
-    liabilities_squad_.addStored_Unit(u);
-    liabilities_squad_.updateUnitInventorySummary();
+	if (liabilities_squad_.addStored_Unit(u)) {
+		liabilities_squad_.updateUnitInventorySummary();
+		return true;
+	}
+	return false;
 }
 
 bool CombatManager::addScout(const Unit & u)
 {
-    scout_squad_.addStored_Unit(u);
-    scout_squad_.updateUnitInventorySummary();
+	if (scout_squad_.addStored_Unit(u)) {
+		scout_squad_.updateUnitInventorySummary();
+		return true;
+	}
+	return false;
 }
 
 void CombatManager::removeScout(const Unit & u)

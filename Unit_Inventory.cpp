@@ -297,12 +297,12 @@ void Unit_Inventory::drawAllMisplacedGroundUnits() const
 }
 
 // Updates the count of units.
-void Unit_Inventory::addStored_Unit( const Unit &unit ) {
-    unit_map_.insert( { unit, Stored_Unit( unit ) } );
+bool Unit_Inventory::addStored_Unit( const Unit &unit ) {
+    return unit_map_.insert( { unit, Stored_Unit( unit ) } ).second;
 };
 
-void Unit_Inventory::addStored_Unit( const Stored_Unit &stored_unit ) {
-    unit_map_.insert( { stored_unit.bwapi_unit_ , stored_unit } );
+bool Unit_Inventory::addStored_Unit( const Stored_Unit &stored_unit ) {
+    return unit_map_.insert( { stored_unit.bwapi_unit_ , stored_unit } ).second;
 };
 
 Position Unit_Inventory::positionBuildFap(bool friendly) {

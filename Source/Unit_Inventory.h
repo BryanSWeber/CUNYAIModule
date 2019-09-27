@@ -199,8 +199,8 @@ struct Unit_Inventory {
     std::map <Unit, Stored_Unit> unit_map_;
 
     // Updates the count of units.
-    void addStored_Unit( const Unit &unit );
-    void addStored_Unit( const Stored_Unit &stored_unit );
+    bool addStored_Unit( const Unit &unit );
+    bool addStored_Unit( const Stored_Unit &stored_unit );
 
     //Removes units
     void removeStored_Unit( Unit unit );
