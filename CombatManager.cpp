@@ -48,7 +48,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
 
-            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive))) { // workers don't need to fight all the time.
+            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive && isAppropriateWorkerFight(friend_loc,enemy_loc)))) { // workers don't need to fight all the time.
                 if (fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                     return mobility.surround(e_closest->pos_);
                 }
@@ -191,6 +191,15 @@ bool CombatManager::isScout(const Unit & u)
     auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
     if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end() ) return true;
     return false;
+}
+
+bool CombatManager::isAppropriateWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
+{
+	if (enemy.worker_count_ < enemy.unit_map_.size())
+		return true; // They have nonworker enemies.
+	else if (friendly.is_attacking_ < enemy.worker_count_ + 1)
+		return true; // we could use another worker attacking.
+	else return false;
 }
 
 void CombatManager::updateReadiness()

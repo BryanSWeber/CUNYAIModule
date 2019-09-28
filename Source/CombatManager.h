@@ -52,6 +52,9 @@ class CombatManager {
         //Checks if a particular unit is stored in scout.
         static bool isScout(const Unit &u);
 
+		// Only returns TRUE if there are A) less than N+1 of my workers committed, where N is the number of enemy workers. B) Viable Nonworker enemies.
+		static bool isAppropriateWorkerFight(const Unit_Inventory &friendly, const Unit_Inventory &enemy);
+
         // Updating advance/retreat conditions:
         void updateReadiness();
 };
