@@ -49,7 +49,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
 
-            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive && isAppropriateWorkerFight(friend_loc,enemy_loc)))) { // workers don't need to fight all the time.
+            if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (!u->getType().isWorker() || (u->getType().isWorker() && unit_will_survive && isAppropriateWorkerFight(friend_loc, enemy_loc)))) { // workers don't need to fight all the time.
                 if (fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                     return mobility.surround(e_closest->pos_);
                 }
@@ -62,7 +62,9 @@ bool CombatManager::combatScript(const Unit & u)
                 Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
                 Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
             }
-            return mobility.Retreat_Logic();
+			if (!isAppropriateWorkerFight(friend_loc, enemy_loc) && unit_will_survive && u->getType().isWorker()) // this fight is not for workers, someone else should handle it.
+				return false;
+			else return mobility.Retreat_Logic();
 
         }
     }

@@ -326,7 +326,6 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     build_type_ = unit->getBuildType();
 	if (unit->getShields() + unit->getHitPoints() < shields_ + health_) time_since_last_dmg_ = 0;
     else time_since_last_dmg_++;
-	CUNYAIModule::DiagnosticText("Been %d since my last damage.", time_since_last_dmg_);
 
     shields_ = unit->getShields();
     health_ = unit->getHitPoints();
