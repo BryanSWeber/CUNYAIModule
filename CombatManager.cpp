@@ -20,8 +20,9 @@ bool CombatManager::combatScript(const Unit & u)
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
         Mobility mobility = Mobility(u);
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
+		//Stored_Unit& my_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u)->second;
 
-        if (e_closest) { // if there are bad guys, fight
+        if (e_closest) { // if there are bad guys, fight. Builders do not fight.
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
             int chargable_distance_self = CUNYAIModule::getChargableDistance(u);
             int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_);
@@ -195,11 +196,11 @@ bool CombatManager::isScout(const Unit & u)
 
 bool CombatManager::isAppropriateWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
 {
-	if (enemy.worker_count_ < enemy.unit_map_.size())
-		return true; // They have nonworker enemies.
-	else if (friendly.is_attacking_ < enemy.worker_count_ + 1)
+	if (enemy.worker_count_ < static_cast<int>(enemy.unit_map_.size()))
+		return true; // They have non workers in the fight, you will have to pull workers.
+	else if (friendly.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < enemy.worker_count_ + 1)
 		return true; // we could use another worker attacking.
-	else return false;
+	else return false; // they are all workers and you have n+1 fighting, so you can relax.
 }
 
 void CombatManager::updateReadiness()

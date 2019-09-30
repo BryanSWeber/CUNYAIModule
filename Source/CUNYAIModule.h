@@ -21,14 +21,14 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DRAWING_MODE = false; //Visualizations, printing records, etc.Should seperate these.
+constexpr bool DRAWING_MODE = true; //Visualizations, printing records, etc.Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
+constexpr bool TEST_MODE = true; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 constexpr int FAP_SIM_DURATION = 24*5; // set FAP sim durations.
-constexpr bool RANDOM_PLAN = true; // Turn off learning and always use a random set of starting conditions.
+constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.
 // Remember not to use "Broodwar" in any global class constructor!
 
 class CUNYAIModule : public BWAPI::AIModule

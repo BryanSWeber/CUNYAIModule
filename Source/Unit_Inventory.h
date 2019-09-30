@@ -151,32 +151,33 @@ struct Unit_Inventory {
     static const int half_map_ = 120; // SC Screen size is 680 X 240
     static std::default_random_engine generator_;  //Will be used to obtain a seed for the random number engine
 
-    int stock_fliers_;
-    int stock_ground_units_;
-    int stock_both_up_and_down_;
-    int stock_shoots_up_;
-    int stock_shoots_down_;
-    int stock_high_ground_;
-    int stock_fighting_total_;
-    int stock_ground_fodder_;
-    int stock_air_fodder_;
-    int stock_total_;
-    int stock_full_health_;
-    int stock_psion_;
-    int total_supply_;
-    int max_range_;
-    int max_cooldown_;
-    int worker_count_;
-    int volume_;
-    int detector_count_;
-    int cloaker_count_;
-    int flyer_count_;
-    int resource_depot_count_;
-    int future_fap_stock_;
-    int moving_average_fap_stock_;
-    int is_shooting_;
-    int is_attacking_;
-    int is_retreating_;
+    int stock_fliers_= 0;
+    int stock_ground_units_= 0;
+    int stock_both_up_and_down_= 0;
+    int stock_shoots_up_= 0;
+    int stock_shoots_down_= 0;
+    int stock_high_ground_= 0;
+    int stock_fighting_total_= 0;
+    int stock_ground_fodder_= 0;
+    int stock_air_fodder_= 0;
+    int stock_total_= 0;
+    int stock_full_health_= 0;
+    int stock_psion_= 0;
+    int total_supply_= 0;
+    int max_range_= 0;
+    int max_cooldown_= 0;
+    int worker_count_= 0;
+    int volume_= 0;
+    int detector_count_= 0;
+    int cloaker_count_= 0;
+    int flyer_count_= 0;
+	int ground_count_= 0;
+	int building_count_= 0;
+    int resource_depot_count_= 0;
+    int future_fap_stock_= 0;
+    int moving_average_fap_stock_= 0;
+    int is_shooting_= 0;
+
     map<Stored_Unit::Phase, int > count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
     { Stored_Unit::Phase::Attacking, 0 },
     { Stored_Unit::Phase::Retreating, 0 },

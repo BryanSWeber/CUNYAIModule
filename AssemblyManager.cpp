@@ -86,7 +86,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 if (building.tileSize() == TilePosition{ 2,2 })
                     placements = block.getSmallTiles();
                 if (!placements.empty()) {
-                    viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
+                    viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), placements });
                 }
             }
             for (auto good_block : viable_placements) { // should automatically search by distance.
@@ -152,7 +152,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
                         placements = block.getLargeTiles();
                     if (!placements.empty()) {
-                        viable_placements.insert({ unit->getTilePosition().getDistance(block.getTilePosition()), placements });
+                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), placements });
                     }
                 }
 
@@ -252,8 +252,10 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     // will send it to do the LAST thing on this list that it can build.
     Mobility drone_pathing_options = Mobility(drone);
     bool path_available = false;
+
+	// Check if worker has any path to an expo.
     for (auto &p : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
-        path_available = path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p));
+        path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p)));
     }
 
     bool buildings_started = false;
@@ -961,7 +963,7 @@ bool AssemblyManager::assignUnitAssembly()
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             bool bad_phase = (potential_lurker.second.phase_ == Stored_Unit::Attacking || potential_lurker.second.phase_ == Stored_Unit::Retreating || potential_lurker.second.phase_ == Stored_Unit::Surrounding) && potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields());
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
-            if (static_cast<bool>(potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION)) combat_creators.addStored_Unit(potential_lurker.second);
+            if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStored_Unit(potential_lurker.second);
         }
     }
 
@@ -970,7 +972,7 @@ bool AssemblyManager::assignUnitAssembly()
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
             bool bad_phase = (potential_endgame_flier.second.phase_ == Stored_Unit::Attacking || potential_endgame_flier.second.phase_ == Stored_Unit::Retreating || potential_endgame_flier.second.phase_ == Stored_Unit::Surrounding) && potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields());
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) || bad_phase) continue;
-            if (static_cast<bool>(potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION) && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
+            if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
         }
     }
 

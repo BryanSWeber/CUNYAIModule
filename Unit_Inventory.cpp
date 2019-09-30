@@ -324,8 +324,9 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
-    if (unit->getShields() + unit->getHitPoints() < shields_ + health_) time_since_last_dmg_ = 0;
-    else time_since_last_dmg_ = time_since_last_dmg_++;
+	if (unit->getShields() + unit->getHitPoints() < shields_ + health_) time_since_last_dmg_ = 0;
+    else time_since_last_dmg_++;
+	CUNYAIModule::DiagnosticText("Been %d since my last damage.", time_since_last_dmg_);
 
     shields_ = unit->getShields();
     health_ = unit->getHitPoints();
@@ -582,50 +583,72 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
  }
 
  void Unit_Inventory::updateUnitInventorySummary() {
-     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
-     //Set default values to 0;
-     stock_fliers_ = stock_ground_units_ = stock_both_up_and_down_ = stock_shoots_up_ = stock_shoots_down_ = stock_high_ground_ = stock_fighting_total_ = stock_ground_fodder_ = stock_air_fodder_ = stock_total_ = total_supply_ = max_range_ = max_cooldown_ = worker_count_ = volume_ = detector_count_ = cloaker_count_ = flyer_count_ = resource_depot_count_ = future_fap_stock_ = moving_average_fap_stock_ = stock_full_health_ = is_shooting_ = is_attacking_ = is_retreating_ = 0;
+	 //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+	 //Set default values to 0;
 
-     int fliers = 0;
-     int flyer_count = 0;
-     int ground_unit = 0;
-     int shoots_up = 0;
-     int shoots_down = 0;
-     int shoots_both = 0;
-     int high_ground = 0;
-     int range = 0;
-     int worker_count = 0;
-     int volume = 0;
-     int detector_count = 0;
-     int cloaker_count = 0;
-     int max_cooldown = 0;
-     int ground_fodder = 0;
-     int air_fodder = 0;
-     int resource_depots = 0;
-     int psion_stock = 0;
-     int future_fap_stock = 0;
-     int moving_average_fap_stock = 0;
-     int stock_full_health = 0;
-     int is_shooting = 0;
-     int supply = 0;
+	  stock_fliers_ = 0;
+	  stock_ground_units_ = 0;
+	  stock_both_up_and_down_ = 0;
+	  stock_shoots_up_ = 0;
+	  stock_shoots_down_ = 0;
+	  stock_high_ground_ = 0;
+	  stock_fighting_total_ = 0;
+	  stock_ground_fodder_ = 0;
+	  stock_air_fodder_ = 0;
+	  stock_total_ = 0;
+	  stock_full_health_ = 0;
+	  stock_psion_ = 0;
+	  total_supply_ = 0;
+	  max_range_ = 0;
+	  max_cooldown_ = 0;
+	  worker_count_ = 0;
+	  volume_ = 0;
+	  detector_count_ = 0;
+	  cloaker_count_ = 0;
+	  flyer_count_ = 0;
+	  ground_count_ = 0;
+	  building_count_ = 0;
+	  resource_depot_count_ = 0;
+	  future_fap_stock_ = 0;
+	  moving_average_fap_stock_ = 0;
+	  is_shooting_ = 0;
+
+	count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
+	 { Stored_Unit::Phase::Attacking, 0 },
+	 { Stored_Unit::Phase::Retreating, 0 },
+	 { Stored_Unit::Phase::Prebuilding, 0 },
+	 { Stored_Unit::Phase::PathingOut, 0 },
+	 { Stored_Unit::Phase::PathingHome, 0 },
+	 { Stored_Unit::Phase::Surrounding, 0 },
+	 { Stored_Unit::Phase::NoRetreat, 0 },
+	 { Stored_Unit::Phase::MiningMin, 0 },
+	 { Stored_Unit::Phase::MiningGas, 0 },
+	 { Stored_Unit::Phase::Returning, 0 },
+	 { Stored_Unit::Phase::DistanceMining, 0 },
+	 { Stored_Unit::Phase::Clearing, 0 },
+	 { Stored_Unit::Phase::Upgrading, 0 },
+	 { Stored_Unit::Phase::Researching, 0 },
+	 { Stored_Unit::Phase::Morphing, 0 },
+	 { Stored_Unit::Phase::Building, 0 },
+	 { Stored_Unit::Phase::Detecting, 0 } };
 
      vector<UnitType> already_seen_types;
 
      for (auto const & u_iter : unit_map_) { // should only search through unit types not per unit.
 
-         future_fap_stock += u_iter.second.future_fap_value_;
-         moving_average_fap_stock += u_iter.second.ma_future_fap_value_;
-         is_shooting += u_iter.second.cd_remaining_ > 0; 
-         supply += u_iter.second.type_.supplyRequired();
+		 future_fap_stock_ += u_iter.second.future_fap_value_;
+		 moving_average_fap_stock_ += u_iter.second.ma_future_fap_value_;
+		 is_shooting_ += u_iter.first->isAttacking();
+		 total_supply_ += u_iter.second.type_.supplyRequired();
+		 building_count_ += u_iter.second.type_.isBuilding();
          count_of_each_phase_.at(u_iter.second.phase_)++;
-
+		 stock_high_ground_ += u_iter.second.elevation_ == 2 || u_iter.second.elevation_ == 4;
 
          if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 
              bool flying_unit = u_iter.second.type_.isFlyer();
              int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
              int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
-
              if (CUNYAIModule::isFightingUnit(u_iter.second)) {
 
                  bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
@@ -633,29 +656,32 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
                  bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
                  int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
 
-                 fliers += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
-                 flyer_count = flying_unit * count_of_unit_type;
-                 ground_unit += !flying_unit * unit_value_for_all_of_type;
-                 shoots_up += up_gun * unit_value_for_all_of_type;
-                 shoots_down += down_gun * unit_value_for_all_of_type;
-                 shoots_both += (up_gun && down_gun) * unit_value_for_all_of_type;
-                 cloaker_count += cloaker * count_of_unit_type;
-                 psion_stock += (u_iter.second.type_.maxEnergy() > 0 * unit_value_for_all_of_type);
+				 stock_fliers_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+				 flyer_count_ += flying_unit * count_of_unit_type;
 
-                 max_cooldown = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown);
-                 range = (range_temp > range) * range_temp + !(range_temp > range) * range;
+				 cloaker_count_ = flying_unit * count_of_unit_type;
+				 stock_ground_units_ += !flying_unit * unit_value_for_all_of_type;
+				 ground_count_ += !flying_unit * count_of_unit_type;
+				 stock_shoots_up_ += up_gun * unit_value_for_all_of_type;
+				 stock_shoots_down_ += down_gun * unit_value_for_all_of_type;
+				 stock_both_up_and_down_ += (up_gun && down_gun) * unit_value_for_all_of_type;
+				 cloaker_count_ += cloaker * count_of_unit_type;
+				 stock_psion_ += (u_iter.second.type_.maxEnergy() > 0 * unit_value_for_all_of_type);
+
+				 max_cooldown_ = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown_);
+				 max_range_ = (range_temp > max_range_) * range_temp + !(range_temp > max_range_) * max_range_;
 
              }
              else {
-                 resource_depots += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
-                 air_fodder += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
-                 ground_fodder += !flying_unit * unit_value_for_all_of_type;
+				 resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
+				 stock_air_fodder_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+				 stock_ground_fodder_ += !flying_unit * unit_value_for_all_of_type;
 
              }
 
-             detector_count += u_iter.second.type_.isDetector() * count_of_unit_type;
-             stock_full_health += u_iter.second.stock_value_ * count_of_unit_type;
-             volume += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
+			 detector_count_ += u_iter.second.type_.isDetector() * count_of_unit_type;
+			 stock_full_health_ += u_iter.second.stock_value_ * count_of_unit_type;
+			 volume_ += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
              //Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
              //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
              //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
@@ -666,33 +692,10 @@ void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
          }
      }
 
+	 stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
+	 stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
+	 worker_count_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
-    worker_count = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
-
-    stock_fliers_ = fliers;
-    stock_ground_units_ = ground_unit;
-    stock_both_up_and_down_ = shoots_both;
-    stock_shoots_up_ = shoots_up;
-    stock_shoots_down_ = shoots_down;
-    stock_high_ground_= high_ground;
-    stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
-    stock_ground_fodder_ = ground_fodder;
-    stock_air_fodder_ = air_fodder;
-    stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
-    stock_psion_ = psion_stock;
-    total_supply_ = supply;
-    max_range_ = range;
-    max_cooldown_ = max_cooldown;
-    worker_count_ = worker_count;
-    volume_ = volume;
-    detector_count_ = detector_count;
-    cloaker_count_ = cloaker_count;
-    flyer_count_ = flyer_count;
-    resource_depot_count_ = resource_depots;
-    future_fap_stock_ = future_fap_stock;
-    moving_average_fap_stock_ = moving_average_fap_stock;
-    stock_full_health_ = stock_full_health;
-    is_shooting_ = is_shooting;
 }
 
 void Unit_Inventory::stopMine(Unit u) {
@@ -806,7 +809,7 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     order_ = unit->getOrder();
     command_ = unit->getLastCommand();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
-    time_since_last_dmg_ = 0;
+    time_since_last_dmg_ = FAP_SIM_DURATION + 1;// New units have not taken damage yet.
     count_of_consecutive_predicted_deaths_ = 0;
     circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
