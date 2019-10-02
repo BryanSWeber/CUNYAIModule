@@ -59,6 +59,7 @@ namespace { auto & bwemMap = BWEM::Map::Instance(); }
 
 void CUNYAIModule::onStart()
 {
+	system(".\\bwapi-data\\read\\pytest.exe");
 
     //Initialize BWEM, must be done FIRST.
     Broodwar << "Map initialization..." << std::endl;

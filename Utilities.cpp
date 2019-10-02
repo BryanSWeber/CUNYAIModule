@@ -1099,6 +1099,12 @@ Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
     }
     return e_set;
 }
+Stored_Unit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
+{
+	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+	bool found = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end();
+	if (found) return &found_item->second;
+}
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
 Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {

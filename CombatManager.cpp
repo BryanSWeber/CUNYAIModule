@@ -20,9 +20,10 @@ bool CombatManager::combatScript(const Unit & u)
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
         Mobility mobility = Mobility(u);
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
-		//Stored_Unit& my_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u)->second;
+		Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
+		bool unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
 
-        if (e_closest) { // if there are bad guys, fight. Builders do not fight.
+        if (e_closest && !unit_building) { // if there are bad guys, fight. Builders do not fight.
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
             int chargable_distance_self = CUNYAIModule::getChargableDistance(u);
             int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_);
@@ -75,8 +76,8 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     
     bool task_assigned = false;
 
-    auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
-    bool found_and_detecting = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ == Stored_Unit::Phase::Detecting;
+    auto found_item = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
+    bool found_and_detecting = found_item->phase_ == Stored_Unit::Phase::Detecting;
 
     if (isScout(u)) {
         if (u->isBlind() || found_and_detecting) removeScout(u);

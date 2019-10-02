@@ -213,6 +213,8 @@ public:
       static const char * noRaceName( const char *name );
       //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
       Unitset getUnit_Set( const Unit_Inventory & ui, const Position & origin, const int & dist );
+	  // Directly looks up unit in Unitinventory. Returns null if it is not found.
+	  static Stored_Unit * getStoredUnit(const Unit_Inventory & ui, const Unit & u);
       //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
       static Stored_Unit* getClosestStored( Unit_Inventory & ui, const Position & origin, const int & dist );
       static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
