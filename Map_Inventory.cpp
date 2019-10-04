@@ -4,6 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Map_Inventory.h"
 #include "Source\Unit_Inventory.h"
+#include "Source/Diagnostics.h"
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
 #include <fstream>
@@ -54,7 +55,7 @@ Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory 
                 buildable_ct += buildable_positions_[i][j];
             }
         }
-        CUNYAIModule::DiagnosticText("There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct);
+        Diagnostics::DiagnosticText("There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct);
     }
 
     if (map_veins_.size() == 0) {
@@ -67,7 +68,7 @@ Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory 
                 }
             }
         }
-        CUNYAIModule::DiagnosticText("There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct);
+        Diagnostics::DiagnosticText("There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct);
     }
 
     if (start_positions_.empty() && !cleared_all_start_positions_) {

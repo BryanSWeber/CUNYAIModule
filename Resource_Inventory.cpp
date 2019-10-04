@@ -5,6 +5,7 @@
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Map_Inventory.h"
+#include "Source/Diagnostics.h"
 #include <bwem.h>
 
 //Resource_Inventory functions.
@@ -152,7 +153,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     Stored_Unit eu = Stored_Unit(r->first);
                     if (ei.unit_map_.insert({ r->first, eu }).second) {
-                        CUNYAIModule::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
+                        Diagnostics::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
                     }
                 }
             }
@@ -191,7 +192,7 @@ void Resource_Inventory::updateMines() {
 void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        CUNYAIModule::DiagnosticMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }

@@ -6,17 +6,17 @@
 
 
 
-    // This function limits the drawing that needs to be done by the bot.
-    void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
-        if constexpr (DRAWING_MODE) {
-            if (CUNYAIModule::isOnScreen(s_pos, screen_pos) || CUNYAIModule::isOnScreen(f_pos, screen_pos)) {
-                Broodwar->drawLineMap(s_pos, f_pos, col);
-            }
+// This function limits the drawing that needs to be done by the bot.
+void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
+    if constexpr (DRAWING_MODE) {
+        if (CUNYAIModule::isOnScreen(s_pos, screen_pos) || CUNYAIModule::isOnScreen(f_pos, screen_pos)) {
+            Broodwar->drawLineMap(s_pos, f_pos, col);
         }
     }
+}
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DRAWING_MODE) {
             for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x += 2) {
                 for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y += 2) {
@@ -27,7 +27,7 @@
     }
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostic_Watch_Position(TilePosition &tp) {
+    void Diagnostics::Diagnostic_Watch_Position(TilePosition &tp) {
         if constexpr (DRAWING_MODE) {
             if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
                 Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2, tp.y - 480 / (4 * 16) + 1));
@@ -38,7 +38,7 @@
 
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DRAWING_MODE) {
             for (auto u : ui.unit_map_) {
                 Position fin = u.second.pos_;
@@ -49,7 +49,7 @@
     }
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DRAWING_MODE) {
             if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
                 Broodwar->drawCircleMap(s_pos, 25, col, true);
@@ -57,7 +57,7 @@
         }
     }
 
-    void DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields()) {
@@ -85,7 +85,7 @@
         }
     }
 
-    void DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0) {
@@ -112,7 +112,7 @@
             }
         }
     }
-    void DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0) {
@@ -139,7 +139,7 @@
         }
     }
 
-    void DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
@@ -165,7 +165,7 @@
         }
     }
 
-    void DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
+    void Diagnostics::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
         if constexpr (DRAWING_MODE) {
             Position upper_left = resource.pos_;
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
@@ -190,7 +190,7 @@
         }
     }
 
-    void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
+    void Diagnostics::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
@@ -214,7 +214,7 @@
             }
         }
     }
-    void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
+    void Diagnostics::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DRAWING_MODE) {
             Position upper_left = unit.pos_;
@@ -224,7 +224,7 @@
         }
     }
 
-    void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
+    void Diagnostics::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DRAWING_MODE) {
             map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
@@ -252,7 +252,7 @@
         }
     }
 
-    void DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
+    void Diagnostics::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
     {
         if constexpr (DRAWING_MODE) {
             for (auto res : reservations.reservation_map_) {
@@ -266,8 +266,18 @@
         }
     }
 
+
+    void Diagnostics::DiagnosticTrack(const Unit &u) {
+        Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
+    }
+
+    void Diagnostics::DiagnosticTrack(const Position &p) {
+        Broodwar->setScreenPosition(p - Position{ 320,200 });
+    }
+
+
     // Announces to player the name and count of all units in the unit inventory. Bland but practical.
-    void Print_Unit_Inventory(const int &screen_x, const int &screen_y, const Unit_Inventory &ui) {
+    void Diagnostics::Print_Unit_Inventory(const int &screen_x, const int &screen_y, const Unit_Inventory &ui) {
         int another_row_of_printing = 0;
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -280,7 +290,7 @@
         }
     }
     // Prints some test onscreen in the given location.
-    void Print_Test_Case(const int &screen_x, const int &screen_y) {
+    void Diagnostics::Print_Test_Case(const int &screen_x, const int &screen_y) {
         int another_row_of_printing = 0;
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -292,7 +302,7 @@
         }
     }
     // Announces to player the name and count of all units in the unit inventory. Bland but practical.
-    void Print_Cached_Inventory(const int &screen_x, const int &screen_y) {
+    void Diagnostics::Print_Cached_Inventory(const int &screen_x, const int &screen_y) {
         int another_row_of_printing = 0;
         for (auto i : CUNYAIModule::friendly_player_model.unit_type_)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -307,7 +317,7 @@
     }
 
     // Announces to player the name and count of all units in the research inventory. Bland but practical.
-    void Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
+    void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
         int another_row_of_printing_ups = 1;
 
         for (auto r : ri.upgrades_)
@@ -343,7 +353,7 @@
     }
 
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-    void Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, const Building_Gene &bo) {
+    void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, const Building_Gene &bo) {
         int another_row_of_printing = 0;
         if (!bo.building_gene_.empty()) {
             for (auto i : bo.building_gene_) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -367,7 +377,7 @@
     }
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-    void Print_Upgrade_Inventory(const int &screen_x, const int &screen_y) {
+    void Diagnostics::Print_Upgrade_Inventory(const int &screen_x, const int &screen_y) {
         int another_sort_of_upgrade = 0;
         for (int i = 0; i != 62; i++)
         { // iterating through all upgrades.
@@ -384,7 +394,7 @@
     }
 
     // Announces to player the name and type of all buildings in the reservation system. Bland but practical.
-    void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res) {
+    void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res) {
         int another_row_of_printing = 0;
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.

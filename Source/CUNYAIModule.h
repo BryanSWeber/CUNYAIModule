@@ -145,14 +145,7 @@ public:
     static bool isRecentCombatant(const Stored_Unit &su);
     static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
-    //Sends a diagnostic text message, accepts another argument..
-    template<typename ...Ts>
-    static void DiagnosticText(char const *fmt, Ts && ... vals) {
-        if constexpr (DRAWING_MODE) {
-            Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
-        }
-    }
-    // Defunct: Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
+
     //static bool Futile_Fight( Unit unit, Unit enemy );
 
     // Outlines the case where you can attack their type (air/ground/cloaked)

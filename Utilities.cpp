@@ -2107,14 +2107,6 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     return true;
 }
 
-void CUNYAIModule::DiagnosticTrack(const Unit &u) {
-    Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
-}
-
-void CUNYAIModule::DiagnosticTrack(const Position &p) {
-    Broodwar->setScreenPosition(p - Position{ 320,200 });
-}
-
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {

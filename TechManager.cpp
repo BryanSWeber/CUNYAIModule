@@ -3,6 +3,7 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\TechManager.h"
+#include "Source/Diagnostics.h"
 # include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
@@ -196,7 +197,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = Stored_Unit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
-            CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
+            Diagnostics::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
         }
     }
@@ -213,7 +214,7 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = Stored_Unit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
-            CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());
+            Diagnostics::DiagnosticText("Researching %s.", tech.c_str());
             return true;
         }
     }

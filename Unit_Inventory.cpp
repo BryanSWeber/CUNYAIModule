@@ -5,6 +5,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\Map_Inventory.h"
 #include "Source\Reservation_Manager.h"
+#include "Source/Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.
 #include <fstream>
@@ -136,7 +137,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit)
         miner.updateStoredUnit(unit);
     }
     else {
-        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
     }
 }
 
@@ -162,7 +163,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
         miner.updateStoredUnit(unit);
     }
     else {
-        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
     }
 }
 
@@ -187,7 +188,7 @@ void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Invento
         miner.updateStoredUnit(unit);
     }
     else {
-        CUNYAIModule::DiagnosticText("Failed to purge worker in inventory.");
+        Diagnostics::DiagnosticText("Failed to purge worker in inventory.");
     }
 }
 
@@ -195,21 +196,21 @@ void Unit_Inventory::drawAllVelocities() const
 {
     for (auto u : unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        CUNYAIModule::Diagnostic_Line(u.second.pos_, destination, CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
+        Diagnostics::Diagnostic_Line(u.second.pos_, destination, CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
     }
 }
 
 void Unit_Inventory::drawAllHitPoints() const
 {
     for (auto u : unit_map_) {
-        CUNYAIModule::DiagnosticHitPoints(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticHitPoints(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
 void Unit_Inventory::drawAllMAFAPaverages() const
 {
     for (auto u : unit_map_) {
-        CUNYAIModule::DiagnosticFAP(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticFAP(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
@@ -217,7 +218,7 @@ void Unit_Inventory::drawAllMAFAPaverages() const
 void Unit_Inventory::drawAllFutureDeaths() const
 {
     for (auto u : unit_map_) {
-        CUNYAIModule::DiagnosticDeath(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticDeath(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
@@ -225,7 +226,7 @@ void Unit_Inventory::drawAllFutureDeaths() const
 void Unit_Inventory::drawAllLastDamage() const
 {
     for (auto u : unit_map_) {
-        CUNYAIModule::DiagnosticLastDamage(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticLastDamage(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
@@ -234,7 +235,7 @@ void Unit_Inventory::drawAllLastDamage() const
 void Unit_Inventory::drawAllSpamGuards() const
 {
     for (auto u : unit_map_) {
-        CUNYAIModule::DiagnosticSpamGuard(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::DiagnosticSpamGuard(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 }
 
@@ -243,20 +244,20 @@ void Unit_Inventory::drawAllWorkerTasks() const
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
             if (u.second.locked_mine_ && !u.second.isAssignedResource() && !u.second.isAssignedClearing()) {
-                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::White);
+                Diagnostics::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::White);
             }
             else if (u.second.isAssignedMining()) {
-                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
+                Diagnostics::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
             }
             else if (u.second.isAssignedGas()) {
-                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Brown);
+                Diagnostics::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Brown);
             }
             else if (u.second.isAssignedClearing()) {
-                CUNYAIModule::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);
+                Diagnostics::Diagnostic_Line(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);
             }
 
             if (u.second.isAssignedBuilding()) {
-                CUNYAIModule::Diagnostic_Dot(u.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple);
+                Diagnostics::Diagnostic_Dot(u.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple);
             }
         }
     }

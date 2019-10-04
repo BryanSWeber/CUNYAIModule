@@ -230,7 +230,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
 
-    CUNYAIModule::DiagnosticText("No target found");
+    Diagnostics::DiagnosticText("No target found");
 
     return false; // no target, we got a falsehood.
 }

@@ -4,6 +4,7 @@
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
+#include "Source/Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\PlayerModelManager.h" // needed for cartidges.
 #include "Source\BWEB\BWEB.h"
@@ -113,7 +114,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 } //extractors must have buildings nearby or we shouldn't build them.
 
                 else if (BWAPI::Broodwar->isVisible(tile)) {
-                    CUNYAIModule::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), tile.x, tile.y);
+                    Diagnostics::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), tile.x, tile.y);
                 }
             }
         }
@@ -170,7 +171,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
 
     if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
-        //CUNYAIModule::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
+        //Diagnostics::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
         //buildorder.updateRemainingBuildOrder(building); // skips the building.
     }
 
@@ -227,7 +228,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
-                    //CUNYAIModule::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
+                    //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
                 }
             }
         }
@@ -483,7 +484,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
     if (CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk) == 0) {
         CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
-        CUNYAIModule::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
+        Diagnostics::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
         return true;
     }
 
@@ -526,7 +527,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
-            //CUNYAIModule::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
+            //Diagnostics::DiagnosticText("Considering morphing a %s", pt_type->first.c_str());
             pt_type++;
         }
         else {
@@ -596,7 +597,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // Build it.
     if (!building_optimal_unit && morph_canidate->getType() != build_type) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit || morph_canidate->getType() == build_type) {
-        //if (Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
+        //if (Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
         return true;
     }
     return false;
@@ -611,13 +612,13 @@ UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_type
         if (potential_type.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             best_sim_score = potential_type.second;
             build_type = potential_type.first;
-            //CUNYAIModule::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
+            //Diagnostics::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
         }
         else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
             //build_type =
             if (build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
             else if (potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
-            //CUNYAIModule::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
+            //Diagnostics::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
         }
     }
 
@@ -663,7 +664,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24); //moving average over 24 simulations, 1 seconds.
-//if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
+//if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
     have_idle_evos_ = false;
@@ -726,7 +727,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         benifit_of_shooting_ground_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
         buildfap_temp.clear();
-        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
 
         // test fake anti-air sunkens
@@ -741,7 +742,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         benifit_of_shooting_air_targets = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false); //The spore colony is just a placeholder.
         buildfap_temp.clear();
-        //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
         return benifit_of_shooting_air_targets >= benifit_of_shooting_ground_targets;
     }
 
@@ -792,7 +793,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
     value_of_ground = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
     buildfap_temp.clear();
-    //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+    //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
 
     // test flying hydras.
@@ -807,7 +808,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
     value_of_flyers = CUNYAIModule::getFAPScore(buildfap_temp, true) - CUNYAIModule::getFAPScore(buildfap_temp, false);
     buildfap_temp.clear();
-    //if(Broodwar->getFrameCount() % 96 == 0) CUNYAIModule::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
+    //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Found a sim score of %d, for %s", combat_types.find(potential_type.first)->second, combat_types.find(potential_type.first)->first.c_str());
 
 
     return value_of_flyers >= value_of_ground;
@@ -894,8 +895,8 @@ bool AssemblyManager::assignUnitAssembly()
         bool this_is_the_closest_base = (distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_)) || distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
 
         if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc) || (they_are_moving_out && this_is_the_closest_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground))) {
-            CUNYAIModule::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
-            //CUNYAIModule::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
+            Diagnostics::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
+            //Diagnostics::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
 
             bool can_upgrade_colonies = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
                 (CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
@@ -1238,7 +1239,7 @@ void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
 void Building_Gene::announceBuildingAttempt(UnitType ut) {
     if (ut.isBuilding()) {
         last_build_order = ut;
-        CUNYAIModule::DiagnosticText("Building a %s", last_build_order.c_str());
+        Diagnostics::DiagnosticText("Building a %s", last_build_order.c_str());
     }
 }
 

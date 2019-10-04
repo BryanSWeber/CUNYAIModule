@@ -6,6 +6,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Reservation_Manager.h"
+#include "Source/Diagnostics.h"
 #include <algorithm>
 
 using namespace std;
@@ -135,7 +136,7 @@ void Reservation::confirmOngoingReservations() {
             ++res_it;
         }
         else {
-            CUNYAIModule::DiagnosticText("No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str());
+            Diagnostics::DiagnosticText("No worker is building the reserved %s. Freeing up the funds.", res_it->second.c_str());
             auto remove_me = res_it;
             res_it++;
             removeReserveSystem(remove_me->first, remove_me->second, true);  // contains an erase.
@@ -148,7 +149,7 @@ void Reservation::confirmOngoingReservations() {
     }
 
     if (!reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
-        CUNYAIModule::DiagnosticText("...We're stuck, aren't we? Have a friendly nudge.", "");
+        Diagnostics::DiagnosticText("...We're stuck, aren't we? Have a friendly nudge.", "");
         reservation_map_.clear();
         min_reserve_ = 0;
         gas_reserve_ = 0;

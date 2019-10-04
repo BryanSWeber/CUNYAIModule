@@ -4,6 +4,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
+#include "Source/Diagnostics.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -19,17 +20,17 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
 
     if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
-        CUNYAIModule::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
+        Diagnostics::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
 
     //if we can build it with an offical build order, and it is in the reserve system, do so now.
     if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
-        CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
     else {
         unit->move(Position(miner.intended_build_tile_));
-        //CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        //Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     //else if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
@@ -133,8 +134,8 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 
     } // find drone minima.
 
-      //    CUNYAIModule::DiagnosticText("LOW DRONE COUNT : %d", low_drone);
-      //    CUNYAIModule::DiagnosticText("Mine Minerals : %d", mine_minerals);
+      //    Diagnostics::DiagnosticText("LOW DRONE COUNT : %d", low_drone);
+      //    Diagnostics::DiagnosticText("Mine Minerals : %d", mine_minerals);
 
     for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
         bool mine_is_right_type = false;
@@ -333,7 +334,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
-        //CUNYAIModule::DiagnosticTrack(u);
+        //Diagnostics::DiagnosticTrack(u);
         if (CUNYAIModule::spamGuard(u, 14) /*&& u->isIdle()*/) {
             task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         }
@@ -376,7 +377,7 @@ bool WorkerManager::workerWork(const Unit &u) {
     case Stored_Unit::Building:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && u->build(miner.intended_build_type_, miner.intended_build_tile_)) {
-                CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+                Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
                 return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Building);
             }
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
