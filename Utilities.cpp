@@ -1336,7 +1336,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
             cd_frames = 28; // this is an INSANE cooldown.
         }
     }
-    //else 
+
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
     }

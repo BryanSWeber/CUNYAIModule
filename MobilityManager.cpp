@@ -105,7 +105,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int helpful_u = ui.moving_average_fap_stock_;
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
-    int max_dist = passed_distance; // copy, to be modified later.
+    //int max_dist = passed_distance; // copy, to be modified later.
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500);
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;

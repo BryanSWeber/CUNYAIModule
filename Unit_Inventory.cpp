@@ -266,7 +266,7 @@ void Unit_Inventory::drawAllWorkerTasks() const
 // Blue if invalid position (lost and can't find), red if valid.
 void Unit_Inventory::drawAllLocations() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
             if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_)) {
                 if (e->second.valid_pos_) {
@@ -283,7 +283,7 @@ void Unit_Inventory::drawAllLocations() const
 //Marks as red if it's on a minitile that ground units should not be at.
 void Unit_Inventory::drawAllMisplacedGroundUnits() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
             if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_) && !e->second.type_.isBuilding()) {
                 if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1) {

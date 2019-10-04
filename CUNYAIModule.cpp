@@ -431,7 +431,7 @@ void CUNYAIModule::onFrame()
     map_time = end_map - start_map;
 
     // Display the game status indicators at the top of the screen
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         Diagnostics::onFrame();
     }// close analysis mode
 
@@ -495,7 +495,7 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange());
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        if constexpr (DRAWING_MODE) {
+                        if constexpr (DIAGNOSTIC_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostics::Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
                         }
@@ -503,7 +503,7 @@ void CUNYAIModule::onFrame()
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        if constexpr (DRAWING_MODE) {
+                        if constexpr (DIAGNOSTIC_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
                             Diagnostics::Diagnostic_Line(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
                         }
@@ -565,7 +565,7 @@ void CUNYAIModule::onFrame()
         }
     }
 
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         int n;
         n = sprintf_s(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
         n = sprintf_s(playermodel_string, "Players:       %3.f%%,%3.fms ", playermodel_time.count() / static_cast<double>(total_frame_time.count()) * 100, playermodel_time.count());

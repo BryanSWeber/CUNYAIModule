@@ -8,7 +8,7 @@
 
 // This function limits the drawing that needs to be done by the bot.
 void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         if (CUNYAIModule::isOnScreen(s_pos, screen_pos) || CUNYAIModule::isOnScreen(f_pos, screen_pos)) {
             Broodwar->drawLineMap(s_pos, f_pos, col);
         }
@@ -17,7 +17,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     // This function limits the drawing that needs to be done by the bot.
     void Diagnostics::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x += 2) {
                 for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y += 2) {
                     Broodwar->drawTextMap(Position(TilePosition(x, y)), "(%d,%d)", x, y);
@@ -28,7 +28,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     // This function limits the drawing that needs to be done by the bot.
     void Diagnostics::Diagnostic_Watch_Position(TilePosition &tp) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
                 Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2, tp.y - 480 / (4 * 16) + 1));
                 Broodwar->setScreenPosition(centered);
@@ -39,7 +39,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     // This function limits the drawing that needs to be done by the bot.
     void Diagnostics::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             for (auto u : ui.unit_map_) {
                 Position fin = u.second.pos_;
                 Position start = u.second.bwapi_unit_->getTargetPosition();
@@ -50,7 +50,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     // This function limits the drawing that needs to be done by the bot.
     void Diagnostics::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
                 Broodwar->drawCircleMap(s_pos, 25, col, true);
             }
@@ -58,7 +58,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
     }
 
     void Diagnostics::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields()) {
                 // Draw the background.
@@ -86,7 +86,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
     }
 
     void Diagnostics::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0) {
                 // Draw the red background.
@@ -113,7 +113,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
     void Diagnostics::DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0) {
                 // Draw the background.
@@ -140,7 +140,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
     }
 
     void Diagnostics::DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
                 // Draw the background.
@@ -166,7 +166,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
     }
 
     void Diagnostics::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = resource.pos_;
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
                 // Draw the orange background.
@@ -192,7 +192,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     void Diagnostics::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
     {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24) {
                 // Draw the black background.
@@ -203,20 +203,26 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
                 lower_right.x = upper_left.x + unit.type_.width();
                 lower_right.y = upper_left.y + 5;
 
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, false);
+                if(unit.bwapi_unit_ && !CUNYAIModule::spamGuard(unit.bwapi_unit_)) 
+                    Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, false);
+                else
+                    Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, false);
 
                 //Overlay the appropriate grey above it.
                 lower_right = upper_left;
                 lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * (1 - min(unit.time_since_last_command_, 24) / static_cast<double>(24)));
                 lower_right.y = upper_left.y + 5;
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
 
+                if (unit.bwapi_unit_ && !CUNYAIModule::spamGuard(unit.bwapi_unit_))
+                    Broodwar->drawBoxMap(upper_left, lower_right, Colors::Red, true);
+                else
+                    Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
             }
         }
     }
     void Diagnostics::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
     {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
                 Broodwar->drawTextMap(unit.pos_, unit.order_.c_str());
@@ -226,7 +232,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     void Diagnostics::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
     {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
             { Stored_Unit::Phase::Attacking,"Attacking" },
             { Stored_Unit::Phase::Retreating,"Retreating" },
@@ -254,7 +260,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
     void Diagnostics::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
     {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             for (auto res : reservations.reservation_map_) {
                 Position upper_left = Position(res.first);
                 Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!

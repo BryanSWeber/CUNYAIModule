@@ -40,7 +40,7 @@ struct Diagnostics {
     //Sends a diagnostic text message, accepts another argument..
     template<typename ...Ts>
     static void DiagnosticText(char const *fmt, Ts && ... vals) {
-        if constexpr (DRAWING_MODE) {
+        if constexpr (DIAGNOSTIC_MODE) {
             Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
         }
     }

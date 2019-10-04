@@ -1269,7 +1269,7 @@ void Map_Inventory::setNextExpo(const TilePosition tp) {
 
 void Map_Inventory::drawExpoPositions() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
@@ -1290,7 +1290,7 @@ void Map_Inventory::drawExpoPositions() const
 
 void Map_Inventory::drawBasePositions() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         Broodwar->drawCircleMap(enemy_base_ground_, 15, Colors::Red, true);
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
         Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
@@ -1500,7 +1500,7 @@ void Map_Inventory::createAttractField(Player_Model &enemy_player) {
 
 
 void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
-    if (DRAWING_MODE) {
+    if (DIAGNOSTIC_MODE) {
         for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
             for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
                 if (pf[i][j] > 0) {
@@ -1514,7 +1514,7 @@ void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
 }
 
 void Map_Inventory::DiagnosticTile() {
-    if (DRAWING_MODE) {
+    if (DIAGNOSTIC_MODE) {
         int tile_map_x = Broodwar->mapWidth();
         int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < tile_map_x; ++i) {
