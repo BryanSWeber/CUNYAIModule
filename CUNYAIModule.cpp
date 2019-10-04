@@ -29,37 +29,37 @@ using namespace std;
 namespace { auto & bwemMap = BWEM::Map::Instance(); }
 
 //Declare static variables for access in other modules.
-    bool CUNYAIModule::army_starved = false;
-    bool CUNYAIModule::econ_starved = false;
-    bool CUNYAIModule::tech_starved = false;
-    bool CUNYAIModule::supply_starved = false;
-    bool CUNYAIModule::gas_starved = false;
-    bool CUNYAIModule::larva_starved = false;
-    double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
-    double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
-    double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
-    double CUNYAIModule::alpha_army_original = 0;
-    double CUNYAIModule::alpha_tech_original = 0;
-    double CUNYAIModule::alpha_econ_original = 0;
-    double CUNYAIModule::supply_ratio; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
-    double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spending but will be matched with supply.
-    Player_Model CUNYAIModule::friendly_player_model;
-    Player_Model CUNYAIModule::enemy_player_model;
-    Player_Model CUNYAIModule::neutral_player_model;
-    Resource_Inventory CUNYAIModule::land_inventory; // resources.
-    Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
-    CombatManager CUNYAIModule::combat_manager;
-    FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
-    TechManager CUNYAIModule::techmanager;
-    AssemblyManager CUNYAIModule::assemblymanager;
-    Building_Gene CUNYAIModule::buildorder; //
-    Reservation CUNYAIModule::my_reservation;
-    GeneticHistory CUNYAIModule::gene_history;
-    WorkerManager CUNYAIModule::workermanager;
+bool CUNYAIModule::army_starved = false;
+bool CUNYAIModule::econ_starved = false;
+bool CUNYAIModule::tech_starved = false;
+bool CUNYAIModule::supply_starved = false;
+bool CUNYAIModule::gas_starved = false;
+bool CUNYAIModule::larva_starved = false;
+double supply_ratio = 0; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth. Created in a ratio ln(supply remaining)/ln(supply used).
+double gas_proportion = 0; // for gas levels. Gas is critical for spending and will be mined in a proportion of gas/(gas+min).
+double CUNYAIModule::adaptation_rate = 0; //Adaptation rate to opponent.
+double CUNYAIModule::alpha_army_original = 0;
+double CUNYAIModule::alpha_tech_original = 0;
+double CUNYAIModule::alpha_econ_original = 0;
+double CUNYAIModule::supply_ratio; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
+double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spending but will be matched with supply.
+Player_Model CUNYAIModule::friendly_player_model;
+Player_Model CUNYAIModule::enemy_player_model;
+Player_Model CUNYAIModule::neutral_player_model;
+Resource_Inventory CUNYAIModule::land_inventory; // resources.
+Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
+CombatManager CUNYAIModule::combat_manager;
+FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
+TechManager CUNYAIModule::techmanager;
+AssemblyManager CUNYAIModule::assemblymanager;
+Building_Gene CUNYAIModule::buildorder; //
+Reservation CUNYAIModule::my_reservation;
+GeneticHistory CUNYAIModule::gene_history;
+WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {
-	system(".\\bwapi-data\\read\\pytest.exe");
+    system(".\\bwapi-data\\read\\pytest.exe");
 
     //Initialize BWEM, must be done FIRST.
     Broodwar << "Map initialization..." << std::endl;
@@ -75,24 +75,24 @@ void CUNYAIModule::onStart()
     BWEB::Blocks::findBlocks();
 
     // Hello World!
-    Broodwar->sendText( "Good luck, have fun!" );
+    Broodwar->sendText("Good luck, have fun!");
 
     // Print the map name.
     // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
     Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
 
     // Enable the UserInput flag, which allows us to control the bot and type messages. Also needed to get the screen position.
-    Broodwar->enableFlag( Flag::UserInput );
+    Broodwar->enableFlag(Flag::UserInput);
 
     // Uncomment the following line and the bot will know about everything through the fog of war (cheat).
     //Broodwar->enableFlag(Flag::CompleteMapInformation);
 
     // Set the command optimization level so that common commands can be grouped
     // and reduce the bot's APM (Actions Per Minute).
-    Broodwar->setCommandOptimizationLevel( 2 );
+    Broodwar->setCommandOptimizationLevel(2);
 
     // Check if this is a replay
-    if ( Broodwar->isReplay() )
+    if (Broodwar->isReplay())
     {
 
         // Announce the players in the replay
@@ -100,10 +100,10 @@ void CUNYAIModule::onStart()
 
         // Iterate all the players in the game using a std:: iterator
         Playerset players = Broodwar->getPlayers();
-        for ( auto p : players )
+        for (auto p : players)
         {
             // Only print the player if they are not an observer
-            if ( !p->isObserver() )
+            if (!p->isObserver())
                 Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
         }
 
@@ -112,7 +112,7 @@ void CUNYAIModule::onStart()
     {
         // Retrieve you and your enemy's races. enemy() will just return the first enemy.
         // If you wish to deal with multiple enemies then you must use enemies().
-        if ( Broodwar->enemy() ) // First make sure there is an enemy
+        if (Broodwar->enemy()) // First make sure there is an enemy
             Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
     }
 
@@ -139,14 +139,14 @@ void CUNYAIModule::onStart()
     win_rate = (1 - gene_history.loss_rate_);
 
     //get initial build order.
-    buildorder.getInitialBuildOrder( gene_history.build_order_ );
+    buildorder.getInitialBuildOrder(gene_history.build_order_);
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
     current_map_inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
     current_map_inventory.updateMapVeins();
-    current_map_inventory.updateMapVeinsOut( Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_ );
+    current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_);
     //inventory.updateMapChokes();
     current_map_inventory.getStartPositions();
 
@@ -169,11 +169,11 @@ void CUNYAIModule::onStart()
 
 }
 
-void CUNYAIModule::onEnd( bool isWinner )
+void CUNYAIModule::onEnd(bool isWinner)
 {// Called when the game ends
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open( ".\\bwapi-data\\write\\history.txt", ios_base::app );
+    output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << gas_proportion << ","
         << supply_ratio << ','
@@ -200,7 +200,7 @@ void CUNYAIModule::onEnd( bool isWinner )
         << enemy_player_model.casualties_.stock_fliers_ + enemy_player_model.units_.stock_fliers_ << ','
         << Broodwar->elapsedTime()
         << endl;
-        ;
+    ;
     output.close();
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
@@ -355,7 +355,7 @@ void CUNYAIModule::onFrame()
 
     if (t_game == 0) {
         //update local resources
-        current_map_inventory.updateMapVeinsOut( current_map_inventory.start_positions_[0], current_map_inventory.enemy_base_ground_, current_map_inventory.map_out_from_enemy_ground_);
+        current_map_inventory.updateMapVeinsOut(current_map_inventory.start_positions_[0], current_map_inventory.enemy_base_ground_, current_map_inventory.map_out_from_enemy_ground_);
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
@@ -374,7 +374,7 @@ void CUNYAIModule::onFrame()
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
 
-    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery)/2;
+    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) / 2;
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -418,24 +418,24 @@ void CUNYAIModule::onFrame()
    // if (Broodwar->mapWidth() && Broodwar->mapHeight()) {
     //current_map_inventory.createThreatField(enemy_player_model);
     //current_map_inventory.createAttractField(enemy_player_model);
-        current_map_inventory.createExploreField();
-        current_map_inventory.createAAField(enemy_player_model);
-   // }
+    current_map_inventory.createExploreField();
+    current_map_inventory.createAAField(enemy_player_model);
+    // }
 
-    //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
-    //current_map_inventory.DiagnosticTile();
+     //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
+     //current_map_inventory.DiagnosticTile();
 
 
     auto end_map = std::chrono::high_resolution_clock::now();
     map_time = end_map - start_map;
 
     // Display the game status indicators at the top of the screen
-    if constexpr(DRAWING_MODE) {
+    if constexpr (DRAWING_MODE) {
 
         //bwemMap.Draw(BWAPI::BroodwarPtr);
         BWEB::Map::draw();
 
-        Print_Unit_Inventory( 0, 50, friendly_player_model.units_ );
+        Print_Unit_Inventory(0, 50, friendly_player_model.units_);
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
         //Print_Test_Case(0, 50);
@@ -444,8 +444,8 @@ void CUNYAIModule::onFrame()
         //enemy_player_model.Print_Average_CD(500, 170);
         //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         if (buildorder.isEmptyBuildOrder()) {
-        //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+            //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+                //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
             Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
         }
         else {
@@ -610,7 +610,7 @@ void CUNYAIModule::onFrame()
         //}
 
         for (auto & j : friendly_player_model.units_.unit_map_) {
-            CUNYAIModule::DiagnosticPhase(j.second,current_map_inventory.screen_position_);
+            CUNYAIModule::DiagnosticPhase(j.second, current_map_inventory.screen_position_);
         }
 
         //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
@@ -628,7 +628,7 @@ void CUNYAIModule::onFrame()
 
     // Assemble units when needed.
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-        assemblymanager.assignUnitAssembly();
+    assemblymanager.assignUnitAssembly();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
     larva_time = end_unit_morphs - start_unit_morphs;
 
@@ -674,8 +674,8 @@ void CUNYAIModule::onFrame()
                     }
                 }
                 if (detector_found /*&& spamGuard(detector_of_choice)*/) {
-                    double theta = atan2(detector_of_choice.pos_.y- c.y, detector_of_choice.pos_.x - c.x);
-                    Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange() );
+                    double theta = atan2(detector_of_choice.pos_.y - c.y, detector_of_choice.pos_.x - c.x);
+                    Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange());
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
                         if constexpr (DRAWING_MODE) {
@@ -706,7 +706,7 @@ void CUNYAIModule::onFrame()
 
         // Worker Loop - moved after combat to prevent mining from overriding worker defense..
         auto start_worker = std::chrono::high_resolution_clock::now();
-           if(u->getType().isWorker()) workermanager.workerWork(u);
+        if (u->getType().isWorker()) workermanager.workerWork(u);
         auto end_worker = std::chrono::high_resolution_clock::now();
 
         //Upgrade loop:
@@ -750,50 +750,50 @@ void CUNYAIModule::onFrame()
 
     if constexpr (DRAWING_MODE) {
         int n;
-        n = sprintf_s(delay_string,       "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
+        n = sprintf_s(delay_string, "Delays:{S:%d,M:%d,L:%d}%3.fms", short_delay, med_delay, long_delay, total_frame_time.count());
         n = sprintf_s(playermodel_string, "Players:       %3.f%%,%3.fms ", playermodel_time.count() / static_cast<double>(total_frame_time.count()) * 100, playermodel_time.count());
-        n = sprintf_s(map_string,         "Maps:          %3.f%%,%3.fms ", map_time.count() / static_cast<double>(total_frame_time.count()) * 100, map_time.count());
-        n = sprintf_s(larva_string,       "Larva:         %3.f%%,%3.fms", larva_time.count() / static_cast<double>(total_frame_time.count()) * 100, larva_time.count());
-        n = sprintf_s(worker_string,      "Workers:       %3.f%%,%3.fms", worker_time.count() / static_cast<double>(total_frame_time.count()) * 100, worker_time.count());
-        n = sprintf_s(scouting_string,    "Scouting:      %3.f%%,%3.fms", scout_time.count() / static_cast<double>(total_frame_time.count()) * 100, scout_time.count());
-        n = sprintf_s(combat_string,      "Combat:        %3.f%%,%3.fms", combat_time.count() / static_cast<double>(total_frame_time.count()) * 100, combat_time.count());
-        n = sprintf_s(detection_string,   "Detection:     %3.f%%,%3.fms", detector_time.count() / static_cast<double>(total_frame_time.count()) * 100, detector_time.count());
-        n = sprintf_s(upgrade_string,     "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
+        n = sprintf_s(map_string, "Maps:          %3.f%%,%3.fms ", map_time.count() / static_cast<double>(total_frame_time.count()) * 100, map_time.count());
+        n = sprintf_s(larva_string, "Larva:         %3.f%%,%3.fms", larva_time.count() / static_cast<double>(total_frame_time.count()) * 100, larva_time.count());
+        n = sprintf_s(worker_string, "Workers:       %3.f%%,%3.fms", worker_time.count() / static_cast<double>(total_frame_time.count()) * 100, worker_time.count());
+        n = sprintf_s(scouting_string, "Scouting:      %3.f%%,%3.fms", scout_time.count() / static_cast<double>(total_frame_time.count()) * 100, scout_time.count());
+        n = sprintf_s(combat_string, "Combat:        %3.f%%,%3.fms", combat_time.count() / static_cast<double>(total_frame_time.count()) * 100, combat_time.count());
+        n = sprintf_s(detection_string, "Detection:     %3.f%%,%3.fms", detector_time.count() / static_cast<double>(total_frame_time.count()) * 100, detector_time.count());
+        n = sprintf_s(upgrade_string, "Upgrades:      %3.f%%,%3.fms", upgrade_time.count() / static_cast<double>(total_frame_time.count()) * 100, upgrade_time.count());
     }
 
     //if (buildorder.isEmptyBuildOrder())  Broodwar->leaveGame(); // Test Opening Game intensively.
 
 } // closure: Onframe
 
-void CUNYAIModule::onSendText( std::string text )
+void CUNYAIModule::onSendText(std::string text)
 {
 
     // Send the text to the game if it is not being processed.
-    Broodwar->sendText( "%s", text.c_str() );
+    Broodwar->sendText("%s", text.c_str());
 
     // Make sure to use %s and pass the text as a parameter,
     // otherwise you may run into problems when you use the %(percent) character!
 
 }
 
-void CUNYAIModule::onReceiveText( BWAPI::Player player, std::string text )
+void CUNYAIModule::onReceiveText(BWAPI::Player player, std::string text)
 {
     // Parse the received text
     Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
 }
 
-void CUNYAIModule::onPlayerLeft( BWAPI::Player player )
+void CUNYAIModule::onPlayerLeft(BWAPI::Player player)
 {
     // Interact verbally with the other players in the game by
     // announcing that the other player has left.
-    Broodwar->sendText( "That was a good game. I'll remember this! %s!", player->getName().c_str() );
+    Broodwar->sendText("That was a good game. I'll remember this! %s!", player->getName().c_str());
 }
 
-void CUNYAIModule::onNukeDetect( BWAPI::Position target )
+void CUNYAIModule::onNukeDetect(BWAPI::Position target)
 {
 
     // Check if the target is a valid position
-    if ( target )
+    if (target)
     {
         // if so, print the location of the nuclear strike target
         Broodwar << "Have you no shame? My sources say there's nuclear launch at " << target << std::endl;
@@ -801,23 +801,23 @@ void CUNYAIModule::onNukeDetect( BWAPI::Position target )
     else
     {
         // Otherwise, ask other players where the nuke is!
-Broodwar->sendText( "Where's the nuke?" );
+        Broodwar->sendText("Where's the nuke?");
     }
 
     // You can also retrieve all the nuclear missile targets using Broodwar->getNukeDots()!
 }
 
-void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
+void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
-    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) && !unit->isInvincible() ) { // safety check.
+    if (unit->getPlayer()->isEnemy(Broodwar->self()) && !unit->isInvincible()) { // safety check.
                                                                                              //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
-        Stored_Unit eu = Stored_Unit( unit );
+        Stored_Unit eu = Stored_Unit(unit);
 
-        if ( enemy_player_model.units_.unit_map_.insert( { unit, eu } ).second ) { // if the insertion succeeded
+        if (enemy_player_model.units_.unit_map_.insert({ unit, eu }).second) { // if the insertion succeeded
                                                                                //CUNYAIModule::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else { // the insertion must have failed
@@ -832,21 +832,21 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
 
     }
 
-    if ( unit->getPlayer()->isNeutral() && !unit->isInvincible() ) { // safety check.
+    if (unit->getPlayer()->isNeutral() && !unit->isInvincible()) { // safety check.
                                                                                  //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
         Stored_Unit nu = Stored_Unit(unit);
         neutral_player_model.units_.addStored_Unit(nu);
 
     }
 
-    if (unit->getPlayer()->isNeutral() && unit->getType().isResourceContainer() ) { // safety check.
+    if (unit->getPlayer()->isNeutral() && unit->getType().isResourceContainer()) { // safety check.
         Stored_Resource* ru = &Stored_Resource(unit);
         ru->max_stock_value_ = ru->current_stock_value_; // its value is what it has now, since it was somehow missing at game start. Must be passed by refrence or it will be forgotten.
         land_inventory.addStored_Resource(*ru);
     }
 
     //update maps, requires up-to date enemy inventories.
-    if ( unit->getType().isBuilding() ) {
+    if (unit->getType().isBuilding()) {
         //if (unit->getPlayer() == Broodwar->enemy()) {
         //    //update maps, requires up-to date enemy inventories.
         //    inventory.veins_out_need_updating = true;
@@ -857,7 +857,7 @@ void CUNYAIModule::onUnitDiscover( BWAPI::Unit unit )
 
 }
 
-void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
+void CUNYAIModule::onUnitEvade(BWAPI::Unit unit)
 {
     //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
     //                                                                //CUNYAIModule::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
@@ -872,7 +872,7 @@ void CUNYAIModule::onUnitEvade( BWAPI::Unit unit )
     //}
 }
 
-void CUNYAIModule::onUnitShow( BWAPI::Unit unit )
+void CUNYAIModule::onUnitShow(BWAPI::Unit unit)
 {
     //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
     //    Stored_Unit eu = Stored_Unit( unit );
@@ -887,31 +887,31 @@ void CUNYAIModule::onUnitShow( BWAPI::Unit unit )
     //}
 }
 
-void CUNYAIModule::onUnitHide( BWAPI::Unit unit )
+void CUNYAIModule::onUnitHide(BWAPI::Unit unit)
 {
 
 
 }
 
-void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
+void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
-    if ( Broodwar->isReplay() )
+    if (Broodwar->isReplay())
     {
         // if we are in a replay, then we will print out the build order of the structures
-        if ( unit->getType().isBuilding() && !unit->getPlayer()->isNeutral() )
+        if (unit->getType().isBuilding() && !unit->getPlayer()->isNeutral())
         {
             int seconds = Broodwar->getFrameCount() / 24;
             int minutes = seconds / 60;
             seconds %= 60;
-            CUNYAIModule::DiagnosticText( "%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
+            CUNYAIModule::DiagnosticText("%.2d:%.2d: %s creates a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
         }
     }
 
-    if ( unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone && unit->getPlayer() == Broodwar->self()) {
+    if (unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone && unit->getPlayer() == Broodwar->self()) {
         my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), false);
     }
 
@@ -922,7 +922,7 @@ void CUNYAIModule::onUnitCreate( BWAPI::Unit unit )
 }
 
 
-void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0xf inside here!
+void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf inside here!
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
@@ -956,11 +956,11 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         combat_manager.removeScout(unit);
     }
 
-    if ( unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
+    if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
         auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
-        if ( found_ptr ) {
+        if (found_ptr) {
             if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
-            enemy_player_model.units_.unit_map_.erase( unit );
+            enemy_player_model.units_.unit_map_.erase(unit);
             enemy_player_model.casualties_.addStored_Unit(unit);
             //CUNYAIModule::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
@@ -969,10 +969,10 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
         }
     }
 
-    if ( IsMineralField( unit ) ) { // If the unit is a mineral field we have to detach all those poor workers.
+    if (IsMineralField(unit)) { // If the unit is a mineral field we have to detach all those poor workers.
 
         // Check for miners who may have been digging at that patch.
-        for ( auto potential_miner = friendly_player_model.units_.unit_map_.begin(); potential_miner != friendly_player_model.units_.unit_map_.end() && !friendly_player_model.units_.unit_map_.empty(); potential_miner++ ) {
+        for (auto potential_miner = friendly_player_model.units_.unit_map_.begin(); potential_miner != friendly_player_model.units_.unit_map_.end() && !friendly_player_model.units_.unit_map_.empty(); potential_miner++) {
 
             if (potential_miner->second.locked_mine_ == unit) {
                 Unit miner_unit = potential_miner->second.bwapi_unit_;
@@ -981,7 +981,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
                 // Do NOT tell the miner to stop here. He will end with a mineral in his "mouth" and not return it to base!
                 friendly_player_model.units_.purgeWorkerRelationsNoStop(miner_unit); // reset the worker
-                if ( was_clearing ) {
+                if (was_clearing) {
 
                     auto found_mineral_ptr = land_inventory.resource_inventory_.find(unit); // erase the now-gone mine.
                     if (found_mineral_ptr != land_inventory.resource_inventory_.end()) {
@@ -1010,7 +1010,7 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
     }
 
-    if ( unit->getPlayer()->isNeutral() && !IsMineralField(unit) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
+    if (unit->getPlayer()->isNeutral() && !IsMineralField(unit)) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead..
         auto found_ptr = neutral_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
             neutral_player_model.units_.unit_map_.erase(unit);
@@ -1025,34 +1025,34 @@ void CUNYAIModule::onUnitDestroy( BWAPI::Unit unit ) // something mods Unit to 0
 
 }
 
-void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
+void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
 {
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
-    if ( Broodwar->isReplay() )
+    if (Broodwar->isReplay())
     {
         // if we are in a replay, then we will print out the build order of the structures
-        if ( unit->getType().isBuilding() &&
-            !unit->getPlayer()->isNeutral() )
+        if (unit->getType().isBuilding() &&
+            !unit->getPlayer()->isNeutral())
         {
             int seconds = Broodwar->getFrameCount() / 24;
             int minutes = seconds / 60;
             seconds %= 60;
-            Broodwar->sendText( "%.2d:%.2d: %s morphs a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str() );
+            Broodwar->sendText("%.2d:%.2d: %s morphs a %s", minutes, seconds, unit->getPlayer()->getName().c_str(), unit->getType().c_str());
         }
     }
 
-    if ( unit->getType().isWorker() ) {
+    if (unit->getType().isWorker()) {
         friendly_player_model.units_.purgeWorkerRelationsStop(unit);
     }
 
-    if ( unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon || unit->getType() == UnitTypes::Zerg_Lurker_Egg ) {
+    if (unit->getType() == UnitTypes::Zerg_Egg || unit->getType() == UnitTypes::Zerg_Cocoon || unit->getType() == UnitTypes::Zerg_Lurker_Egg) {
         buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Shouldn't be a problem if unit isn't in buildorder.  Don't have to worry about double-built units (lings) since the second one is not morphed as per BWAPI rules.
     }
 
-    if ( unit->getBuildType().isBuilding() ) {
+    if (unit->getBuildType().isBuilding()) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
         //buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on RESERVATION ONLY, this might double catch them...
 
@@ -1066,17 +1066,17 @@ void CUNYAIModule::onUnitMorph( BWAPI::Unit unit )
 
 }
 
-void CUNYAIModule::onUnitRenegade( BWAPI::Unit unit ) // Should be a line-for-line copy of onUnitDestroy.
+void CUNYAIModule::onUnitRenegade(BWAPI::Unit unit) // Should be a line-for-line copy of onUnitDestroy.
 {
     onUnitDestroy(unit);
     onUnitDiscover(unit);
 }
 
-void CUNYAIModule::onSaveGame( std::string gameName )
+void CUNYAIModule::onSaveGame(std::string gameName)
 {
     Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
 }
 
-void CUNYAIModule::onUnitComplete( BWAPI::Unit unit )
+void CUNYAIModule::onUnitComplete(BWAPI::Unit unit)
 {
 }

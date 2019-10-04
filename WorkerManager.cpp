@@ -210,14 +210,14 @@ bool WorkerManager::assignClear(const Unit & unit)
     miner.stopMine();
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_map_inventory.front_line_base_.getDistance(r->second.pos_) <  CUNYAIModule::current_map_inventory.my_portion_of_the_map_) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_map_inventory.front_line_base_.getDistance(r->second.pos_) < CUNYAIModule::current_map_inventory.my_portion_of_the_map_) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
 
     if (!available_fields.resource_inventory_.empty() && attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner))
         return CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, Stored_Unit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
-    else if(old_mineral_patch){
+    else if (old_mineral_patch) {
         miner.startMine(old_mineral_patch);
         old_mineral_patch->getType().isRefinery() ? CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningGas) : CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningMin);
     }
@@ -302,7 +302,7 @@ bool WorkerManager::workerWork(const Unit &u) {
             task_guard = true;
         }
         break;
-    case Stored_Unit::MiningMin: 
+    case Stored_Unit::MiningMin:
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u);
         }
@@ -314,7 +314,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Clearing: // does the same thing as...
-    case Stored_Unit::DistanceMining: 
+    case Stored_Unit::DistanceMining:
         if (!isEmptyWorker(u)) { //auto return if needed.
             miner.stopMine();
             task_guard = workersReturn(u);
@@ -361,7 +361,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                     }
                 }
             }
-            if(!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+            if (!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
         }
 
         break;

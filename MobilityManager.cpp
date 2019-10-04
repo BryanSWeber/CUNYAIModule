@@ -38,7 +38,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     Position target_pos = Positions::Origin;
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
-        if(CUNYAIModule::combat_manager.isScout(unit_)){
+        if (CUNYAIModule::combat_manager.isScout(unit_)) {
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_);
             target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
         }
@@ -110,7 +110,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
-    
+
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
     Unit_Inventory ThreateningTargets;
@@ -130,7 +130,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                 e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-            if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui)) ) {
+            if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui))) {
                 DiveableTargets.addStored_Unit(e->second);
             }
 
@@ -142,7 +142,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 SecondOrderThreats.addStored_Unit(e->second);
             }
 
-            if ( (e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
+            if ((e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
                 LowPriority.addStored_Unit(e->second);
             }
         }
@@ -160,7 +160,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     LowPriority.updateUnitInventorySummary();
 
     // Dive some modest distance if they're critical to kill.
-    double temp_max_divable = max( CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving) , static_cast<double>(CUNYAIModule::getProperRange(unit_)) );
+    double temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
     if (!target) { // repeated calls should be functionalized.
         for (auto t : DiveableTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
@@ -226,7 +226,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
     else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-        if(unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
+        if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
 
     CUNYAIModule::DiagnosticText("No target found");
@@ -247,7 +247,7 @@ bool Mobility::Retreat_Logic() {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
-    
+
     if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
     }
@@ -325,9 +325,9 @@ bool Mobility::checkSafePath(const Position &finish) {
     if (!cpp.empty()) { // if there's an actual path to follow...
         for (auto choke_point : cpp) {
             Unit_Inventory ei_temp;
-                ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
-           if (choke_point == cpp.back())
-               ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
+            ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
+            if (choke_point == cpp.back())
+                ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
             ei_temp.updateUnitInventorySummary();
 
             if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
@@ -342,15 +342,15 @@ bool Mobility::adjust_lurker_burrow(const Position position_of_target) {
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
     if (u_type_ == UnitTypes::Zerg_Lurker) {
-        if ( !unit_->isBurrowed() && dist_condition ) {
+        if (!unit_->isBurrowed() && dist_condition) {
             unit_->burrow();
             return true;
         }
-        else if ( unit_->isBurrowed() && !dist_condition ) {
+        else if (unit_->isBurrowed() && !dist_condition) {
             unit_->unburrow();
             return true;
         }
-        else if ( !unit_->isBurrowed() && !dist_condition) {
+        else if (!unit_->isBurrowed() && !dist_condition) {
             double theta = atan2(position_of_target.y - unit_->getPosition().y, position_of_target.x - unit_->getPosition().x);
             Position closest_loc_to_permit_attacking = Position(position_of_target.x + static_cast<int>(cos(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()), position_of_target.y + static_cast<int>(sin(theta) * 0.75 * UnitTypes::Zerg_Lurker.groundWeapon().maxRange()));
             unit_->move(closest_loc_to_permit_attacking);
@@ -386,7 +386,7 @@ Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map) const {
     int current_best = INT_MAX;
     double theta = 0;
     vector<Position> barrier_points;
-  
+
     SpiralOut spiral;
 
     // we need to spiral out from the center, stopping if we hit an object.
@@ -398,8 +398,8 @@ Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map) const {
         bool shadow_check = false;
 
         for (auto barrier_point : barrier_points) {
-            shadow_check = abs(centralize_x) >= abs(barrier_point.x) && abs(centralize_y) >= abs(barrier_point.y) && 
-                           signbit(static_cast<float>(centralize_x)) == signbit(static_cast<float>(barrier_point.x)) && signbit(static_cast<float>(centralize_y)) == signbit(static_cast<float>(barrier_point.y)); // is it further out and in the same quadrant? If so it's in the "shadow". Rough, incredibly lazy.
+            shadow_check = abs(centralize_x) >= abs(barrier_point.x) && abs(centralize_y) >= abs(barrier_point.y) &&
+                signbit(static_cast<float>(centralize_x)) == signbit(static_cast<float>(barrier_point.x)) && signbit(static_cast<float>(centralize_y)) == signbit(static_cast<float>(barrier_point.y)); // is it further out and in the same quadrant? If so it's in the "shadow". Rough, incredibly lazy.
             if (shadow_check) break;
         }
 
@@ -450,7 +450,7 @@ Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const
         if (centralize_x < map_dim.x &&
             centralize_y < map_dim.y &&
             centralize_x > 0 &&
-            centralize_y > 0 
+            centralize_y > 0
             ) // Is the spot acceptable?
         {
             if (field[centralize_x][centralize_y] > my_spot) {
@@ -513,7 +513,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
     if (!cpp.empty() && !unit_->isFlying()) {
         // first try traveling with CPP.
         bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad());
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item );
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
         if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
         if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.

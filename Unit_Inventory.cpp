@@ -15,9 +15,9 @@ std::default_random_engine Unit_Inventory::generator_;  //Will be used to obtain
 
 
 //Creates an instance of the unit inventory class.
-Unit_Inventory::Unit_Inventory(){}
+Unit_Inventory::Unit_Inventory() {}
 
-Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
+Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
 
     for (const auto & u : unit_set) {
         unit_map_.insert({ u, Stored_Unit(u) });
@@ -26,7 +26,7 @@ Unit_Inventory::Unit_Inventory( const Unitset &unit_set) {
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitInventory(const Unitset &unit_set){
+void Unit_Inventory::updateUnitInventory(const Unitset &unit_set) {
     for (const auto & u : unit_set) {
         Stored_Unit* found_unit = getStoredUnit(u);
         if (found_unit) {
@@ -72,9 +72,9 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
             }
         }
 
-        if(e.second.time_since_last_dmg_ > 6) e.second.circumference_remaining_ = e.second.circumference_; //Every 6 frames, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
+        if (e.second.time_since_last_dmg_ > 6) e.second.circumference_remaining_ = e.second.circumference_; //Every 6 frames, give it back its circumfrance. This may occasionally lead to the unit being considered surrounded/unsurrounded incorrectly.  Tracking every single target and updating is not yet implemented but could be eventually.
 
-        if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown ) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
+        if ((e.second.type_ == UnitTypes::Resource_Vespene_Geyser) || e.second.type_ == UnitTypes::Unknown) { // Destroyed refineries revert to geyers, requiring the manual catch. Unknowns should be removed as well.
             e.second.valid_pos_ = false;
         }
 
@@ -285,7 +285,7 @@ void Unit_Inventory::drawAllMisplacedGroundUnits() const
     if constexpr (DRAWING_MODE) {
         for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
             if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_) && !e->second.type_.isBuilding()) {
-                if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1 ) {
+                if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
                 }
                 else if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 0) {
@@ -297,12 +297,12 @@ void Unit_Inventory::drawAllMisplacedGroundUnits() const
 }
 
 // Updates the count of units.
-bool Unit_Inventory::addStored_Unit( const Unit &unit ) {
-    return unit_map_.insert( { unit, Stored_Unit( unit ) } ).second;
+bool Unit_Inventory::addStored_Unit(const Unit &unit) {
+    return unit_map_.insert({ unit, Stored_Unit(unit) }).second;
 };
 
-bool Unit_Inventory::addStored_Unit( const Stored_Unit &stored_unit ) {
-    return unit_map_.insert( { stored_unit.bwapi_unit_ , stored_unit } ).second;
+bool Unit_Inventory::addStored_Unit(const Stored_Unit &stored_unit) {
+    return unit_map_.insert({ stored_unit.bwapi_unit_ , stored_unit }).second;
 };
 
 Position Unit_Inventory::positionBuildFap(bool friendly) {
@@ -319,12 +319,12 @@ Position Unit_Inventory::positionMCFAP(const Stored_Unit & su) {
     return Position(rand_x, rand_y) + su.pos_;
 }
 
-void Stored_Unit::updateStoredUnit(const Unit &unit){
+void Stored_Unit::updateStoredUnit(const Unit &unit) {
 
     valid_pos_ = true;
     pos_ = unit->getPosition();
     build_type_ = unit->getBuildType();
-	if (unit->getShields() + unit->getHitPoints() < shields_ + health_) time_since_last_dmg_ = 0;
+    if (unit->getShields() + unit->getHitPoints() < shields_ + health_) time_since_last_dmg_ = 0;
     else time_since_last_dmg_++;
 
     shields_ = unit->getShields();
@@ -364,336 +364,336 @@ void Stored_Unit::updateStoredUnit(const Unit &unit){
         bool overkilled = (count_of_consecutive_predicted_deaths_ > FAP_SIM_DURATION && time_since_last_dmg_ > FAP_SIM_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
- 
+
         //double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION); // exponential moving average?
         //if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_); // exponential moving average?
         if (unit->getPlayer() == Broodwar->self()) {
             ma_future_fap_value_ = unit_escaped ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // normal moving average.
-            if (future_fap_value_ > 0 || unit_escaped ) count_of_consecutive_predicted_deaths_ = 0;
+            if (future_fap_value_ > 0 || unit_escaped) count_of_consecutive_predicted_deaths_ = 0;
             else count_of_consecutive_predicted_deaths_++;
         }
         else {
             ma_future_fap_value_ = overkilled ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
-            if (future_fap_value_ > 0 ) count_of_consecutive_predicted_deaths_ = 0;
+            if (future_fap_value_ > 0) count_of_consecutive_predicted_deaths_ = 0;
             else count_of_consecutive_predicted_deaths_++;
         }
     }
-    if ( (phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || (phase_ == Stored_Unit::Building && unit->isCompleted() && type_.isBuilding()) ) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
+    if ((phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || (phase_ == Stored_Unit::Building && unit->isCompleted() && type_.isBuilding())) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
 }
 
 //Removes units that have died
-void Unit_Inventory::removeStored_Unit( Unit e_unit ) {
-    unit_map_.erase( e_unit );
+void Unit_Inventory::removeStored_Unit(Unit e_unit) {
+    unit_map_.erase(e_unit);
 };
 
 
- Position Unit_Inventory::getMeanLocation() const {
+Position Unit_Inventory::getMeanLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
-    Position out = Position(0,0);
-    for ( const auto &u : this->unit_map_ ) {
+    Position out = Position(0, 0);
+    for (const auto &u : this->unit_map_) {
         if (u.second.valid_pos_) {
             x_sum += u.second.pos_.x;
             y_sum += u.second.pos_.y;
             count++;
         }
     }
-    if ( count > 0 ) {
-        out = Position( x_sum / count, y_sum / count );
+    if (count > 0) {
+        out = Position(x_sum / count, y_sum / count);
     }
     return out;
 }
 
- Position Unit_Inventory::getMeanBuildingLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     for ( const auto &u : this->unit_map_ ) {
-         if ( ( ( (u.second.type_.isBuilding() || u.second.type_.isAddon()) && !u.second.type_.isSpecialBuilding()) || u.second.bwapi_unit_->isMorphing() ) && u.second.valid_pos_ ) {
-             x_sum += u.second.pos_.x;
-             y_sum += u.second.pos_.y;
-             count++;
-         }
-     }
-     if ( count > 0 ) {
-         Position out = { x_sum / count, y_sum / count };
-         return out;
-     }
-     else {
-         return Position( 0, 0 ); // you're dead at this point, fyi.
-     }
- }
+Position Unit_Inventory::getMeanBuildingLocation() const {
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    for (const auto &u : this->unit_map_) {
+        if ((((u.second.type_.isBuilding() || u.second.type_.isAddon()) && !u.second.type_.isSpecialBuilding()) || u.second.bwapi_unit_->isMorphing()) && u.second.valid_pos_) {
+            x_sum += u.second.pos_.x;
+            y_sum += u.second.pos_.y;
+            count++;
+        }
+    }
+    if (count > 0) {
+        Position out = { x_sum / count, y_sum / count };
+        return out;
+    }
+    else {
+        return Position(0, 0); // you're dead at this point, fyi.
+    }
+}
 
- Position Unit_Inventory::getMeanAirLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     for (const auto &u : this->unit_map_) {
-         if (u.second.is_flying_ && u.second.valid_pos_) {
-             x_sum += u.second.pos_.x;
-             y_sum += u.second.pos_.y;
-             count++;
-         }
-     }
-     if (count > 0) {
-         Position out = { x_sum / count, y_sum / count };
-         return out;
-     }
-     else {
-         return Positions::Origin; // you're dead at this point, fyi.
-     }
- }
+Position Unit_Inventory::getMeanAirLocation() const {
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.is_flying_ && u.second.valid_pos_) {
+            x_sum += u.second.pos_.x;
+            y_sum += u.second.pos_.y;
+            count++;
+        }
+    }
+    if (count > 0) {
+        Position out = { x_sum / count, y_sum / count };
+        return out;
+    }
+    else {
+        return Positions::Origin; // you're dead at this point, fyi.
+    }
+}
 // In progress
- Position Unit_Inventory::getStrongestLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     int standard_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-     for (const auto &u : this->unit_map_) {
-         if (CUNYAIModule::isFightingUnit(u.second) && u.second.valid_pos_) {
-             int remaining_stock = u.second.current_stock_value_;
-                 while (remaining_stock > 0) {
-                     x_sum += u.second.pos_.x;
-                     y_sum += u.second.pos_.y;
-                     count++;
-                     remaining_stock -= standard_value;
-                 }
-         }
-     }
-     if (count > 0) {
-         Position out = { x_sum / count, y_sum / count };
-         return out;
-     }
-     else {
-         return Positions::Origin; // you're dead at this point, fyi.
-     }
- }
+Position Unit_Inventory::getStrongestLocation() const {
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    int standard_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+    for (const auto &u : this->unit_map_) {
+        if (CUNYAIModule::isFightingUnit(u.second) && u.second.valid_pos_) {
+            int remaining_stock = u.second.current_stock_value_;
+            while (remaining_stock > 0) {
+                x_sum += u.second.pos_.x;
+                y_sum += u.second.pos_.y;
+                count++;
+                remaining_stock -= standard_value;
+            }
+        }
+    }
+    if (count > 0) {
+        Position out = { x_sum / count, y_sum / count };
+        return out;
+    }
+    else {
+        return Positions::Origin; // you're dead at this point, fyi.
+    }
+}
 
 
- Position Unit_Inventory::getMeanCombatLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     for ( const auto &u : this->unit_map_) {
-         if ( u.second.type_.canAttack() && u.second.valid_pos_ ) {
-             x_sum += u.second.pos_.x;
-             y_sum += u.second.pos_.y;
-             count++;
-         }
-     }
-     if ( count > 0 ) {
-         Position out = { x_sum / count, y_sum / count };
-         return out;
-     }
-     else {
-         return Position( 0, 0 );  // you might be dead at this point, fyi.
-     }
+Position Unit_Inventory::getMeanCombatLocation() const {
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.type_.canAttack() && u.second.valid_pos_) {
+            x_sum += u.second.pos_.x;
+            y_sum += u.second.pos_.y;
+            count++;
+        }
+    }
+    if (count > 0) {
+        Position out = { x_sum / count, y_sum / count };
+        return out;
+    }
+    else {
+        return Position(0, 0);  // you might be dead at this point, fyi.
+    }
 
- }
+}
 
- //for the army that can actually move.
- Position Unit_Inventory::getMeanArmyLocation() const {
-     int x_sum = 0;
-     int y_sum = 0;
-     int count = 0;
-     for (const auto &u : this->unit_map_) {
-         if (u.second.type_.canAttack() && u.second.valid_pos_ && u.second.type_.canMove() && !u.second.type_.isWorker() ) {
-             x_sum += u.second.pos_.x;
-             y_sum += u.second.pos_.y;
-             count++;
-         }
-     }
-     if (count > 0) {
-         Position out = { x_sum / count, y_sum / count };
-         return out;
-     }
-     else {
-         return Positions::Origin;  // you might be dead at this point, fyi.
-     }
- }
+//for the army that can actually move.
+Position Unit_Inventory::getMeanArmyLocation() const {
+    int x_sum = 0;
+    int y_sum = 0;
+    int count = 0;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.type_.canAttack() && u.second.valid_pos_ && u.second.type_.canMove() && !u.second.type_.isWorker()) {
+            x_sum += u.second.pos_.x;
+            y_sum += u.second.pos_.y;
+            count++;
+        }
+    }
+    if (count > 0) {
+        Position out = { x_sum / count, y_sum / count };
+        return out;
+    }
+    else {
+        return Positions::Origin;  // you might be dead at this point, fyi.
+    }
+}
 
- //for the army that can actually move. Removed for usage of Broodwar->getclosest(), a very slow function.
- //Position Unit_Inventory::getClosestMeanArmyLocation() const {
- //    Position mean_pos = getMeanArmyLocation();
- //    if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
- //       Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
- //        if (nearest_neighbor && nearest_neighbor->getPosition() ) {
- //            Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
- //            return out;
- //        }
- //        else {
- //            return Positions::Origin;  // you might be dead at this point, fyi.
- //        }
- //    }
- //    else {
- //        return Positions::Origin;  // you might be dead at this point, fyi.
- //    }
- //}
+//for the army that can actually move. Removed for usage of Broodwar->getclosest(), a very slow function.
+//Position Unit_Inventory::getClosestMeanArmyLocation() const {
+//    Position mean_pos = getMeanArmyLocation();
+//    if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
+//       Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
+//        if (nearest_neighbor && nearest_neighbor->getPosition() ) {
+//            Position out = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500)->getPosition();
+//            return out;
+//        }
+//        else {
+//            return Positions::Origin;  // you might be dead at this point, fyi.
+//        }
+//    }
+//    else {
+//        return Positions::Origin;  // you might be dead at this point, fyi.
+//    }
+//}
 
- Unit_Inventory Unit_Inventory::getInventoryAtArea(const int areaID ) const {
-     Unit_Inventory return_inventory;
-     for (const auto &u : this->unit_map_) {
-         if (u.second.areaID_ == areaID) { return_inventory.addStored_Unit(u.second); }
-     }
-     return return_inventory;
- }
+Unit_Inventory Unit_Inventory::getInventoryAtArea(const int areaID) const {
+    Unit_Inventory return_inventory;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.areaID_ == areaID) { return_inventory.addStored_Unit(u.second); }
+    }
+    return return_inventory;
+}
 
- Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
-     Unit_Inventory return_inventory;
-     for (const auto &u : this->unit_map_) {
-         if (u.second.areaID_ == areaID && CUNYAIModule::isFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
-     }
-     return return_inventory;
- }
+Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
+    Unit_Inventory return_inventory;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.areaID_ == areaID && CUNYAIModule::isFightingUnit(u.second)) { return_inventory.addStored_Unit(u.second); }
+    }
+    return return_inventory;
+}
 
- Unit_Inventory Unit_Inventory::getBuildingInventoryAtArea(const int areaID) const {
-     Unit_Inventory return_inventory;
-     for (const auto &u : this->unit_map_) {
-         if (u.second.areaID_ == areaID && u.second.type_.isBuilding()) { return_inventory.addStored_Unit(u.second); }
-     }
-     return return_inventory;
- }
+Unit_Inventory Unit_Inventory::getBuildingInventoryAtArea(const int areaID) const {
+    Unit_Inventory return_inventory;
+    for (const auto &u : this->unit_map_) {
+        if (u.second.areaID_ == areaID && u.second.type_.isBuilding()) { return_inventory.addStored_Unit(u.second); }
+    }
+    return return_inventory;
+}
 
- Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
- {
+Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+{
     Unit_Inventory total = lhs;
     total.unit_map_.insert(rhs.unit_map_.begin(), rhs.unit_map_.end());
     total.updateUnitInventorySummary();
     return total;
- }
+}
 
- Unit_Inventory operator-(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
- {
-     Unit_Inventory total;
-     total.unit_map_.insert(lhs.unit_map_.begin(), lhs.unit_map_.end());
+Unit_Inventory operator-(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+{
+    Unit_Inventory total;
+    total.unit_map_.insert(lhs.unit_map_.begin(), lhs.unit_map_.end());
 
-     for (map<Unit,Stored_Unit>::const_iterator& it = rhs.unit_map_.begin(); it != rhs.unit_map_.end();) {
-         if (total.unit_map_.find(it->first) != total.unit_map_.end() ) {
-             total.unit_map_.erase(it->first);
-         }
-         else {
-             it++;
-         }
-     }
-     total.updateUnitInventorySummary();
-     return total;
- }
+    for (map<Unit, Stored_Unit>::const_iterator& it = rhs.unit_map_.begin(); it != rhs.unit_map_.end();) {
+        if (total.unit_map_.find(it->first) != total.unit_map_.end()) {
+            total.unit_map_.erase(it->first);
+        }
+        else {
+            it++;
+        }
+    }
+    total.updateUnitInventorySummary();
+    return total;
+}
 
- void Unit_Inventory::updateUnitInventorySummary() {
-	 //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
-	 //Set default values to 0;
+void Unit_Inventory::updateUnitInventorySummary() {
+    //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
+    //Set default values to 0;
 
-	  stock_fliers_ = 0;
-	  stock_ground_units_ = 0;
-	  stock_both_up_and_down_ = 0;
-	  stock_shoots_up_ = 0;
-	  stock_shoots_down_ = 0;
-	  stock_high_ground_ = 0;
-	  stock_fighting_total_ = 0;
-	  stock_ground_fodder_ = 0;
-	  stock_air_fodder_ = 0;
-	  stock_total_ = 0;
-	  stock_full_health_ = 0;
-	  stock_psion_ = 0;
-	  total_supply_ = 0;
-	  max_range_ = 0;
-	  max_cooldown_ = 0;
-	  worker_count_ = 0;
-	  volume_ = 0;
-	  detector_count_ = 0;
-	  cloaker_count_ = 0;
-	  flyer_count_ = 0;
-	  ground_count_ = 0;
-	  building_count_ = 0;
-	  resource_depot_count_ = 0;
-	  future_fap_stock_ = 0;
-	  moving_average_fap_stock_ = 0;
-	  is_shooting_ = 0;
+    stock_fliers_ = 0;
+    stock_ground_units_ = 0;
+    stock_both_up_and_down_ = 0;
+    stock_shoots_up_ = 0;
+    stock_shoots_down_ = 0;
+    stock_high_ground_ = 0;
+    stock_fighting_total_ = 0;
+    stock_ground_fodder_ = 0;
+    stock_air_fodder_ = 0;
+    stock_total_ = 0;
+    stock_full_health_ = 0;
+    stock_psion_ = 0;
+    total_supply_ = 0;
+    max_range_ = 0;
+    max_cooldown_ = 0;
+    worker_count_ = 0;
+    volume_ = 0;
+    detector_count_ = 0;
+    cloaker_count_ = 0;
+    flyer_count_ = 0;
+    ground_count_ = 0;
+    building_count_ = 0;
+    resource_depot_count_ = 0;
+    future_fap_stock_ = 0;
+    moving_average_fap_stock_ = 0;
+    is_shooting_ = 0;
 
-	count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
-	 { Stored_Unit::Phase::Attacking, 0 },
-	 { Stored_Unit::Phase::Retreating, 0 },
-	 { Stored_Unit::Phase::Prebuilding, 0 },
-	 { Stored_Unit::Phase::PathingOut, 0 },
-	 { Stored_Unit::Phase::PathingHome, 0 },
-	 { Stored_Unit::Phase::Surrounding, 0 },
-	 { Stored_Unit::Phase::NoRetreat, 0 },
-	 { Stored_Unit::Phase::MiningMin, 0 },
-	 { Stored_Unit::Phase::MiningGas, 0 },
-	 { Stored_Unit::Phase::Returning, 0 },
-	 { Stored_Unit::Phase::DistanceMining, 0 },
-	 { Stored_Unit::Phase::Clearing, 0 },
-	 { Stored_Unit::Phase::Upgrading, 0 },
-	 { Stored_Unit::Phase::Researching, 0 },
-	 { Stored_Unit::Phase::Morphing, 0 },
-	 { Stored_Unit::Phase::Building, 0 },
-	 { Stored_Unit::Phase::Detecting, 0 } };
+    count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
+     { Stored_Unit::Phase::Attacking, 0 },
+     { Stored_Unit::Phase::Retreating, 0 },
+     { Stored_Unit::Phase::Prebuilding, 0 },
+     { Stored_Unit::Phase::PathingOut, 0 },
+     { Stored_Unit::Phase::PathingHome, 0 },
+     { Stored_Unit::Phase::Surrounding, 0 },
+     { Stored_Unit::Phase::NoRetreat, 0 },
+     { Stored_Unit::Phase::MiningMin, 0 },
+     { Stored_Unit::Phase::MiningGas, 0 },
+     { Stored_Unit::Phase::Returning, 0 },
+     { Stored_Unit::Phase::DistanceMining, 0 },
+     { Stored_Unit::Phase::Clearing, 0 },
+     { Stored_Unit::Phase::Upgrading, 0 },
+     { Stored_Unit::Phase::Researching, 0 },
+     { Stored_Unit::Phase::Morphing, 0 },
+     { Stored_Unit::Phase::Building, 0 },
+     { Stored_Unit::Phase::Detecting, 0 } };
 
-     vector<UnitType> already_seen_types;
+    vector<UnitType> already_seen_types;
 
-     for (auto const & u_iter : unit_map_) { // should only search through unit types not per unit.
+    for (auto const & u_iter : unit_map_) { // should only search through unit types not per unit.
 
-		 future_fap_stock_ += u_iter.second.future_fap_value_;
-		 moving_average_fap_stock_ += u_iter.second.ma_future_fap_value_;
-		 is_shooting_ += u_iter.first->isAttacking();
-		 total_supply_ += u_iter.second.type_.supplyRequired();
-		 building_count_ += u_iter.second.type_.isBuilding();
-         count_of_each_phase_.at(u_iter.second.phase_)++;
-		 stock_high_ground_ += u_iter.second.elevation_ == 2 || u_iter.second.elevation_ == 4;
+        future_fap_stock_ += u_iter.second.future_fap_value_;
+        moving_average_fap_stock_ += u_iter.second.ma_future_fap_value_;
+        is_shooting_ += u_iter.first->isAttacking();
+        total_supply_ += u_iter.second.type_.supplyRequired();
+        building_count_ += u_iter.second.type_.isBuilding();
+        count_of_each_phase_.at(u_iter.second.phase_)++;
+        stock_high_ground_ += u_iter.second.elevation_ == 2 || u_iter.second.elevation_ == 4;
 
-         if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
+        if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 
-             bool flying_unit = u_iter.second.type_.isFlyer();
-             int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
-             int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
-             if (CUNYAIModule::isFightingUnit(u_iter.second)) {
+            bool flying_unit = u_iter.second.type_.isFlyer();
+            int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
+            int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
+            if (CUNYAIModule::isFightingUnit(u_iter.second)) {
 
-                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
-                 bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
-                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
-                 int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
+                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
+                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
+                bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
+                int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
 
-				 stock_fliers_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
-				 flyer_count_ += flying_unit * count_of_unit_type;
+                stock_fliers_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                flyer_count_ += flying_unit * count_of_unit_type;
 
-				 cloaker_count_ = flying_unit * count_of_unit_type;
-				 stock_ground_units_ += !flying_unit * unit_value_for_all_of_type;
-				 ground_count_ += !flying_unit * count_of_unit_type;
-				 stock_shoots_up_ += up_gun * unit_value_for_all_of_type;
-				 stock_shoots_down_ += down_gun * unit_value_for_all_of_type;
-				 stock_both_up_and_down_ += (up_gun && down_gun) * unit_value_for_all_of_type;
-				 cloaker_count_ += cloaker * count_of_unit_type;
-				 stock_psion_ += (u_iter.second.type_.maxEnergy() > 0 * unit_value_for_all_of_type);
+                cloaker_count_ = flying_unit * count_of_unit_type;
+                stock_ground_units_ += !flying_unit * unit_value_for_all_of_type;
+                ground_count_ += !flying_unit * count_of_unit_type;
+                stock_shoots_up_ += up_gun * unit_value_for_all_of_type;
+                stock_shoots_down_ += down_gun * unit_value_for_all_of_type;
+                stock_both_up_and_down_ += (up_gun && down_gun) * unit_value_for_all_of_type;
+                cloaker_count_ += cloaker * count_of_unit_type;
+                stock_psion_ += (u_iter.second.type_.maxEnergy() > 0 * unit_value_for_all_of_type);
 
-				 max_cooldown_ = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown_);
-				 max_range_ = (range_temp > max_range_) * range_temp + !(range_temp > max_range_) * max_range_;
+                max_cooldown_ = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown_);
+                max_range_ = (range_temp > max_range_) * range_temp + !(range_temp > max_range_) * max_range_;
 
-             }
-             else {
-				 resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
-				 stock_air_fodder_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
-				 stock_ground_fodder_ += !flying_unit * unit_value_for_all_of_type;
+            }
+            else {
+                resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
+                stock_air_fodder_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
+                stock_ground_fodder_ += !flying_unit * unit_value_for_all_of_type;
 
-             }
+            }
 
-			 detector_count_ += u_iter.second.type_.isDetector() * count_of_unit_type;
-			 stock_full_health_ += u_iter.second.stock_value_ * count_of_unit_type;
-			 volume_ += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
-             //Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
-             //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
-             //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
-             //                 high_ground += u_iter.second.current_stock_value_;
-             //             }
-             //         }
-             already_seen_types.push_back(u_iter.second.type_);
-         }
-     }
+            detector_count_ += u_iter.second.type_.isDetector() * count_of_unit_type;
+            stock_full_health_ += u_iter.second.stock_value_ * count_of_unit_type;
+            volume_ += !flying_unit * u_iter.second.type_.height()*u_iter.second.type_.width() * count_of_unit_type;
+            //Region r = Broodwar->getRegionAt( u_iter.second.pos_ );
+            //         if ( r && u_iter.second.valid_pos_ && u_iter.second.type_ != UnitTypes::Buildings ) {
+            //             if ( r->isHigherGround() || r->getDefensePriority() > 1 ) {
+            //                 high_ground += u_iter.second.current_stock_value_;
+            //             }
+            //         }
+            already_seen_types.push_back(u_iter.second.type_);
+        }
+    }
 
-	 stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
-	 stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
-	 worker_count_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
+    stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
+    stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
+    worker_count_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
 
 }
 
@@ -736,7 +736,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_min_cost_ += 50;
     }  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
 
-    if (unittype == UnitTypes::Zerg_Sunken_Colony || unittype == UnitTypes::Zerg_Spore_Colony ) {
+    if (unittype == UnitTypes::Zerg_Sunken_Colony || unittype == UnitTypes::Zerg_Spore_Colony) {
         modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
     }
 
@@ -746,7 +746,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
         modified_supply_ += UnitTypes::Zerg_Hydralisk.supplyRequired();
     }
 
-    if (unittype == UnitTypes::Zerg_Devourer || unittype == UnitTypes::Zerg_Guardian ) {
+    if (unittype == UnitTypes::Zerg_Devourer || unittype == UnitTypes::Zerg_Guardian) {
         modified_min_cost_ += UnitTypes::Zerg_Mutalisk.mineralPrice();
         modified_gas_cost_ += UnitTypes::Zerg_Mutalisk.gasPrice();
         modified_supply_ += UnitTypes::Zerg_Mutalisk.supplyRequired();
@@ -792,7 +792,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 };
 
 // We must be able to create Stored_Unit objects as well.
-Stored_Unit::Stored_Unit( const Unit &unit ) {
+Stored_Unit::Stored_Unit(const Unit &unit) {
     valid_pos_ = true;
     unit_ID_ = unit->getID();
     bwapi_unit_ = unit;
@@ -817,27 +817,27 @@ Stored_Unit::Stored_Unit( const Unit &unit ) {
     shoots_up_ = type_.airWeapon() != WeaponTypes::None;
 
     //Needed for FAP.
-        is_flying_ = unit->isFlying();
-        elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
-        cd_remaining_ = unit->getAirWeaponCooldown();
-        stimmed_ = unit->isStimmed();
+    is_flying_ = unit->isFlying();
+    elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
+    cd_remaining_ = unit->getAirWeaponCooldown();
+    stimmed_ = unit->isStimmed();
 
     //Get unit's status. Precalculated, precached.
     Stored_Unit shell = Stored_Unit(type_);
-        modified_min_cost_ = shell.modified_min_cost_;
-        modified_gas_cost_ = shell.modified_gas_cost_;
-        modified_supply_ = shell.modified_supply_;
-        stock_value_ = shell.stock_value_; //prevents retyping.
-        ma_future_fap_value_ = shell.stock_value_;
-        future_fap_value_ = shell.stock_value_;
+    modified_min_cost_ = shell.modified_min_cost_;
+    modified_gas_cost_ = shell.modified_gas_cost_;
+    modified_supply_ = shell.modified_supply_;
+    stock_value_ = shell.stock_value_; //prevents retyping.
+    ma_future_fap_value_ = shell.stock_value_;
+    future_fap_value_ = shell.stock_value_;
 
-    current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>( type_.maxHitPoints() + type_.maxShields() ) ); // Precalculated, precached.
+    current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 
 }
 
 
 //Increments the number of miners on a resource.
-void Stored_Unit::startMine(Stored_Resource &new_resource){
+void Stored_Unit::startMine(Stored_Resource &new_resource) {
     locked_mine_ = new_resource.bwapi_unit_;
     CUNYAIModule::land_inventory.resource_inventory_.find(locked_mine_)->second.number_of_miners_++;
 }
@@ -848,8 +848,8 @@ void Stored_Unit::startMine(Unit &new_resource) {
 }
 
 //Decrements the number of miners on a resource, if possible.
-void Stored_Unit::stopMine(){
-    if (locked_mine_){
+void Stored_Unit::stopMine() {
+    if (locked_mine_) {
         if (getMine()) {
             getMine()->number_of_miners_ = max(getMine()->number_of_miners_ - 1, 0);
         }
@@ -891,7 +891,7 @@ Stored_Resource* getMine(const Unit &resource) {
 
 //checks if mine started with less than 8 resource
 bool Stored_Unit::isAssignedClearing() {
-    if ( locked_mine_ ) {
+    if (locked_mine_) {
         if (Stored_Resource* mine_of_choice = this->getMine()) { // if it has an associated mine.
             return mine_of_choice->blocking_mineral_;
         }
@@ -945,7 +945,7 @@ bool Stored_Unit::isAssignedBuilding() {
 }
 
 //if the miner is not doing any thing
-bool Stored_Unit::isNoLock(){
+bool Stored_Unit::isNoLock() {
     this->updateStoredUnit(this->bwapi_unit_); // unit needs to be updated to confirm this.
     return  bwapi_unit_ && !bwapi_unit_->getOrderTarget();
 }
@@ -1023,26 +1023,26 @@ auto Stored_Unit::convertToFAPPosition(const Position &chosen_pos, const Researc
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating)) +
         (type_.armorUpgrade() == upgrade);
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade) ;
+    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade);
 
     int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling      && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)  || upgrade == UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord      && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk     && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout      && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer   && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot     && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture     && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters)   || upgrade == UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost) || upgrade == UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters) || upgrade == UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk     && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon    && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine      && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath     && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks    && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
         (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
@@ -1277,7 +1277,7 @@ bool Stored_Unit::unitDeadInFuture(const Stored_Unit &unit, const int &number_of
 
 void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<Stored_Unit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
-        if (friendly ) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
+        if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
@@ -1313,11 +1313,11 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object
 }
 
 // we no longer build sim against their buildings.
-void Unit_Inventory::addToBuildFAP( FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
+void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<Stored_Unit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
     for (auto &u : unit_map_) {
         Position pos = positionBuildFap(friendly);
-            if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
-            else if (!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
+        if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
+        else if (!u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri)); // they don't get the benifits of my upgrade tests.
     }
 
     // These units are sometimes NAN.
@@ -1349,7 +1349,7 @@ void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &fap_vector)
     }
 
     for (auto &fu : fap_vector) {
-        if ( fu.data ) {
+        if (fu.data) {
             Stored_Unit::updateFAPvalue(fu);
         }
     }

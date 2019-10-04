@@ -150,79 +150,79 @@ void GeneticHistory::initializeHistory() {
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
     input.open(".\\bwapi-data\\write\\history.txt", ios::in);
-        getline(input, line); //skip the first line of the document.
-        csv_length--; // that means the remaining csv is shorter by 1 line.
-        for (int j = 0; j < csv_length; ++j) {
-            // The ugly tuple.
-            double gas_proportion_total;
-            double supply_ratio_total;
-            double a_army_total;
-            double a_econ_total;
-            double a_tech_total;
-            double r_total;
-            string race_total;
-            bool win_total;
-            int sdelay_total;
-            int mdelay_total;
-            int ldelay_total;
-            string name_total;
-            string map_name_total;
-		    double enemy_average_army_;
-		    double enemy_average_econ_;
-		    double enemy_average_tech_;
-            string build_order_total;
+    getline(input, line); //skip the first line of the document.
+    csv_length--; // that means the remaining csv is shorter by 1 line.
+    for (int j = 0; j < csv_length; ++j) {
+        // The ugly tuple.
+        double gas_proportion_total;
+        double supply_ratio_total;
+        double a_army_total;
+        double a_econ_total;
+        double a_tech_total;
+        double r_total;
+        string race_total;
+        bool win_total;
+        int sdelay_total;
+        int mdelay_total;
+        int ldelay_total;
+        string name_total;
+        string map_name_total;
+        double enemy_average_army_;
+        double enemy_average_econ_;
+        double enemy_average_tech_;
+        string build_order_total;
 
-            getline(input, entry, ',');
-            gas_proportion_total=stod(entry);
+        getline(input, entry, ',');
+        gas_proportion_total = stod(entry);
 
-            getline(input, entry, ',');
-            supply_ratio_total=stod(entry);
+        getline(input, entry, ',');
+        supply_ratio_total = stod(entry);
 
-            getline(input, entry, ',');
-            a_army_total=stod(entry);
+        getline(input, entry, ',');
+        a_army_total = stod(entry);
 
-            getline(input, entry, ',');
-            a_econ_total=stod(entry);
-            getline(input, entry, ',');
-            a_tech_total=stod(entry);
-            getline(input, entry, ',');
-            r_total=stod(entry);
+        getline(input, entry, ',');
+        a_econ_total = stod(entry);
+        getline(input, entry, ',');
+        a_tech_total = stod(entry);
+        getline(input, entry, ',');
+        r_total = stod(entry);
 
-            getline(input, entry, ',');
-            race_total=entry;
+        getline(input, entry, ',');
+        race_total = entry;
 
-            getline(input, entry, ',');
-            win_total=static_cast<bool>(stoi(entry));
+        getline(input, entry, ',');
+        win_total = static_cast<bool>(stoi(entry));
 
-            getline(input, entry, ',');
-            sdelay_total=stoi(entry);
-            getline(input, entry, ',');
-            mdelay_total=stoi(entry);
-            getline(input, entry, ',');
-            ldelay_total=stoi(entry);
+        getline(input, entry, ',');
+        sdelay_total = stoi(entry);
+        getline(input, entry, ',');
+        mdelay_total = stoi(entry);
+        getline(input, entry, ',');
+        ldelay_total = stoi(entry);
 
-            getline(input, entry, ',');
-            name_total=entry;
-            getline(input, entry, ',');
-            map_name_total=entry;
+        getline(input, entry, ',');
+        name_total = entry;
+        getline(input, entry, ',');
+        map_name_total = entry;
 
-            getline(input, entry, ',');
-            enemy_average_army_ = stod(entry);
-            getline(input, entry, ',');
-            enemy_average_econ_ = stod(entry);
-            getline(input, entry, ',');
-            enemy_average_tech_ = stod(entry);
+        getline(input, entry, ',');
+        enemy_average_army_ = stod(entry);
+        getline(input, entry, ',');
+        enemy_average_econ_ = stod(entry);
+        getline(input, entry, ',');
+        enemy_average_tech_ = stod(entry);
 
-            getline(input, entry, ',');
-            build_order_total = entry;
+        getline(input, entry, ',');
+        build_order_total = entry;
 
-            //Remaining entries for score, dectectors , game duration - skip.
+        //Remaining entries for score, dectectors , game duration - skip.
 
-            getline(input, entry); //diff. End of line char, not ','
+        getline(input, entry); //diff. End of line char, not ','
 
-            a_game = std::make_tuple(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
-            game_data.push_back(a_game);
-        } // closure for each row
+        a_game = std::make_tuple(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
+        game_data.push_back(a_game);
+    } // closure for each row
     input.close();
 
     string e_name = Broodwar->enemy()->getName().c_str();
@@ -253,7 +253,7 @@ void GeneticHistory::initializeHistory() {
         if (std::get<12>(game_data[j]) == map_name) {
             if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
-               win_count[2]++;
+                win_count[2]++;
             }
             else lose_count[2]++;
         }
@@ -281,19 +281,19 @@ void GeneticHistory::initializeHistory() {
 
         // an inelegant statement follows. How do I make this into a switch?
 
-        if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
+        if (win_count[0] > 0 && win_count[1] > 0 && win_count[2] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
             conditions_for_inclusion = name_matches && race_matches && map_matches;
         }
-        else if (win_count[0] > 0 && win_count[1] > 0 &&win_count[2] == 0) {
+        else if (win_count[0] > 0 && win_count[1] > 0 && win_count[2] == 0) {
             conditions_for_inclusion = name_matches && race_matches && !map_matches;
         }
-        else if (win_count[0] > 0 && win_count[1] == 0 &&win_count[2] > 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] > 0) {
             conditions_for_inclusion = name_matches && !race_matches && !map_matches;
         }
-		else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] == 0) {
-			conditions_for_inclusion = name_matches && !race_matches && !map_matches;
-		}
-        else if (win_count[0] == 0 && win_count[1] > 0 &&win_count[2] > 0) {
+        else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] == 0) {
+            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
+        }
+        else if (win_count[0] == 0 && win_count[1] > 0 && win_count[2] > 0) {
             conditions_for_inclusion = !name_matches && race_matches && map_matches;
         }
 
@@ -323,7 +323,7 @@ void GeneticHistory::initializeHistory() {
 
         //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { //
+        if (dis(gen) < (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { //
             //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_well_matched) {
                 if (std::get<16>(potential_parent) == opening_of_choice) {
@@ -345,14 +345,14 @@ void GeneticHistory::initializeHistory() {
             a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
             a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
             a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
-            r_out      = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
+            r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
         else { // we must need diversity.
             // use the random values we have determined in the beginning and the random opening.
         }
 
     }
-    else if( game_data_partial_match.size() > 0 ){ // do our best with the partial match data.
+    else if (game_data_partial_match.size() > 0) { // do our best with the partial match data.
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_partial_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
         parent_1 = game_data_partial_match[rand_parent_1];
@@ -362,7 +362,7 @@ void GeneticHistory::initializeHistory() {
 
                                      //if we don't need diversity, combine our old wins together.
 
-        if (dis(gen) <  (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { //
+        if (dis(gen) < (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { //
                                                                                                                     //Parent 2 must match the build of the first one.
             for (auto potential_parent : game_data_partial_match) {
                 if (std::get<16>(potential_parent) == opening_of_choice) {
@@ -457,7 +457,7 @@ void GeneticHistory::initializeHistory() {
         a_tech_out_mutate_ = 0.52895;
         r_out_mutate_ = 0.5097605;
 
-		build_order_ = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling"; // 2h lurker; //Standard Opener
+        build_order_ = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling"; // 2h lurker; //Standard Opener
 
     }
 

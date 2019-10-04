@@ -19,9 +19,9 @@ struct Reservation;
 struct Stored_Unit {
 
     //Creates a steryotyped ideal of the unit. For comparisons.
-    Stored_Unit( const UnitType &unittype );
+    Stored_Unit(const UnitType &unittype);
     // Creates an enemy unit object, an abbreviated version of the original.
-    Stored_Unit( const Unit &unit );
+    Stored_Unit(const Unit &unit);
     Stored_Unit();
     auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
     auto convertToFAPPosition(const Position & chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
@@ -73,22 +73,22 @@ struct Stored_Unit {
 
     enum Phase
     {
-        None = 0, 
-        Attacking = 1, 
-        Retreating = 2, 
-        Prebuilding = 3, 
-        PathingOut = 4, 
-        PathingHome = 5, 
-        Surrounding = 6, 
-        NoRetreat = 7, 
-        MiningMin = 8, 
+        None = 0,
+        Attacking = 1,
+        Retreating = 2,
+        Prebuilding = 3,
+        PathingOut = 4,
+        PathingHome = 5,
+        Surrounding = 6,
+        NoRetreat = 7,
+        MiningMin = 8,
         MiningGas = 9,
         Returning = 10,
-        DistanceMining = 11, 
-        Clearing = 12, 
-        Upgrading = 13, 
-        Researching = 14, 
-        Morphing = 15, 
+        DistanceMining = 11,
+        Clearing = 12,
+        Upgrading = 13,
+        Researching = 14,
+        Morphing = 15,
         Building = 16,
         Detecting = 17
     };
@@ -133,17 +133,17 @@ struct Stored_Unit {
     int circumference_remaining_;
 
     Unit bwapi_unit_;
-    private:
-        //prevent automatic conversion for any other built-in types such as bool, int, etc
-        template<typename T>
-        operator T () const;
+private:
+    //prevent automatic conversion for any other built-in types such as bool, int, etc
+    template<typename T>
+    operator T () const;
 };
 
 struct Unit_Inventory {
 
     //Creates an instance of the Unit inventory class.
     Unit_Inventory();
-    Unit_Inventory( const Unitset &unit_set );
+    Unit_Inventory(const Unitset &unit_set);
 
     //what about their upgrades?
     //Other details?
@@ -151,32 +151,32 @@ struct Unit_Inventory {
     static const int half_map_ = 120; // SC Screen size is 680 X 240
     static std::default_random_engine generator_;  //Will be used to obtain a seed for the random number engine
 
-    int stock_fliers_= 0;
-    int stock_ground_units_= 0;
-    int stock_both_up_and_down_= 0;
-    int stock_shoots_up_= 0;
-    int stock_shoots_down_= 0;
-    int stock_high_ground_= 0;
-    int stock_fighting_total_= 0;
-    int stock_ground_fodder_= 0;
-    int stock_air_fodder_= 0;
-    int stock_total_= 0;
-    int stock_full_health_= 0;
-    int stock_psion_= 0;
-    int total_supply_= 0;
-    int max_range_= 0;
-    int max_cooldown_= 0;
-    int worker_count_= 0;
-    int volume_= 0;
-    int detector_count_= 0;
-    int cloaker_count_= 0;
-    int flyer_count_= 0;
-	int ground_count_= 0;
-	int building_count_= 0;
-    int resource_depot_count_= 0;
-    int future_fap_stock_= 0;
-    int moving_average_fap_stock_= 0;
-    int is_shooting_= 0;
+    int stock_fliers_ = 0;
+    int stock_ground_units_ = 0;
+    int stock_both_up_and_down_ = 0;
+    int stock_shoots_up_ = 0;
+    int stock_shoots_down_ = 0;
+    int stock_high_ground_ = 0;
+    int stock_fighting_total_ = 0;
+    int stock_ground_fodder_ = 0;
+    int stock_air_fodder_ = 0;
+    int stock_total_ = 0;
+    int stock_full_health_ = 0;
+    int stock_psion_ = 0;
+    int total_supply_ = 0;
+    int max_range_ = 0;
+    int max_cooldown_ = 0;
+    int worker_count_ = 0;
+    int volume_ = 0;
+    int detector_count_ = 0;
+    int cloaker_count_ = 0;
+    int flyer_count_ = 0;
+    int ground_count_ = 0;
+    int building_count_ = 0;
+    int resource_depot_count_ = 0;
+    int future_fap_stock_ = 0;
+    int moving_average_fap_stock_ = 0;
+    int is_shooting_ = 0;
 
     map<Stored_Unit::Phase, int > count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
     { Stored_Unit::Phase::Attacking, 0 },
@@ -200,11 +200,11 @@ struct Unit_Inventory {
     std::map <Unit, Stored_Unit> unit_map_;
 
     // Updates the count of units.
-    bool addStored_Unit( const Unit &unit );
-    bool addStored_Unit( const Stored_Unit &stored_unit );
+    bool addStored_Unit(const Unit &unit);
+    bool addStored_Unit(const Stored_Unit &stored_unit);
 
     //Removes units
-    void removeStored_Unit( Unit unit );
+    void removeStored_Unit(Unit unit);
 
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();

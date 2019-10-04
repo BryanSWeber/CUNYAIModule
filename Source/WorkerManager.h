@@ -30,7 +30,7 @@ public:
     // Do worker things:
     bool workerWork(const Unit &u);
     // Checks if unit is carrying minerals.
-    bool isEmptyWorker(const Unit & unit); 
+    bool isEmptyWorker(const Unit & unit);
     //Workers at their end build location should build there!  May return false if there is an object at the end destination that prohibits building.
     bool workerPrebuild(const Unit & unit);
     // Workers doing nothing should begin a resource task.

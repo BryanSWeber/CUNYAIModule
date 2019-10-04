@@ -38,7 +38,7 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {
+        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -59,7 +59,7 @@ void TechManager::updateMaxGas() {
         }
     }
     for (auto potential_tech : tech_cycle_) {
-        if (checkBuildingReady(potential_tech.first) && !Broodwar->self()->hasResearched(potential_tech.first) ) {
+        if (checkBuildingReady(potential_tech.first) && !Broodwar->self()->hasResearched(potential_tech.first)) {
             max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
         }
     }
@@ -71,7 +71,7 @@ bool TechManager::checkTechAvail()
 }
 
 
-    // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
+// Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 bool TechManager::updateTech_Avail() {
 
     //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
@@ -141,7 +141,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
         if (!busy && potential_up->first) {
-            if ( !CUNYAIModule::checkDesirable(building, potential_up->first, true) ) {
+            if (!CUNYAIModule::checkDesirable(building, potential_up->first, true)) {
                 local_upgrade_cycle.erase(potential_up++);
             }
         }
@@ -229,9 +229,9 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", tech_idea->second.c_str(), tech_idea->first);
-            another_sort_of_upgrade++;
+        Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
+        Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", tech_idea->second.c_str(), tech_idea->first);
+        another_sort_of_upgrade++;
     }
 }
 

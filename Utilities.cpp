@@ -1513,19 +1513,30 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
     return ui_out;
 }
 
-//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
+//Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
+Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
     Resource_Inventory ri_out;
-    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
-    if (area) {
-        int area_id = area->Id();
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            if ( r->second.areaID_ == area_id) {
-                ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
-            }
-        }
-    }
-    return ri_out;
+	for (auto & e = ri.resource_inventory_.begin(); e != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); e++) {
+		if ((*e).second.pos_.getDistance(origin) <= dist) {
+			ri_out.addStored_Resource((*e).second); // if we take any distance and they are in inventory.
+		}
+	}
+	return ri_out;
+}
+
+//Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
+Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
+	Resource_Inventory ri_out;
+	auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+	if (area) {
+		int area_id = area->Id();
+		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+			if (r->second.areaID_ == area_id) {
+				ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
+			}
+		}
+	}
+	return ri_out;
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.

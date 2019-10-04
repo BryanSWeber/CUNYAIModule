@@ -54,7 +54,7 @@ void Player_Model::updateSelfOnFrame()
     researches_.updateResearch(Broodwar->self());
 
     int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-    spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_ , units_.worker_count_ * worker_value );
+    spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
         if (Broodwar->elapsedTime() % 15 == 0) {
@@ -81,7 +81,7 @@ void Player_Model::updateSelfOnFrame()
     spending_model_.tech_derivative = spending_model_.tech_derivative;
 
     //Update general weaknesses.
-    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ + CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0)) ;
+    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ + CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0));
     e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory
@@ -134,11 +134,11 @@ void Player_Model::imputeUnits(const Unit &unit)
 
         for (auto u : imputedUnits_.unit_map_) {
             if (u.second.type_ == expected_producer) {
-                longest_known_unit = max( Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
+                longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
             }
         }
 
-        estimated_unseen_army_ = eu.stock_value_/static_cast<double>(eu.type_.buildTime()) * max(longest_known_unit, eu.type_.buildTime());
+        estimated_unseen_army_ = eu.stock_value_ / static_cast<double>(eu.type_.buildTime()) * max(longest_known_unit, eu.type_.buildTime());
     }
 
     estimated_unseen_army_ = max(estimated_unseen_army_, 0.0);
@@ -157,7 +157,7 @@ void Player_Model::evaluatePotentialWorkerCount() {
         int bases_in_start_positions = 0;
         for (auto & a : BWEM::Map::Instance().Areas()) {
             bool found_a_base = false;
-            if (!units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty() && !a.Bases().empty() ) {
+            if (!units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty() && !a.Bases().empty()) {
                 count_of_occupied_bases++;
                 found_a_base = true;
             }
@@ -169,12 +169,12 @@ void Player_Model::evaluatePotentialWorkerCount() {
                 }
             }
         }
-        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0 ) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
+        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
         count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
         estimated_bases_ = static_cast<double>(max(units_.resource_depot_count_, count_of_occupied_bases));
         double functional_worker_cap = static_cast<double>(estimated_bases_ * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
 
-        estimated_workers_ += static_cast<double>( estimated_bases_ ) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+        estimated_workers_ += static_cast<double>(estimated_bases_) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
         estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
 
     }
@@ -195,7 +195,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
 
         // These are possible troop expenditures.
         if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
-            continue;   
+            continue;
         }
         else if (i.second.type_.producesLarva()) {
             for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
@@ -211,7 +211,7 @@ void Player_Model::evaluatePotentialArmyExpenditures() {
         else {
             for (auto p : i.second.type_.buildsWhat()) {
                 if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
-                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) ); // assume the largest of these. (worst for me, risk averse).
+                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                     value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
                 }
             }
@@ -324,7 +324,7 @@ void Player_Model::evaluatePotentialTechExpenditures() {
             }
         }
 
-        for (auto p : UnitTypes::allUnitTypes() ) {
+        for (auto p : UnitTypes::allUnitTypes()) {
             bool permits_new_unit = false;
             for (auto possible_new_unit : p.buildsWhat()) { // a building allows new units if it produces something and is not a duplicate.
                 if (CUNYAIModule::Count_Units(possible_new_unit, units_) == 0 && CUNYAIModule::Count_Units(p, units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
@@ -375,7 +375,7 @@ void Player_Model::evaluateCurrentWorth()
             supply_expenditures_ += i.second.modified_supply_;
         }
 
-        for (auto i : researches_.upgrades_ ) {
+        for (auto i : researches_.upgrades_) {
             int number_of_times_factor_triggers = max((i.second * (i.second + 1)) / 2 - 1, 0);
             min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
             gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
@@ -400,7 +400,7 @@ void Player_Model::evaluateCurrentWorth()
 
         if ((gas_spent + min_spent) != 0) min_proportion = min_spent / (gas_spent + min_spent);
 
-        estimated_resources_per_frame_ = estimated_workers_  * (0.045 * min_proportion + 0.07 * (1 - min_proportion) * 1.25); // If we assign them in the same way they have been assigned over the course of this game...
+        estimated_resources_per_frame_ = estimated_workers_ * (0.045 * min_proportion + 0.07 * (1 - min_proportion) * 1.25); // If we assign them in the same way they have been assigned over the course of this game...
         // Churchill, David, and Michael Buro. "Build Order Optimization in StarCraft." AIIDE. 2011.  Workers gather minerals at a rate of about 0.045/frame and gas at a rate of about 0.07/frame.
         estimated_cumulative_worth_ += max(estimated_resources_per_frame_, estimated_unseen_army_per_frame_ + estimated_unseen_tech_per_frame_); // 
 
@@ -427,7 +427,7 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
 
 bool Player_Model::opponentHasRequirements(const TechType &tech)
 {
-     if (tech.whatResearches() != UnitTypes::Zerg_Larva && !tech.whatResearches().isResourceDepot() && CUNYAIModule::Count_Units(tech.whatResearches(), CUNYAIModule::enemy_player_model.units_) == 0 ) return false;
+    if (tech.whatResearches() != UnitTypes::Zerg_Larva && !tech.whatResearches().isResourceDepot() && CUNYAIModule::Count_Units(tech.whatResearches(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
     return true;
 }
 
@@ -482,15 +482,15 @@ void Player_Model::updateUnit_Counts() {
 
 // sample command set to explore zergling rushing.
 void Player_Model::setLockedOpeningValues() {
-     
-    // sample command set to explore zergling rushing.
-     spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
-     spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
-     spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
 
-     CUNYAIModule::gas_proportion = 0.00;
-     CUNYAIModule::supply_ratio = 0.55;
-     CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
+    // sample command set to explore zergling rushing.
+    spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
+    spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
+    spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
+
+    CUNYAIModule::gas_proportion = 0.00;
+    CUNYAIModule::supply_ratio = 0.55;
+    CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
 
     //This no longer works after declaring the inventories as const.
     //combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
@@ -498,7 +498,7 @@ void Player_Model::setLockedOpeningValues() {
     //building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
     //upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
     //tech_cartridge_ = {  };
-    
+
 }
 
 void Player_Model::updatePlayerAverageCD()
@@ -513,8 +513,8 @@ void Player_Model::updatePlayerAverageCD()
 
 void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)
 {
-            Broodwar->drawTextScreen(screen_x, screen_y, "CD_History:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10, "Army: %.2g", average_army_);
-            Broodwar->drawTextScreen(screen_x, screen_y + 20, "Econ: %.2g", average_econ_);
-            Broodwar->drawTextScreen(screen_x, screen_y + 30, "Tech: %.2g", average_tech_);
+    Broodwar->drawTextScreen(screen_x, screen_y, "CD_History:");  //
+    Broodwar->drawTextScreen(screen_x, screen_y + 10, "Army: %.2g", average_army_);
+    Broodwar->drawTextScreen(screen_x, screen_y + 20, "Econ: %.2g", average_econ_);
+    Broodwar->drawTextScreen(screen_x, screen_y + 30, "Tech: %.2g", average_tech_);
 }

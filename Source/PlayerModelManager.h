@@ -32,11 +32,11 @@ public:
     CobbDouglas spending_model_;
     //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
 
-    bool u_have_active_air_problem_; 
+    bool u_have_active_air_problem_;
     bool e_has_air_vunerability_;
 
     void updateOtherOnFrame(const Player &other_player);
-    void updateSelfOnFrame(); 
+    void updateSelfOnFrame();
     void imputeUnits(const Unit &unit);
     void evaluatePotentialWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
     void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
@@ -59,7 +59,7 @@ public:
     vector< int > radial_distances_from_enemy_ground_ = { 0 };
     int closest_ground_combatant_ = INT_MAX;
 
-// Averages for Opponent Modeling
+    // Averages for Opponent Modeling
     void updatePlayerAverageCD();
     double average_army_;
     double average_econ_;
