@@ -58,7 +58,9 @@ bool CombatManager::combatScript(const Unit & u)
                 //Some unit types are special and behave differently.
                 switch (u->getType())
                 {
-                case UnitTypes::Protoss_Probe || UnitTypes::Terran_SCV || UnitTypes::Zerg_Drone: // Workers are very unique.
+                case UnitTypes::Protoss_Probe:
+                case UnitTypes::Terran_SCV:
+                case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if (worker_time_and_place) {
                         if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive))) {
                             return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
