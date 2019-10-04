@@ -47,17 +47,18 @@ bool CombatManager::combatScript(const Unit & u)
 			enemy_loc.updateUnitInventorySummary();
 			friend_loc.updateUnitInventorySummary();
 
+            // Bools needed before the switch.
 			//bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
 			bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
 			bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
 			bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
+            bool worker_time_and_place = unit_will_survive && !resource_loc.resource_inventory_.empty() && isPullWorkersTime(friend_loc, enemy_loc);
 
-			if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) { // workers don't need to fight all the time.
+			if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
+                //Some unit types are special and behave differently.
 				switch (u->getType())
 				{
-					//Some unit types are special and behave differently.
 				case UnitTypes::Protoss_Probe || UnitTypes::Terran_SCV || UnitTypes::Zerg_Drone: // Workers are very unique.
-					bool worker_time_and_place = unit_will_survive && !resource_loc.resource_inventory_.empty() && isPullWorkersTime(friend_loc, enemy_loc);
 					if (!worker_time_and_place) {
 						// do not fight.
 					}
