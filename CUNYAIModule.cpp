@@ -11,6 +11,7 @@
 #include "Source\AssemblyManager.h"
 #include "Source\\CombatManager.h"
 #include "Source\TechManager.h"
+#include "Source\Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\BWEB\BWEB.h"
 #include <bwem.h>
@@ -406,7 +407,7 @@ void CUNYAIModule::onFrame()
 
     my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations();
-    DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
+    Diagnostics::DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
 
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
 
@@ -431,191 +432,7 @@ void CUNYAIModule::onFrame()
 
     // Display the game status indicators at the top of the screen
     if constexpr (DRAWING_MODE) {
-
-        //bwemMap.Draw(BWAPI::BroodwarPtr);
-        BWEB::Map::draw();
-
-        Print_Unit_Inventory(0, 50, friendly_player_model.units_);
-        //Print_Cached_Inventory(0, 50);
-        //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
-        //Print_Test_Case(0, 50);
-        Print_Unit_Inventory(375, 130, enemy_player_model.imputedUnits_);
-        Print_Reservations(250, 190, my_reservation);
-        //enemy_player_model.Print_Average_CD(500, 170);
-        //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-        if (buildorder.isEmptyBuildOrder()) {
-            //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-                //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
-            Print_Research_Inventory(500, 170, enemy_player_model.researches_); // tech stuff
-        }
-        else {
-            Print_Build_Order_Remaining(500, 170, buildorder);
-        }
-
-        Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", land_inventory.getLocalMinPatches());
-        Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", workermanager.min_workers_, workermanager.gas_workers_);  //
-        Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", workermanager.min_workers_, land_inventory.getLocalMiners()); // This a misuse of local miners.
-        Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", workermanager.gas_workers_, land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
-
-        Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 10, "Army Starved: %s", friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 20, "Tech Starved: %s", friendly_player_model.spending_model_.tech_starved() ? "TRUE" : "FALSE");  //
-
-        //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
-        Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", gas_starved ? "TRUE" : "FALSE");
-        Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
-        Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", workermanager.excess_gas_capacity_ ? "TRUE" : "FALSE");  //
-
-
-        //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
-        //Broodwar->drawTextScreen(125, 90, "Ln Y: %4.2f", friendly_player_model.spending_model_.getlnY()); //
-
-        //Broodwar->drawTextScreen(125, 100, "Game Time: %d minutes", (Broodwar->elapsedTime()) / 60); //
-        //Broodwar->drawTextScreen(125, 110, "Win Rate: %1.2f", win_rate); //
-        //Broodwar->drawTextScreen(125, 120, "Race: %s", Broodwar->enemy()->getRace().c_str());
-        //Broodwar->drawTextScreen(125, 130, "Opponent: %s", Broodwar->enemy()->getName().c_str()); //
-        //Broodwar->drawTextScreen(125, 140, "Map: %s", Broodwar->mapFileName().c_str()); //
-        //Broodwar->drawTextScreen(125, 150, "Min Reserved: %d", my_reservation.min_reserve_); //
-        //Broodwar->drawTextScreen(125, 160, "Gas Reserved: %d", my_reservation.gas_reserve_); //
-
-        Broodwar->drawTextScreen(250, 0, "Econ Gradient: %.2g", friendly_player_model.spending_model_.econ_derivative);  //
-        Broodwar->drawTextScreen(250, 10, "Army Gradient: %.2g", friendly_player_model.spending_model_.army_derivative); //
-        Broodwar->drawTextScreen(250, 20, "Tech Gradient: %.2g", friendly_player_model.spending_model_.tech_derivative); //
-        Broodwar->drawTextScreen(250, 30, "Enemy R: %.2g ", adaptation_rate); //
-        Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
-        Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", friendly_player_model.spending_model_.alpha_army * 100); //
-        Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-        Broodwar->drawTextScreen(250, 70, "gas_proportion_gas: %4.2f", gas_proportion); //
-        Broodwar->drawTextScreen(250, 80, "supply_ratio_supply: %4.2f", supply_ratio); //
-        //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
-        //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
-        //Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
-        //Broodwar->drawTextScreen(250, 120, "Last Building: %s", buildorder.last_build_order.c_str()); //
-        //Broodwar->drawTextScreen(250, 130, "Next Expo Loc: (%d , %d)", current_map_inventory.next_expo_.x, current_map_inventory.next_expo_.y); //
-        //Broodwar->drawTextScreen(250, 140, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
-
-        //if (buildorder.isEmptyBuildOrder()) {
-        //    Broodwar->drawTextScreen(250, 160, "Total Reservations: Min: %d, Gas: %d", my_reservation.min_reserve_, my_reservation.gas_reserve_);
-        //}
-        //else {
-        //    Broodwar->drawTextScreen(250, 160, "Top in Build Order: Min: %d, Gas: %d", buildorder.building_gene_.begin()->getUnit().mineralPrice(), buildorder.building_gene_.begin()->getUnit().gasPrice());
-        //}
-
-        ////Broodwar->drawTextScreen(250, 150, "FAPP comparison: (%d , %d)", friendly_fap_score, enemy_fap_score); //
-        //Broodwar->drawTextScreen(250, 170, "Air Weakness: %s", friendly_player_model.u_have_active_air_problem_ ? "TRUE" : "FALSE"); //
-        //Broodwar->drawTextScreen(250, 180, "Foe Air Weakness: %s", friendly_player_model.e_has_air_vunerability_ ? "TRUE" : "FALSE"); //
-
-        ////vision belongs here.
-        //Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_map_inventory.est_enemy_stock_);
-        //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
-        //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-        Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(enemy_player_model.estimated_workers_));
-        Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", enemy_player_model.estimated_resources_per_frame_, enemy_player_model.estimated_unseen_army_per_frame_, enemy_player_model.estimated_unseen_tech_per_frame_);
-        Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", enemy_player_model.spending_model_.getlnYusing(friendly_player_model.spending_model_.alpha_army, friendly_player_model.spending_model_.alpha_tech), friendly_player_model.spending_model_.getlnY());  //
-        Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", enemy_player_model.estimated_unseen_army_);  //
-        Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", enemy_player_model.estimated_unseen_tech_);  //
-        Broodwar->drawTextScreen(375, 100, "Unseen Flyer: %4.2f", enemy_player_model.estimated_unseen_flyers_);  //
-        Broodwar->drawTextScreen(375, 110, "Unseen Ground: %4.2f", enemy_player_model.estimated_unseen_ground_);  //
-
-        ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
-        ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //
-        ////Broodwar->drawTextScreen( 500, 150, "Map Area: %d", map_area );  //
-
-        //Broodwar->drawTextScreen(500, 20, "Performance:");  //
-        //Broodwar->drawTextScreen(500, 30, "APM: %d", Broodwar->getAPM());  //
-        //Broodwar->drawTextScreen(500, 40, "APF: %4.2f", (Broodwar->getAPM() / 60) / Broodwar->getAverageFPS());  //
-        //Broodwar->drawTextScreen(500, 50, "FPS: %4.2f", Broodwar->getAverageFPS());  //
-        //Broodwar->drawTextScreen(500, 60, "Frames of Latency: %d", Broodwar->getLatencyFrames());  //
-
-        //Broodwar->drawTextScreen(500, 70, delay_string);
-        //Broodwar->drawTextScreen(500, 80, playermodel_string);
-        //Broodwar->drawTextScreen(500, 90, map_string);
-        //Broodwar->drawTextScreen(500, 100, larva_string);
-        //Broodwar->drawTextScreen(500, 110, worker_string);
-        //Broodwar->drawTextScreen(500, 120, scouting_string);
-        //Broodwar->drawTextScreen(500, 130, combat_string);
-        //Broodwar->drawTextScreen(500, 140, detection_string);
-        //Broodwar->drawTextScreen(500, 150, upgrade_string);
-        //Broodwar->drawTextScreen(500, 160, creep_colony_string);
-
-        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-        //    }
-        //}
-
-        //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
-        //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
-        //        if (current_map_inventory.map_veins_[i][j] > 175 ) {
-        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Cyan );
-        //            }
-        //        }
-        //        else if (current_map_inventory.map_veins_[i][j] <= 2 && current_map_inventory.map_veins_[i][j] > 1 ) { // should only highlight smoothed-out barriers.
-        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Purple);
-        //            }
-        //        }
-        //        else if (current_map_inventory.map_veins_[i][j] == 1 ) { // should only highlight smoothed-out barriers.
-        //            if (isOnScreen( { static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_) ) {
-        //                //Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", inventory.map_veins_[i][j] );
-        //                Broodwar->drawCircleMap( i * 8 + 4, j * 8 + 4, 1, Colors::Red );
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
-
-
-        //for (vector<int>::size_type i = 0; i < current_map_inventory.map_out_from_home_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < current_map_inventory.map_out_from_home_[i].size(); ++j) {
-        //        if (current_map_inventory.map_out_from_home_[i][j] <= 5 /*&& current_map_inventory.map_out_from_home_[i][j] <= 1*/ ) {
-        //            if (isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, current_map_inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(  i * 8 + 4, j * 8 + 4, "%d", current_map_inventory.map_out_from_home_[i][j] );
-        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
-
-        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
-        //        if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
-        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
-        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
-
-        //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
-        //        if ( inventory.smoothed_barriers_[i][j] > 0) {
-        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
-        //                //Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.smoothed_barriers_[i][j]);
-        //                Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
-
-        //for (auto &u : Broodwar->self()->getUnits()) {
-        //    if (u->getLastCommand().getType() != UnitCommandTypes::Attack_Move /*&& u_type != UnitTypes::Zerg_Extractor && u->getLastCommand().getType() != UnitCommandTypes::Attack_Unit*/) {
-        //        Broodwar->drawTextMap(u->getPosition(), u->getLastCommand().getType().c_str());
-        //    }
-        //}
-
-        for (auto & j : friendly_player_model.units_.unit_map_) {
-            CUNYAIModule::DiagnosticPhase(j.second, current_map_inventory.screen_position_);
-        }
-
-        //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
-        Diagnostic_Destination(friendly_player_model.units_, current_map_inventory.screen_position_, Colors::Grey);
-        //Diagnostic_Watch_Expos();
+        Diagnostics::onFrame();
     }// close analysis mode
 
 
@@ -680,7 +497,7 @@ void CUNYAIModule::onFrame()
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
                         if constexpr (DRAWING_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
+                            Diagnostics::Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
                         }
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting); // Update the detector not the calling unit.
                     }
@@ -688,7 +505,7 @@ void CUNYAIModule::onFrame()
                         detector_of_choice.bwapi_unit_->move(c);
                         if constexpr (DRAWING_MODE) {
                             Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostic_Line(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
+                            Diagnostics::Diagnostic_Line(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
                         }
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting);  // Update the detector not the calling unit.
                     }

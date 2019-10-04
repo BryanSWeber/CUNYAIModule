@@ -65,6 +65,9 @@
     <ClCompile Include="CUNYAIModule.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="Diagnostics.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -99,6 +102,7 @@
     <ClInclude Include="Source\MobilityManager.h" />
     <ClInclude Include="Source\WorkerManager.h" />
     <ClInclude Include="Source\CombatManager.h" />
+    <ClInclude Include="Source\Diagnostics.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

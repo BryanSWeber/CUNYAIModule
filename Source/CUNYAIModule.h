@@ -143,21 +143,6 @@ public:
 
     // evaluates if it was order to fight recently.
     static bool isRecentCombatant(const Stored_Unit &su);
-    // Draws a line if diagnostic mode is TRUE.
-    static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
-    static void Diagnostic_Tiles(const Position & screen_pos, Color col);
-    static void Diagnostic_Watch_Position(TilePosition & tp);
-    static void Diagnostic_Destination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
-    static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
-    static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticDeath(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticLastDamage(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
-    static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticReservations(const Reservation reservations, const Position & screen_pos);
     static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
     //Sends a diagnostic text message, accepts another argument..
@@ -196,18 +181,6 @@ public:
     static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     //gets the nearest choke by simple counting along in the direction of the final unit.
     static Position getNearestChoke(const Position & initial, const Position &final, const Map_Inventory & inv);
-
-    // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-    void Print_Upgrade_Inventory(const int &screen_x, const int &screen_y);
-    // Announces to player the name and type of all known units in set.
-    void Print_Unit_Inventory(const int &screen_x, const int &screen_y, const Unit_Inventory &ui);
-    void Print_Test_Case(const int & screen_x, const int & screen_y);
-    void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
-    void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
-    // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-    void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const Building_Gene & bo);
-    // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
-    void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
 
     //Strips the RACE_ from the front of the unit type string.
     static const char * noRaceName(const char *name);

@@ -2,6 +2,7 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\MobilityManager.h"
+# include "Source\Diagnostics.h"
 # include <random> // C++ base random is low quality.
 # include <numeric>
 # include <math.h>
@@ -26,8 +27,8 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
 
     approach(e_pos);
     if (unit_->move(pos_ + attract_vector_)) {
-        CUNYAIModule::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
-        CUNYAIModule::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
+        Diagnostics::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
+        Diagnostics::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
     return false;
@@ -81,8 +82,8 @@ bool Mobility::surround(const Position & pos)
 {
     encircle(pos);
     if (unit_->move(pos_ + encircle_vector_)) {
-        CUNYAIModule::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're running around it
-        CUNYAIModule::Diagnostic_Line(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
+        Diagnostics::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're running around it
+        Diagnostics::Diagnostic_Line(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
     }
     return false;
@@ -222,7 +223,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             //    permenent_target.circumference_remaining_ -= widest_dim;
             //}
         }
-        CUNYAIModule::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
+        Diagnostics::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
     else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
