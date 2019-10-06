@@ -895,7 +895,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool this_is_the_closest_base = (distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_)) || distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
 
         if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc) || (they_are_moving_out && this_is_the_closest_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground))) {
-            Diagnostics::Diagnostic_Dot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
+            Diagnostics::drawDot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
             //Diagnostics::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
 
             bool can_upgrade_colonies = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||

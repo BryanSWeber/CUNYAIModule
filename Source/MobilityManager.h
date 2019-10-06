@@ -36,9 +36,14 @@ public:
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
+    // causes a unit to avoid low-altitude areas.
+    Position avoid_edges();
     // causes a unit to move towards a position.
     Position approach(const Position & p);
 
+    //Checks if all except the first area are safe, since we are trying to run.
+    bool checkSafeEscapePath(const Position & finish);
+    //Checks first area for safety.
     bool checkSafePath(const Position & finish);
 
     bool adjust_lurker_burrow(const Position position_of_target);
@@ -51,6 +56,8 @@ public:
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     bool moveTo(const Position & start, const Position & finish);
+    // gives how far the unit can move in one second.
+    int getDistanceMetric();
 
 private:
     Position pos_;

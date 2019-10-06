@@ -265,13 +265,13 @@ void CUNYAIModule::onFrame()
         if (p->isNeutral()) neutral_player = &p;
     }
     neutral_player_model.updateOtherOnFrame(*neutral_player);
-    neutral_player_model.units_.drawAllHitPoints();
+    Diagnostics::drawAllHitPoints(neutral_player_model.units_);
     neutral_player_model.units_.drawAllLocations();
 
     friendly_player_model.updateSelfOnFrame(); // So far, mimics the only other enemy player.
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
-    friendly_player_model.units_.drawAllSpamGuards();
+    Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
     //friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
     //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_map_inventory);
     //land_inventory.drawUnreachablePatch(current_map_inventory);
@@ -279,11 +279,11 @@ void CUNYAIModule::onFrame()
     MCfap.clear();
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
     //enemy_player_model.units_.drawAllMAFAPaverages();
-    enemy_player_model.units_.drawAllFutureDeaths();
+    Diagnostics::drawAllFutureDeaths(enemy_player_model.units_);
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
     //friendly_player_model.units_.drawAllMAFAPaverages();
-    friendly_player_model.units_.drawAllFutureDeaths();
+    Diagnostics::drawAllFutureDeaths(friendly_player_model.units_);
 
     // Let us estimate FAP values.
     MCfap.simulate(FAP_SIM_DURATION);
@@ -407,7 +407,7 @@ void CUNYAIModule::onFrame()
 
     my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations();
-    Diagnostics::DiagnosticReservations(my_reservation, current_map_inventory.screen_position_);
+    Diagnostics::drawReservations(my_reservation, current_map_inventory.screen_position_);
 
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
 
@@ -495,21 +495,16 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange());
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        if constexpr (DIAGNOSTIC_MODE) {
-                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostics::Diagnostic_Line(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
-                        }
+                        Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        if constexpr (DIAGNOSTIC_MODE) {
-                            Broodwar->drawCircleMap(c, 25, Colors::Cyan);
-                            Diagnostics::Diagnostic_Line(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
-                        }
+                        Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
-
                 }
             }
         }

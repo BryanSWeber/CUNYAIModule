@@ -7,7 +7,7 @@
 
 
 // This function limits the drawing that needs to be done by the bot.
-void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
+void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
         if (CUNYAIModule::isOnScreen(s_pos, screen_pos) || CUNYAIModule::isOnScreen(f_pos, screen_pos)) {
             Broodwar->drawLineMap(s_pos, f_pos, col);
@@ -16,7 +16,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 }
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostics::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::drawTiles(const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DIAGNOSTIC_MODE) {
             for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x += 2) {
                 for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y += 2) {
@@ -27,7 +27,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
     }
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostics::Diagnostic_Watch_Position(TilePosition &tp) {
+    void Diagnostics::watchTile(TilePosition &tp) {
         if constexpr (DIAGNOSTIC_MODE) {
             if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
                 Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2, tp.y - 480 / (4 * 16) + 1));
@@ -38,18 +38,18 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
 
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostics::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::drawDestination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DIAGNOSTIC_MODE) {
             for (auto u : ui.unit_map_) {
                 Position fin = u.second.pos_;
                 Position start = u.second.bwapi_unit_->getTargetPosition();
-                Diagnostic_Line(start, fin, screen_pos, col);
+                drawLine(start, fin, screen_pos, col);
             }
         }
     }
 
     // This function limits the drawing that needs to be done by the bot.
-    void Diagnostics::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
+    void Diagnostics::drawDot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
         if constexpr (DIAGNOSTIC_MODE) {
             if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
                 Broodwar->drawCircleMap(s_pos, 25, col, true);
@@ -57,7 +57,16 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
+    // This function limits the drawing that needs to be done by the bot.
+    void Diagnostics::drawCircle(const Position &s_pos, const Position &screen_pos, const int &radius, Color col = Colors::White) {
+        if constexpr (DIAGNOSTIC_MODE) {
+            if (CUNYAIModule::isOnScreen(s_pos, screen_pos)) {
+                Broodwar->drawCircleMap(s_pos, radius, col, false);
+            }
+        }
+    }
+
+    void Diagnostics::drawHitPoints(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields()) {
@@ -85,7 +94,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::drawFAP(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0) {
@@ -112,7 +121,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
             }
         }
     }
-    void Diagnostics::DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::drawEstimatedDeath(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0) {
@@ -139,7 +148,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
+    void Diagnostics::drawLastDamage(const Stored_Unit unit, const Position &screen_pos) {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
             if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
@@ -165,7 +174,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
+    void Diagnostics::drawMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = resource.pos_;
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
@@ -190,7 +199,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
+    void Diagnostics::drawSpamGuard(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
@@ -220,7 +229,8 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
             }
         }
     }
-    void Diagnostics::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
+
+    void Diagnostics::printLastOrder(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DIAGNOSTIC_MODE) {
             Position upper_left = unit.pos_;
@@ -230,7 +240,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
+    void Diagnostics::printPhase(const Stored_Unit unit, const Position & screen_pos)
     {
         if constexpr (DIAGNOSTIC_MODE) {
             map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
@@ -258,7 +268,7 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         }
     }
 
-    void Diagnostics::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
+    void Diagnostics::drawReservations(const Reservation reservations, const Position & screen_pos)
     {
         if constexpr (DIAGNOSTIC_MODE) {
             for (auto res : reservations.reservation_map_) {
@@ -521,13 +531,13 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         //Broodwar->drawTextScreen(500, 150, upgrade_string);
         //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
-        //for (auto p = land_inventory.resource_inventory_.begin(); p != land_inventory.resource_inventory_.end() && !land_inventory.resource_inventory_.empty(); ++p) {
-        //    if (isOnScreen(p->second.pos_, current_map_inventory.screen_position_)) {
-        //        Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
-        //        Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
-        //        Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
-        //    }
-        //}
+        for (auto p = CUNYAIModule::land_inventory.resource_inventory_.begin(); p != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++p) {
+            if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::current_map_inventory.screen_position_)) {
+                Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
+                Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
+                Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
+            }
+        }
 
         //for ( vector<int>::size_type i = 0; i < current_map_inventory.map_veins_.size(); ++i ) {
         //    for ( vector<int>::size_type j = 0; j < current_map_inventory.map_veins_[i].size(); ++j ) {
@@ -593,10 +603,58 @@ void Diagnostics::Diagnostic_Line(const Position &s_pos, const Position &f_pos, 
         //}
 
         for (auto & j : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-            DiagnosticPhase(j.second, CUNYAIModule::current_map_inventory.screen_position_);
+            printPhase(j.second, CUNYAIModule::current_map_inventory.screen_position_);
         }
 
         //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
-        Diagnostic_Destination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Grey);
+        drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Grey);
         //Diagnostic_Watch_Expos();
     }
+
+    void Diagnostics::drawAllVelocities(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
+            Diagnostics::drawLine(u.second.pos_, destination, CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
+        }
+    }
+
+    void Diagnostics::drawAllHitPoints(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Diagnostics::drawHitPoints(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        }
+
+    }
+    void Diagnostics::drawAllMAFAPaverages(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Diagnostics::drawFAP(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        }
+
+    }
+
+    void Diagnostics::drawAllFutureDeaths(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        }
+
+    }
+
+    void Diagnostics::drawAllLastDamage(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Diagnostics::drawLastDamage(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        }
+
+    }
+
+
+    void Diagnostics::drawAllSpamGuards(const Unit_Inventory ui)
+    {
+        for (auto u : ui.unit_map_) {
+            Diagnostics::drawSpamGuard(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        }
+    }
+

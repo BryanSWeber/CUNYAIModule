@@ -192,7 +192,7 @@ void Resource_Inventory::updateMines() {
 void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        Diagnostics::DiagnosticMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }

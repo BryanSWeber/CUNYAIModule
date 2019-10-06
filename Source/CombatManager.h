@@ -13,7 +13,7 @@ private:
     //Squad attacks either.
     Unit_Inventory universal_squad_;
     //Squad only gets hurt. Overlords, low energy psions...
-    Unit_Inventory liabilities_squad_;
+    static Unit_Inventory liabilities_squad_;
     //Squad scouts
     static Unit_Inventory scout_squad_;
     //Squad detects
@@ -51,6 +51,8 @@ public:
     void removeScout(const Unit & u);
     //Checks if a particular unit is stored in scout.
     static bool isScout(const Unit &u);
+    //Checks if a particular unit is stored in liablities.
+    static bool isLiability(const Unit & u);
 
     // Only returns TRUE if there are A) less than N+1 of my workers committed, where N is the number of enemy workers. B) Viable Nonworker enemies.
     static bool isPullWorkersTime(const Unit_Inventory &friendly, const Unit_Inventory &enemy);

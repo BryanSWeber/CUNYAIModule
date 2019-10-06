@@ -1741,7 +1741,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
     return base_range;
 }
 
-//How far can the unit move in one MAFAP sim (96 frames)?
+//How far can the unit move in one MAFAP sim (120 frames)? Currently too large.
 int CUNYAIModule::getChargableDistance(const Unit & u)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };

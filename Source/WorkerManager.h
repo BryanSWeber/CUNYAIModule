@@ -18,7 +18,7 @@ public:
     // Clears blocking minerals (as determined by BWEB). Check if area is threatened before clearing.  Returns true on success.
     bool assignClear(const Unit & unit);
     // attaches the miner to the nearest mine in the inventory, and updates the stored_unit. Returns true on success.
-    bool attachToNearestMine(Resource_Inventory & ri, Map_Inventory & inv, Stored_Unit & miner);
+    bool attachToNearestMine(Resource_Inventory & ri, Stored_Unit & miner);
     // attaches the miner to the particular mine and updates the stored unit.
     void attachToParticularMine(Stored_Resource &mine, Resource_Inventory &ri, Stored_Unit &miner);
     // Overload: attaches the miner to the particular mine and updates the stored unit.

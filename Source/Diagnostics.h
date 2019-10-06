@@ -6,24 +6,29 @@
 // Manages various types of important diagnostics and print functions.
 struct Diagnostics {
     static void onFrame();
-    static void Diagnostic_Line(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
-    static void Diagnostic_Tiles(const Position & screen_pos, Color col);
-    static void Diagnostic_Watch_Position(TilePosition & tp);
-    static void Diagnostic_Destination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
-    static void Diagnostic_Dot(const Position & s_pos, const Position & screen_pos, Color col);
-    static void DiagnosticHitPoints(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticFAP(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticDeath(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticLastDamage(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
-    static void DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos);
-    static void DiagnosticReservations(const Reservation reservations, const Position & screen_pos);
-
+    static void drawAllVelocities(const Unit_Inventory ui);
+    static void drawAllHitPoints(const Unit_Inventory ui);
+    static void drawAllMAFAPaverages(const Unit_Inventory ui);
+    static void drawAllFutureDeaths(const Unit_Inventory ui);
+    static void drawAllLastDamage(const Unit_Inventory ui);
+    static void drawAllSpamGuards(const Unit_Inventory ui);
+    static void drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
+    static void drawTiles(const Position & screen_pos, Color col);
+    static void watchTile(TilePosition & tp);
+    static void drawDestination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
+    static void drawDot(const Position & s_pos, const Position & screen_pos, Color col);
+    static void drawCircle(const Position & s_pos, const Position & screen_pos, const int & radius, Color col);
+    static void drawHitPoints(const Stored_Unit unit, const Position & screen_pos);
+    static void drawFAP(const Stored_Unit unit, const Position & screen_pos);
+    static void drawEstimatedDeath(const Stored_Unit unit, const Position & screen_pos);
+    static void drawLastDamage(const Stored_Unit unit, const Position & screen_pos);
+    static void drawMineralsRemaining(const Stored_Resource unit, const Position & screen_pos);
+    static void drawSpamGuard(const Stored_Unit unit, const Position & screen_pos);
+    static void printLastOrder(const Stored_Unit unit, const Position & screen_pos);
+    static void printPhase(const Stored_Unit unit, const Position & screen_pos);
+    static void drawReservations(const Reservation reservations, const Position & screen_pos);
     static void DiagnosticTrack(const Unit & u);
-
-    void DiagnosticTrack(const Position & p);
+    static void DiagnosticTrack(const Position & p);
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
     static void Print_Upgrade_Inventory(const int &screen_x, const int &screen_y);

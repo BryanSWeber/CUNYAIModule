@@ -4,6 +4,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
+#include "Source/Diagnostics.h"
 #include <bwem.h>
 
 bool CombatManager::ready_to_fight = !CUNYAIModule::army_starved ||
@@ -12,15 +13,47 @@ CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::frien
 (CUNYAIModule::enemy_player_model.estimated_unseen_army_ + CUNYAIModule::enemy_player_model.estimated_unseen_tech_ > CUNYAIModule::enemy_player_model.estimated_resources_per_frame_ * 24 * 60 && CUNYAIModule::enemy_player_model.spending_model_.army_stock < CUNYAIModule::friendly_player_model.spending_model_.army_stock); // or we haven't scouted for an approximate minute. 
 
 Unit_Inventory CombatManager::scout_squad_;
+Unit_Inventory CombatManager::liabilities_squad_;
+
+bool CombatManager::grandStrategyScript(const Unit & u) {
+
+    bool task_assigned = false;
+
+    auto found_item = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
+    bool found_and_detecting = found_item->phase_ == Stored_Unit::Phase::Detecting;
+
+    if (isScout(u)) {
+        if (u->isBlind() || found_and_detecting) removeScout(u);
+    }
+
+    if (found_and_detecting && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+
+    if (CUNYAIModule::spamGuard(u)) {
+        if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
+            task_assigned = true;
+        if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
+            task_assigned = true;
+        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord || u->getType() == UnitTypes::Zerg_Zergling) && !u->isBlind() && scoutScript(u))
+            task_assigned = true;
+        if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
+            task_assigned = true;
+    }
+
+    if (task_assigned && u->getType() == Broodwar->self()->getRace().getWorker()) {
+        stopMine(u);
+    }
+
+    return false;
+}
+
 
 bool CombatManager::combatScript(const Unit & u)
 {
     if (CUNYAIModule::spamGuard(u))
     {
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-        int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 160 }) + 32; // minimum range is upgraded hydra range plus 1 tile, so we notice enemies BEFORE we get shot.
-
         Mobility mobility = Mobility(u);
+        int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = false;
@@ -62,12 +95,18 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if (worker_time_and_place) {
-                        if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive))) {
+                        if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (fight_looks_good || (unit_will_survive && friend_loc.building_count_ > 0) || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
                             return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
                     }
-                    if (!isPullWorkersTime(friend_loc, enemy_loc)) // this fight is not for workers, someone else should handle it, continue gathering.
-                        return false;
+                    if (!isPullWorkersTime(friend_loc, enemy_loc)) { // this fight is not for workers, someone else should handle it, continue gathering.
+                        if (my_unit && my_unit->phase_ == Stored_Unit::Phase::Attacking) {
+                            break; // move along and retreat now if you have been fighting and shouldn't be.
+                        }
+                        else {
+                            return false;
+                        }
+                    }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
                     if (fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
@@ -95,45 +134,14 @@ bool CombatManager::combatScript(const Unit & u)
                 }
             }
 
-            if constexpr (DIAGNOSTIC_MODE) {
-                Broodwar->drawCircleMap(e_closest->pos_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-                Broodwar->drawCircleMap(e_closest->pos_, search_radius, Colors::Green);
-            }
+
+            Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+            Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
+
             return mobility.Retreat_Logic();
 
         }
     }
-    return false;
-}
-
-bool CombatManager::grandStrategyScript(const Unit & u) {
-
-    bool task_assigned = false;
-
-    auto found_item = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
-    bool found_and_detecting = found_item->phase_ == Stored_Unit::Phase::Detecting;
-
-    if (isScout(u)) {
-        if (u->isBlind() || found_and_detecting) removeScout(u);
-    }
-
-    if (found_and_detecting && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
-
-    if (CUNYAIModule::spamGuard(u)) {
-        if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
-            task_assigned = true;
-        if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
-            task_assigned = true;
-        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord || u->getType() == UnitTypes::Zerg_Zergling) && !u->isBlind() && scoutScript(u))
-            task_assigned = true;
-        if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
-            task_assigned = true;
-    }
-
-    if (task_assigned && u->getType() == Broodwar->self()->getRace().getWorker()) {
-        stopMine(u);
-    }
-
     return false;
 }
 
@@ -228,6 +236,13 @@ bool CombatManager::isScout(const Unit & u)
 {
     auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
     if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end()) return true;
+    return false;
+}
+
+bool CombatManager::isLiability(const Unit & u)
+{
+    auto found_item = CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.end()) return true;
     return false;
 }
 
