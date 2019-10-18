@@ -27,8 +27,8 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
 
     approach(e_pos);
     if (unit_->move(pos_ + attract_vector_)) {
-        Diagnostics::Diagnostic_Line(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
-        Diagnostics::Diagnostic_Line(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
+        Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
+        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
     return false;
@@ -81,9 +81,12 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
 bool Mobility::surround(const Position & pos)
 {
     encircle(pos);
-    if (unit_->move(pos_ + encircle_vector_)) {
-        Diagnostics::Diagnostic_Line(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're running around it
-        Diagnostics::Diagnostic_Line(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
+    //avoid_edges();//Prototyping
+    if (unit_->move(pos_ + encircle_vector_ + walkability_vector_)) {
+        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//show we're running around it
+        Diagnostics::drawLine(pos_ + encircle_vector_, pos_ + encircle_vector_ + walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
+        Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
+        //Diagnostics::DiagnosticTrack(pos_ + encircle_vector_ + walkability_vector_);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
     }
     return false;
@@ -223,7 +226,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             //    permenent_target.circumference_remaining_ -= widest_dim;
             //}
         }
-        Diagnostics::Diagnostic_Line(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
+        Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
     else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
@@ -310,6 +313,43 @@ Position Mobility::encircle(const Position & p) {
     return encircle_vector_ = (dis(gen) > 0.5) ? encircle_left : encircle_right; // only one direction for now.
 }
 
+Position Mobility::avoid_edges() {
+
+    // numerous tiles to check.
+    WalkPosition main = WalkPosition(pos_);
+    BWEM::MiniTile main_mini = BWEM::Map::Instance().GetMiniTile(main);
+    WalkPosition alt = main;
+    alt.x = main.x + 1;
+    pair<BWEM::altitude_t, WalkPosition> up = {BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt};
+    alt = main;
+    alt.x = main.x - 1;
+    pair<BWEM::altitude_t, WalkPosition> down = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
+    alt = main;
+    alt.y = main.y + 1;
+    pair<BWEM::altitude_t, WalkPosition> left = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
+    alt = main;
+    alt.y = main.y - 1;
+    pair<BWEM::altitude_t, WalkPosition> right = { BWEM::Map::Instance().GetMiniTile(alt).Altitude(), alt };
+
+    vector<pair<BWEM::altitude_t, WalkPosition>> higher_ground;
+    for (auto i : { up, down, left, right }) {
+        if (i.first >= main_mini.Altitude())
+            higher_ground.push_back(i);
+    }
+
+    if (higher_ground.empty()) {
+        Diagnostics::DiagnosticText("No higher ground?");
+        return Positions::Origin;
+    }
+    else {
+        pair<BWEM::altitude_t, WalkPosition> targeted_pair = *CUNYAIModule::select_randomly(higher_ground.begin(), higher_ground.end());
+        Position vector_to = Position(targeted_pair.second) - pos_;
+        double theta = atan2(vector_to.y, vector_to.x);
+        walkability_vector_ = Position(static_cast<int>(cos(theta) * distance_metric_ * 0.25), static_cast<int>(sin(theta) * distance_metric_* 0.25)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+        return walkability_vector_;
+    }
+}
+
 Position Mobility::approach(const Position & p) {
     Position vector_to = p - pos_;
     double theta = atan2(vector_to.y, vector_to.x);
@@ -319,13 +359,13 @@ Position Mobility::approach(const Position & p) {
 }
 
 
-bool Mobility::checkSafePath(const Position &finish) {
+bool Mobility::checkSafeEscapePath(const Position &finish) {
     int plength = 0;
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);
+    Unit_Inventory ei_temp;
     if (!cpp.empty()) { // if there's an actual path to follow...
         for (auto choke_point : cpp) {
-            Unit_Inventory ei_temp;
             ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
             if (choke_point == cpp.back())
                 ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
@@ -333,6 +373,29 @@ bool Mobility::checkSafePath(const Position &finish) {
 
             if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
         }
+    }
+    return true;
+}
+
+bool Mobility::checkSafePath(const Position &finish) {
+    int plength = 0;
+    bool unit_sent = false;
+    auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);
+    Unit_Inventory ei_temp;
+    if (!cpp.empty()) { // if there's an actual path to follow...
+        for (auto choke_point : cpp) {
+            ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
+            if (choke_point == cpp.back())
+                ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
+            ei_temp.updateUnitInventorySummary();
+
+            if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
+        }
+    }
+    if (plength) {
+        ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, finish);
+        ei_temp.updateUnitInventorySummary();
+        if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
     }
     return true;
 }
@@ -524,4 +587,9 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
     if (!unit_sent) unit_sent = local_pathing(-1, finish);
 
     return unit_sent;
+}
+
+int Mobility::getDistanceMetric()
+{
+    return distance_metric_;
 }

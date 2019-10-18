@@ -28,7 +28,7 @@ constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simp
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
- constexpr bool RANDOM_PLAN = true; // Turn off learning and always use a random set of starting conditions.
+constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.
 // Remember not to use "Broodwar" in any global class constructor!
 
 class CUNYAIModule : public BWAPI::AIModule

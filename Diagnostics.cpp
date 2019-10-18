@@ -427,7 +427,6 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
     {
         //bwemMap.Draw(BWAPI::BroodwarPtr);
         BWEB::Map::draw();
-
         Print_Unit_Inventory(0, 50, CUNYAIModule::friendly_player_model.units_);
         //Print_Cached_Inventory(0, 50);
         //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
@@ -574,16 +573,16 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
         //    }
         //} // Pretty to look at!
 
-        //for (vector<int>::size_type i = 0; i < inventory.map_out_from_enemy_ground_.size(); ++i) {
-        //    for (vector<int>::size_type j = 0; j < inventory.map_out_from_enemy_ground_[i].size(); ++j) {
-        //        if (inventory.map_out_from_enemy_ground_[i][j] % 25 == 0 && inventory.map_out_from_enemy_ground_[i][j] > 1) {
-        //            if (isOnScreen({ static_cast<int>i * 8 + 4, static_cast<int>j * 8 + 4 }, inventory.screen_position_)) {
-        //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", inventory.map_out_from_enemy_ground_[i][j]);
-        //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-        //            }
-        //        }
-        //    }
-        //} // Pretty to look at!
+        for (vector<int>::size_type i = 0; i < CUNYAIModule::current_map_inventory.map_out_from_safety_.size(); ++i) {
+            for (vector<int>::size_type j = 0; j < CUNYAIModule::current_map_inventory.map_out_from_safety_[i].size(); ++j) {
+                if (CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] % 25 == 0 && CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] > 1) {
+                    if (CUNYAIModule::isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, CUNYAIModule::current_map_inventory.screen_position_)) {
+                        Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j]);
+                        //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+                    }
+                }
+            }
+        } // Pretty to look at!
 
         //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
         //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {
@@ -609,6 +608,8 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
         //Diagnostic_Tiles(current_map_inventory.screen_position_, Colors::White);
         drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Grey);
         //Diagnostic_Watch_Expos();
+
+         
     }
 
     void Diagnostics::drawAllVelocities(const Unit_Inventory ui)

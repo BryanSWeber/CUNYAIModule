@@ -56,8 +56,7 @@ bool CombatManager::combatScript(const Unit & u)
         int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
-        bool unit_building = false;
-        if (my_unit) unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
+        bool unit_building = unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
 
         if (e_closest && !unit_building) { // if there are bad guys, fight. Builders do not fight.
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
@@ -85,7 +84,12 @@ bool CombatManager::combatScript(const Unit & u)
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
-            bool worker_time_and_place = !resource_loc.resource_inventory_.empty() && isPullWorkersTime(friend_loc, enemy_loc);
+            bool worker_time_and_place = false;
+            Unit_Inventory expanded_friend_loc;
+            if (e_closest->type_.isWorker()) {
+                expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
+                expanded_friend_loc.updateUnitInventorySummary();
+            }
 
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
                 //Some unit types are special and behave differently.
@@ -94,17 +98,22 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if (worker_time_and_place) {
-                        if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && (fight_looks_good || (unit_will_survive && friend_loc.building_count_ > 0) || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
-                            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
-                        }
-                    }
-                    if (!isPullWorkersTime(friend_loc, enemy_loc)) { // this fight is not for workers, someone else should handle it, continue gathering.
-                        if (my_unit && my_unit->phase_ == Stored_Unit::Phase::Attacking) {
-                            break; // move along and retreat now if you have been fighting and shouldn't be.
+                    if (isWorkerFight(expanded_friend_loc, enemy_loc)) { // if this is a worker battle, eg stone or a mean worker scout.
+                        if (expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < (enemy_loc.worker_count_ + 1) && CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin) > expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking)) {
+                            if (!resource_loc.resource_inventory_.empty() && unit_will_survive) { // Do you need to join in?
+                                return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White); 
+                            }
+                            else {
+                                break; // exit this section and retreat.
+                            }
                         }
                         else {
-                            return false;
+                            return false; // Too many workers are fighting, so let us have you continue your task.
+                        }
+                    }
+                    else { // this fight is a regular fight.
+                        if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc) && !resource_loc.resource_inventory_.empty() && (fight_looks_good || (unit_will_survive && friend_loc.building_count_ > 0) || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
+                            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
                     }
                     break;
@@ -246,11 +255,9 @@ bool CombatManager::isLiability(const Unit & u)
     return false;
 }
 
-bool CombatManager::isPullWorkersTime(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
+bool CombatManager::isWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
 {
-    if (enemy.worker_count_ < static_cast<int>(enemy.unit_map_.size()))
-        return true; // They have non workers in the fight, you will have to pull workers.
-    else if (friendly.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < enemy.worker_count_ + 1)
+    if (enemy.worker_count_ == static_cast<int>(enemy.unit_map_.size()))
         return true; // we could use another worker attacking.
     else return false; // they are all workers and you have n+1 fighting, so you can relax.
 }
