@@ -373,7 +373,6 @@ Position Mobility::approach(const Position & p) {
     return attract_vector_ = approach_vector; // only one direction for now.
 }
 
-
 bool Mobility::checkDangerousArea(const Position pos) {
     Unit_Inventory ei_temp;
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
