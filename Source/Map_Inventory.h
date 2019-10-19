@@ -37,6 +37,9 @@ struct Map_Inventory {
     int map_x;
     int map_y;
 
+    //Marks Data for each area if it is "ground safe"
+    void updateGroundDangerousAreas();
+
     vector<Position> start_positions_;
     vector<TilePosition> expo_tilepositions_;
     vector<TilePosition> expo_positions_complete_;
@@ -159,7 +162,7 @@ struct Map_Inventory {
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateBasePositions();
+    void updateCurrentMap();
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);

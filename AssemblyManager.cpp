@@ -118,34 +118,81 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 }
             }
         }
+        else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
+            map<int, TilePosition> viable_placements;
+
+            for (auto tile : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+                int plength;
+                auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
+                if (plength)
+                    viable_placements.insert({ plength, tile });
+            }
+
+            auto closest_wall = BWEB::Walls::getClosestWall(unit->getTilePosition());
+            if (closest_wall && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) >= 2 ) {
+                set<TilePosition> wall_placements;
+                if (building.tileSize() == TilePosition{ 2,2 })
+                    wall_placements = closest_wall->getSmallTiles();
+                else if (building.tileSize() == TilePosition{ 3 , 2 })
+                    wall_placements = closest_wall->getMediumTiles();
+                else if (building.tileSize() == TilePosition{ 4 , 3 })
+                    wall_placements = closest_wall->getLargeTiles();
+                if (!wall_placements.empty()) {
+                    for (auto &tile : wall_placements) {
+                        int plength;
+                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
+                        if (plength)
+                            viable_placements.insert({ plength, tile });
+                    }
+                }
+            }
+
+            //Otherwise, use blocks.
+            for (auto block : BWEB::Blocks::getBlocks()) {
+                set<TilePosition> block_placements;
+                if (building.tileSize() == TilePosition{ 2,2 })
+                    block_placements = block.getSmallTiles();
+                else if (building.tileSize() == TilePosition{ 3 , 2 })
+                    block_placements = block.getMediumTiles();
+                else if (building.tileSize() == TilePosition{ 4 , 3 })
+                    block_placements = block.getLargeTiles();
+                if (!block_placements.empty()) {
+                    for (auto &tile : block_placements) {
+                        int plength;
+                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
+                        if (plength)
+                            viable_placements.insert({ plength, tile });
+                    }
+                }
+            }
+
+            for (auto good_tile : viable_placements) { // should automatically search by distance.
+                if (isPlaceableCUNY(building, good_tile.second) && CUNYAIModule::my_reservation.addReserveSystem(good_tile.second, building)) {
+                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
+                    unit->stop();
+                    return CUNYAIModule::updateUnitBuildIntent(unit, building, good_tile.second);
+                }
+            }
+
+        }
         else if (canMakeCUNY(building, false, unit)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos)) {
 
-                set<TilePosition> block_placements;
-                set<TilePosition> wall_placements;
                 map<int, set<TilePosition>> viable_placements;
-
-                if (building == UnitTypes::Zerg_Hatchery) { // macro hatches simply go to the closest place. Even if that's another expo.
-                    for (auto station : BWEB::Stations::getStations()) {
-                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(station.getBWEMBase()->Location())), std::set<TilePosition>{station.getBWEMBase()->Location()} });
-                    }
-                }
 
                 //check walls first
                 auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
                 if (closest_wall) {
+                    set<TilePosition> placements;
                     if (building.tileSize() == TilePosition{ 2,2 })
-                        wall_placements = closest_wall->getSmallTiles();
+                        placements = closest_wall->getSmallTiles();
                     else if (building.tileSize() == TilePosition{ 3 , 2 })
-                        wall_placements = closest_wall->getMediumTiles();
+                        placements = closest_wall->getMediumTiles();
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        wall_placements = closest_wall->getLargeTiles();
-                    if (!wall_placements.empty()) {
-                        for (auto &tile : wall_placements) {
-                            if (building == UnitTypes::Zerg_Hatchery) { // macro hatches simply go to the closest place. Even if that's the wall.
-                                viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(tile)), std::set<TilePosition>{tile} });
-                            }
-                            else if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                        placements = closest_wall->getLargeTiles();
+                    if (!placements.empty()) {
+                        for (auto &tile : placements) {
+                            if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
                                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
                                 return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                             }
@@ -155,14 +202,18 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 //Otherwise, use blocks.
                 for (auto block : BWEB::Blocks::getBlocks()) {
+                    set<TilePosition> placements;
                     if (building.tileSize() == TilePosition{ 2,2 })
-                        block_placements = block.getSmallTiles();
+                        placements = block.getSmallTiles();
                     else if (building.tileSize() == TilePosition{ 3 , 2 })
-                        block_placements = block.getMediumTiles();
+                        placements = block.getMediumTiles();
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        block_placements = block.getLargeTiles();
-                    if (!block_placements.empty()) {
-                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), block_placements });
+                        placements = block.getLargeTiles();
+                    if (!placements.empty()) {
+                        int plength;
+                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(block.getTilePosition()), &plength);
+                        if (plength)
+                            viable_placements.insert({ plength, placements });
                     }
                 }
 
@@ -176,6 +227,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                     }
                 }
             }
+
         }
     }
 

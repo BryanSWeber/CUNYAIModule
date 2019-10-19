@@ -60,7 +60,7 @@ WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {
-    system(".\\bwapi-data\\read\\pytest.exe");
+    //system(".\\bwapi-data\\read\\pytest.exe");
 
     //Initialize BWEM, must be done FIRST.
     Broodwar << "Map initialization..." << std::endl;
@@ -363,7 +363,7 @@ void CUNYAIModule::onFrame()
         current_map_inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    current_map_inventory.updateBasePositions();
+    current_map_inventory.updateCurrentMap();
     current_map_inventory.drawExpoPositions();
     current_map_inventory.drawBasePositions();
 

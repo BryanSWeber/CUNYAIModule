@@ -74,7 +74,16 @@ Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory 
     if (start_positions_.empty() && !cleared_all_start_positions_) {
         getStartPositions();
     }
-};
+}
+
+//Marks Data for each area if it is "ground safe"
+void Map_Inventory::updateGroundDangerousAreas()
+{
+    for (auto area : BWEM::Map::Instance().Areas()) {
+        area.SetData(CUNYAIModule::checkDangerousArea(UnitTypes::Zerg_Drone, Position(area.Top())));
+    }
+}
+;
 
 
 
@@ -1089,7 +1098,9 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Map_Inventory::updateBasePositions() {
+void Map_Inventory::updateCurrentMap() {
+
+    updateGroundDangerousAreas();
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;

@@ -113,7 +113,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
 
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
@@ -373,28 +373,19 @@ Position Mobility::approach(const Position & p) {
     return attract_vector_ = approach_vector; // only one direction for now.
 }
 
-bool Mobility::checkDangerousArea(const Position pos) {
-    Unit_Inventory ei_temp;
-    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
-    ei_temp.updateUnitInventorySummary();
-
-    if (CUNYAIModule::isInDanger(stored_unit_->type_, ei_temp)) return false;
-    return true;
-}
 
 bool Mobility::checkSafeEscapePath(const Position &finish) {
+
     int plength = 0;
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);
-    Unit_Inventory ei_temp;
+    bool threat_found = true;
     if (!cpp.empty()) { // if there's an actual path to follow...
         for (auto choke_point : cpp) {
-            ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
-            if (choke_point == cpp.back())
-                ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
-            ei_temp.updateUnitInventorySummary();
-
-            if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
+            BWEM::Area area = *choke_point->GetAreas().first;
+                if (area.Data()) return false;
+            BWEM::Area area2 = *choke_point->GetAreas().second;
+                if (area2.Data()) return false;
         }
     }
     return true;
@@ -405,20 +396,11 @@ bool Mobility::checkSafePath(const Position &finish) {
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);
     Unit_Inventory ei_temp;
-    if (!cpp.empty()) { // if there's an actual path to follow...
-        for (auto choke_point : cpp) {
-            ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().first)));
-            if (choke_point == cpp.back())
-                ei_temp = ei_temp + CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(choke_point->PosInArea(choke_point->middle, choke_point->GetAreas().second)));
-            ei_temp.updateUnitInventorySummary();
+    if (!Mobility::checkSafeEscapePath(finish)) return false;
 
-            if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
-        }
-    }
     if (plength) {
-        ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, finish);
-        ei_temp.updateUnitInventorySummary();
-        if (CUNYAIModule::isInDanger(u_type_, ei_temp)) return false;
+        BWEM::Area area = *BWEM::Map::Instance().GetArea(TilePosition(finish));
+        if (area.Data()) return false;
     }
     return true;
 }

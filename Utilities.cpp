@@ -2132,3 +2132,12 @@ bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended
     }
     return false;
 }
+
+bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
+    Unit_Inventory ei_temp;
+    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
+    ei_temp.updateUnitInventorySummary();
+
+    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    return true;
+}
