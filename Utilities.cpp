@@ -1984,11 +1984,11 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.phase_ != Stored_Unit::Phase::Detecting && !CUNYAIModule::combat_manager.isScout(u.first);
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
-            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
-            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
+            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && CUNYAIModule::canContributeToFight(u.second.type_, ei);
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save; // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * u.second.shoots_up_ * fighting_may_save;
+            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * u.second.shoots_down_ * fighting_may_save;
         }
     }
     for (auto e : ei.unit_map_) {
