@@ -122,7 +122,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
     for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
         bool mine_is_right_type = false;
         bool safe = drone_pathing_options.checkSafePath(r.second.pos_);
-        bool potential_escape = drone_pathing_options.checkSafeEscapePath(r.second.pos_);
+        bool potential_escape = safe || drone_pathing_options.checkSafeEscapePath(r.second.pos_); // only need to check if there is an escape if it is not safe.
 
         bool mine_is_unoccupied_by_enemy = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
         bool path_exists = CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_);

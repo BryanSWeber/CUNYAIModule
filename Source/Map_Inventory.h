@@ -119,7 +119,7 @@ struct Map_Inventory {
     // Updates the chokes on the map.
     //void Map_Inventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
-    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
+    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
 
     // Gets distance using
     int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;

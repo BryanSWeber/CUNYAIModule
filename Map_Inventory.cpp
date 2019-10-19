@@ -341,7 +341,7 @@ int Map_Inventory::getFieldValue(const Position & pos, const vector<vector<int>>
     return field[startloc.x][startloc.y];
 }
 
-void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print = false) { //in progress.
+void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
 
     int map_x = Broodwar->mapWidth() * 4;
     int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
