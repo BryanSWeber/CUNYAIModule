@@ -374,6 +374,15 @@ Position Mobility::approach(const Position & p) {
 }
 
 
+bool Mobility::checkDangerousArea(const Position pos) {
+    Unit_Inventory ei_temp;
+    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
+    ei_temp.updateUnitInventorySummary();
+
+    if (CUNYAIModule::isInDanger(stored_unit_->type_, ei_temp)) return false;
+    return true;
+}
+
 bool Mobility::checkSafeEscapePath(const Position &finish) {
     int plength = 0;
     bool unit_sent = false;
