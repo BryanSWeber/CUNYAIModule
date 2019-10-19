@@ -172,6 +172,8 @@ struct Unit_Inventory {
     int cloaker_count_ = 0;
     int flyer_count_ = 0;
     int ground_count_ = 0;
+    int ground_melee_count_ = 0;
+    int ground_range_count_ = 0;
     int building_count_ = 0;
     int resource_depot_count_ = 0;
     int future_fap_stock_ = 0;

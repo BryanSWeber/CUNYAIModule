@@ -121,21 +121,31 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         else if (canMakeCUNY(building, false, unit)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos)) {
 
+                set<TilePosition> block_placements;
+                set<TilePosition> wall_placements;
                 map<int, set<TilePosition>> viable_placements;
+
+                if (building == UnitTypes::Zerg_Hatchery) { // macro hatches simply go to the closest place. Even if that's another expo.
+                    for (auto station : BWEB::Stations::getStations()) {
+                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(station.getBWEMBase()->Location())), std::set<TilePosition>{station.getBWEMBase()->Location()} });
+                    }
+                }
 
                 //check walls first
                 auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
                 if (closest_wall) {
-                    set<TilePosition> placements;
                     if (building.tileSize() == TilePosition{ 2,2 })
-                        placements = closest_wall->getSmallTiles();
+                        wall_placements = closest_wall->getSmallTiles();
                     else if (building.tileSize() == TilePosition{ 3 , 2 })
-                        placements = closest_wall->getMediumTiles();
+                        wall_placements = closest_wall->getMediumTiles();
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        placements = closest_wall->getLargeTiles();
-                    if (!placements.empty()) {
-                        for (auto &tile : placements) {
-                            if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
+                        wall_placements = closest_wall->getLargeTiles();
+                    if (!wall_placements.empty()) {
+                        for (auto &tile : wall_placements) {
+                            if (building == UnitTypes::Zerg_Hatchery) { // macro hatches simply go to the closest place. Even if that's the wall.
+                                viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(tile)), std::set<TilePosition>{tile} });
+                            }
+                            else if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
                                 CUNYAIModule::buildorder.announceBuildingAttempt(building);
                                 return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
                             }
@@ -145,15 +155,14 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
                 //Otherwise, use blocks.
                 for (auto block : BWEB::Blocks::getBlocks()) {
-                    set<TilePosition> placements;
                     if (building.tileSize() == TilePosition{ 2,2 })
-                        placements = block.getSmallTiles();
+                        block_placements = block.getSmallTiles();
                     else if (building.tileSize() == TilePosition{ 3 , 2 })
-                        placements = block.getMediumTiles();
+                        block_placements = block.getMediumTiles();
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        placements = block.getLargeTiles();
-                    if (!placements.empty()) {
-                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), placements });
+                        block_placements = block.getLargeTiles();
+                    if (!block_placements.empty()) {
+                        viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), block_placements });
                     }
                 }
 
@@ -363,13 +372,16 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
 
     // Always:
+    bool upgrade_worth_melee = CUNYAIModule::friendly_player_model.units_.ground_melee_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Zergling).stock_value_ && CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0; // first upgrade is +1
+    bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::Count_Units(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
+
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
         Broodwar->self()->gas() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         Broodwar->self()->minerals() > 100 * CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (!have_idle_evos_ || CUNYAIModule::Count_Units(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Spawning_Pool) > 0 &&
+        (upgrade_worth_melee || upgrade_worth_ranged) &&
         CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&

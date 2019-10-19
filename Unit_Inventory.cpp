@@ -558,6 +558,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     cloaker_count_ = 0;
     flyer_count_ = 0;
     ground_count_ = 0;
+    ground_melee_count_ = 0;
+    ground_range_count_ = 0;
     building_count_ = 0;
     resource_depot_count_ = 0;
     future_fap_stock_ = 0;
@@ -613,6 +615,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 cloaker_count_ = flying_unit * count_of_unit_type;
                 stock_ground_units_ += !flying_unit * unit_value_for_all_of_type;
                 ground_count_ += !flying_unit * count_of_unit_type;
+                ground_melee_count_ += u_iter.second.type_.groundWeapon().maxRange() < 32 * !flying_unit * count_of_unit_type;
+                ground_range_count_ += u_iter.second.type_.groundWeapon().maxRange() < 32 * !flying_unit * count_of_unit_type;
                 stock_shoots_up_ += up_gun * unit_value_for_all_of_type;
                 stock_shoots_down_ += down_gun * unit_value_for_all_of_type;
                 stock_both_up_and_down_ += (up_gun && down_gun) * unit_value_for_all_of_type;
