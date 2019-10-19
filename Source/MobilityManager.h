@@ -41,6 +41,8 @@ public:
     // causes a unit to move towards a position.
     Position approach(const Position & p);
 
+    //Checks if current area is dangerous.
+    bool checkDangerousArea(const Position pos);
     //Checks if all except the first area are safe, since we are trying to run.
     bool checkSafeEscapePath(const Position & finish);
     //Checks first area for safety.
