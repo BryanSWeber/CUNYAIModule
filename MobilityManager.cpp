@@ -109,11 +109,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     //int max_dist = passed_distance; // copy, to be modified later.
-    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500);
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()) );
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 2 : 2 * log(helpful_e - helpful_u);
 
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
@@ -155,6 +155,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     double dist_to_enemy = passed_distance;
     Unit target = nullptr;
 
+    ThreateningTargets.unit_map_.insert(DiveableTargets.unit_map_.begin(), DiveableTargets.unit_map_.end());
     SecondOrderThreats.unit_map_.insert(ThreateningTargets.unit_map_.begin(), ThreateningTargets.unit_map_.end());
     LowPriority.unit_map_.insert(SecondOrderThreats.unit_map_.begin(), SecondOrderThreats.unit_map_.end());
 
@@ -255,43 +256,57 @@ bool Mobility::Retreat_Logic() {
     if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
     }
+    else if (CUNYAIModule::combat_manager.isScout(unit_)) {
+        auto threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, unit_, 400);
+        if (threat) {
+            approach(CUNYAIModule::current_map_inventory.safe_base_);
+            encircle(threat->pos_);
+            moveTo(pos_, pos_ + attract_vector_ + encircle_vector_);
+        }
+    }
     else {
         moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_);
     }
     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
 }
 
-bool Mobility::Scatter_Logic()
+bool Mobility::Scatter_Logic(const Position pos)
 {
+    Position problem_pos = Positions::Origin;
+
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
 
-    Position problem_pos = Positions::Origin;
 
-    if (unit_->isUnderStorm()) {
-        double current_distance = 999999;
-        for (auto s : Broodwar->getBullets()) {
-            if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
-                problem_pos = s->getPosition();
-                current_distance = s->getPosition().getDistance(pos_);
+    if (pos == Positions::Origin) {
+        if (unit_->isUnderStorm()) {
+            double current_distance = 999999;
+            for (auto s : Broodwar->getBullets()) {
+                if (s->getType() == BulletTypes::Psionic_Storm  && s->getPosition().getDistance(pos_) < current_distance) {
+                    problem_pos = s->getPosition();
+                    current_distance = s->getPosition().getDistance(pos_);
+                }
             }
         }
-    }
-    if (unit_->isUnderDisruptionWeb()) {
-        double current_distance = 999999;
-        for (auto s : Broodwar->getAllUnits()) {
-            if (s->getType() == UnitTypes::Spell_Disruption_Web  && s->getPosition().getDistance(pos_) < current_distance) {
-                problem_pos = s->getPosition();
-                current_distance = s->getPosition().getDistance(pos_);
+        if (unit_->isUnderDisruptionWeb()) {
+            double current_distance = 999999;
+            for (auto s : Broodwar->getAllUnits()) {
+                if (s->getType() == UnitTypes::Spell_Disruption_Web  && s->getPosition().getDistance(pos_) < current_distance) {
+                    problem_pos = s->getPosition();
+                    current_distance = s->getPosition().getDistance(pos_);
+                }
             }
         }
-    }
 
-    if (unit_->isIrradiated()) {
-        problem_pos = unit_->getClosestUnit()->getPosition();
+        if (unit_->isIrradiated()) {
+            problem_pos = unit_->getClosestUnit()->getPosition();
+        }
+    }
+    else {
+        problem_pos = pos;
     }
 
     approach(problem_pos);

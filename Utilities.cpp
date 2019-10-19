@@ -81,7 +81,7 @@ bool CUNYAIModule::isFightingUnit(const Unit &unit)
     UnitType u_type = unit->getType();
 
     // no workers or buildings allowed. Or overlords, or larva..
-    if ( unit && u_type.isWorker() ||
+    if (u_type.isWorker() ||
         //u_type.isBuilding() ||
         u_type == BWAPI::UnitTypes::Zerg_Larva ||
         u_type == BWAPI::UnitTypes::Zerg_Overlord )
@@ -1984,10 +1984,11 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
-            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
-            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
+            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.phase_ != Stored_Unit::Phase::Detecting && !CUNYAIModule::combat_manager.isScout(u.first);
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
         }
     }
     for (auto e : ei.unit_map_) {
@@ -2009,7 +2010,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
             //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
             //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
         //(total_surviving_ui > total_surviving_ei) ||
-        (total_dying_ui <= total_dying_ei); //|| // If my losses are smaller than theirs..
+        (total_dying_ui < total_dying_ei); //|| // If my losses are smaller than theirs..
         //(local && total_dying_ui == 0); // || // there are no losses.
             //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
