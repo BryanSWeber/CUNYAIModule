@@ -577,6 +577,9 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
 {
     int plength = 0;
     bool unit_sent = false;
+    if (!start.isValid() || !finish.isValid()) {
+        return false;
+    }
     auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
 
     if (!cpp.empty() && !unit_->isFlying()) {
