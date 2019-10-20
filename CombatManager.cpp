@@ -163,6 +163,9 @@ bool CombatManager::combatScript(const Unit & u)
             if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                 return mobility.Retreat_Logic();
             }
+            else {
+                return mobility.surround(e_closest->pos_);
+            }
         }
     }
     return false;
