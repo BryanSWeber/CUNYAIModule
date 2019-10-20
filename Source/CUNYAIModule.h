@@ -21,7 +21,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc.Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool LEARNING_MODE = true; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
@@ -209,6 +209,7 @@ public:
     static Unit_Inventory getThreateningUnitInventoryInRadius(const Unit_Inventory & ui, const Position & origin, const int & dist, const bool & air_attack);
     static Unit_Inventory getUnitsOutOfReach(const Unit_Inventory & ui, const Unit & target);
     static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const Position & origin);
+    static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const int AreaID);
     static Unit_Inventory getUnitInventoryInNeighborhood(const Unit_Inventory & ui, const Position & origin);
     static Unit_Inventory getUnitInventoryInArea(const Unit_Inventory & ui, const UnitType ut, const Position & origin);
 
@@ -280,9 +281,9 @@ public:
     static double bindBetween(double x, double lower_bound, double upper_bound);
     // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
     static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
-    static bool checkMiniFAPForecast(Unit_Inventory & ui, Unit_Inventory & ei);
+    static bool checkMiniFAPForecast(Unit_Inventory & ui, Unit_Inventory & ei, const bool equality_is_win);
     // Tells if we will be dealing more damage than we recieve, proportionally or total.
-    static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei);
+    static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool equality_is_win = false);
     // Tells the size of the losses after a fight. The fodder setting also includes the results of destroying the units that cannot defend themselves, such as a nexus.
     static int getFAPDamageForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder = true);
     // Tells the size of the surviving forces after a fight. The fodder setting also includes the results of surviving units that cannot defend themselves, such as a nexus.
@@ -293,6 +294,9 @@ public:
     static void DiagnosticTrack(const Position & p);
     static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
     static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type, const TilePosition & intended_build_tile); // finds the unit in friendly unit inventory and updates its phase to prebuild , its intended build type to Type, and its intended build tile to the listed tileposition. Function updates that the unit has been touched.
+    // Checks if an area (by position) is dangerous for a unit to be in. If it is dangerous, returns TRUE.
+    static bool checkDangerousArea(const UnitType ut, const Position pos);
+    static bool checkDangerousArea(const UnitType ut, const int AreaID);
 
 
 // Vision Functions

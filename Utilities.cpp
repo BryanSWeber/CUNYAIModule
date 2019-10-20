@@ -1973,7 +1973,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 //        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 //}
 
-bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei) {
+bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei, const bool equality_is_win) {
     FAP::FastAPproximation<Stored_Unit*> MiniFap; // integrating FAP into combat with a produrbation.
     ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
     ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
@@ -1982,10 +1982,10 @@ bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei) 
     ei.pullFromFAP(*MiniFap.getState().second);
     ui.updateUnitInventorySummary();
     ei.updateUnitInventorySummary();
-    return checkSuperiorFAPForecast(ui, ei);
+    return checkSuperiorFAPForecast(ui, ei, equality_is_win);
 }
 
-bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool equality_is_win) {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
     int total_surviving_ui_down = 0;
@@ -2019,13 +2019,18 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
     if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
     if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
 
-    return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
-            //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
-            //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
-        //(total_surviving_ui > total_surviving_ei) ||
-        (total_dying_ui < total_dying_ei); //|| // If my losses are smaller than theirs..
-        //(local && total_dying_ui == 0); // || // there are no losses.
-            //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+    if (equality_is_win)
+        return total_dying_ui <= total_dying_ei;
+    else
+        return total_dying_ui < total_dying_ei;
+
+    //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
+    //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
+    //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
+    //(total_surviving_ui > total_surviving_ei) ||
+    //(total_dying_ui < total_dying_ei); //|| // If my losses are smaller than theirs..
+    //(local && total_dying_ui == 0); // || // there are no losses.
+    //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 
 int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool fodder) {
