@@ -603,9 +603,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
             int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
             int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
             if (CUNYAIModule::isFightingUnit(u_iter.second)) {
-
-                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
-                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker;
+                bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
+                bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Reaver || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
                 int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
 

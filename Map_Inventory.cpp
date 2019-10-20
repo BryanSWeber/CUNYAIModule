@@ -80,7 +80,7 @@ Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory 
 void Map_Inventory::updateGroundDangerousAreas()
 {
     for (auto area : BWEM::Map::Instance().Areas()) {
-        area.SetData(CUNYAIModule::checkDangerousArea(UnitTypes::Zerg_Drone, Position(area.Top())));
+        area.SetData(CUNYAIModule::checkDangerousArea(UnitTypes::Zerg_Drone, area.Id() ));
     }
 }
 ;

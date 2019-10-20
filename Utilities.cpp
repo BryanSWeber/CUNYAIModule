@@ -1178,6 +1178,19 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
     return ui_out;
 }
 
+//Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const int AreaID) {
+    Unit_Inventory ui_out;
+
+    for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+        if (e->second.areaID_ == AreaID) {
+            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+        }
+    }
+
+    return ui_out;
+}
+
 //Searches an enemy inventory for units within a BWAPI Neighborhood. Can return nullptr.
 Unit_Inventory CUNYAIModule::getUnitInventoryInNeighborhood(const Unit_Inventory &ui, const Position &origin) {
     Unit_Inventory ui_out;
@@ -1984,7 +1997,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && CUNYAIModule::canContributeToFight(u.second.type_, ei) && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran;
+            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && CUNYAIModule::canContributeToFight(u.second.type_, ei) && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
             total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save; // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save;
             total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * u.second.shoots_up_ * fighting_may_save;
@@ -2136,6 +2149,15 @@ bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended
 bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
     Unit_Inventory ei_temp;
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
+    ei_temp.updateUnitInventorySummary();
+
+    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    return true;
+}
+
+bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
+    Unit_Inventory ei_temp;
+    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, AreaID);
     ei_temp.updateUnitInventorySummary();
 
     if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
