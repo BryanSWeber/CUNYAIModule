@@ -121,7 +121,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surround(e_closest->pos_);
                         }
@@ -129,7 +129,7 @@ bool CombatManager::combatScript(const Unit & u)
                             return mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
                         }
                     }
-                    else if (standard_fight_reasons) {
+                    else if (standard_fight_reasons || enemy_loc.detector_count_ > 0) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
@@ -138,7 +138,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Zerg_Infested_Terran: 
                     if (overstacked_units)
                         return mobility.Scatter_Logic(overstacked_units->pos_);
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc) ) {
                             return mobility.surround(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
@@ -146,7 +146,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 default:
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                         return mobility.surround(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
