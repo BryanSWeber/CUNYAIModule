@@ -55,12 +55,12 @@ void TechManager::updateOptimalTech() {
 void TechManager::updateMaxGas() {
     max_gas_value_ = 0;
     for (auto potential_up : upgrade_cycle_) {
-        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first)) {
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first)) {
             max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
         }
     }
     for (auto potential_tech : tech_cycle_) {
-        if (checkBuildingReady(potential_tech.first) && !Broodwar->self()->hasResearched(potential_tech.first)) {
+        if (checkBuildingReady(potential_tech.first) && canTech(potential_tech.first)) {
             max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
         }
     }
@@ -264,4 +264,75 @@ int TechManager::returnTechRank(const UpgradeType &ut) {
 int TechManager::getMaxGas()
 {
     return max_gas_value_;
+}
+
+bool TechManager::canUpgradeCUNY(const UpgradeType type, const bool checkAffordable, const Unit &builder)
+{
+    Player self = Broodwar->self();
+
+    if (builder)
+    {
+        if (builder->getPlayer() != self)
+            return false;
+        if (!builder->getType().isSuccessorOf(type.whatUpgrades()))
+            return false;
+        if ((builder->isLifted() || !builder->isIdle() || !builder->isCompleted()))
+            return false;
+    }
+
+    if (!self)
+        return false;
+    int nextLvl = self->getUpgradeLevel(type) + 1;
+
+    if (!self->hasUnitTypeRequirement(type.whatUpgrades()))
+        return false;
+    if (!self->hasUnitTypeRequirement(type.whatsRequired(nextLvl)))
+        return false;
+    if (self->isUpgrading(type))
+        return false;
+    if (self->getUpgradeLevel(type) >= self->getMaxUpgradeLevel(type))
+        return false;
+    if (checkAffordable) {
+        if (self->minerals() < type.mineralPrice(nextLvl))
+            return false;
+        if (self->gas() < type.gasPrice(nextLvl))
+            return false;
+    }
+    return true;
+}
+
+bool TechManager::canTech(TechType type, const bool checkAffordable, const Unit &builder)
+{
+    // Error checking
+    if (!Broodwar->self())
+        return Broodwar->setLastError(Errors::Unit_Not_Owned);
+
+    if (builder)
+    {
+        if (builder->getPlayer() != Broodwar->self())
+            return false;
+        if (!builder->getType().isSuccessorOf(type.whatResearches()))
+            return false;
+        if ((builder->isLifted() || !builder->isIdle() || !builder->isCompleted()))
+            return false;
+    }
+
+    if (Broodwar->self()->isResearching(type))
+        return false;
+    if (Broodwar->self()->hasResearched(type))
+        return false;
+    if (!Broodwar->self()->isResearchAvailable(type))
+        return false;
+
+    if (checkAffordable) {
+        if (Broodwar->self()->minerals() < type.mineralPrice())
+            return false;
+        if (Broodwar->self()->gas() < type.gasPrice())
+            return false;
+    }
+
+    if (!Broodwar->self()->hasUnitTypeRequirement(type.requiredUnit()))
+        return false;
+
+    return Broodwar->setLastError();
 }

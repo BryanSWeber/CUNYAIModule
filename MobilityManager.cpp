@@ -25,8 +25,16 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
     }
 
+    Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
+    friendly_blocks.updateUnitInventorySummary();
+    bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
+
+    if (has_a_blocking_item && !unit_->isFlying())
+        encircle(e_pos);
+
     approach(e_pos);
-    if (unit_->move(pos_ + attract_vector_)) {
+    if (unit_->move(pos_ + attract_vector_ + encircle_vector_)) {
+        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//Run around an obstacle.
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
@@ -82,7 +90,7 @@ bool Mobility::surround(const Position & pos)
 {
     encircle(pos);
     //avoid_edges();//Prototyping
-    if (unit_->move(pos_ + encircle_vector_ + walkability_vector_)) {
+    if (unit_->move(pos_ + encircle_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//show we're running around it
         Diagnostics::drawLine(pos_ + encircle_vector_, pos_ + encircle_vector_ + walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
         Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
@@ -127,7 +135,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
-            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_)) {
+            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_ && CUNYAIModule::isFightingUnit(e->second.type_))) {
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
@@ -600,8 +608,9 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
     }
 
-    // then try traveling with local travel.
-    if (!unit_sent) unit_sent = local_pathing(-1, finish);
+
+    // then try traveling with local travel. Should have plength > 0
+    if (!unit_sent && plength) unit_sent = local_pathing(plength, finish);
 
     return unit_sent;
 }

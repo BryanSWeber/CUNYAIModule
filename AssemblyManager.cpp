@@ -1237,6 +1237,20 @@ bool AssemblyManager::canMakeCUNY(const UnitType & type, const bool can_afford, 
     return true;
 }
 
+
+
+int AssemblyManager::getMaxGas()
+{
+    int max_gas_ = 0;
+    for (auto u : CUNYAIModule::friendly_player_model.combat_unit_cartridge_) {
+        if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
+    }
+    for (auto u : CUNYAIModule::friendly_player_model.building_cartridge_) {
+        if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
+    }
+    return max_gas_;
+}
+
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
     return friendly_player_model.combat_unit_cartridge_.find(ut) != friendly_player_model.combat_unit_cartridge_.end() || friendly_player_model.building_cartridge_.find(ut) != friendly_player_model.building_cartridge_.end() || friendly_player_model.eco_unit_cartridge_.find(ut) != friendly_player_model.eco_unit_cartridge_.end();
 }
@@ -1353,6 +1367,16 @@ void Building_Gene::retryBuildOrderElement(const UnitType & ut)
     building_gene_.insert(building_gene_.begin(), Build_Order_Object(ut));
 }
 
+void Building_Gene::getCumulativeResources()
+{
+    cumulative_gas_ = 0;
+    cumulative_minerals_ = 0;
+    for (auto u : building_gene_) {
+        cumulative_gas_ += u.getResearch().gasPrice() + u.getUnit().gasPrice() + u.getUpgrade().gasPrice();
+        cumulative_minerals_ += u.getResearch().mineralPrice() + u.getUnit().mineralPrice() + u.getUpgrade().mineralPrice();
+    }
+}
+
 void Building_Gene::getInitialBuildOrder(string s) {
 
     building_gene_.clear();
@@ -1466,6 +1490,7 @@ void Building_Gene::getInitialBuildOrder(string s) {
             building_gene_.push_back(muscular_augments);
         }
     }
+    getCumulativeResources();
 }
 
 void Building_Gene::clearRemainingBuildOrder(const bool diagnostic) {

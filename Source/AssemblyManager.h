@@ -67,6 +67,9 @@ public:
     static void getDefensiveWalls();
     // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
+
+    //Returns the maximum gas that a unit could cost that I can build right now.
+    static int getMaxGas();
 };
 
 
@@ -124,6 +127,9 @@ struct Building_Gene {
     bool ever_clear_ = false;
     UnitType last_build_order;
 
+    int cumulative_gas_;
+    int cumulative_minerals_;
+
     void getInitialBuildOrder(string s);
     void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
     void updateRemainingBuildOrder(const Unit &u); // drops item from list as complete.
@@ -142,6 +148,7 @@ struct Building_Gene {
 
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the list again.
 
+    void getCumulativeResources();
     //bool checkExistsInBuild( UnitType unit );
 };
 

@@ -25,7 +25,7 @@ public:
     void attachToParticularMine(Unit & mine, Resource_Inventory & ri, Stored_Unit & miner);
     // Returns true if there is a blocking mineral nearby.
     bool checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui);
-    // returns true if a blocking mineral exists.
+    //Returns True if there is an out for gas. Does not consider all possible gas outlets.
     bool checkGasOutlet();
     // Do worker things:
     bool workerWork(const Unit &u);

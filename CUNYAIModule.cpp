@@ -312,10 +312,11 @@ void CUNYAIModule::onFrame()
         Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
     }
 
+    buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
     gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) ||
-        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ Count_Units(UnitTypes::Zerg_Extractor) * 100, CUNYAIModule::techmanager.getMaxGas(), 100 })) || // you need gas to buy things.
-        (!buildorder.building_gene_.empty() && my_reservation.getExcessGas() <= 0);// you need gas for a required build order item.
+        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()})) || // you need gas to buy things.
+        (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.

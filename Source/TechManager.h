@@ -34,4 +34,8 @@ public:
     static int returnTechRank(const UpgradeType & ut);
     // Returns the most expensive piece of Tech we've considered making.
     static int getMaxGas();
-};
+    // a modification of the BWAPI canUpgrdae. Has an option to -exclude- cost. Affordability is min, gas, and supply.
+    static bool canUpgradeCUNY(const UpgradeType type, const bool checkAffordable = false, const Unit &builder = nullptr);
+    // a modification of the BWAPI canResearch (canTech in my parlance). Has an option to -exclude- cost. Affordability is min, gas, and supply.
+    static bool canTech(TechType type, const bool checkAffordable = false, const Unit &builder = nullptr);
+};   

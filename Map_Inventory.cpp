@@ -1018,11 +1018,11 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
         ui_mini.updateUnitInventorySummary();
 
         if (friendly) {
-            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ui_loc, ei_loc, fodder);
+            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ui_loc, ei_loc, FAP_SIM_DURATION, fodder);
             sample_ground_fodder = ui_mini.stock_ground_fodder_;
         }
         else {
-            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ei_loc, ui_loc, fodder);
+            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ei_loc, ui_loc, FAP_SIM_DURATION, fodder);
             sample_ground_fodder = ei_mini.stock_ground_fodder_;
         }
 
