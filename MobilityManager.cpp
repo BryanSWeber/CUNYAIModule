@@ -112,6 +112,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()) );
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
+    bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
     double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
 
@@ -126,28 +127,29 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
+            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_)) {
+                bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
+                    (e_type.isSpellcaster() && !e_type.isBuilding()) ||
+                    (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
+                    e_type == UnitTypes::Protoss_Carrier ||
+                    (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
+                    e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-            bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
-                (e_type.isSpellcaster() && !e_type.isBuilding()) ||
-                (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
-                e_type == UnitTypes::Protoss_Carrier ||
-                (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
-                e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
+                if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui))) {
+                    DiveableTargets.addStored_Unit(e->second);
+                }
 
-            if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui))) {
-                DiveableTargets.addStored_Unit(e->second);
-            }
+                if (CUNYAIModule::Can_Fight(e_type, unit_)) {
+                    ThreateningTargets.addStored_Unit(e->second);
+                }
 
-            if (CUNYAIModule::Can_Fight(e_type, unit_)) {
-                ThreateningTargets.addStored_Unit(e->second);
-            }
+                if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
+                    SecondOrderThreats.addStored_Unit(e->second);
+                }
 
-            if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
-                SecondOrderThreats.addStored_Unit(e->second);
-            }
-
-            if ((e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
-                LowPriority.addStored_Unit(e->second);
+                if ((e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
+                    LowPriority.addStored_Unit(e->second);
+                }
             }
         }
     }
@@ -387,8 +389,12 @@ bool Mobility::checkSafeEscapePath(const Position &finish) {
             BWEM::Area area2 = *choke_point->GetAreas().second;
                 if (area2.Data()) return false;
         }
+        return true;
     }
-    return true;
+    if (plength) {
+        return true;
+    }
+    return false;
 }
 
 bool Mobility::checkSafePath(const Position &finish) {
@@ -401,8 +407,9 @@ bool Mobility::checkSafePath(const Position &finish) {
     if (plength) {
         BWEM::Area area = *BWEM::Map::Instance().GetArea(TilePosition(finish));
         if (area.Data()) return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 // returns TRUE if the lurker needed fixing. For Attack.

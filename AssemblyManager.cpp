@@ -284,9 +284,10 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 //    occupied_expo = true;
 
 
-                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p));
+                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
+                bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 1;
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available && safe_path_available_or_needed) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
