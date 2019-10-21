@@ -189,6 +189,7 @@ public:
     static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
+    static Stored_Unit * getClosestStored(const Unit unit, Unit_Inventory & ui, const UnitType & u_type, const int & dist);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
     //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);

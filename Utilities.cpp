@@ -709,6 +709,7 @@ Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
     }
     return e_set;
 }
+
 Stored_Unit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
 {
 	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
@@ -768,6 +769,27 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
             if (temp_dist <= min_dist ) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest unit of a type to point in Unit_inventory EXCLUDING the unit. Checks range. Careful about visiblity.
+Stored_Unit* CUNYAIModule::getClosestStored(const Unit unit, Unit_Inventory &ui, const UnitType &u_type, const int &dist = 999999) {
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.type_ == u_type && e->second.valid_pos_ && e->first != unit) {
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(unit->getPosition()));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
             }
         }
     }

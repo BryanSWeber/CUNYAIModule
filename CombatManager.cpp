@@ -85,6 +85,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_foe > enemy_loc.max_range_ + 32; // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
+            bool standard_fight_reasons = fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc);
             Unit_Inventory expanded_friend_loc;
             if (e_closest->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
@@ -92,18 +93,20 @@ bool CombatManager::combatScript(const Unit & u)
             }
 
             if (CUNYAIModule::canContributeToFight(u->getType(), enemy_loc)) {
+                auto overstacked_units = CUNYAIModule::getClosestStored(u, friend_loc, u->getType(), u->getType().width());
+
                 //Some unit types are special and behave differently.
                 switch (u->getType())
                 {
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if (isWorkerFight(expanded_friend_loc, enemy_loc)) { // if this is a worker battle, eg stone or a mean worker scout.
-                        if (expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < (enemy_loc.worker_count_ + 1) && CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin) > expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking)) {
-                            if (!resource_loc.resource_inventory_.empty() && unit_will_survive) { // Do you need to join in?
+                    if (isPulledWorkersFight(expanded_friend_loc, enemy_loc)) { // if this is a worker battle, eg stone , a mean worker scout, or a static defense rush.
+                        if (expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < ((enemy_loc.worker_count_ > 0)*(enemy_loc.worker_count_ + 1) + (enemy_loc.building_count_ > 0)*(enemy_loc.building_count_ + 3)) && CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin) > expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking)) {
+                            if (!resource_loc.resource_inventory_.empty()) { // Do you need to join in?
                                 return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White); 
                             }
-                            else {
+                            else{
                                 break; // exit this section and retreat.
                             }
                         }
@@ -112,44 +115,41 @@ bool CombatManager::combatScript(const Unit & u)
                         }
                     }
                     else { // this fight is a regular fight.
-                        if (!resource_loc.resource_inventory_.empty() && (fight_looks_good || (unit_will_survive && friend_loc.building_count_ > 0) || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
+                        if (!resource_loc.resource_inventory_.empty() && (standard_fight_reasons || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
                             return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
-                        auto overstacked_lurker = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Lurker, u->getPosition(), UnitTypes::Zerg_Lurker.width());
-                        if (overstacked_lurker) { // we don't want lurkers literally on top of each other.
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
+                        if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surround(e_closest->pos_);
                         }
                         else {
                             return mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
                         }
                     }
-                    else if ((fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc))) {
+                    else if (standard_fight_reasons) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                     // Most simple combat units behave like this:
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran: 
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
-                        auto closest_twin = CUNYAIModule::getClosestStored(friend_loc, u->getPosition(), u->getType());
-                        if (closest_twin)
-                            return mobility.Scatter_Logic(closest_twin->pos_);
-                        else 
+                    if (overstacked_units)
+                        return mobility.Scatter_Logic(overstacked_units->pos_);
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
                             return mobility.surround(e_closest->pos_);
                     }
-                    else if ((fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc))) {
+                    else if (standard_fight_reasons) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 default:
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack) {
                         return mobility.surround(e_closest->pos_);
                     }
-                    else if ((fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc))) {
+                    else if (standard_fight_reasons) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
@@ -160,12 +160,7 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
-                return mobility.Retreat_Logic();
-            }
-            else {
-                return mobility.surround(e_closest->pos_);
-            }
+           return mobility.Retreat_Logic();
         }
     }
     return false;
@@ -275,8 +270,15 @@ bool CombatManager::isLiability(const Unit & u)
 bool CombatManager::isWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
 {
     if (enemy.worker_count_ == static_cast<int>(enemy.unit_map_.size()))
-        return true; // we could use another worker attacking.
-    else return false; // they are all workers and you have n+1 fighting, so you can relax.
+        return true; // They're all workers
+    else return false; 
+}
+
+bool CombatManager::isPulledWorkersFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
+{
+    if (enemy.worker_count_ + enemy.building_count_ == static_cast<int>(enemy.unit_map_.size()))
+        return true; // The enemy has pulled the boys and is fighting amongst the buildings.
+    else return false; 
 }
 
 void CombatManager::updateReadiness()

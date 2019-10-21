@@ -54,8 +54,10 @@ public:
     //Checks if a particular unit is stored in liablities.
     static bool isLiability(const Unit & u);
 
-    // Only returns TRUE if there are A) less than N+1 of my workers committed, where N is the number of enemy workers. B) Viable Nonworker enemies.
+    // Returns True if all enemy units are workers. 
     static bool isWorkerFight(const Unit_Inventory &friendly, const Unit_Inventory &enemy);
+    // Returns True if all enemy units are Workers or Buildings
+    static bool isPulledWorkersFight(const Unit_Inventory &friendly, const Unit_Inventory &enemy);
 
     // Updating advance/retreat conditions:
     void updateReadiness();
