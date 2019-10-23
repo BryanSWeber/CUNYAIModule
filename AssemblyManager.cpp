@@ -559,7 +559,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
     if (u_type == UnitTypes::Zerg_Larva && morph_canidate->getHatchery()) wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3;
     bool floating_tech_edge_cases = CUNYAIModule::tech_starved && 
         ((Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300) || 
-        (Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed() > 16 && wasting_larva_soon && CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative && (canMakeCUNY(UnitTypes::Zerg_Hydralisk, true, morph_canidate) || canMakeCUNY(UnitTypes::Zerg_Mutalisk, true, morph_canidate)))); // These two units are pretty much always safe.
+        (wasting_larva_soon && CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative && (canMakeCUNY(UnitTypes::Zerg_Hydralisk, true, morph_canidate) || canMakeCUNY(UnitTypes::Zerg_Mutalisk, true, morph_canidate)))); // These two units are pretty much always safe.
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || floating_tech_edge_cases) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
@@ -949,7 +949,8 @@ bool AssemblyManager::assignUnitAssembly()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    bool they_are_moving_out = alarming_enemy_ground.stock_ground_fodder_ == 0;
+    bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
+    bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;
     int distance_to_alarming_ground = INT_MAX;
     int distance_to_alarming_air = INT_MAX;
 
@@ -963,9 +964,10 @@ bool AssemblyManager::assignUnitAssembly()
         auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, hatch.first->getPosition());
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
-        bool this_is_the_closest_base = (distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_)) || distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+        bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_);
+        bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
 
-        if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc, true) || (they_are_moving_out && this_is_the_closest_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true))) {
+        if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc, true) || (they_are_moving_out_ground && this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (they_are_moving_out_air && this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true))) {
             Diagnostics::drawDot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
             //Diagnostics::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
 
