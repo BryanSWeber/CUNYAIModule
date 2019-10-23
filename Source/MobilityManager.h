@@ -59,6 +59,9 @@ public:
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 
+    // Returns true if the enemy unit is too far up another hill.
+    bool isOnDifferentHill(const Stored_Unit &e);
+
 private:
     Position pos_;
     Unit unit_;
