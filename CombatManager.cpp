@@ -136,12 +136,13 @@ bool CombatManager::combatScript(const Unit & u)
                     // Most simple combat units behave like this:
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran: 
-                    if (overstacked_units)
+                    if (my_unit->phase_ != Stored_Unit::Phase::Attacking && overstacked_units) {
                         return mobility.Scatter_Logic(overstacked_units->pos_);
-                    if ((fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc) ) {
-                            return mobility.surround(e_closest->pos_);
                     }
-                    else if (standard_fight_reasons) {
+                    else if (my_unit->phase_ != Stored_Unit::Phase::Attacking && (fight_looks_good || isWorkerFight(friend_loc, enemy_loc)) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+                        return mobility.surround(e_closest->pos_);
+                    }
+                    else if (standard_fight_reasons || my_unit->phase_ == Stored_Unit::Phase::Attacking) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
