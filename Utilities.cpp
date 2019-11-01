@@ -2100,10 +2100,10 @@ int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_I
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second);
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
+        bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
     }
     for (auto e : ei.unit_map_) {
         total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
