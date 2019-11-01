@@ -365,10 +365,10 @@ void CUNYAIModule::onFrame()
     }
 
     if (t_game % (24 * 60) == 0) {
-        friendly_player_model.units_.printUnitInventory(Broodwar->self()->getName());
-        friendly_player_model.casualties_.printUnitInventory(Broodwar->self()->getName() + "casualties");
-        enemy_player_model.units_.printUnitInventory(Broodwar->enemy()->getName());
-        enemy_player_model.casualties_.printUnitInventory(Broodwar->enemy()->getName() + "casualties");
+        friendly_player_model.units_.printUnitInventory(Broodwar->self());
+        friendly_player_model.casualties_.printUnitInventory(Broodwar->self(), "casualties");
+        enemy_player_model.units_.printUnitInventory(Broodwar->enemy());
+        enemy_player_model.casualties_.printUnitInventory(Broodwar->enemy(), "casualties");
     }
 
     current_map_inventory.updateCurrentMap();
