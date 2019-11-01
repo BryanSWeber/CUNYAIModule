@@ -23,12 +23,12 @@ public:
 
     // Basic retreat logic
     bool Retreat_Logic();
-    // Scatter (from storms or spells)
-    bool Scatter_Logic();
+    // Scatter (from given position, or if blank, any present storms or spells)
+    bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
     bool Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool local_pathing(const int &passed_distance, const Position &e_pos );
+    bool local_pathing(const int &passed_distance, const Position &e_pos);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
     // Surrounds position of choice slowly.
@@ -36,9 +36,14 @@ public:
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
+    // causes a unit to avoid low-altitude areas.
+    Position avoid_edges();
     // causes a unit to move towards a position.
     Position approach(const Position & p);
 
+    //Checks if all except the first area are safe, since we are trying to run.
+    bool checkSafeEscapePath(const Position & finish);
+    //Checks first area for safety.
     bool checkSafePath(const Position & finish);
 
     bool adjust_lurker_burrow(const Position position_of_target);
@@ -51,6 +56,11 @@ public:
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     bool moveTo(const Position & start, const Position & finish);
+    // gives how far the unit can move in one second.
+    int getDistanceMetric();
+
+    // Returns true if the enemy unit is too far up another hill.
+    bool isOnDifferentHill(const Stored_Unit &e);
 
 private:
     Position pos_;
@@ -69,6 +79,6 @@ private:
     Position walkability_vector_ = Positions::Origin;
     Position encircle_vector_ = Positions::Origin;
 
-    int rng_direction_ ; // send unit in a random tilt direction if blocked
+    int rng_direction_; // send unit in a random tilt direction if blocked
 
 };

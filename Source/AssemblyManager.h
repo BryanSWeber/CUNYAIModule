@@ -12,7 +12,7 @@ using namespace Filter;
 using namespace std;
 
 class AssemblyManager {
-private: 
+private:
     static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
     static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
     static std::map<UnitType, int> specialization_buildings_; // persistent set of intended buildings.
@@ -35,7 +35,7 @@ public:
     static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness);
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
-    static int returnUnitRank(const UnitType &ut );
+    static int returnUnitRank(const UnitType &ut);
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate);
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
@@ -67,6 +67,9 @@ public:
     static void getDefensiveWalls();
     // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
+
+    //Returns the maximum gas that a unit could cost that I can build right now.
+    static int getMaxGas();
 };
 
 
@@ -81,30 +84,30 @@ public:
     //bool operator==( const Build_Order_Object &rhs );
     //bool operator!=( const Build_Order_Object &rhs );
 
-    Build_Order_Object( UnitType unit ) {
+    Build_Order_Object(UnitType unit) {
         _unit_in_queue = unit;
         _upgrade_in_queue = UpgradeTypes::None;
         _research_in_queue = TechTypes::None;
     };
 
-    Build_Order_Object( UpgradeType up ) {
+    Build_Order_Object(UpgradeType up) {
         _unit_in_queue = UnitTypes::None;
         _upgrade_in_queue = up;
         _research_in_queue = TechTypes::None;
     };
 
-    Build_Order_Object( TechType tech ) {
+    Build_Order_Object(TechType tech) {
         _unit_in_queue = UnitTypes::None;
         _upgrade_in_queue = UpgradeTypes::None;
         _research_in_queue = tech;
     };
 
     UnitType Build_Order_Object::getUnit() {
-            return _unit_in_queue;
+        return _unit_in_queue;
     };
 
     UpgradeType Build_Order_Object::getUpgrade() {
-            return _upgrade_in_queue;
+        return _upgrade_in_queue;
     };
 
     TechType Build_Order_Object::getResearch() {
@@ -114,7 +117,7 @@ public:
 
 struct Building_Gene {
     Building_Gene();
-    Building_Gene( string s );
+    Building_Gene(string s);
 
     vector<Build_Order_Object> building_gene_;  // how many of each of these do we want?
     string initial_building_gene_;
@@ -124,16 +127,19 @@ struct Building_Gene {
     bool ever_clear_ = false;
     UnitType last_build_order;
 
+    int cumulative_gas_;
+    int cumulative_minerals_;
+
     void getInitialBuildOrder(string s);
     void clearRemainingBuildOrder(const bool diagnostic); // empties the build order.
-    void updateRemainingBuildOrder( const Unit &u ); // drops item from list as complete.
-    void updateRemainingBuildOrder( const UpgradeType &ups ); // drops item from list as complete.
-    void updateRemainingBuildOrder( const TechType & research );// drops item from list as complete.
-    void updateRemainingBuildOrder( const UnitType &ut ); // drops item from list as complete.
-    void announceBuildingAttempt( UnitType ut );  // do we have a guy going to build it?
-    bool checkBuilding_Desired( UnitType ut ); 
-    bool checkUpgrade_Desired( UpgradeType upgrade );
-    bool checkResearch_Desired( TechType upgrade );
+    void updateRemainingBuildOrder(const Unit &u); // drops item from list as complete.
+    void updateRemainingBuildOrder(const UpgradeType &ups); // drops item from list as complete.
+    void updateRemainingBuildOrder(const TechType & research);// drops item from list as complete.
+    void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
+    void announceBuildingAttempt(UnitType ut);  // do we have a guy going to build it?
+    bool checkBuilding_Desired(UnitType ut);
+    bool checkUpgrade_Desired(UpgradeType upgrade);
+    bool checkResearch_Desired(TechType upgrade);
     bool isEmptyBuildOrder();
 
     void addBuildOrderElement(const UpgradeType &ups); // adds an element to the list.
@@ -142,6 +148,7 @@ struct Building_Gene {
 
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the list again.
 
+    void getCumulativeResources();
     //bool checkExistsInBuild( UnitType unit );
 };
 

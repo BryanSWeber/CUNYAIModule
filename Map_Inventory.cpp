@@ -4,6 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Map_Inventory.h"
 #include "Source\Unit_Inventory.h"
+#include "Source/Diagnostics.h"
 #include "Source\Resource_Inventory.h"
 #include <algorithm>
 #include <fstream>
@@ -15,7 +16,7 @@ using namespace std;
 
 // Creates a Inventory Object
 Map_Inventory::Map_Inventory() {};
-Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory &ri ) {
+Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri) {
 
     updateVision_Count();
 
@@ -42,38 +43,47 @@ Map_Inventory::Map_Inventory( const Unit_Inventory &ui, const Resource_Inventory
     //    Broodwar->sendText( "There are %d tiles, and %d smoothed out tiles.", smoothed_barriers_.size(), unwalkable_ct );
     //}
 
-    if ( unwalkable_barriers_.size() == 0 ) {
+    if (unwalkable_barriers_.size() == 0) {
         updateUnwalkable();
     }
 
-    if ( ri.resource_inventory_.size() == 0 ) {
+    if (ri.resource_inventory_.size() == 0) {
         updateBuildablePos();
         int buildable_ct = 0;
-        for ( vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j ) {
+        for (vector<int>::size_type i = 0; i != buildable_positions_.size(); ++i) {
+            for (vector<int>::size_type j = 0; j != buildable_positions_[i].size(); ++j) {
                 buildable_ct += buildable_positions_[i][j];
             }
         }
-        CUNYAIModule::DiagnosticText( "There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct );
+        Diagnostics::DiagnosticText("There are %d resources on the map, %d canidate expo positions.", ri.resource_inventory_.size(), buildable_ct);
     }
 
-    if ( map_veins_.size() == 0 ) {
+    if (map_veins_.size() == 0) {
         updateMapVeins();
         int vein_ct = 0;
-        for ( vector<int>::size_type i = 0; i != map_veins_.size(); ++i ) {
-            for ( vector<int>::size_type j = 0; j != map_veins_[i].size(); ++j ) {
-                if ( map_veins_[i][j] > 10 ) {
+        for (vector<int>::size_type i = 0; i != map_veins_.size(); ++i) {
+            for (vector<int>::size_type j = 0; j != map_veins_[i].size(); ++j) {
+                if (map_veins_[i][j] > 10) {
                     ++vein_ct;
                 }
             }
         }
-        CUNYAIModule::DiagnosticText( "There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct );
+        Diagnostics::DiagnosticText("There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct);
     }
 
-    if ( start_positions_.empty() && !cleared_all_start_positions_) {
+    if (start_positions_.empty() && !cleared_all_start_positions_) {
         getStartPositions();
     }
-};
+}
+
+//Marks Data for each area if it is "ground safe"
+void Map_Inventory::updateGroundDangerousAreas()
+{
+    for (auto area : BWEM::Map::Instance().Areas()) {
+        area.SetData(CUNYAIModule::checkDangerousArea(UnitTypes::Zerg_Drone, area.Id() ));
+    }
+}
+;
 
 
 
@@ -82,29 +92,29 @@ void Map_Inventory::updateLn_Supply_Remain() {
 
     int total = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
 
-    if ( total <= 0 ) {
+    if (total <= 0) {
         total = 1;
     } // no log 0 under my watch!.
 
-    ln_supply_remain_ = log( total );
+    ln_supply_remain_ = log(total);
 };
 
 // Updates the (safe) log of our consumed supply total.
 void Map_Inventory::updateLn_Supply_Total() {
 
     double total = Broodwar->self()->supplyTotal();
-    if ( total <= 0 ) {
+    if (total <= 0) {
         total = 1;
     } // no log 0 under my watch!.
 
-    ln_supply_total_ = log( total );
+    ln_supply_total_ = log(total);
 };
 
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
 double Map_Inventory::getGasRatio() {
     // Normally:
-    if ( Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0 ) {
+    if (Broodwar->self()->minerals() > 0 || Broodwar->self()->gas() > 0) {
         return static_cast<double>(Broodwar->self()->gas()) / static_cast<double>(Broodwar->self()->minerals() + Broodwar->self()->gas());
     }
     else {
@@ -115,7 +125,7 @@ double Map_Inventory::getGasRatio() {
 // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
 double Map_Inventory::getLn_Supply_Ratio() {
     // Normally:
-    if ( ln_supply_total_ > 0 ) {
+    if (ln_supply_total_ > 0) {
         return ln_supply_remain_ / ln_supply_total_;
     }
     else {
@@ -130,15 +140,15 @@ void Map_Inventory::updateVision_Count() {
 
     int map_area = map_x * map_y; // map area in tiles.
     int total_tiles = 0;
-    for ( int tile_x = 1; tile_x <= map_x; tile_x++ ) { // there is no tile (0,0)
-        for ( int tile_y = 1; tile_y <= map_y; tile_y++ ) {
-            if ( BWAPI::Broodwar->isVisible( tile_x, tile_y ) ) {
+    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
+        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
+            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
                 total_tiles += 1;
             }
         }
     } // this search must be very exhaustive to do every frame. But C++ does it without any problems.
 
-    if ( total_tiles == 0 ) {
+    if (total_tiles == 0) {
         total_tiles = 1;
     } // catch some odd case where you are dead anyway. Rather not crash.
     vision_tile_count_ = total_tiles;
@@ -151,9 +161,9 @@ void Map_Inventory::updateScreen_Position()
 
 // Updates the number of hatcheries (and decendent buildings).
 void Map_Inventory::updateHatcheries() {
-    hatches_ = CUNYAIModule::Count_Units( UnitTypes::Zerg_Hatchery) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Lair) +
-        CUNYAIModule::Count_Units( UnitTypes::Zerg_Hive);
+    hatches_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) +
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) +
+        CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive);
 }
 
 
@@ -163,13 +173,13 @@ void Map_Inventory::updateBuildablePos()
     int map_x = Broodwar->mapWidth();
     int map_y = Broodwar->mapHeight();
     buildable_positions_.reserve(map_x);
-    for ( int x = 0; x <= map_x; ++x ) {
+    for (int x = 0; x <= map_x; ++x) {
         vector<bool> temp;
         temp.reserve(map_y);
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( Broodwar->isBuildable( x, y ) );
+        for (int y = 0; y <= map_y; ++y) {
+            temp.push_back(Broodwar->isBuildable(x, y));
         }
-        buildable_positions_.push_back( temp );
+        buildable_positions_.push_back(temp);
     }
 };
 
@@ -179,13 +189,13 @@ void Map_Inventory::updateUnwalkable() {
 
     unwalkable_barriers_.reserve(map_x);
     // first, define matrixes to recieve the walkable locations for every minitile.
-    for ( int x = 0; x <= map_x; ++x ) {
+    for (int x = 0; x <= map_x; ++x) {
         vector<int> temp;
         temp.reserve(map_y);
-        for ( int y = 0; y <= map_y; ++y ) {
-            temp.push_back( !Broodwar->isWalkable( x, y ) );
+        for (int y = 0; y <= map_y; ++y) {
+            temp.push_back(!Broodwar->isWalkable(x, y));
         }
-        unwalkable_barriers_.push_back( temp );
+        unwalkable_barriers_.push_back(temp);
     }
 
     unwalkable_barriers_with_buildings_ = unwalkable_barriers_; // preparing for the dependencies.
@@ -213,15 +223,15 @@ void Map_Inventory::updateSmoothPos() {
                     bool local_grid[3][3]; // WAY BETTER!
 
                     local_grid[0][0] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y - 1)] > 0);
-                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y]       < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
+                    local_grid[0][1] = (smoothed_barriers_[(minitile_x - 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x - 1)][minitile_y] > 0);
                     local_grid[0][2] = (smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x - 1)][(minitile_y + 1)] > 0);
 
                     local_grid[1][0] = (smoothed_barriers_[minitile_x][(minitile_y - 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y - 1)] > 0);
-                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y]       < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
+                    local_grid[1][1] = (smoothed_barriers_[minitile_x][minitile_y] < iter && smoothed_barriers_[minitile_x][minitile_y] > 0);
                     local_grid[1][2] = (smoothed_barriers_[minitile_x][(minitile_y + 1)] < iter && smoothed_barriers_[minitile_x][(minitile_y + 1)] > 0);
 
                     local_grid[2][0] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y - 1)] > 0);
-                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y]       < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
+                    local_grid[2][1] = (smoothed_barriers_[(minitile_x + 1)][minitile_y] < iter && smoothed_barriers_[(minitile_x + 1)][minitile_y] > 0);
                     local_grid[2][2] = (smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] < iter && smoothed_barriers_[(minitile_x + 1)][(minitile_y + 1)] > 0);
 
                     // if it is surrounded, it is probably a choke, with weight inversely proportional to the number of cycles we have taken this on.
@@ -231,9 +241,9 @@ void Map_Inventory::updateSmoothPos() {
                         (local_grid[2][0] && (local_grid[0][2] || local_grid[0][1] || local_grid[1][2])) ||
                         (local_grid[0][1] && (local_grid[2][1] || local_grid[2][0] || local_grid[2][2])) ||
                         (local_grid[0][2] && (local_grid[1][0] || local_grid[2][0] || local_grid[2][1]));
-                        //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
-                        //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
-                        //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
+                    //(local_grid[1][2] && (local_grid[0][0] || local_grid[1][0] || local_grid[2][0])) || //
+                    //(local_grid[2][1] && (local_grid[0][0] || local_grid[0][1] || local_grid[0][2])) || //
+                    //(local_grid[2][2] && (local_grid[0][0] || local_grid[0][1] || local_grid[1][0])) ; // several of these checks are redundant!
 
                     bool open_path =
                         (!local_grid[0][0] && !local_grid[2][2]) ||
@@ -243,7 +253,7 @@ void Map_Inventory::updateSmoothPos() {
 
 
                     changed_a_value_last_cycle = opposing_tiles || changed_a_value_last_cycle;
-                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * ( iter + open_path * (99 - 2 * iter) );
+                    smoothed_barriers_[minitile_x][minitile_y] = opposing_tiles * (iter + open_path * (99 - 2 * iter));
                 }
             }
         }
@@ -276,7 +286,7 @@ void Map_Inventory::updateMapVeins() {
     vector<int> flattened_map_veins;
     for (int minitile_x = 0; minitile_x < map_x; ++minitile_x) {
         for (int minitile_y = 0; minitile_y < map_y; ++minitile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_map_veins.push_back( map_veins_[minitile_x][minitile_y] );
+            flattened_map_veins.push_back(map_veins_[minitile_x][minitile_y]);
         }
     }
 
@@ -445,7 +455,7 @@ void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCe
             fire_fill_queue_holder.clear();
         }
 
-        if(print) writeMap(map, WalkPosition(newCenter));
+        if (print) writeMap(map, WalkPosition(newCenter));
     }
     else
     {
@@ -454,7 +464,7 @@ void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCe
     newVeins.close();
 }
 
-int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B ) const
+int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const
 {
     if (map_out_from_enemy_ground_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
@@ -466,26 +476,26 @@ int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const P
         }
     }
 
-     return 9999999;
+    return 9999999;
 }
 
-int Map_Inventory::getRadialDistanceOutFromEnemy( const Position A) const
+int Map_Inventory::getRadialDistanceOutFromEnemy(const Position A) const
 {
-    if ( map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition( A );
+    if (map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
             return map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         }
     }
 
-      return 9999999;
+    return 9999999;
 
 }
 
-int Map_Inventory::getDifferentialDistanceOutFromHome( const Position A, const Position B ) const
+int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const
 {
-    if ( map_out_from_home_.size() > 0 && A.isValid() && B.isValid() ) {
+    if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
         WalkPosition wp_b = WalkPosition(B);
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
@@ -523,10 +533,10 @@ bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) co
             return true;
         }
     }
-return false;
+    return false;
 }
 
-int Map_Inventory::getRadialDistanceOutFromHome( const Position A ) const
+int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const
 {
     if (map_out_from_home_.size() > 0 && A.isValid()) {
         WalkPosition wp_a = WalkPosition(A);
@@ -669,7 +679,7 @@ void Map_Inventory::updateUnwalkableWithBuildings() {
 
             //respect map bounds please.
             WalkPosition lower_right_modified = WalkPosition(max_lower_right.x < map_x ? max_lower_right.x : map_x - 1, max_lower_right.y < map_y ? max_lower_right.y : map_y - 1);
-            WalkPosition upper_left_modified  = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
+            WalkPosition upper_left_modified = WalkPosition(max_upper_left.x > 0 ? max_upper_left.x : 1, max_upper_left.y > 0 ? max_upper_left.y : 1);
 
             for (auto minitile_x = upper_left_modified.x; minitile_x <= lower_right_modified.x; ++minitile_x) {
                 for (auto minitile_y = upper_left_modified.y; minitile_y <= lower_right_modified.y; ++minitile_y) { // Check all possible walkable locations.
@@ -1008,11 +1018,11 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
         ui_mini.updateUnitInventorySummary();
 
         if (friendly) {
-            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ui_loc, ei_loc, fodder);
+            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ui_loc, ei_loc, FAP_SIM_DURATION, fodder);
             sample_ground_fodder = ui_mini.stock_ground_fodder_;
         }
         else {
-            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ei_loc, ui_loc, fodder);
+            sample_surviving = CUNYAIModule::getFAPSurvivalForecast(ei_loc, ui_loc, FAP_SIM_DURATION, fodder);
             sample_ground_fodder = ei_mini.stock_ground_fodder_;
         }
 
@@ -1046,8 +1056,8 @@ void Map_Inventory::getExpoPositions() {
     expo_tilepositions_.clear();
 
     std::vector<TilePosition> expo_positions;
-    for (auto & area : BWEM::Map::Instance().Areas()){
-        for (auto & base : area.Bases()){
+    for (auto & area : BWEM::Map::Instance().Areas()) {
+        for (auto & base : area.Bases()) {
             expo_positions.push_back(base.Location());
         }
     }
@@ -1062,15 +1072,15 @@ void Map_Inventory::getExpoPositions() {
 }
 
 void Map_Inventory::getStartPositions() {
-    for ( auto loc : Broodwar->getStartLocations() ) {
-        start_positions_.push_back( Position( loc ) );
+    for (auto loc : Broodwar->getStartLocations()) {
+        start_positions_.push_back(Position(loc));
     }
 }
 
 void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
-    for ( auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
-        if ( Broodwar->isExplored( TilePosition( *visible_base ) ) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base) ) {
-            visible_base = start_positions_.erase( visible_base );
+    for (auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
+        if (Broodwar->isExplored(TilePosition(*visible_base)) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base)) {
+            visible_base = start_positions_.erase(visible_base);
             //if ( *visible_base == start_positions_[0] ) {
             //    updateMapVeinsOutFromFoe(start_positions_[0]);
             //}
@@ -1080,7 +1090,7 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
         }
     }
 
-    if ( start_positions_.empty() ) {
+    if (start_positions_.empty()) {
         cleared_all_start_positions_ = true;
     }
     //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ground_ != start_positions_[0]){ // should start precaching the mean building location.
@@ -1088,7 +1098,9 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
     //}
 }
 
-void Map_Inventory::updateBasePositions() {
+void Map_Inventory::updateCurrentMap() {
+
+    updateGroundDangerousAreas();
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
@@ -1161,7 +1173,7 @@ void Map_Inventory::updateBasePositions() {
 
         Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
-        if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() !=  Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+        if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
         }
         else {
@@ -1182,7 +1194,7 @@ void Map_Inventory::updateBasePositions() {
             suspected_friendly_base = getBaseNearest();
         }
 
-        if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base !=  Positions::Origin) {
+        if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base != Positions::Origin) {
             updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), front_line_base_, map_out_from_home_);
         }
 
@@ -1195,9 +1207,9 @@ void Map_Inventory::updateBasePositions() {
         //otherwise go to your safest base - the one with least deaths near it and most units.
         Position suspected_safe_base = Positions::Origin;
 
-        suspected_safe_base = getBaseWithMostSurvivors(true, false); 
+        suspected_safe_base = getBaseWithMostSurvivors(true, false);
 
-        if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base !=  Positions::Origin) {
+        if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
             updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
         }
         else {
@@ -1246,8 +1258,8 @@ void Map_Inventory::updateBasePositions() {
                 for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
                     Position potential_scout_target = get<1>(*itr);
                     double weighted_p_of_selection = log(get<0>(*itr) / total_distance) / sum_log_p; // sums to one, actually.
-                   
-                    if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr))) ) {
+
+                    if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr)))) {
                         updateMapVeinsOut(potential_scout_target, scouting_base_, map_out_from_scouting_, false);
                         found_base = true;
                     }
@@ -1262,13 +1274,13 @@ void Map_Inventory::updateBasePositions() {
 }
 
 
-void Map_Inventory::setNextExpo( const TilePosition tp ) {
+void Map_Inventory::setNextExpo(const TilePosition tp) {
     next_expo_ = tp;
 }
 
 void Map_Inventory::drawExpoPositions() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         for (auto &p : expo_positions_complete_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
@@ -1289,7 +1301,7 @@ void Map_Inventory::drawExpoPositions() const
 
 void Map_Inventory::drawBasePositions() const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         Broodwar->drawCircleMap(enemy_base_ground_, 15, Colors::Red, true);
         Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
         Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
@@ -1336,7 +1348,7 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     newMap.close();
 }
 
-void Map_Inventory::readMap( vector< vector<int> > &mapin, const WalkPosition &center)
+void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center)
 
 {
     std::stringstream ss;
@@ -1391,7 +1403,7 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, con
         }
     }
 
-    
+
 
     bool changed_a_value_last_cycle = true;
 
@@ -1493,13 +1505,13 @@ void Map_Inventory::createAttractField(Player_Model &enemy_player) {
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::isFightingUnit(unit.second.type_);
     }
 
-     pf_attract_ = completeField(pf_clear, 10);
+    pf_attract_ = completeField(pf_clear, 10);
 
 }
 
 
 void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
-    if (DRAWING_MODE) {
+    if (DIAGNOSTIC_MODE) {
         for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
             for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
                 if (pf[i][j] > 0) {
@@ -1513,7 +1525,7 @@ void Map_Inventory::DiagnosticField(vector< vector<int> > &pf) {
 }
 
 void Map_Inventory::DiagnosticTile() {
-    if (DRAWING_MODE) {
+    if (DIAGNOSTIC_MODE) {
         int tile_map_x = Broodwar->mapWidth();
         int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < tile_map_x; ++i) {

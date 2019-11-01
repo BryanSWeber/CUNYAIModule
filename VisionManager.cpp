@@ -9,9 +9,9 @@ int CUNYAIModule::Vision_Count() {
 
     int map_area = map_x * map_y; // map area in tiles.
     int vision_tile_count = 1; // starting at 1 to avoid /0 issues. Should be profoundly rare and vision is usually in the thousands anyway.
-    for ( int tile_x = 1; tile_x <= map_x; tile_x++ ) { // there is no tile (0,0)
-        for ( int tile_y = 1; tile_y <= map_y; tile_y++ ) {
-            if ( BWAPI::Broodwar->isVisible( tile_x, tile_y ) ) {
+    for (int tile_x = 1; tile_x <= map_x; tile_x++) { // there is no tile (0,0)
+        for (int tile_y = 1; tile_y <= map_y; tile_y++) {
+            if (BWAPI::Broodwar->isVisible(tile_x, tile_y)) {
                 vision_tile_count += 1;
             }
         }

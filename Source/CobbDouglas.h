@@ -23,7 +23,7 @@ struct CobbDouglas
     double worker_stock;
     double army_stock;
     double tech_stock;
-    
+
     double econ_derivative;
     double army_derivative;
     double tech_derivative;
@@ -57,7 +57,7 @@ struct CobbDouglas
 //The CD model is not made for 0's. But zeros happen in SC. 
 template <class T>
 double safeDiv(T &lhs, T &rhs) {
-    if (lhs!=0 && rhs != 0)  return static_cast<double>(lhs) / static_cast<double>(rhs);
+    if (lhs != 0 && rhs != 0)  return static_cast<double>(lhs) / static_cast<double>(rhs);
     else if (lhs == 0 && rhs != 0) return DBL_MIN;
     else if (lhs > 0 && rhs == 0)  return DBL_MAX;
     else if (lhs < 0 && rhs == 0)  return -DBL_MAX;

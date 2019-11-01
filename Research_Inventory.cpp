@@ -23,7 +23,7 @@ void Research_Inventory::updateTechTypes(const Player &player) {
     //They are generally characterizable as abilities/spells that units have upon construction. This list excludes those researches.  
     //Including them causes the bot to believe it has upgrades finished at the start of the game, which can be misleading.
     vector<int> limited_array = { 1,2,3,5,7,8,9,10,11,13,15,16,17,19,20,21,22,24,25,27,30,31,32 };
-    for (auto i:limited_array) //Max number of possible tech types
+    for (auto i : limited_array) //Max number of possible tech types
     {
         bool observed_level = player->hasResearched((TechType)i);
         bool new_level = observed_level || tech_[(TechType)i];
@@ -43,7 +43,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
         player_model_to_compare = CUNYAIModule::enemy_player_model;
 
 
-    for (auto &i:player_model_to_compare.units_.unit_map_) {// for every unit type they have or have imputed.
+    for (auto &i : player_model_to_compare.units_.unit_map_) {// for every unit type they have or have imputed.
         temp_unit_types.insert(i.second.type_);
     }
     for (auto &i : player_model_to_compare.imputedUnits_.unit_map_) {// for every unit type I have imputed.
@@ -65,16 +65,16 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto u : unit_types) {
-        if ( (u.isBuilding() || u.isAddon()) && !CUNYAIModule::isFightingUnit(u) && u != UnitTypes::Zerg_Creep_Colony && u != UnitTypes::Protoss_Pylon && u != UnitTypes::Terran_Supply_Depot && u != UnitTypes::Protoss_Nexus && u != UnitTypes::Terran_Command_Center && u != UnitTypes::Zerg_Hatchery)
+        if ((u.isBuilding() || u.isAddon()) && !CUNYAIModule::isFightingUnit(u) && u != UnitTypes::Zerg_Creep_Colony && u != UnitTypes::Protoss_Pylon && u != UnitTypes::Terran_Supply_Depot && u != UnitTypes::Protoss_Nexus && u != UnitTypes::Terran_Command_Center && u != UnitTypes::Zerg_Hatchery)
             tech_buildings_[u] = max(CUNYAIModule::Count_Units(u, player_model_to_compare.units_) + CUNYAIModule::Count_Units(u, player_model_to_compare.imputedUnits_), 1); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
     for (auto i : upgrades_) {
-        if (i.second > 0) 
+        if (i.second > 0)
             tech_buildings_[i.first.whatsRequired(i.second)] = (i.first.whatsRequired(i.second) != UnitTypes::None); // requirements might be "none".
     }
     for (auto i : tech_) {
-        if ( i.second ) 
+        if (i.second)
             tech_buildings_[i.first.whatResearches()] = (i.first.whatResearches() != UnitTypes::None); // requirements might be "none".
     }
 
@@ -111,7 +111,7 @@ void Research_Inventory::updateBuildingStock() {
     for (auto i : tech_buildings_)//Max number of possible upgrade types
     {
         int value = Stored_Unit(i.first).stock_value_;
-        temp_building_stock +=  i.second * value; // include value of drone if race is zerg.
+        temp_building_stock += i.second * value; // include value of drone if race is zerg.
     }
     building_stock_ = temp_building_stock;
 }

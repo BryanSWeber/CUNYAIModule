@@ -112,6 +112,7 @@
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="CUNYAIModule.cpp" />
+    <ClCompile Include="Diagnostics.cpp" />
     <ClCompile Include="Map_Inventory.cpp" />
     <ClCompile Include="PlayerModelManager.cpp" />
     <ClCompile Include="Research_Inventory.cpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="Source\CobbDouglas.h" />
     <ClInclude Include="Source\CombatManager.h" />
     <ClInclude Include="Source\CUNYAIModule.h" />
+    <ClInclude Include="Source\Diagnostics.h" />
     <ClInclude Include="Source\MobilityManager.h" />
     <ClInclude Include="Source\Map_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />

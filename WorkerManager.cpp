@@ -4,6 +4,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
+#include "Source/Diagnostics.h"
 
 using namespace BWAPI;
 using namespace Filter;
@@ -19,17 +20,17 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
 
     if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
-        CUNYAIModule::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
+        Diagnostics::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
 
     //if we can build it with an offical build order, and it is in the reserve system, do so now.
     if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
-        CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Building);
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
     else {
         unit->move(Position(miner.intended_build_tile_));
-        //CUNYAIModule::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        //Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     //else if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
@@ -55,6 +56,7 @@ bool WorkerManager::workersCollect(const Unit & unit)
     else { //if this is your first worker of the frame consider resetting him.
         return assignGather(unit, UnitTypes::Resource_Mineral_Field); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
     }
+
     return false;
 }
 
@@ -90,78 +92,104 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
     Stored_Unit& miner = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
     bool building_unit = miner.isAssignedBuilding();
-    Resource_Inventory available_fields;
+    Resource_Inventory safe_fields;
+    Resource_Inventory escape_fields;
+    Resource_Inventory desperation_fields;
+
+    Resource_Inventory local_fields;
     Resource_Inventory long_dist_fields;
+    Resource_Inventory overmining_fields;
+
     Unit old_mineral_patch = nullptr;
     old_mineral_patch = miner.locked_mine_;
     bool assignment_complete = false;
     miner.stopMine();// will reassign later.
     Mobility drone_pathing_options = Mobility(unit);
-    int low_drone = 0;
     int max_drone = 3;
+    int min_drone_on_mine = INT_MAX;
     bool mine_minerals = mine.isMineralField();
     bool found_low_occupied_mine = false;
 
     // mineral patches can handle up to 2 miners, gas/refineries can handle up to 3.
-    if (mine_minerals) {
-        low_drone = 1;
+    if (mine_minerals)
         max_drone = 2;
-    }
-    else {
-        low_drone = 2; // note : Does not count worker IN extractor.
+    else
         max_drone = 3;
-    }
 
-
-    // scrape over every resource to determine the lowest number of miners.
+    bool there_exists_a_safe_mine = false;
+    bool there_exists_an_escape_mine = false;
+    // scrape over every resource to determine the lowest number of miners, and identify if there are any safe mines for this worker.
     for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
         bool mine_is_right_type = false;
-        bool safe = drone_pathing_options.checkSafePath(r.second.pos_);
+        bool potential_escape = drone_pathing_options.checkSafeEscapePath(r.second.pos_); 
+        bool safe = drone_pathing_options.checkSafePath(unit->getPosition()) && potential_escape; // If there's no escape, it is not safe.
+
+        bool mine_is_unoccupied_by_enemy = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
+        bool path_exists = CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_);
 
         if (mine_minerals) {
-            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_ && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid(); // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
         }
-        else {
-            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
-        }
-
-        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
-        if (mine_is_right_type && r.second.pos_.isValid() && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone && r.second.occupied_resource_ && CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied && safe) { //occupied natural -> resource is close to a base
-            low_drone = r.second.number_of_miners_;
-            found_low_occupied_mine = true;
+        else { // gas can never be more than 3x, ever.
+            int plength = 0;
+            bool unit_sent = false;
+            auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, r.second.pos_, &plength);
+            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_) && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && r.second.number_of_miners_ < max_drone && plength < 400;// never hike to a gas location.
         }
 
-    } // find drone minima.
-
-      //    CUNYAIModule::DiagnosticText("LOW DRONE COUNT : %d", low_drone);
-      //    CUNYAIModule::DiagnosticText("Mine Minerals : %d", mine_minerals);
-
-    for (auto r : CUNYAIModule::land_inventory.resource_inventory_) {
-        bool mine_is_right_type = false;
-        bool safe = drone_pathing_options.checkSafePath(r.second.pos_);
-        bool mine_is_unoccupied = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
-
-        if (mine_minerals) {
-            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+        if (mine_is_right_type) {
+            if (safe) {
+                there_exists_a_safe_mine = safe || there_exists_a_safe_mine;
+                safe_fields.addStored_Resource(r.second);
+            }
+            if (potential_escape) {
+                there_exists_an_escape_mine = potential_escape || there_exists_an_escape_mine;
+                escape_fields.addStored_Resource(r.second);
+            }
+            desperation_fields.addStored_Resource(r.second);
+            min_drone_on_mine = min(min_drone_on_mine, r.second.number_of_miners_);
         }
-        else {
-            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_);
-        }
-        if (mine_is_right_type && r.second.number_of_miners_ <= low_drone && r.second.number_of_miners_ < max_drone &&  CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_) && mine_is_unoccupied && safe) {
-            long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
-            if (r.second.occupied_resource_ && found_low_occupied_mine) { //if it has a closeby base, we want to prioritize those resources first.
-                available_fields.addStored_Resource(r.second);
+
+    } // find drone minima, and mark if there are ANY safe mines for this worker, regardless of type.
+
+    //We have to go over each type otherwise we may accidentially enter a mode without qualifiers.
+    if (there_exists_a_safe_mine) {
+        for (auto r : safe_fields.resource_inventory_) {
+            if (r.second.number_of_miners_ < max_drone) {
+                long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
+                if (r.second.occupied_resource_)
+                    local_fields.addStored_Resource(r.second);
             }
         }
-    } //find closest mine meeting this criteria.
+    }
+    
+    if (there_exists_an_escape_mine) {
+        for (auto r : escape_fields.resource_inventory_) {
+            if (r.second.number_of_miners_ < max_drone) {
+                long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
+                if (r.second.occupied_resource_)
+                    local_fields.addStored_Resource(r.second);
+            }
+        }
+    }
 
-      // mine from the closest mine with a base nearby.
-    if (!available_fields.resource_inventory_.empty()) {
-        assignment_complete = attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner); // phase is already updated.
+    for (auto r : desperation_fields.resource_inventory_) {
+        if (r.second.occupied_resource_) // if the area has workers and is not occupied, then it is now a desperate choice. Just go anywhere occupied.
+            if (r.second.number_of_miners_ >= min_drone_on_mine)
+                overmining_fields.addStored_Resource(r.second); //
     }
-    else if (!long_dist_fields.resource_inventory_.empty()) { // if there are no suitible mineral patches with bases nearby, long-distance mine.
-        assignment_complete = attachToNearestMine(long_dist_fields, CUNYAIModule::current_map_inventory, miner); // phase is already updated.
+
+    // mine from the closest mine with a base nearby.
+    if (!local_fields.resource_inventory_.empty())
+        assignment_complete = attachToNearestMine(local_fields, miner); // phase is updated here.
+    else if (!long_dist_fields.resource_inventory_.empty()) // if there are no suitible mineral patches with bases nearby, long-distance mine.
+        assignment_complete = attachToNearestMine(long_dist_fields, miner); // phase is updated here.
+    else if (!overmining_fields.resource_inventory_.empty()) { // if you are still in trouble just... mine *something*.
+        assignment_complete = attachToNearestMine(overmining_fields, miner); // phase is updated here.
+        Diagnostics::DiagnosticText("I cannot find a safe place to mine, I'm going to overstack somewhere safe.");
     }
+
+    //Diagnostics::DiagnosticText("local:%d,distance:%d,overmining:%d", local_fields.resource_inventory_.size(), long_dist_fields.resource_inventory_.size(), overmining_fields.resource_inventory_.size());
 
     if (!assignment_complete && old_mineral_patch) {
         miner.startMine(old_mineral_patch);
@@ -171,7 +199,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
 } // closure worker mine
 
   //Attaches MINER to nearest mine in RESOURCE INVENTORY. Performs proper incremenation in the overall land_inventory, requires access to overall inventory for maps.
-bool WorkerManager::attachToNearestMine(Resource_Inventory &ri, Map_Inventory &inv, Stored_Unit &miner) {
+bool WorkerManager::attachToNearestMine(Resource_Inventory & ri, Stored_Unit & miner) {
     Stored_Resource* closest = CUNYAIModule::getClosestGroundStored(ri, miner.pos_);
     if (closest) {
         miner.startMine(*closest); // this must update the LAND INVENTORY proper. Otherwise it will update some temperary value, to "availabile Fields".
@@ -210,14 +238,14 @@ bool WorkerManager::assignClear(const Unit & unit)
     miner.stopMine();
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_map_inventory.front_line_base_.getDistance(r->second.pos_) <  CUNYAIModule::current_map_inventory.my_portion_of_the_map_) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_map_inventory.front_line_base_.getDistance(r->second.pos_) < CUNYAIModule::current_map_inventory.my_portion_of_the_map_) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
 
-    if (!available_fields.resource_inventory_.empty() && attachToNearestMine(available_fields, CUNYAIModule::current_map_inventory, miner))
+    if (!available_fields.resource_inventory_.empty() && attachToNearestMine(available_fields, miner))
         return CUNYAIModule::updateUnitPhase(miner.bwapi_unit_, Stored_Unit::Clearing); //oof we have to manually edit the command to clear, it's a rare case.
-    else if(old_mineral_patch){
+    else if (old_mineral_patch) {
         miner.startMine(old_mineral_patch);
         old_mineral_patch->getType().isRefinery() ? CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningGas) : CUNYAIModule::updateUnitPhase(unit, Stored_Unit::MiningMin);
     }
@@ -302,7 +330,7 @@ bool WorkerManager::workerWork(const Unit &u) {
             task_guard = true;
         }
         break;
-    case Stored_Unit::MiningMin: 
+    case Stored_Unit::MiningMin:
         if (!isEmptyWorker(u)) { //auto return if needed.
             task_guard = workersReturn(u);
         }
@@ -314,7 +342,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Clearing: // does the same thing as...
-    case Stored_Unit::DistanceMining: 
+    case Stored_Unit::DistanceMining:
         if (!isEmptyWorker(u)) { //auto return if needed.
             miner.stopMine();
             task_guard = workersReturn(u);
@@ -333,7 +361,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         }
         break;
     case Stored_Unit::Prebuilding:
-        //CUNYAIModule::DiagnosticTrack(u);
+        //Diagnostics::DiagnosticTrack(u);
         if (CUNYAIModule::spamGuard(u, 14) /*&& u->isIdle()*/) {
             task_guard = workerPrebuild(u); // may need to move from prebuild to "build".
         }
@@ -361,7 +389,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                     }
                 }
             }
-            if(!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+            if (!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
         }
 
         break;
@@ -376,7 +404,7 @@ bool WorkerManager::workerWork(const Unit &u) {
     case Stored_Unit::Building:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && u->build(miner.intended_build_type_, miner.intended_build_tile_)) {
-                CUNYAIModule::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+                Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
                 return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Building);
             }
             task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
@@ -385,10 +413,9 @@ bool WorkerManager::workerWork(const Unit &u) {
     case Stored_Unit::Attacking:
     case Stored_Unit::Retreating:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
-            auto local_ui = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
-            local_ui.updateUnitInventorySummary();
-            bool enemy_exists = local_ui.stock_shoots_down_ > 0;
-            if (!enemy_exists) {
+            auto enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
+            enemy_loc.updateUnitInventorySummary();
+            if (!CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                 task_guard = workersCollect(u);
             }
         }

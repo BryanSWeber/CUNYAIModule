@@ -5,13 +5,14 @@
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Map_Inventory.h"
+#include "Source/Diagnostics.h"
 #include <bwem.h>
 
 //Resource_Inventory functions.
 //Creates an instance of the resource inventory class.
 
 
-Resource_Inventory::Resource_Inventory(){
+Resource_Inventory::Resource_Inventory() {
     // Updates the static locations of minerals and gas on the map. Should only be called on game start.
     //if (Broodwar->getFrameCount() == 0){
     //    Unitset min = Broodwar->getStaticMinerals();
@@ -32,7 +33,7 @@ Resource_Inventory::Resource_Inventory(const Unitset &unit_set) {
         resource_inventory_.insert({ u, Stored_Resource(u) });
     }
 
-    if (unit_set.empty()){
+    if (unit_set.empty()) {
         resource_inventory_;
     }
 
@@ -57,7 +58,7 @@ Position Resource_Inventory::getMeanLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
-    Position out =  Positions::Origin;
+    Position out = Positions::Origin;
     for (const auto &u : this->resource_inventory_) {
         x_sum += u.second.pos_.x;
         y_sum += u.second.pos_.y;
@@ -109,7 +110,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
     // Update "My Bases"
     Unit_Inventory hatches;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted() ) hatches.addStored_Unit(u.second);
+        if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted()) hatches.addStored_Unit(u.second);
     }
     vector<Position> my_bases_;
 
@@ -152,12 +153,13 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
                     Stored_Unit eu = Stored_Unit(r->first);
                     if (ei.unit_map_.insert({ r->first, eu }).second) {
-                        CUNYAIModule::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
+                        Diagnostics::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
                     }
                 }
-            } else {
-                    r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
-                    erasure_sentinel = true;
+            }
+            else {
+                r = resource_inventory_.erase(r); // get rid of these. Don't iterate if this occurs or we will (at best) end the loop with an invalid iterator.
+                erasure_sentinel = true;
             }
         }
         if (!erasure_sentinel) {
@@ -180,7 +182,7 @@ void Resource_Inventory::updateMines() {
             local_mineral_patches_++; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
             local_miners_ += r->second.number_of_miners_;
         }
-        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.occupied_resource_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted() ) {
+        if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.occupied_resource_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted()) {
             local_refineries_++;
             local_gas_collectors_ += r->second.number_of_miners_;
 
@@ -190,14 +192,14 @@ void Resource_Inventory::updateMines() {
 void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        CUNYAIModule::DiagnosticMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
     }
 
 }
 
 void Resource_Inventory::drawUnreachablePatch(const Map_Inventory & inv) const
 {
-    if constexpr (DRAWING_MODE) {
+    if constexpr (DIAGNOSTIC_MODE) {
         for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
             if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::current_map_inventory.screen_position_)) {
                 if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {

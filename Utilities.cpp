@@ -81,7 +81,7 @@ bool CUNYAIModule::isFightingUnit(const Unit &unit)
     UnitType u_type = unit->getType();
 
     // no workers or buildings allowed. Or overlords, or larva..
-    if ( unit && u_type.isWorker() ||
+    if (u_type.isWorker() ||
         //u_type.isBuilding() ||
         u_type == BWAPI::UnitTypes::Zerg_Larva ||
         u_type == BWAPI::UnitTypes::Zerg_Overlord )
@@ -164,265 +164,6 @@ bool CUNYAIModule::isFightingUnit(const UnitType &unittype)
     return false;
 }
 
-// This function limits the drawing that needs to be done by the bot.
-void CUNYAIModule::Diagnostic_Line( const Position &s_pos, const Position &f_pos , const Position &screen_pos, Color col = Colors::White ) {
-    if constexpr ( DRAWING_MODE ) {
-        if ( isOnScreen( s_pos , screen_pos) || isOnScreen( f_pos , screen_pos) ) {
-            Broodwar->drawLineMap( s_pos, f_pos, col );
-        }
-    }
-}
-
-// This function limits the drawing that needs to be done by the bot.
-void CUNYAIModule::Diagnostic_Tiles(const Position &screen_pos, Color col = Colors::White) {
-    if constexpr (DRAWING_MODE) {
-        for (int x = TilePosition(screen_pos).x; x <= TilePosition(screen_pos).x + 640 / 16; x+=2) {
-            for (int y = TilePosition(screen_pos).y; y <= TilePosition(screen_pos).y + 480 / 16; y+=2) {
-                Broodwar->drawTextMap(Position(TilePosition(x, y)), "(%d,%d)", x, y);
-            }
-        }
-    }
-}
-
-// This function limits the drawing that needs to be done by the bot.
-void CUNYAIModule::Diagnostic_Watch_Position(TilePosition &tp) {
-    if constexpr (DRAWING_MODE) {
-        if (CUNYAIModule::current_map_inventory.next_expo_ != TilePositions::Origin) {
-            Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2 , tp.y - 480 / (4 * 16) + 1 ));
-            Broodwar->setScreenPosition(centered);
-        }
-    }
-}
-
-
-// This function limits the drawing that needs to be done by the bot.
-void CUNYAIModule::Diagnostic_Destination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
-    if constexpr (DRAWING_MODE) {
-        for (auto u : ui.unit_map_) {
-            Position fin = u.second.pos_;
-            Position start = u.second.bwapi_unit_->getTargetPosition();
-            Diagnostic_Line(start, fin, screen_pos, col);
-        }
-    }
-}
-
-// This function limits the drawing that needs to be done by the bot.
-void CUNYAIModule::Diagnostic_Dot(const Position &s_pos, const Position &screen_pos, Color col = Colors::White) {
-    if constexpr (DRAWING_MODE) {
-        if (isOnScreen(s_pos, screen_pos)) {
-            Broodwar->drawCircleMap(s_pos, 25, col, true);
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticHitPoints(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (DRAWING_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields() ) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate green above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>( upper_left.x + unit.type_.width() * unit.current_hp_ / static_cast<double> (unit.type_.maxHitPoints() + unit.type_.maxShields())) ;
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Green, true);
-
-            int temp_hp_value = (unit.type_.maxHitPoints() + unit.type_.maxShields());
-            for (int i = 0; i <= static_cast<int>((unit.type_.maxHitPoints() + unit.type_.maxShields()) / 25); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_hp_value / static_cast<double>(unit.type_.maxHitPoints() + unit.type_.maxShields()));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-                temp_hp_value -= 25;
-            }
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticFAP(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (DRAWING_MODE ) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0 ) {
-            // Draw the red background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate green above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / static_cast<double>(unit.stock_value_));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            int temp_stock_value = unit.stock_value_;
-            for (int i = 0; i <= static_cast<int>(unit.stock_value_ / 25); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * temp_stock_value / static_cast<double>(unit.stock_value_));
-                Broodwar->drawBoxMap(upper_left, lower_right , Colors::Black, false);
-                temp_stock_value -= 25;
-            }
-        }
-    }
-}
-void CUNYAIModule::DiagnosticDeath(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (DRAWING_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0 ) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate color above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.count_of_consecutive_predicted_deaths_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-                //temp_stock_value -= 15;
-            }
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticLastDamage(const Stored_Unit unit, const Position &screen_pos) {
-    if constexpr (DRAWING_MODE) {
-        Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
-            // Draw the background.
-            upper_left.y = upper_left.y + unit.type_.dimensionUp();
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            //Overlay the appropriate color above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * min(unit.time_since_last_dmg_ / static_cast<double>(FAP_SIM_DURATION), 1.0));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
-
-            for (int i = 0; i <= static_cast<int>(FAP_SIM_DURATION / 12); i++) {
-                lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * i * 12 / static_cast<double>(FAP_SIM_DURATION));
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Black, false);
-            }
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticMineralsRemaining(const Stored_Resource resource, const Position &screen_pos) {
-    if constexpr (DRAWING_MODE) {
-        Position upper_left = resource.pos_;
-        if (isOnScreen(upper_left, screen_pos) && /*resource.current_stock_value_ != static_cast<double>(resource.max_stock_value_) &&*/ resource.occupied_resource_) {
-            // Draw the orange background.
-            upper_left.y = upper_left.y + resource.type_.dimensionUp();
-            upper_left.x = upper_left.x - resource.type_.dimensionLeft();
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + resource.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, false);
-
-            //Overlay the appropriate blue above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>( upper_left.x + resource.type_.width() * resource.current_stock_value_ / static_cast<double>(resource.max_stock_value_));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Orange, true);
-
-            //Overlay the 10hp rectangles over it.
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticSpamGuard(const Stored_Unit unit, const Position & screen_pos)
-{
-    if constexpr(DRAWING_MODE) {
-        Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos) && unit.time_since_last_command_ < 24 ) {
-            // Draw the black background.
-            upper_left.x = upper_left.x - unit.type_.dimensionLeft();
-            upper_left.y = upper_left.y - 10;
-
-            Position lower_right = upper_left;
-            lower_right.x = upper_left.x + unit.type_.width();
-            lower_right.y = upper_left.y + 5;
-
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, false);
-
-            //Overlay the appropriate grey above it.
-            lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * ( 1 - min(unit.time_since_last_command_, 24) / static_cast<double>(24) ));
-            lower_right.y = upper_left.y + 5;
-            Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
-
-        }
-    }
-}
-void CUNYAIModule::DiagnosticLastOrder(const Stored_Unit unit, const Position & screen_pos)
-{
-    if constexpr(DRAWING_MODE) {
-        Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos)) {
-            Broodwar->drawTextMap(unit.pos_, unit.order_.c_str());
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticPhase(const Stored_Unit unit, const Position & screen_pos)
-{
-    if constexpr(DRAWING_MODE) {
-        map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
-        { Stored_Unit::Phase::Attacking,"Attacking" },
-        { Stored_Unit::Phase::Retreating,"Retreating" },
-        { Stored_Unit::Phase::Prebuilding,"Prebuilding" },
-        { Stored_Unit::Phase::PathingOut,"PathingOut" },
-        { Stored_Unit::Phase::PathingHome,"PathingHome" },
-        { Stored_Unit::Phase::Surrounding,"Surrounding" },
-        { Stored_Unit::Phase::NoRetreat,"NoRetreat" },
-        { Stored_Unit::Phase::MiningMin,"Gather Min" },
-        { Stored_Unit::Phase::MiningGas,"Gather Gas" },
-        { Stored_Unit::Phase::Returning,"Returning" },
-        { Stored_Unit::Phase::DistanceMining,"DistanceMining" },
-        { Stored_Unit::Phase::Clearing,"Clearing" },
-        { Stored_Unit::Phase::Upgrading,"Upgrading" },
-        { Stored_Unit::Phase::Researching,"Researching" },
-        { Stored_Unit::Phase::Morphing,"Morphing" },
-        { Stored_Unit::Phase::Building,"Building" },
-        { Stored_Unit::Phase::Detecting,"Detecting" } };
-        Position upper_left = unit.pos_;
-        if (isOnScreen(upper_left, screen_pos)) {
-            Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());
-        }
-    }
-}
-
-void CUNYAIModule::DiagnosticReservations(const Reservation reservations, const Position & screen_pos)
-{
-    if constexpr(DRAWING_MODE) {
-        for (auto res : reservations.reservation_map_) {
-            Position upper_left = Position(res.first);
-            Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
-            if (isOnScreen(upper_left, screen_pos)) {
-                Broodwar->drawBoxMap(upper_left, lower_right, Colors::Grey, true);
-                Broodwar->drawTextMap(upper_left, res.second.c_str());
-            }
-        }
-    }
-}
 
 void CUNYAIModule::writePlayerModel(const Player_Model &player, const string label)
 {
@@ -951,137 +692,6 @@ int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & en
     return threatening_e;
 }
 
-// Announces to player the name and count of all units in the unit inventory. Bland but practical.
-void CUNYAIModule::Print_Unit_Inventory( const int &screen_x, const int &screen_y, const Unit_Inventory &ui ) {
-    int another_row_of_printing = 0;
-    for ( int i = 0; i != 229; i++ )
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        int u_count = Count_Units( ((UnitType)i), ui );
-        if ( u_count > 0 ) {
-            Broodwar->drawTextScreen( screen_x, screen_y, "Inventoried Units:" );  //
-            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10 , "%s: %d", noRaceName( ((UnitType)i).c_str()), u_count );  //
-            another_row_of_printing++;
-        }
-    }
-}
-// Prints some test onscreen in the given location.
-void CUNYAIModule::Print_Test_Case(const int &screen_x, const int &screen_y) {
-    int another_row_of_printing = 0;
-    for (int i = 0; i != 229; i++)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (((UnitType)i).isBuilding() && (!((UnitType)i).upgradesWhat().empty() || !((UnitType)i).researchesWhat().empty()) && ((UnitType)i) != UnitTypes::Zerg_Hatchery ) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "Confirmed Hits:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", noRaceName(((UnitType)i).c_str()));  //
-            another_row_of_printing++;
-        }
-    }
-}
-// Announces to player the name and count of all units in the unit inventory. Bland but practical.
-void CUNYAIModule::Print_Cached_Inventory(const int &screen_x, const int &screen_y) {
-    int another_row_of_printing = 0;
-    for (auto i : CUNYAIModule::friendly_player_model.unit_type_)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        int u_count = CUNYAIModule::Count_Units(i);
-        int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i);
-        if (u_count > 0) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d Inc: %d", noRaceName( i.c_str() ), u_count, u_incomplete_count);  //
-            another_row_of_printing++;
-        }
-    }
-}
-
-// Announces to player the name and count of all units in the research inventory. Bland but practical.
-void CUNYAIModule::Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
-    int another_row_of_printing_ups = 1;
-
-    for (auto r:ri.upgrades_)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (r.second > 0) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "Upgrades:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "%s: %d", r.first.c_str(), r.second);  //
-            another_row_of_printing_ups++;
-        }
-    }
-
-    int another_row_of_printing_research = another_row_of_printing_ups + 1;
-
-    for (auto r : ri.tech_)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (r.second) {
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "Tech:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "%s", r.first.c_str());  //
-            another_row_of_printing_research++;
-        }
-    }
-
-    int another_row_of_printing_buildings = another_row_of_printing_research + 1;
-
-    for (auto r : ri.tech_buildings_)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        if (r.second > 0) {
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_buildings * 10, "%s: %d", r.first.c_str(), r.second);  //
-            another_row_of_printing_buildings++;
-        }
-    }
-}
-
-// Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-void CUNYAIModule::Print_Build_Order_Remaining( const int &screen_x, const int &screen_y, const Building_Gene &bo ) {
-    int another_row_of_printing = 0;
-    if ( !bo.building_gene_.empty() ) {
-        for ( auto i : bo.building_gene_ ) { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-            Broodwar->drawTextScreen( screen_x, screen_y, "Build Order:" );  //
-            if ( i.getUnit() != UnitTypes::None ) {
-                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", noRaceName( i.getUnit().c_str() ) );  //
-            }
-            else if ( i.getUpgrade() != UpgradeTypes::None ) {
-                Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getUpgrade().c_str() );  //
-            }
-            else if (i.getResearch() != UpgradeTypes::None) {
-                Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s", i.getResearch().c_str());  //
-            }
-            another_row_of_printing++;
-        }
-    }
-    else {
-        Broodwar->drawTextScreen( screen_x, screen_y, "Build Order:" );  //
-        Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "Build Order Empty");  //
-    }
-}
-
-// Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-void CUNYAIModule::Print_Upgrade_Inventory( const int &screen_x, const int &screen_y ) {
-    int another_sort_of_upgrade = 0;
-    for ( int i = 0; i != 62; i++ )
-    { // iterating through all upgrades.
-        int up_count = Broodwar->self()->getUpgradeLevel( ((UpgradeType)i) ) + static_cast<int>( Broodwar->self()->isUpgrading( ((UpgradeType)i) ) );
-        if ( up_count > 0 ) {
-            Broodwar->drawTextScreen( screen_x, screen_y, "Upgrades:" );  //
-            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", ((UpgradeType)i).c_str() , up_count );  //
-            another_sort_of_upgrade++;
-        }
-    }
-    if ( Broodwar->self()->hasResearched( TechTypes::Lurker_Aspect )) {
-        Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: 1", TechTypes::Lurker_Aspect.c_str(), 1 );  //
-    }
-}
-
-// Announces to player the name and type of all buildings in the reservation system. Bland but practical.
-void CUNYAIModule::Print_Reservations( const int &screen_x, const int &screen_y, const Reservation &res ) {
-    int another_row_of_printing = 0;
-    for ( int i = 0; i != 229; i++ )
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-        int u_count = Count_Units( ((UnitType)i), res );
-        if ( u_count > 0 ) {
-            Broodwar->drawTextScreen( screen_x, screen_y, "Reserved Buildings:" );  //
-            Broodwar->drawTextScreen( screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d", noRaceName( ((UnitType)i).c_str() ), u_count );  //
-            another_row_of_printing++;
-        }
-    }
-}
-
 //Strips the RACE_ from the front of the unit type string.
 const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
     for ( const char *c = name; *c; c++ )
@@ -1098,6 +708,13 @@ Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
         }
     }
     return e_set;
+}
+
+Stored_Unit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
+{
+	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
+	bool found = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end();
+	if (found) return &found_item->second;
 }
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -1152,6 +769,27 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
             if (temp_dist <= min_dist ) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest unit of a type to point in Unit_inventory EXCLUDING the unit. Checks range. Careful about visiblity.
+Stored_Unit* CUNYAIModule::getClosestStored(const Unit unit, Unit_Inventory &ui, const UnitType &u_type, const int &dist = 999999) {
+    int min_dist = dist;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.type_ == u_type && e->second.valid_pos_ && e->first != unit) {
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(unit->getPosition()));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
             }
         }
     }
@@ -1507,19 +1145,30 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
     return ui_out;
 }
 
-//Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
+//Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
+Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
     Resource_Inventory ri_out;
-    auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
-    if (area) {
-        int area_id = area->Id();
-        for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            if ( r->second.areaID_ == area_id) {
-                ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
-            }
-        }
-    }
-    return ri_out;
+	for (auto & e = ri.resource_inventory_.begin(); e != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); e++) {
+		if ((*e).second.pos_.getDistance(origin) <= dist) {
+			ri_out.addStored_Resource((*e).second); // if we take any distance and they are in inventory.
+		}
+	}
+	return ri_out;
+}
+
+//Searches an resource inventory for units within an area. Returns resource inventory meeting that critera. Can return nullptr.
+Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin) {
+	Resource_Inventory ri_out;
+	auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
+	if (area) {
+		int area_id = area->Id();
+		for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
+			if (r->second.areaID_ == area_id) {
+				ri_out.addStored_Resource((*r).second); // if we take any distance and they are in inventory.
+			}
+		}
+	}
+	return ri_out;
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
@@ -1548,6 +1197,19 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
             }
         }
     }
+    return ui_out;
+}
+
+//Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
+Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const int AreaID) {
+    Unit_Inventory ui_out;
+
+    for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+        if (e->second.areaID_ == AreaID) {
+            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+        }
+    }
+
     return ui_out;
 }
 
@@ -1709,7 +1371,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
             cd_frames = 28; // this is an INSANE cooldown.
         }
     }
-    //else 
+
     if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
         cd_frames = 14;
     }
@@ -2114,7 +1776,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
     return base_range;
 }
 
-//How far can the unit move in one MAFAP sim (96 frames)?
+//How far can the unit move in one MAFAP sim (120 frames)? Currently too large.
 int CUNYAIModule::getChargableDistance(const Unit & u)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
@@ -2266,7 +1928,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     e_neighborhood.updateUnitInventorySummary();
     friend_loc.updateUnitInventorySummary();
     
-    if (e_neighborhood.stock_ground_fodder_ > 0) return false; // don't build where they have buildings.
+    if (e_neighborhood.building_count_ > 0) return false; // don't build where they have buildings.
 
     if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood) && e_closest) { // if they could overrun us if they organized and we did not.
         radial_distance_to_closest_enemy = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromHome(e_closest->pos_);
@@ -2333,7 +1995,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 //        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 //}
 
-bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei) {
+bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei, const bool equality_is_win) {
     FAP::FastAPproximation<Stored_Unit*> MiniFap; // integrating FAP into combat with a produrbation.
     ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
     ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
@@ -2342,10 +2004,10 @@ bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei) 
     ei.pullFromFAP(*MiniFap.getState().second);
     ui.updateUnitInventorySummary();
     ei.updateUnitInventorySummary();
-    return checkSuperiorFAPForecast(ui, ei);
+    return checkSuperiorFAPForecast(ui, ei, equality_is_win);
 }
 
-bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool equality_is_win) {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
     int total_surviving_ui_down = 0;
@@ -2357,16 +2019,17 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
-            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
-            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
+            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            //total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
         }
     }
     for (auto e : ei.unit_map_) {
         if (!e.first || !e.first->isBeingConstructed()) { // don't count constructing units.
             total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+            //total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
             total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
             total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
         }
@@ -2378,13 +2041,18 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
     if (total_surviving_ui_up > 0) total_dying_ei += ei.stock_air_fodder_;
     if (total_surviving_ui_down > 0) total_dying_ei += ei.stock_ground_fodder_;
 
-    return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
-            //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
-            //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
-        //(total_surviving_ui > total_surviving_ei) ||
-        (total_dying_ui <= total_dying_ei); //|| // If my losses are smaller than theirs..
-        //(local && total_dying_ui == 0); // || // there are no losses.
-            //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
+    if (equality_is_win)
+        return total_dying_ui <= total_dying_ei;
+    else
+        return total_dying_ui < total_dying_ei;
+
+    //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) <= (ei.stock_fighting_total_ - ei.moving_average_fap_stock_)) || // If my losses are smaller than theirs..
+    //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
+    //(ei.moving_average_fap_stock_ == 0 && ui.moving_average_fap_stock_ > 0) || // or the enemy will get wiped out.
+    //(total_surviving_ui > total_surviving_ei) ||
+    //(total_dying_ui < total_dying_ei); //|| // If my losses are smaller than theirs..
+    //(local && total_dying_ui == 0); // || // there are no losses.
+    //ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 }
 
 int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool fodder) {
@@ -2420,7 +2088,7 @@ int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inve
     return total_dying_ui;
 }
 
-int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool fodder)
+int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const int duration, const bool fodder)
 {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
@@ -2432,16 +2100,16 @@ int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_I
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
+        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
+        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:
@@ -2480,14 +2148,6 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     return true;
 }
 
-void CUNYAIModule::DiagnosticTrack(const Unit &u) {
-    Broodwar->setScreenPosition(u->getPosition() - Position{ 320,200 });
-}
-
-void CUNYAIModule::DiagnosticTrack(const Position &p) {
-    Broodwar->setScreenPosition(p - Position{ 320,200 });
-}
-
 bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
@@ -2511,4 +2171,22 @@ bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended
         return true;
     }
     return false;
+}
+
+bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
+    Unit_Inventory ei_temp;
+    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
+    ei_temp.updateUnitInventorySummary();
+
+    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    return true;
+}
+
+bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
+    Unit_Inventory ei_temp;
+    ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, AreaID);
+    ei_temp.updateUnitInventorySummary();
+
+    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    return true;
 }

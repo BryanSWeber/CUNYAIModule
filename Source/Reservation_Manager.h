@@ -17,9 +17,9 @@ struct Reservation {
     map<TilePosition, UnitType> reservation_map_;
 
     // Updates mineral, gas, and time reserves for a particular unit. Will return FALSE if it is already present. This functionality is taken advantage of in some cases.
-    bool Reservation::addReserveSystem( TilePosition tile, UnitType type );
+    bool Reservation::addReserveSystem(TilePosition tile, UnitType type);
     // Removes an item from the reserve system. Will return FALSE if it is not there.
-    bool Reservation::removeReserveSystem( TilePosition tile, UnitType type, bool retry_this_building);
+    bool Reservation::removeReserveSystem(TilePosition tile, UnitType type, bool retry_this_building);
     // Checks if an item of type is in reserve system.
     bool checkTypeInReserveSystem(UnitType type);
 
@@ -33,10 +33,10 @@ struct Reservation {
     bool Reservation::checkExcessIsGreaterThan(const TechType & type) const;
 
     //Checks if a purchase is affordable, imagines that we have a constant income stream X seconds in the future.
-    bool Reservation::checkAffordablePurchase( const UnitType type , const int X = 3);
+    bool Reservation::checkAffordablePurchase(const UnitType type, const int X = 3);
     int Reservation::countTimesWeCanAffordPurchase(const UnitType type);
-    bool Reservation::checkAffordablePurchase( const TechType type );
-    bool Reservation::checkAffordablePurchase( const UpgradeType type );
+    bool Reservation::checkAffordablePurchase(const TechType type);
+    bool Reservation::checkAffordablePurchase(const UpgradeType type);
 
     void Reservation::confirmOngoingReservations();
 

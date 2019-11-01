@@ -37,6 +37,9 @@ struct Map_Inventory {
     int map_x;
     int map_y;
 
+    //Marks Data for each area if it is "ground safe"
+    void updateGroundDangerousAreas();
+
     vector<Position> start_positions_;
     vector<TilePosition> expo_tilepositions_;
     vector<TilePosition> expo_positions_complete_;
@@ -119,7 +122,7 @@ struct Map_Inventory {
     // Updates the chokes on the map.
     //void Map_Inventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
-    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = true);
+    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
 
     // Gets distance using
     int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
@@ -159,9 +162,9 @@ struct Map_Inventory {
 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateBasePositions();
+    void updateCurrentMap();
 
-   //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
+    //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
     void createThreatField(Player_Model & enemy_player);
     void createAAField(Player_Model & enemy_player);

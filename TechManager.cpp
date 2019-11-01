@@ -3,6 +3,7 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\TechManager.h"
+#include "Source/Diagnostics.h"
 # include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
@@ -38,7 +39,7 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) ) || potential_up.first == UpgradeTypes::None) {
+        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
             FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
@@ -54,12 +55,12 @@ void TechManager::updateOptimalTech() {
 void TechManager::updateMaxGas() {
     max_gas_value_ = 0;
     for (auto potential_up : upgrade_cycle_) {
-        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first)) {
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first)) {
             max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
         }
     }
     for (auto potential_tech : tech_cycle_) {
-        if (checkBuildingReady(potential_tech.first) && !Broodwar->self()->hasResearched(potential_tech.first) ) {
+        if (checkBuildingReady(potential_tech.first) && canTech(potential_tech.first)) {
             max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
         }
     }
@@ -71,7 +72,7 @@ bool TechManager::checkTechAvail()
 }
 
 
-    // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
+// Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
 bool TechManager::updateTech_Avail() {
 
     //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
@@ -141,7 +142,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
         if (!busy && potential_up->first) {
-            if ( !CUNYAIModule::checkDesirable(building, potential_up->first, true) ) {
+            if (!CUNYAIModule::checkDesirable(building, potential_up->first, true)) {
                 local_upgrade_cycle.erase(potential_up++);
             }
         }
@@ -196,7 +197,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = Stored_Unit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
-            CUNYAIModule::DiagnosticText("Upgrading %s.", ups.c_str());
+            Diagnostics::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
         }
     }
@@ -213,7 +214,7 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
             Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = Stored_Unit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
-            CUNYAIModule::DiagnosticText("Researching %s.", tech.c_str());
+            Diagnostics::DiagnosticText("Researching %s.", tech.c_str());
             return true;
         }
     }
@@ -229,9 +230,9 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
     }
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
-            Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", tech_idea->second.c_str(), tech_idea->first);
-            another_sort_of_upgrade++;
+        Broodwar->drawTextScreen(screen_x, screen_y, "UpgradeSimResults:");  //
+        Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_sort_of_upgrade * 10, "%s: %d", tech_idea->second.c_str(), tech_idea->first);
+        another_sort_of_upgrade++;
     }
 }
 
@@ -263,4 +264,75 @@ int TechManager::returnTechRank(const UpgradeType &ut) {
 int TechManager::getMaxGas()
 {
     return max_gas_value_;
+}
+
+bool TechManager::canUpgradeCUNY(const UpgradeType type, const bool checkAffordable, const Unit &builder)
+{
+    Player self = Broodwar->self();
+
+    if (builder)
+    {
+        if (builder->getPlayer() != self)
+            return false;
+        if (!builder->getType().isSuccessorOf(type.whatUpgrades()))
+            return false;
+        if ((builder->isLifted() || !builder->isIdle() || !builder->isCompleted()))
+            return false;
+    }
+
+    if (!self)
+        return false;
+    int nextLvl = self->getUpgradeLevel(type) + 1;
+
+    if (!self->hasUnitTypeRequirement(type.whatUpgrades()))
+        return false;
+    if (!self->hasUnitTypeRequirement(type.whatsRequired(nextLvl)))
+        return false;
+    if (self->isUpgrading(type))
+        return false;
+    if (self->getUpgradeLevel(type) >= self->getMaxUpgradeLevel(type))
+        return false;
+    if (checkAffordable) {
+        if (self->minerals() < type.mineralPrice(nextLvl))
+            return false;
+        if (self->gas() < type.gasPrice(nextLvl))
+            return false;
+    }
+    return true;
+}
+
+bool TechManager::canTech(TechType type, const bool checkAffordable, const Unit &builder)
+{
+    // Error checking
+    if (!Broodwar->self())
+        return Broodwar->setLastError(Errors::Unit_Not_Owned);
+
+    if (builder)
+    {
+        if (builder->getPlayer() != Broodwar->self())
+            return false;
+        if (!builder->getType().isSuccessorOf(type.whatResearches()))
+            return false;
+        if ((builder->isLifted() || !builder->isIdle() || !builder->isCompleted()))
+            return false;
+    }
+
+    if (Broodwar->self()->isResearching(type))
+        return false;
+    if (Broodwar->self()->hasResearched(type))
+        return false;
+    if (!Broodwar->self()->isResearchAvailable(type))
+        return false;
+
+    if (checkAffordable) {
+        if (Broodwar->self()->minerals() < type.mineralPrice())
+            return false;
+        if (Broodwar->self()->gas() < type.gasPrice())
+            return false;
+    }
+
+    if (!Broodwar->self()->hasUnitTypeRequirement(type.requiredUnit()))
+        return false;
+
+    return Broodwar->setLastError();
 }
