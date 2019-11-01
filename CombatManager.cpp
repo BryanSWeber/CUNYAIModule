@@ -160,8 +160,13 @@ bool CombatManager::combatScript(const Unit & u)
 
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
-
-           return mobility.Retreat_Logic();
+            
+            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+                return mobility.Retreat_Logic();
+            }
+            else {
+                return mobility.surround(e_closest->pos_);
+            }
         }
     }
     return false;

@@ -652,6 +652,57 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
 }
 
+void Unit_Inventory::printUnitInventory(const string PlayerName)
+{
+    string start = ".\\bwapi-data\\read\\" + PlayerName + ".txt";
+    string finish = ".\\bwapi-data\\write\\" + PlayerName + ".txt";
+    rename(start.c_str(), finish.c_str()); // Furthermore, rename will fail if there is already an existing file.
+
+
+    ifstream input; // brings in info;
+    input.open(".\\bwapi-data\\write\\" + PlayerName + ".txt", ios::in);   // for each row
+    string line;
+    int csv_length = 0;
+    while (getline(input, line)) {
+        ++csv_length;
+    }
+    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+    if (++csv_length > 500 && PlayerName != "Bryan Weber");
+        return;  // let's not flood the world
+
+    ofstream output; // Prints to brood war file while in the WRITE file.
+    string opponent_name = Broodwar->enemy()->getName().c_str();
+    output.open(".\\bwapi-data\\write\\" + PlayerName + ".txt", ios_base::app);
+
+    if (csv_length < 1) {
+        output << "GameSeed" << ",";
+        output << "GameTime" << ",";
+        for (auto i : UnitTypes::allUnitTypes()) {
+            if (!i.isNeutral()) {
+                output << i.c_str() << ",";
+            }
+        }
+        output << endl;
+    }
+
+    output << Broodwar->getRandomSeed() << ",";
+    output << Broodwar->elapsedTime() << ",";
+    for (auto i : UnitTypes::allUnitTypes()) {
+        if (!i.isNeutral()) {
+            output << CUNYAIModule::Count_Units(i, *this) << ",";
+        }
+    }
+    output << endl;
+    output.close();
+
+    if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
+        string start = ".\\bwapi-data\\write\\" + PlayerName + ".txt";
+        string finish = ".\\bwapi-data\\read\\" + PlayerName + ".txt";
+        rename(start.c_str(), finish.c_str()); // Furthermore, rename will fail if there is already an existing file.
+    }
+}
+
 void Unit_Inventory::stopMine(Unit u) {
     if (u->getType().isWorker()) {
         Stored_Unit& miner = unit_map_.find(u)->second;

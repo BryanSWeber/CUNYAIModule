@@ -258,6 +258,8 @@ struct Unit_Inventory {
     static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 
+    void printUnitInventory(const string PlayerName);
+
     void stopMine(Unit u);
     friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
     friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
