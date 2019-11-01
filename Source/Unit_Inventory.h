@@ -165,6 +165,8 @@ struct Unit_Inventory {
     int stock_psion_ = 0;
     int total_supply_ = 0;
     int max_range_ = 0;
+    int max_range_air_ = 0;
+    int max_range_ground_ = 0;
     int max_cooldown_ = 0;
     int worker_count_ = 0;
     int volume_ = 0;

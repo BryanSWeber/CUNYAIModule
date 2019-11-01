@@ -551,6 +551,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
     stock_full_health_ = 0;
     stock_psion_ = 0;
     total_supply_ = 0;
+    max_range_air_ = 0;
+    max_range_ground_ = 0;
     max_range_ = 0;
     max_cooldown_ = 0;
     worker_count_ = 0;
@@ -625,7 +627,8 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
                 max_cooldown_ = max(max(u_iter.second.type_.groundWeapon().damageCooldown(), u_iter.second.type_.airWeapon().damageCooldown()), max_cooldown_);
                 max_range_ = (range_temp > max_range_) * range_temp + !(range_temp > max_range_) * max_range_;
-
+                max_range_air_ = (range_temp > max_range_air_ && up_gun) * range_temp + !(range_temp > max_range_air_ && up_gun) * max_range_air_;
+                max_range_ground_ = (range_temp > max_range_ground_ && down_gun) * range_temp + !(range_temp > max_range_ground_ && down_gun) * max_range_ground_; //slightly faster if-else conditions.
             }
             else {
                 resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
