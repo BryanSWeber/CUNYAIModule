@@ -122,7 +122,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel_poor_target_atk = false;
     bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 4 : 4 * log(helpful_e - helpful_u);
+    double limit_units_diving = weak_enemy_or_small_armies ? 10 : 10 * log(helpful_e - helpful_u);
 
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
@@ -614,5 +614,5 @@ int Mobility::getDistanceMetric()
 
 bool Mobility::isOnDifferentHill(const Stored_Unit &e) {
     int altitude = BWEM::Map::Instance().GetMiniTile(WalkPosition(e.pos_)).Altitude();
-    return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 64 < CUNYAIModule::getProperRange(unit_);
+    return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getProperRange(unit_);
 }

@@ -197,7 +197,13 @@ bool CombatManager::scoutScript(const Unit & u)
     else if(CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
         Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
-        return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector);
+        if(explore_vector != Positions::Origin)
+            return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector);
+        else {
+            Stored_Unit* closest = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2);
+            if (closest)
+                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.approach(closest->pos_));
+        }
     }
     return false;
 }

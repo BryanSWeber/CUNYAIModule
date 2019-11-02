@@ -1770,7 +1770,7 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
         base_range += 3 * 32;
     }
     else if ( u_type == UnitTypes::Terran_Barracks ) {
-        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + 32 + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
     }
 
     return base_range;
