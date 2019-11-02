@@ -2027,12 +2027,12 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
         }
     }
     for (auto e : ei.unit_map_) {
-        if (!e.first || !e.first->isBeingConstructed()) { // don't count constructing units.
+        //if (!e.first->isBeingConstructed()) { // don't count constructing units.
             total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 100)) * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
             //total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
             total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
             total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
-        }
+        //}
     }
 
     // Calculate if the surviving side can destroy the fodder:
