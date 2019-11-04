@@ -17,7 +17,7 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
-bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) {
+bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos, const Stored_Unit::Phase phase) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
@@ -37,7 +37,7 @@ bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos) 
         Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//Run around an obstacle.
         Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//Run towards it.
         Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//Run around 
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
+        return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
 }
@@ -48,30 +48,30 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
         if (CUNYAIModule::combat_manager.isScout(unit_)) {
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_, Stored_Unit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, Stored_Unit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
         }
         else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, Stored_Unit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
         }
         else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, Stored_Unit::Phase::PathingOut);
                 target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
             }
             else {
-                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, Stored_Unit::Phase::PathingOut);
                 target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
             }
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
+        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, Stored_Unit::Phase::PathingHome);
         target_pos = CUNYAIModule::current_map_inventory.front_line_base_;
     }
 
@@ -179,7 +179,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : DiveableTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            if (dist_to_enemy < temp_max_divable && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
@@ -187,11 +188,12 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     // Shoot closest threat if they can shoot you or vis versa.
-    temp_max_divable = 400;
+    temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
     if (!target) { // repeated calls should be functionalized.
         for (auto t : ThreateningTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            if (dist_to_enemy < temp_max_divable && dist_to_enemy < max(ei.max_range_, CUNYAIModule::getProperRange(unit_)) && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
@@ -203,14 +205,15 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : SecondOrderThreats.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            if (dist_to_enemy < temp_max_divable && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
         }
     }
 
-    temp_max_divable = 99999;
+    temp_max_divable = INT_MAX;
     if (!target) { // repeated calls should be functionalized.
         for (auto t : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
@@ -256,18 +259,18 @@ bool Mobility::Retreat_Logic() {
     }
 
     if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
-        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_);
+        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, Stored_Unit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
         auto threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, unit_, 400);
         if (threat) {
             approach(CUNYAIModule::current_map_inventory.safe_base_);
             encircle(threat->pos_);
-            moveTo(pos_, pos_ + attract_vector_ + encircle_vector_);
+            moveTo(pos_, pos_ + attract_vector_ + encircle_vector_, Stored_Unit::Phase::Retreating);
         }
     }
     else {
-        moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_);
+        moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_, Stored_Unit::Phase::Retreating);
     }
     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
 }
@@ -580,7 +583,7 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     return  return_vector;
 }
 
-bool Mobility::moveTo(const Position &start, const Position &finish)
+bool Mobility::moveTo(const Position &start, const Position &finish, const Stored_Unit::Phase phase)
 {
     int plength = 0;
     bool unit_sent = false;
@@ -602,7 +605,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish)
 
 
     // then try traveling with local travel. Should have plength > 0
-    if (!unit_sent && plength) unit_sent = local_pathing(plength, finish);
+    if (!unit_sent && plength) unit_sent = local_pathing(plength, finish, phase);
 
     return unit_sent;
 }

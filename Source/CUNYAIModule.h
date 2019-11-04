@@ -149,6 +149,7 @@ public:
     //static bool Futile_Fight( Unit unit, Unit enemy );
 
     // Outlines the case where you can attack their type (air/ground/cloaked)
+    static bool Can_Fight(UnitType u_type, UnitType e_type);
     static bool Can_Fight(Unit unit, Unit enemy);
     static bool Can_Fight(Unit unit, Stored_Unit enemy);
     static bool Can_Fight(Stored_Unit unit, Stored_Unit enemy);

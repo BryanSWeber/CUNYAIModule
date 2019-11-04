@@ -90,7 +90,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest) || u->isFlying()) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_threat > ( enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
-            bool standard_fight_reasons = fight_looks_good || (friend_loc.stock_ground_fodder_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc) || isWorkerFight(friend_loc, enemy_loc);
+            bool standard_fight_reasons = fight_looks_good || (friend_loc.building_count_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc) || isWorkerFight(friend_loc, enemy_loc);
             Unit_Inventory expanded_friend_loc;
             if (e_closest->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
@@ -126,12 +126,13 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ( !fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+                    if ( !fight_looks_good && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surround(e_closest->pos_);
                         }
                         else {
-                            return mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
+                            mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
+                            return true; // now the lurker should be burrowed.
                         }
                     }
                     else if (standard_fight_reasons || enemy_loc.detector_count_ > 0) {
@@ -152,7 +153,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 default:
-                    if (!fight_looks_good && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+                    if (!fight_looks_good && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack && CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                         return mobility.surround(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
@@ -198,11 +199,11 @@ bool CombatManager::scoutScript(const Unit & u)
         Mobility mobility = Mobility(u);
         Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
         if(explore_vector != Positions::Origin)
-            return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector);
+            return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector, Stored_Unit::Phase::PathingOut);
         else {
             Stored_Unit* closest = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2);
             if (closest)
-                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.approach(closest->pos_));
+                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.approach(closest->pos_), Stored_Unit::Phase::PathingOut);
         }
     }
     return false;

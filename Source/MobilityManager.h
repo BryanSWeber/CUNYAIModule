@@ -28,7 +28,7 @@ public:
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
     bool Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool local_pathing(const int &passed_distance, const Position &e_pos);
+    bool local_pathing(const int &passed_distance, const Position &e_pos, const Stored_Unit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
     // Surrounds position of choice slowly.
@@ -55,7 +55,7 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
-    bool moveTo(const Position & start, const Position & finish);
+    bool moveTo(const Position & start, const Position & finish, const Stored_Unit::Phase phase);
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 

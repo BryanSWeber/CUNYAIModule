@@ -314,64 +314,48 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
 //    return ( e_invunerable && u_vunerable ) || ( u_vunerable && !enemy->isDetected() ); // also if they are cloaked and can attack us.
 //}
 
+// Outlines the case where UNIT can attack ENEMY; 
+bool CUNYAIModule::Can_Fight(UnitType u_type, UnitType e_type) {
+    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
+    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier; // medics do not fight per se.
+    bool reaver = u_type == UnitTypes::Protoss_Reaver && !e_type.isFlyer();
+    bool could_get_spelled = (u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler) && !e_type.isBuilding();
+    bool queen_broodling = u_type == UnitTypes::Zerg_Queen && !e_type.isFlyer() && e_type != UnitTypes::Protoss_Probe && e_type != UnitTypes::Protoss_Reaver && e_type != UnitTypes::Protoss_Archon && e_type != UnitTypes::Protoss_Dark_Archon;
+    bool science_irradiate = u_type == UnitTypes::Terran_Science_Vessel && e_type.isOrganic() && !e_type.isBuilding();
+    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons || queen_broodling || reaver || science_irradiate || could_get_spelled); // if we cannot attack them.
+    return e_vunerable; // also if they are cloaked and can attack us.
+}
+
 // Outlines the case where UNIT can attack ENEMY;
 bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit->getType();
-    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Terran_Science_Vessel || u_type == UnitTypes::Terran_Medic || u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler || u_type == UnitTypes::Zerg_Queen;
-    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons); // if we cannot attack them.
-    if ( enemy->exists() ) {
-        return e_vunerable && enemy->isDetected();
-    }
-    else {
-        return e_vunerable; // also if they are cloaked and can attack us.
-    }
+    if (!enemy->isDetected()) return false;
+    return CUNYAIModule::Can_Fight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
 bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
-    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Terran_Science_Vessel || u_type == UnitTypes::Terran_Medic || u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler || u_type == UnitTypes::Zerg_Queen;
-    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons); // if we cannot attack them.
-    if (enemy.bwapi_unit_ && enemy.bwapi_unit_->exists()) {
-        return e_vunerable && enemy.bwapi_unit_->isDetected();
-    }
-    else {
-        return e_vunerable; // also if they are cloaked and can attack us.
-    }
+    if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
+    return CUNYAIModule::Can_Fight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
 bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
-    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Terran_Science_Vessel || u_type == UnitTypes::Terran_Medic || u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler || u_type == UnitTypes::Zerg_Queen;
-    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons); // if we cannot attack them.
-    if ( enemy.bwapi_unit_ && enemy.bwapi_unit_->exists() ) {
-        return e_vunerable && enemy.bwapi_unit_->isDetected();
-    }
-    else {
-        return e_vunerable; // also if they are cloaked and can attack us.
-    }
+    if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
+    return CUNYAIModule::Can_Fight(u_type, e_type);
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
 bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
-    bool has_appropriate_weapons = (e_type.isFlyer() && u_type.airWeapon() != WeaponTypes::None) || (!e_type.isFlyer() && u_type.groundWeapon() != WeaponTypes::None);
-    bool shoots_without_weapons = u_type == UnitTypes::Terran_Bunker || u_type == UnitTypes::Protoss_Carrier || u_type == UnitTypes::Terran_Science_Vessel || u_type == UnitTypes::Terran_Medic || u_type == UnitTypes::Protoss_High_Templar || u_type == UnitTypes::Protoss_Dark_Archon || u_type == UnitTypes::Zerg_Defiler || u_type == UnitTypes::Zerg_Queen;
-    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons); // if we cannot attack them.
-    if (enemy->exists()) {
-        return e_vunerable && enemy->isDetected();
-    }
-    else {
-        return e_vunerable; // also if they are cloaked and can attack us.
-    }
+    if (enemy && !enemy->isDetected()) return false;
+    return CUNYAIModule::Can_Fight(u_type, e_type);
 }
 
 // Returns True if UnitType UT can attack anything in Unit_Inventory ENEMY; 
@@ -379,7 +363,6 @@ bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory
     bool shooting_up = ut.airWeapon() != WeaponTypes::None && (enemy.stock_air_fodder_ + enemy.stock_fliers_ > 0);
     bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver || ut == UnitTypes::Zerg_Lurker) && (enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0);
     bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Terran_Science_Vessel || ut == UnitTypes::Terran_Medic || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Archon || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen;
-
     return shooting_up || shooting_down || shoots_without_weapons;
 }
 
