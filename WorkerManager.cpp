@@ -260,7 +260,7 @@ bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui
     Resource_Inventory available_fields;
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !CUNYAIModule::checkOccupiedArea(CUNYAIModule::enemy_player_model.units_, r->second.pos_) && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, r->second.pos_) && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.
