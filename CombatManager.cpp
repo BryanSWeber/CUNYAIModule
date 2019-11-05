@@ -52,6 +52,7 @@ bool CombatManager::combatScript(const Unit & u)
     if (CUNYAIModule::spamGuard(u))
     {
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
+        int u_safeAreaID = BWEM::Map::Instance().GetNearestArea(TilePosition(CUNYAIModule::current_map_inventory.safe_base_))->Id();
         Mobility mobility = Mobility(u);
         int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
@@ -61,6 +62,7 @@ bool CombatManager::combatScript(const Unit & u)
         if (e_closest && !unit_building ) { // if there are bad guys, fight. Builders do not fight.
             int distance_to_foe = static_cast<int>(e_closest->pos_.getDistance(u->getPosition()));
             int distance_to_threat = distance_to_foe;
+
             //int chargable_distance_self = CUNYAIModule::getChargableDistance(u);
             //int chargable_distance_enemy = CUNYAIModule::getChargableDistance(e_closest->bwapi_unit_);
             //int chargable_distance_max = max(chargable_distance_self, chargable_distance_enemy); // how far can you get before he shoots?
@@ -90,7 +92,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest) || u->isFlying()) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_threat > ( enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
-            bool standard_fight_reasons = fight_looks_good || (friend_loc.building_count_ > 0 && unit_will_survive) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc) || isWorkerFight(friend_loc, enemy_loc);
+            bool standard_fight_reasons = fight_looks_good || (friend_loc.building_count_ > 0 && (unit_will_survive || (u_areaID == u_safeAreaID && e_closest->areaID_ == u_safeAreaID))) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc) || isWorkerFight(friend_loc, enemy_loc);
             Unit_Inventory expanded_friend_loc;
             if (e_closest->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
