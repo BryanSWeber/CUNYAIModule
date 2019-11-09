@@ -9,7 +9,7 @@
 #include "Reservation_Manager.h"
 #include "PlayerModelManager.h"
 #include "FAP\FAP\include\FAP.hpp"
-#include "GeneticHistoryManager.h"
+#include "LearningManager.h"
 #include "TechManager.h"
 #include "WorkerManager.h"
 #include "CombatManager.h"
@@ -22,13 +22,18 @@
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
 constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.Should seperate these.
-constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
+constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
-constexpr bool LEARNING_MODE = false; //if we are exploring new positions or simply keeping existing ones.  Should almost always be on. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
-constexpr bool RANDOM_PLAN = true; // Turn off learning and always use a random set of starting conditions.
+constexpr bool RIP_REPLAY = false; // Copy replay information.
+
+constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
+constexpr bool INTERBREED_PARENTS = false && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
+constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
+constexpr bool RF_LEARNING = true; // use the random forest to filter unwanted parameters.
+constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
+
 // Remember not to use "Broodwar" in any global class constructor!
 
 class CUNYAIModule : public BWAPI::AIModule
@@ -83,7 +88,7 @@ public:
     static AssemblyManager assemblymanager;
     static Building_Gene buildorder; //
     static Reservation my_reservation;
-    static GeneticHistory gene_history;
+    static LearningManager learned_plan;
     static WorkerManager workermanager;
 
     //These measure its clock.
@@ -301,6 +306,8 @@ public:
     static bool checkDangerousArea(const UnitType ut, const Position pos);
     static bool checkDangerousArea(const UnitType ut, const int AreaID);
 
+    // Removes ( ) and " " from string.
+    static string safeString(string input);
 
 // Vision Functions
     // returns number of visible tiles.

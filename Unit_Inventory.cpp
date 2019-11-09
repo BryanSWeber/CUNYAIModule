@@ -658,14 +658,14 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
 void Unit_Inventory::printUnitInventory(const Player &player, const string &bonus)
 {
-    string start = ".\\bwapi-data\\read\\" + player->getName() + bonus + ".txt";
-    string finish = ".\\bwapi-data\\write\\" + player->getName() + bonus + ".txt";
-    if (filesystem::exists(start.c_str()))
-        filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
+    //string start = "./bwapi-data/read/" + player->getName() + bonus + ".txt";
+    //string finish = "./bwapi-data/write/" + player->getName() + bonus + ".txt";
+    //if (filesystem::exists(start.c_str()))
+    //    filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
 
 
     ifstream input; // brings in info;
-    input.open(".\\bwapi-data\\write\\" + player->getName() + bonus + ".txt", ios::in);   // for each row
+    input.open("./bwapi-data/write/" + player->getName() + bonus + ".txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -673,13 +673,12 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    if ( (csv_length > 500 && player != Broodwar->self()) || Broodwar->elapsedTime() > (60 * 30) )
+    if ( (csv_length > 500 && player != Broodwar->self()) || Broodwar->elapsedTime() > (60 * 24) )
         return;  // let's not flood the world
 
-    ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open(".\\bwapi-data\\write\\" + player->getName() + bonus + ".txt", ios_base::app);
-
     if (csv_length < 1) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open("./bwapi-data/write/" + player->getName() + bonus + ".txt", ios_base::app);
         output << "GameSeed" << ",";
         output << "GameTime" << ",";
         for (auto i : UnitTypes::allUnitTypes()) {
@@ -688,8 +687,12 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
             }
         }
         output << endl;
+        output.close();
     }
 
+
+    ofstream output; // Prints to brood war file while in the WRITE file.
+    output.open("./bwapi-data/write/" + player->getName() + bonus + ".txt", ios_base::app);
     output << Broodwar->getRandomSeed() << ",";
     output << Broodwar->elapsedTime() << ",";
     for (auto i : UnitTypes::allUnitTypes()) {
@@ -700,12 +703,12 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
     output << endl;
     output.close();
 
-    if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        string start = ".\\bwapi-data\\write\\" + player->getName() + bonus + ".txt";
-        string finish = ".\\bwapi-data\\read\\" + player->getName() + bonus + ".txt";
-        if (filesystem::exists(start.c_str()))
-            filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
-    }
+    //if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
+    //    string start = "./bwapi-data/write/" + player->getName() + bonus + ".txt";
+    //    string finish = "./bwapi-data/read/" + player->getName() + bonus + ".txt";
+    //    if (filesystem::exists(start.c_str()))
+    //        filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
+    //}
 }
 
 void Unit_Inventory::stopMine(Unit u) {

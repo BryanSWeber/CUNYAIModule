@@ -2,6 +2,7 @@
 # include "Source\CUNYAIModule.h"
 #include <numeric> // std::accumulate
 #include <fstream>
+#include <algorithm>
 
 using namespace BWAPI;
 using namespace Filter;
@@ -272,7 +273,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 }
             }
 
-            output.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
+            output.open("./bwapi-data/write/" + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
 
             output << label << " Frame Count " << Broodwar->getFrameCount() << endl;
             output << " Unit Types " << smashed_unit_types << endl;
@@ -2173,3 +2174,11 @@ bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
     if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
     return true;
 }
+
+string CUNYAIModule::safeString(string input)
+{
+    input.erase(std::remove_if(input.begin(), input.end(), [](char c) { return !isalpha(c) && !isdigit(c); }), input.end());
+
+    return input;
+}
+

@@ -6,7 +6,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Research_Inventory.h"
-#include "Source\GeneticHistoryManager.h"
+#include "Source\LearningManager.h"
 #include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
 #include "Source\\CombatManager.h"
@@ -21,6 +21,7 @@
 #include <algorithm>    // std::min_element, std::max_element
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
+#include <filesystem>
 
 // CUNYAI V2.00
 
@@ -55,12 +56,11 @@ TechManager CUNYAIModule::techmanager;
 AssemblyManager CUNYAIModule::assemblymanager;
 Building_Gene CUNYAIModule::buildorder; //
 Reservation CUNYAIModule::my_reservation;
-GeneticHistory CUNYAIModule::gene_history;
+LearningManager CUNYAIModule::learned_plan;
 WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {
-    //system(".\\bwapi-data\\read\\pytest.exe");
 
     //Initialize BWEM, must be done FIRST.
     Broodwar << "Map initialization..." << std::endl;
@@ -95,7 +95,6 @@ void CUNYAIModule::onStart()
     // Check if this is a replay
     if (Broodwar->isReplay())
     {
-
         // Announce the players in the replay
         Broodwar << "The following players are in this replay:" << std::endl;
 
@@ -125,22 +124,33 @@ void CUNYAIModule::onStart()
     tech_starved = false;
 
     //Initialize model variables.
-    gene_history = GeneticHistory();
-    gene_history.initializeHistory();
+    learned_plan = LearningManager();
+    learned_plan.confirmHistoryPresent();
+    if (GENETIC_HISTORY) {
+        learned_plan.initializeGeneticLearning();
+    }
+    if (RF_LEARNING) {
+        //.\kiwook.exe Zerg CUBOT "(4)Roadrunner.scx" history8_29_2019.txt BWKK_out.txt
+        learned_plan.initializeRFLearning();
+    }
+    if (RANDOM_PLAN) {
+        learned_plan.initializeRandomStart();
+    }
+    if (TEST_MODE) {
+        learned_plan.initializeTestStart();
+    }
 
-    gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
-    supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
-
+    gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
+    supply_ratio = learned_plan.supply_ratio_t0; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
     //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    alpha_army_original = friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
-    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
-    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
-    adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
-
-    win_rate = (1 - gene_history.loss_rate_);
-
+    alpha_army_original = friendly_player_model.spending_model_.alpha_army = learned_plan.a_army_t0; // army starved parameter.
+    alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = learned_plan.a_econ_t0; // econ starved parameter.
+    alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = learned_plan.a_tech_t0; // tech starved parameter.
+    adaptation_rate = learned_plan.r_out_t0; //rate of worker growth.
+    win_rate = (1 - learned_plan.loss_rate_);
     //get initial build order.
-    buildorder.getInitialBuildOrder(gene_history.build_order_);
+    buildorder.getInitialBuildOrder(learned_plan.build_order_t0);
+
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -161,20 +171,71 @@ void CUNYAIModule::onStart()
 
     // Testing Build Order content intenstively.
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+    output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
     string print_value = "";
-    print_value += gene_history.build_order_;
+    print_value += learned_plan.build_order_t0;
     output << "Trying Build Order" << print_value << endl;
     output.close();
 
 
+    if (RIP_REPLAY) {
+        string src = "./bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt";
+        string dst = "./bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt";
+        rename(src.c_str(), dst.c_str());
+
+        src = "./bwapi-data/read/" + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        dst = "./bwapi-data/write/" + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        rename(src.c_str(), dst.c_str());
+
+        src = "./bwapi-data/read/" + Broodwar->self()->getName() + ".txt";
+        dst = "./bwapi-data/write/" + Broodwar->self()->getName() + ".txt";
+        rename(src.c_str(), dst.c_str());
+
+        src = "./bwapi-data/read/" + Broodwar->self()->getName() + "casualties" + ".txt";
+        dst = "./bwapi-data/write/" + Broodwar->self()->getName() + "casualties" + ".txt";
+        rename(src.c_str(), dst.c_str());
+
+        if (std::filesystem::exists("./bwapi-data/read/"))
+            Broodwar << "We found a READ folder" << std::endl;
+        if (std::filesystem::exists("./bwapi-data/write/"))
+            Broodwar << "We found a WRITE folder" << std::endl;
+
+        //std::error_code ec;
+        //try {
+        //    using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
+        //    for (const auto& dirEntry : recursive_directory_iterator("./bwapi-data/read/")) {
+        //        string filename = dirEntry.path().filename().string();
+        //        Broodwar << "Copying: " << filename << std::endl;
+        //        rename(dirEntry, "./bwapi-data/write/" + filename);
+        //        //std::filesystem::copy(dirEntry, "./bwapi-data/write/" + filename, filesystem::copy_options::update_existing, ec);
+        //        //if (ec) {
+        //        //    Broodwar << ec.message() << std::endl;
+        //        //}
+        //    }
+        //}
+        //catch (...) {
+        //    Broodwar << "Couldn't list all the contents of READ." << std::endl;
+        //}
+
+
+        //std::filesystem::copy("./bwapi-data/read/", "./bwapi-data/write/", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
+
+        //if (ec) {
+        //    Broodwar << ec.message() << std::endl;
+        //    Broodwar << ec.value() << std::endl;
+        //    Broodwar << "Couldn't copy from READ to WRITE folder." << std::endl;
+        //}
+        //else {
+        //    Broodwar << "Successfully copied from READ to WRITE folder." << std::endl;
+        //}
+    }
 }
 
 void CUNYAIModule::onEnd(bool isWinner)
 {// Called when the game ends
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
+    output.open("./bwapi-data/write/history.txt", ios_base::app);
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << gas_proportion << ","
         << supply_ratio << ','
@@ -187,8 +248,8 @@ void CUNYAIModule::onEnd(bool isWinner)
         << short_delay << ','
         << med_delay << ','
         << long_delay << ','
-        << opponent_name << ','
-        << Broodwar->mapFileName().c_str() << ','
+        << CUNYAIModule::safeString(opponent_name) << ','
+        << CUNYAIModule::safeString(Broodwar->mapFileName().c_str()) << ','
         << round(enemy_player_model.average_army_ * 1000000) / 1000000 << ','
         << round(enemy_player_model.average_econ_ * 1000000) / 1000000 << ','
         << round(enemy_player_model.average_tech_ * 1000000) / 1000000 << ','
@@ -205,12 +266,18 @@ void CUNYAIModule::onEnd(bool isWinner)
     output.close();
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-        rename(".\\bwapi-data\\write\\history.txt", ".\\bwapi-data\\read\\history.txt"); // Furthermore, rename will fail if there is already an existing file.
+        try {
+            std::filesystem::copy("./bwapi-data/write/", "./bwapi-data/read/", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
+            Broodwar << "Successfully copied from WRITE to READ folder." << std::endl;
+        }
+        catch (...) {
+            //Broodwar << "Couldn't copy from WRITE to READ folder." << std::endl; // Message doesn't matter since the game is over.
+        }
     }
 
     if (!buildorder.isEmptyBuildOrder()) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+        output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
         string print_value = "";
 
         print_value += buildorder.building_gene_.front().getResearch().c_str();
@@ -295,22 +362,22 @@ void CUNYAIModule::onFrame()
     writePlayerModel(friendly_player_model, "friendly");
     writePlayerModel(enemy_player_model, "enemy");
 
-    if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
-        //Initialize model variables.
-        gene_history = GeneticHistory();
-        gene_history.initializeHistory();
+    //if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
+    //    //Initialize model variables.
+    //    gene_history = GeneticHistory();
+    //    gene_history.initializeHistory();
 
-        gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
-        supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
+    //    gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
+    //    supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
 
-                                                //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-        friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
-        friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
-        friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
-        adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
-        win_rate = (1 - gene_history.loss_rate_);
-        Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
-    }
+    //                                            //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
+    //    friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
+    //    friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
+    //    friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
+    //    adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
+    //    win_rate = (1 - gene_history.loss_rate_);
+    //    Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
+    //}
 
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
@@ -364,7 +431,7 @@ void CUNYAIModule::onFrame()
         current_map_inventory.getExpoPositions(); // prime this once on game start.
     }
 
-    if (t_game % (24 * 60) == 0) {
+    if (t_game % (24 * 60) == 0 && RIP_REPLAY) {
         friendly_player_model.units_.printUnitInventory(Broodwar->self());
         friendly_player_model.casualties_.printUnitInventory(Broodwar->self(), "casualties");
         enemy_player_model.units_.printUnitInventory(Broodwar->enemy());

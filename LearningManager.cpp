@@ -1,7 +1,7 @@
 #pragma once
 // Remember not to use "Broodwar" in any global class constructor!
 # include "Source\CUNYAIModule.h"
-# include "Source\GeneticHistoryManager.h"
+# include "Source\LearningManager.h"
 # include <fstream>
 # include <BWAPI.h>
 # include <cstdlib>
@@ -11,16 +11,39 @@
 # include <algorithm>
 # include <set>
 # include <random> // C++ base random is low quality.
-
+# include <thread>
+# include <filesystem>
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-// Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { gas_proportion_out, supply_ratio_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
-void GeneticHistory::initializeHistory() {
+bool LearningManager::confirmHistoryPresent()
+{
+    rename("./bwapi-data/read/history.txt", "./bwapi-data/write/history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
 
-    rename(".\\bwapi-data\\read\\history.txt", ".\\bwapi-data\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
+    ifstream input; // brings in info;
+    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
+    string line;
+    int csv_length = 0;
+    while (getline(input, line)) {
+        ++csv_length;
+    }
+    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+    if (csv_length < 1) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open("./bwapi-data/write/history.txt", ios_base::app);
+        output << "gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
+        output.close();
+        return false;
+    }
+
+    return true;
+}
+
+// Returns average of historical wins against that race for key heuristic values. For each specific value:[0...5] : { gas_proportion_out, supply_ratio_out, a_army_out, a_vis_out, a_econ_out, a_tech_out };
+void LearningManager::initializeGeneticLearning() {
 
     //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked.
 
@@ -48,31 +71,10 @@ void GeneticHistory::initializeHistory() {
 
     string build_order_out;
 
-
-    vector<string> build_order_list = {
-        "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
-        "drone pool drone drone ling ling ling overlord ling ling ling ling ling ling ling ling", // 5pool with some commitment.
-        "drone drone drone drone drone overlord pool drone drone", // 9pool gasless
-        "drone drone drone drone drone overlord pool drone extract drone drone", // 9pool
-        "drone drone drone drone drone overlord drone drone drone pool drone extract hatch ling ling ling speed", // 12-pool tenative.
-        "drone drone drone drone drone overlord drone drone drone hatch pool drone drone", // 12hatch-pool
-        "drone drone drone drone drone pool drone extract overlord drone ling ling ling lair drone overlord drone hydra_den hydra hydra hydra hydra ling ling ling ling lurker_tech", //1 h lurker, tenative.
-        "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling", // 2h lurker
-        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone ling ling ling drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken",  // 2 h turtle, tenative. Dies because the first hatch does not have creep by it when it is time to build.
-        //"drone drone drone drone drone overlord drone drone drone hatch pool drone drone drone drone drone drone drone creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
-        //"drone drone drone drone drone overlord drone drone drone pool creep drone sunken creep drone sunken creep drone sunken creep drone sunken evo drone creep spore", // Sunken Testing build. Superpassive.
-        "drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta", // 2h - Muta. Extra overlord is for safety.
-       "drone drone drone drone drone pool drone extract overlord drone ling ling ling hydra_den drone drone drone drone", //zerg_9pool to hydra one base.
-       "drone drone drone drone drone overlord drone drone drone hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool", //supermacro cheese
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract", //zerg_2hatchhydra -range added an overlord.
-       "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
-    };
-
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
     size_t build_order_rand = rand_bo(gen);
 
     build_order_out = build_order_list[build_order_rand];
-
 
     int selected_win_count = 0;
     int selected_lose_count = 0;
@@ -127,7 +129,7 @@ void GeneticHistory::initializeHistory() {
     loss_rate_ = 1;
 
     ifstream input; // brings in info;
-    input.open(".\\bwapi-data\\write\\history.txt", ios::in);   // for each row
+    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -135,21 +137,14 @@ void GeneticHistory::initializeHistory() {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    if (csv_length < 1) {
-        ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open(".\\bwapi-data\\write\\history.txt", ios_base::app);
-        output << "gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
-        output.close();
-    }
-
-    input.open(".\\bwapi-data\\write\\history.txt", ios::in);   // for each row
+    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
     csv_length = 0;
     while (getline(input, line)) {
         ++csv_length;
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open(".\\bwapi-data\\write\\history.txt", ios::in);
+    input.open("./bwapi-data/write/history.txt", ios::in);
     getline(input, line); //skip the first line of the document.
     csv_length--; // that means the remaining csv is shorter by 1 line.
     for (int j = 0; j < csv_length; ++j) {
@@ -336,7 +331,7 @@ void GeneticHistory::initializeHistory() {
             parent_2 = game_data_parent_match[rand_parent_2];
 
 
-            if constexpr (!LEARNING_MODE) {
+            if constexpr (!INTERBREED_PARENTS) {
                 parent_2 = parent_1;
             }
 
@@ -375,7 +370,7 @@ void GeneticHistory::initializeHistory() {
             parent_2 = game_data_parent_match[rand_parent_2];
 
 
-            if constexpr (!LEARNING_MODE) {
+            if constexpr (!INTERBREED_PARENTS) {
                 parent_2 = parent_1;
             }
 
@@ -409,22 +404,22 @@ void GeneticHistory::initializeHistory() {
     // Chance of mutation.
     if (dis(gen) > 0.95 || selected_win_count < 10) {
         // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
-        gas_proportion_out_mutate_ = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
-        supply_ratio_out_mutate_ = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
-        a_army_out_mutate_ = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
-        a_econ_out_mutate_ = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
-        a_tech_out_mutate_ = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
-        r_out_mutate_ = mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
+        gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
+        supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
+        a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
+        a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
+        a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+        r_out_t0 = mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
     }
     else {
 
-        gas_proportion_out_mutate_ = gas_proportion_out;
-        supply_ratio_out_mutate_ = supply_ratio_out;
-        a_army_out_mutate_ = a_army_out;
-        a_econ_out_mutate_ = a_econ_out;
-        a_tech_out_mutate_ = a_tech_out;
-        r_out_mutate_ = r_out;
+        gas_proportion_t0 = gas_proportion_out;
+        supply_ratio_t0 = supply_ratio_out;
+        a_army_t0 = a_army_out;
+        a_econ_t0 = a_econ_out;
+        a_tech_t0 = a_tech_out;
+        r_out_t0 = r_out;
 
     }
 
@@ -435,56 +430,170 @@ void GeneticHistory::initializeHistory() {
     //a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
 
     // Normalize the CD part of the gene with CAPITAL AUGMENTING TECHNOLOGY.
-    double a_tot = a_army_out_mutate_ + a_econ_out_mutate_;
-    a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
-    a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
-    a_tech_out_mutate_ = a_tech_out_mutate_; // this is no longer normalized.
-    build_order_ = build_order_out;
+    double a_tot = a_army_t0 + a_econ_t0;
+    a_army_t0 = a_army_t0 / a_tot;
+    a_econ_t0 = a_econ_t0 / a_tot;
+    a_tech_t0 = a_tech_t0; // this is no longer normalized.
+    build_order_t0 = build_order_out;
 
     //if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
     //    && gas_proportion_out_mutate_ < 0.55 && gas_proportion_out_mutate_ > 0.40 && supply_ratio_out_mutate_ < 0.55 && supply_ratio_out_mutate_ > 0.20) {
     //    break; // if we have an interior solution, let's use it, if not, we try again.
     //}
     //}
+}
 
-    // Overwrite whatever you previously wanted if we're using "test mode".
-    if constexpr (TEST_MODE) {
-        // Values altered
-        gas_proportion_out_mutate_ = 0.3021355;
-        supply_ratio_out_mutate_ = 0.35;
-        a_army_out_mutate_ = 0.511545;
-        a_econ_out_mutate_ = 0.488455;
-        a_tech_out_mutate_ = 0.52895;
-        r_out_mutate_ = 0.5097605;
+void LearningManager::initializeRFLearning()
+{
+    string entry; // entered string from stream
 
-        build_order_ = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling"; // 2h lurker; //Standard Opener
+    string rf_executable = ".\\bwapi-data\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
+    string e_race = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    string e_name = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+    string e_map = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
+    string in_file = "bwapi-data\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
+    string out_file = "bwapi-data\\write\\BWKK" + to_string(Broodwar->getRandomSeed()) + ".txt";
+    const char start_quote = '^"';
+    const char end_quote = '^"'; // this only exists because it is a zoo.
+    const char space = ' ';
 
+    string system_command = rf_executable + space + e_race + space + e_name + space + e_map + space + in_file + space + out_file; // gotta sterilize the inputs.
+
+
+    Broodwar << "Sending command: " << system_command << endl;
+    int i = system(system_command.c_str()); // we run the RF in kiwook's script.  We do this first because the delay causes SC to clear the other messages.
+    Broodwar << "Result: " << i << endl;
+
+    Broodwar << filesystem::current_path().string() << endl;
+
+    if (std::filesystem::exists(rf_executable.c_str())) {
+        Broodwar << "The kiwook.exe file is where I would expect it to be, at: " << rf_executable << endl;
+    }
+    else {
+        Broodwar << "The kiwook.exe file is missing from: " << rf_executable << endl;
     }
 
-    //Otherwise, use random build order and values from above
-    if constexpr (RANDOM_PLAN) {
+    Broodwar << "Enemy race (arg1) is " << e_race << endl;
+    Broodwar << "Enemy name (arg2) is " << e_name << endl;
+    Broodwar << "Map File Name (arg3) is " << e_map << endl;
+    Broodwar << "In File (arg4) is " << in_file << endl;
+    Broodwar << "Out File (arg5) is " << out_file << endl;
 
-        gas_proportion_out = dis(gen);
-        supply_ratio_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
-                                    // the values below will be normalized to 1.
-        a_army_out = dis(gen);
-        a_econ_out = dis(gen);
-        a_tech_out = dis(gen) * 3;
-        //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
-        r_out = dis(gen);
-        //No longer used.
-        a_vis_out = dis(gen);
-        std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
-        size_t build_order_rand = rand_bo(gen);
-
-        build_order_out = build_order_list[build_order_rand];
-
-        gas_proportion_out_mutate_ = gas_proportion_out;
-        supply_ratio_out_mutate_ = supply_ratio_out;
-        a_army_out_mutate_ = a_army_out;
-        a_econ_out_mutate_ = 1 - a_army_out;
-        a_tech_out_mutate_ = a_tech_out;
-        r_out_mutate_ = r_out;
-        build_order_ = build_order_list[build_order_rand];
+    string history_file = ".\\" + in_file; // must put the relative directory back in.
+    if (std::filesystem::exists(history_file.c_str())) {
+        Broodwar << "The history file is where I would expect it to be, at: " << history_file << endl;
     }
+    else {
+        Broodwar << "The history file is missing from: " << history_file << endl;
+    }
+
+    string BWKK_learning_plan = ".\\" + out_file; // must put the relative directory back in.
+
+    if (std::filesystem::exists(BWKK_learning_plan.c_str())) {
+
+        Broodwar << "I seem to have found the RF plan" << endl;
+
+        ifstream input; // brings in info;
+        input.open(BWKK_learning_plan, ios::in);
+        string line;
+        getline(input, line); //skip the first line of the document.
+
+        // The ugly tuple. This section should be cleaned up eventually.
+        double gas_proportion_total;
+        double supply_ratio_total;
+        double a_army_total;
+        double a_econ_total;
+        double a_tech_total;
+        double r_total;
+        string race_total;
+        string name_total;
+        string map_name_total;
+        double enemy_average_army_;
+        double enemy_average_econ_;
+        double enemy_average_tech_;
+        string build_order_total;
+        double detector_count;
+        double fliers;
+        int win_count;
+        int attempt_count;
+
+        getline(input, entry, ',');
+        gas_proportion_t0 = gas_proportion_total = stod(entry);
+        getline(input, entry, ',');
+        supply_ratio_t0 = supply_ratio_total = stod(entry);
+        getline(input, entry, ',');
+        a_army_t0 = a_army_total = stod(entry);
+        getline(input, entry, ',');
+        a_econ_t0 = a_econ_total = stod(entry);
+        getline(input, entry, ',');
+        a_tech_t0 = a_tech_total = stod(entry);
+        getline(input, entry, ',');
+        r_out_t0 = r_total = stod(entry);
+        getline(input, entry, ',');
+        build_order_total = entry;
+
+        getline(input, entry, ',');
+        race_total = entry;
+        getline(input, entry, ',');
+        name_total = entry;
+        getline(input, entry, ',');
+        map_name_total = entry;
+        getline(input, entry, ',');
+        enemy_average_army_ = stod(entry);
+        getline(input, entry, ',');
+        enemy_average_econ_ = stod(entry);
+        getline(input, entry, ',');
+        enemy_average_tech_ = stod(entry);
+
+
+        getline(input, entry, ',');
+        detector_count = stod(entry);
+        getline(input, entry, ',');
+        fliers = stod(entry);
+        getline(input, entry, ',');
+        win_count = stoi(entry);
+
+        getline(input, entry); //diff. End of line char, not ','
+        attempt_count = stoi(entry);
+
+        input.close();
+    }
+    else {
+        Broodwar << "Blast, I can't seem to find the RF plan: " << BWKK_learning_plan << endl;
+        initializeRandomStart();
+    }
+
+}
+
+
+// Overwrite whatever you previously wanted if we're using "test mode".
+void LearningManager::initializeTestStart(){
+    // Values altered
+    gas_proportion_t0 = 0.3021355;
+    supply_ratio_t0 = 0.35;
+    a_army_t0 = 0.511545;
+    a_econ_t0 = 0.488455;
+    a_tech_t0 = 0.52895;
+    r_out_t0 = 0.5097605;
+
+    build_order_t0 = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling"; // 2h lurker; //Standard Opener
+
+}
+
+//Otherwise, use random build order and values from above
+void LearningManager::initializeRandomStart(){
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+
+    std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
+    size_t build_order_rand = rand_bo(gen);
+
+    gas_proportion_t0 = dis(gen);
+    supply_ratio_t0 = dis(gen);
+    a_army_t0 = dis(gen);
+    a_econ_t0 = 1 - a_army_t0;
+    a_tech_t0 = dis(gen) * 3;
+    r_out_t0 = dis(gen);
+    build_order_t0 = build_order_list[build_order_rand];
 }

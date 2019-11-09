@@ -1501,7 +1501,7 @@ void Building_Gene::clearRemainingBuildOrder(const bool diagnostic) {
 
             if (building_gene_.front().getUnit().supplyRequired() > Broodwar->self()->supplyTotal() - Broodwar->self()->supplyTotal()) {
                 ofstream output; // Prints to brood war file while in the WRITE file.
-                output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+                output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
                 string print_value = "";
 
                 //print_value += building_gene_.front().getResearch().c_str();
@@ -1514,7 +1514,7 @@ void Building_Gene::clearRemainingBuildOrder(const bool diagnostic) {
             }
             else {
                 ofstream output; // Prints to brood war file while in the WRITE file.
-                output.open(".\\bwapi-data\\write\\BuildOrderFailures.txt", ios_base::app);
+                output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
                 string print_value = "";
 
                 print_value += building_gene_.front().getResearch().c_str();

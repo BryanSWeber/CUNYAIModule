@@ -363,7 +363,7 @@ void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCe
     ss << WalkPosition(newCenter);
     string base = ss.str();
 
-    ifstream newVeins(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+    ifstream newVeins("./bwapi-data/write/" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newVeins)         //The file does not exist, we need to write it.
     {
 
@@ -1335,11 +1335,11 @@ void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosit
     // Now add the last element with no delimiter
     merged_holding_vector << holding_vector.back();
 
-    ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+    ifstream newMap("./bwapi-data/write/" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (!newMap)
     {
         ofstream map;
-        map.open(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
+        map.open("./bwapi-data/write/" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::app);
         //faster write of whole vector.
         map << merged_holding_vector.str() << endl;
 
@@ -1357,7 +1357,7 @@ void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &ce
     string base = ss.str();
     mapin.clear();
 
-    ifstream newMap(".\\bwapi-data\\write\\" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+    ifstream newMap("./bwapi-data/write/" + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
     if (newMap)
     {
         for (int i = 0; i < Broodwar->mapWidth() * 4; i++)
