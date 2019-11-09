@@ -122,8 +122,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel_poor_target_atk = false;
     bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? 10 : 10 * log(helpful_e - helpful_u);
-
+    double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION/12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
+    
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
     Unit_Inventory ThreateningTargets;
