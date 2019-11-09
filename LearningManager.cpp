@@ -530,7 +530,7 @@ void LearningManager::initializeRFLearning()
         getline(input, entry, ',');
         r_out_t0 = r_total = stod(entry);
         getline(input, entry, ',');
-        build_order_total = entry;
+        build_order_t0 = build_order_total = entry;
 
         getline(input, entry, ',');
         race_total = entry;

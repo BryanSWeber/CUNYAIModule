@@ -150,7 +150,7 @@ void CUNYAIModule::onStart()
     win_rate = (1 - learned_plan.loss_rate_);
     //get initial build order.
     buildorder.getInitialBuildOrder(learned_plan.build_order_t0);
-
+    Broodwar << "The build order is: " << learned_plan.build_order_t0 << endl;
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -229,6 +229,7 @@ void CUNYAIModule::onStart()
         //    Broodwar << "Successfully copied from READ to WRITE folder." << std::endl;
         //}
     }
+
 }
 
 void CUNYAIModule::onEnd(bool isWinner)
@@ -429,6 +430,25 @@ void CUNYAIModule::onFrame()
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
         current_map_inventory.getExpoPositions(); // prime this once on game start.
+
+
+        if (INF_MONEY) {
+            Broodwar->sendText("show me the money");
+        }
+        if (MAP_REVEAL) {
+            Broodwar->sendText("black sheep wall");
+        }
+        if (NEVER_DIE) {
+            Broodwar->sendText("power overwhelming");
+        }
+        if (INSTANT_WIN) {
+            Broodwar->sendText("there is no cow level");
+        }
+
+        if (!(INF_MONEY || MAP_REVEAL || NEVER_DIE || INSTANT_WIN)) {
+            Broodwar->sendText("Cough Cough: Power Overwhelming! (Please work!)");
+        }
+
     }
 
     if (t_game % (24 * 60) == 0 && RIP_REPLAY) {

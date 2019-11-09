@@ -2177,7 +2177,7 @@ bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
 
 string CUNYAIModule::safeString(string input)
 {
-    input.erase(std::remove_if(input.begin(), input.end(), [](char c) { return !isalpha(c) && !isdigit(c); }), input.end());
+    input.erase(std::remove_if(input.begin(), input.end(), [](char c) { return !isalpha(c); }), input.end());
 
     return input;
 }
