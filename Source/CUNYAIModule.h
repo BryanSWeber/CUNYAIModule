@@ -25,14 +25,21 @@ constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
+constexpr int FAP_SIM_DURATION = 24 * 4; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 
-constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
-constexpr bool INTERBREED_PARENTS = false && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
+constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
+constexpr bool INTERBREED_PARENTS = true && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool RF_LEARNING = true; // use the random forest to filter unwanted parameters.
+constexpr bool RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
+
+//Cheats:  Like, literal single player cheats.
+constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
+constexpr bool NEVER_DIE = false; // just types in power overwhelming for local testing.
+constexpr bool INF_MONEY = false; // just types in show me the money for local testing.
+constexpr bool INSTANT_WIN = false; // just types in there is no cow level for local testing.
+
 
 // Remember not to use "Broodwar" in any global class constructor!
 
