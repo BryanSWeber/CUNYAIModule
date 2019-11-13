@@ -62,9 +62,9 @@ WorkerManager CUNYAIModule::workermanager;
 void CUNYAIModule::onStart()
 {
 
-    //Initialize BWEM, must be done FIRST.
     Broodwar << "Map initialization..." << std::endl;
 
+    //Initialize BWEM, must be done FIRST.
     bwemMap.Initialize(BWAPI::BroodwarPtr);
     bwemMap.EnableAutomaticPathAnalysis();
     bool startingLocationsOK = bwemMap.FindBasesForStartingLocations();
@@ -495,7 +495,7 @@ void CUNYAIModule::onFrame()
 
         bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor) == 0;
         if (need_gas_now && no_extractor) {
-            //buildorder.clearRemainingBuildOrder();
+            buildorder.clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
         }
     }
@@ -842,11 +842,12 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         }
 
         if (!buildorder.ever_clear_) {
+            auto stored_unit = friendly_player_model.units_.getStoredUnit(unit);
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-            else if (unit->getOrder() == Orders::ZergBuildingMorph && unit->isMorphing()) {
-                //buildorder.clearRemainingBuildOrder( false );
+            else if (unit->getType() == UnitTypes::Zerg_Drone || stored_unit && (stored_unit->phase_ == Stored_Unit::Phase::Building || stored_unit->phase_ == Stored_Unit::Phase::Morphing)) {
+                buildorder.clearRemainingBuildOrder( false );
             }
         }
 

@@ -25,7 +25,7 @@ constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
-constexpr int FAP_SIM_DURATION = 24 * 4; // set FAP sim durations.
+constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
