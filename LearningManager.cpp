@@ -56,7 +56,7 @@ void LearningManager::initializeGeneticLearning() {
     // the values below will be normalized to 1.
     double a_army_out = dis(gen);
     double a_econ_out = dis(gen);
-    double a_tech_out = dis(gen);
+    double a_tech_out = 3*dis(gen);
     //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
     double r_out = dis(gen);
     //No longer used.
@@ -339,7 +339,7 @@ void LearningManager::initializeGeneticLearning() {
             supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
             a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
             a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
-            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
+            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
             r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
         else { // we must need diversity.
@@ -378,7 +378,7 @@ void LearningManager::initializeGeneticLearning() {
             supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
             a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
             a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
-            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 1.);
+            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
             r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
         }
         else { // we must need diversity.
@@ -408,7 +408,7 @@ void LearningManager::initializeGeneticLearning() {
         supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
         a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
-        a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 1.) : a_tech_out;
+        a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 3.) : a_tech_out;
         r_out_t0 = mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
 
     }
@@ -453,8 +453,6 @@ void LearningManager::initializeRFLearning()
     string e_map = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
     string in_file = "bwapi-data\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
     string out_file = "bwapi-data\\write\\BWKK" + to_string(Broodwar->getRandomSeed()) + ".txt";
-    const char start_quote = '^"';
-    const char end_quote = '^"'; // this only exists because it is a zoo.
     const char space = ' ';
 
     string system_command = rf_executable + space + e_race + space + e_name + space + e_map + space + in_file + space + out_file; // gotta sterilize the inputs.
