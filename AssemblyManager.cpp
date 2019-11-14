@@ -559,7 +559,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
     if (u_type == UnitTypes::Zerg_Larva && morph_canidate->getHatchery()) wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3;
     bool floating_tech_edge_cases = CUNYAIModule::tech_starved && 
         ((Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300) || 
-        (wasting_larva_soon && CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative && (canMakeCUNY(UnitTypes::Zerg_Hydralisk, true, morph_canidate) || canMakeCUNY(UnitTypes::Zerg_Mutalisk, true, morph_canidate)))); // These two units are pretty much always safe.
+        (wasting_larva_soon && CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative)); // These two units are pretty much always safe.
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || floating_tech_edge_cases) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
