@@ -80,6 +80,18 @@ int main(int argc, const char* argv[])
                 case EventType::NukeDetect:
                     myBot->onNukeDetect(e.getPosition());
                     break;
+                case EventType::UnitDiscover:
+                    myBot->onUnitDiscover(e.getUnit());
+                    break;
+                case EventType::UnitEvade:
+                    myBot->onUnitEvade(e.getUnit());
+                    break;
+                case EventType::UnitShow:
+                    myBot->onUnitShow(e.getUnit());
+                    break;
+                case EventType::UnitHide:
+                    myBot->onUnitHide(e.getUnit());
+                    break;
                 case EventType::UnitCreate:
                     myBot->onUnitCreate(e.getUnit());
                     break;
@@ -89,24 +101,19 @@ int main(int argc, const char* argv[])
                 case EventType::UnitMorph:
                     myBot->onUnitMorph(e.getUnit());
                     break;
-                case EventType::UnitShow:
-                    if (!Broodwar->isReplay())
-                        Broodwar->sendText("A %s [%p] has been spotted at (%d,%d)", e.getUnit()->getType().c_str(), e.getUnit(), e.getUnit()->getPosition().x, e.getUnit()->getPosition().y);
-                    break;
-                case EventType::UnitHide:
-                    if (!Broodwar->isReplay())
-                        Broodwar->sendText("A %s [%p] was last seen at (%d,%d)", e.getUnit()->getType().c_str(), e.getUnit(), e.getUnit()->getPosition().x, e.getUnit()->getPosition().y);
-                    break;
                 case EventType::UnitRenegade:
                     myBot->onUnitRenegade(e.getUnit());
                     break;
                 case EventType::SaveGame:
                     myBot->onSaveGame(e.getText().c_str());
                     break;
+                case EventType::UnitComplete:
+                    myBot->onUnitComplete(e.getUnit());
+                    break;
                 }
             }
-
-            myBot->onFrame(); // has catch in it for when it needs to run.
+            if (BWAPI::Broodwar->getFrameCount() % BWAPI::Broodwar->getLatencyFrames() / 2 == BWAPI::Broodwar->getLatencyFrames() / 2 - 1)
+                myBot->onFrame(); // has catch in it for when it needs to run.
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
