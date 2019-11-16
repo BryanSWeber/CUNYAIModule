@@ -995,6 +995,3 @@ void CUNYAIModule::onSaveGame(std::string gameName)
 void CUNYAIModule::onUnitComplete(BWAPI::Unit unit)
 {
 }
-
-
-CUNYAIModule CUNYAImodule;

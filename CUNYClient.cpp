@@ -55,7 +55,6 @@ int main(int argc, const char* argv[])
         }
         else
         {
-            myBot->onStart();
         }
         while (Broodwar->isInGame())
         {
@@ -63,6 +62,9 @@ int main(int argc, const char* argv[])
             {
                 switch (e.getType())
                 {
+                case EventType::MatchStart:
+                    myBot = std::make_unique<CUNYAIModule>();
+                    myBot->onStart();
                 case EventType::MatchEnd:
                     myBot->onEnd(e.isWinner());
                     break;
@@ -101,12 +103,10 @@ int main(int argc, const char* argv[])
                 case EventType::SaveGame:
                     myBot->onSaveGame(e.getText().c_str());
                     break;
-                default:
-                    myBot->onFrame();
-
                 }
             }
 
+            myBot->onFrame(); // has catch in it for when it needs to run.
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {

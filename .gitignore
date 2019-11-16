@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 lib/BWEM-Release.lib
 *.lib
+lib/BWEM-Release.lib
