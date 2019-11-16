@@ -112,7 +112,7 @@ int main(int argc, const char* argv[])
                     break;
                 }
             }
-            if (BWAPI::Broodwar->getFrameCount() % BWAPI::Broodwar->getLatencyFrames() / 2 == BWAPI::Broodwar->getLatencyFrames() / 2 - 1)
+            //if (BWAPI::Broodwar->getFrameCount() % BWAPI::Broodwar->getLatencyFrames() / 2 == BWAPI::Broodwar->getLatencyFrames() / 2 - 1)
                 myBot->onFrame(); // has catch in it for when it needs to run.
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
