@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BWAPILIB", "..\bwapi\bwapi\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BWEM", "..\BWEM-community\BWEM\BWEM.vcxproj", "{EE73B286-B35D-4387-9EEA-5B8C5192D068}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BWAPIClient", "..\bwapi\Release_Binary\BWAPIClient\BWAPIClient.vcxproj", "{C99ABF61-6716-4FC0-AA77-9A136EA61680}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoCopy|x64 = Debug_NoCopy|x64
@@ -95,6 +97,28 @@ Global
 		{EE73B286-B35D-4387-9EEA-5B8C5192D068}.Release|x64.ActiveCfg = Release|Win32
 		{EE73B286-B35D-4387-9EEA-5B8C5192D068}.Release|x86.ActiveCfg = Release|Win32
 		{EE73B286-B35D-4387-9EEA-5B8C5192D068}.Release|x86.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_NoCopy|x64.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_NoCopy|x64.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_NoCopy|x86.ActiveCfg = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_NoCopy|x86.Build.0 = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_Pipeline|x64.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_Pipeline|x64.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_Pipeline|x86.ActiveCfg = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug_Pipeline|x86.Build.0 = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug|x64.ActiveCfg = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug|x86.ActiveCfg = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Debug|x86.Build.0 = Debug|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_NoCopy|x64.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_NoCopy|x64.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_NoCopy|x86.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_NoCopy|x86.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_Pipeline|x64.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_Pipeline|x64.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_Pipeline|x86.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release_Pipeline|x86.Build.0 = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release|x64.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release|x86.ActiveCfg = Release|Win32
+		{C99ABF61-6716-4FC0-AA77-9A136EA61680}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

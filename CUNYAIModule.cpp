@@ -674,13 +674,22 @@ void CUNYAIModule::onFrame()
 
 void CUNYAIModule::onSendText(std::string text)
 {
-
-    // Send the text to the game if it is not being processed.
-    Broodwar->sendText("%s", text.c_str());
-
-    // Make sure to use %s and pass the text as a parameter,
-    // otherwise you may run into problems when you use the %(percent) character!
-
+    if (text == "/show bullets")
+    {
+        Diagnostics::drawBullets();
+    }
+    else if (text == "/show players")
+    {
+        Diagnostics::showPlayers();
+    }
+    else if (text == "/show forces")
+    {
+        Diagnostics::showForces();
+    }
+    else if (text == "/show visibility")
+    {
+        Diagnostics::drawVisibilityData();
+    }
 }
 
 void CUNYAIModule::onReceiveText(BWAPI::Player player, std::string text)
@@ -698,7 +707,6 @@ void CUNYAIModule::onPlayerLeft(BWAPI::Player player)
 
 void CUNYAIModule::onNukeDetect(BWAPI::Position target)
 {
-
     // Check if the target is a valid position
     if (target)
     {
@@ -827,7 +835,6 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
     }
 
 }
-
 
 void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf inside here!
 {
@@ -988,3 +995,6 @@ void CUNYAIModule::onSaveGame(std::string gameName)
 void CUNYAIModule::onUnitComplete(BWAPI::Unit unit)
 {
 }
+
+
+CUNYAIModule CUNYAImodule;

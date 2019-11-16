@@ -12,6 +12,11 @@ struct Diagnostics {
     static void drawAllFutureDeaths(const Unit_Inventory ui);
     static void drawAllLastDamage(const Unit_Inventory ui);
     static void drawAllSpamGuards(const Unit_Inventory ui);
+    static void drawStats();
+    static void drawBullets();
+    static void drawVisibilityData();
+    static void showPlayers();
+    static void showForces();
     static void drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
     static void drawTiles(const Position & screen_pos, Color col);
     static void watchTile(TilePosition & tp);

@@ -19,12 +19,12 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
@@ -70,7 +70,7 @@
     <PreLinkEvent />
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalDependencies>
@@ -96,7 +96,7 @@
     <PreLinkEvent />
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
@@ -112,6 +112,7 @@
     <ClCompile Include="CobbDouglas.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="CUNYAIModule.cpp" />
+    <ClCompile Include="CUNYClient.cpp" />
     <ClCompile Include="Diagnostics.cpp" />
     <ClCompile Include="Map_Inventory.cpp" />
     <ClCompile Include="PlayerModelManager.cpp" />
@@ -158,6 +159,9 @@
   <ItemGroup>
     <ProjectReference Include="..\bwapi\bwapi\BWAPILIB\BWAPILIB.vcxproj">
       <Project>{843656fd-9bfd-47bf-8460-7bfe9710ea2c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\bwapi\Release_Binary\BWAPIClient\BWAPIClient.vcxproj">
+      <Project>{c99abf61-6716-4fc0-aa77-9a136ea61680}</Project>
     </ProjectReference>
     <ProjectReference Include="..\BWEM-community\BWEM\BWEM.vcxproj">
       <Project>{ee73b286-b35d-4387-9eea-5b8c5192d068}</Project>

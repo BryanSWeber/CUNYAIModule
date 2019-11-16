@@ -68,6 +68,9 @@
     <ClCompile Include="LearningManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="CUNYClient.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />

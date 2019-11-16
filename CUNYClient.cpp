@@ -1,0 +1,122 @@
+#include <BWAPI.h>
+#include <BWAPI/Client.h>
+#include "Source/CUNYAIModule.h"
+
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <string>
+
+using namespace BWAPI;
+
+std::unique_ptr<CUNYAIModule> myBot;
+
+void reconnect()
+{
+    while (!BWAPIClient.connect())
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds{ 1000 });
+    }
+}
+
+int main(int argc, const char* argv[])
+{
+    std::cout << "Connecting..." << std::endl;;
+    reconnect();
+    while (true)
+    {
+        std::cout << "waiting to enter match" << std::endl;
+        while (!Broodwar->isInGame())
+        {
+            BWAPI::BWAPIClient.update();
+            if (!BWAPI::BWAPIClient.isConnected())
+            {
+                std::cout << "Reconnecting..." << std::endl;;
+                reconnect();
+            }
+        }
+        std::cout << "starting match!" << std::endl;
+        Broodwar->sendText("Hello world!");
+        Broodwar << "The map is " << Broodwar->mapName() << ", a " << Broodwar->getStartLocations().size() << " player map" << std::endl;
+        // Enable some cheat flags
+        Broodwar->enableFlag(Flag::UserInput);
+        // Uncomment to enable complete map information
+        //Broodwar->enableFlag(Flag::CompleteMapInformation);
+
+        if (Broodwar->isReplay())
+        {
+            Broodwar << "The following players are in this replay:" << std::endl;;
+            Playerset players = Broodwar->getPlayers();
+            for (auto p : players)
+            {
+                if (!p->getUnits().empty() && !p->isNeutral())
+                    Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
+            }
+        }
+        else
+        {
+            myBot->onStart();
+        }
+        while (Broodwar->isInGame())
+        {
+            for (auto &e : Broodwar->getEvents())
+            {
+                switch (e.getType())
+                {
+                case EventType::MatchEnd:
+                    myBot->onEnd(e.isWinner());
+                    break;
+                case EventType::SendText:
+                    myBot->onSendText(e.getText());
+                    break;
+                case EventType::ReceiveText:
+                    myBot->onReceiveText(e.getPlayer(), e.getText());
+                    break;
+                case EventType::PlayerLeft:
+                    myBot->onPlayerLeft(e.getPlayer());
+                    break;
+                case EventType::NukeDetect:
+                    myBot->onNukeDetect(e.getPosition());
+                    break;
+                case EventType::UnitCreate:
+                    myBot->onUnitCreate(e.getUnit());
+                    break;
+                case EventType::UnitDestroy:
+                    myBot->onUnitDestroy(e.getUnit());
+                    break;
+                case EventType::UnitMorph:
+                    myBot->onUnitMorph(e.getUnit());
+                    break;
+                case EventType::UnitShow:
+                    if (!Broodwar->isReplay())
+                        Broodwar->sendText("A %s [%p] has been spotted at (%d,%d)", e.getUnit()->getType().c_str(), e.getUnit(), e.getUnit()->getPosition().x, e.getUnit()->getPosition().y);
+                    break;
+                case EventType::UnitHide:
+                    if (!Broodwar->isReplay())
+                        Broodwar->sendText("A %s [%p] was last seen at (%d,%d)", e.getUnit()->getType().c_str(), e.getUnit(), e.getUnit()->getPosition().x, e.getUnit()->getPosition().y);
+                    break;
+                case EventType::UnitRenegade:
+                    myBot->onUnitRenegade(e.getUnit());
+                    break;
+                case EventType::SaveGame:
+                    myBot->onSaveGame(e.getText().c_str());
+                    break;
+                default:
+                    myBot->onFrame();
+
+                }
+            }
+
+            BWAPI::BWAPIClient.update();
+            if (!BWAPI::BWAPIClient.isConnected())
+            {
+                std::cout << "Reconnecting..." << std::endl;
+                reconnect();
+            }
+        }
+        std::cout << "Game ended" << std::endl;
+    }
+    std::cout << "Press ENTER to continue..." << std::endl;
+    std::cin.ignore();
+    return 0;
+}
