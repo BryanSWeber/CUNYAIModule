@@ -631,14 +631,14 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None)  up_shooting_class = true;
         if (potential_type.first.groundWeapon() != WeaponTypes::None)  down_shooting_class = true;
-        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_)  flying_class = true;
+        if (potential_type.first.isFlyer())  flying_class = true;
     }
 
     // Identify desirable unit classes prior to simulation.
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
-        if (potential_type.first.isFlyer() && (CUNYAIModule::friendly_player_model.e_has_air_vunerability_) && flying_class) it_needs_to_fly = true;
+        if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
         if (potential_type.first == UnitTypes::Zerg_Scourge && CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
     }
 

@@ -130,6 +130,7 @@ struct Map_Inventory {
     int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
     int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const;
     bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const;
+    bool Map_Inventory::isOnIsland(const Position A) const;
     int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
 
     // gets the radial distance of all units to the enemy base.
