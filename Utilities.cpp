@@ -79,67 +79,25 @@ bool CUNYAIModule::isFightingUnit(const Unit &unit)
     {
         return false;
     }
+
     UnitType u_type = unit->getType();
+    return isFightingUnit(u_type);
 
-    // no workers or buildings allowed. Or overlords, or larva..
-    if (u_type.isWorker() ||
-        //u_type.isBuilding() ||
-        u_type == BWAPI::UnitTypes::Zerg_Larva ||
-        u_type == BWAPI::UnitTypes::Zerg_Overlord )
-    {
-        return false;
-    }
-
-    // This is a last minute check for psi-ops. I removed a bunch of these. Observers and medics are not combat units per se.
-    if (u_type.canAttack() ||
-        u_type.maxEnergy() > 0 ||
-        u_type.isDetector() ||
-        u_type == BWAPI::UnitTypes::Terran_Bunker ||
-        u_type.spaceProvided() ||
-        u_type == BWAPI::UnitTypes::Protoss_Carrier ||
-        u_type == BWAPI::UnitTypes::Protoss_Reaver)
-    {
-        return true;
-    }
-
-    return false;
 }
 
 // Checks if a stored unit is a combat unit.
 bool CUNYAIModule::isFightingUnit(const Stored_Unit &unit)
 {
-    if (!unit.valid_pos_ || unit.type_ == UnitTypes::Spell_Scanner_Sweep)
-    {
+    if (!unit.valid_pos_)
         return false;
-    }
-
-    // no workers, overlords, or larva...
-    if (unit.type_.isWorker() ||
-        //unit.type_.isBuilding() ||
-        unit.type_ == BWAPI::UnitTypes::Zerg_Larva ||
-        unit.type_ == BWAPI::UnitTypes::Zerg_Overlord)
-    {
-        return false;
-    }
-
-    // This is a last minute check for psi-ops or transports.
-    if (unit.type_.canAttack() ||
-        unit.type_.maxEnergy() > 0 ||
-        unit.type_.isDetector() ||
-        unit.type_ == BWAPI::UnitTypes::Terran_Bunker ||
-        unit.type_.spaceProvided() ||
-        unit.type_ == BWAPI::UnitTypes::Protoss_Carrier ||
-        unit.type_ == BWAPI::UnitTypes::Protoss_Reaver)
-    {
-        return true;
-    }
-
-    return false;
+    return isFightingUnit(unit.type_);
 }
 
 // Checks if a stored unit is a combat unit.
 bool CUNYAIModule::isFightingUnit(const UnitType &unittype)
 {
+    if (unittype == UnitTypes::Spell_Scanner_Sweep)
+        return false;
 
     // no workers, overlords, or larva...
     if (unittype.isWorker() ||
@@ -374,16 +332,6 @@ bool CUNYAIModule::isInDanger(const UnitType &ut, const Unit_Inventory enemy) {
     bool shoots_without_weapons = enemy.stock_psion_ > 0;
 
     return shooting_up || shooting_down || shoots_without_weapons;
-}
-
-bool CUNYAIModule::Can_Fight_Type(UnitType unittype, UnitType enemytype)
-{
-    bool has_appropriate_weapons = (enemytype.isFlyer() && unittype.airWeapon() != WeaponTypes::None) || (!enemytype.isFlyer() && unittype.groundWeapon() != WeaponTypes::None);
-    bool shoots_without_weapons = unittype == UnitTypes::Terran_Bunker || unittype == UnitTypes::Protoss_Carrier || unittype == UnitTypes::Terran_Science_Vessel || unittype == UnitTypes::Terran_Medic || unittype == UnitTypes::Protoss_High_Templar || unittype == UnitTypes::Protoss_Dark_Archon || unittype == UnitTypes::Zerg_Defiler || unittype == UnitTypes::Zerg_Queen;
-    bool e_vunerable = (has_appropriate_weapons || shoots_without_weapons); // if we cannot attack them.
-
-    return e_vunerable; // also if they are cloaked and can attack us.
-
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
@@ -963,8 +911,8 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 
     if ( !ui.unit_map_.empty() ) {
         for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
-            can_attack = Can_Fight_Type(u_type, e->second.type_) && e->second.bwapi_unit_;
-            can_be_attacked_by = Can_Fight_Type(e->second.type_, u_type);
+            can_attack = Can_Fight(u_type, e->second.type_) && e->second.bwapi_unit_;
+            can_be_attacked_by = Can_Fight(e->second.type_, u_type);
             if ( (can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = static_cast<int>(e->second.pos_.getDistance( origin ));
                 if ( temp_dist <= min_dist ) {
@@ -1092,14 +1040,14 @@ Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inv
     Unit_Inventory ui_out;
     if (air_attack) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Overlord)) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Overlord)) {
                 ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
             }
         }
     }
     else {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight_Type(e->second.type_, UnitTypes::Zerg_Drone)) {
+            if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Drone)) {
                 ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
             }
         }

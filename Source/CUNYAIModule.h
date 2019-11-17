@@ -168,8 +168,6 @@ public:
     static bool Can_Fight(Stored_Unit unit, Unit enemy);
     static bool canContributeToFight(const UnitType & ut, const Unit_Inventory enemy);
     static bool isInDanger(const UnitType & ut, const Unit_Inventory enemy);
-    // Can_Fight_Type does NOT check cloaked status.
-    static bool Can_Fight_Type(UnitType unittype, UnitType enemytype);
 
     // Returns top speed of unit with upgrades.
     static double getProperSpeed(const Unit u);
