@@ -179,7 +179,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : DiveableTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
             if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -192,7 +192,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : ThreateningTargets.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
             if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -205,7 +205,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : SecondOrderThreats.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_);
+            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
             if (dist_to_enemy < temp_max_divable && baseline_requirement) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
@@ -217,7 +217,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (!target) { // repeated calls should be functionalized.
         for (auto t : LowPriority.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
-            if (dist_to_enemy < temp_max_divable && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight_Type(u_type_, t.second.type_)) {
+            if (dist_to_enemy < temp_max_divable && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_)) {
                 temp_max_divable = dist_to_enemy;
                 target = t.first;
             }
