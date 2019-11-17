@@ -536,6 +536,18 @@ bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) co
     return false;
 }
 
+bool Map_Inventory::isOnIsland(const Position A) const
+{
+    if (map_out_from_home_.size() > 0 && A.isValid()) {
+        WalkPosition wp_a = WalkPosition(A);
+        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
+        if (A > 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const
 {
     if (map_out_from_home_.size() > 0 && A.isValid()) {

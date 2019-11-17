@@ -568,6 +568,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     future_fap_stock_ = 0;
     moving_average_fap_stock_ = 0;
     is_shooting_ = 0;
+    island_count_ = 0;
 
     count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
      { Stored_Unit::Phase::Attacking, 0 },
@@ -599,6 +600,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
         building_count_ += u_iter.second.type_.isBuilding();
         count_of_each_phase_.at(u_iter.second.phase_)++;
         stock_high_ground_ += u_iter.second.elevation_ == 2 || u_iter.second.elevation_ == 4;
+        island_count_ += u_iter.second.is_on_island_;
 
         if (find(already_seen_types.begin(), already_seen_types.end(), u_iter.second.type_) == already_seen_types.end()) { // if you haven't already checked this unit type.
 
@@ -736,6 +738,7 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     elevation_ = 0; //inaccurate and will need to be fixed.
     cd_remaining_ = 0;
     stimmed_ = false;
+    is_on_island_ = false;
 
     shoots_down_ = unittype.groundWeapon() != WeaponTypes::None;
     shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
@@ -833,6 +836,8 @@ Stored_Unit::Stored_Unit(const Unit &unit) {
     //Needed for FAP.
     is_flying_ = unit->isFlying();
     elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
+    is_on_island_ = CUNYAIModule::current_map_inventory.isOnIsland(pos_) && !is_flying_;
+
     cd_remaining_ = unit->getAirWeaponCooldown();
     stimmed_ = unit->isStimmed();
 

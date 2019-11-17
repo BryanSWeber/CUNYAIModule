@@ -70,6 +70,7 @@ struct Stored_Unit {
     bool updated_fap_this_frame_;
     int areaID_;
     int time_since_last_dmg_;
+    bool is_on_island_;
 
     enum Phase
     {
@@ -181,6 +182,7 @@ struct Unit_Inventory {
     int future_fap_stock_ = 0;
     int moving_average_fap_stock_ = 0;
     int is_shooting_ = 0;
+    int island_count_ = 0;
 
     map<Stored_Unit::Phase, int > count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
     { Stored_Unit::Phase::Attacking, 0 },
