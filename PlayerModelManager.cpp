@@ -82,7 +82,9 @@ void Player_Model::updateSelfOnFrame()
     spending_model_.tech_derivative = spending_model_.tech_derivative;
 
     //Update general weaknesses.
-    u_have_active_air_problem_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ + CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0));
+    bool seen_air = CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0;
+    bool possible_air = CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0;
+    u_have_active_air_problem_ = (bool)( (CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) && (seen_air || possible_air)) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && seen_air) );
     e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory
