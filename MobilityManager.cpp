@@ -143,7 +143,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-                if (e_type.isWorker() || (critical_target && CUNYAIModule::canContributeToFight(e_type, ui))) {
+                if (e_type.isWorker() || critical_target && CUNYAIModule::canContributeToFight(e_type, ui)) {
                     DiveableTargets.addStored_Unit(e->second);
                 }
 
@@ -201,7 +201,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
+    temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
     if (!target) { // repeated calls should be functionalized.
         for (auto t : SecondOrderThreats.unit_map_) {
             dist_to_enemy = unit_->getDistance(t.second.pos_);
@@ -265,8 +265,8 @@ bool Mobility::Retreat_Logic() {
         auto threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, unit_, 400);
         if (threat) {
             approach(CUNYAIModule::current_map_inventory.safe_base_);
-            encircle(threat->pos_);
-            moveTo(pos_, pos_ + attract_vector_ + encircle_vector_, Stored_Unit::Phase::Retreating);
+            //encircle(threat->pos_);
+            moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, Stored_Unit::Phase::Retreating);
         }
     }
     else {
