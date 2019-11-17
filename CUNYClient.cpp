@@ -9,8 +9,6 @@
 
 using namespace BWAPI;
 
-std::unique_ptr<CUNYAIModule> myBot;
-
 void reconnect()
 {
     while (!BWAPIClient.connect())
@@ -25,37 +23,34 @@ int main(int argc, const char* argv[])
     reconnect();
     while (true)
     {
+        std::unique_ptr<CUNYAIModule> myBot;
         std::cout << "waiting to enter match" << std::endl;
-        while (!Broodwar->isInGame())
-        {
-            BWAPI::BWAPIClient.update();
+        while (!Broodwar->isInGame()){
+                 BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
                 std::cout << "Reconnecting..." << std::endl;;
                 reconnect();
             }
         }
-        std::cout << "starting match!" << std::endl;
-        Broodwar->sendText("Hello world!");
-        Broodwar << "The map is " << Broodwar->mapName() << ", a " << Broodwar->getStartLocations().size() << " player map" << std::endl;
         // Enable some cheat flags
         Broodwar->enableFlag(Flag::UserInput);
         // Uncomment to enable complete map information
         //Broodwar->enableFlag(Flag::CompleteMapInformation);
 
-        if (Broodwar->isReplay())
-        {
-            Broodwar << "The following players are in this replay:" << std::endl;;
-            Playerset players = Broodwar->getPlayers();
-            for (auto p : players)
-            {
-                if (!p->getUnits().empty() && !p->isNeutral())
-                    Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
-            }
-        }
-        else
-        {
-        }
+        //if (Broodwar->isReplay())
+        //{
+        //    Broodwar << "The following players are in this replay:" << std::endl;;
+        //    Playerset players = Broodwar->getPlayers();
+        //    for (auto p : players)
+        //    {
+        //        if (!p->getUnits().empty() && !p->isNeutral())
+        //            Broodwar << p->getName() << ", playing as " << p->getRace() << std::endl;
+        //    }
+        //}
+        //else
+        //{
+        //}
         while (Broodwar->isInGame())
         {
             for (auto &e : Broodwar->getEvents())
@@ -65,6 +60,7 @@ int main(int argc, const char* argv[])
                 case EventType::MatchStart:
                     myBot = std::make_unique<CUNYAIModule>();
                     myBot->onStart();
+                    break;
                 case EventType::MatchEnd:
                     myBot->onEnd(e.isWinner());
                     break;
@@ -110,10 +106,13 @@ int main(int argc, const char* argv[])
                 case EventType::UnitComplete:
                     myBot->onUnitComplete(e.getUnit());
                     break;
+                default:
+                    myBot->onFrame(); // has catch in it for when it needs to run.
+                    break;
                 }
             }
             //if (BWAPI::Broodwar->getFrameCount() % BWAPI::Broodwar->getLatencyFrames() / 2 == BWAPI::Broodwar->getLatencyFrames() / 2 - 1)
-                myBot->onFrame(); // has catch in it for when it needs to run.
+            
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
