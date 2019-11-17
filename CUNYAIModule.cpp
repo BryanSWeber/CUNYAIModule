@@ -22,8 +22,6 @@
 #include <chrono> // for in-game frame clock.
 #include <stdio.h>  //for removal of files.
 #include <filesystem>
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
 
 // CUNYAI V2.00
 
@@ -31,7 +29,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 namespace { auto & bwemMap = BWEM::Map::Instance(); }
-namespace py = pybind11;
+
 
 //Declare static variables for access in other modules.
 bool CUNYAIModule::army_starved = false;
@@ -64,13 +62,10 @@ WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {
-    std::cout << "Python Initialization..." << std::endl;
 
-    Py_Initialize();
-    auto math = py::module::import("math");
-    auto resultobj = math.attr("sqrt")(2);
-    double result = resultobj.cast<double>();
-    Broodwar->sendText("The python test is %2.2g", result);
+
+
+
 
     Broodwar << "Map initialization..." << std::endl;
 

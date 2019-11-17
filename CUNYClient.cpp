@@ -1,12 +1,17 @@
 #include <BWAPI.h>
 #include <BWAPI/Client.h>
 #include "Source/CUNYAIModule.h"
-
+#include "bwem.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <string>
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
+#include <pybind11/eval.h>
+#include <Python.h>
+namespace py = pybind11;
 using namespace BWAPI;
 
 void reconnect()
@@ -19,6 +24,28 @@ void reconnect()
 
 int main(int argc, const char* argv[])
 {
+    //Python Stuff
+    char filename[] = "kiwook.py";
+    FILE* fp;
+
+    std::cout << "Python Initialization..." << std::endl;
+    Py_Initialize();
+    std::cout << "Python Initialized" << std::endl;
+    py::object scope = py::module::import("__main__").attr("__dict__");
+    fp = _Py_fopen(filename, "r");
+    //Approach B
+    PyRun_SimpleFile(fp, filename);
+    //Approach A
+    //py::exec(
+    //    "print('Hello')\n"
+    //    "print('world!');",
+    //    scope);
+    // Approach C
+    //py::eval_file(filename, scope);
+    std::cout << "Python Finalizing..." << std::endl;
+    Py_Finalize();
+    std::cout << "Python Finalized" << std::endl;
+
     std::cout << "Connecting..." << std::endl;;
     reconnect();
     while (true)
