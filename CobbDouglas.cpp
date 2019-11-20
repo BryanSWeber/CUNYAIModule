@@ -184,7 +184,7 @@ bool CobbDouglas::evalArmyPossible()
     // drop all units types I cannot assemble at this time. 
     for (auto unit_selection : combat_types) {
         for (auto u : unit_selection.first.requiredUnits()) {
-            if (CUNYAIModule::Count_Units(u.first) >= u.second) {
+            if (CUNYAIModule::countUnits(u.first) >= u.second) {
                 can_build_army = true;
                 break;
             }
@@ -197,10 +197,10 @@ bool CobbDouglas::evalArmyPossible()
 
 bool CobbDouglas::evalEconPossible()
 {
-    bool enough_mines_exist = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= static_cast<int>(Broodwar->getMinerals().size() * 2 + Broodwar->getGeysers().size() * 3 + 1);
-    bool not_enough_miners_for_mines = (CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) * 3);
-    bool not_excessive_workers = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.estimated_workers_ + 12);
-    return enough_mines_exist && not_excessive_workers && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
+    bool enough_mines_exist = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= static_cast<int>(Broodwar->getMinerals().size() * 2 + Broodwar->getGeysers().size() * 3 + 1);
+    bool not_enough_miners_for_mines = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3);
+    bool not_excessive_workers = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.estimated_workers_ + 12);
+    return enough_mines_exist && not_excessive_workers && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }
 

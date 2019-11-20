@@ -330,7 +330,7 @@ void Player_Model::evaluatePotentialTechExpenditures() {
         for (auto p : UnitTypes::allUnitTypes()) {
             bool permits_new_unit = false;
             for (auto possible_new_unit : p.buildsWhat()) { // a building allows new units if it produces something and is not a duplicate.
-                if (CUNYAIModule::Count_Units(possible_new_unit, units_) == 0 && CUNYAIModule::Count_Units(p, units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
+                if (CUNYAIModule::countUnits(possible_new_unit, units_) == 0 && CUNYAIModule::countUnits(p, units_) == 0 && (possible_new_unit.isBuilding() || possible_new_unit.isAddon()) && (!possible_new_unit.upgradesWhat().empty() || !possible_new_unit.researchesWhat().empty())) {
                     permits_new_unit = true;
                     break;
                 }
@@ -422,7 +422,7 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
     for (auto u : ut.requiredUnits()) {
-        bool has_necessity = (CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.units_) + CUNYAIModule::Count_Units(u.first, CUNYAIModule::enemy_player_model.imputedUnits_) < u.second);
+        bool has_necessity = (CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.units_) + CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.imputedUnits_) < u.second);
         if (u.first != UnitTypes::Zerg_Larva && !u.first.isResourceDepot() && has_necessity) return false;
     }
     return true;
@@ -430,13 +430,13 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
 
 bool Player_Model::opponentHasRequirements(const TechType &tech)
 {
-    if (tech.whatResearches() != UnitTypes::Zerg_Larva && !tech.whatResearches().isResourceDepot() && CUNYAIModule::Count_Units(tech.whatResearches(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
+    if (tech.whatResearches() != UnitTypes::Zerg_Larva && !tech.whatResearches().isResourceDepot() && CUNYAIModule::countUnits(tech.whatResearches(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
     return true;
 }
 
 bool Player_Model::opponentHasRequirements(const UpgradeType &up)
 {
-    if (up.whatUpgrades() != UnitTypes::Zerg_Larva && !up.whatUpgrades().isResourceDepot() && CUNYAIModule::Count_Units(up.whatUpgrades(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
+    if (up.whatUpgrades() != UnitTypes::Zerg_Larva && !up.whatUpgrades().isResourceDepot() && CUNYAIModule::countUnits(up.whatUpgrades(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
     return true;
 }
 
@@ -470,8 +470,8 @@ void Player_Model::updateUnit_Counts() {
         UnitType u_type = u_iter.second.type_;
         bool new_unit_type = find(already_seen.begin(), already_seen.end(), u_type) == already_seen.end();
         if (new_unit_type) {
-            int found_units = CUNYAIModule::Count_Units(u_type, units_);
-            int incomplete_units = CUNYAIModule::Count_Units_In_Progress(u_type, units_);
+            int found_units = CUNYAIModule::countUnits(u_type, units_);
+            int incomplete_units = CUNYAIModule::countUnitsInProgress(u_type, units_);
             already_seen.push_back(u_type);
             unit_count_temp.push_back(found_units);
             unit_incomplete_temp.push_back(incomplete_units);

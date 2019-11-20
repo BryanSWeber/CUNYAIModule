@@ -335,7 +335,7 @@ bool CUNYAIModule::isInDanger(const UnitType &ut, const Unit_Inventory enemy) {
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
-int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
+int CUNYAIModule::countUnits( const UnitType &type, const Unit_Inventory &ui )
 {
     int count = 0;
 
@@ -354,7 +354,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unit_Inventory &ui )
     return count;
 }
 
-bool CUNYAIModule::Contains_Unit(const UnitType &type, const Unit_Inventory &ui) {
+bool CUNYAIModule::containsUnit(const UnitType &type, const Unit_Inventory &ui) {
 
     for (auto & e : ui.unit_map_) {
         if(e.second.type_ == type) return true; 
@@ -364,7 +364,7 @@ bool CUNYAIModule::Contains_Unit(const UnitType &type, const Unit_Inventory &ui)
 
 
 // Counts all units of one type in existance and owned by enemies. 
-int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
+int CUNYAIModule::countSuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
 {
     int count = 0;
 
@@ -384,7 +384,7 @@ int CUNYAIModule::Count_SuccessorUnits(const UnitType &type, const Unit_Inventor
 }
 
 // Overload. (Very slow, since it uses BWAPI Unitsets) Counts all units in a set of one type owned by player. Includes individual units in production. 
-int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
+int CUNYAIModule::countUnits( const UnitType &type, const Unitset &unit_set )
 {
     int count = 0;
     for ( auto & unit : unit_set )
@@ -403,7 +403,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Unitset &unit_set )
 }
 
 // Overload. Counts all units in a set of one type in the reservation system. Does not reserve larva units. 
-int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
+int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
 {
     int count = 0;
     for (auto it : res.reservation_map_ ) {
@@ -414,7 +414,7 @@ int CUNYAIModule::Count_Units( const UnitType &type, const Reservation &res )
 }
 
 // Counts all units of one type in existance and owned by me. Counts units under construction.
-int CUNYAIModule::Count_Units(const UnitType &type)
+int CUNYAIModule::countUnits(const UnitType &type)
 {
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
     if (c_iter == CUNYAIModule::friendly_player_model.unit_type_.end()) {
@@ -428,7 +428,7 @@ int CUNYAIModule::Count_Units(const UnitType &type)
 }
 
 // Counts all units of one type in existance and in progress by me. Counts units under construction.
-int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
+int CUNYAIModule::countUnitsInProgress(const UnitType &type)
 {
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
     if (c_iter == CUNYAIModule::friendly_player_model.unit_type_.end()) {
@@ -441,7 +441,7 @@ int CUNYAIModule::Count_Units_In_Progress(const UnitType &type)
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
-int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
+int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set)
 {
     int count = 0;
     for (const auto & unit : unit_set)
@@ -457,7 +457,7 @@ int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
     return count;
 }
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
-int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
+int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_map_)
@@ -477,7 +477,7 @@ int CUNYAIModule::Count_Units_Doing(const UnitType &type, const UnitCommandType 
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production.  I have doubts about this function.
-int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inventory &ui)
+int CUNYAIModule::countUnitsInProgress(const UnitType &type, const Unit_Inventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_map_)
@@ -497,10 +497,26 @@ int CUNYAIModule::Count_Units_In_Progress(const UnitType &type, const Unit_Inven
     return count;
 }
 
+int CUNYAIModule::countUnitsAvailableToPerform(const UpgradeType &upType) {
+    int count = 0;
+    for (auto u : Broodwar->self()->getUnits()) {
+        if (u->getType() == upType.whatUpgrades() && !u->isMorphing() && u->isCompleted()) count++;
+    }
+    return count;
+}
+
+int CUNYAIModule::countUnitsAvailableToPerform(const TechType &techType) {
+    int count = 0;
+    for (auto u : Broodwar->self()->getUnits()) {
+        if (u->getType() == techType.whatResearches() && !u->isMorphing() && u->isCompleted()) count++;
+    }
+    return count;
+}
+
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
     int cost = Stored_Unit(building).stock_value_;
-    int instances = Count_Units( building , ui );
+    int instances = countUnits( building , ui );
     int total_stock = cost * instances;
     return total_stock;
 }
@@ -577,7 +593,7 @@ int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
 // evaluates the value of a stock of unit, in terms of supply added.
 int CUNYAIModule::Stock_Supply( const UnitType &unit ) {
     int supply = unit.supplyProvided();
-    int instances = Count_Units( unit);
+    int instances = countUnits( unit);
     int total_stock = supply * instances;
     return total_stock;
 }

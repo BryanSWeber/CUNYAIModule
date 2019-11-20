@@ -606,7 +606,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
             bool flying_unit = u_iter.second.type_.isFlyer();
             int unit_value_for_all_of_type = CUNYAIModule::Stock_Units(u_iter.second.type_, *this);
-            int count_of_unit_type = CUNYAIModule::Count_Units(u_iter.second.type_, *this);
+            int count_of_unit_type = CUNYAIModule::countUnits(u_iter.second.type_, *this);
             if (CUNYAIModule::isFightingUnit(u_iter.second)) {
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
                 bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Reaver || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
@@ -654,7 +654,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
     stock_fighting_total_ = stock_ground_units_ + stock_fliers_;
     stock_total_ = stock_fighting_total_ + stock_ground_fodder_ + stock_air_fodder_;
-    worker_count_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::Count_Units(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::Count_Units(UnitTypes::Terran_SCV, *this);
+    worker_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone, *this) + CUNYAIModule::countUnits(UnitTypes::Protoss_Probe, *this) + CUNYAIModule::countUnits(UnitTypes::Terran_SCV, *this);
 
 }
 
@@ -699,7 +699,7 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
     output << Broodwar->elapsedTime() << ",";
     for (auto i : UnitTypes::allUnitTypes()) {
         if (!i.isNeutral() && !i.isHero() && !i.isSpecialBuilding() && !i.isResourceContainer() && !i.isPowerup() && !i.isBeacon() && i.getRace() != Races::None) {
-            output << CUNYAIModule::Count_Units(i, *this) << ",";
+            output << CUNYAIModule::countUnits(i, *this) << ",";
         }
     }
     output << endl;

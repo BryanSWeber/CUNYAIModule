@@ -28,9 +28,9 @@ constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat respon
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 
-constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
-constexpr bool INTERBREED_PARENTS = false && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-constexpr bool RANDOM_PLAN = true; // Turn off learning and always use a random set of starting conditions.  
+constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
+constexpr bool INTERBREED_PARENTS = true && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
+constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 
@@ -239,21 +239,25 @@ public:
 
     // Utility functions that need to be accessed by any number of classes, ie. static declarations.
         // Counts the tally of a particular int a specific unit set. Includes those in production.
-    static int Count_Units(const UnitType &type, const Unitset &unit_set);
+    static int countUnits(const UnitType &type, const Unitset &unit_set);
     // Counts the tally of a particular unit type. Includes those in production, those in inventory (passed by value).
-    static int Count_Units(const UnitType &type, const Unit_Inventory &ei);
-    static bool Contains_Unit(const UnitType & type, const Unit_Inventory & ui);
+    static int countUnits(const UnitType &type, const Unit_Inventory &ei);
+    static bool containsUnit(const UnitType & type, const Unit_Inventory & ui);
     // Counts all units of a type or successors of that type.
-    static int Count_SuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
+    static int countSuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
     // Counts the tally of a particular unit type in a reservation queue.
-    static int Count_Units(const UnitType &type, const Reservation &res);
+    static int countUnits(const UnitType &type, const Reservation &res);
     // Counts the tally of all created units in my personal inventory of that type.
-    static int Count_Units(const UnitType & type);
+    static int countUnits(const UnitType & type);
     // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
-    static int Count_Units_Doing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
-    static int Count_Units_Doing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
-    static int Count_Units_In_Progress(const UnitType & type, const Unit_Inventory & ui);
-    static int Count_Units_In_Progress(const UnitType & type);
+    static int countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
+    static int countUnitsDoing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);
+    static int countUnitsInProgress(const UnitType & type, const Unit_Inventory & ui);
+    static int countUnitsInProgress(const UnitType & type);
+    // Counts units that can perform a given upgrade, uses BWAPI's unit sets so it is somewhat slow but requires details I don't otherwise store.
+    static int countUnitsAvailableToPerform(const UpgradeType & upType);
+    // Counts units that can perform a given research (tech), uses BWAPI's unit sets so it is somewhat slow but requires details I don't otherwise store.
+    static int countUnitsAvailableToPerform(const TechType & techType);
     // Evaluates the total stock of a type of unit in the inventory.
     static int Stock_Units(const UnitType & unit_type, const Unit_Inventory & ui);
     // evaluates the value of a stock of combat units, for all unit types in a unit inventory.

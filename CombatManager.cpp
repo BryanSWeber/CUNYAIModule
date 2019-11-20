@@ -91,7 +91,7 @@ bool CombatManager::combatScript(const Unit & u)
             // Bools needed before the switch.
             //bool unit_death_in_moments = Stored_Unit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
-            bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest) || u->isFlying()) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::Count_Units(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_threat > ( enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
+            bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest) || u->isFlying()) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::PathingOut) > CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) == 0 && distance_to_threat > ( enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
             bool unit_will_survive = !Stored_Unit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
             bool standard_fight_reasons = fight_looks_good || (friend_loc.building_count_ > 0 && e_closest->areaID_ == u_safeAreaID) || !CUNYAIModule::isInDanger(u->getType(), enemy_loc) || isWorkerFight(friend_loc, enemy_loc);
@@ -199,7 +199,7 @@ bool CombatManager::scoutScript(const Unit & u)
             }
         }
     }
-    else if(CUNYAIModule::Count_SuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
+    else if(CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
         Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
         if(explore_vector != Positions::Origin)

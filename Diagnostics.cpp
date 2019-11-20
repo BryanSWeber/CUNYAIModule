@@ -297,7 +297,7 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
         int another_row_of_printing = 0;
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-            int u_count = CUNYAIModule::Count_Units(((UnitType)i), ui);
+            int u_count = CUNYAIModule::countUnits(((UnitType)i), ui);
             if (u_count > 0) {
                 Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
                 Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //
@@ -322,8 +322,8 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
         int another_row_of_printing = 0;
         for (auto i : CUNYAIModule::friendly_player_model.unit_type_)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-            int u_count = CUNYAIModule::Count_Units(i);
-            int u_incomplete_count = CUNYAIModule::Count_Units_In_Progress(i);
+            int u_count = CUNYAIModule::countUnits(i);
+            int u_incomplete_count = CUNYAIModule::countUnitsInProgress(i);
             if (u_count > 0) {
                 Broodwar->drawTextScreen(screen_x, screen_y, "Inventoried Units:");  //
                 Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d Inc: %d", CUNYAIModule::noRaceName(i.c_str()), u_count, u_incomplete_count);  //
@@ -414,7 +414,7 @@ void Diagnostics::drawLine(const Position &s_pos, const Position &f_pos, const P
         int another_row_of_printing = 0;
         for (int i = 0; i != 229; i++)
         { // iterating through all known combat units. See unit type for enumeration, also at end of page.
-            int u_count = CUNYAIModule::Count_Units(((UnitType)i), res);
+            int u_count = CUNYAIModule::countUnits(((UnitType)i), res);
             if (u_count > 0) {
                 Broodwar->drawTextScreen(screen_x, screen_y, "Reserved Buildings:");  //
                 Broodwar->drawTextScreen(screen_x, screen_y + 10 + another_row_of_printing * 10, "%s: %d", CUNYAIModule::noRaceName(((UnitType)i).c_str()), u_count);  //

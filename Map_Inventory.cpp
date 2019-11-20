@@ -161,9 +161,9 @@ void Map_Inventory::updateScreen_Position()
 
 // Updates the number of hatcheries (and decendent buildings).
 void Map_Inventory::updateHatcheries() {
-    hatches_ = CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) +
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Lair) +
-        CUNYAIModule::Count_Units(UnitTypes::Zerg_Hive);
+    hatches_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) +
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) +
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Hive);
 }
 
 
