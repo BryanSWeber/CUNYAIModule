@@ -145,7 +145,7 @@ void CUNYAIModule::onStart()
         learned_plan.initializeTestStart();
     }
 
-    gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
+    gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
     supply_ratio = learned_plan.supply_ratio_t0; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
     //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
     alpha_army_original = friendly_player_model.spending_model_.alpha_army = learned_plan.a_army_t0; // army starved parameter.
@@ -387,8 +387,8 @@ void CUNYAIModule::onFrame()
 
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) ||
-        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()})) || // you need gas to buy things.
+    gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) || 
+        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()})) || // you cannot buy something because of gas.
         (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
@@ -475,7 +475,7 @@ void CUNYAIModule::onFrame()
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
 
-    larva_starved = CUNYAIModule::Count_Units(UnitTypes::Zerg_Larva) <= CUNYAIModule::Count_Units(UnitTypes::Zerg_Hatchery) / 2;
+    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) / 2;
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
@@ -498,7 +498,7 @@ void CUNYAIModule::onFrame()
             }
         }
 
-        bool no_extractor = Count_Units(UnitTypes::Zerg_Extractor) == 0;
+        bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
         if (need_gas_now && no_extractor) {
             buildorder.clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
@@ -654,7 +654,7 @@ void CUNYAIModule::onFrame()
         long_delay += 1;
     }
     if constexpr (RESIGN_MODE) {
-        if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || Count_Units(UnitTypes::Zerg_Drone, friendly_player_model.units_) == 0)) //if game times out or lags out, end game with resignation.
+        if ((short_delay > 320 || med_delay > 10 || long_delay > 1 || Broodwar->elapsedTime() > 90 * 60 || countUnits(UnitTypes::Zerg_Drone, friendly_player_model.units_) == 0)) //if game times out or lags out, end game with resignation.
         {
             Broodwar->leaveGame();
         }

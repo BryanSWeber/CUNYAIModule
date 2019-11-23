@@ -268,35 +268,19 @@ bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui
     return false;
 }
 
+bool WorkerManager::checkGasDump() {
+    return AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Hydralisk, false) ||
+        AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Mutalisk, false) ||
+        AssemblyManager::canMakeCUNY(UnitTypes::Zerg_Ultralisk, false);
+}
+
 //Returns True if there is an out for gas. Does not consider all possible gas outlets.
 bool WorkerManager::checkGasOutlet() {
-    bool outlet_avail = false;
+    if (CUNYAIModule::techmanager.checkTechAvail() && max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas() }) > CUNYAIModule::my_reservation.getExcessGas()) return true;
+    if (checkGasDump()) return true;
+    if(CUNYAIModule::buildorder.cumulative_gas_ > 0) return true;
 
-    if (CUNYAIModule::techmanager.checkTechAvail() && CUNYAIModule::Count_Units(BWAPI::UnitTypes::Zerg_Spawning_Pool) > 0) {
-        outlet_avail = true;
-    }
-
-    bool long_condition = Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Hydralisk) ||
-        Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Mutalisk) ||
-        Broodwar->self()->hasUnitTypeRequirement(UnitTypes::Zerg_Ultralisk);
-
-    if (long_condition) {
-        outlet_avail = true;
-    } // turns off gas interest when larve are 0.
-
-    if (!CUNYAIModule::buildorder.building_gene_.empty()) {
-        UnitType unit = CUNYAIModule::buildorder.building_gene_.front().getUnit();
-        TechType tech = CUNYAIModule::buildorder.building_gene_.front().getResearch();
-        UpgradeType up = CUNYAIModule::buildorder.building_gene_.front().getUpgrade();
-
-        // Don't write this way:
-        if (unit != UnitTypes::None) if (unit.gasPrice() > 0) outlet_avail = true;
-        if (tech != TechTypes::None) if (tech.gasPrice() > 0) outlet_avail = true;
-        if (up != UpgradeTypes::None) if (up.gasPrice() > 0) outlet_avail = true;
-    }
-
-
-    return outlet_avail;
+    return false;
 }
 
 bool WorkerManager::workerWork(const Unit &u) {
