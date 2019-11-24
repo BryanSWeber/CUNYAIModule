@@ -115,4 +115,9 @@
       <UniqueIdentifier>{a191b572-c4d5-4666-a7f1-b6fe86a15072}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\kiwook.py">
+      <Filter>Utilities</Filter>
+    </None>
+  </ItemGroup>
 </Project>
