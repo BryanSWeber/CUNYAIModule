@@ -473,13 +473,13 @@ void LearningManager::initializeRFLearning()
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
     local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
     local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    local["in_file"] = "..\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
+    local["in_file"] = "\\..\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
 
     const char space = ' ';
     string e_race_string = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
     string e_name_string = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
     string e_map_string = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    string in_file_string = "bwapi-data\\write\\history.txt";
+    string in_file_string = "\\..\\write\\history.txt";
     local["system_command"] = e_race_string + space + e_name_string + space + e_map_string + space + in_file_string; // gotta sterilize the inputs.
 
     local["gas_proportion_t0"] = 0;
@@ -503,9 +503,18 @@ void LearningManager::initializeRFLearning()
     string entry; // entered string from stream
 
     Broodwar << filesystem::current_path().string() << endl;
+    Broodwar << filesystem::current_path().string() + in_file_string << endl;
 
     auto result = py::eval_file("C:\\Users\\Bryan\\CUNYBot\\CUNYAIModule\\Source\\kiwook.py", scope, local);
     
+    gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
+    supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
+    a_army_t0 = py::float_(local["a_army_t0"]);
+    a_econ_t0 = py::float_(local["a_econ_t0"]);
+    a_tech_t0 = py::float_(local["a_tech_t0"]);
+    r_out_t0 = py::float_(local["r_out_t0"]);
+    build_order_t0 = py::str(local["build_order_t0"]);
+
     if (result) {
         return;
     }

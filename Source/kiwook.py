@@ -126,13 +126,14 @@ def generate_choose(dfg_test):
 # 1. Load Dataset--------------------------------------------------------------------------------------------
 #path = os.getcwd()
 file = file_in
-print("Read a file from: ", file)
-print("Read a file from: " + file)
+print("Reading a file from: " + file)
 
 col_ori = ['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'race', 'win',
            'sdelay', 'mdelay', 'ldelay', 'name', 'map', 'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech',
            'opening', 'building', 'kills', 'raze', 'units', 'detector_count', 'flyers', 'duration']
 df = pd.read_csv(file, names=col_ori)
+
+print("Finished reading a file from: " + file)
 
 if df.empty:
     print("No history records. Just exit.")
@@ -202,8 +203,10 @@ dfg = df_cleaned[given]
 choose = ['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code']
 dfc = df_cleaned[choose]
 
+print("Finished cleaning the data")
+
 # 3. Proper Dataset----------------------------------------------------------------------------------------
-# Creat a train data set
+# Create a train data set
 df_train = pd.concat([dfc, dfg], axis=1, sort=False)
 df_train = df_train.astype(float)
 df_train = df_train.reset_index(drop=True)
@@ -226,6 +229,8 @@ for i in range(df_train.shape[0]):
         df_temp.at[i, 'enemy_avg_tech'] = (gp_tech_sum - df_train.iloc[i][12]) / (gp_tech_cnt - 1)
 df_train = df_temp
 
+print("Finished creating training data")
+
 # 4. Create a possible Train Dataset-----------------------------------------------------------------------
 # Define train dataset
 X_train = df_train.drop(['win'], axis=1)
@@ -235,6 +240,7 @@ y_train = df_train['win']
 clf = RandomForestClassifier(n_estimators=500, max_depth=7, random_state=1234)
 clf.fit(X_train, y_train)
 
+print("Finished fitting RF")
 # 5. Generate test dataset and predict the game result-----------------------------------------------------
 
 # Testing Call arguments from C++
@@ -327,30 +333,28 @@ else:
 
 
 print(df_final)
-raw_input("Press Enter to continue...")
 
 #Pass results to C++
 gas_proportion_t0 = df_final["gas_proportion"]
 print(gas_proportion_t0)
-raw_input("Press Enter to continue...")
+
 supply_ratio_t0 = df_final["supply_ratio"]
 print(supply_ratio_t0)
-raw_input("Press Enter to continue...")
+
 a_army_t0 = df_final["avg_army"]
 print(a_army_t0)
-raw_input("Press Enter to continue...")
+
 a_econ_t0 = df_final["avg_econ"]
 print(a_econ_t0)
-raw_input("Press Enter to continue...")
+
 a_tech_t0 = df_final["avg_tech"]
 print(a_tech_t0)
-raw_input("Press Enter to continue...")
+
 r_out_t0 = df_final["r"]
 print(r_out_t0)
-raw_input("Press Enter to continue...")
+
 build_order_t0 = df_final["opening_code"]
 print(build_order_t0)
-raw_input("Press Enter to continue...")
+
 attempt_count = df_final["count"]
 print(attempt_count)
-raw_input("Press Enter to continue...")
