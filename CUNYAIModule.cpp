@@ -23,13 +23,6 @@
 #include <stdio.h>  //for removal of files.
 #include <filesystem>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
-#include <pybind11/eval.h>
-#include <Python.h>
-
-namespace py = pybind11;
-
 // CUNYAI V2.00
 
 using namespace BWAPI;
@@ -69,15 +62,6 @@ WorkerManager CUNYAIModule::workermanager;
 
 void CUNYAIModule::onStart()
 {
-
-    //Python Stuff
-    std::cout << "Python Initialization..." << std::endl;
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-
-    py::object scipy = py::module::import("sklearn");
-    py::object version = scipy.attr("__version__");
-    std::cout << version.cast<string>() << std::endl;
-
     Broodwar << "Map initialization..." << std::endl;
 
     //Initialize BWEM, must be done FIRST.
@@ -146,7 +130,6 @@ void CUNYAIModule::onStart()
         learned_plan.initializeGeneticLearning();
     }
     if (RF_LEARNING) {
-        //.\kiwook.exe Zerg CUBOT "(4)Roadrunner.scx" history8_29_2019.txt BWKK_out.txt
         learned_plan.initializeRFLearning();
     }
     if (RANDOM_PLAN) {

@@ -9,42 +9,28 @@ from sklearn.ensemble import RandomForestClassifier
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
 
-print(sys.argv)
-if len(sys.argv) != 6:
-    print("Not enough information to run.")
-    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
-    print("Exit.")
-    sys.exit(0)
+print(system_command)
+#if len(local) != 6:
+#    print("Not enough information to run.")
+#    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
+#    print("Exit.")
+#    sys.exit(0)
 
-f = open("bwapi-data/write/test.txt", "w")
+#f = open("bwapi-data/write/test.txt", "w")
 # 0. Get C++ arguments--------------------------------------------------------------------------------------
-print(len(sys.argv))
-print("Run a file: ", (sys.argv[0]))
-print("We are at: ", os.getcwd())
-f.write("We are at: " + os.getcwd() + "\n")
+print("We are at: " + os.getcwd() + "\n")
 
-arguments = str(sys.argv)
+opp_race = e_race
+print("Opp. Race: " + opp_race + "\n")
 
-opp_race = str(sys.argv[1])
-print("Opp. Race: ", opp_race)
-f.write("Opp. Race: " + opp_race + "\n")
+opp_name = e_name
+print("Opp. Name: " + opp_name + "\n")
 
-opp_name = str(sys.argv[2])
-print("Opp. Name: ", opp_name)
-f.write("Opp. Name: " + opp_name + "\n")
+opp_map = e_map
+print("Opp. Map: " + opp_map + "\n")
 
-opp_map = str(sys.argv[3])
-print("Opp. Map: ", opp_map)
-f.write("Opp. Map: " + opp_map + "\n")
-
-file_in = str(os.path.join(os.getcwd(), sys.argv[4]))
-print("File In: ", file_in)
-f.write("File In: " + file_in + "\n")
-
-file_out = str(os.path.join(os.getcwd(), sys.argv[5]))
-print("File Out: ", file_out)
-f.write("File Out: " + file_out + "\n")
-
+file_in = str(os.path.join(os.getcwd(), in_file))
+print("File In: " + file_in + "\n")
 
 # Def functions----------------------------------------------------------------------------------------------
 def binary_convert(feature):
@@ -141,7 +127,7 @@ def generate_choose(dfg_test):
 #path = os.getcwd()
 file = file_in
 print("Read a file from: ", file)
-f.write("Read a file from: " + file)
+print("Read a file from: " + file)
 
 col_ori = ['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'race', 'win',
            'sdelay', 'mdelay', 'ldelay', 'name', 'map', 'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech',
@@ -282,7 +268,7 @@ for i in range(len(race_code_table)):
         opp_race_code = race_code_table[i][0]
 if opp_race not in race_code_table[:][1]:
     opp_race_code = race_code_table[-1][0]
-f.write(str(opp_race_code) + "\n")
+print(str(opp_race_code) + "\n")
 
 name_code_table = df_name.index.tolist()
 name_code_table.append((len(name_code_table), 'None'))
@@ -293,7 +279,7 @@ for i in range(len(name_code_table)):
         opp_name_code = name_code_table[i][0]
 if opp_name not in name_code_table[:][1]:
     opp_name_code = name_code_table[-1][0]
-f.write(str(opp_name_code) + "\n")
+print(str(opp_name_code) + "\n")
 
 
 map_code_table = df_map.index.tolist()
@@ -305,7 +291,7 @@ for i in range(len(map_code_table)):
         opp_map_code = map_code_table[i][0]
 if opp_map not in map_code_table[:][1]:
     opp_map_code = map_code_table[-1][0]
-f.write(str(opp_map_code) + "\n")
+print(str(opp_map_code) + "\n")
 
 # Find the records which match to opp_features
 df_fit = df_train[(df_train['race_code'] == opp_race_code) &
@@ -315,47 +301,6 @@ df_fit = df_fit.reset_index(drop=True)
 
 # No record, 1 record, and 2+ records
 if df_fit.shape[0] == 0:                        # 0 Record
-
-    """
-    det_max = df_train['detector_count'].max()
-    fly_max = df_train['flyers'].max()
-    dfg_test_temp = df_train[['race_code', 'name_code', 'map_code',
-                              'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech'
-                              ]].groupby(['race_code']).mean()
-    r_list = dfg_test_temp.index.values.tolist()
-    if opp_race_code not in r_list:
-        
-    
-    if (opp_race_code == race_code_table[-1][0]
-            and opp_name_code == name_code_table[-1][0]
-            and opp_map_code != map_code_table[-1][0]):
-        det_max = df_train['detector_count'].max()
-        fly_max = df_train['flyers'].max()
-        dfg_test_temp = df_train[['race_code', 'name_code', 'map_code',
-                                  'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech'
-                                  ]].groupby(['race_code', 'name_code']).mean()
-
-    elif (opp_race_code == race_code_table[-1][0]
-            and opp_name_code != name_code_table[-1][0]
-            and opp_map_code == map_code_table[-1][0]):
-        print(1)
-    elif (opp_race_code != race_code_table[-1][0]
-            and opp_name_code == name_code_table[-1][0]
-            and opp_map_code == map_code_table[-1][0]):
-        print(1)
-    elif (opp_race_code != race_code_table[-1][0]
-            and opp_name_code != name_code_table[-1][0]
-            and opp_map_code == map_code_table[-1][0]):
-        print(1)
-    elif (opp_race_code == race_code_table[-1][0]
-            and opp_name_code != name_code_table[-1][0]
-            and opp_map_code != map_code_table[-1][0]):
-        print(1)
-    elif (opp_race_code != race_code_table[-1][0]
-            and opp_name_code == name_code_table[-1][0]
-            and opp_map_code != map_code_table[-1][0]):
-        print(1)
-    """
     dfg_test = pd.DataFrame([
         (opp_race_code, opp_name_code, opp_map_code, 0, 0, 0, 0, 0)],
         columns=given[:-1], index=[0])          # Set given features
@@ -382,6 +327,30 @@ else:
 
 
 print(df_final)
+raw_input("Press Enter to continue...")
 
-# Generate result
-df_final.to_csv(file_out, index=False)
+#Pass results to C++
+gas_proportion_t0 = df_final["gas_proportion"]
+print(gas_proportion_t0)
+raw_input("Press Enter to continue...")
+supply_ratio_t0 = df_final["supply_ratio"]
+print(supply_ratio_t0)
+raw_input("Press Enter to continue...")
+a_army_t0 = df_final["avg_army"]
+print(a_army_t0)
+raw_input("Press Enter to continue...")
+a_econ_t0 = df_final["avg_econ"]
+print(a_econ_t0)
+raw_input("Press Enter to continue...")
+a_tech_t0 = df_final["avg_tech"]
+print(a_tech_t0)
+raw_input("Press Enter to continue...")
+r_out_t0 = df_final["r"]
+print(r_out_t0)
+raw_input("Press Enter to continue...")
+build_order_t0 = df_final["opening_code"]
+print(build_order_t0)
+raw_input("Press Enter to continue...")
+attempt_count = df_final["count"]
+print(attempt_count)
+raw_input("Press Enter to continue...")

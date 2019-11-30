@@ -13,10 +13,15 @@
 # include <random> // C++ base random is low quality.
 # include <thread>
 # include <filesystem>
+# include <pybind11/pybind11.h>
+# include <pybind11/embed.h>
+# include <pybind11/eval.h>
+# include <Python.h>
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
+namespace py = pybind11;
 
 bool LearningManager::confirmHistoryPresent()
 {
@@ -445,119 +450,66 @@ void LearningManager::initializeGeneticLearning() {
 
 void LearningManager::initializeRFLearning()
 {
-    string entry; // entered string from stream
+    //Python loading of critical libraries.
+    std::cout << "Python Initialization..." << std::endl;
+    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+    py::object scope = py::module::import("__main__").attr("__dict__");
+    py::object scipy = py::module::import("sklearn");
+    py::object random = py::module::import("random");
+    py::object sys = py::module::import("sys");
+    py::object osPath = py::module::import("os.path");
+    py::object pd = py::module::import("pandas");
+    py::object np = py::module::import("numpy");
 
-    string rf_executable = ".\\bwapi-data\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
-    string e_race = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    string e_name = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
-    string e_map = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    string in_file = "bwapi-data\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
-    string out_file = "bwapi-data\\write\\BWKK" + to_string(Broodwar->getRandomSeed()) + ".txt";
+    ////Proof of concept:
+    //py::object version = scipy.attr("__version__");
+    //std::cout << version.cast<string>() << std::endl;
+    
+
+    //local["rf_executable"] = ".\\bwapi-data\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
+
+    //Executing script:
+    auto local = py::dict();
+    local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+    local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
+    local["in_file"] = "..\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
+
     const char space = ' ';
+    string e_race_string = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    string e_name_string = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+    string e_map_string = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
+    string in_file_string = "bwapi-data\\write\\history.txt";
+    local["system_command"] = e_race_string + space + e_name_string + space + e_map_string + space + in_file_string; // gotta sterilize the inputs.
 
-    string system_command = rf_executable + space + e_race + space + e_name + space + e_map + space + in_file + space + out_file; // gotta sterilize the inputs.
+    local["gas_proportion_t0"] = 0;
+    local["supply_ratio_t0"] = 0;
+    local["a_army_t0"] = 0;
+    local["a_econ_t0"] = 0;
+    local["a_tech_t0"] = 0;
+    local["r_out_t0"] = 0;
+    local["build_order_t0"] = 0;
+    local["attempt_count"] = 0;
+
+    gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
+    supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
+    a_army_t0 = py::float_(local["a_army_t0"]);
+    a_econ_t0 = py::float_(local["a_econ_t0"]);
+    a_tech_t0 = py::float_(local["a_tech_t0"]);
+    r_out_t0 = py::float_(local["r_out_t0"]);
+    build_order_t0 = py::str(local["build_order_t0"]);
 
 
-    Broodwar << "Sending command: " << system_command << endl;
-    int i = system(system_command.c_str()); // we run the RF in kiwook's script.  We do this first because the delay causes SC to clear the other messages.
-    Broodwar << "Result: " << i << endl;
+    string entry; // entered string from stream
 
     Broodwar << filesystem::current_path().string() << endl;
 
-    if (std::filesystem::exists(rf_executable.c_str())) {
-        Broodwar << "The kiwook.exe file is where I would expect it to be, at: " << rf_executable << endl;
+    auto result = py::eval_file("C:\\Users\\Bryan\\CUNYBot\\CUNYAIModule\\Source\\kiwook.py", scope, local);
+    
+    if (result) {
+        return;
     }
     else {
-        Broodwar << "The kiwook.exe file is missing from: " << rf_executable << endl;
-    }
-
-    Broodwar << "Enemy race (arg1) is " << e_race << endl;
-    Broodwar << "Enemy name (arg2) is " << e_name << endl;
-    Broodwar << "Map File Name (arg3) is " << e_map << endl;
-    Broodwar << "In File (arg4) is " << in_file << endl;
-    Broodwar << "Out File (arg5) is " << out_file << endl;
-
-    string history_file = ".\\" + in_file; // must put the relative directory back in.
-    if (std::filesystem::exists(history_file.c_str())) {
-        Broodwar << "The history file is where I would expect it to be, at: " << history_file << endl;
-    }
-    else {
-        Broodwar << "The history file is missing from: " << history_file << endl;
-    }
-
-    string BWKK_learning_plan = ".\\" + out_file; // must put the relative directory back in.
-
-    if (std::filesystem::exists(BWKK_learning_plan.c_str())) {
-
-        Broodwar << "I seem to have found the RF plan" << endl;
-
-        ifstream input; // brings in info;
-        input.open(BWKK_learning_plan, ios::in);
-        string line;
-        getline(input, line); //skip the first line of the document.
-
-        // The ugly tuple. This section should be cleaned up eventually.
-        double gas_proportion_total;
-        double supply_ratio_total;
-        double a_army_total;
-        double a_econ_total;
-        double a_tech_total;
-        double r_total;
-        string race_total;
-        string name_total;
-        string map_name_total;
-        double enemy_average_army_;
-        double enemy_average_econ_;
-        double enemy_average_tech_;
-        string build_order_total;
-        double detector_count;
-        double fliers;
-        int win_count;
-        int attempt_count;
-
-        getline(input, entry, ',');
-        gas_proportion_t0 = gas_proportion_total = stod(entry);
-        getline(input, entry, ',');
-        supply_ratio_t0 = supply_ratio_total = stod(entry);
-        getline(input, entry, ',');
-        a_army_t0 = a_army_total = stod(entry);
-        getline(input, entry, ',');
-        a_econ_t0 = a_econ_total = stod(entry);
-        getline(input, entry, ',');
-        a_tech_t0 = a_tech_total = stod(entry);
-        getline(input, entry, ',');
-        r_out_t0 = r_total = stod(entry);
-        getline(input, entry, ',');
-        build_order_t0 = build_order_total = entry;
-
-        getline(input, entry, ',');
-        race_total = entry;
-        getline(input, entry, ',');
-        name_total = entry;
-        getline(input, entry, ',');
-        map_name_total = entry;
-        getline(input, entry, ',');
-        enemy_average_army_ = stod(entry);
-        getline(input, entry, ',');
-        enemy_average_econ_ = stod(entry);
-        getline(input, entry, ',');
-        enemy_average_tech_ = stod(entry);
-
-
-        getline(input, entry, ',');
-        detector_count = stod(entry);
-        getline(input, entry, ',');
-        fliers = stod(entry);
-        getline(input, entry, ',');
-        win_count = stoi(entry);
-
-        getline(input, entry); //diff. End of line char, not ','
-        attempt_count = stoi(entry);
-
-        input.close();
-    }
-    else {
-        Broodwar << "Blast, I can't seem to find the RF plan: " << BWKK_learning_plan << endl;
         initializeRandomStart();
     }
 
