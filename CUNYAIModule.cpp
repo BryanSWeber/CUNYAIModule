@@ -170,7 +170,7 @@ void CUNYAIModule::onStart()
 
     // Testing Build Order content intenstively.
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
+    output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
     string print_value = "";
     print_value += learned_plan.build_order_t0;
     output << "Trying Build Order" << print_value << endl;
@@ -178,35 +178,35 @@ void CUNYAIModule::onStart()
 
 
     if (RIP_REPLAY) {
-        string src = "./bwapi-data/read/" + Broodwar->enemy()->getName() + ".txt";
-        string dst = "./bwapi-data/write/" + Broodwar->enemy()->getName() + ".txt";
+        string src = "..\\read\\" + Broodwar->enemy()->getName() + ".txt";
+        string dst = "..\\write\\" + Broodwar->enemy()->getName() + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "./bwapi-data/read/" + Broodwar->enemy()->getName() + "casualties" + ".txt";
-        dst = "./bwapi-data/write/" + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        src = "..\\read\\" + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        dst = "..\\write\\" + Broodwar->enemy()->getName() + "casualties" + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "./bwapi-data/read/" + Broodwar->self()->getName() + ".txt";
-        dst = "./bwapi-data/write/" + Broodwar->self()->getName() + ".txt";
+        src = "..\\read\\" + Broodwar->self()->getName() + ".txt";
+        dst = "..\\write\\" + Broodwar->self()->getName() + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "./bwapi-data/read/" + Broodwar->self()->getName() + "casualties" + ".txt";
-        dst = "./bwapi-data/write/" + Broodwar->self()->getName() + "casualties" + ".txt";
+        src = "..\\read\\" + Broodwar->self()->getName() + "casualties" + ".txt";
+        dst = "..\\write\\" + Broodwar->self()->getName() + "casualties" + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        if (std::filesystem::exists("./bwapi-data/read/"))
+        if (std::filesystem::exists("..\\read\\"))
             Broodwar << "We found a READ folder" << std::endl;
-        if (std::filesystem::exists("./bwapi-data/write/"))
+        if (std::filesystem::exists("..\\write\\"))
             Broodwar << "We found a WRITE folder" << std::endl;
 
         //std::error_code ec;
         //try {
         //    using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-        //    for (const auto& dirEntry : recursive_directory_iterator("./bwapi-data/read/")) {
+        //    for (const auto& dirEntry : recursive_directory_iterator("..\\read\\")) {
         //        string filename = dirEntry.path().filename().string();
         //        Broodwar << "Copying: " << filename << std::endl;
-        //        rename(dirEntry, "./bwapi-data/write/" + filename);
-        //        //std::filesystem::copy(dirEntry, "./bwapi-data/write/" + filename, filesystem::copy_options::update_existing, ec);
+        //        rename(dirEntry, "..\\write\\" + filename);
+        //        //std::filesystem::copy(dirEntry, "..\\write\\" + filename, filesystem::copy_options::update_existing, ec);
         //        //if (ec) {
         //        //    Broodwar << ec.message() << std::endl;
         //        //}
@@ -217,7 +217,7 @@ void CUNYAIModule::onStart()
         //}
 
 
-        //std::filesystem::copy("./bwapi-data/read/", "./bwapi-data/write/", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
+        //std::filesystem::copy("..\\read\\", "..\\write\\", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
 
         //if (ec) {
         //    Broodwar << ec.message() << std::endl;
@@ -235,7 +235,10 @@ void CUNYAIModule::onEnd(bool isWinner)
 {// Called when the game ends
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open("./bwapi-data/write/history.txt", ios_base::app);
+    if (std::filesystem::exists("..\\write\\history.txt")) {
+        std::cout << "Writing to history at game end..." << std::endl;
+    }
+    output.open("..\\write\\history.txt", ios_base::app);
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << gas_proportion << ","
         << supply_ratio << ','
@@ -267,7 +270,7 @@ void CUNYAIModule::onEnd(bool isWinner)
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         try {
-            std::filesystem::copy("./bwapi-data/write/", "./bwapi-data/read/", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
+            std::filesystem::copy("..\\write\\", "..\\read\\", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
             Broodwar << "Successfully copied from WRITE to READ folder." << std::endl;
         }
         catch (...) {
@@ -277,7 +280,7 @@ void CUNYAIModule::onEnd(bool isWinner)
 
     if (!buildorder.isEmptyBuildOrder()) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("./bwapi-data/write/BuildOrderFailures.txt", ios_base::app);
+        output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
         string print_value = "";
 
         print_value += buildorder.building_gene_.front().getResearch().c_str();

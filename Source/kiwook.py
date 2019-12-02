@@ -9,16 +9,15 @@ from sklearn.ensemble import RandomForestClassifier
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
 
-print(system_command)
 #if len(local) != 6:
 #    print("Not enough information to run.")
 #    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
 #    print("Exit.")
 #    sys.exit(0)
 
-#f = open("bwapi-data/write/test.txt", "w")
 # 0. Get C++ arguments--------------------------------------------------------------------------------------
 print("We are at: " + os.getcwd() + "\n")
+print("Our parent is " + os.path.normpath(os.path.join(os.getcwd(), os.pardir)) + "\n")
 
 opp_race = e_race
 print("Opp. Race: " + opp_race + "\n")
@@ -29,25 +28,25 @@ print("Opp. Name: " + opp_name + "\n")
 opp_map = e_map
 print("Opp. Map: " + opp_map + "\n")
 
-file_in = str(os.path.join(os.getcwd(), in_file))
+file_in = str(os.path.join(os.path.abspath('..'), in_file))
 print("File In: " + file_in + "\n")
 
 # Def functions----------------------------------------------------------------------------------------------
-def binary_convert(feature):
-    df[feature] = df[feature].astype(float)
-    for row in range(1, df.shape[0]):
-        if df.at[row, feature] >= 1:
-            df.at[row, feature] = 1
+def binary_convert(df_in, feature):
+    df_in[feature] = df_in[feature].astype(float)
+    for row in range(1, df_in.shape[0]):
+        if df_in.at[row, feature] >= 1:
+            df_in.at[row, feature] = 1
         else:
-            df.at[row, feature] = 0
+            df_in.at[row, feature] = 0
+    return df_in
 
+def generate_random_list(df_opening_in):
+    print(df_opening_in)
 
-def generate_random_list():
-    print(df_opening)
-
-    ran_open = df_opening.shape[0]
+    ran_open = df_opening_in.shape[0]
     print(ran_open)
-    opening_code_table = df_opening.index.tolist()
+    opening_code_table = df_opening_in.index.tolist()
     print(opening_code_table)
 
     opening_index_table = []
@@ -61,7 +60,7 @@ def generate_random_list():
     return random_list
 
 
-def generate_choose(dfg_test):
+def generate_choose(df_opening_in, dfg_test_in):
     df_test = []
     limit_attempt = 3
     cnt = 0
@@ -69,12 +68,12 @@ def generate_choose(dfg_test):
 
     # Try until it predicts win or limit_attempts
     while continuing:
-        random_list = generate_random_list()
+        random_list = generate_random_list(df_opening_in)
 
         dfc_test = pd.DataFrame([random_list], columns=['gas_proportion', 'supply_ratio', 'avg_army',
                                                         'avg_econ', 'avg_tech', 'r', 'opening_code'])
 
-        df_single_test = pd.concat([dfc_test, dfg_test], axis=1, sort=False)
+        df_single_test = pd.concat([dfc_test, dfg_test_in], axis=1, sort=False)
 
         df_single_test_temp = df_single_test.astype(float)          # Convert to float
         df_single_test_temp['win'] = clf.predict(df_single_test)    # Predict and store
@@ -138,24 +137,27 @@ print("Finished reading a file from: " + file)
 if df.empty:
     print("No history records. Just exit.")
     sys.exit(0)
+print("We have history records")
 
 # 2. Clean Dataset-------------------------------------------------------------------------------------------
 # Drop the header
 df = df.drop(df.index[0])
 
-print(df)
-
 if df.empty:
     print("No history records. Just exit.")
     sys.exit(0)
+print("We have history records")
 
 if df.isnull().values.any():
     print("Missing values exist. Exit.")
     sys.exit(0)
+print("No missing values")
 
 # Convert 'detector_count' and 'flyers' feature (numerical number to binary number)
-binary_convert('detector_count')
-binary_convert('flyers')
+df = binary_convert(df,'detector_count')
+df = binary_convert(df,'flyers')
+
+print("Binary Conversion Complete")
 
 # Encode numerical values
 lb_make = LabelEncoder()
@@ -164,6 +166,8 @@ df["name_code"] = lb_make.fit_transform(df["name"])
 df["map_code"] = lb_make.fit_transform(df["map"])
 df["opening_code"] = lb_make.fit_transform(df["opening"])
 
+print("Encoding Complete")
+
 # Find and remove noise players.
 df['win'] = df['win'].astype(int)
 df_noise = df[["name", "win"]].groupby(["name"]).mean().rename(columns={'win': 'mean'})
@@ -171,6 +175,8 @@ df_noise = df_noise.loc[df_noise['mean'].isin([0, 1])]
 noise_player = []
 noise_player = df_noise.index.tolist()
 df_cleaned = df.loc[~df['name'].isin(noise_player)]
+
+print("Noise Removed")
 
 # Create Code Table
 df_race = df_cleaned[
@@ -230,6 +236,7 @@ for i in range(df_train.shape[0]):
 df_train = df_temp
 
 print("Finished creating training data")
+print(df_train)
 
 # 4. Create a possible Train Dataset-----------------------------------------------------------------------
 # Define train dataset
@@ -274,7 +281,7 @@ for i in range(len(race_code_table)):
         opp_race_code = race_code_table[i][0]
 if opp_race not in race_code_table[:][1]:
     opp_race_code = race_code_table[-1][0]
-print(str(opp_race_code) + "\n")
+print("Opponent Race Code is: " + str(opp_race_code) + "\n")
 
 name_code_table = df_name.index.tolist()
 name_code_table.append((len(name_code_table), 'None'))
@@ -285,7 +292,7 @@ for i in range(len(name_code_table)):
         opp_name_code = name_code_table[i][0]
 if opp_name not in name_code_table[:][1]:
     opp_name_code = name_code_table[-1][0]
-print(str(opp_name_code) + "\n")
+print("Opponent Name Code is: " + str(opp_name_code) + "\n")
 
 
 map_code_table = df_map.index.tolist()
@@ -297,64 +304,53 @@ for i in range(len(map_code_table)):
         opp_map_code = map_code_table[i][0]
 if opp_map not in map_code_table[:][1]:
     opp_map_code = map_code_table[-1][0]
-print(str(opp_map_code) + "\n")
+print("Opponent Map Code is: " + str(opp_map_code) + "\n")
 
 # Find the records which match to opp_features
 df_fit = df_train[(df_train['race_code'] == opp_race_code) &
                   (df_train['name_code'] == opp_name_code) &
                   (df_train['map_code'] == opp_map_code)]
 df_fit = df_fit.reset_index(drop=True)
+print("Records match attempted.")
 
 # No record, 1 record, and 2+ records
 if df_fit.shape[0] == 0:                        # 0 Record
-    dfg_test = pd.DataFrame([
-        (opp_race_code, opp_name_code, opp_map_code, 0, 0, 0, 0, 0)],
-        columns=given[:-1], index=[0])          # Set given features
-    df_final = generate_choose(dfg_test)        # Set choosing features
-
+    print("Records match failed.")
+    abort_code_t0 = True;
+    print(abort_code_t0)
 else:
+    abort_code_t0 = False;
+    print(abort_code_t0)
     if df_fit.shape[0] == 1:                    # 1 Record
+        print("One record matched")
         dfg_test = df_fit[given[:-1]]           # Set given features
-        df_final = generate_choose(dfg_test)    # Set choosing features
-
+        df_final = generate_choose(df_opening, dfg_test)    # Set choosing features
     else:                                       # 2 Records
+        print("Multiple records matched")
         dfg_test_temp = df_fit[given[:-1]]      # Set given features
-
         # Find max for binary feature and mean for numerical features
         det_max = dfg_test_temp['detector_count'].max()
         fly_max = dfg_test_temp['flyers'].max()
         dfg_test_cleaned = dfg_test_temp.mean()
-
         dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
                                   dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
                                   det_max, fly_max)], columns=given[:-1], index=[0])
-
         df_final = generate_choose(dfg_test)    # Set choosing features
-
-
-print(df_final)
-
-#Pass results to C++
-gas_proportion_t0 = df_final["gas_proportion"]
-print(gas_proportion_t0)
-
-supply_ratio_t0 = df_final["supply_ratio"]
-print(supply_ratio_t0)
-
-a_army_t0 = df_final["avg_army"]
-print(a_army_t0)
-
-a_econ_t0 = df_final["avg_econ"]
-print(a_econ_t0)
-
-a_tech_t0 = df_final["avg_tech"]
-print(a_tech_t0)
-
-r_out_t0 = df_final["r"]
-print(r_out_t0)
-
-build_order_t0 = df_final["opening_code"]
-print(build_order_t0)
-
-attempt_count = df_final["count"]
-print(attempt_count)
+    #Regardless: Pass results to C++ and tell us what we are working with.
+    print(df_final)
+    gas_proportion_t0 = df_final["gas_proportion"]
+    print(gas_proportion_t0)
+    supply_ratio_t0 = df_final["supply_ratio"]
+    print(supply_ratio_t0)
+    a_army_t0 = df_final["avg_army"]
+    print(a_army_t0)
+    a_econ_t0 = df_final["avg_econ"]
+    print(a_econ_t0)
+    a_tech_t0 = df_final["avg_tech"]
+    print(a_tech_t0)
+    r_out_t0 = df_final["r"]
+    print(r_out_t0)
+    build_order_t0 = df_final["opening_code"]
+    print(build_order_t0)
+    attempt_count = df_final["count"]
+    print(attempt_count)

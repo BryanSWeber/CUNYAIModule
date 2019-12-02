@@ -162,7 +162,7 @@ void CobbDouglas::enemy_mimic(const Player_Model & enemy, const double adaptatio
 
 void CobbDouglas::printModelParameters() { // we have poorly named parameters, alpha army is in CUNYAIModule as well.
     std::ofstream GameParameters;
-    GameParameters.open("./bwapi-data/write/GameParameters.txt", ios::app | ios::ate);
+    GameParameters.open("..\\write\\GameParameters.txt", ios::app | ios::ate);
     if (GameParameters.is_open()) {
         GameParameters.seekp(0, ios::end); //to ensure the put pointer is at the end
         GameParameters << getlnY() << "," << getlny() << "," << alpha_army << "," << alpha_econ << "," << alpha_tech << "," << econ_derivative << "," << army_derivative << "," << tech_derivative << "\n";

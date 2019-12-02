@@ -63,6 +63,7 @@ int main(int argc, const char* argv[])
                     break;
                 case EventType::MatchEnd:
                     myBot->onEnd(e.isWinner());
+                    exit; // prevents auto-restart issues.
                     break;
                 case EventType::SendText:
                     myBot->onSendText(e.getText());

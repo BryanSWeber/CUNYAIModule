@@ -25,10 +25,10 @@ namespace py = pybind11;
 
 bool LearningManager::confirmHistoryPresent()
 {
-    rename("./bwapi-data/read/history.txt", "./bwapi-data/write/history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
+    rename("..\\read\\history.txt", "..\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
 
     ifstream input; // brings in info;
-    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
+    input.open("..\\write\\history.txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -38,7 +38,7 @@ bool LearningManager::confirmHistoryPresent()
 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("./bwapi-data/write/history.txt", ios_base::app);
+        output.open("..\\write\\history.txt", ios_base::app);
         output << "gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
         output.close();
         return false;
@@ -134,7 +134,7 @@ void LearningManager::initializeGeneticLearning() {
     loss_rate_ = 1;
 
     ifstream input; // brings in info;
-    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
+    input.open("..\\write\\history.txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -142,14 +142,14 @@ void LearningManager::initializeGeneticLearning() {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open("./bwapi-data/write/history.txt", ios::in);   // for each row
+    input.open("..\\write\\history.txt", ios::in);   // for each row
     csv_length = 0;
     while (getline(input, line)) {
         ++csv_length;
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open("./bwapi-data/write/history.txt", ios::in);
+    input.open("..\\write\\history.txt", ios::in);
     getline(input, line); //skip the first line of the document.
     csv_length--; // that means the remaining csv is shorter by 1 line.
     for (int j = 0; j < csv_length; ++j) {
@@ -473,14 +473,7 @@ void LearningManager::initializeRFLearning()
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
     local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
     local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    local["in_file"] = "\\..\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
-
-    const char space = ' ';
-    string e_race_string = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    string e_name_string = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
-    string e_map_string = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    string in_file_string = "\\..\\write\\history.txt";
-    local["system_command"] = e_race_string + space + e_name_string + space + e_map_string + space + in_file_string; // gotta sterilize the inputs.
+    local["in_file"] = ".\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
 
     local["gas_proportion_t0"] = 0;
     local["supply_ratio_t0"] = 0;
@@ -490,6 +483,7 @@ void LearningManager::initializeRFLearning()
     local["r_out_t0"] = 0;
     local["build_order_t0"] = 0;
     local["attempt_count"] = 0;
+    local["abort_code_t0"] = false;
 
     gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
     supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
@@ -498,30 +492,26 @@ void LearningManager::initializeRFLearning()
     a_tech_t0 = py::float_(local["a_tech_t0"]);
     r_out_t0 = py::float_(local["r_out_t0"]);
     build_order_t0 = py::str(local["build_order_t0"]);
+    bool abort_code = py::bool_(local["abort_code_t0"]);
 
 
     string entry; // entered string from stream
 
-    Broodwar << filesystem::current_path().string() << endl;
-    Broodwar << filesystem::current_path().string() + in_file_string << endl;
-
-    auto result = py::eval_file("C:\\Users\\Bryan\\CUNYBot\\CUNYAIModule\\Source\\kiwook.py", scope, local);
+    py::eval_file(".\\kiwook.py", scope, local);
     
-    gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
-    supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
-    a_army_t0 = py::float_(local["a_army_t0"]);
-    a_econ_t0 = py::float_(local["a_econ_t0"]);
-    a_tech_t0 = py::float_(local["a_tech_t0"]);
-    r_out_t0 = py::float_(local["r_out_t0"]);
-    build_order_t0 = py::str(local["build_order_t0"]);
-
-    if (result) {
-        return;
-    }
-    else {
+    if (abort_code) {
         initializeRandomStart();
     }
-
+    else {
+        gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
+        supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
+        a_army_t0 = py::float_(local["a_army_t0"]);
+        a_econ_t0 = py::float_(local["a_econ_t0"]);
+        a_tech_t0 = py::float_(local["a_tech_t0"]);
+        r_out_t0 = py::float_(local["r_out_t0"]);
+        build_order_t0 = py::str(local["build_order_t0"]);
+    }
+    return;
 }
 
 
