@@ -456,7 +456,6 @@ void LearningManager::initializeRFLearning()
     py::object scope = py::module::import("__main__").attr("__dict__");
     py::object scipy = py::module::import("sklearn");
     py::object random = py::module::import("random");
-    py::object sys = py::module::import("sys");
     py::object osPath = py::module::import("os.path");
     py::object pd = py::module::import("pandas");
     py::object np = py::module::import("numpy");
@@ -470,6 +469,7 @@ void LearningManager::initializeRFLearning()
 
     //Executing script:
     auto local = py::dict();
+    bool abort_code = false;
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
     local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
     local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
@@ -492,13 +492,18 @@ void LearningManager::initializeRFLearning()
     a_tech_t0 = py::float_(local["a_tech_t0"]);
     r_out_t0 = py::float_(local["r_out_t0"]);
     build_order_t0 = py::str(local["build_order_t0"]);
-    bool abort_code = py::bool_(local["abort_code_t0"]);
+    abort_code = py::bool_(local["abort_code_t0"]);
 
 
     string entry; // entered string from stream
 
     py::eval_file(".\\kiwook.py", scope, local);
-    
+
+    //Pull the abort code, should be false if we got through, otherwise if true we aborted.
+    abort_code = py::bool_(local["abort_code_t0"]);
+
+    cout << "Did we abort?: " << abort_code << endl;
+
     if (abort_code) {
         initializeRandomStart();
     }

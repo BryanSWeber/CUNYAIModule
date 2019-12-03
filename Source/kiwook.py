@@ -1,5 +1,4 @@
 import os.path
-import sys
 import random
 import pandas as pd
 import numpy as np
@@ -13,7 +12,6 @@ pd.set_option('display.max_columns', 100)
 #    print("Not enough information to run.")
 #    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
 #    print("Exit.")
-#    sys.exit(0)
 
 # 0. Get C++ arguments--------------------------------------------------------------------------------------
 print("We are at: " + os.getcwd() + "\n")
@@ -30,6 +28,8 @@ print("Opp. Map: " + opp_map + "\n")
 
 file_in = str(os.path.join(os.path.abspath('..'), in_file))
 print("File In: " + file_in + "\n")
+
+abort_code_t0 = False;
 
 # Def functions----------------------------------------------------------------------------------------------
 def binary_convert(df_in, feature):
@@ -136,221 +136,207 @@ print("Finished reading a file from: " + file)
 
 if df.empty:
     print("No history records. Just exit.")
-    sys.exit(0)
-print("We have history records")
-
-# 2. Clean Dataset-------------------------------------------------------------------------------------------
-# Drop the header
-df = df.drop(df.index[0])
-
-if df.empty:
-    print("No history records. Just exit.")
-    sys.exit(0)
-print("We have history records")
+    abort_code_t0 = True;
+    print(abort_code_t0)
+else: 
+    print("We have history records")
 
 if df.isnull().values.any():
     print("Missing values exist. Exit.")
-    sys.exit(0)
-print("No missing values")
-
-# Convert 'detector_count' and 'flyers' feature (numerical number to binary number)
-df = binary_convert(df,'detector_count')
-df = binary_convert(df,'flyers')
-
-print("Binary Conversion Complete")
-
-# Encode numerical values
-lb_make = LabelEncoder()
-df["race_code"] = lb_make.fit_transform(df["race"])
-df["name_code"] = lb_make.fit_transform(df["name"])
-df["map_code"] = lb_make.fit_transform(df["map"])
-df["opening_code"] = lb_make.fit_transform(df["opening"])
-
-print("Encoding Complete")
-
-# Find and remove noise players.
-df['win'] = df['win'].astype(int)
-df_noise = df[["name", "win"]].groupby(["name"]).mean().rename(columns={'win': 'mean'})
-df_noise = df_noise.loc[df_noise['mean'].isin([0, 1])]
-noise_player = []
-noise_player = df_noise.index.tolist()
-df_cleaned = df.loc[~df['name'].isin(noise_player)]
-
-print("Noise Removed")
-
-# Create Code Table
-df_race = df_cleaned[
-    ['race_code', 'race', 'gas_proportion']].groupby(
-    ['race_code', 'race']).count().rename(columns={'gas_proportion': 'count'})
-print(df_race)
-
-df_name = df_cleaned[
-    ['name_code', 'name', 'gas_proportion']].groupby(
-    ['name_code', 'name']).count().rename(columns={'gas_proportion': 'count'})
-print(df_name)
-
-df_map = df_cleaned[
-    ['map_code', 'map', 'gas_proportion']].groupby(
-    ['map_code', 'map']).count().rename(columns={'gas_proportion': 'count'})
-print(df_map)
-
-df_opening = df_cleaned[
-    ['opening_code', 'opening', 'gas_proportion']].groupby(
-    ['opening_code', 'opening']).count().rename(columns={'gas_proportion': 'count'})
-print(df_opening)
-
-
-# dfg = given
-given = ['race_code', 'name_code', 'map_code', 'enemy_avg_army', 'enemy_avg_econ',
-         'enemy_avg_tech', 'detector_count', 'flyers', 'win']
-dfg = df_cleaned[given]
-
-# dfc = choose
-choose = ['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code']
-dfc = df_cleaned[choose]
-
-print("Finished cleaning the data")
-
-# 3. Proper Dataset----------------------------------------------------------------------------------------
-# Create a train data set
-df_train = pd.concat([dfc, dfg], axis=1, sort=False)
-df_train = df_train.astype(float)
-df_train = df_train.reset_index(drop=True)
-df_temp = df_train.copy(deep=True)
-
-enemy_avg_col = ['name_code', 'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech']
-df_sum = df_train[enemy_avg_col].groupby(['name_code']).sum()
-df_cnt = df_train[enemy_avg_col].groupby(['name_code']).count()
-
-for i in range(df_train.shape[0]):
-    if df_train.iloc[i][8] in df_sum.index.tolist():   # name match
-        gp_army_sum = df_sum.at[df_train.iloc[i][8], 'enemy_avg_army']
-        gp_army_cnt = df_cnt.at[df_train.iloc[i][8], 'enemy_avg_army']
-        gp_tech_sum = df_sum.at[df_train.iloc[i][8], 'enemy_avg_tech']
-        gp_tech_cnt = df_cnt.at[df_train.iloc[i][8], 'enemy_avg_tech']
-
-    if df_cnt.at[df_train.iloc[i][8], 'enemy_avg_army'] != 1:
-        df_temp.at[i, 'enemy_avg_army'] = (gp_army_sum - df_train.iloc[i][10]) / (gp_army_cnt - 1)
-        df_temp.at[i, 'enemy_avg_econ'] = 1 - df_temp.at[i, 'enemy_avg_army']
-        df_temp.at[i, 'enemy_avg_tech'] = (gp_tech_sum - df_train.iloc[i][12]) / (gp_tech_cnt - 1)
-df_train = df_temp
-
-print("Finished creating training data")
-print(df_train)
-
-# 4. Create a possible Train Dataset-----------------------------------------------------------------------
-# Define train dataset
-X_train = df_train.drop(['win'], axis=1)
-y_train = df_train['win']
-
-# Creat Random Forest Classifier
-clf = RandomForestClassifier(n_estimators=500, max_depth=7, random_state=1234)
-clf.fit(X_train, y_train)
-
-print("Finished fitting RF")
-# 5. Generate test dataset and predict the game result-----------------------------------------------------
-
-# Testing Call arguments from C++
-
-# Testing 0 record
-#opp_name = "ABCDxyz"
-#opp_map = "(4)Circuit Breaker.scx"
-#opp_race = "Protoss"
-
-# Testing 1 record
-#opp_name = "CUBOT"
-#opp_map = "(4)Circuit Breaker.scx"
-#opp_race = "Zerg"
-
-# Testing 2 record
-#opp_name = "CUBOT"
-#opp_map = "(4)Roadrunner.scx"
-#opp_race = "Zerg"
-
-#opp_race_code = "UNMATCHED"
-#opp_name_code = "UNMATCHED"
-#opp_map_code = "UNMATCHED"
-
-# Find code of opp_features
-race_code_table = df_race.index.tolist()
-race_code_table.append((len(race_code_table), 'None'))
-print(race_code_table)
-for i in range(len(race_code_table)):
-    race_code_table[i] = list(race_code_table[i])
-    if race_code_table[i][1] == opp_race:
-        opp_race_code = race_code_table[i][0]
-if opp_race not in race_code_table[:][1]:
-    opp_race_code = race_code_table[-1][0]
-print("Opponent Race Code is: " + str(opp_race_code) + "\n")
-
-name_code_table = df_name.index.tolist()
-name_code_table.append((len(name_code_table), 'None'))
-print(name_code_table)
-for i in range(len(name_code_table)):
-    name_code_table[i] = list(name_code_table[i])
-    if name_code_table[i][1] == opp_name:
-        opp_name_code = name_code_table[i][0]
-if opp_name not in name_code_table[:][1]:
-    opp_name_code = name_code_table[-1][0]
-print("Opponent Name Code is: " + str(opp_name_code) + "\n")
-
-
-map_code_table = df_map.index.tolist()
-map_code_table.append((len(map_code_table), 'None'))
-print(map_code_table)
-for i in range(len(map_code_table)):
-    map_code_table[i] = list(map_code_table[i])
-    if map_code_table[i][1] == opp_map:
-        opp_map_code = map_code_table[i][0]
-if opp_map not in map_code_table[:][1]:
-    opp_map_code = map_code_table[-1][0]
-print("Opponent Map Code is: " + str(opp_map_code) + "\n")
-
-# Find the records which match to opp_features
-df_fit = df_train[(df_train['race_code'] == opp_race_code) &
-                  (df_train['name_code'] == opp_name_code) &
-                  (df_train['map_code'] == opp_map_code)]
-df_fit = df_fit.reset_index(drop=True)
-print("Records match attempted.")
-
-# No record, 1 record, and 2+ records
-if df_fit.shape[0] == 0:                        # 0 Record
-    print("Records match failed.")
     abort_code_t0 = True;
     print(abort_code_t0)
-else:
-    abort_code_t0 = False;
-    print(abort_code_t0)
-    if df_fit.shape[0] == 1:                    # 1 Record
-        print("One record matched")
-        dfg_test = df_fit[given[:-1]]           # Set given features
-        df_final = generate_choose(df_opening, dfg_test)    # Set choosing features
-    else:                                       # 2 Records
-        print("Multiple records matched")
-        dfg_test_temp = df_fit[given[:-1]]      # Set given features
-        # Find max for binary feature and mean for numerical features
-        det_max = dfg_test_temp['detector_count'].max()
-        fly_max = dfg_test_temp['flyers'].max()
-        dfg_test_cleaned = dfg_test_temp.mean()
-        dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
-                                  dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
-                                  det_max, fly_max)], columns=given[:-1], index=[0])
-        df_final = generate_choose(dfg_test)    # Set choosing features
-    #Regardless: Pass results to C++ and tell us what we are working with.
-    print(df_final)
-    gas_proportion_t0 = df_final["gas_proportion"]
-    print(gas_proportion_t0)
-    supply_ratio_t0 = df_final["supply_ratio"]
-    print(supply_ratio_t0)
-    a_army_t0 = df_final["avg_army"]
-    print(a_army_t0)
-    a_econ_t0 = df_final["avg_econ"]
-    print(a_econ_t0)
-    a_tech_t0 = df_final["avg_tech"]
-    print(a_tech_t0)
-    r_out_t0 = df_final["r"]
-    print(r_out_t0)
-    build_order_t0 = df_final["opening_code"]
-    print(build_order_t0)
-    attempt_count = df_final["count"]
-    print(attempt_count)
+else: 
+    print("No missing values")
+
+if abort_code_t0 == False:
+    # 2. Clean Dataset-------------------------------------------------------------------------------------------
+    # Drop the header
+    df = df.drop(df.index[0])
+
+    # Convert 'detector_count' and 'flyers' feature (numerical number to binary number)
+    df = binary_convert(df,'detector_count')
+    df = binary_convert(df,'flyers')
+
+    print("Binary Conversion Complete")
+
+    # Encode numerical values
+    lb_make = LabelEncoder()
+    df["race_code"] = lb_make.fit_transform(df["race"])
+    df["name_code"] = lb_make.fit_transform(df["name"])
+    df["map_code"] = lb_make.fit_transform(df["map"])
+    df["opening_code"] = lb_make.fit_transform(df["opening"])
+
+    print("Encoding Complete")
+
+    # Find and remove noise players.
+    df['win'] = df['win'].astype(int)
+    df_noise = df[["name", "win"]].groupby(["name"]).mean().rename(columns={'win': 'mean'})
+    df_noise = df_noise.loc[df_noise['mean'].isin([0, 1])]
+    noise_player = []
+    noise_player = df_noise.index.tolist()
+    df_cleaned = df.loc[~df['name'].isin(noise_player)]
+
+    print("Noise Removed")
+
+    # Create Code Table
+    df_race = df_cleaned[
+        ['race_code', 'race', 'gas_proportion']].groupby(
+        ['race_code', 'race']).count().rename(columns={'gas_proportion': 'count'})
+    print(df_race)
+
+    df_name = df_cleaned[
+        ['name_code', 'name', 'gas_proportion']].groupby(
+        ['name_code', 'name']).count().rename(columns={'gas_proportion': 'count'})
+    print(df_name)
+
+    df_map = df_cleaned[
+        ['map_code', 'map', 'gas_proportion']].groupby(
+        ['map_code', 'map']).count().rename(columns={'gas_proportion': 'count'})
+    print(df_map)
+
+    df_opening = df_cleaned[
+        ['opening_code', 'opening', 'gas_proportion']].groupby(
+        ['opening_code', 'opening']).count().rename(columns={'gas_proportion': 'count'})
+    print(df_opening)
+
+    # dfg = given
+    given = ['race_code', 'name_code', 'map_code', 'enemy_avg_army', 'enemy_avg_econ',
+             'enemy_avg_tech', 'detector_count', 'flyers', 'win']
+    dfg = df_cleaned[given]
+
+    # dfc = choose
+    choose = ['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code']
+    dfc = df_cleaned[choose]
+
+    print("Finished cleaning the data")
+
+    # 3. Proper Dataset----------------------------------------------------------------------------------------
+    # Create a train data set
+    df_train = pd.concat([dfc, dfg], axis=1, sort=False)
+    df_train = df_train.astype(float)
+    df_train = df_train.reset_index(drop=True)
+    df_temp = df_train.copy(deep=True)
+
+    enemy_avg_col = ['name_code', 'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech']
+    df_sum = df_train[enemy_avg_col].groupby(['name_code']).sum()
+    df_cnt = df_train[enemy_avg_col].groupby(['name_code']).count()
+
+    for i in range(df_train.shape[0]):
+        if df_train.iloc[i][8] in df_sum.index.tolist():   # name match
+            gp_army_sum = df_sum.at[df_train.iloc[i][8], 'enemy_avg_army']
+            gp_army_cnt = df_cnt.at[df_train.iloc[i][8], 'enemy_avg_army']
+            gp_tech_sum = df_sum.at[df_train.iloc[i][8], 'enemy_avg_tech']
+            gp_tech_cnt = df_cnt.at[df_train.iloc[i][8], 'enemy_avg_tech']
+
+        if df_cnt.at[df_train.iloc[i][8], 'enemy_avg_army'] != 1:
+            df_temp.at[i, 'enemy_avg_army'] = (gp_army_sum - df_train.iloc[i][10]) / (gp_army_cnt - 1)
+            df_temp.at[i, 'enemy_avg_econ'] = 1 - df_temp.at[i, 'enemy_avg_army']
+            df_temp.at[i, 'enemy_avg_tech'] = (gp_tech_sum - df_train.iloc[i][12]) / (gp_tech_cnt - 1)
+    df_train = df_temp
+
+    print("Finished creating training data")
+    print(df_train)
+    
+    if df_train.empty or df_train.shape[0] <= 1:
+        print("Training File is empty.")
+        abort_code_t0 = True;
+        print(abort_code_t0)
+    else: 
+        print("Training File is not empty.")
+
+if abort_code_t0 == False:
+    # 4. Create a possible Train Dataset-----------------------------------------------------------------------
+    # Define train dataset
+    X_train = df_train.drop(['win'], axis=1)
+    y_train = df_train['win']
+
+    # Creat Random Forest Classifier
+    clf = RandomForestClassifier(n_estimators=500, max_depth=7, random_state=1234)
+    clf.fit(X_train, y_train)
+
+    print("Finished fitting RF")
+    # 5. Generate test dataset and predict the game result-----------------------------------------------------
+
+    # Find code of opp_features
+    race_code_table = df_race.index.tolist()
+    race_code_table.append((len(race_code_table), 'None'))
+    print(race_code_table)
+    for i in range(len(race_code_table)):
+        race_code_table[i] = list(race_code_table[i])
+        if race_code_table[i][1] == opp_race:
+            opp_race_code = race_code_table[i][0]
+    if opp_race not in race_code_table[:][1]:
+        opp_race_code = race_code_table[-1][0]
+    print("Opponent Race Code is: " + str(opp_race_code) + "\n")
+
+    name_code_table = df_name.index.tolist()
+    name_code_table.append((len(name_code_table), 'None'))
+    print(name_code_table)
+    for i in range(len(name_code_table)):
+        name_code_table[i] = list(name_code_table[i])
+        if name_code_table[i][1] == opp_name:
+            opp_name_code = name_code_table[i][0]
+    if opp_name not in name_code_table[:][1]:
+        opp_name_code = name_code_table[-1][0]
+    print("Opponent Name Code is: " + str(opp_name_code) + "\n")
+
+
+    map_code_table = df_map.index.tolist()
+    map_code_table.append((len(map_code_table), 'None'))
+    print(map_code_table)
+    for i in range(len(map_code_table)):
+        map_code_table[i] = list(map_code_table[i])
+        if map_code_table[i][1] == opp_map:
+            opp_map_code = map_code_table[i][0]
+    if opp_map not in map_code_table[:][1]:
+        opp_map_code = map_code_table[-1][0]
+    print("Opponent Map Code is: " + str(opp_map_code) + "\n")
+
+    # Find the records which match to opp_features
+    df_fit = df_train[(df_train['race_code'] == opp_race_code) &
+                      (df_train['name_code'] == opp_name_code) &
+                      (df_train['map_code'] == opp_map_code)]
+    df_fit = df_fit.reset_index(drop=True)
+    print("Records match attempted.")
+
+    # No record, 1 record, and 2+ records
+    if df_fit.shape[0] == 0:                        # 0 Record
+        print("Records match failed.")
+        abort_code_t0 = True;
+        print(abort_code_t0)
+    else:
+        print(abort_code_t0)
+        if df_fit.shape[0] == 1:                    # 1 Record
+            print("One record matched")
+            dfg_test = df_fit[given[:-1]]           # Set given features
+            df_final = generate_choose(df_opening, dfg_test)    # Set choosing features
+        else:                                       # 2 Records
+            print("Multiple records matched")
+            dfg_test_temp = df_fit[given[:-1]]      # Set given features
+            # Find max for binary feature and mean for numerical features
+            det_max = dfg_test_temp['detector_count'].max()
+            fly_max = dfg_test_temp['flyers'].max()
+            dfg_test_cleaned = dfg_test_temp.mean()
+            dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
+                                      dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
+                                      det_max, fly_max)], columns=given[:-1], index=[0])
+            df_final = generate_choose(dfg_test)    # Set choosing features
+        #Regardless: Pass results to C++ and tell us what we are working with.
+        print(df_final)
+        gas_proportion_t0 = df_final["gas_proportion"]
+        print(gas_proportion_t0)
+        supply_ratio_t0 = df_final["supply_ratio"]
+        print(supply_ratio_t0)
+        a_army_t0 = df_final["avg_army"]
+        print(a_army_t0)
+        a_econ_t0 = df_final["avg_econ"]
+        print(a_econ_t0)
+        a_tech_t0 = df_final["avg_tech"]
+        print(a_tech_t0)
+        r_out_t0 = df_final["r"]
+        print(r_out_t0)
+        build_order_t0 = df_final["opening_code"]
+        print(build_order_t0)
+        attempt_count = df_final["count"]
+        print(attempt_count)
+
