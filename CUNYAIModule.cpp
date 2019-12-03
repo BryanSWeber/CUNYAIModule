@@ -246,7 +246,7 @@ void CUNYAIModule::onEnd(bool isWinner)
         << alpha_econ_original << ','
         << alpha_tech_original << ','
         << adaptation_rate << ','
-        << Broodwar->enemy()->getRace().c_str() << ","
+        << CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str()) << ","
         << isWinner << ','
         << short_delay << ','
         << med_delay << ','

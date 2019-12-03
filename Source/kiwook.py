@@ -305,7 +305,6 @@ if abort_code_t0 == False:
         abort_code_t0 = True;
         print(abort_code_t0)
     else:
-        print(abort_code_t0)
         if df_fit.shape[0] == 1:                    # 1 Record
             print("One record matched")
             dfg_test = df_fit[given[:-1]]           # Set given features
@@ -339,4 +338,5 @@ if abort_code_t0 == False:
         print(build_order_t0)
         attempt_count = df_final["count"]
         print(attempt_count)
+        print(abort_code_t0)
 
