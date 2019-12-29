@@ -41,45 +41,54 @@ def binary_convert(df_in, feature):
             df_in.at[row, feature] = 0
     return df_in
 
-def generate_random_list(df_opening_in):
-    print(df_opening_in)
-
-    ran_open = df_opening_in.shape[0]
-    print(ran_open)
-    opening_code_table = df_opening_in.index.tolist()
-    print(opening_code_table)
-
-    opening_index_table = []
-    for ele in range(len(opening_code_table)):
-        opening_index_table += [list(opening_code_table[ele])[0]]
-    print(opening_index_table)
-    np.random.choice(opening_index_table, 1)
-    random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),
-                   round(random.uniform(0, 3), 6), round(np.random.rand(), 6), np.random.choice(opening_index_table, 1)] #np.random.randint(ran_open)]
-    random_list.insert(3, round(1 - random_list[2], 6))
-    return random_list
-
-
 def generate_choose(df_opening_in, dfg_test_in):
+    import pandas as pd
+    import numpy as np
     df_test = []
     limit_attempt = 3
     cnt = 0
     continuing = True
-
+    print("Made it inside Generate Choose")
     # Try until it predicts win or limit_attempts
     while continuing:
-        random_list = generate_random_list(df_opening_in)
-
-        dfc_test = pd.DataFrame([random_list], columns=['gas_proportion', 'supply_ratio', 'avg_army',
-                                                        'avg_econ', 'avg_tech', 'r', 'opening_code'])
-
+    
+        print("Attempting to generate a random guess:")
+        print(df_opening_in)
+        ran_open = df_opening_in.shape[0]
+        print(ran_open)
+        opening_code_table = df_opening_in.index.tolist()
+        print(opening_code_table)
+        opening_index_table = []
+        for ele in range(len(opening_code_table)):
+            opening_index_table += [list(opening_code_table[ele])[0]]
+        print(opening_index_table)
+        print(np.pi)
+        print(np.random.choice(opening_index_table))
+        opn = np.random.choice(opening_index_table, 1)[0]
+        opn = int(opn)
+        print(opn)
+        print(round(np.random.rand(), 6))
+        random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),round(np.random.uniform(0, 3), 6), round(np.random.rand(), 6), opn] 
+        print(random_list)
+        random_list.insert(3, round(1 - random_list[2], 6))
+        current_guess = random_list
+        print("Guess Made")
+        print(current_guess)
+        
+        dfc_test = pd.DataFrame([current_guess], columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code'])
         df_single_test = pd.concat([dfc_test, dfg_test_in], axis=1, sort=False)
 
+        print("Testing the following:")
+        print(df_single_test)
+        
         df_single_test_temp = df_single_test.astype(float)          # Convert to float
         df_single_test_temp['win'] = clf.predict(df_single_test)    # Predict and store
+        print(df_single_test_temp['win'])
         single_test = df_single_test_temp.values.tolist()
+        print(single_test)
         single_test = single_test[0]                                # Remove duplicate []
-
+        print(single_test)
+        
         # Check whether the result is win or loss
         if single_test[15] == 1.0:  # win case
             cnt += 1
@@ -95,7 +104,7 @@ def generate_choose(df_opening_in, dfg_test_in):
 
     print(df_test)
     # Decode the code of opp_features
-    opening_code_table = df_opening.index.tolist()
+    opening_code_table = df_opening_in.index.tolist()
     for i in range(len(opening_code_table)):
         opening_code_table[i] = list(opening_code_table[i])
         print(opening_code_table[i])
@@ -261,65 +270,62 @@ if abort_code_t0 == False:
     race_code_table = df_race.index.tolist()
     race_code_table.append((len(race_code_table), 'None'))
     print(race_code_table)
+    opp_race_code = race_code_table[-1][0]
     for i in range(len(race_code_table)):
         race_code_table[i] = list(race_code_table[i])
         if race_code_table[i][1] == opp_race:
             opp_race_code = race_code_table[i][0]
-    if opp_race not in race_code_table[:][1]:
-        opp_race_code = race_code_table[-1][0]
     print("Opponent Race Code is: " + str(opp_race_code) + "\n")
 
     name_code_table = df_name.index.tolist()
     name_code_table.append((len(name_code_table), 'None'))
     print(name_code_table)
+    opp_name_code = name_code_table[-1][0]
     for i in range(len(name_code_table)):
         name_code_table[i] = list(name_code_table[i])
         if name_code_table[i][1] == opp_name:
             opp_name_code = name_code_table[i][0]
-    if opp_name not in name_code_table[:][1]:
-        opp_name_code = name_code_table[-1][0]
     print("Opponent Name Code is: " + str(opp_name_code) + "\n")
 
 
     map_code_table = df_map.index.tolist()
     map_code_table.append((len(map_code_table), 'None'))
     print(map_code_table)
+    opp_map_code = map_code_table[-1][0]
     for i in range(len(map_code_table)):
         map_code_table[i] = list(map_code_table[i])
         if map_code_table[i][1] == opp_map:
             opp_map_code = map_code_table[i][0]
-    if opp_map not in map_code_table[:][1]:
-        opp_map_code = map_code_table[-1][0]
     print("Opponent Map Code is: " + str(opp_map_code) + "\n")
 
     # Find the records which match to opp_features
-    df_fit = df_train[(df_train['race_code'] == opp_race_code) &
-                      (df_train['name_code'] == opp_name_code) &
-                      (df_train['map_code'] == opp_map_code)]
-    df_fit = df_fit.reset_index(drop=True)
+    race_found = (df_train['race_code'] == opp_race_code).any() 
+    if race_found:
+        print("Race Found.")
+    opp_found = (df_train['name_code'] == opp_name_code).any() 
+    if opp_found:
+        print("Opp. Found.")
+    map_found = (df_train['map_code'] == opp_map_code).any()
+    if map_found:
+        print("Map Found.")
+    
+    match_found = race_found and opp_found and map_found
     print("Records match attempted.")
 
     # No record, 1 record, and 2+ records
-    if df_fit.shape[0] == 0:                        # 0 Record
-        print("Records match failed.")
-        abort_code_t0 = True;
-        print(abort_code_t0)
-    else:
-        if df_fit.shape[0] == 1:                    # 1 Record
-            print("One record matched")
-            dfg_test = df_fit[given[:-1]]           # Set given features
-            df_final = generate_choose(df_opening, dfg_test)    # Set choosing features
-        else:                                       # 2 Records
-            print("Multiple records matched")
-            dfg_test_temp = df_fit[given[:-1]]      # Set given features
-            # Find max for binary feature and mean for numerical features
-            det_max = dfg_test_temp['detector_count'].max()
-            fly_max = dfg_test_temp['flyers'].max()
-            dfg_test_cleaned = dfg_test_temp.mean()
-            dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
-                                      dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
-                                      det_max, fly_max)], columns=given[:-1], index=[0])
-            df_final = generate_choose(dfg_test)    # Set choosing features
+    if match_found:                        # 0 Record
+        print("Multiple records matched")
+        dfg_test_temp = df_train[given[:-1]]      # Set given features
+        # Find max for binary feature and mean for numerical features
+        det_max = dfg_test_temp['detector_count'].max()
+        fly_max = dfg_test_temp['flyers'].max()
+        dfg_test_cleaned = dfg_test_temp.mean()
+        dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
+                                  dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
+                                  det_max, fly_max)], columns=given[:-1], index=[0])
+        print(df_opening)
+        print(dfg_test)
+        df_final = generate_choose(df_opening,dfg_test)    # Set choosing features
         #Regardless: Pass results to C++ and tell us what we are working with.
         print(df_final)
         gas_proportion_t0 = df_final["gas_proportion"]
@@ -339,4 +345,9 @@ if abort_code_t0 == False:
         attempt_count = df_final["count"]
         print(attempt_count)
         print(abort_code_t0)
+    else:
+        print("Records match failed.")
+        abort_code_t0 = True;
+        print(abort_code_t0)
 
+print("Script Concluded.")

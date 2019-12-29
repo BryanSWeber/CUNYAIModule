@@ -501,8 +501,9 @@ void LearningManager::initializeRFLearning()
 
     //Pull the abort code, should be false if we got through, otherwise if true we aborted.
     abort_code = py::bool_(local["abort_code_t0"]);
+    string result = abort_code ? "TRUE" : "FALSE";
 
-    cout << "Did we abort?: " << abort_code << endl;
+    cout << "Did we abort?: " << result << endl;
 
     if (abort_code) {
         initializeRandomStart();
