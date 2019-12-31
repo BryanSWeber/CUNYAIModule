@@ -41,94 +41,7 @@ def binary_convert(df_in, feature):
             df_in.at[row, feature] = 0
     return df_in
 
-def generate_choose(df_opening_in, dfg_test_in):
-    import pandas as pd
-    import numpy as np
-    df_test = []
-    limit_attempt = 3
-    cnt = 0
-    continuing = True
-    print("Made it inside Generate Choose")
-    # Try until it predicts win or limit_attempts
-    while continuing:
-    
-        print("Attempting to generate a random guess:")
-        print(df_opening_in)
-        ran_open = df_opening_in.shape[0]
-        print(ran_open)
-        opening_code_table = df_opening_in.index.tolist()
-        print(opening_code_table)
-        opening_index_table = []
-        for ele in range(len(opening_code_table)):
-            opening_index_table += [list(opening_code_table[ele])[0]]
-        print(opening_index_table)
-        print(np.pi)
-        print(np.random.choice(opening_index_table))
-        opn = np.random.choice(opening_index_table, 1)[0]
-        opn = int(opn)
-        print(opn)
-        print(round(np.random.rand(), 6))
-        random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),round(np.random.uniform(0, 3), 6), round(np.random.rand(), 6), opn] 
-        print(random_list)
-        random_list.insert(3, round(1 - random_list[2], 6))
-        current_guess = random_list
-        print("Guess Made")
-        print(current_guess)
-        
-        dfc_test = pd.DataFrame([current_guess], columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code'])
-        df_single_test = pd.concat([dfc_test, dfg_test_in], axis=1, sort=False)
-
-        print("Testing the following:")
-        print(df_single_test)
-        
-        df_single_test_temp = df_single_test.astype(float)          # Convert to float
-        df_single_test_temp['win'] = clf.predict(df_single_test)    # Predict and store
-        print(df_single_test_temp['win'])
-        single_test = df_single_test_temp.values.tolist()
-        print(single_test)
-        single_test = single_test[0]                                # Remove duplicate []
-        print(single_test)
-        
-        # Check whether the result is win or loss
-        if single_test[15] == 1.0:  # win case
-            cnt += 1
-            single_test.append(cnt)
-            df_test += [single_test]
-            continuing = False
-        else:                       # lose case
-            cnt += 1
-            if cnt >= limit_attempt:
-                single_test.append(cnt)
-                df_test += [single_test]
-                continuing = False
-
-    print(df_test)
-    # Decode the code of opp_features
-    opening_code_table = df_opening_in.index.tolist()
-    for i in range(len(opening_code_table)):
-        opening_code_table[i] = list(opening_code_table[i])
-        print(opening_code_table[i])
-        print(opening_code_table[i][0])
-        print(type(opening_code_table[i][0]))
-        print(type(df_test[0][6]))
-        if float(opening_code_table[i][0]) == df_test[0][6]:
-            df_test[0][6] = opening_code_table[i][1]
-
-    print(df_test)
-
-    df_test[0][7] = opp_race
-    df_test[0][8] = opp_name
-    df_test[0][9] = opp_map
-
-    print(df_test)
-
-    df_test = pd.DataFrame(
-        df_test, columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r',
-                          'opening', 'race', 'name', 'map', 'enemy_avg_army', 'enemy_avg_econ',
-                          'enemy_avg_tech', 'detector_count', 'flyers', 'win', 'count'])
-    return df_test
-
-
+# cannot use because it has a definition of CLF in it that is not yet defined. Seems like the IDE allowed strange behavior.
 # -----------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------
 # 1. Load Dataset--------------------------------------------------------------------------------------------
@@ -325,7 +238,88 @@ if abort_code_t0 == False:
                                   det_max, fly_max)], columns=given[:-1], index=[0])
         print(df_opening)
         print(dfg_test)
-        df_final = generate_choose(df_opening,dfg_test)    # Set choosing features
+        #Generate choice:
+        df_test = []
+        limit_attempt = 3
+        cnt = 0
+        continuing = True
+        print("Made it inside Generate Choose")
+        # Try until it predicts win or limit_attempts
+        while continuing:
+            print("Attempting to generate a random guess:")
+            print(df_opening)
+            ran_open = df_opening.shape[0]
+            print(ran_open)
+            opening_code_table = df_opening.index.tolist()
+            print(opening_code_table)
+            opening_index_table = []
+            for ele in range(len(opening_code_table)):
+                opening_index_table += [list(opening_code_table[ele])[0]]
+            print(opening_index_table)
+            print(np.pi)
+            print(np.random.choice(opening_index_table))
+            opn = np.random.choice(opening_index_table, 1)[0]
+            opn = int(opn)
+            print(opn)
+            print(round(np.random.rand(), 6))
+            random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),round(np.random.uniform(0, 3), 6), round(np.random.rand(), 6), opn] 
+            print(random_list)
+            random_list.insert(3, round(1 - random_list[2], 6))
+            current_guess = random_list
+            print("Guess Made")
+            print(current_guess)
+            dfc_test = pd.DataFrame([current_guess], columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code'])
+            df_single_test = pd.concat([dfc_test, dfg_test], axis=1, sort=False)
+            print("Testing the following:")
+            print(df_single_test)
+            df_single_test_temp = df_single_test.astype(float)          # Convert to float
+            print("Trying CLF")
+            df_single_test_temp['win'] = clf.predict(df_single_test)    # Predict and store
+            print(df_single_test_temp['win'])
+            single_test = df_single_test_temp.values.tolist()
+            single_test = single_test[0]                                # Remove duplicate []
+            print(single_test)
+            
+            # Check whether the result is win or loss
+            if single_test[15] == 1.0:  # win case
+                cnt += 1
+                single_test.append(cnt)
+                df_test += [single_test]
+                continuing = False
+                print("We passed the filter.")
+            else:                       # lose case
+                cnt += 1
+                if cnt >= limit_attempt:
+                    single_test.append(cnt)
+                    df_test += [single_test]
+                    continuing = False
+                print("We did NOT pass the filter.")
+        print(df_test)
+        # Decode the code of opp_features
+        opening_code_table = df_opening.index.tolist()
+        for i in range(len(opening_code_table)):
+            opening_code_table[i] = list(opening_code_table[i])
+            print(opening_code_table[i])
+            print(opening_code_table[i][0])
+            print(type(opening_code_table[i][0]))
+            print(type(df_test[0][6]))
+            if float(opening_code_table[i][0]) == df_test[0][6]:
+                df_test[0][6] = opening_code_table[i][1]
+        print(df_test)
+
+        df_test[0][7] = opp_race
+        df_test[0][8] = opp_name
+        df_test[0][9] = opp_map
+
+        print(df_test)
+
+        df_test = pd.DataFrame(
+            df_test, columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r',
+                              'opening', 'race', 'name', 'map', 'enemy_avg_army', 'enemy_avg_econ',
+                              'enemy_avg_tech', 'detector_count', 'flyers', 'win', 'count'])
+        df_final = df_test
+        #End Generate Choose
+        
         #Regardless: Pass results to C++ and tell us what we are working with.
         print(df_final)
         gas_proportion_t0 = df_final["gas_proportion"]
@@ -340,7 +334,7 @@ if abort_code_t0 == False:
         print(a_tech_t0)
         r_out_t0 = df_final["r"]
         print(r_out_t0)
-        build_order_t0 = df_final["opening_code"]
+        build_order_t0 = df_final["opening"]
         print(build_order_t0)
         attempt_count = df_final["count"]
         print(attempt_count)
