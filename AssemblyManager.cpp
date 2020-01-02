@@ -568,7 +568,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
 }
 
-bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate) {
+bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate, const bool & force_spore = false, const bool & force_sunken = false) {
 
     if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
     else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
@@ -576,8 +576,8 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate) {
     bool must_make_spore = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
     bool must_make_sunken = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
 
-    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (!CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if ((CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_spore) || force_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if ((!CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_sunken) || force_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 
     return false;
 }
@@ -966,8 +966,14 @@ bool AssemblyManager::assignUnitAssembly()
         u_loc.updateUnitInventorySummary();
         bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_);
         bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+        bool sunken_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
+        bool spore_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
+        bool creep_colony_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
 
-        if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc, true) || (they_are_moving_out_ground && this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (they_are_moving_out_air && this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true))) {
+        bool ground_weak = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (sunken_count == 0 && creep_colony_count == 0);
+        bool air_weak = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (spore_count == 0 && creep_colony_count == 0);
+
+        if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc, true) || (they_are_moving_out_ground && ground_weak && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true)) || (they_are_moving_out_air && air_weak && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true))) {
             Diagnostics::drawDot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
             //Diagnostics::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
 
@@ -984,9 +990,22 @@ bool AssemblyManager::assignUnitAssembly()
         }
     }
 
+    // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager.
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
-            buildStaticDefence(creep_colony.first); // checks globally but not bad, info is mostly already there.
+            auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, creep_colony.first->getPosition());
+            auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, creep_colony.first->getPosition());
+            e_loc.updateUnitInventorySummary();
+            u_loc.updateUnitInventorySummary();
+            bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(creep_colony.second.pos_);
+            bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(creep_colony.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+            bool sunken_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
+            bool spore_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
+            bool creep_colony_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
+            bool ground_weak = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (sunken_count == 0);
+            bool air_weak = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (spore_count == 0);
+
+            buildStaticDefence(creep_colony.first, air_weak && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first), ground_weak && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first)); // checks globally but not bad, info is mostly already there.
         }
         last_frame_of_creep_command = Broodwar->getFrameCount();
     }

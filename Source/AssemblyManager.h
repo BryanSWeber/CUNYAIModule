@@ -37,7 +37,7 @@ public:
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
     static int returnUnitRank(const UnitType &ut);
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
-    static bool buildStaticDefence(const Unit & morph_canidate);
+    static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken);
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building.
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera);
@@ -68,7 +68,7 @@ public:
     // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
 
-    //Returns the maximum gas that a unit could cost that I can build right now.
+    //Returns the maximum gas cost of all currently builable units.
     static int getMaxGas();
 };
 

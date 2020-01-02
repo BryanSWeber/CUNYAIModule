@@ -190,7 +190,8 @@ bool CombatManager::scoutScript(const Unit & u)
     if (scout_squad_.unit_map_.empty() || isScout(u)) { // if the scout squad is empty or this unit is in it.
         auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
         if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != Stored_Unit::Phase::Detecting) {
-            scout_squad_.addStored_Unit(u);
+            addScout(u);
+            removeLiablity(u);
             Mobility mobility = Mobility(u);
             Stored_Unit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
             if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
@@ -220,11 +221,15 @@ bool CombatManager::liabilitiesScript(const Unit &u)
 {
     liabilities_squad_.addStored_Unit(u);
     Stored_Unit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 99999);
-    if (closestSpore && u->move(closestSpore->pos_))
+    if (closestSpore && u->getPosition().getDistance(closestSpore->pos_) < 32) // If they're there at the destination, they are doing nothing.
+        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+    if (closestSpore && u->move(closestSpore->pos_)) // Otherwise, get them to safety.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
     Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 99999);
-    if (closestSunken && u->move(closestSunken->pos_))
-        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
+    if (closestSunken && u->getPosition().getDistance(closestSunken->pos_) < 32) // If they're there at the destination, they are doing nothing.
+        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None); 
+    if (closestSunken && u->move(closestSunken->pos_)) // Otherwise, get them to safety.
+        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome); 
     return false;
 }
 

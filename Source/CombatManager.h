@@ -47,9 +47,9 @@ public:
     //Adds to appropriate inventory. May move differently.
     bool addLiablitity(const Unit &u);
     //Adds to appropriate inventory. May move differently.
-    bool addScout(const Unit &u);
+    static bool addScout(const Unit &u);
     //Removes from appropriate inventory. May move differently.
-    void removeScout(const Unit & u);
+    static void removeScout(const Unit & u);
     //Checks if a particular unit is stored in scout.
     static bool isScout(const Unit &u);
     //Checks if a particular unit is stored in liablities.
