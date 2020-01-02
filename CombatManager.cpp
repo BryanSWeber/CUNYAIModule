@@ -23,12 +23,13 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     bool found_and_detecting = found_item->phase_ == Stored_Unit::Phase::Detecting;
     bool found_and_doing_nothing = found_item->phase_ == Stored_Unit::Phase::None;
     bool found_and_morphing = found_item->phase_ == Stored_Unit::Phase::Morphing;
+    bool found_and_going_home = found_item->phase_ == Stored_Unit::Phase::PathingHome;
 
     if (isScout(u)) {
         if (u->isBlind() || found_and_detecting) removeScout(u);
     }
 
-    if (found_and_detecting && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+    if ( (found_and_morphing || found_and_going_home || found_and_detecting) && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
 
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
@@ -39,7 +40,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
             task_assigned = true;
         if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
             task_assigned = true;
-        if (!task_assigned && u->getType() == UnitTypes::Zerg_Overlord && (found_and_doing_nothing || found_and_morphing) && liabilitiesScript(u))
+        if (!task_assigned && u->getType() == UnitTypes::Zerg_Overlord && (found_and_doing_nothing || found_and_morphing || found_and_going_home) && liabilitiesScript(u))
             task_assigned = true;
     }
 
