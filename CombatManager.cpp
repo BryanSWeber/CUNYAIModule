@@ -21,6 +21,8 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
 
     auto found_item = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
     bool found_and_detecting = found_item->phase_ == Stored_Unit::Phase::Detecting;
+    bool found_and_doing_nothing = found_item->phase_ == Stored_Unit::Phase::None;
+    bool found_and_morphing = found_item->phase_ == Stored_Unit::Phase::Morphing;
 
     if (isScout(u)) {
         if (u->isBlind() || found_and_detecting) removeScout(u);
@@ -37,7 +39,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
             task_assigned = true;
         if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
             task_assigned = true;
-        if (!task_assigned && u->getType() == UnitTypes::Zerg_Overlord && u->isBlind() && Mobility(u).Retreat_Logic())
+        if (!task_assigned && u->getType() == UnitTypes::Zerg_Overlord && (found_and_doing_nothing || found_and_morphing) && liabilitiesScript(u))
             task_assigned = true;
     }
 
@@ -213,6 +215,19 @@ bool CombatManager::scoutScript(const Unit & u)
     return false;
 }
 
+// Protects a unit (primarily overlords) that is otherwise simply a liability.
+bool CombatManager::liabilitiesScript(const Unit &u)
+{
+    liabilities_squad_.addStored_Unit(u);
+    Stored_Unit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 99999);
+    if (closestSpore && u->move(closestSpore->pos_))
+        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
+    Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 99999);
+    if (closestSunken && u->move(closestSunken->pos_))
+        return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
+    return false;
+}
+
 bool CombatManager::pathingScript(const Unit & u)
 {
     Mobility mobility = Mobility(u);
@@ -289,6 +304,12 @@ bool CombatManager::isLiability(const Unit & u)
     auto found_item = CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.find(u);
     if (found_item != CUNYAIModule::combat_manager.liabilities_squad_.unit_map_.end()) return true;
     return false;
+}
+
+void CombatManager::removeLiablity(const Unit & u)
+{
+    liabilities_squad_.removeStored_Unit(u);
+    liabilities_squad_.updateUnitInventorySummary();
 }
 
 bool CombatManager::isWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)

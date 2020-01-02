@@ -244,7 +244,6 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     return false; // no target, we got a falsehood.
 }
 
-
 //Essentially, we would like to call the movement script BUT disable any attraction to the enemy since we are trying to only surround.
 //void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const Map_Inventory & inv){
 //}

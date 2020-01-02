@@ -871,6 +871,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         }
 
         combat_manager.removeScout(unit);
+        combat_manager.removeLiablity(unit);
     }
 
     if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
