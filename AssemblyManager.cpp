@@ -203,10 +203,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 //Otherwise, use blocks.
                 for (auto block : BWEB::Blocks::getBlocks()) {
                     set<TilePosition> placements;
+                    set<TilePosition> backup_placements;
                     if (building.tileSize() == TilePosition{ 2,2 })
                         placements = block.getSmallTiles();
-                    else if (building.tileSize() == TilePosition{ 3 , 2 })
+                    else if (building.tileSize() == TilePosition{ 3 , 2 }) { // allow to build medium tile at large blocks that are not walls. If you need a building, you *need* it.
                         placements = block.getMediumTiles();
+                        backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks.
+                    }
                     else if (building.tileSize() == TilePosition{ 4 , 3 })
                         placements = block.getLargeTiles();
                     if (!placements.empty()) {
@@ -214,6 +217,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                         auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(block.getTilePosition()), &plength);
                         if (plength)
                             viable_placements.insert({ plength, placements });
+                    }
+                    if (!backup_placements.empty()) {
+                        int plength;
+                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(block.getTilePosition()), &plength);
+                        if (plength)
+                            viable_placements.insert({ plength, backup_placements });
                     }
                 }
 

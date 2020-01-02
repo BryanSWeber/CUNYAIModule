@@ -29,6 +29,10 @@ namespace BWEB::Blocks
                 if (width == 3)
                     pieces = { Piece::Medium };
             }
+            else if (height == 3) {
+                if (width == 4)
+                    pieces = { Piece::Large };
+            }
             else if (height == 4) {
                 if (width == 5)
                     pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
@@ -42,8 +46,9 @@ namespace BWEB::Blocks
                     pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium };
             }
             else if (height == 8) {
-                if (width == 5)
-                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
+                if (width == 4) {
+                    pieces = { Piece::Small, Piece::Small, Piece::Row, Piece::Large };
+                }
             }
             return pieces;
         }
