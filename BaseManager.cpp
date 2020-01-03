@@ -1,24 +1,36 @@
-#include "BaseManager.h"
-#include "Source/Map_Inventory.h"
+#include <BWAPI.h>
 #include "Source/CUNYAIModule.h"
+#include "Source/Diagnostics.h"
 
+Base::Base() {
+    gas_taken_ = false;
+    gas_tolerable_ = true;
+    spore_count_ = 0;
+    sunken_count_ = 0;
+    creep_count_ = 0;
+    gas_gatherers_ = 0;
+    mineral_gatherers_ = 0;
+};
 
 Base::Base(const Unit & u)
 {
     gas_taken_ = false;
     gas_tolerable_ = true;
-    spores_ = 0;
-    sunkens_ = 0;
+    spore_count_ = 0;
+    sunken_count_ = 0;
+    creep_count_ = 0;
     gas_gatherers_ = 0;
     mineral_gatherers_ = 0;
-}
+    unit_ = u;
+};
+
 
 void BaseManager::updateBases()
 {
     baseMap_.clear();
 
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery) && std::find(CUNYAIModule::current_map_inventory.expo_tilepositions_.begin(), CUNYAIModule::current_map_inventory.expo_tilepositions_.end(), TilePosition(u.second.pos_)) != CUNYAIModule::current_map_inventory.expo_tilepositions_.end())
+        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
             baseMap_.insert({ u.second.pos_, Base( u.first ) });
     }
 
@@ -50,5 +62,16 @@ void BaseManager::updateBases()
         b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
         b.second.ground_weak_ = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (b.second.sunken_count_ == 0);
         b.second.air_weak_ = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (b.second.spore_count_ == 0);
+    }
+}
+
+void BaseManager::displayBaseData()
+{
+    for (auto b : baseMap_) {
+        Broodwar->drawTextMap(b.first + Position(10, 50), "Sunkens: %d", b.second.sunken_count_);
+        Broodwar->drawTextMap(b.first + Position(10, 40), "Spores: %d", b.second.spore_count_);
+        Broodwar->drawTextMap(b.first + Position(10, 30), "Creeps: %d", b.second.creep_count_);
+        Broodwar->drawTextMap(b.first + Position(10, 20), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(10, 10), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
     }
 }

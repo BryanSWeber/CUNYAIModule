@@ -13,7 +13,7 @@
 #include "TechManager.h"
 #include "WorkerManager.h"
 #include "CombatManager.h"
-
+#include "BaseManager.h"
 #include <bwem.h>
 #include "BWEB\BWEB.h"
 //#include "BrawlSim\BrawlSimLib\include\BrawlSim.hpp"
@@ -97,6 +97,7 @@ public:
     static Reservation my_reservation;
     static LearningManager learned_plan;
     static WorkerManager workermanager;
+    static BaseManager basemanager;
 
     //These measure its clock.
     int short_delay;

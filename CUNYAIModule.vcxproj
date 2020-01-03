@@ -134,8 +134,8 @@
     <ClCompile Include="Source\Dll.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseManager.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
+    <ClInclude Include="Source\BaseManager.h" />
     <ClInclude Include="Source\BWEB\Block.h" />
     <ClInclude Include="Source\BWEB\BWEB.h" />
     <ClInclude Include="Source\BWEB\JPS.h" />

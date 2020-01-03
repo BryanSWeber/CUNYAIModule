@@ -7,13 +7,13 @@
 #include "Source\Resource_Inventory.h"
 #include "Source\Research_Inventory.h"
 #include "Source\LearningManager.h"
-#include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
-#include "Source\\CombatManager.h"
+#include "Source\CombatManager.h"
 #include "Source\TechManager.h"
 #include "Source\Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "Source\BWEB\BWEB.h"
+#include "Source\BaseManager.h"
 #include <bwem.h>
 #include <iostream>
 #include <fstream> // for file read/writing
@@ -59,6 +59,7 @@ Building_Gene CUNYAIModule::buildorder; //
 Reservation CUNYAIModule::my_reservation;
 LearningManager CUNYAIModule::learned_plan;
 WorkerManager CUNYAIModule::workermanager;
+BaseManager CUNYAIModule::basemanager;
 
 void CUNYAIModule::onStart()
 {
@@ -424,6 +425,9 @@ void CUNYAIModule::onFrame()
     current_map_inventory.expo_portion_of_the_map_ = static_cast<int>(sqrt(pow(Broodwar->mapHeight() * 32, 2) + pow(Broodwar->mapWidth() * 32, 2)) / static_cast<double>(current_map_inventory.expo_tilepositions_.size()));
     current_map_inventory.updateStartPositions(enemy_player_model.units_);
     current_map_inventory.updateScreen_Position();
+
+    basemanager.updateBases();
+    basemanager.displayBaseData();
 
     if (t_game == 0) {
         //update local resources
