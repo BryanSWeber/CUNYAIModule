@@ -1018,7 +1018,7 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
     int current_best_surviving = 0; // surviving units must be bigger than 0 or else it's not really a base.
     int sample_surviving = 0;
     int sample_ground_fodder = 0;
-    for (auto expo : expo_positions_complete_) {
+    for (auto expo : expo_tilepositions_) {
         Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
         Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
         Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
@@ -1051,7 +1051,7 @@ Position Map_Inventory::getBaseNearest() {
     int plength = 0;
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
-    for (auto expo : expo_positions_complete_) {
+    for (auto expo : expo_tilepositions_) {
         Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
         ui_mini.updateUnitInventorySummary();
         auto cpp = BWEM::Map::Instance().GetPath(Position(expo), enemy_base_ground_, &plength);
@@ -1075,12 +1075,6 @@ void Map_Inventory::getExpoPositions() {
     }
     expo_tilepositions_ = expo_positions;
 
-
-    //From SO, quick conversion into set.
-    set<TilePosition> s;
-    int size = expo_tilepositions_.size();
-    for (int i = 0; i < size; ++i) s.insert(expo_tilepositions_[i]);
-    expo_positions_complete_.assign(s.begin(), s.end());
 }
 
 void Map_Inventory::getStartPositions() {
@@ -1293,7 +1287,7 @@ void Map_Inventory::setNextExpo(const TilePosition tp) {
 void Map_Inventory::drawExpoPositions() const
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        for (auto &p : expo_positions_complete_) {
+        for (auto &p : expo_tilepositions_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
                 lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;

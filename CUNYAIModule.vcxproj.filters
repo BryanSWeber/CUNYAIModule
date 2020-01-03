@@ -71,6 +71,9 @@
     <ClCompile Include="CUNYClient.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="BaseManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -106,6 +109,7 @@
     <ClInclude Include="Source\CombatManager.h" />
     <ClInclude Include="Source\Diagnostics.h" />
     <ClInclude Include="Source\LearningManager.h" />
+    <ClInclude Include="BaseManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

@@ -41,8 +41,7 @@ struct Map_Inventory {
     void updateGroundDangerousAreas();
 
     vector<Position> start_positions_;
-    vector<TilePosition> expo_tilepositions_;
-    vector<TilePosition> expo_positions_complete_;
+    vector<TilePosition> expo_tilepositions_;  //Contains all possible expos and starting bases, found with BWEM.
     Position enemy_base_ground_;
     Position enemy_base_air_;
     Position front_line_base_;

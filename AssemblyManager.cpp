@@ -1018,6 +1018,7 @@ bool AssemblyManager::assignUnitAssembly()
         }
         last_frame_of_creep_command = Broodwar->getFrameCount();
     }
+
     //Assess the units and sort them into bins.
     if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
         for (auto larva : larva_bank_.unit_map_) {
