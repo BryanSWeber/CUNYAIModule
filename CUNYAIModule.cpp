@@ -427,7 +427,6 @@ void CUNYAIModule::onFrame()
     current_map_inventory.updateScreen_Position();
 
     basemanager.updateBases();
-    basemanager.displayBaseData();
 
     if (t_game == 0) {
         //update local resources

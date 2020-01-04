@@ -27,7 +27,6 @@ Base::Base(const Unit & u)
 
 void BaseManager::updateBases()
 {
-    baseMap_.clear();
 
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
@@ -50,7 +49,7 @@ void BaseManager::updateBases()
         distance_to_alarming_air = min(static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
     }
 
-    for (auto b : baseMap_) {
+    for (auto & b : baseMap_) {
         auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
         auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, b.first);
         e_loc.updateUnitInventorySummary();
@@ -63,15 +62,18 @@ void BaseManager::updateBases()
         b.second.ground_weak_ = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (b.second.sunken_count_ == 0);
         b.second.air_weak_ = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (b.second.spore_count_ == 0);
     }
+
+    displayBaseData();
 }
 
 void BaseManager::displayBaseData()
 {
+    Diagnostics::DiagnosticText("%d",static_cast<int>(baseMap_.size()));
     for (auto b : baseMap_) {
-        Broodwar->drawTextMap(b.first + Position(10, 50), "Sunkens: %d", b.second.sunken_count_);
-        Broodwar->drawTextMap(b.first + Position(10, 40), "Spores: %d", b.second.spore_count_);
-        Broodwar->drawTextMap(b.first + Position(10, 30), "Creeps: %d", b.second.creep_count_);
-        Broodwar->drawTextMap(b.first + Position(10, 20), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
-        Broodwar->drawTextMap(b.first + Position(10, 10), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(10, -50), "Sunkens: %d", b.second.sunken_count_);
+        Broodwar->drawTextMap(b.first + Position(10, -40), "Spores: %d", b.second.spore_count_);
+        Broodwar->drawTextMap(b.first + Position(10, -30), "Creeps: %d", b.second.creep_count_);
+        Broodwar->drawTextMap(b.first + Position(10, -20), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(10, -10), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
     }
 }
