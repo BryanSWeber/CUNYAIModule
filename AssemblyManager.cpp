@@ -967,54 +967,13 @@ bool AssemblyManager::assignUnitAssembly()
         distance_to_alarming_ground = min(CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
         distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
     }
-
-    for (auto hatch : production_facility_bank_.unit_map_) {
-        auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, hatch.first->getPosition());
-        auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, hatch.first->getPosition());
-        e_loc.updateUnitInventorySummary();
-        u_loc.updateUnitInventorySummary();
-        bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_);
-        bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
-        bool sunken_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
-        bool spore_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
-        bool creep_colony_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
-
-        bool ground_weak = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (sunken_count == 0 && creep_colony_count == 0);
-        bool air_weak = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (spore_count == 0 && creep_colony_count == 0);
-
-        if (!CUNYAIModule::checkMiniFAPForecast(u_loc, e_loc, true) || (they_are_moving_out_ground && ground_weak && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true)) || (they_are_moving_out_air && air_weak && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true))) {
-            Diagnostics::drawDot(hatch.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);
-            //Diagnostics::DiagnosticText("Danger, Will Robinson! (%d, %d)", hatch.second.pos_.x, hatch.second.pos_.y);
-
-            bool can_upgrade_colonies = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
-                (CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
-
-            Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), hatch.second.pos_, 999999);
-            if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
-                Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
-                    can_upgrade_colonies &&
-                    CUNYAIModule::current_map_inventory.hatches_ > 1 &&
-                    CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony) + CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
-            }
-        }
-    }
-
+    
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager.
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
-            auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, creep_colony.first->getPosition());
-            auto u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, creep_colony.first->getPosition());
-            e_loc.updateUnitInventorySummary();
-            u_loc.updateUnitInventorySummary();
-            bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(creep_colony.second.pos_);
-            bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(creep_colony.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
-            bool sunken_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
-            bool spore_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
-            bool creep_colony_count = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
-            bool ground_weak = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (sunken_count == 0);
-            bool air_weak = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (spore_count == 0);
-
-            buildStaticDefence(creep_colony.first, air_weak && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first), ground_weak && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first)); // checks globally but not bad, info is mostly already there.
+            Base air_base = CUNYAIModule::basemanager.getClosestBaseAir(creep_colony.second.pos_);
+            Base ground_base = CUNYAIModule::basemanager.getClosestBaseGround(creep_colony.second.pos_);
+            buildStaticDefence(creep_colony.first, air_base.air_weak_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first), ground_base.ground_weak_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first)); // checks globally but not bad, info is mostly already there.
         }
         last_frame_of_creep_command = Broodwar->getFrameCount();
     }

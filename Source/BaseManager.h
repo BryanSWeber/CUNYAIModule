@@ -24,5 +24,7 @@ private:
 public:
     void updateBases();
     void displayBaseData(); //vital for testing.
+    Base getClosestBaseGround(const Position &pos);
+    Base getClosestBaseAir(const Position &pos);
     string test;
 };
