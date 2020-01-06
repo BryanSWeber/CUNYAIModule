@@ -163,6 +163,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     }
 
     double dist_to_enemy = passed_distance;
+    double target_surviablity = INT_MAX;
     Unit target = nullptr;
 
     ThreateningTargets.unit_map_.insert(DiveableTargets.unit_map_.begin(), DiveableTargets.unit_map_.end());
@@ -177,51 +178,24 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     // Dive some modest distance if they're critical to kill.
     double temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
     if (!target) { // repeated calls should be functionalized.
-        for (auto t : DiveableTargets.unit_map_) {
-            dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
-            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
-                temp_max_divable = dist_to_enemy;
-                target = t.first;
-            }
-        }
+        target = pickTarget(temp_max_divable, DiveableTargets);
     }
 
     // Shoot closest threat if they can shoot you or vis versa.
     temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
     if (!target) { // repeated calls should be functionalized.
-        for (auto t : ThreateningTargets.unit_map_) {
-            dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
-            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
-                temp_max_divable = dist_to_enemy;
-                target = t.first;
-            }
-        }
+        target = pickTarget(temp_max_divable, ThreateningTargets);
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
     temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
     if (!target) { // repeated calls should be functionalized.
-        for (auto t : SecondOrderThreats.unit_map_) {
-            dist_to_enemy = unit_->getDistance(t.second.pos_);
-            bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
-            if (dist_to_enemy < temp_max_divable && baseline_requirement) {
-                temp_max_divable = dist_to_enemy;
-                target = t.first;
-            }
-        }
+        target = pickTarget(temp_max_divable, SecondOrderThreats);
     }
 
     temp_max_divable = INT_MAX;
     if (!target) { // repeated calls should be functionalized.
-        for (auto t : LowPriority.unit_map_) {
-            dist_to_enemy = unit_->getDistance(t.second.pos_);
-            if (dist_to_enemy < temp_max_divable && (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_)) {
-                temp_max_divable = dist_to_enemy;
-                target = t.first;
-            }
-        }
+        target = pickTarget(temp_max_divable, LowPriority);
     }
 
     if (target && target->exists()) {
@@ -617,4 +591,20 @@ int Mobility::getDistanceMetric()
 bool Mobility::isOnDifferentHill(const Stored_Unit &e) {
     int altitude = BWEM::Map::Instance().GetMiniTile(WalkPosition(e.pos_)).Altitude();
     return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getProperRange(unit_);
+}
+
+Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
+    Unit target;
+    int dist_to_enemy = 0;
+    int target_surviablity = INT_MAX;
+    for (auto t : ui.unit_map_) {
+        dist_to_enemy = unit_->getDistance(t.second.pos_);
+        bool baseline_requirement = (!isOnDifferentHill(t.second) || stored_unit_->is_flying_) && CUNYAIModule::Can_Fight(u_type_, t.second.type_);
+        if (t.second.future_fap_value_ <= target_surviablity && dist_to_enemy <= MaxDiveDistance && baseline_requirement) {
+            MaxDiveDistance = dist_to_enemy;
+            target_surviablity = t.second.future_fap_value_;  //attack most likely to die, not closest!
+            target = t.first;
+        }
+    }
+    return target;
 }

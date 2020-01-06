@@ -123,7 +123,7 @@ struct Stored_Unit {
     int modified_gas_cost_;
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
-    int future_fap_value_; // only taken from fap.
+    int future_fap_value_; // Current FAP prediction.
     int ma_future_fap_value_; // A moving average of FAP values.
     int count_of_consecutive_predicted_deaths_; // the number of sims forcasting the unit's death.
     bool hasTarget_;

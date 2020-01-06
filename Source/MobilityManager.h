@@ -62,6 +62,8 @@ public:
     // Returns true if the enemy unit is too far up another hill.
     bool isOnDifferentHill(const Stored_Unit &e);
 
+    Unit pickTarget(int MaxDiveDistance, Unit_Inventory & ui); // selects a target from a unit map. Can return NULL
+
 private:
     Position pos_;
     Unit unit_;
