@@ -594,7 +594,7 @@ bool Mobility::isOnDifferentHill(const Stored_Unit &e) {
 }
 
 Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
-    Unit target;
+    Unit target = nullptr;
     int dist_to_enemy = 0;
     int target_surviablity = INT_MAX;
     for (auto t : ui.unit_map_) {
