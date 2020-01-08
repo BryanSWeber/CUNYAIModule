@@ -15,6 +15,7 @@ public:
     int creep_count_;
     int gas_gatherers_;
     int mineral_gatherers_;
+    int returners_;
     Unit unit_;
 };
 

@@ -262,8 +262,8 @@ void Diagnostics::printPhase(const Stored_Unit unit, const Position & screen_pos
         { Stored_Unit::Phase::Building,"Building" },
         { Stored_Unit::Phase::Detecting,"Detecting" } };
         Position upper_left = unit.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
-            Broodwar->drawTextMap(unit.pos_, enum_to_string[unit.phase_].c_str());
+        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.phase_ != Stored_Unit::Phase::None) {
+            Broodwar->drawTextMap(unit.pos_ + Position(unit.type_.dimensionDown(), unit.type_.dimensionRight()), enum_to_string[unit.phase_].c_str());
         }
     }
 }
