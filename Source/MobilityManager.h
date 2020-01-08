@@ -64,6 +64,13 @@ public:
 
     Unit pickTarget(int MaxDiveDistance, Unit_Inventory & ui); // selects a target from a unit map. Can return NULL
 
+    bool checkGoingDifferentDirections(Unit e);
+    bool checkEnemyApproachingUs(Unit e);
+
+    Position getVectorToEnemyDestination(Unit e);
+
+    Position getVectorToEnemyBack(Unit e);
+
 private:
     Position pos_;
     Unit unit_;
@@ -84,3 +91,12 @@ private:
     int rng_direction_; // send unit in a random tilt direction if blocked
 
 };
+
+// returns the total, nondirected speed of an enemy unit. Highly variable.
+int getEnemySpeed(Unit e);
+
+//returns the vector of an enemy unit.
+Position getEnemyVector(Unit e);
+
+// returns the a 32-pixel vector in the direction of an enemy unit.
+Position getEnemyUnitaryVector(Unit e);

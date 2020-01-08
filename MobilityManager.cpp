@@ -117,13 +117,13 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
     int max_dist_no_priority = INT_MAX;
     //int max_dist = passed_distance; // copy, to be modified later.
-    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()) );
+    bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()));
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
     bool melee = CUNYAIModule::getProperRange(unit_) < 32;
-    double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION/12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
-    
+    double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION / 12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
+
     // Let us bin all potentially interesting units.
     Unit_Inventory DiveableTargets;
     Unit_Inventory ThreateningTargets;
@@ -143,7 +143,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     (e->second.bwapi_unit_ && e->second.bwapi_unit_->exists() && e->second.bwapi_unit_->isRepairing()) ||
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
-                if (e_type.isWorker() || critical_target && CUNYAIModule::canContributeToFight(e_type, ui)) {
+                if ((e_type.isWorker() || critical_target) && CUNYAIModule::canContributeToFight(e_type, ui)) {
                     DiveableTargets.addStored_Unit(e->second);
                 }
 
@@ -176,19 +176,19 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     LowPriority.updateUnitInventorySummary();
 
     // Dive some modest distance if they're critical to kill.
-    double temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
+    int temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, DiveableTargets);
     }
 
     // Shoot closest threat if they can shoot you or vis versa.
-    temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
+    temp_max_divable = max({ei.max_range_, CUNYAIModule::getProperRange(unit_), 32});
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, ThreateningTargets);
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = max(ei.max_range_, CUNYAIModule::getProperRange(unit_));
+    temp_max_divable = max({ ei.max_range_, CUNYAIModule::getProperRange(unit_), 32});
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, SecondOrderThreats);
     }
@@ -204,7 +204,15 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
             //if (melee) {
             //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
             //    permenent_target.circumference_remaining_ -= widest_dim;
+            //    if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > 32) {
+            //        if(getEnemySpeed(target) > UnitTypes::Zerg_Drone.topSpeed() * 0.25)
+            //            unit_->move(pos_+ getVectorToEnemyDestination(target));
+            //        else
+            //            unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToEnemyBack(target));
+            //        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+            //    }
             //}
+            unit_->attack(target);
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
@@ -607,4 +615,37 @@ Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
         }
     }
     return target;
+}
+
+bool Mobility::checkGoingDifferentDirections(Unit e) {
+    return abs(e->getAngle() - unit_->getAngle()) > 0.50 * 3.1415;
+}
+
+bool Mobility::checkEnemyApproachingUs(Unit e) {
+    Position vector_to_me = pos_ - e->getPosition();
+    double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
+    return abs(e->getAngle() - angle_to_me) < 0.50 * 3.1415;
+}
+
+int getEnemySpeed(Unit e) {
+    return sqrt(pow(e->getVelocityX(),2) + pow(e->getVelocityY(),2));
+}
+
+Position getEnemyVector(Unit e) {
+    return Position(static_cast<int>(e->getVelocityX()), static_cast<int>(e->getVelocityY()));
+}
+
+Position getEnemyUnitaryVector(Unit e) {
+
+}
+
+Position Mobility::getVectorToEnemyDestination(Unit e) {
+    Position his_destination = e->getPosition() + getEnemyVector(e);
+    return his_destination - pos_;
+}
+
+Position Mobility::getVectorToEnemyBack(Unit e) {
+    double theta = atan2(e->getVelocityY(), e->getVelocityX());
+    return Position(static_cast<int>(cos(theta) * (e->getType().width() + e->getType().height()) ), static_cast<int>(sin(theta) *  (e->getType().width() + e->getType().height()) ));
+
 }
