@@ -22,7 +22,7 @@ public:
     };
 
     // Basic retreat logic
-    bool Retreat_Logic(Stored_Unit &su);
+    bool Retreat_Logic();
     // Scatter (from given position, or if blank, any present storms or spells)
     bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
@@ -56,8 +56,6 @@ public:
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
     bool moveTo(const Position & start, const Position & finish, const Stored_Unit::Phase phase);
-    //Gets the next waypoint the unit would move to if using the moveTo command.
-    Position getNextWaypoint(const Position & start, const Position & finish);
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 
