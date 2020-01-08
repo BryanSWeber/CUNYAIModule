@@ -201,17 +201,17 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (target && target->exists()) {
         if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
             unit_->attack(target);
-            //if (melee) {
-            //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
-            //    permenent_target.circumference_remaining_ -= widest_dim;
-            //    if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > 32) {
-            //        if(getEnemySpeed(target) > UnitTypes::Zerg_Drone.topSpeed() * 0.25)
-            //            unit_->move(pos_+ getVectorToEnemyDestination(target));
-            //        else
-            //            unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToEnemyBack(target));
-            //        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
-            //    }
-            //}
+            if (melee) { // Attempting surround code.
+                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+                permenent_target.circumference_remaining_ -= widest_dim;
+                if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > 32) {
+                    if(getEnemySpeed(target) > UnitTypes::Zerg_Drone.topSpeed() * 0.25)
+                        unit_->move(pos_+ getVectorToEnemyDestination(target));
+                    else
+                        unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToEnemyBack(target));
+                    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+                }
+            }
             unit_->attack(target);
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
@@ -231,7 +231,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-bool Mobility::Retreat_Logic() {
+bool Mobility::Retreat_Logic(Stored_Unit &su) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
@@ -239,16 +239,19 @@ bool Mobility::Retreat_Logic() {
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
     }
 
-    if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
+    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_map_inventory.safe_base_);
+
+    if ( &su && su.areaID_ == stored_unit_->areaID_ && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(su.pos_)) {
+        approach(su.pos_ + Position(su.velocity_x_, su.velocity_y_) );
+        moveTo(pos_, pos_ - attract_vector_, Stored_Unit::Phase::Retreating);
+    }
+    else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
         moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, Stored_Unit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
-        auto threat = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, unit_, 400);
-        if (threat) {
-            approach(CUNYAIModule::current_map_inventory.safe_base_);
-            //encircle(threat->pos_);
-            moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, Stored_Unit::Phase::Retreating);
-        }
+        approach(CUNYAIModule::current_map_inventory.safe_base_);
+        //encircle(threat->pos_);
+        moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, Stored_Unit::Phase::Retreating);
     }
     else {
         moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_, Stored_Unit::Phase::Retreating);
@@ -590,6 +593,30 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
 
     return unit_sent;
 }
+
+Position Mobility::getNextWaypoint(const Position &start, const Position &finish)
+{
+    int plength = 0;
+    Position waypoint = Positions::Invalid;
+    if (!start.isValid() || !finish.isValid()) {
+        return waypoint;
+    }
+    auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
+
+    if (!cpp.empty() && !unit_->isFlying()) {
+        // first try traveling with CPP.
+        Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
+        friendly_blocks.updateUnitInventorySummary();
+        bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0);
+        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
+        if (!too_close && cpp.size() >= 1)  waypoint = Position(cpp[0]->Center()); // if you're not too close, get closer.
+        if (too_close && cpp.size() > 1) waypoint = Position(cpp[1]->Center()); // if you're too close to one choke point, move to the next one!
+        //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
+    }
+
+    return waypoint;
+}
+
 
 int Mobility::getDistanceMetric()
 {
