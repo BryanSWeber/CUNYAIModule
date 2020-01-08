@@ -14,7 +14,7 @@ public:
     bool excess_gas_capacity_;
 
     // Checks all Mines of type for undersaturation and assigns Gather. Goes to any undersaturated location, preference for local mine. Returns true on success.
-    bool assignGather(const Unit & unit, const UnitType mine);
+    bool assignGather(const Unit & unit, const UnitType mine, const int max_dist);
     // Clears blocking minerals (as determined by BWEB). Check if area is threatened before clearing.  Returns true on success.
     bool assignClear(const Unit & unit);
     // attaches the miner to the nearest mine in the inventory, and updates the stored_unit. Returns true on success.
@@ -34,8 +34,8 @@ public:
     bool isEmptyWorker(const Unit & unit);
     //Workers at their end build location should build there!  May return false if there is an object at the end destination that prohibits building.
     bool workerPrebuild(const Unit & unit);
-    // Workers doing nothing should begin a resource task.
-    bool workersCollect(const Unit & unit);
+    // Workers doing nothing should begin a resource task. Max_dist represents the longest a worker should be transfered.
+    bool workersCollect(const Unit & unit, const int max_dist);
     // Workers should clear if conditions are met;  Ought to be reprogrammed to run a periodic cycle to check for clearing. Then grab nearest worker to patch and assign. This policy may lead to inefficent mining.
     bool workersClear(const Unit &unit);
     // Workers should return cargo and forget about their original mine.

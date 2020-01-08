@@ -41,20 +41,20 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     return false;
 }
 
-bool WorkerManager::workersCollect(const Unit & unit)
+bool WorkerManager::workersCollect(const Unit & unit, int max_dist = 500)
 {
     Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
 
     if (excess_gas_capacity_ && CUNYAIModule::gas_starved) {
-        if (assignGather(unit, UnitTypes::Zerg_Extractor)) {
+        if (assignGather(unit, UnitTypes::Zerg_Extractor, max_dist)) {
             return true;
         }
         else {// assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
-            return assignGather(unit, UnitTypes::Resource_Mineral_Field); //assign a worker (minerals)
+            return assignGather(unit, UnitTypes::Resource_Mineral_Field, max_dist); //assign a worker (minerals)
         }
     } // Otherwise, we should put them on minerals.
     else { //if this is your first worker of the frame consider resetting him.
-        return assignGather(unit, UnitTypes::Resource_Mineral_Field); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
+        return assignGather(unit, UnitTypes::Resource_Mineral_Field, max_dist); // assign a worker a mine (gas). Will return null if no viable refinery exists. Might be a bug source.
     }
 
     return false;
@@ -87,7 +87,7 @@ bool WorkerManager::workersReturn(const Unit & unit)
 }
 
 //Sends a Worker to gather resources from UNITTYPE (mineral or refinery). letabot has code on this. "AssignEvenSplit(Unit* unit)"
-bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
+bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const int max_dist = 500) {
 
     Stored_Unit& miner = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
     //bool building_unit = unit->getLastCommand().getType() == UnitCommandTypes::Morph || unit->getLastCommand().getType() == UnitCommandTypes::Build || unit->getLastCommand().getTargetPosition() == Position(inventory.next_expo_);
@@ -128,13 +128,16 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine) {
         bool path_exists = CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_);
 
         if (mine_minerals) {
-            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_ && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid(); // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles.
+            int plength = 0;
+            bool unit_sent = false;
+            auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, r.second.pos_, &plength);
+            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_ && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && plength < max_dist; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles. Don't hike so far.
         }
         else { // gas can never be more than 3x, ever.
             int plength = 0;
             bool unit_sent = false;
             auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, r.second.pos_, &plength);
-            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_) && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && r.second.number_of_miners_ < max_drone && plength < 400;// never hike to a gas location.
+            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_) && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && r.second.number_of_miners_ < max_drone && plength < max_dist;// never hike to a gas location.
         }
 
         if (mine_is_right_type) {
@@ -354,10 +357,10 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (isEmptyWorker(u)) {
             if (miner.locked_mine_) {
                 if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
-                    task_guard = workersCollect(u);
+                    task_guard = workersCollect(u, 500);
                 }
                 else if (miner.locked_mine_->getType().isRefinery() && !CUNYAIModule::gas_starved) {
-                    task_guard = workersCollect(u);
+                    task_guard = workersCollect(u, 500);
                 }
                 else if ((miner.locked_mine_->getType().isMineralField() && !excess_gas_capacity_) || (miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved)) { // if they're doing the proper thing, consider reassigning them.
                     if (workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u))) {
@@ -382,7 +385,7 @@ bool WorkerManager::workerWork(const Unit &u) {
             task_guard = workersReturn(u); // mark worker as returning.
         }
         else {
-            task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u);
+            task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u, 500);
         }
         break;
     case Stored_Unit::Building:
