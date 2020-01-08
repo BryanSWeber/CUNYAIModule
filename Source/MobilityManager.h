@@ -71,7 +71,7 @@ public:
 
     Position getVectorToEnemyDestination(Unit e);
 
-    Position getVectorToEnemyBack(Unit e);
+    Position getVectorToBeyondEnemy(Unit e);
 
 private:
     Position pos_;

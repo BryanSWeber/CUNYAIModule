@@ -208,7 +208,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     if(getEnemySpeed(target) > UnitTypes::Zerg_Drone.topSpeed() * 0.25)
                         unit_->move(pos_+ getVectorToEnemyDestination(target));
                     else
-                        unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToEnemyBack(target));
+                        unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
                     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
                 }
             }
@@ -671,8 +671,8 @@ Position Mobility::getVectorToEnemyDestination(Unit e) {
     return his_destination - pos_;
 }
 
-Position Mobility::getVectorToEnemyBack(Unit e) {
-    double theta = atan2(e->getVelocityY(), e->getVelocityX());
-    return Position(static_cast<int>(cos(theta) * (e->getType().width() + e->getType().height()) ), static_cast<int>(sin(theta) *  (e->getType().width() + e->getType().height()) ));
-
+Position Mobility::getVectorToBeyondEnemy(Unit e) {
+    Position p = getVectorToEnemyDestination(e);
+    double angle_to_enemy = atan2(p.y, p.x);
+    return Position(static_cast<int>(cos(angle_to_enemy) * (e->getType().width() + e->getType().height() + 32) ), static_cast<int>(sin(angle_to_enemy) *  (e->getType().width() + e->getType().height() + 32) ));
 }
