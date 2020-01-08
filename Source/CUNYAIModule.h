@@ -21,7 +21,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc.Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool SSCAIT_OR_DOCKER = true; // should be TRUE for SC-docker, TRUE for SSCAIT.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
@@ -30,8 +30,8 @@ constexpr bool RIP_REPLAY = true; // Copy replay information.
 
 constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
 constexpr bool INTERBREED_PARENTS = false && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
-constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool RF_LEARNING = true; // use the random forest to filter unwanted parameters.
+constexpr bool RANDOM_PLAN = true; // Turn off learning and always use a random set of starting conditions.  
+constexpr bool RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 
 //Cheats:  Like, literal single player cheats.

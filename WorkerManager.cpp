@@ -131,13 +131,13 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
             int plength = 0;
             bool unit_sent = false;
             auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, r.second.pos_, &plength);
-            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_ && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && plength < max_dist; // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles. Don't hike so far.
+            mine_is_right_type = r.second.type_.isMineralField() && !r.second.blocking_mineral_ && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && (plength < max_dist || !old_mineral_patch); // Only gather from "Real" mineral patches with substantive value. Don't mine from obstacles. Don't hike so far.
         }
         else { // gas can never be more than 3x, ever.
             int plength = 0;
             bool unit_sent = false;
             auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, r.second.pos_, &plength);
-            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_) && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && r.second.number_of_miners_ < max_drone && plength < max_dist;// never hike to a gas location.
+            mine_is_right_type = r.second.type_.isRefinery() && r.second.bwapi_unit_ && IsOwned(r.second.bwapi_unit_) && mine_is_unoccupied_by_enemy && path_exists && r.second.pos_.isValid() && r.second.number_of_miners_ < max_drone && (plength < max_dist || !old_mineral_patch);// never hike to a gas location.
         }
 
         if (mine_is_right_type) {
