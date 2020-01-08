@@ -195,7 +195,7 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
             
             if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
-                return mobility.Retreat_Logic();
+                return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {
                 return mobility.surround(e_closest->pos_);
@@ -219,7 +219,7 @@ bool CombatManager::scoutScript(const Unit & u)
                 pathingScript(u);
             }
             else {
-                return mobility.Retreat_Logic();
+                return mobility.Retreat_Logic(*e_closest);
             }
         }
     }
