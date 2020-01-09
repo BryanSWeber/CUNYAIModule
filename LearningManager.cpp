@@ -465,7 +465,7 @@ void LearningManager::initializeRFLearning()
     //std::cout << version.cast<string>() << std::endl;
     
 
-    //local["rf_executable"] = ".\\bwapi-data\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
+    //local["rf_executable"] = ".\\..\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
 
     //Executing script:
     auto local = py::dict();

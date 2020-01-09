@@ -11,6 +11,8 @@ Base::Base() {
     creep_count_ = 0;
     gas_gatherers_ = 0;
     mineral_gatherers_ = 0;
+    returners_ = 0;
+    overlords_ = 0;
 };
 
 Base::Base(const Unit & u)
@@ -22,9 +24,16 @@ Base::Base(const Unit & u)
     creep_count_ = 0;
     gas_gatherers_ = 0;
     mineral_gatherers_ = 0;
+    returners_ = 0;
+    overlords_ = 0;
     unit_ = u;
 };
 
+
+map<Position, Base> BaseManager::getBases()
+{
+    return baseMap_;
+}
 
 void BaseManager::updateBases()
 {
@@ -60,6 +69,8 @@ void BaseManager::updateBases()
         b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
         b.second.spore_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
         b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
+        b.second.overlords_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, u_loc);
+
         b.second.ground_weak_ = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (b.second.sunken_count_ == 0);
         b.second.air_weak_ = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (b.second.spore_count_ == 0);
         b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin);
@@ -102,8 +113,9 @@ void BaseManager::displayBaseData()
         Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
         Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
         Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
-        Broodwar->drawTextMap(b.first + Position(5, 20), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
-        Broodwar->drawTextMap(b.first + Position(5, 30), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
+        Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(5, 40), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
     }
 }
 

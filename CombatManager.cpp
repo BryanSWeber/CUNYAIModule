@@ -24,12 +24,13 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     bool found_and_doing_nothing = found_item->phase_ == Stored_Unit::Phase::None;
     bool found_and_morphing = found_item->phase_ == Stored_Unit::Phase::Morphing;
     bool found_and_going_home = found_item->phase_ == Stored_Unit::Phase::PathingHome;
+    bool found_and_going_out = found_item->phase_ == Stored_Unit::Phase::PathingOut;
 
     if (isScout(u)) {
         if (u->isBlind() || found_and_detecting) removeScout(u);
     }
 
-    if ( (found_and_morphing || found_and_going_home || found_and_detecting) && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+    if ( (found_and_morphing || found_and_going_home || found_and_detecting || found_and_going_out) && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
 
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
@@ -246,7 +247,7 @@ bool CombatManager::liabilitiesScript(const Unit &u)
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
     if (closestSpore && u->move(closestSpore->pos_)) // Otherwise, get them to safety.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
-    Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 99999);
+    Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 500);
     if (closestSunken && u->getPosition().getDistance(closestSunken->pos_) < 32) // If they're there at the destination, they are doing nothing.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None); 
     if (closestSunken && u->move(closestSunken->pos_)) // Otherwise, get them to safety.

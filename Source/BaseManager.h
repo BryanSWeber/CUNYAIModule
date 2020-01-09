@@ -16,6 +16,7 @@ public:
     int gas_gatherers_;
     int mineral_gatherers_;
     int returners_;
+    int overlords_;
     Unit unit_;
 };
 
@@ -23,6 +24,8 @@ class BaseManager {
 private:
     map<Position, Base> baseMap_;
 public:
+    //Returns a copy.
+    map<Position, Base> getBases();
     void updateBases();
     void displayBaseData(); //vital for testing.
     Base getClosestBaseGround(const Position &pos);

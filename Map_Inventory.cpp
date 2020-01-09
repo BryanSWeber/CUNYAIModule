@@ -6,6 +6,7 @@
 #include "Source\Unit_Inventory.h"
 #include "Source/Diagnostics.h"
 #include "Source\Resource_Inventory.h"
+#include "Source/BaseManager.h"
 #include <algorithm>
 #include <fstream>
 #include <ostream>
@@ -1018,11 +1019,11 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
     int current_best_surviving = 0; // surviving units must be bigger than 0 or else it's not really a base.
     int sample_surviving = 0;
     int sample_ground_fodder = 0;
-    for (auto expo : expo_tilepositions_) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
-        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
-        Unit_Inventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(expo));
+    for (auto b : CUNYAIModule::basemanager.getBases()) {
+        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
+        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, b.first);
+        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
+        Unit_Inventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, b.first);
 
         ei_loc.updateUnitInventorySummary();
         ei_mini.updateUnitInventorySummary();
@@ -1040,7 +1041,7 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
 
         if (sample_surviving > current_best_surviving && sample_ground_fodder > 0) { // let's go to the place that is dishing out the most defensive damage.
             current_best_surviving = sample_surviving;
-            strongest_base = Position(expo);
+            strongest_base = Position(b.first);
         }
     }
 
@@ -1051,13 +1052,13 @@ Position Map_Inventory::getBaseNearest() {
     int plength = 0;
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
-    for (auto expo : expo_tilepositions_) {
-        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
+    for (auto b : CUNYAIModule::basemanager.getBases()) {
+        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
         ui_mini.updateUnitInventorySummary();
-        auto cpp = BWEM::Map::Instance().GetPath(Position(expo), enemy_base_ground_, &plength);
+        auto cpp = BWEM::Map::Instance().GetPath(b.first, enemy_base_ground_, &plength);
         if (plength && plength < shortest_path && ui_mini.stock_ground_fodder_ > 0) {
             shortest_path = plength;
-            closest_base = Position(expo);
+            closest_base = b.first;
         }
     }
     return closest_base;
