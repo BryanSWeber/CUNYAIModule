@@ -227,7 +227,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-bool Mobility::Retreat_Logic(Stored_Unit &su) {
+bool Mobility::Retreat_Logic(Stored_Unit &e) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
@@ -237,8 +237,8 @@ bool Mobility::Retreat_Logic(Stored_Unit &su) {
 
     Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_map_inventory.safe_base_);
 
-    if ( &su && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(su.pos_) && !checkSameDirection(next_waypoint-pos_,su.pos_-pos_) ) {
-        approach(su.pos_ + Position(su.velocity_x_, su.velocity_y_) );
+    if ( (&e && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(e.pos_) && !checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == Stored_Unit::Phase::Surrounding)) {
+        approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, Stored_Unit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
