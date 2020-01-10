@@ -31,8 +31,9 @@ public:
     bool local_pathing(const int &passed_distance, const Position &e_pos, const Stored_Unit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
+
     // Surrounds position of choice slowly.
-    bool surround(const Position &pos);
+    bool surround(const Position & pos);
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);
@@ -50,6 +51,8 @@ public:
 
     // gives a vector that has the direction towards center on (map). returns a direction.
     Position getVectorTowardsMap(const vector<vector<int>>& map) const;
+    // gives a vector that has the direction towards a radial distance of (value) on (map). returns a direction.
+    Position getVectorTowardsMap(const vector<vector<int>>& map, const int value) const;
     // gives a vector that has the direction towards higher values on the field.  returns a direction.
     Position getVectorTowardsField(const vector<vector<int>>& field) const;
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
@@ -104,3 +107,5 @@ Position getEnemyVector(Unit e);
 Position getEnemyUnitaryVector(Unit e);
 
 bool checkSameDirection(const Position vector_a, const Position vector_b);
+// returns true if the angles are within 90 degrees of each other (0.5*pi)
+bool checkAngleSimilar(double angle1, double angle2);

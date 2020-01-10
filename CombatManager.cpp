@@ -30,7 +30,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
         if (u->isBlind() || found_and_detecting) removeScout(u);
     }
 
-    if ( (found_and_morphing || found_and_going_home || found_and_detecting || found_and_going_out) && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
+    if ( (found_and_morphing || found_and_going_home || found_and_detecting) && u->isIdle()) return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
 
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
@@ -170,7 +170,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
-                        return mobility.surround(e_closest->pos_);
+                         return mobility.surround(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
                         bool is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);

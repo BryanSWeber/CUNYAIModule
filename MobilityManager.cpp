@@ -92,7 +92,7 @@ bool Mobility::surround(const Position & pos)
     //avoid_edges();//Prototyping
     if (unit_->move(pos_ + encircle_vector_)) {
         Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//show we're running around it
-        Diagnostics::drawLine(pos_ + encircle_vector_, pos_ + encircle_vector_ + walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
+        Diagnostics::drawLine(pos_ + encircle_vector_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
         Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
         //Diagnostics::DiagnosticTrack(pos_ + encircle_vector_ + walkability_vector_);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
@@ -478,6 +478,58 @@ Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map) const {
                 temp_x = spiral.x;
                 temp_y = spiral.y;
                 current_best = map[centralize_x][centralize_y];
+            }
+        }
+    }
+
+    if (temp_y != 0 || temp_x != 0) {
+        theta = atan2(temp_y, temp_x);
+        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+    }
+    return  return_vector;
+}
+
+Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map, const int value) const {
+    Position return_vector = Positions::Origin;
+    int my_spot = CUNYAIModule::current_map_inventory.getMapValue(pos_, map);
+    int temp_x = 0;
+    int temp_y = 0;
+    int current_best = INT_MAX;
+    double theta = 0;
+    vector<Position> barrier_points;
+
+    SpiralOut spiral;
+
+    // we need to spiral out from the center, stopping if we hit an object.
+    WalkPosition map_dim = WalkPosition(TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() }));
+    for (int i = 0; i <= 256; i++) {
+        spiral.goNext();
+        int centralize_x = WalkPosition(pos_).x + spiral.x;
+        int centralize_y = WalkPosition(pos_).y + spiral.y;
+        bool shadow_check = false;
+
+        for (auto barrier_point : barrier_points) {
+            shadow_check = abs(centralize_x) >= abs(barrier_point.x) && abs(centralize_y) >= abs(barrier_point.y) &&
+                signbit(static_cast<float>(centralize_x)) == signbit(static_cast<float>(barrier_point.x)) && signbit(static_cast<float>(centralize_y)) == signbit(static_cast<float>(barrier_point.y)); // is it further out and in the same quadrant? If so it's in the "shadow". Rough, incredibly lazy.
+            if (shadow_check) break;
+        }
+
+        if (centralize_x < map_dim.x &&
+            centralize_y < map_dim.y &&
+            centralize_x > 0 &&
+            centralize_y > 0 &&
+            !shadow_check
+            ) // Is the spot acceptable?
+        {
+            if (map[centralize_x][centralize_y] <= 2) // if it's a barrier (or right on top of one), make a shadow.
+            {
+                barrier_points.push_back(Position(centralize_x, centralize_y));
+            }
+            else if (abs(map[centralize_x][centralize_y] - value) < current_best && map[centralize_x][centralize_y] > 2) // otherwise, if it's an improvement, go directly to the best destination
+            {
+                temp_x = spiral.x;
+                temp_y = spiral.y;
+                current_best = abs(map[centralize_x][centralize_y] - value);
             }
         }
     }
