@@ -168,24 +168,16 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
-                case UnitTypes::Zerg_Zergling:
-                    if (!standard_fight_reasons && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
-                        return mobility.surround(e_closest->pos_);
-                    }
-                    else if (standard_fight_reasons) {
-                        bool is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) >= UnitTypes::Zerg_Drone.topSpeed() * 0.25);
-                        if (distance_to_ground > mobility.getDistanceMetric() && is_escaping) // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
-                            return mobility.moveTo(u->getPosition(), e_closest_ground->pos_ + getEnemyVector(e_closest_ground->bwapi_unit_), Stored_Unit::Phase::Surrounding);
-                        else 
-                            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
-                    }
-                    break;
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
                         return mobility.surround(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
-                        return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+                        bool is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
+                        if (distance_to_ground > max(mobility.getDistanceMetric() , CUNYAIModule::getFunctionalRange(u)) && is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker) // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
+                            return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground->bwapi_unit_), Stored_Unit::Phase::Surrounding);
+                        else 
+                            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
                 }

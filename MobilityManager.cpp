@@ -200,14 +200,14 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
     if (target && target->exists()) {
         if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
-            //if (melee && !unit_->isFlying()) { // Attempting surround code.
-            //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
-            //    permenent_target.circumference_remaining_ -= widest_dim;
-            //    if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) ) {
-            //            unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
-            //        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
-            //    }
-            //}
+            if (melee && !unit_->isFlying()) { // Attempting surround code.
+                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+                permenent_target.circumference_remaining_ -= widest_dim;
+                if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) && permenent_target.type_.isBuilding()) {
+                        unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
+                    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+                }
+            }
             unit_->attack(target);
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
@@ -641,13 +641,13 @@ Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
 }
 
 bool Mobility::checkGoingDifferentDirections(Unit e) {
-    return abs(e->getAngle() - unit_->getAngle()) > 0.50 * 3.1415;
+    return !checkAngleSimilar(e->getAngle() , unit_->getAngle());
 }
 
 bool Mobility::checkEnemyApproachingUs(Unit e) {
     Position vector_to_me = pos_ - e->getPosition();
     double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
-    return abs(e->getAngle() - angle_to_me) < 0.50 * 3.1415;
+    return checkAngleSimilar(e->getAngle(), angle_to_me);
 }
 
 int getEnemySpeed(Unit e) {
@@ -676,5 +676,13 @@ Position Mobility::getVectorToBeyondEnemy(Unit e) {
 bool checkSameDirection(const Position vector_a, const Position vector_b) {
     double angle_to_a = atan2(vector_a.y, vector_a.x);
     double angle_to_b = atan2(vector_b.y, vector_b.x);
-    return abs(angle_to_a - angle_to_b) < 0.50 * 3.1415;
+    return checkAngleSimilar(angle_to_a, angle_to_b);
+}
+
+bool checkAngleSimilar(double angle1, double angle2) {
+    double diff = abs(angle1 - angle2);
+    if (diff > 3.14) {
+        diff -= 3.14;
+    }
+    return diff < 0.50 * 3.1415;
 }
