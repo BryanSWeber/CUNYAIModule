@@ -973,8 +973,8 @@ bool AssemblyManager::assignUnitAssembly()
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
             Base air_base = CUNYAIModule::basemanager.getClosestBaseAir(creep_colony.second.pos_);
             Base ground_base = CUNYAIModule::basemanager.getClosestBaseGround(creep_colony.second.pos_);
-            bool force_air = air_base.air_weak_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first);
-            bool force_ground = ground_base.ground_weak_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first);
+            bool force_air = air_base.air_weak_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first) && air_base.spore_count_ < 6;
+            bool force_ground = ground_base.ground_weak_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first) && ground_base.sunken_count_ < 6;
             buildStaticDefence(creep_colony.first, force_air, force_ground); // checks globally but not bad, info is mostly already there.
         }
         last_frame_of_creep_command = Broodwar->getFrameCount();

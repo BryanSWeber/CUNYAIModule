@@ -121,7 +121,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     bool target_sentinel = false;
     bool target_sentinel_poor_target_atk = false;
     bool suicide_unit = stored_unit_->type_ == UnitTypes::Zerg_Scourge || stored_unit_->type_ == UnitTypes::Zerg_Infested_Terran;
-    bool melee = CUNYAIModule::getProperRange(unit_) < 32;
+    bool melee = CUNYAIModule::getFunctionalRange(unit_) == 32;
     double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION / 12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
 
     // Let us bin all potentially interesting units.
@@ -176,19 +176,19 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     LowPriority.updateUnitInventorySummary();
 
     // Dive some modest distance if they're critical to kill.
-    int temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getProperRange(unit_)));
+    int temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getFunctionalRange(unit_)));
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, DiveableTargets);
     }
 
     // Shoot closest threat if they can shoot you or vis versa.
-    temp_max_divable = max({ei.max_range_, CUNYAIModule::getProperRange(unit_), 32});
+    temp_max_divable = max(ei.max_range_, CUNYAIModule::getFunctionalRange(unit_));
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, ThreateningTargets);
     }
 
     // If they are threatening something, feel free to dive some distance to them, but not too far as to trigger another fight.
-    temp_max_divable = max({ ei.max_range_, CUNYAIModule::getProperRange(unit_), 32});
+    temp_max_divable = max( ei.max_range_, CUNYAIModule::getFunctionalRange(unit_));
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, SecondOrderThreats);
     }
@@ -200,18 +200,14 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
     if (target && target->exists()) {
         if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
-            unit_->attack(target);
-            if (melee) { // Attempting surround code.
-                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
-                permenent_target.circumference_remaining_ -= widest_dim;
-                if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > 32) {
-                    if(getEnemySpeed(target) > UnitTypes::Zerg_Drone.topSpeed() * 0.25)
-                        unit_->move(pos_+ getVectorToEnemyDestination(target));
-                    else
-                        unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
-                    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
-                }
-            }
+            //if (melee && !unit_->isFlying()) { // Attempting surround code.
+            //    Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+            //    permenent_target.circumference_remaining_ -= widest_dim;
+            //    if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) ) {
+            //            unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
+            //        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+            //    }
+            //}
             unit_->attack(target);
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
@@ -241,7 +237,7 @@ bool Mobility::Retreat_Logic(Stored_Unit &su) {
 
     Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_map_inventory.safe_base_);
 
-    if ( &su && su.areaID_ == stored_unit_->areaID_ && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(su.pos_)) {
+    if ( &su && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(su.pos_) && !checkSameDirection(next_waypoint-pos_,su.pos_-pos_) ) {
         approach(su.pos_ + Position(su.velocity_x_, su.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, Stored_Unit::Phase::Retreating);
     }
@@ -625,7 +621,7 @@ int Mobility::getDistanceMetric()
 
 bool Mobility::isOnDifferentHill(const Stored_Unit &e) {
     int altitude = BWEM::Map::Instance().GetMiniTile(WalkPosition(e.pos_)).Altitude();
-    return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getProperRange(unit_);
+    return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getFunctionalRange(unit_);
 }
 
 Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
@@ -675,4 +671,10 @@ Position Mobility::getVectorToBeyondEnemy(Unit e) {
     Position p = getVectorToEnemyDestination(e);
     double angle_to_enemy = atan2(p.y, p.x);
     return Position(static_cast<int>(cos(angle_to_enemy) * (e->getType().width() + e->getType().height() + 32) ), static_cast<int>(sin(angle_to_enemy) *  (e->getType().width() + e->getType().height() + 32) ));
+}
+
+bool checkSameDirection(const Position vector_a, const Position vector_b) {
+    double angle_to_a = atan2(vector_a.y, vector_a.x);
+    double angle_to_b = atan2(vector_b.y, vector_b.x);
+    return abs(angle_to_a - angle_to_b) < 0.50 * 3.1415;
 }

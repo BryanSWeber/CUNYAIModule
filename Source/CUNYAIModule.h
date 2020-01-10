@@ -21,7 +21,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc.Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc.Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -173,8 +173,13 @@ public:
     static double getProperSpeed(const Unit u);
     static double getProperSpeed(const UnitType & type, const Player owner = Broodwar->self());
     //range in pixels, including upgrades
-    static int getProperRange(const Unit u);
-    static int getProperRange(const UnitType u_type, const Player owner = Broodwar->self());
+    static int getExactRange(const Unit u);
+    static int getExactRange(const UnitType u_type, const Player owner = Broodwar->self());
+    //Shortcut returns 32 if unit is melee.
+    static int getFunctionalRange(const UnitType u_type, const Player owner);
+    static int getFunctionalRange(const Unit u);
+
+    //Returns about how far a unit can move+shoot in a FAP sim duration.
     static int getChargableDistance(const Unit &u);
 
     //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.

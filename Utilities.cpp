@@ -1665,7 +1665,7 @@ double CUNYAIModule::getProperSpeed(const UnitType &type, const Player owner) {
     return base_speed;
 }
 
-int CUNYAIModule::getProperRange(const Unit u) {
+int CUNYAIModule::getExactRange(const Unit u) {
 
     UnitType u_type = u->getType();
     Player owner = u->getPlayer();
@@ -1697,7 +1697,7 @@ int CUNYAIModule::getProperRange(const Unit u) {
     return base_range;
 }
 
-int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
+int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
         base_range += 1 * 32;
@@ -1724,11 +1724,19 @@ int CUNYAIModule::getProperRange(const UnitType u_type, const Player owner) {
     return base_range;
 }
 
+int CUNYAIModule::getFunctionalRange(const UnitType u_type, const Player owner) {
+    return max(getExactRange(u_type, owner), 32 );
+}
+
+int CUNYAIModule::getFunctionalRange(const Unit u) {
+    return max(getExactRange(u), 32);
+}
+
 //How far can the unit move in one MAFAP sim (120 frames)? Currently too large.
 int CUNYAIModule::getChargableDistance(const Unit & u)
 {
     int size_array[] = { u->getType().dimensionDown(), u->getType().dimensionUp(), u->getType().dimensionLeft(), u->getType().dimensionRight() };
-    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * FAP_SIM_DURATION) + CUNYAIModule::getProperRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
+    return (u->getType() != UnitTypes::Zerg_Lurker) * static_cast<int>(CUNYAIModule::getProperSpeed(u) * FAP_SIM_DURATION) + CUNYAIModule::getFunctionalRange(u) + *std::max_element( size_array, size_array + 4 ); //lurkers have a proper speed of 0. 96 frames is length of MAfap sim.
 
 }
 

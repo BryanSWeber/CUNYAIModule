@@ -611,7 +611,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 bool up_gun = u_iter.second.type_.airWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
                 bool down_gun = u_iter.second.type_.groundWeapon() != WeaponTypes::None || u_iter.second.type_ == UnitTypes::Terran_Bunker || u_iter.second.type_ == UnitTypes::Protoss_Reaver || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_ == UnitTypes::Protoss_Carrier;
                 bool cloaker = u_iter.second.type_.isCloakable() || u_iter.second.type_ == UnitTypes::Zerg_Lurker || u_iter.second.type_.hasPermanentCloak();
-                int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getProperRange(u_iter.second.type_, Broodwar->enemy());
+                int range_temp = (bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getExactRange(u_iter.second.type_, u_iter.second.bwapi_unit_->getPlayer()) + !(bool)(u_iter.second.bwapi_unit_) * CUNYAIModule::getExactRange(u_iter.second.type_, Broodwar->enemy());
 
                 stock_fliers_ += flying_unit * unit_value_for_all_of_type; // add the value of that type of unit to the flier stock.
                 flyer_count_ += flying_unit * count_of_unit_type;

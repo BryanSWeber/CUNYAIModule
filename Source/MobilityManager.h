@@ -102,3 +102,5 @@ Position getEnemyVector(Unit e);
 
 // returns the a 32-pixel vector in the direction of an enemy unit.
 Position getEnemyUnitaryVector(Unit e);
+
+bool checkSameDirection(const Position vector_a, const Position vector_b);
