@@ -113,8 +113,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     int priority = 0;
 
     //auto path = BWEM::Map::Instance().GetPath(pos_, e_unit.pos_); // maybe useful later.
-    int helpful_u = ui.moving_average_fap_stock_;
-    int helpful_e = ei.moving_average_fap_stock_; // both forget value of psi units.
+    int helpful_u = ui.stock_fighting_total_;
+    int helpful_e = ei.stock_fighting_total_; 
     int max_dist_no_priority = INT_MAX;
     //int max_dist = passed_distance; // copy, to be modified later.
     bool weak_enemy_or_small_armies = (helpful_e < helpful_u || helpful_e < 500 || ei.worker_count_ == static_cast<int>(ei.unit_map_.size()));
@@ -380,7 +380,7 @@ bool Mobility::checkSafeEscapePath(const Position &finish) {
     return false;
 }
 
-bool Mobility::checkSafePath(const Position &finish) {
+bool Mobility::checkSafeGroundPath(const Position &finish) {
     int plength = 0;
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);

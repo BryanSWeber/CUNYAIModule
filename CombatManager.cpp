@@ -234,12 +234,13 @@ bool CombatManager::scoutScript(const Unit & u)
 bool CombatManager::liabilitiesScript(const Unit &u)
 {
     liabilities_squad_.addStored_Unit(u);
-    Stored_Unit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 99999);
+    Stored_Unit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 500);
     if (closestSpore && u->getPosition().getDistance(closestSpore->pos_) < 32) // If they're there at the destination, they are doing nothing.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None);
     if (closestSpore && u->move(closestSpore->pos_)) // Otherwise, get them to safety.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::PathingHome);
-    Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 500);
+
+    Stored_Unit* closestSunken = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Sunken_Colony, u->getPosition(), 9999);
     if (closestSunken && u->getPosition().getDistance(closestSunken->pos_) < 32) // If they're there at the destination, they are doing nothing.
         return CUNYAIModule::updateUnitPhase(u, Stored_Unit::Phase::None); 
     if (closestSunken && u->move(closestSunken->pos_)) // Otherwise, get them to safety.

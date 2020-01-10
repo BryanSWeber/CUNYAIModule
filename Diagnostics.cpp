@@ -97,7 +97,7 @@ void Diagnostics::drawHitPoints(const Stored_Unit unit, const Position &screen_p
 void Diagnostics::drawFAP(const Stored_Unit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
-        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) /*&& unit.ma_future_fap_value_ < unit.stock_value_*/ && unit.ma_future_fap_value_ > 0) {
+        if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.future_fap_value_ > 0) {
             // Draw the red background.
             upper_left.y = upper_left.y + unit.type_.dimensionUp();
             upper_left.x = upper_left.x - unit.type_.dimensionLeft();
@@ -108,7 +108,7 @@ void Diagnostics::drawFAP(const Stored_Unit unit, const Position &screen_pos) {
 
             //Overlay the appropriate green above it.
             lower_right = upper_left;
-            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.ma_future_fap_value_ / static_cast<double>(unit.stock_value_));
+            lower_right.x = static_cast<int>(upper_left.x + unit.type_.width() * unit.future_fap_value_ / static_cast<double>(unit.stock_value_));
             lower_right.y = upper_left.y + 5;
             Broodwar->drawBoxMap(upper_left, lower_right, Colors::White, true);
 

@@ -275,7 +275,7 @@ void CUNYAIModule::onEnd(bool isWinner)
             Broodwar << "Successfully copied from WRITE to READ folder." << std::endl;
         }
         catch (...) {
-            //Broodwar << "Couldn't copy from WRITE to READ folder." << std::endl; // Message doesn't matter since the game is over.
+            Broodwar << "Couldn't copy from WRITE to READ folder." << std::endl; 
         }
     }
 

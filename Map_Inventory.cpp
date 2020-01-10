@@ -1410,8 +1410,6 @@ vector< vector<int> > Map_Inventory::completeField(vector< vector<int> > pf, con
         }
     }
 
-
-
     bool changed_a_value_last_cycle = true;
 
     for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
@@ -1462,7 +1460,7 @@ void Map_Inventory::createThreatField(Player_Model &enemy_player) {
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
     for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.future_fap_value_;
     }
 
     pf_threat_ = completeField(pf_clear, 10);
@@ -1477,7 +1475,7 @@ void Map_Inventory::createAAField(Player_Model &enemy_player) {
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
     for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.ma_future_fap_value_ * unit.second.shoots_up_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.future_fap_value_ * unit.second.shoots_up_;
     }
 
     pf_aa_ = completeField(pf_clear, 5);

@@ -66,6 +66,7 @@ struct Stored_Unit {
     int cd_remaining_;
     bool stimmed_;
     bool burrowed_;
+    bool cloaked_;
     bool detected_; // this bool only works for enemy units not our own.
     bool updated_fap_this_frame_;
     int areaID_;
@@ -124,7 +125,6 @@ struct Stored_Unit {
     int current_stock_value_; // Precalculated, precached.
     int stock_value_; // Precalculated, precached.
     int future_fap_value_; // Current FAP prediction.
-    int ma_future_fap_value_; // A moving average of FAP values.
     int count_of_consecutive_predicted_deaths_; // the number of sims forcasting the unit's death.
     bool hasTarget_;
 

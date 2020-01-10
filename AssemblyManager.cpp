@@ -327,7 +327,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     // Check if worker has any path to an expo.
     for (auto &p : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
-        path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafePath(Position(p)));
+        path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafeGroundPath(Position(p)));
     }
 
     bool buildings_started = false;

@@ -37,10 +37,12 @@ map<Position, Base> BaseManager::getBases()
 
 void BaseManager::updateBases()
 {
-
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
-            baseMap_.insert({ u.second.pos_, Base( u.first ) });
+        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
+            for (auto expo : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+                if(u.second.bwapi_unit_->getTilePosition() == expo)
+                    baseMap_.insert({ u.second.pos_, Base(u.first) });
+            }
     }
 
     Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
@@ -71,8 +73,8 @@ void BaseManager::updateBases()
         b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
         b.second.overlords_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, u_loc);
 
-        b.second.ground_weak_ = (this_is_the_closest_ground_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true)) || (b.second.sunken_count_ == 0);
-        b.second.air_weak_ = (this_is_the_closest_air_base && !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true)) || (b.second.spore_count_ == 0);
+        b.second.ground_weak_ = !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true) || (b.second.sunken_count_ == 0 && b.second.overlords_ > 6);
+        b.second.air_weak_ = !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true) || (b.second.spore_count_ == 0 && b.second.overlords_ > 6);
         b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin);
         b.second.gas_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningGas);
         b.second.returners_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::Returning);
@@ -80,8 +82,8 @@ void BaseManager::updateBases()
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        bool emergency_sunken = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && they_are_moving_out_ground && b.second.ground_weak_ && can_upgrade_sunken;
-        bool emergency_spore = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && they_are_moving_out_air && b.second.air_weak_ && can_upgrade_spore;
+        bool emergency_sunken = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((this_is_the_closest_ground_base && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken;
+        bool emergency_spore = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((this_is_the_closest_air_base && they_are_moving_out_air) || b.second.air_weak_) && can_upgrade_spore;
         
         if (emergency_sunken) {
             Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);

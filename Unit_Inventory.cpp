@@ -299,6 +299,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit) {
     cd_remaining_ = unit->getAirWeaponCooldown();
     stimmed_ = unit->isStimmed();
     burrowed_ = unit->isBurrowed();
+    cloaked_ = unit->isCloaked();
     detected_ = unit->isDetected(); // detected doesn't work for personal units, only enemy units.
     if (type_ != unit->getType()) {
         type_ = unit->getType();
@@ -308,28 +309,17 @@ void Stored_Unit::updateStoredUnit(const Unit &unit) {
         circumference_remaining_ = shell.circumference_;
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
-        ma_future_fap_value_ = shell.stock_value_;
         count_of_consecutive_predicted_deaths_ = 0;
     }
     else {
         //bool unit_fighting = type_.canAttack() && phase_ == Stored_Unit::Attacking"; //&& !(burrowed_ && type_ == UnitTypes::Zerg_Lurker && time_since_last_dmg_ > 24); // detected doesn't work for personal units, only enemy units.
-        bool unit_escaped = burrowed_ && time_since_last_dmg_ > FAP_SIM_DURATION; // can't still be getting shot if we're setting its assesment to 0.
-        bool overkilled = (count_of_consecutive_predicted_deaths_ > FAP_SIM_DURATION && time_since_last_dmg_ > FAP_SIM_DURATION) || !type_.canAttack(); // ad - hoc resetting idea.
+        bool unit_escaped = (burrowed_ || cloaked_) && (!detected_ || time_since_last_dmg_ > FAP_SIM_DURATION); // can't still be getting shot if we're setting its assesment to 0.
         circumference_remaining_ = circumference_;
         current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
+        if (future_fap_value_ > 0 || unit_escaped) count_of_consecutive_predicted_deaths_ = 0;
+        else count_of_consecutive_predicted_deaths_++;
 
-        //double weight = (MOVING_AVERAGE_DURATION - 1) / static_cast<double>(MOVING_AVERAGE_DURATION); // exponential moving average?
-        //if(unit->getPlayer() == Broodwar->self()) ma_future_fap_value_ = retreating_undetected ? current_stock_value_ : static_cast<int>(weight * ma_future_fap_value_ + (1.0 - weight) * future_fap_value_); // exponential moving average?
-        if (unit->getPlayer() == Broodwar->self()) {
-            ma_future_fap_value_ = unit_escaped ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // normal moving average.
-            if (future_fap_value_ > 0 || unit_escaped) count_of_consecutive_predicted_deaths_ = 0;
-            else count_of_consecutive_predicted_deaths_++;
-        }
-        else {
-            ma_future_fap_value_ = overkilled ? current_stock_value_ : static_cast<int>(((FAP_SIM_DURATION - 1) * ma_future_fap_value_ + future_fap_value_) / FAP_SIM_DURATION); // enemy units ought to be simply treated as their simulated value. Otherwise repeated exposure "drains" them and cannot restore them when they are "out of combat" and the MA_FAP sim gets out of touch with the game state.
-            if (future_fap_value_ > 0) count_of_consecutive_predicted_deaths_ = 0;
-            else count_of_consecutive_predicted_deaths_++;
-        }
+
     }
     if ((phase_ == Stored_Unit::Upgrading || phase_ == Stored_Unit::Researching || (phase_ == Stored_Unit::Building && unit->isCompleted() && type_.isBuilding())) && unit->isIdle()) phase_ = Stored_Unit::None; // adjust units that are no longer upgrading.
 
@@ -594,7 +584,6 @@ void Unit_Inventory::updateUnitInventorySummary() {
     for (auto const & u_iter : unit_map_) { // should only search through unit types not per unit.
 
         future_fap_stock_ += u_iter.second.future_fap_value_;
-        moving_average_fap_stock_ += u_iter.second.ma_future_fap_value_;
         is_shooting_ += u_iter.first->isAttacking();
         total_supply_ += u_iter.second.type_.supplyRequired();
         building_count_ += u_iter.second.type_.isBuilding();
@@ -805,7 +794,6 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
     future_fap_value_ = stock_value_;
-    ma_future_fap_value_ = stock_value_;
 };
 
 // We must be able to create Stored_Unit objects as well.
@@ -847,9 +835,7 @@ Stored_Unit::Stored_Unit(const Unit &unit) {
     modified_gas_cost_ = shell.modified_gas_cost_;
     modified_supply_ = shell.modified_supply_;
     stock_value_ = shell.stock_value_; //prevents retyping.
-    ma_future_fap_value_ = shell.stock_value_;
     future_fap_value_ = shell.stock_value_;
-
     current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields())); // Precalculated, precached.
 
 }
@@ -1289,7 +1275,6 @@ void Stored_Unit::updateFAPvalueDead()
 }
 
 bool Stored_Unit::unitDeadInFuture(const Stored_Unit &unit, const int &number_of_frames_voted_death) {
-    //return unit.ma_future_fap_value_ < (unit.current_stock_value_ * static_cast<double>(MOVING_AVERAGE_DURATION - number_of_frames_in_future) / static_cast<double>(MOVING_AVERAGE_DURATION)); 
     return unit.count_of_consecutive_predicted_deaths_ >= number_of_frames_voted_death;
 }
 

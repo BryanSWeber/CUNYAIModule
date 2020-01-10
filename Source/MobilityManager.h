@@ -45,7 +45,7 @@ public:
     //Checks if all except the first area are safe, since we are trying to run.
     bool checkSafeEscapePath(const Position & finish);
     //Checks first area for safety.
-    bool checkSafePath(const Position & finish);
+    bool checkSafeGroundPath(const Position & finish);
 
     bool adjust_lurker_burrow(const Position position_of_target);
 
