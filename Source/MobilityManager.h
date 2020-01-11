@@ -22,7 +22,7 @@ public:
     };
 
     // Basic retreat logic
-    bool Retreat_Logic(Stored_Unit &su);
+    bool Retreat_Logic(const Stored_Unit &su);
     // Scatter (from given position, or if blank, any present storms or spells)
     bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
