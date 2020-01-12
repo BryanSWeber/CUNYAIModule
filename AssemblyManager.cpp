@@ -341,6 +341,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool enemy_mostly_ground = CUNYAIModule::enemy_player_model.units_.stock_ground_units_ > CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ * 0.75;
     bool nearby_enemy = CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
     bool drone_death = false;
+    bool prefer_hydra_den_over_spire = max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) }) ||
+        CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0;
     int number_of_evos_wanted =
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)) +
@@ -396,21 +398,21 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             CUNYAIModule::current_map_inventory.hatches_ > 1);
     }
 
-    //Muta or lurker for main body of units.
-    if (max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) })) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
+    //Muta or lurker for main body of units. Short-circuit for lurkers if they have no detection. Build both if hive is present.
+    if (prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0) { 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
     }
-    else {
+    if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
     }
 
-    //For your capstone tech:
+    //For getting to hive: See techmanager for hive, it will trigger after queens nest is built!
     if (returnUnitRank(UnitTypes::Zerg_Guardian) == 0 || returnUnitRank(UnitTypes::Zerg_Devourer) == 0 || returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) == 0 &&
@@ -419,19 +421,21 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
-    if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) == 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
+    //For your capstone tech:
+    for (auto r : { 0,1,2,3,4,5 }) {
+        if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == r) {
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) == 0 &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
+        }
+        if (returnUnitRank(UnitTypes::Zerg_Guardian) == r || returnUnitRank(UnitTypes::Zerg_Devourer) == r || returnUnitRank(UnitTypes::Zerg_Mutalisk) == r) {
+            if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
+                CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
+                CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
+        }
     }
-    else if (returnUnitRank(UnitTypes::Zerg_Guardian) == 0 || returnUnitRank(UnitTypes::Zerg_Devourer) == 0 || returnUnitRank(UnitTypes::Zerg_Mutalisk) == 0) {
-        if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
-            CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
-            CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
-    }
-
 
     // Always:
     bool upgrade_worth_melee = CUNYAIModule::friendly_player_model.units_.ground_melee_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Zergling).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0; // first upgrade is +1
