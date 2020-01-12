@@ -545,6 +545,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
     max_range_ground_ = 0;
     max_range_ = 0;
     max_cooldown_ = 0;
+    max_speed_ = 0;
     worker_count_ = 0;
     volume_ = 0;
     detector_count_ = 0;
@@ -556,7 +557,6 @@ void Unit_Inventory::updateUnitInventorySummary() {
     building_count_ = 0;
     resource_depot_count_ = 0;
     future_fap_stock_ = 0;
-    moving_average_fap_stock_ = 0;
     is_shooting_ = 0;
     island_count_ = 0;
 
@@ -620,6 +620,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
                 max_range_ = (range_temp > max_range_) ? range_temp : max_range_;
                 max_range_air_ = (range_temp > max_range_air_ && up_gun) ? range_temp : max_range_air_;
                 max_range_ground_ = (range_temp > max_range_ground_ && down_gun) ? range_temp : max_range_ground_; //slightly faster if-else conditions.
+                max_speed_ = max(static_cast<int>(CUNYAIModule::getProperSpeed(u_iter.second.type_)), max_speed_);
             }
             else {
                 resource_depot_count_ += u_iter.second.type_.isResourceDepot() * count_of_unit_type;
@@ -649,14 +650,14 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
 void Unit_Inventory::printUnitInventory(const Player &player, const string &bonus)
 {
-    //string start = ""..\\read\\" + player->getName() + bonus + ".txt";
-    //string finish = "..\\write\\" + player->getName() + bonus + ".txt";
+    //string start = "learned_plan.readDirectory + player->getName() + bonus + ".txt";
+    //string finish = learned_plan.writeDirectory + player->getName() + bonus + ".txt";
     //if (filesystem::exists(start.c_str()))
     //    filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
 
 
     ifstream input; // brings in info;
-    input.open("..\\write\\" + player->getName() + bonus + ".txt", ios::in);   // for each row
+    input.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -669,7 +670,7 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("..\\write\\" + player->getName() + bonus + ".txt", ios_base::app);
+        output.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios_base::app);
         output << "GameSeed" << ",";
         output << "GameTime" << ",";
         for (auto i : UnitTypes::allUnitTypes()) {
@@ -683,7 +684,7 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
 
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open("..\\write\\" + player->getName() + bonus + ".txt", ios_base::app);
+    output.open(CUNYAIModule::learned_plan.writeDirectory + player->getName() + bonus + ".txt", ios_base::app);
     output << Broodwar->getRandomSeed() << ",";
     output << Broodwar->elapsedTime() << ",";
     for (auto i : UnitTypes::allUnitTypes()) {
@@ -695,8 +696,8 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
     output.close();
 
     //if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
-    //    string start = "..\\write\\" + player->getName() + bonus + ".txt";
-    //    string finish = ""..\\read\\" + player->getName() + bonus + ".txt";
+    //    string start = learned_plan.writeDirectory + player->getName() + bonus + ".txt";
+    //    string finish = learned_plan.readDirectory + player->getName() + bonus + ".txt";
     //    if (filesystem::exists(start.c_str()))
     //        filesystem::copy(start.c_str(), finish.c_str(), filesystem::copy_options::update_existing); // Furthermore, rename will fail if there is already an existing file.
     //}

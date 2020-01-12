@@ -144,7 +144,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
                     if ( (!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
-                            return mobility.surround(e_closest->pos_);
+                            return mobility.surroundLogic(e_closest->pos_);
                         }
                         else {
                             mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
@@ -162,7 +162,7 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Scatter_Logic(overstacked_units->pos_);
                     }
                     else if (!(standard_fight_reasons && my_unit->phase_ == Stored_Unit::Phase::PathingOut && my_unit->phase_ != Stored_Unit::Phase::Attacking) && prepping_attack) {
-                        return mobility.surround(e_closest->pos_);
+                        return mobility.surroundLogic(e_closest->pos_);
                     }
                     else if (standard_fight_reasons || my_unit->phase_ == Stored_Unit::Phase::Attacking) {
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
@@ -170,7 +170,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
-                         return mobility.surround(e_closest->pos_);
+                         return mobility.surroundLogic(e_closest->pos_);
                     }
                     else if (standard_fight_reasons) {
                         bool is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
@@ -191,7 +191,7 @@ bool CombatManager::combatScript(const Unit & u)
                     return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {
-                return mobility.surround(e_closest->pos_);
+                return mobility.surroundLogic(e_closest->pos_);
             }
         }
     }

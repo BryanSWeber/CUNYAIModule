@@ -33,7 +33,9 @@ public:
     bool BWEM_Movement(const bool & in_or_out);
 
     // Surrounds position of choice slowly.
-    bool surround(const Position & pos);
+    bool surroundLogic(const Position & pos);
+    // Causes a unit to move away from its neighbors.
+    bool isolate();
 
     // causes a unit to move to the left or the right of a position.
     Position encircle(const Position & p);

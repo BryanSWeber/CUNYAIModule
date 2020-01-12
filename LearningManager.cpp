@@ -25,10 +25,42 @@ namespace py = pybind11;
 
 bool LearningManager::confirmHistoryPresent()
 {
-    rename("..\\read\\history.txt", "..\\write\\history.txt"); // Copy our history to the write folder. There needs to be a file called history.txt.
+    rename( (readDirectory + "history.txt").c_str(), (writeDirectory + "history.txt").c_str()); // Copy our history to the write folder. There needs to be a file called history.txt.
+
+    if constexpr (PRINT_BOMB) {
+        ofstream a; // Prints to brood war file while in the WRITE file. ** Works at home, prints in directory of CUNYbot.exe
+        a.open(".\\test.txt", ios_base::app);
+        a << ".\\test.txt" << endl;
+        a.close();
+
+        ofstream A; // Prints to brood war file while in the WRITE file.
+        A.open("\\test.txt", ios_base::app);
+        A << "\\test.txt" << endl;
+        A.close();
+
+        ofstream B; // Prints to brood war file while in the WRITE file.  ** Works at home, Prints outside of parent directory.
+        B.open("..\\test.txt", ios_base::app);
+        B << "..\\test.txt" << endl;
+        B.close();
+
+        ofstream C; // Prints to brood war file while in the WRITE file.  **Works at home, prints in write directory.
+        C.open("..\\write\\test.txt", ios_base::app);
+        C << "..\\write\\test.txt" << endl;
+        C.close();
+
+        ofstream D; // Prints to brood war file while in the WRITE file. **works in BASIL-Docker
+        D.open("bwapi-data\\write\\test.txt", ios_base::app);
+        D << "bwapi-data\\write\\test.txt" << endl;
+        D.close();
+
+        ofstream E; // Prints to brood war file while in the WRITE file. 
+        E.open("..\\bwapi-data\\write\\test.txt", ios_base::app);
+        E << "..\\bwapi-data\\write\\test.txt" << endl;
+        E.close();
+    }
 
     ifstream input; // brings in info;
-    input.open("..\\write\\history.txt", ios::in);   // for each row
+    input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -38,7 +70,7 @@ bool LearningManager::confirmHistoryPresent()
 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open("..\\write\\history.txt", ios_base::app);
+        output.open( (writeDirectory + "history.txt").c_str(), ios_base::app);
         output << "gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening, score_building, score_kills, score_raze, score_units, detector_count, flyers, duration" << endl;
         output.close();
         return false;
@@ -134,7 +166,7 @@ void LearningManager::initializeGeneticLearning() {
     loss_rate_ = 1;
 
     ifstream input; // brings in info;
-    input.open("..\\write\\history.txt", ios::in);   // for each row
+    input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
     string line;
     int csv_length = 0;
     while (getline(input, line)) {
@@ -142,14 +174,14 @@ void LearningManager::initializeGeneticLearning() {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open("..\\write\\history.txt", ios::in);   // for each row
+    input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
     csv_length = 0;
     while (getline(input, line)) {
         ++csv_length;
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open("..\\write\\history.txt", ios::in);
+    input.open( (writeDirectory + "history.txt").c_str(), ios::in);
     getline(input, line); //skip the first line of the document.
     csv_length--; // that means the remaining csv is shorter by 1 line.
     for (int j = 0; j < csv_length; ++j) {

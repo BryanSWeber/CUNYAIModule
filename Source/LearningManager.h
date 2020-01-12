@@ -8,6 +8,10 @@ using namespace BWAPI;
 
 struct LearningManager {
 
+    string readDirectory = "bwapi-data//read//";
+    string writeDirectory = "bwapi-data//write//";
+
+
     bool confirmHistoryPresent();
     void initializeGeneticLearning();
     void initializeRFLearning();
@@ -42,5 +46,6 @@ struct LearningManager {
     double r_out_t0;
     double loss_rate_;
     string build_order_t0;
-
+    int fliers_t0;
+    int detectors_t0;
 };

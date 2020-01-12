@@ -26,6 +26,7 @@ constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = true; // Copy replay information.
+constexpr bool PRINT_BOMB = true; // print a bunch of practice files to see what directory we are in.
 
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
 constexpr bool INTERBREED_PARENTS = true && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.

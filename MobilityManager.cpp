@@ -86,20 +86,38 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     return it_worked;
 }
 
-bool Mobility::surround(const Position & pos)
+bool Mobility::surroundLogic(const Position & pos)
 {
     encircle(pos);
     //avoid_edges();//Prototyping
+    //isolate();
+    //Position get_proper_surround_distance = getVectorTowardsMap(CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, 250 / 4);
     if (unit_->move(pos_ + encircle_vector_)) {
-        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//show we're running around it
-        Diagnostics::drawLine(pos_ + encircle_vector_, pos_ + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
-        Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
+        //Diagnostics::drawLine(pos_, pos_ + seperation_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);//show we're seperating from others.
+        //Diagnostics::drawLine(pos_ + seperation_vector_, pos_ + seperation_vector_ + walkability_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
+        //Diagnostics::drawLine(pos_ + seperation_vector_ + walkability_vector_, pos_ + seperation_vector_ + walkability_vector_ + get_proper_surround_distance, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
+        //Diagnostics::drawLine(pos_ + seperation_vector_ + walkability_vector_ + get_proper_surround_distance, pos_ + seperation_vector_ + walkability_vector_ + get_proper_surround_distance + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
+        //Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
         //Diagnostics::DiagnosticTrack(pos_ + encircle_vector_ + walkability_vector_);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
     }
     return false;
 }
 
+bool Mobility::isolate()
+{
+    Unit_Inventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
+    
+    Position central_pos = Positions::Origin;
+    for (auto u : u_loc.unit_map_) {
+        central_pos += u.second.pos_ - pos_;
+    }
+
+    Position vector_away = Positions::Origin - (central_pos - pos_); 
+    double theta = atan2(vector_away.y, vector_away.x); // we want to go away from them.
+    Position seperation_vector_ = Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+
+}
 
 // This is basic combat logic for nonspellcasting units.
 bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
@@ -345,7 +363,7 @@ Position Mobility::avoid_edges() {
         pair<BWEM::altitude_t, WalkPosition> targeted_pair = *CUNYAIModule::select_randomly(higher_ground.begin(), higher_ground.end());
         Position vector_to = Position(targeted_pair.second) - pos_;
         double theta = atan2(vector_to.y, vector_to.x);
-        walkability_vector_ = Position(static_cast<int>(cos(theta) * distance_metric_ * 0.25), static_cast<int>(sin(theta) * distance_metric_* 0.25)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+        walkability_vector_ = Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
         return walkability_vector_;
     }
 }
@@ -536,7 +554,7 @@ Position Mobility::getVectorTowardsMap(const vector<vector<int>> &map, const int
 
     if (temp_y != 0 || temp_x != 0) {
         theta = atan2(temp_y, temp_x);
-        return_vector = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
+        return_vector = Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); //vector * scalar. Note if you try to return just the unit vector, Position will truncate the doubles to ints, and you'll get 0,0.
     }
     return  return_vector;
 }

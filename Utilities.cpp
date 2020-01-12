@@ -231,7 +231,7 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
                 }
             }
 
-            output.open("..\\write\\" + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
+            output.open(learned_plan.writeDirectory + Broodwar->mapFileName() + "_v_" + Broodwar->enemy()->getName() + "_status.txt", ios_base::app);
 
             output << label << " Frame Count " << Broodwar->getFrameCount() << endl;
             output << " Unit Types " << smashed_unit_types << endl;

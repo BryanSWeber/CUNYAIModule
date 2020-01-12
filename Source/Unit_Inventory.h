@@ -169,6 +169,7 @@ struct Unit_Inventory {
     int max_range_air_ = 0;
     int max_range_ground_ = 0;
     int max_cooldown_ = 0;
+    int max_speed_ = 0;
     int worker_count_ = 0;
     int volume_ = 0;
     int detector_count_ = 0;
@@ -180,7 +181,6 @@ struct Unit_Inventory {
     int building_count_ = 0;
     int resource_depot_count_ = 0;
     int future_fap_stock_ = 0;
-    int moving_average_fap_stock_ = 0;
     int is_shooting_ = 0;
     int island_count_ = 0;
 
@@ -221,12 +221,6 @@ struct Unit_Inventory {
     void purgeWorkerRelationsStop(const Unit & unit);
     void purgeWorkerRelationsNoStop(const Unit & unit);
     void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
-    void drawAllVelocities() const; // sometimes causes a lag-out or a crash. Unclear why.
-    void drawAllHitPoints() const;
-    void drawAllMAFAPaverages() const;
-    void drawAllFutureDeaths() const;
-    void drawAllLastDamage() const;
-    void drawAllSpamGuards() const;
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllMisplacedGroundUnits() const;

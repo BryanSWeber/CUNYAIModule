@@ -171,7 +171,7 @@ void CUNYAIModule::onStart()
 
     // Testing Build Order content intenstively.
     ofstream output; // Prints to brood war file while in the WRITE file.
-    output.open("..\\write\\BuildOrderFailures.txt", ios_base::app);
+    output.open( (learned_plan.writeDirectory + "BuildOrderFailures.txt").c_str(), ios_base::app);
     string print_value = "";
     print_value += learned_plan.build_order_t0;
     output << "Trying Build Order" << print_value << endl;
@@ -179,35 +179,35 @@ void CUNYAIModule::onStart()
 
 
     if (RIP_REPLAY) {
-        string src = "..\\read\\" + Broodwar->enemy()->getName() + ".txt";
-        string dst = "..\\write\\" + Broodwar->enemy()->getName() + ".txt";
+        string src = learned_plan.readDirectory + Broodwar->enemy()->getName() + ".txt";
+        string dst = learned_plan.writeDirectory + Broodwar->enemy()->getName() + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "..\\read\\" + Broodwar->enemy()->getName() + "casualties" + ".txt";
-        dst = "..\\write\\" + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        src = learned_plan.readDirectory + Broodwar->enemy()->getName() + "casualties" + ".txt";
+        dst = learned_plan.writeDirectory + Broodwar->enemy()->getName() + "casualties" + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "..\\read\\" + Broodwar->self()->getName() + ".txt";
-        dst = "..\\write\\" + Broodwar->self()->getName() + ".txt";
+        src = learned_plan.readDirectory + Broodwar->self()->getName() + ".txt";
+        dst = learned_plan.writeDirectory + Broodwar->self()->getName() + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        src = "..\\read\\" + Broodwar->self()->getName() + "casualties" + ".txt";
-        dst = "..\\write\\" + Broodwar->self()->getName() + "casualties" + ".txt";
+        src = learned_plan.readDirectory + Broodwar->self()->getName() + "casualties" + ".txt";
+        dst = learned_plan.writeDirectory + Broodwar->self()->getName() + "casualties" + ".txt";
         rename(src.c_str(), dst.c_str());
 
-        if (std::filesystem::exists("..\\read\\"))
+        if (std::filesystem::exists(learned_plan.readDirectory))
             Broodwar << "We found a READ folder" << std::endl;
-        if (std::filesystem::exists("..\\write\\"))
+        if (std::filesystem::exists(learned_plan.writeDirectory))
             Broodwar << "We found a WRITE folder" << std::endl;
 
         //std::error_code ec;
         //try {
         //    using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-        //    for (const auto& dirEntry : recursive_directory_iterator("..\\read\\")) {
+        //    for (const auto& dirEntry : recursive_directory_iterator(learned_plan.readDirectory)) {
         //        string filename = dirEntry.path().filename().string();
         //        Broodwar << "Copying: " << filename << std::endl;
-        //        rename(dirEntry, "..\\write\\" + filename);
-        //        //std::filesystem::copy(dirEntry, "..\\write\\" + filename, filesystem::copy_options::update_existing, ec);
+        //        rename(dirEntry, learned_plan.writeDirectory + filename);
+        //        //std::filesystem::copy(dirEntry, learned_plan.writeDirectory + filename, filesystem::copy_options::update_existing, ec);
         //        //if (ec) {
         //        //    Broodwar << ec.message() << std::endl;
         //        //}
@@ -218,7 +218,7 @@ void CUNYAIModule::onStart()
         //}
 
 
-        //std::filesystem::copy("..\\read\\", "..\\write\\", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
+        //std::filesystem::copy(learned_plan.readDirectory, learned_plan.writeDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
 
         //if (ec) {
         //    Broodwar << ec.message() << std::endl;
@@ -271,7 +271,7 @@ void CUNYAIModule::onEnd(bool isWinner)
 
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         try {
-            std::filesystem::copy("..\\write\\", "..\\read\\", filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
+            std::filesystem::copy(learned_plan.writeDirectory, learned_plan.readDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
             Broodwar << "Successfully copied from WRITE to READ folder." << std::endl;
         }
         catch (...) {
