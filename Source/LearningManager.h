@@ -8,8 +8,8 @@ using namespace BWAPI;
 
 struct LearningManager {
 
-    string readDirectory = "bwapi-data//read//";
-    string writeDirectory = "bwapi-data//write//";
+    string readDirectory = "..//..//read//";
+    string writeDirectory = "..//..//write//";
 
 
     bool confirmHistoryPresent();

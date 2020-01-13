@@ -236,10 +236,10 @@ void CUNYAIModule::onEnd(bool isWinner)
 {// Called when the game ends
 
     ofstream output; // Prints to brood war file while in the WRITE file.
-    if (std::filesystem::exists("..\\write\\history.txt")) {
+    if (std::filesystem::exists(learned_plan.writeDirectory + "history.txt")) {
         std::cout << "Writing to history at game end..." << std::endl;
     }
-    output.open("..\\write\\history.txt", ios_base::app);
+    output.open(learned_plan.writeDirectory + "history.txt", ios_base::app);
     string opponent_name = Broodwar->enemy()->getName().c_str();
     output << gas_proportion << ","
         << supply_ratio << ','

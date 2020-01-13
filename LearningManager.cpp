@@ -27,36 +27,12 @@ bool LearningManager::confirmHistoryPresent()
 {
     rename( (readDirectory + "history.txt").c_str(), (writeDirectory + "history.txt").c_str()); // Copy our history to the write folder. There needs to be a file called history.txt.
 
-    if constexpr (PRINT_BOMB) {
+    if constexpr (PRINT_PARENT) {
         ofstream a; // Prints to brood war file while in the WRITE file. ** Works at home, prints in directory of CUNYbot.exe
         a.open(".\\test.txt", ios_base::app);
-        a << ".\\test.txt" << endl;
+        a << "This is the parent directory, friend!" << endl;
         a.close();
 
-        ofstream A; // Prints to brood war file while in the WRITE file.
-        A.open("\\test.txt", ios_base::app);
-        A << "\\test.txt" << endl;
-        A.close();
-
-        ofstream B; // Prints to brood war file while in the WRITE file.  ** Works at home, Prints outside of parent directory.
-        B.open("..\\test.txt", ios_base::app);
-        B << "..\\test.txt" << endl;
-        B.close();
-
-        ofstream C; // Prints to brood war file while in the WRITE file.  **Works at home, prints in write directory.
-        C.open("..\\write\\test.txt", ios_base::app);
-        C << "..\\write\\test.txt" << endl;
-        C.close();
-
-        ofstream D; // Prints to brood war file while in the WRITE file. **works in BASIL-Docker
-        D.open("bwapi-data\\write\\test.txt", ios_base::app);
-        D << "bwapi-data\\write\\test.txt" << endl;
-        D.close();
-
-        ofstream E; // Prints to brood war file while in the WRITE file. 
-        E.open("..\\bwapi-data\\write\\test.txt", ios_base::app);
-        E << "..\\bwapi-data\\write\\test.txt" << endl;
-        E.close();
     }
 
     ifstream input; // brings in info;
@@ -497,15 +473,13 @@ void LearningManager::initializeRFLearning()
     //std::cout << version.cast<string>() << std::endl;
     
 
-    //local["rf_executable"] = ".\\..\\read\\kiwook.exe"; // system needs the relative directory. Apparently it HAS to be \\ slashes... I don't know why.
-
     //Executing script:
     auto local = py::dict();
     bool abort_code = false;
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
     local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
     local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    local["in_file"] = ".\\write\\history.txt"; // note that python builds the absolute directory so adding "." or "./" will result in it looking for literal ".", eg. /.//file.txt.
+    local["in_file"] = ".\\write\\history.txt"; // Back directory command '..' is not something you can confidently pass to python here so we have to manually rig our path there.
 
     local["gas_proportion_t0"] = 0;
     local["supply_ratio_t0"] = 0;
