@@ -1031,7 +1031,7 @@ bool AssemblyManager::assignUnitAssembly()
     if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12) {
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
-            bool bad_phase = (potential_lurker.second.phase_ == Stored_Unit::Attacking || potential_lurker.second.phase_ == Stored_Unit::Retreating || potential_lurker.second.phase_ == Stored_Unit::Surrounding) && potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields());
+            bool bad_phase = (potential_lurker.second.phase_ == Stored_Unit::Attacking || potential_lurker.second.phase_ == Stored_Unit::Retreating || potential_lurker.second.phase_ == Stored_Unit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
             if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStored_Unit(potential_lurker.second);
         }
@@ -1040,7 +1040,7 @@ bool AssemblyManager::assignUnitAssembly()
     if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12) {
         bool endgame_fliers_permissable = CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
-            bool bad_phase = (potential_endgame_flier.second.phase_ == Stored_Unit::Attacking || potential_endgame_flier.second.phase_ == Stored_Unit::Retreating || potential_endgame_flier.second.phase_ == Stored_Unit::Surrounding) && potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields());
+            bool bad_phase = (potential_endgame_flier.second.phase_ == Stored_Unit::Attacking || potential_endgame_flier.second.phase_ == Stored_Unit::Retreating || potential_endgame_flier.second.phase_ == Stored_Unit::Surrounding) /*&& potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) || bad_phase) continue;
             if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
         }
