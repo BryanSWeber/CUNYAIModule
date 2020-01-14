@@ -17,6 +17,7 @@ struct LearningManager {
     void initializeRFLearning();
     void initializeTestStart();
     void initializeRandomStart();
+    void initializeUnitWeighting();
 
     vector<string> build_order_list = {
     "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.

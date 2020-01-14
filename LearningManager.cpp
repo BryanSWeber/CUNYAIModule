@@ -32,7 +32,6 @@ bool LearningManager::confirmHistoryPresent()
         a.open(".\\test.txt", ios_base::app);
         a << "This is the parent directory, friend!" << endl;
         a.close();
-
     }
 
     ifstream input; // brings in info;
@@ -557,4 +556,51 @@ void LearningManager::initializeRandomStart(){
     a_tech_t0 = dis(gen) * 3;
     r_out_t0 = dis(gen);
     build_order_t0 = build_order_list[build_order_rand];
+}
+
+void LearningManager::initializeUnitWeighting()
+{
+    ifstream input; // brings in info;
+    input.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);   // for each row
+    string line;
+    int csv_length = 0;
+    while (getline(input, line)) {
+        ++csv_length;
+    }
+    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+    if (csv_length < 1) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::app);
+
+        string name_of_units = "";
+        for (auto u : BWAPI::UnitTypes::allUnitTypes()) {
+            string temp = u.getName().c_str();
+            name_of_units += temp + ",";
+        }
+        name_of_units += "win";
+        output << name_of_units << endl;
+
+        string weight_of_units = "";
+        for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+            string temp = to_string(Stored_Unit(u).stock_value_);
+            weight_of_units += temp + ",";
+        }
+        name_of_units += "0";
+        output << weight_of_units << endl;
+
+        output.close();
+    }
+
+    map<UnitType, int> unit_weights;
+
+    std::cout << "Python Initialization..." << std::endl;
+
+    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+    auto local = py::dict();
+    py::object scope = py::module::import("__main__").attr("__dict__");
+    py::object cma = py::module::import("cma");
+
+    py::eval_file(".\\cames.py", scope, local);
+
 }

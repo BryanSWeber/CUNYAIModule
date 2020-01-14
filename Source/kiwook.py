@@ -1,5 +1,11 @@
+"""
+This script is written to receive CUNYBot's game history, analyze it with Random Forest, and
+generate opening parameters for current game. This script gets the information of current game
+through C++ arguments (opponent's race, name, and map). The information is used to find the
+strategic opening parameters.
+"""
+
 import os.path
-import random
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -8,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
 
+# To check whether all required information is typed or not.
 #if len(local) != 6:
 #    print("Not enough information to run.")
 #    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
@@ -16,6 +23,7 @@ pd.set_option('display.max_columns', 100)
 # 0. Get C++ arguments--------------------------------------------------------------------------------------
 print("We are at: " + os.getcwd() + "\n")
 print("Our parent is " + os.path.normpath(os.path.join(os.getcwd(), os.pardir)) + "\n")
+print("Our parent's parent is " + os.path.normpath(os.path.join(os.getcwd(), os.pardir, os.pardir)) + "\n")
 
 opp_race = e_race
 print("Opp. Race: " + opp_race + "\n")
@@ -26,12 +34,14 @@ print("Opp. Name: " + opp_name + "\n")
 opp_map = e_map
 print("Opp. Map: " + opp_map + "\n")
 
-file_in = str(os.path.join(os.path.abspath('..'), in_file))
+file_in = str(os.path.join(os.getcwd(), os.pardir, os.pardir, in_file))
 print("File In: " + file_in + "\n")
 
 abort_code_t0 = False;
 
+
 # Def functions----------------------------------------------------------------------------------------------
+# "binary_convert" function converts multiple values into binary values
 def binary_convert(df_in, feature):
     df_in[feature] = df_in[feature].astype(float)
     for row in range(1, df_in.shape[0]):
@@ -41,7 +51,6 @@ def binary_convert(df_in, feature):
             df_in.at[row, feature] = 0
     return df_in
 
-# cannot use because it has a definition of CLF in it that is not yet defined. Seems like the IDE allowed strange behavior.
 # -----------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------
 # 1. Load Dataset--------------------------------------------------------------------------------------------
@@ -121,6 +130,7 @@ if abort_code_t0 == False:
         ['opening_code', 'opening']).count().rename(columns={'gas_proportion': 'count'})
     print(df_opening)
 
+    # Classify Enemy's information (given) and CUNYBot's information (choose)
     # dfg = given
     given = ['race_code', 'name_code', 'map_code', 'enemy_avg_army', 'enemy_avg_econ',
              'enemy_avg_tech', 'detector_count', 'flyers', 'win']
@@ -139,10 +149,12 @@ if abort_code_t0 == False:
     df_train = df_train.reset_index(drop=True)
     df_temp = df_train.copy(deep=True)
 
+    # Group in-game information of enemies by players
     enemy_avg_col = ['name_code', 'enemy_avg_army', 'enemy_avg_econ', 'enemy_avg_tech']
     df_sum = df_train[enemy_avg_col].groupby(['name_code']).sum()
     df_cnt = df_train[enemy_avg_col].groupby(['name_code']).count()
 
+    # Calculate means for the information
     for i in range(df_train.shape[0]):
         if df_train.iloc[i][8] in df_sum.index.tolist():   # name match
             gp_army_sum = df_sum.at[df_train.iloc[i][8], 'enemy_avg_army']
@@ -158,7 +170,8 @@ if abort_code_t0 == False:
 
     print("Finished creating training data")
     print(df_train)
-    
+
+    # To check whether the information by players exists or not
     if df_train.empty or df_train.shape[0] <= 1:
         print("Training File is empty.")
         abort_code_t0 = True;
@@ -177,8 +190,8 @@ if abort_code_t0 == False:
     clf.fit(X_train, y_train)
 
     print("Finished fitting RF")
-    # 5. Generate test dataset and predict the game result-----------------------------------------------------
 
+    # 5. Generate test dataset and predict the game result-----------------------------------------------------
     # Find code of opp_features
     race_code_table = df_race.index.tolist()
     race_code_table.append((len(race_code_table), 'None'))
@@ -199,7 +212,6 @@ if abort_code_t0 == False:
         if name_code_table[i][1] == opp_name:
             opp_name_code = name_code_table[i][0]
     print("Opponent Name Code is: " + str(opp_name_code) + "\n")
-
 
     map_code_table = df_map.index.tolist()
     map_code_table.append((len(map_code_table), 'None'))
@@ -226,68 +238,73 @@ if abort_code_t0 == False:
     print("Records match attempted.")
 
     # No record, 1 record, and 2+ records
-    if match_found:                        # 0 Record
+    if match_found:                                     # 0 Record
         print("Multiple records matched")
-        dfg_test_temp = df_train[given[:-1]]      # Set given features
+        dfg_test_temp = df_train[given[:-1]]            # Set given features
         # Find max for binary feature and mean for numerical features
         det_max = dfg_test_temp['detector_count'].max()
         fly_max = dfg_test_temp['flyers'].max()
-        dfg_test_cleaned = dfg_test_temp.mean()
+        dfg_test_cleaned = dfg_test_temp.mean()         # Calculate mean for all values
         dfg_test = pd.DataFrame([(dfg_test_cleaned[0], dfg_test_cleaned[1], dfg_test_cleaned[2],
                                   dfg_test_cleaned[3], dfg_test_cleaned[4], dfg_test_cleaned[5],
                                   det_max, fly_max)], columns=given[:-1], index=[0])
         print(df_opening)
         print(dfg_test)
-        #Generate choice:
+
+        # Generate choice:
         df_test = []
         limit_attempt = 3
         cnt = 0
         continuing = True
         print("Made it inside Generate Choose")
+
         # Try until it predicts win or limit_attempts
         while continuing:
             print("Attempting to generate a random guess:")
             print(df_opening)
+
             ran_open = df_opening.shape[0]
-            print(ran_open)
             opening_code_table = df_opening.index.tolist()
-            print(opening_code_table)
             opening_index_table = []
             for ele in range(len(opening_code_table)):
                 opening_index_table += [list(opening_code_table[ele])[0]]
-            print(opening_index_table)
-            print(np.pi)
-            print(np.random.choice(opening_index_table))
+
             opn = np.random.choice(opening_index_table, 1)[0]
             opn = int(opn)
-            print(opn)
-            print(round(np.random.rand(), 6))
-            random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),round(np.random.uniform(0, 3), 6), round(np.random.rand(), 6), opn] 
+
+            random_list = [round(np.random.rand(), 6), round(np.random.rand(), 6), round(np.random.rand(), 6),
+                           round(np.random.uniform(0, 3), 6), round(np.random.rand(), 6), opn]
+            print("Random List:")
             print(random_list)
+
             random_list.insert(3, round(1 - random_list[2], 6))
             current_guess = random_list
             print("Guess Made")
             print(current_guess)
-            dfc_test = pd.DataFrame([current_guess], columns=['gas_proportion', 'supply_ratio', 'avg_army', 'avg_econ', 'avg_tech', 'r', 'opening_code'])
+
+            dfc_test = pd.DataFrame([current_guess], columns=choose)
             df_single_test = pd.concat([dfc_test, dfg_test], axis=1, sort=False)
             print("Testing the following:")
             print(df_single_test)
+
             df_single_test_temp = df_single_test.astype(float)          # Convert to float
             print("Trying CLF")
+
             df_single_test_temp['win'] = clf.predict(df_single_test)    # Predict and store
             print(df_single_test_temp['win'])
+
             single_test = df_single_test_temp.values.tolist()
             single_test = single_test[0]                                # Remove duplicate []
             print(single_test)
             
             # Check whether the result is win or loss
-            if single_test[15] == 1.0:  # win case
+            if single_test[15] == 1.0:                                  # win case
                 cnt += 1
                 single_test.append(cnt)
                 df_test += [single_test]
                 continuing = False
                 print("We passed the filter.")
-            else:                       # lose case
+            else:                                                       # lose case
                 cnt += 1
                 if cnt >= limit_attempt:
                     single_test.append(cnt)
@@ -295,6 +312,7 @@ if abort_code_t0 == False:
                     continuing = False
                 print("We did NOT pass the filter.")
         print(df_test)
+
         # Decode the code of opp_features
         opening_code_table = df_opening.index.tolist()
         for i in range(len(opening_code_table)):
@@ -318,9 +336,9 @@ if abort_code_t0 == False:
                               'opening', 'race', 'name', 'map', 'enemy_avg_army', 'enemy_avg_econ',
                               'enemy_avg_tech', 'detector_count', 'flyers', 'win', 'count'])
         df_final = df_test
-        #End Generate Choose
+        # End Generate Choose
         
-        #Regardless: Pass results to C++ and tell us what we are working with.
+        # Regardless: Pass results to C++ and tell us what we are working with.
         print(df_final)
         gas_proportion_t0 = df_final["gas_proportion"]
         print(gas_proportion_t0)

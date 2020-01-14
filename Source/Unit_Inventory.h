@@ -19,7 +19,8 @@ struct Reservation;
 struct Stored_Unit {
 
     //Creates a steryotyped ideal of the unit. For comparisons.
-    Stored_Unit(const UnitType &unittype);
+    Stored_Unit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
+
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit(const Unit &unit);
     Stored_Unit();

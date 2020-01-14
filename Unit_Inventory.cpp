@@ -304,6 +304,9 @@ void Stored_Unit::updateStoredUnit(const Unit &unit) {
     if (type_ != unit->getType()) {
         type_ = unit->getType();
         Stored_Unit shell = Stored_Unit(type_);
+        if (unit->getPlayer()->isEnemy(Broodwar->self())) {
+            Stored_Unit shell = Stored_Unit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+        }
         stock_value_ = shell.stock_value_; // longer but prevents retyping.
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
@@ -393,7 +396,7 @@ Position Unit_Inventory::getStrongestLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
-    int standard_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+    int standard_value = Stored_Unit(UnitTypes::Zerg_Drone, false, false).stock_value_;
     for (const auto &u : this->unit_map_) {
         if (CUNYAIModule::isFightingUnit(u.second) && u.second.valid_pos_) {
             int remaining_stock = u.second.current_stock_value_;
@@ -714,7 +717,7 @@ void Unit_Inventory::stopMine(Unit u) {
 Stored_Unit::Stored_Unit() = default;
 
 //returns a steryotypical unit only.
-Stored_Unit::Stored_Unit(const UnitType &unittype) {
+Stored_Unit::Stored_Unit(const UnitType &unittype, const bool &carrierUpgrade, const bool &reaverUpgrade) {
     valid_pos_ = false;
     type_ = unittype;
     build_type_ = UnitTypes::None;
@@ -772,13 +775,13 @@ Stored_Unit::Stored_Unit(const UnitType &unittype) {
     }
 
     if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
-        modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
-        modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity));
+        modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * carrierUpgrade);
+        modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * carrierUpgrade);
     }
 
     if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
-        modified_min_cost_ += BWAPI::UnitTypes::Protoss_Scarab.mineralPrice() * (5 + 5 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
-        modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+        modified_min_cost_ += BWAPI::UnitTypes::Protoss_Scarab.mineralPrice() * (5 + 5 * reaverUpgrade);
+        modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * reaverUpgrade);
     }
 
     if (unittype == UnitTypes::Protoss_Interceptor || unittype.isSpell()) {
@@ -832,6 +835,9 @@ Stored_Unit::Stored_Unit(const Unit &unit) {
 
     //Get unit's status. Precalculated, precached.
     Stored_Unit shell = Stored_Unit(type_);
+    if (unit->getPlayer()->isEnemy(Broodwar->self())) {
+        Stored_Unit shell = Stored_Unit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+    }
     modified_min_cost_ = shell.modified_min_cost_;
     modified_gas_cost_ = shell.modified_gas_cost_;
     modified_supply_ = shell.modified_supply_;
