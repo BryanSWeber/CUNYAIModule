@@ -52,6 +52,10 @@ struct Diagnostics {
     static void DiagnosticText(char const *fmt, Ts && ... vals) {
         if constexpr (DIAGNOSTIC_MODE) {
             Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
+            ofstream output; // Prints to brood war file while in the WRITE file.
+            output.open(learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            output << fmt << endl;
+            output.close();
         }
     }
     // Defunct: Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.

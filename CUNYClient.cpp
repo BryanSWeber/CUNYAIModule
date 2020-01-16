@@ -19,17 +19,17 @@ void reconnect()
 
 int main(int argc, const char* argv[])
 {
-    std::cout << "Connecting..." << std::endl;
+    //std::cout << "Connecting..." << std::endl;
     reconnect();
     while (true)
     {
         std::unique_ptr<CUNYAIModule> myBot;
-        std::cout << "waiting to enter match" << std::endl;
+        //std::cout << "waiting to enter match" << std::endl;
         while (!Broodwar->isInGame()){
                  BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
-                std::cout << "Reconnecting..." << std::endl;;
+                //std::cout << "Reconnecting..." << std::endl;;
                 reconnect();
             }
         }
@@ -117,13 +117,13 @@ int main(int argc, const char* argv[])
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
-                std::cout << "Reconnecting..." << std::endl;
+                //std::cout << "Reconnecting..." << std::endl;
                 reconnect();
             }
         }
-        std::cout << "Game ended" << std::endl;
+        //std::cout << "Game ended" << std::endl;
     }
-    std::cout << "Press ENTER to continue..." << std::endl;
+    //std::cout << "Press ENTER to continue..." << std::endl;
     std::cin.ignore();
     return 0;
 }

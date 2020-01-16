@@ -2,6 +2,7 @@
 // Remember not to use "Broodwar" in any global class constructor!
 # include "Source\CUNYAIModule.h"
 # include "Source\LearningManager.h"
+# include "Source\Diagnostics.h"
 # include <fstream>
 # include <BWAPI.h>
 # include <cstdlib>
@@ -458,16 +459,12 @@ void LearningManager::initializeGeneticLearning() {
 void LearningManager::initializeRFLearning()
 {
     //Python loading of critical libraries.
-    //std::cout << "Python Initialization..." << std::endl;
+    Diagnostics::DiagnosticText("Python Initializing");
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
     py::object scope = py::module::import("__main__").attr("__dict__");
-    //py::object scipy = py::module::import("sklearn");
-    //py::object random = py::module::import("random");
-    //py::object osPath = py::module::import("os.path");
-    //py::object pd = py::module::import("pandas");
-    //py::object np = py::module::import("numpy");
 
     //Executing script:
+    Diagnostics::DiagnosticText("Loading Dictionaries");
     auto local = py::dict();
     bool abort_code = false;
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
@@ -494,16 +491,19 @@ void LearningManager::initializeRFLearning()
     build_order_t0 = py::str(local["build_order_t0"]);
     abort_code = py::bool_(local["abort_code_t0"]);
 
+    Diagnostics::DiagnosticText("Evaluating Kiwook.py");
     py::eval_file(".\\kiwook.py", scope, local);
+    Diagnostics::DiagnosticText("Evaluation Complete.");
 
     //Pull the abort code, should be false if we got through, otherwise if true we aborted.
     abort_code = py::bool_(local["abort_code_t0"]);
-    string result = "Did we abort the RF process?: " + abort_code ? "TRUE" : "FALSE";
+    string result = abort_code ? "YES" : "NO";
+    string print_string = "Did we abort the RF process?: " + result;
 
-    Broodwar->sendText(result.c_str());
+    Diagnostics::DiagnosticText(print_string.c_str());
 
     if (abort_code) {
-        initializeRandomStart();
+        initializeGeneticLearning();
     }
     else {
         gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
