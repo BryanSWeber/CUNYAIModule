@@ -458,19 +458,14 @@ void LearningManager::initializeGeneticLearning() {
 void LearningManager::initializeRFLearning()
 {
     //Python loading of critical libraries.
-    std::cout << "Python Initialization..." << std::endl;
+    //std::cout << "Python Initialization..." << std::endl;
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
     py::object scope = py::module::import("__main__").attr("__dict__");
-    py::object scipy = py::module::import("sklearn");
-    py::object random = py::module::import("random");
-    py::object osPath = py::module::import("os.path");
-    py::object pd = py::module::import("pandas");
-    py::object np = py::module::import("numpy");
-
-    ////Proof of concept:
-    //py::object version = scipy.attr("__version__");
-    //std::cout << version.cast<string>() << std::endl;
-    
+    //py::object scipy = py::module::import("sklearn");
+    //py::object random = py::module::import("random");
+    //py::object osPath = py::module::import("os.path");
+    //py::object pd = py::module::import("pandas");
+    //py::object np = py::module::import("numpy");
 
     //Executing script:
     auto local = py::dict();
@@ -499,16 +494,13 @@ void LearningManager::initializeRFLearning()
     build_order_t0 = py::str(local["build_order_t0"]);
     abort_code = py::bool_(local["abort_code_t0"]);
 
-
-    string entry; // entered string from stream
-
     py::eval_file(".\\kiwook.py", scope, local);
 
     //Pull the abort code, should be false if we got through, otherwise if true we aborted.
     abort_code = py::bool_(local["abort_code_t0"]);
-    string result = abort_code ? "TRUE" : "FALSE";
+    string result = "Did we abort the RF process?: " + abort_code ? "TRUE" : "FALSE";
 
-    cout << "Did we abort?: " << result << endl;
+    Broodwar->sendText(result.c_str());
 
     if (abort_code) {
         initializeRandomStart();
@@ -569,9 +561,9 @@ void LearningManager::initializeUnitWeighting()
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    if (csv_length < 1) {
+    if (csv_length < 2) {
         ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::app);
+        output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::trunc); // wipe if it does not start at the correct place.
 
         string name_of_units = "";
         for (auto u : BWAPI::UnitTypes::allUnitTypes()) {
@@ -594,13 +586,20 @@ void LearningManager::initializeUnitWeighting()
 
     map<UnitType, int> unit_weights;
 
-    std::cout << "Python Initialization..." << std::endl;
+    //std::cout << "Python Initialization..." << std::endl;
 
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-    auto local = py::dict();
-    py::object scope = py::module::import("__main__").attr("__dict__");
     py::object cma = py::module::import("cma");
 
-    py::eval_file(".\\cames.py", scope, local);
+    py::object es = cma.attr("CMAEvolutionStrategy");
+    int zeros [5] = { 0,0,0,0,0 };
+    py::object starting_conditions = py::cast(zeros);
 
+    py::object inital_SD = py::cast(0.5);
+    py::object RosenbackFunction = cma.attr("ff").attr("rosen");
+    py::object initialized_es = es(starting_conditions, inital_SD); //Crashes here.
+    py::object fit_es = initialized_es.attr("optimize")(RosenbackFunction);
+
+
+    //py::print(fit_es.attr("result_pretty"));
 }

@@ -139,7 +139,9 @@ void CUNYAIModule::onStart()
     if (TEST_MODE) {
         learned_plan.initializeTestStart();
     }
-    //learned_plan.initializeUnitWeighting(); // in progress.
+    if (UNIT_WEIGHTING) {
+        learned_plan.initializeUnitWeighting(); // in progress.
+    }
 
     gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
     supply_ratio = learned_plan.supply_ratio_t0; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -468,15 +470,15 @@ void CUNYAIModule::onFrame()
     current_map_inventory.drawExpoPositions();
     current_map_inventory.drawBasePositions();
 
-    techmanager.updateTech_Avail();
-    assemblymanager.updateOptimalCombatUnit();
+    if(tech_starved) techmanager.updateTech_Avail();
+    if(army_starved) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
     if (t_game % FAP_SIM_DURATION == 0) {
         techmanager.clearSimulationHistory();
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
 
-    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) / 2;
+    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery);
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
