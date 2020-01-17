@@ -28,7 +28,7 @@ bool LearningManager::confirmHistoryPresent()
 {
     rename( (readDirectory + "history.txt").c_str(), (writeDirectory + "history.txt").c_str()); // Copy our history to the write folder. There needs to be a file called history.txt.
 
-    if constexpr (PRINT_PARENT) {
+    if constexpr (PRINT_WD) {
         ofstream a; // Prints to brood war file while in the WRITE file. ** Works at home, prints in directory of CUNYbot.exe
         a.open(".\\test.txt", ios_base::app);
         a << "This is the parent directory, friend!" << endl;
@@ -436,11 +436,6 @@ void LearningManager::initializeGeneticLearning() {
 
     }
 
-    // Normalize the CD part of the gene.
-    //double a_tot = a_army_out_mutate_ + a_econ_out_mutate_ + a_tech_out_mutate_;
-    //a_army_out_mutate_ = a_army_out_mutate_ / a_tot;
-    //a_econ_out_mutate_ = a_econ_out_mutate_ / a_tot;
-    //a_tech_out_mutate_ = a_tech_out_mutate_ / a_tot;
 
     // Normalize the CD part of the gene with CAPITAL AUGMENTING TECHNOLOGY.
     double a_tot = a_army_t0 + a_econ_t0;
@@ -449,11 +444,6 @@ void LearningManager::initializeGeneticLearning() {
     a_tech_t0 = a_tech_t0; // this is no longer normalized.
     build_order_t0 = build_order_out;
 
-    //if (a_army_out_mutate_ > 0.01 && a_econ_out_mutate_ > 0.25 && a_tech_out_mutate_ > 0.01 && a_tech_out_mutate_ < 0.50
-    //    && gas_proportion_out_mutate_ < 0.55 && gas_proportion_out_mutate_ > 0.40 && supply_ratio_out_mutate_ < 0.55 && supply_ratio_out_mutate_ > 0.20) {
-    //    break; // if we have an interior solution, let's use it, if not, we try again.
-    //}
-    //}
 }
 
 void LearningManager::initializeRFLearning()
@@ -461,10 +451,11 @@ void LearningManager::initializeRFLearning()
     //Python loading of critical libraries.
     Diagnostics::DiagnosticText("Python Initializing");
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+    Diagnostics::DiagnosticText("Loading Main");
     py::object scope = py::module::import("__main__").attr("__dict__");
 
     //Executing script:
-    Diagnostics::DiagnosticText("Loading Dictionaries");
+    Diagnostics::DiagnosticText("Loading Dictionary Contents");
     auto local = py::dict();
     bool abort_code = false;
     local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
@@ -472,38 +463,36 @@ void LearningManager::initializeRFLearning()
     local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
     local["in_file"] = ".\\write\\history.txt"; // Back directory command '..' is not something you can confidently pass to python here so we have to manually rig our path there.
 
-    local["gas_proportion_t0"] = 0;
-    local["supply_ratio_t0"] = 0;
-    local["a_army_t0"] = 0;
-    local["a_econ_t0"] = 0;
-    local["a_tech_t0"] = 0;
-    local["r_out_t0"] = 0;
-    local["build_order_t0"] = 0;
+    local["gas_proportion_t0"] = gas_proportion_t0 = 0;
+    local["supply_ratio_t0"] = supply_ratio_t0 = 0;
+    local["a_army_t0"] = a_army_t0 = 0;
+    local["a_econ_t0"] = a_econ_t0 = 0;
+    local["a_tech_t0"] = a_tech_t0 = 0;
+    local["r_out_t0"] = r_out_t0 = 0;
+    local["build_order_t0"] = build_order_t0 = "Undefined Build Order";
     local["attempt_count"] = 0;
-    local["abort_code_t0"] = false;
-
-    gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
-    supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
-    a_army_t0 = py::float_(local["a_army_t0"]);
-    a_econ_t0 = py::float_(local["a_econ_t0"]);
-    a_tech_t0 = py::float_(local["a_tech_t0"]);
-    r_out_t0 = py::float_(local["r_out_t0"]);
-    build_order_t0 = py::str(local["build_order_t0"]);
-    abort_code = py::bool_(local["abort_code_t0"]);
-
+    local["abort_code_t0"] = abort_code = false;
     Diagnostics::DiagnosticText("Evaluating Kiwook.py");
-    py::eval_file(".\\kiwook.py", scope, local);
+    try {
+        py::eval_file(".\\kiwook.py", scope, local);
+    }
+    catch (py::error_already_set const &pythonErr) { 
+        Diagnostics::DiagnosticText(pythonErr.what()); 
+        local["abort_code_t0"] = true;
+    }
     Diagnostics::DiagnosticText("Evaluation Complete.");
 
     //Pull the abort code, should be false if we got through, otherwise if true we aborted.
     abort_code = py::bool_(local["abort_code_t0"]);
+
     string result = abort_code ? "YES" : "NO";
     string print_string = "Did we abort the RF process?: " + result;
 
     Diagnostics::DiagnosticText(print_string.c_str());
 
     if (abort_code) {
-        initializeGeneticLearning();
+        Diagnostics::DiagnosticText("We will then pick a random opening");
+        initializeRandomStart();
     }
     else {
         gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
@@ -561,6 +550,7 @@ void LearningManager::initializeUnitWeighting()
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
+    //Provide default starting values if there is nothing else to use.
     if (csv_length < 2) {
         ofstream output; // Prints to brood war file while in the WRITE file.
         output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::trunc); // wipe if it does not start at the correct place.
@@ -570,7 +560,7 @@ void LearningManager::initializeUnitWeighting()
             string temp = u.getName().c_str();
             name_of_units += temp + ",";
         }
-        name_of_units += "win";
+        name_of_units += "Score";
         output << name_of_units << endl;
 
         string weight_of_units = "";
@@ -586,19 +576,18 @@ void LearningManager::initializeUnitWeighting()
 
     map<UnitType, int> unit_weights;
 
-    //std::cout << "Python Initialization..." << std::endl;
 
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-    py::object cma = py::module::import("cma");
+    //py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+    //py::object cma = py::module::import("cma");
 
-    py::object es = cma.attr("CMAEvolutionStrategy");
-    int zeros [5] = { 0,0,0,0,0 };
-    py::object starting_conditions = py::cast(zeros);
+    //py::object es = cma.attr("CMAEvolutionStrategy");
+    //int zeros [5] = { 0,0,0,0,0 };
+    //py::object starting_conditions = py::cast(zeros);
 
-    py::object inital_SD = py::cast(0.5);
-    py::object RosenbackFunction = cma.attr("ff").attr("rosen");
-    py::object initialized_es = es(starting_conditions, inital_SD); //Crashes here.
-    py::object fit_es = initialized_es.attr("optimize")(RosenbackFunction);
+    //py::object inital_SD = py::cast(0.5);
+    //py::object RosenbackFunction = cma.attr("ff").attr("rosen");
+    //py::object initialized_es = es(starting_conditions, inital_SD); //Crashes here.
+    //py::object fit_es = initialized_es.attr("optimize")(RosenbackFunction);
 
 
     //py::print(fit_es.attr("result_pretty"));

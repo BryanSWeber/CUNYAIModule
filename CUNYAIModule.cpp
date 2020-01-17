@@ -114,7 +114,7 @@ void CUNYAIModule::onStart()
         // Retrieve you and your enemy's races. enemy() will just return the first enemy.
         // If you wish to deal with multiple enemies then you must use enemies().
         if (Broodwar->enemy()) // First make sure there is an enemy
-            Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
+            Diagnostics::DiagnosticText( string(string("The matchup is ") + string(Broodwar->self()->getRace().c_str()) + string(" vs ") + string(Broodwar->enemy()->getRace().c_str())).c_str()); // this is pretty ugly.
     }
 
     //Initialize state variables
@@ -153,7 +153,7 @@ void CUNYAIModule::onStart()
     win_rate = (1 - learned_plan.loss_rate_);
     //get initial build order.
     buildorder.getInitialBuildOrder(learned_plan.build_order_t0);
-    Broodwar << "The build order is: " << learned_plan.build_order_t0 << endl;
+    Diagnostics::DiagnosticText(string("The build order is: " + learned_plan.build_order_t0).c_str());
 
     //update Map Grids
     current_map_inventory.updateBuildablePos();
@@ -199,38 +199,10 @@ void CUNYAIModule::onStart()
         rename(src.c_str(), dst.c_str());
 
         if (std::filesystem::exists(learned_plan.readDirectory))
-            Broodwar << "We found a READ folder" << std::endl;
+            Diagnostics::DiagnosticText( "We found a READ folder");
         if (std::filesystem::exists(learned_plan.writeDirectory))
-            Broodwar << "We found a WRITE folder" << std::endl;
+            Diagnostics::DiagnosticText( "We found a WRITE folder");
 
-        //std::error_code ec;
-        //try {
-        //    using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-        //    for (const auto& dirEntry : recursive_directory_iterator(learned_plan.readDirectory)) {
-        //        string filename = dirEntry.path().filename().string();
-        //        Broodwar << "Copying: " << filename << std::endl;
-        //        rename(dirEntry, learned_plan.writeDirectory + filename);
-        //        //std::filesystem::copy(dirEntry, learned_plan.writeDirectory + filename, filesystem::copy_options::update_existing, ec);
-        //        //if (ec) {
-        //        //    Broodwar << ec.message() << std::endl;
-        //        //}
-        //    }
-        //}
-        //catch (...) {
-        //    Broodwar << "Couldn't list all the contents of READ." << std::endl;
-        //}
-
-
-        //std::filesystem::copy(learned_plan.readDirectory, learned_plan.writeDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive, ec);
-
-        //if (ec) {
-        //    Broodwar << ec.message() << std::endl;
-        //    Broodwar << ec.value() << std::endl;
-        //    Broodwar << "Couldn't copy from READ to WRITE folder." << std::endl;
-        //}
-        //else {
-        //    Broodwar << "Successfully copied from READ to WRITE folder." << std::endl;
-        //}
     }
 
 }
@@ -275,10 +247,10 @@ void CUNYAIModule::onEnd(bool isWinner)
     if constexpr (MOVE_OUTPUT_BACK_TO_READ) {
         try {
             std::filesystem::copy(learned_plan.writeDirectory, learned_plan.readDirectory, filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
-            Broodwar << "Successfully copied from WRITE to READ folder." << std::endl;
+            Diagnostics::DiagnosticText("Successfully copied from WRITE to READ folder.");
         }
         catch (...) {
-            Broodwar << "Couldn't copy from WRITE to READ folder." << std::endl; 
+            Diagnostics::DiagnosticText("Couldn't copy from WRITE to READ folder.");
         }
     }
 

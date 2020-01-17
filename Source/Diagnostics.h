@@ -53,7 +53,7 @@ struct Diagnostics {
         if constexpr (DIAGNOSTIC_MODE) {
             Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
             ofstream output; // Prints to brood war file while in the WRITE file.
-            output.open(learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
             output << fmt << endl;
             output.close();
         }
