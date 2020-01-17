@@ -26,29 +26,16 @@ namespace BWEB::Blocks
             if (height == 2) {
                 if (width == 2)
                     pieces = { Piece::Small };
-                if (width == 3)
-                    pieces = { Piece::Medium };
             }
             else if (height == 3) {
                 if (width == 4)
                     pieces = { Piece::Large };
             }
-            else if (height == 4) {
-                if (width == 5)
-                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
-            }
             else if (height == 5) {
+                if (width == 4)
+                    pieces = { Piece::Small, Piece::Small, Piece::Row, Piece::Large };
                 if (width == 8)
                     pieces = { Piece::Medium, Piece::Small, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
-            }
-            else if (height == 6) {
-                if (width == 5)
-                    pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small, Piece::Row, Piece::Small, Piece::Medium };
-            }
-            else if (height == 8) {
-                if (width == 4) {
-                    pieces = { Piece::Small, Piece::Small, Piece::Row, Piece::Large };
-                }
             }
             return pieces;
         }
