@@ -31,6 +31,9 @@ int AssemblyManager::last_frame_of_muta_morph_command = 0;
 int AssemblyManager::last_frame_of_creep_command = 0;
 bool AssemblyManager::have_idle_evos_ = false;
 bool AssemblyManager::have_idle_spires_ = false;
+bool AssemblyManager::resources_are_slack_ = false;
+bool AssemblyManager::subgoal_econ_ = false;
+bool AssemblyManager::subgoal_army_ = false;
 
 std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_unit_cartridge_;
 
@@ -568,11 +571,8 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
     //Let us simulate some combat.
     
-    bool wasting_larva_soon = false;
-    if (u_type == UnitTypes::Zerg_Larva && morph_canidate->getHatchery()) wasting_larva_soon = morph_canidate->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && morph_canidate->getHatchery()->getLarva().size() == 3;
-    bool floating_tech_edge_cases = CUNYAIModule::tech_starved && 
-        ((Broodwar->self()->gas() > 300 && Broodwar->self()->minerals() > 300) || 
-        (wasting_larva_soon && CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative)); // These two units are pretty much always safe.
+    bool floating_tech_edge_cases =resources_are_slack_ && u_type == UnitTypes::Zerg_Larva && subgoal_army_; // These two units are pretty much always safe.
+    
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || floating_tech_edge_cases) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
@@ -640,6 +640,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     bool up_shooting_class = false;
     bool down_shooting_class = false;
     bool flying_class = false;
+    bool no_way_this_would_be_anti_air = Broodwar->self()->gas() < 25 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) > 2;
 
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None)  up_shooting_class = true;
@@ -649,7 +650,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
 
     // Identify desirable unit classes prior to simulation.
     for (auto &potential_type : combat_types) {
-        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
+        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class || no_way_this_would_be_anti_air)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
         if (potential_type.first == UnitTypes::Zerg_Scourge && CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
@@ -962,6 +963,10 @@ bool AssemblyManager::assignUnitAssembly()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
+    resources_are_slack_ = Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
+    subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army > CUNYAIModule::friendly_player_model.spending_model_.alpha_econ;
+    subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army < CUNYAIModule::friendly_player_model.spending_model_.alpha_econ; // they're complimentrary but I'd like them positively defined, negations can confuse.
+
     bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
     bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;
     int distance_to_alarming_ground = INT_MAX;
@@ -971,7 +976,7 @@ bool AssemblyManager::assignUnitAssembly()
         distance_to_alarming_ground = min(CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
         distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
     }
-    
+
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager.
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
@@ -996,7 +1001,7 @@ bool AssemblyManager::assignUnitAssembly()
             bool prep_for_transfer = true;
 
             if (larva.first->getHatchery()) {
-                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 3 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
+                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 2 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
                 Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
                 if (!local_resources.resource_inventory_.empty()) {
                     local_resources.updateMines();
@@ -1008,8 +1013,8 @@ bool AssemblyManager::assignUnitAssembly()
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
             bool drone_conditional = (CUNYAIModule::econ_starved || CUNYAIModule::tech_starved); // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
 
-            bool drones_are_needed_here = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && hatch_wants_drones;
-            bool drones_are_needed_elsewhere = (drone_conditional || wasting_larva_soon) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool drones_are_needed_here = (drone_conditional || wasting_larva_soon || resources_are_slack_ && subgoal_econ_) && !enough_drones_globally && hatch_wants_drones;
+            bool drones_are_needed_elsewhere = (drone_conditional || wasting_larva_soon || resources_are_slack_ && subgoal_econ_) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
             bool found_noncombat_use = false;
 
             if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
@@ -1052,24 +1057,22 @@ bool AssemblyManager::assignUnitAssembly()
     //Unit_Inventory transfer_drone_larva;
     //Unit_Inventory combat_creators;
 
-    if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
-        for (auto o : overlord_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
-                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-                return true;
-            }
+    for (auto o : overlord_larva.unit_map_) {
+        if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
+            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+            return true;
         }
-        for (auto d : immediate_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
-                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-                return true;
-            }
+    }
+    for (auto d : immediate_drone_larva.unit_map_) {
+        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+            return true;
         }
-        for (auto d : transfer_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
-                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-                return true;
-            }
+    }
+    for (auto d : transfer_drone_larva.unit_map_) {
+        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+            return true;
         }
     }
 

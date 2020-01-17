@@ -28,10 +28,10 @@ constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = true; // Copy replay information.
 constexpr bool PRINT_WD = false; // print a file to the current working directory.
 
-constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
-constexpr bool INTERBREED_PARENTS = false && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
+constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
+constexpr bool INTERBREED_PARENTS = true && GENETIC_HISTORY; //A component of the handcrafted genetic history. If off, prevents both mutation and interbreeding of parents, they will only clone themselves.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool RF_LEARNING = true; // use the random forest to filter unwanted parameters.
+constexpr bool RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool UNIT_WEIGHTING = false; // under development.
 
