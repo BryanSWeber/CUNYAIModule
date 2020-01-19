@@ -34,8 +34,6 @@ namespace BWEB::Blocks
             else if (height == 5) {
                 if (width == 4)
                     pieces = { Piece::Small, Piece::Small, Piece::Row, Piece::Large };
-                if (width == 8)
-                    pieces = { Piece::Medium, Piece::Small, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
             }
             return pieces;
         }
