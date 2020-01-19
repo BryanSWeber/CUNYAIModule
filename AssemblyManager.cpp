@@ -583,14 +583,8 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
 bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate, const bool & force_spore = false, const bool & force_sunken = false) {
 
-    if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony)) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
-
-    bool must_make_spore = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Spore_Colony, true);
-    bool must_make_sunken = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Sunken_Colony, true);
-
-    if ((CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_spore) || force_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if ((!CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && must_make_sunken) || force_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
+    if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony) || force_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
+    else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony) || force_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
 
     return false;
 }
@@ -1007,7 +1001,7 @@ bool AssemblyManager::assignUnitAssembly()
                     local_resources.updateMines();
                     hatch_wants_drones = 2 * local_resources.getLocalMinPatches() + 3 * local_resources.getLocalRefineries() > local_resources.getLocalMiners() + local_resources.getLocalGasCollectors();
                 }
-                prep_for_transfer = CUNYAIModule::countUnitsInProgress(Broodwar->self()->getRace().getResourceDepot()) > 0 || CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot());
+                prep_for_transfer = CUNYAIModule::countUnitsInProgress(Broodwar->self()->getRace().getResourceDepot()) > 0;
             }
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
@@ -1057,22 +1051,24 @@ bool AssemblyManager::assignUnitAssembly()
     //Unit_Inventory transfer_drone_larva;
     //Unit_Inventory combat_creators;
 
-    for (auto o : overlord_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
+    if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
+        for (auto o : overlord_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Overlord, o.first, true)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
         }
-    }
-    for (auto d : immediate_drone_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
+        for (auto d : immediate_drone_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
         }
-    }
-    for (auto d : transfer_drone_larva.unit_map_) {
-        if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
-            last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
+        for (auto d : transfer_drone_larva.unit_map_) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+                last_frame_of_larva_morph_command = Broodwar->getFrameCount();
+                return true;
+            }
         }
     }
 

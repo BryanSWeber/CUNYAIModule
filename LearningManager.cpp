@@ -101,7 +101,6 @@ void LearningManager::initializeGeneticLearning() {
     int losing_player = 0;
     int losing_map = 0;
     int losing_race = 0;
-    int games_since_last_win = 999; // starting at 0 makes the script think it WON the last game. 999 is a functional marker for having never won.
     double prob_win_given_opponent;
 
     string entry; // entered string from stream
@@ -241,7 +240,6 @@ void LearningManager::initializeGeneticLearning() {
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
                                            //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
-
         if (std::get<11>(game_data[j]) == e_name) {
             if (std::get<7>(game_data[j]) == 1) {
                 game_data_partial_match.push_back(game_data[j]);
@@ -287,142 +285,53 @@ void LearningManager::initializeGeneticLearning() {
         bool map_matches = std::get<12>(*game_iter) == map_name;
         bool game_won = std::get<7>(*game_iter);
 
-        // an inelegant statement follows. How do I make this into a switch?
-
-        if (win_count[0] > 0 && win_count[1] > 0 && win_count[2] > 0) { //choice in race for random players is like a whole new ball park. Let's only look at player/map collisions. Race is if there's no player data.
-            conditions_for_inclusion = name_matches && race_matches && map_matches;
-        }
-        else if (win_count[0] > 0 && win_count[1] > 0 && win_count[2] == 0) {
-            conditions_for_inclusion = name_matches && race_matches && !map_matches;
-        }
-        else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] > 0) {
-            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
-        }
-        else if (win_count[0] > 0 && win_count[1] == 0 && win_count[2] == 0) {
-            conditions_for_inclusion = name_matches && !race_matches && !map_matches;
-        }
-        else if (win_count[0] == 0 && win_count[1] > 0 && win_count[2] > 0) {
-            conditions_for_inclusion = !name_matches && race_matches && map_matches;
-        }
-
-
-        if (conditions_for_inclusion && game_won) {
+        for (int i = 0; i < name_matches + race_matches + map_matches; i++) { //add once for each match, 3x if it matches well.
             game_data_well_matched.push_back(*game_iter);
-            games_since_last_win = 0;
-        }
-        else if (conditions_for_inclusion && !game_won) {
-            games_since_last_win++;
         }
 
-        if (game_data_well_matched.size() >= 10) { // stop once we have 50 games in the parantage.
-            break;
-        }
     } //or widest hunt possible.
 
 
-    if (game_data_well_matched.size() > 0) { // redefine final output.
+    if (game_data_well_matched.size() > 5) { // redefine final output.
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_well_matched.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
+        size_t rand_parent_2 = unif_dist_to_win_count(gen); // choose a random 'parent'.
         parent_1 = game_data_well_matched[rand_parent_1];
-        string opening_of_choice = std::get<16>(parent_1); // its matching parents must have a similar opening.
+        parent_2 = game_data_well_matched[rand_parent_2];
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-        //if we don't need diversity, combine our old wins together.
-
-        if (dis(gen) < (game_data_well_matched.size() - 1) / static_cast<double>(game_data_well_matched.size())) { //
-            //Parent 2 must match the build of the first one.
-            for (auto potential_parent : game_data_well_matched) {
-                if (std::get<16>(potential_parent) == opening_of_choice) {
-                    game_data_parent_match.push_back(potential_parent);
-                }
-            }
-
-            std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_parent_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
-            size_t rand_parent_2 = unif_dist_to_win_count(gen); // choose a random 'parent'.
-            parent_2 = game_data_parent_match[rand_parent_2];
-
-
-            if constexpr (!INTERBREED_PARENTS) {
-                parent_2 = parent_1;
-            }
-
-            gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
-            supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
-            a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-            a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
-            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
-            r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
-        }
-        else { // we must need diversity.
-            // use the random values we have determined in the beginning and the random opening.
-        }
-
-    }
-    else if (game_data_partial_match.size() > 0) { // do our best with the partial match data.
-        std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_partial_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
-        size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
-        parent_1 = game_data_partial_match[rand_parent_1];
-        string opening_of_choice = std::get<16>(parent_1); // its matching parents must have a similar opening.
-
-        double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
-
-                                     //if we don't need diversity, combine our old wins together.
-
-        if (dis(gen) < (game_data_partial_match.size() - 1) / static_cast<double>(game_data_partial_match.size())) { //
-                                                                                                                    //Parent 2 must match the build of the first one.
-            for (auto potential_parent : game_data_partial_match) {
-                if (std::get<16>(potential_parent) == opening_of_choice) {
-                    game_data_parent_match.push_back(potential_parent);
-                }
-            }
-
-            std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_parent_match.size() - 1); // safe even if there is only 1 win., index starts at 0.
-            size_t rand_parent_2 = unif_dist_to_win_count(gen); // choose a random 'parent'.
-            parent_2 = game_data_parent_match[rand_parent_2];
-
-
-            if constexpr (!INTERBREED_PARENTS) {
-                parent_2 = parent_1;
-            }
-
-            gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
-            supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
-            a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-            a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
-            a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
-            r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
-        }
-        else { // we must need diversity.
-               // use the random values we have determined in the beginning and the random opening.
-        }
+        gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
+        supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
+        a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+        a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
+        a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
+        r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
+        build_order_out = dis(gen) > 0.5 ? std::get<6>(parent_1) : std::get<6>(parent_2);
     }
 
     prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
     loss_rate_ = 1 - prob_win_given_opponent;
 
-
-    //for (int i = 0; i < 1000; i++) {  // no corner solutions, please. Happens with incredibly small values 2*10^-234 ish.
-
     //From genetic history, random parent for each gene. Mutate the genome
-    std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 5);
-    std::normal_distribution<double> normal_mutation_size(0, 0.05);
-
-    size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
-    //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
-
-    double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
+    std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 6);
+    std::normal_distribution<double> normal_mutation_size(0, 0.10);
 
     // Chance of mutation.
-    if (dis(gen) > 0.95 || selected_win_count < 10) {
-        // dis(gen) > (games_since_last_win /(double)(games_since_last_win + 5)) * loss_rate_ // might be worth exploring.
+    if (dis(gen) > 0.25) {
+
+        //genetic mutation rate ought to slow with success. Consider the following approach: Ackley (1987) suggested that mutation probability is analogous to temperature in simulated annealing.
+        size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
+        double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
+
         gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
         supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
         a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
         a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 3.) : a_tech_out;
         r_out_t0 = mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
+        build_order_t0 = mutation_0 == 6 ? std::get<16>(parent_1) : build_order_out;
 
     }
     else {
@@ -433,6 +342,7 @@ void LearningManager::initializeGeneticLearning() {
         a_econ_t0 = a_econ_out;
         a_tech_t0 = a_tech_out;
         r_out_t0 = r_out;
+        build_order_t0 = build_order_out;
 
     }
 

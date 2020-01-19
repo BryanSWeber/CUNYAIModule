@@ -17,6 +17,10 @@ public:
     int mineral_gatherers_;
     int returners_;
     int overlords_;
+    int distance_to_ground_;
+    int distance_to_air_;
+    bool emergency_spore_;
+    bool emergency_sunken_;
     Unit unit_;
 };
 

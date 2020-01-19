@@ -37,6 +37,7 @@ map<Position, Base> BaseManager::getBases()
 
 void BaseManager::updateBases()
 {
+    baseMap_.clear();
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
             for (auto expo : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
@@ -53,12 +54,14 @@ void BaseManager::updateBases()
 
     bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
     bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;
-    int distance_to_alarming_ground = INT_MAX;
-    int distance_to_alarming_air = INT_MAX;
+    set<int> distance_to_alarming_ground;
+    set<int> distance_to_alarming_air;
 
-    for (auto b : baseMap_) {
-        distance_to_alarming_ground = min(CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first), distance_to_alarming_ground);
-        distance_to_alarming_air = min(static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
+    for (auto & b : baseMap_) {
+        b.second.distance_to_ground_ = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first);
+        distance_to_alarming_ground.insert(b.second.distance_to_ground_);
+        b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+        distance_to_alarming_air.insert(b.second.distance_to_air_);
     }
 
     for (auto & b : baseMap_) {
@@ -66,42 +69,53 @@ void BaseManager::updateBases()
         auto u_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
-        bool this_is_the_closest_ground_base = distance_to_alarming_ground == CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first);
-        bool this_is_the_closest_air_base = distance_to_alarming_air == static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+        bool too_close_by_ground = true;
+        if (distance_to_alarming_ground.size() > 3) {
+            std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
+            too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter);
+        }
+        bool too_close_by_air = true;
+        if (distance_to_alarming_air.size() > 3) {
+            std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
+            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter);
+        }
         b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
         b.second.spore_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
         b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
         b.second.overlords_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, u_loc);
 
-        b.second.ground_weak_ = !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true) || (b.second.sunken_count_ == 0 && b.second.overlords_ > 6);
-        b.second.air_weak_ = !CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true) || (b.second.spore_count_ == 0 && b.second.overlords_ > 6);
         b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin);
         b.second.gas_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningGas);
         b.second.returners_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::Returning);
+        b.second.ground_weak_ = /*!CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true) ||*/ (b.second.sunken_count_ == 0 && b.second.overlords_ > 4);
+        b.second.air_weak_ = /*!CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true) ||*/ (b.second.spore_count_ == 0 && b.second.overlords_ > 4);
 
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        bool emergency_sunken = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((this_is_the_closest_ground_base && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken;
-        bool emergency_spore = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((this_is_the_closest_air_base && they_are_moving_out_air) || b.second.air_weak_) && can_upgrade_spore;
+        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken && (b.second.creep_count_ + b.second.sunken_count_ == 0 || Broodwar->elapsedTime() > 3 * 60);
+        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air) || b.second.air_weak_) && can_upgrade_spore;
         
-        if (emergency_sunken) {
+        if (b.second.emergency_sunken_) {
             Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
                 CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
-                    emergency_sunken &&
                     b.second.sunken_count_ < 6 &&
                     CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
         }
-        if (emergency_spore) {
+        if (b.second.emergency_spore_) {
             Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
                 CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 + 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
-                    emergency_spore &&
                     b.second.spore_count_ < 6 &&
                     CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony) < max((CUNYAIModule::current_map_inventory.hatches_ * (CUNYAIModule::current_map_inventory.hatches_ + 1)) / 2, 6)); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
+        }
+
+        Unit_Inventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(u_loc, UnitTypes::Zerg_Creep_Colony, b.first);
+        for (auto u : creep_colonies.unit_map_) {
+            if (u.first) AssemblyManager::buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
         }
     }
 
@@ -119,7 +133,9 @@ void BaseManager::displayBaseData()
         Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
         Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
         Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
-        Broodwar->drawTextMap(b.first + Position(5, 40), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(5, 40), "Ground Dist: %d", b.second.distance_to_ground_);
+        Broodwar->drawTextMap(b.first + Position(5, 50), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
+        Broodwar->drawTextMap(b.first + Position(5, 60), "Air Dist: %d", b.second.distance_to_air_);
     }
 }
 
