@@ -8,8 +8,6 @@ public:
     Base::Base(const Unit &u);
     bool gas_taken_;
     bool gas_tolerable_;
-    bool air_weak_;
-    bool ground_weak_;
     int spore_count_;
     int sunken_count_;
     int creep_count_;

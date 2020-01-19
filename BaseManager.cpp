@@ -87,14 +87,12 @@ void BaseManager::updateBases()
         b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin);
         b.second.gas_gatherers_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::MiningGas);
         b.second.returners_ = u_loc.count_of_each_phase_.at(Stored_Unit::Phase::Returning);
-        b.second.ground_weak_ = /*!CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_ground, true) ||*/ (b.second.sunken_count_ == 0 && b.second.overlords_ > 4);
-        b.second.air_weak_ = /*!CUNYAIModule::checkMiniFAPForecast(u_loc, alarming_enemy_air, true) ||*/ (b.second.spore_count_ == 0 && b.second.overlords_ > 4);
 
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken && (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0 || Broodwar->elapsedTime() > 3 * 60);
-        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air) || b.second.air_weak_) && can_upgrade_spore;
+        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground)) && can_upgrade_sunken && (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0 || Broodwar->elapsedTime() > 3 * 60);
+        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air)) && can_upgrade_spore;
         
         if (b.second.emergency_sunken_) {
             Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
@@ -132,10 +130,8 @@ void BaseManager::displayBaseData()
         Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
         Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
         Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
-        Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Weak: %s", b.second.ground_weak_ ? "TRUE" : "FALSE");
-        Broodwar->drawTextMap(b.first + Position(5, 40), "Ground Dist: %d", b.second.distance_to_ground_);
-        Broodwar->drawTextMap(b.first + Position(5, 50), "Air Weak: %s", b.second.air_weak_ ? "TRUE" : "FALSE");
-        Broodwar->drawTextMap(b.first + Position(5, 60), "Air Dist: %d", b.second.distance_to_air_);
+        Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Dist: %d", b.second.distance_to_ground_);
+        Broodwar->drawTextMap(b.first + Position(5, 40), "Air Dist: %d", b.second.distance_to_air_);
     }
 }
 
