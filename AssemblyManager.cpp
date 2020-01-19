@@ -334,8 +334,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     bool buildings_started = false;
-    bool any_macro_problems = CUNYAIModule::friendly_player_model.spending_model_.evalEconPossible() || CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
-    bool the_only_macro_hatch_case = (CUNYAIModule::larva_starved && (!any_macro_problems && !CUNYAIModule::econ_starved));
+    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
+    bool macro_hatch_timings = (CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) < 6);
     bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery);
@@ -380,10 +380,10 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (any_macro_problems || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && path_available && !the_only_macro_hatch_case, CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, the_only_macro_hatch_case); // only macrohatch if you are short on larvae and can afford to spend.
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings); // only macrohatch if you are short on larvae and can afford to spend.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         !CUNYAIModule::workermanager.excess_gas_capacity_ && CUNYAIModule::gas_starved &&
@@ -975,8 +975,8 @@ bool AssemblyManager::assignUnitAssembly()
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
             Base air_base = CUNYAIModule::basemanager.getClosestBaseAir(creep_colony.second.pos_);
             Base ground_base = CUNYAIModule::basemanager.getClosestBaseGround(creep_colony.second.pos_);
-            bool force_air = air_base.air_weak_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first) && air_base.spore_count_ < 6;
-            bool force_ground = ground_base.ground_weak_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first) && ground_base.sunken_count_ < 6;
+            bool force_air = air_base.emergency_spore_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first) && air_base.spore_count_ < 6;
+            bool force_ground = ground_base.emergency_sunken_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first) && ground_base.sunken_count_ < 6;
             buildStaticDefence(creep_colony.first, force_air, force_ground); // checks globally but not bad, info is mostly already there.
         }
         last_frame_of_creep_command = Broodwar->getFrameCount();
