@@ -78,7 +78,7 @@ bool CombatManager::combatScript(const Unit & u)
             Unit_Inventory friend_loc;
             Unit_Inventory enemy_loc;
             Unit_Inventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, max(enemy_loc.max_range_ground_, 200) );
-            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest->pos_, search_radius);
+            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest->pos_, 75);
 
             //Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_, search_radius);
             Unit_Inventory enemy_loc_around_self = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
@@ -124,7 +124,7 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
                     if (isPulledWorkersFight(expanded_friend_loc, enemy_loc)) { // if this is a worker battle, eg stone , a mean worker scout, or a static defense rush.
                         if (expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking) < ((enemy_loc.worker_count_ > 0)*(enemy_loc.worker_count_ + 1) + (enemy_loc.building_count_ > 0)*(enemy_loc.building_count_ + 3)) && CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(Stored_Unit::Phase::MiningMin) > expanded_friend_loc.count_of_each_phase_.at(Stored_Unit::Phase::Attacking)) {
-                            if (!resource_loc.resource_inventory_.empty()) { // Do you need to join in?
+                            if (!resource_loc.resource_inventory_.empty() || enemy_loc.worker_count_ > 1 || enemy_loc.building_count_ > 0) { // Do you need to join in?
                                 return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White); 
                             }
                             else{
@@ -136,7 +136,7 @@ bool CombatManager::combatScript(const Unit & u)
                         }
                     }
                     else { // this fight is a regular fight.
-                        if (!resource_loc.resource_inventory_.empty() && (standard_fight_reasons || (CUNYAIModule::current_map_inventory.hatches_ == 1 && friend_loc.building_count_ > 0))) {
+                        if (!resource_loc.resource_inventory_.empty() && standard_fight_reasons) {
                             return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
                     }
