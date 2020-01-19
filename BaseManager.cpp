@@ -58,7 +58,7 @@ void BaseManager::updateBases()
     set<int> distance_to_alarming_air;
 
     for (auto & b : baseMap_) {
-        b.second.distance_to_ground_ = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first);
+        b.second.distance_to_ground_ = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first) * 4;
         distance_to_alarming_ground.insert(b.second.distance_to_ground_);
         b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
         distance_to_alarming_air.insert(b.second.distance_to_air_);

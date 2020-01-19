@@ -84,8 +84,8 @@ void Player_Model::updateSelfOnFrame()
     //Update general weaknesses.
     bool seen_air = CUNYAIModule::enemy_player_model.units_.stock_fliers_ + CUNYAIModule::enemy_player_model.casualties_.stock_fliers_ > 0;
     bool possible_air = CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0;
-    u_have_active_air_problem_ = (bool)( (CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) && (seen_air || possible_air)) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && seen_air) );
-    e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
+    if(CUNYAIModule::army_starved) u_have_active_air_problem_ = (bool)( (CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, true) && (seen_air || possible_air)) || (CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, false) && seen_air) );
+    if(CUNYAIModule::army_starved) e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory
     radial_distances_from_enemy_ground_ = Map_Inventory::getRadialDistances(units_, CUNYAIModule::current_map_inventory.map_out_from_enemy_ground_, true);

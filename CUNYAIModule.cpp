@@ -451,7 +451,7 @@ void CUNYAIModule::onFrame()
         assemblymanager.clearSimulationHistory();
     }// every X seconds reset the simulations.
 
-    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery);
+    larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, friendly_player_model.units_);
 
     if (buildorder.building_gene_.empty()) {
         buildorder.ever_clear_ = true;
