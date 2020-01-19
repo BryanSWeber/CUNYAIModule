@@ -93,7 +93,7 @@ void BaseManager::updateBases()
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken && (b.second.creep_count_ + b.second.sunken_count_ == 0 || Broodwar->elapsedTime() > 3 * 60);
+        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground) || b.second.ground_weak_) && can_upgrade_sunken && (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0 || Broodwar->elapsedTime() > 3 * 60);
         b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air) || b.second.air_weak_) && can_upgrade_spore;
         
         if (b.second.emergency_sunken_) {
