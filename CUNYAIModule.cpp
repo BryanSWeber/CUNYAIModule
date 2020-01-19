@@ -445,7 +445,6 @@ void CUNYAIModule::onFrame()
     if(tech_starved) techmanager.updateTech_Avail();
     if(army_starved) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
-
     if (t_game % FAP_SIM_DURATION == 0) {
         techmanager.clearSimulationHistory();
         assemblymanager.clearSimulationHistory();

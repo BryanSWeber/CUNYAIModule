@@ -25,9 +25,10 @@ private:
     static Unit_Inventory production_facility_bank_;
     static bool have_idle_evos_;
     static bool have_idle_spires_;
-    static bool resources_are_slack_; //Do we have floating $$ or larva?
-    static bool subgoal_econ_; // How should we prioritize dumping floating resources?
-    static bool subgoal_army_; // How should we prioritize dumping floating resources?
+    static bool resources_are_slack_;
+    static bool subgoal_econ_;
+    static bool subgoal_army_;
+
     static int last_frame_of_larva_morph_command;
     static int last_frame_of_hydra_morph_command;
     static int last_frame_of_muta_morph_command;

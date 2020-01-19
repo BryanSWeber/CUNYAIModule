@@ -634,7 +634,6 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     bool up_shooting_class = false;
     bool down_shooting_class = false;
     bool flying_class = false;
-    bool no_way_this_would_be_anti_air = Broodwar->self()->gas() < 25 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) > 2;
 
     for (auto &potential_type : combat_types) {
         if (potential_type.first.airWeapon() != WeaponTypes::None)  up_shooting_class = true;
@@ -644,7 +643,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
 
     // Identify desirable unit classes prior to simulation.
     for (auto &potential_type : combat_types) {
-        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class || no_way_this_would_be_anti_air)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
+        if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
         if (potential_type.first == UnitTypes::Zerg_Scourge && CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
@@ -653,7 +652,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // remove undesireables.
     auto potential_type2 = combat_types.begin();
     while (potential_type2 != combat_types.end()) {
-        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++;
+        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first) || resources_are_slack_ ) potential_type2++;
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
         else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
         else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
@@ -957,7 +956,7 @@ bool AssemblyManager::assignUnitAssembly()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    resources_are_slack_ = Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
+    resources_are_slack_ = CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
     subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army > CUNYAIModule::friendly_player_model.spending_model_.alpha_econ;
     subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army < CUNYAIModule::friendly_player_model.spending_model_.alpha_econ; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
