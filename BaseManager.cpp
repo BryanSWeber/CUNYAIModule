@@ -49,6 +49,7 @@ void BaseManager::updateBases()
     if (baseMap_.empty()) {
         return;
     }
+
     Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
     Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_air_);
 
@@ -127,16 +128,18 @@ void BaseManager::updateBases()
 
 void BaseManager::displayBaseData()
 {
-    for (auto b : baseMap_) {
-        Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d", b.second.gas_gatherers_);
-        Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d", b.second.mineral_gatherers_);
-        Broodwar->drawTextMap(b.first + Position(5, -20), "Returners: %d", b.second.returners_);
-        Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
-        Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
-        Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
-        Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
-        Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Dist: %d", b.second.distance_to_ground_);
-        Broodwar->drawTextMap(b.first + Position(5, 40), "Air Dist: %d", b.second.distance_to_air_);
+    if (DIAGNOSTIC_MODE) {
+        for (auto b : baseMap_) {
+            Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d", b.second.gas_gatherers_);
+            Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d", b.second.mineral_gatherers_);
+            Broodwar->drawTextMap(b.first + Position(5, -20), "Returners: %d", b.second.returners_);
+            Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
+            Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
+            Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
+            Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
+            Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Dist: %d", b.second.distance_to_ground_);
+            Broodwar->drawTextMap(b.first + Position(5, 40), "Air Dist: %d", b.second.distance_to_air_);
+        }
     }
 }
 
