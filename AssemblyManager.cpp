@@ -1053,13 +1053,13 @@ bool AssemblyManager::assignUnitAssembly()
             }
         }
         for (auto d : immediate_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved || (resources_are_slack_ && subgoal_econ_) ) ) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
         for (auto d : transfer_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved)) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved || (resources_are_slack_ && subgoal_econ_) ) ) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }

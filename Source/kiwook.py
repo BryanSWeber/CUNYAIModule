@@ -6,30 +6,31 @@ strategic opening parameters.
 """
 
 #Removed several prints since there is a risk of overflowing SSCAIT's terminal.
+#Use pip to install these dependencies directly to the ~/ai/cunybot/ folder.
 
 import pandas as pd
 import numpy as np
 from pathlib import Path
-# import sys
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 
+# import sys
 # for path in sys.path:
-    # print(path)
+    # #print(path)
 
 pd.set_option('display.max_rows', 100)
 pd.set_option('display.max_columns', 100)
 
 # To check whether all required information is typed or not.
 #if len(local) != 6:
-#    print("Not enough information to run.")
-#    print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
-#    print("Exit.")
+#    #print("Not enough information to run.")
+#    #print("Need all of 'Path', 'Race', 'Player Name', 'Map', 'File In', and 'File Out'.")
+#    #print("Exit.")
 
 # 0. Get C++ arguments--------------------------------------------------------------------------------------
-#print("We are at: " + os.getcwd() + "\n")
-#print("Our parent is " + os.path.normpath(os.path.join(os.getcwd(), os.pardir)) + "\n")
-#print("Our parent's parent is " + os.path.normpath(os.path.join(os.getcwd(), os.pardir, os.pardir)) + "\n")
+#print("We are at: " + str(Path().resolve()) + "\n")
+#print("Our parent is " + str(Path().resolve().parent) + "\n")
+#print("Our parent's parent is " + str(Path().resolve().parent.parent) + "\n")
 
 opp_race = e_race
 #print("Opp. Race: " + opp_race + "\n")
@@ -76,14 +77,14 @@ if df.empty:
     abort_code_t0 = True;
     #print(abort_code_t0)
 #else: 
-#    print("We have history records")
+#    #print("We have history records")
 
 if df.isnull().values.any():
     #print("Missing values exist. Exit.")
     abort_code_t0 = True;
     #print(abort_code_t0)
 #else: 
-#    print("No missing values")
+#    #print("No missing values")
 
 if abort_code_t0 == False:
     # 2. Clean Dataset-------------------------------------------------------------------------------------------
@@ -183,7 +184,7 @@ if abort_code_t0 == False:
         abort_code_t0 = True;
         #print(abort_code_t0)
     #else: 
-    #    print("Training File is not empty.")
+    #    #print("Training File is not empty.")
 
 if abort_code_t0 == False:
     # 4. Create a possible Train Dataset-----------------------------------------------------------------------
@@ -232,13 +233,13 @@ if abort_code_t0 == False:
     # Find the records which match to opp_features
     race_found = (df_train['race_code'] == opp_race_code).any() 
     #if race_found:
-    #    print("Race Found.")
+    #    #print("Race Found.")
     opp_found = (df_train['name_code'] == opp_name_code).any() 
     #if opp_found:
-    #    print("Opp. Found.")
+    #    #print("Opp. Found.")
     map_found = (df_train['map_code'] == opp_map_code).any()
     #if map_found:
-    #    print("Map Found.")
+    #    #print("Map Found.")
     
     match_found = race_found and opp_found and map_found
     #print("Records match attempted.")
