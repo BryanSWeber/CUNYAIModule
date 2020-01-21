@@ -149,7 +149,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     Unit_Inventory LowPriority;
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
-        if (e->second.valid_pos_ && e->first && e->first->exists() && e->first->isDetected()) { // only target observable units.
+        if (e->first && e->first->isDetected()) { // only target observable units.
             UnitType e_type = e->second.type_;
             int e_priority = 0;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
@@ -173,7 +173,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     SecondOrderThreats.addStored_Unit(e->second);
                 }
 
-                if ((e->second.type_.mineralPrice() > 25 || e->second.type_.gasPrice() > 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
+                if ((e->second.type_.mineralPrice() >= 25 || e->second.type_.gasPrice() >= 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
                     LowPriority.addStored_Unit(e->second);
                 }
             }
@@ -216,7 +216,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         target = pickTarget(temp_max_divable, LowPriority);
     }
 
-    if (target && target->exists()) {
+    if (target) {
         if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
             if (melee && !unit_->isFlying()) { // Attempting surround code.
                 Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
@@ -226,16 +226,24 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
                 }
             }
-            unit_->attack(target);
+            if (target->exists())
+                unit_->attack(target);
+            else
+                unit_->attack(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     }
-    else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-        if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
-    }
+    //else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
+    //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
+    //}
 
-    Diagnostics::DiagnosticText("No target found");
+    if (LowPriority.unit_map_.size() == 0) {
+        Diagnostics::DiagnosticText("No target possible.");
+    }
+    else {
+        Diagnostics::DiagnosticText("No target I wanted to attack...");
+    }
 
     return false; // no target, we got a falsehood.
 }
