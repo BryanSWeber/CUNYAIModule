@@ -21,11 +21,11 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
-constexpr bool RIP_REPLAY = true; // Copy replay information.
+constexpr bool RIP_REPLAY = false; // Copy replay information.
 constexpr bool PRINT_WD = false; // print a file to the current working directory.
 
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
@@ -128,7 +128,7 @@ public:
     static bool checkInCartridge(const UpgradeType & ut);
     static bool checkInCartridge(const TechType & ut);
     // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
-    static bool checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria);
+    static bool checkDesirable(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);
     static bool checkDesirable(const UpgradeType & ut, const bool & extra_criteria);
     static bool checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria);
     static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
@@ -250,7 +250,7 @@ public:
     static int countUnits(const UnitType &type, const Unit_Inventory &ei);
     static bool containsUnit(const UnitType & type, const Unit_Inventory & ui);
     // Counts all units of a type or successors of that type.
-    static int countSuccessorUnits(const UnitType & type, const Unit_Inventory & ui);
+    static int countSuccessorUnits(const UnitType & type, const Unit_Inventory & ui = CUNYAIModule::friendly_player_model.units_);
     // Counts the tally of a particular unit type in a reservation queue.
     static int countUnits(const UnitType &type, const Reservation &res);
     // Counts the tally of all created units in my personal inventory of that type.
