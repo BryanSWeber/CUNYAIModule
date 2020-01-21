@@ -46,6 +46,9 @@ void BaseManager::updateBases()
             }
     }
 
+    if (baseMap_.empty()) {
+        return;
+    }
     Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
     Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_air_);
 
@@ -92,9 +95,9 @@ void BaseManager::updateBases()
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
         bool getting_rushed = (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0);
-        bool making_natural = (CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) == 2 && CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery) == 1);
-        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground)) && can_upgrade_sunken && (getting_rushed || Broodwar->elapsedTime() > 3 * 60) && !making_natural;
-        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air)) && can_upgrade_spore && (getting_rushed || Broodwar->elapsedTime() > 3 * 60) && !making_natural;
+        bool on_one_base = baseMap_.size() - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery) <= 1;
+        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_ground && they_are_moving_out_ground)) && can_upgrade_sunken && (getting_rushed || (Broodwar->elapsedTime() > 3 * 60 && !on_one_base));
+        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, true) && ((too_close_by_air && they_are_moving_out_air)) && can_upgrade_spore && (getting_rushed || (Broodwar->elapsedTime() > 3 * 60 && !on_one_base));
         
         if (b.second.emergency_sunken_) {
             Stored_Unit * drone = CUNYAIModule::getClosestStored(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);

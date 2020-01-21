@@ -132,7 +132,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
 
             auto closest_wall = BWEB::Walls::getClosestWall(unit->getTilePosition());
-            if (closest_wall && CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) >= 2 ) {
+            if (closest_wall && CUNYAIModule::basemanager.getBases().size() >= 2 ) {
                 set<TilePosition> wall_placements;
                 if (building.tileSize() == TilePosition{ 2,2 })
                     wall_placements = closest_wall->getSmallTiles();
@@ -268,7 +268,6 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv) {
-    if (CUNYAIModule::checkDesirable(unit, UnitTypes::Zerg_Hatchery, extra_critera)) {
 
         int expo_score = -99999999;
 
@@ -290,16 +289,14 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
                 bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
-                //bool occupied_expo = false;
-                //auto nearby_resource = CUNYAIModule::getClosestStored(CUNYAIModule::land_inventory, Position(p), 1000);
-                //if (nearby_resource && nearby_resource->occupied_resource_)
-                //    occupied_expo = true;
-
 
                 bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 1;
+                int plength = 0;
+                auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
+                bool can_afford_with_travel = CUNYAIModule::checkDesirable(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available && safe_path_available_or_needed) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -317,8 +314,6 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_);
             }
         }
-    } // closure affordablity.
-
     return false;
 }
 
@@ -335,7 +330,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     bool buildings_started = false;
     bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
-    bool macro_hatch_timings = (CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) < 6);
+    bool macro_hatch_timings = (CUNYAIModule::basemanager.getBases().size() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBases().size() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery);
@@ -380,10 +375,10 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::larva_starved || CUNYAIModule::econ_starved) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getBases().size() < 2 ) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings); // only macrohatch if you are short on larvae and can afford to spend.
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         !CUNYAIModule::workermanager.excess_gas_capacity_ && CUNYAIModule::gas_starved &&
@@ -571,7 +566,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
 
     //Let us simulate some combat.
     
-    bool floating_tech_edge_cases =resources_are_slack_ && u_type == UnitTypes::Zerg_Larva && subgoal_army_; // These two units are pretty much always safe.
+    bool floating_tech_edge_cases = resources_are_slack_ && u_type == UnitTypes::Zerg_Larva && subgoal_army_; // These two units are pretty much always safe.
     
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || floating_tech_edge_cases) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
@@ -652,12 +647,12 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // remove undesireables.
     auto potential_type2 = combat_types.begin();
     while (potential_type2 != combat_types.end()) {
-        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first) || resources_are_slack_ ) potential_type2++;
+        if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++; // if you need it.
+        else if (resources_are_slack_ && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure.
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
         else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
         else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
         else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
-
         else potential_type2++;
     }
 
@@ -1257,8 +1252,8 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
     return friendly_player_model.tech_cartridge_.find(ut) != friendly_player_model.tech_cartridge_.end();
 }
 
-bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, 3 + 10 * ut == Broodwar->self()->getRace().getResourceDepot()) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkDesirable(const UpgradeType &ut, const bool &extra_criteria) {
