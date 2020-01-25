@@ -62,7 +62,7 @@ bool CombatManager::combatScript(const Unit & u)
 
         Mobility mobility = Mobility(u);
         int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
-        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetExcluding(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Larva, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
 
@@ -218,14 +218,14 @@ bool CombatManager::scoutScript(const Unit & u)
     }
     else if(CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
-        Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
-        if(explore_vector != Positions::Origin)
-            return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector, Stored_Unit::Phase::PathingOut);
-        else {
+        //Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
+        //if(explore_vector != Positions::Origin)
+        //    return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector, Stored_Unit::Phase::PathingOut);
+        //else {
             Stored_Unit* closest = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2);
             if (closest)
                 return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.approach(closest->pos_), Stored_Unit::Phase::PathingOut);
-        }
+        //}
     }
     return false;
 }

@@ -269,6 +269,15 @@ void CUNYAIModule::onEnd(bool isWinner)
         output.close();
     }; // testing build order stuff intensively.
 
+    if (UNIT_WEIGHTING) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open(learned_plan.writeDirectory + "UnitWeights.txt", ios_base::app);
+        for (auto uw : learned_plan.unit_weights) {
+            output << uw.second << ",";
+        }
+        output << isWinner << endl;
+        output.close();
+    }
 }
 
 void CUNYAIModule::onFrame()
@@ -445,6 +454,7 @@ void CUNYAIModule::onFrame()
     if(tech_starved) techmanager.updateTech_Avail();
     if(army_starved) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
+
     if (t_game % FAP_SIM_DURATION == 0) {
         techmanager.clearSimulationHistory();
         assemblymanager.clearSimulationHistory();
@@ -494,8 +504,8 @@ void CUNYAIModule::onFrame()
    // if (Broodwar->mapWidth() && Broodwar->mapHeight()) {
     //current_map_inventory.createThreatField(enemy_player_model);
     //current_map_inventory.createAttractField(enemy_player_model);
-    current_map_inventory.createExploreField();
-    current_map_inventory.createAAField(enemy_player_model);
+    //current_map_inventory.createExploreField();
+    //current_map_inventory.createAAField(enemy_player_model);
     // }
 
      //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
