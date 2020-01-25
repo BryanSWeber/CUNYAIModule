@@ -737,64 +737,71 @@ Stored_Unit::Stored_Unit(const UnitType &unittype, const bool &carrierUpgrade, c
     shoots_up_ = unittype.airWeapon() != WeaponTypes::None;
 
     //Get unit's status. Precalculated, precached.
-    modified_supply_ = unittype.supplyRequired();
-    modified_min_cost_ = unittype.mineralPrice();
-    modified_gas_cost_ = unittype.gasPrice();
 
-    if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
-        modified_supply_ += 2;
-        modified_min_cost_ += 50;
-    }  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
-
-    if (unittype == UnitTypes::Zerg_Sunken_Colony || unittype == UnitTypes::Zerg_Spore_Colony) {
-        modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
+    map<UnitType, double>::iterator it = CUNYAIModule::learned_plan.unit_weights.find(unittype);
+    if (it!= CUNYAIModule::learned_plan.unit_weights.end()) {
+        stock_value_ = (CUNYAIModule::learned_plan.unit_weights.at(unittype) + 1.0)/2.0 * CUNYAIModule::learned_plan.max_value; // need to denormalize them, since they are ints everything will round to zero
     }
+    else{
+        modified_supply_ = unittype.supplyRequired();
+        modified_min_cost_ = unittype.mineralPrice();
+        modified_gas_cost_ = unittype.gasPrice();
 
-    if (unittype == UnitTypes::Zerg_Lurker) {
-        modified_min_cost_ += UnitTypes::Zerg_Hydralisk.mineralPrice();
-        modified_gas_cost_ += UnitTypes::Zerg_Hydralisk.gasPrice();
-        modified_supply_ += UnitTypes::Zerg_Hydralisk.supplyRequired();
+        if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
+            modified_supply_ += 2;
+            modified_min_cost_ += 50;
+        }  // Zerg units cost a supply (2, technically since BW cuts it in half.) // Assume bunkers are loaded with 1 marine
+
+        if (unittype == UnitTypes::Zerg_Sunken_Colony || unittype == UnitTypes::Zerg_Spore_Colony) {
+            modified_min_cost_ += UnitTypes::Zerg_Creep_Colony.mineralPrice();
+        }
+
+        if (unittype == UnitTypes::Zerg_Lurker) {
+            modified_min_cost_ += UnitTypes::Zerg_Hydralisk.mineralPrice();
+            modified_gas_cost_ += UnitTypes::Zerg_Hydralisk.gasPrice();
+            modified_supply_ += UnitTypes::Zerg_Hydralisk.supplyRequired();
+        }
+
+        if (unittype == UnitTypes::Zerg_Devourer || unittype == UnitTypes::Zerg_Guardian) {
+            modified_min_cost_ += UnitTypes::Zerg_Mutalisk.mineralPrice();
+            modified_gas_cost_ += UnitTypes::Zerg_Mutalisk.gasPrice();
+            modified_supply_ += UnitTypes::Zerg_Mutalisk.supplyRequired();
+        }
+
+        if (unittype == UnitTypes::Protoss_Archon) {
+            modified_min_cost_ += UnitTypes::Protoss_High_Templar.mineralPrice() * 2;
+            modified_gas_cost_ += UnitTypes::Protoss_High_Templar.gasPrice() * 2;
+            modified_supply_ += UnitTypes::Protoss_High_Templar.supplyRequired() * 2;
+        }
+
+        if (unittype == UnitTypes::Protoss_Dark_Archon) {
+            modified_min_cost_ += UnitTypes::Protoss_Dark_Templar.mineralPrice() * 2;
+            modified_gas_cost_ += UnitTypes::Protoss_Dark_Templar.gasPrice() * 2;
+            modified_supply_ += UnitTypes::Protoss_Dark_Templar.supplyRequired() * 2;
+        }
+
+        if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
+            modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * carrierUpgrade);
+            modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * carrierUpgrade);
+        }
+
+        if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
+            modified_min_cost_ += BWAPI::UnitTypes::Protoss_Scarab.mineralPrice() * (5 + 5 * reaverUpgrade);
+            modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * reaverUpgrade);
+        }
+
+        if (unittype == UnitTypes::Protoss_Interceptor || unittype.isSpell()) {
+            modified_min_cost_ = 0;
+            modified_gas_cost_ = 0;
+            modified_supply_ = 0;
+        }
+
+        modified_supply_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // Lings return 1 supply when they should only return 0.5
+
+        stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
+
+        stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
     }
-
-    if (unittype == UnitTypes::Zerg_Devourer || unittype == UnitTypes::Zerg_Guardian) {
-        modified_min_cost_ += UnitTypes::Zerg_Mutalisk.mineralPrice();
-        modified_gas_cost_ += UnitTypes::Zerg_Mutalisk.gasPrice();
-        modified_supply_ += UnitTypes::Zerg_Mutalisk.supplyRequired();
-    }
-
-    if (unittype == UnitTypes::Protoss_Archon) {
-        modified_min_cost_ += UnitTypes::Protoss_High_Templar.mineralPrice() * 2;
-        modified_gas_cost_ += UnitTypes::Protoss_High_Templar.gasPrice() * 2;
-        modified_supply_ += UnitTypes::Protoss_High_Templar.supplyRequired() * 2;
-    }
-
-    if (unittype == UnitTypes::Protoss_Dark_Archon) {
-        modified_min_cost_ += UnitTypes::Protoss_Dark_Templar.mineralPrice() * 2;
-        modified_gas_cost_ += UnitTypes::Protoss_Dark_Templar.gasPrice() * 2;
-        modified_supply_ += UnitTypes::Protoss_Dark_Templar.supplyRequired() * 2;
-    }
-
-    if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
-        modified_min_cost_ += UnitTypes::Protoss_Interceptor.mineralPrice() * (4 + 4 * carrierUpgrade);
-        modified_gas_cost_ += UnitTypes::Protoss_Interceptor.gasPrice() * (4 + 4 * carrierUpgrade);
-    }
-
-    if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
-        modified_min_cost_ += BWAPI::UnitTypes::Protoss_Scarab.mineralPrice() * (5 + 5 * reaverUpgrade);
-        modified_gas_cost_ += BWAPI::UnitTypes::Protoss_Scarab.gasPrice() * (5 + 5 * reaverUpgrade);
-    }
-
-    if (unittype == UnitTypes::Protoss_Interceptor || unittype.isSpell()) {
-        modified_min_cost_ = 0;
-        modified_gas_cost_ = 0;
-        modified_supply_ = 0;
-    }
-
-    modified_supply_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // Lings return 1 supply when they should only return 0.5
-
-    stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
-
-    stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
 
     current_stock_value_ = stock_value_; // Precalculated, precached.
     future_fap_value_ = stock_value_;

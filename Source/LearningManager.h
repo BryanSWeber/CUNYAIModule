@@ -49,4 +49,7 @@ struct LearningManager {
     string build_order_t0;
     int fliers_t0;
     int detectors_t0;
+
+    map<UnitType,double> unit_weights;
+    int max_value;
 };

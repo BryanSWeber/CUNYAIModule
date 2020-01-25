@@ -173,7 +173,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     SecondOrderThreats.addStored_Unit(e->second);
                 }
 
-                if ((e->second.type_.mineralPrice() >= 25 || e->second.type_.gasPrice() >= 25) && e->second.type_ != UnitTypes::Zerg_Egg && e->second.type_ != UnitTypes::Zerg_Larva) { // don't target larva or noncosting units.
+                if (CUNYAIModule::hasPriority(e->second)) { // don't target larva or noncosting units.
                     LowPriority.addStored_Unit(e->second);
                 }
             }
