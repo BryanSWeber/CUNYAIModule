@@ -27,7 +27,7 @@ using namespace Filter;
 using namespace std;
 namespace py = pybind11;
 
-bool LearningManager::confirmHistoryPresent()
+bool LearningManager::confirmLearningFilesPresent()
 {
     rename( (readDirectory + "history.txt").c_str(), (writeDirectory + "history.txt").c_str()); // Copy our history to the write folder. There needs to be a file called history.txt.
 
@@ -38,14 +38,15 @@ bool LearningManager::confirmHistoryPresent()
         a.close();
     }
 
-    ifstream input; // brings in info;
-    input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
+    //Get the history file ready.
+    ifstream historyFile; // brings in info;
+    historyFile.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
     string line;
     int csv_length = 0;
-    while (getline(input, line)) {
+    while (getline(historyFile, line)) {
         ++csv_length;
     }
-    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+    historyFile.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
     if (csv_length < 1) {
         ofstream output; // Prints to brood war file while in the WRITE file.
@@ -55,9 +56,48 @@ bool LearningManager::confirmHistoryPresent()
         return false;
     }
 
-    ofstream output; // Nukes the Debug file between games.
+    // Nukes the Debug file between games.
+    ofstream output; 
     output.open((writeDirectory + "Debug.txt").c_str(), ios_base::trunc);
     output.close();
+
+    //Get the unit weights file ready.
+    ifstream unitweightsFile; // brings in info;
+    unitweightsFile.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);   // for each row
+    csv_length = 0;
+    while (getline(unitweightsFile, line)) {
+        ++csv_length;
+    }
+    unitweightsFile.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+    max_value = 0;
+    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+        max_value = max(max_value, Stored_Unit(u).stock_value_);
+    }
+
+    //Provide default starting values if there is nothing else to use.
+    if (csv_length < 2) {
+        ofstream output; // Prints to brood war file while in the WRITE file.
+        output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::trunc); // wipe if it does not start at the correct place.
+
+        string name_of_units = "";
+        for (auto u : BWAPI::UnitTypes::allUnitTypes()) {
+            string temp = u.getName().c_str();
+            name_of_units += temp + ",";
+        }
+        name_of_units += "Score";
+        output << name_of_units << endl;
+
+        string weight_of_units = "";
+        for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_) / static_cast<double>(max_value) - 1.0);
+            weight_of_units += temp + ",";
+        }
+        weight_of_units += "0.3";
+        output << weight_of_units << endl;
+
+        output.close();
+    }
 
     return true;
 }
@@ -456,46 +496,8 @@ void LearningManager::initializeRandomStart(){
     build_order_t0 = build_order_list[build_order_rand];
 }
 
-void LearningManager::initializeUnitWeighting()
+void LearningManager::initializeCMAESUnitWeighting()
 {
-    ifstream input; // brings in info;
-    input.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);   // for each row
-    string line;
-    int csv_length = 0;
-    while (getline(input, line)) {
-        ++csv_length;
-    }
-    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
-    
-    max_value = 0;
-    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-        max_value = max(max_value, Stored_Unit(u).stock_value_);
-    }
-
-    //Provide default starting values if there is nothing else to use.
-    if (csv_length < 2) {
-        ofstream output; // Prints to brood war file while in the WRITE file.
-        output.open((writeDirectory + "UnitWeights.txt").c_str(), ios_base::trunc); // wipe if it does not start at the correct place.
-
-        string name_of_units = "";
-        for (auto u : BWAPI::UnitTypes::allUnitTypes()) {
-            string temp = u.getName().c_str();
-            name_of_units += temp + ",";
-        }
-        name_of_units += "Score";
-        output << name_of_units << endl;
-
-        string weight_of_units = "";
-        for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_)/static_cast<double>(max_value) - 1.0);
-            weight_of_units += temp + ",";
-        }
-        weight_of_units += "0.3";
-        output << weight_of_units << endl;
-
-        output.close();
-    }
-
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
     py::object scope = py::module::import("__main__").attr("__dict__");
 
@@ -518,6 +520,71 @@ void LearningManager::initializeUnitWeighting()
 
     passed_unit_weights = py::cast<std::vector<double>>(local["unit_weights"]);
 
+    int pos = 0;
+    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+        unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));
+        pos++;
+    }
+}
+
+void LearningManager::initializeGAUnitWeighting()
+{
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(-1, 1);    // default values for output.
+
+    //Executing script:
+    vector<double> passed_unit_weights(BWAPI::UnitTypes::allUnitTypes().size());
+    for (auto &x : passed_unit_weights) {
+        x = dis(gen);
+    }
+    string val;
+
+    ifstream input; // brings in info;
+    input.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);// for each row
+    string line;
+    int csv_length = 0;
+    while (getline(input, line)) {
+        ++csv_length;
+    }
+    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+
+    input.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);
+    getline(input, line); //skip the first line of the document.
+    csv_length--; // that means the remaining csv is shorter by 1 line.
+    vector<vector<double>> matrix_of_unit_weights;
+    vector<double> entire_vector(BWAPI::UnitTypes::allUnitTypes().size()+1);
+
+    for (int j = 0; j < csv_length; ++j) {
+        vector<double> local_copy = entire_vector;
+        for (auto &i:local_copy) {
+             getline(input, val, ',');
+             i = stod(val);
+        }
+        if (local_copy.back() > 0) {
+            matrix_of_unit_weights.push_back(local_copy); //if we won, keep it.
+        }
+    }
+
+    Diagnostics::DiagnosticText("%d",matrix_of_unit_weights.size());
+
+    //Generate more if we don't have enough, otherwise combine some winners with a mutation chance:
+    if (matrix_of_unit_weights.empty() || matrix_of_unit_weights.size() <= 2) {
+        //We're good, use the random one.
+    }
+    else {
+        std::uniform_int_distribution<size_t> rand_bo(0, matrix_of_unit_weights.size() - 1);
+        size_t row_choice1 = rand_bo(gen);
+        size_t row_choice2 = rand_bo(gen);
+        for (int x = 0; x <= BWAPI::UnitTypes::allUnitTypes().size(); ++x) {
+            passed_unit_weights[x] = (matrix_of_unit_weights[row_choice1][x] + matrix_of_unit_weights[row_choice2][x])/2.0;
+            if (dis(gen) > 0.10) { // 5% chance of mutation.
+                passed_unit_weights[x] = dis(gen);
+            }
+        }
+    }
+
+    //submit results.
     int pos = 0;
     for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
         unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));

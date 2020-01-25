@@ -12,12 +12,13 @@ struct LearningManager {
     string writeDirectory = "..//..//write//";
 
 
-    bool confirmHistoryPresent();
+    bool confirmLearningFilesPresent();
     void initializeGeneticLearning();
     void initializeRFLearning();
     void initializeTestStart();
     void initializeRandomStart();
-    void initializeUnitWeighting();
+    void initializeCMAESUnitWeighting();
+    void initializeGAUnitWeighting();
 
     vector<string> build_order_list = {
     "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
@@ -52,4 +53,5 @@ struct LearningManager {
 
     map<UnitType,double> unit_weights;
     int max_value;
+
 };

@@ -30,9 +30,10 @@ constexpr bool PRINT_WD = false; // print a file to the current working director
 
 constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
-constexpr bool RF_LEARNING = true; // use the random forest to filter unwanted parameters.
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
-constexpr bool UNIT_WEIGHTING = false; // under development.
+constexpr bool PYTHON_AVAILABLE = false;
+constexpr bool UNIT_WEIGHTING = true; // under development.
+constexpr bool RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 
 //Cheats:  Like, literal single player cheats.
 constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
