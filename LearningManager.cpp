@@ -17,6 +17,9 @@
 # include <pybind11/pybind11.h>
 # include <pybind11/embed.h>
 # include <pybind11/eval.h>
+# include <pybind11/stl.h> //Needed for arrays.
+# include <pybind11/stl_bind.h>
+# include "pybind11/numpy.h"
 # include <Python.h>
 
 using namespace BWAPI;
@@ -51,6 +54,10 @@ bool LearningManager::confirmHistoryPresent()
         output.close();
         return false;
     }
+
+    ofstream output; // Nukes the Debug file between games.
+    output.open((writeDirectory + "Debug.txt").c_str(), ios_base::trunc);
+    output.close();
 
     return true;
 }
@@ -308,7 +315,7 @@ void LearningManager::initializeGeneticLearning() {
         a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
         a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
         r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
-        build_order_out = dis(gen) > 0.5 ? std::get<6>(parent_1) : std::get<6>(parent_2);
+        build_order_out = dis(gen) > 0.5 ? std::get<16>(parent_1) : std::get<16>(parent_2);
     }
 
     prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
@@ -459,6 +466,11 @@ void LearningManager::initializeUnitWeighting()
         ++csv_length;
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
+    
+    max_value = 0;
+    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+        max_value = max(max_value, Stored_Unit(u).stock_value_);
+    }
 
     //Provide default starting values if there is nothing else to use.
     if (csv_length < 2) {
@@ -475,30 +487,40 @@ void LearningManager::initializeUnitWeighting()
 
         string weight_of_units = "";
         for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-            string temp = to_string(Stored_Unit(u).stock_value_);
+            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_)/static_cast<double>(max_value) - 1.0);
             weight_of_units += temp + ",";
         }
-        name_of_units += "0";
+        weight_of_units += "0.3";
         output << weight_of_units << endl;
 
         output.close();
     }
 
-    map<UnitType, int> unit_weights;
+    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+    py::object scope = py::module::import("__main__").attr("__dict__");
+
+    //Executing script:
+    Diagnostics::DiagnosticText("Loading Dictionary Contents");
+    auto local = py::dict();
+    vector<double> passed_unit_weights(BWAPI::UnitTypes::allUnitTypes().size());
+    for (auto x : passed_unit_weights) {
+        passed_unit_weights[x] = 0;
+    }
+
+    local["unit_weights"] = passed_unit_weights; //automatic conversion to type requires stl library. needs to be a vector, can't pass a map.
+    try {
+        py::eval_file(".\\evo_test.py", scope, local);
+    }
+    catch (py::error_already_set const &pythonErr) {
+        Diagnostics::DiagnosticText(pythonErr.what());
+    }
 
 
-    //py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-    //py::object cma = py::module::import("cma");
+    passed_unit_weights = py::cast<std::vector<double>>(local["unit_weights"]);
 
-    //py::object es = cma.attr("CMAEvolutionStrategy");
-    //int zeros [5] = { 0,0,0,0,0 };
-    //py::object starting_conditions = py::cast(zeros);
-
-    //py::object inital_SD = py::cast(0.5);
-    //py::object RosenbackFunction = cma.attr("ff").attr("rosen");
-    //py::object initialized_es = es(starting_conditions, inital_SD); //Crashes here.
-    //py::object fit_es = initialized_es.attr("optimize")(RosenbackFunction);
-
-
-    //py::print(fit_es.attr("result_pretty"));
+    int pos = 0;
+    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+        unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));
+        pos++;
+    }
 }
