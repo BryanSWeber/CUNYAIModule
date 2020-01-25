@@ -124,22 +124,17 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
             map<int, TilePosition> viable_placements;
 
-            for (auto tile : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
-                int plength;
-                auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-                if (plength)
-                    viable_placements.insert({ plength, tile });
-            }
+            //for (auto tile : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+            //    int plength;
+            //    auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
+            //    if (plength)
+            //        viable_placements.insert({ plength, tile });
+            //}
 
             auto closest_wall = BWEB::Walls::getClosestWall(unit->getTilePosition());
-            if (closest_wall && CUNYAIModule::basemanager.getBases().size() >= 2 ) {
+            if (closest_wall && CUNYAIModule::basemanager.getBaseCount() >= 2 ) {
                 set<TilePosition> wall_placements;
-                if (building.tileSize() == TilePosition{ 2,2 })
-                    wall_placements = closest_wall->getSmallTiles();
-                else if (building.tileSize() == TilePosition{ 3 , 2 })
-                    wall_placements = closest_wall->getMediumTiles();
-                else if (building.tileSize() == TilePosition{ 4 , 3 })
-                    wall_placements = closest_wall->getLargeTiles();
+                 wall_placements = closest_wall->getLargeTiles();
                 if (!wall_placements.empty()) {
                     for (auto &tile : wall_placements) {
                         int plength;
@@ -153,12 +148,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             //Otherwise, use blocks.
             for (auto block : BWEB::Blocks::getBlocks()) {
                 set<TilePosition> block_placements;
-                if (building.tileSize() == TilePosition{ 2,2 })
-                    block_placements = block.getSmallTiles();
-                else if (building.tileSize() == TilePosition{ 3 , 2 })
-                    block_placements = block.getMediumTiles();
-                else if (building.tileSize() == TilePosition{ 4 , 3 })
-                    block_placements = block.getLargeTiles();
+                block_placements = block.getLargeTiles();
                 if (!block_placements.empty()) {
                     for (auto &tile : block_placements) {
                         int plength;
@@ -330,7 +320,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     bool buildings_started = false;
     bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
-    bool macro_hatch_timings = (CUNYAIModule::basemanager.getBases().size() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBases().size() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
+    bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery);
@@ -375,7 +365,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getBases().size() < 2 ) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getBaseCount() < 2 ) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
@@ -564,11 +554,8 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
         return true;
     }
 
-    //Let us simulate some combat.
-    
-    bool floating_tech_edge_cases = resources_are_slack_ && u_type == UnitTypes::Zerg_Larva && subgoal_army_; // These two units are pretty much always safe.
-    
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || floating_tech_edge_cases) {
+    //Let us utilize the combat sim
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || resources_are_slack_ && u_type == UnitTypes::Zerg_Larva) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 
@@ -999,10 +986,9 @@ bool AssemblyManager::assignUnitAssembly()
             }
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
-            bool drone_conditional = (CUNYAIModule::econ_starved || CUNYAIModule::tech_starved); // Econ does not detract from technology growth. (only minerals, gas is needed for tech). Always be droning.
 
-            bool drones_are_needed_here = (drone_conditional || wasting_larva_soon || resources_are_slack_ && subgoal_econ_) && !enough_drones_globally && hatch_wants_drones;
-            bool drones_are_needed_elsewhere = (drone_conditional || wasting_larva_soon || resources_are_slack_ && subgoal_econ_) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
+            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
             bool found_noncombat_use = false;
 
             if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
@@ -1053,19 +1039,20 @@ bool AssemblyManager::assignUnitAssembly()
             }
         }
         for (auto d : immediate_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved || (resources_are_slack_ && subgoal_econ_) ) ) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true ) ) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
         for (auto d : transfer_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, CUNYAIModule::econ_starved || CUNYAIModule::tech_starved || (resources_are_slack_ && subgoal_econ_) ) ) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true ) ) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
     }
 
+    //We will fall through to this case if resources are slack and a drone is not created.
     for (auto c : combat_creators.unit_map_) {
         if (Reactive_BuildFAP(c.first)) {
             if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
