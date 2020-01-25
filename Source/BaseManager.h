@@ -28,6 +28,7 @@ private:
 public:
     //Returns a copy.
     map<Position, Base> getBases();
+    int getBaseCount();
     void updateBases();
     void displayBaseData(); //vital for testing.
     Base getClosestBaseGround(const Position &pos);

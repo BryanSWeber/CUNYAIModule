@@ -35,6 +35,13 @@ map<Position, Base> BaseManager::getBases()
     return baseMap_;
 }
 
+int BaseManager::getBaseCount()
+{
+    if (!baseMap_.empty())
+        return baseMap_.size();
+    return 0;
+}
+
 void BaseManager::updateBases()
 {
     baseMap_.clear();
