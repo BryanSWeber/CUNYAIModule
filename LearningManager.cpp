@@ -564,14 +564,18 @@ void LearningManager::initializeGAUnitWeighting()
              i = stod(val);
         }
         if (local_copy.back() > 0) {
-            matrix_of_unit_weights.push_back(local_copy); //if we won, keep it.
+            int weight = local_copy.back();
+            while (weight > 0) {
+                matrix_of_unit_weights.push_back(local_copy); //if we did well, keep it.
+                weight -= sqrt(100000);
+            }
         }
     }
 
     Diagnostics::DiagnosticText("%d",matrix_of_unit_weights.size());
 
     //Generate more if we don't have enough, otherwise combine some winners with a mutation chance:
-    if (matrix_of_unit_weights.empty() || matrix_of_unit_weights.size() <= 2) {
+    if (matrix_of_unit_weights.empty() || matrix_of_unit_weights.size() <= 200) {
         //We're good, use the random one.
     }
     else {

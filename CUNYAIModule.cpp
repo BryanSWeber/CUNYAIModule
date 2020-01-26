@@ -130,7 +130,9 @@ void CUNYAIModule::onStart()
 
     if (PYTHON_AVAILABLE) {
         learned_plan.initializeRFLearning();
-        learned_plan.initializeCMAESUnitWeighting(); // in progress.
+        if (UNIT_WEIGHTING) {
+            learned_plan.initializeCMAESUnitWeighting(); // in progress.
+        }
     }
     else {
         if (GENETIC_HISTORY) {
@@ -142,7 +144,9 @@ void CUNYAIModule::onStart()
         if (TEST_MODE) {
             learned_plan.initializeTestStart();
         }
-        learned_plan.initializeGAUnitWeighting(); // in progress.
+        if (UNIT_WEIGHTING) {
+            learned_plan.initializeGAUnitWeighting(); // in progress.
+        }
     }
 
     gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
@@ -277,7 +281,7 @@ void CUNYAIModule::onEnd(bool isWinner)
         for (auto uw : learned_plan.unit_weights) {
             output << uw.second << ",";
         }
-        output << isWinner << endl;
+        output << sqrt(isWinner * 100000) + (1 - isWinner)*sqrt(Broodwar->self()->getBuildingScore() + Broodwar->self()->getKillScore() + Broodwar->self()->getRazingScore() + Broodwar->self()->getUnitScore()) << endl;
         output.close();
     }
 }
