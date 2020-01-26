@@ -61,6 +61,8 @@ bool LearningManager::confirmLearningFilesPresent()
     output.open((writeDirectory + "Debug.txt").c_str(), ios_base::trunc);
     output.close();
 
+    rename((readDirectory + "UnitWeights.txt").c_str(), (writeDirectory + "UnitWeights.txt").c_str()); // Copy our UnitWeights to the write folder. There needs to be a file called history.txt.
+
     //Get the unit weights file ready.
     ifstream unitweightsFile; // brings in info;
     unitweightsFile.open((writeDirectory + "UnitWeights.txt").c_str(), ios::in);   // for each row
