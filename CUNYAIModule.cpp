@@ -128,25 +128,23 @@ void CUNYAIModule::onStart()
     learned_plan = LearningManager();
     learned_plan.confirmLearningFilesPresent();
 
-    if (PYTHON_AVAILABLE) {
+    if (PY_RF_LEARNING) {
         learned_plan.initializeRFLearning();
-        if (UNIT_WEIGHTING) {
-            learned_plan.initializeCMAESUnitWeighting(); // in progress.
-        }
     }
-    else {
-        if (GENETIC_HISTORY) {
-            learned_plan.initializeGeneticLearning();
-        }
-        if (RANDOM_PLAN) {
-            learned_plan.initializeRandomStart();
-        }
-        if (TEST_MODE) {
-            learned_plan.initializeTestStart();
-        }
-        if (UNIT_WEIGHTING) {
-            learned_plan.initializeGAUnitWeighting(); // in progress.
-        }
+    if (GENETIC_HISTORY) {
+        learned_plan.initializeGeneticLearning();
+    }
+    if (RANDOM_PLAN) {
+        learned_plan.initializeRandomStart();
+    }
+    if (TEST_MODE) {
+        learned_plan.initializeTestStart();
+    }
+    if (UNIT_WEIGHTING) {
+        learned_plan.initializeGAUnitWeighting(); // in progress.
+    }
+    if (PY_UNIT_WEIGHTING) {
+        learned_plan.initializeCMAESUnitWeighting(); // in progress.
     }
 
     gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.

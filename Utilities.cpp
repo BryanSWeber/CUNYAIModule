@@ -1308,7 +1308,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     int cd_frames = 0;
 
     if (cd_frames_chosen == 99) {// if default value, then we assume 0 cd frames. This is nearly always the case.
-        cd_frames = 0;
+        cd_frames = 9;
     } 
     else { // if the person has selected some specific delay they are looking for, check that.
         ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames_chosen;
@@ -1358,7 +1358,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     }
 
     if (u_command == UnitCommandTypes::Move) {
-        cd_frames = 5;
+        cd_frames = 9;
     }
 
     //if (u_command == UnitCommandTypes::Hold_Position) {
@@ -2015,7 +2015,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             bool fighting_may_save =  e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * Stored_Unit(UnitTypes::Terran_Marine).stock_value_)) * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::canContributeToFight(e.second.type_, ui) * fighting_may_save;
+            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * Stored_Unit(UnitTypes::Terran_Marine).stock_value_)) * Stored_Unit::unitDeadInFuture(e.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(e.second.type_, ui);
             //total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
             total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * fighting_may_save;
             total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * fighting_may_save;

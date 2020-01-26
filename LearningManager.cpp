@@ -95,7 +95,7 @@ bool LearningManager::confirmLearningFilesPresent()
             string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_) / static_cast<double>(max_value) - 1.0);
             weight_of_units += temp + ",";
         }
-        weight_of_units += "0.3";
+        weight_of_units += "100";
         output << weight_of_units << endl;
 
         output.close();
@@ -567,7 +567,7 @@ void LearningManager::initializeGAUnitWeighting()
             int weight = local_copy.back();
             while (weight > 0) {
                 matrix_of_unit_weights.push_back(local_copy); //if we did well, keep it.
-                weight -= sqrt(100000);
+                weight -= 100;
             }
         }
     }

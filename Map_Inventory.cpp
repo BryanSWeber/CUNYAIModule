@@ -1107,7 +1107,9 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
 
 void Map_Inventory::updateCurrentMap() {
 
-    updateGroundDangerousAreas();
+    if (Broodwar->getFrameCount() % 17 == 0) 
+        updateGroundDangerousAreas(); // every second or so update ground frames.
+
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;

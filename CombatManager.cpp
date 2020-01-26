@@ -155,7 +155,6 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
-                    // Most simple combat units behave like this:
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran: 
                     if (my_unit->phase_ != Stored_Unit::Phase::Attacking && overstacked_units) {
@@ -168,6 +167,7 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
+                    // Most simple combat units behave like this:
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
                          return mobility.surroundLogic(e_closest->pos_);
