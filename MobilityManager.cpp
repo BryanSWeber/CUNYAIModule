@@ -238,11 +238,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
     //}
 
-    if (LowPriority.unit_map_.size() == 0) {
-        Diagnostics::DiagnosticText("No target possible.");
-    }
-    else {
-        Diagnostics::DiagnosticText("No target I wanted to attack...");
+
+    Diagnostics::DiagnosticText("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
+    Diagnostics::DiagnosticText("This is the local unit map");
+    for (auto u : LowPriority.unit_map_) {
+        Diagnostics::DiagnosticText("%s", u.second.type_.c_str());
     }
 
     return false; // no target, we got a falsehood.

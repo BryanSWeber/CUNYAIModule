@@ -40,7 +40,7 @@ std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
 {
-    if (CUNYAIModule::checkDesirable(unit, building, extra_critera, 50)) { // assume you have to walk 100 pixels.
+    if (CUNYAIModule::checkDesirable(unit, building, extra_critera, 96)) { // assume you have to walk 3 tiles.
         Position unit_pos = unit->getPosition();
         bool unit_can_morph_intended_target = unit->canMorph(building);
         //Check simple upgrade into lair/hive.
@@ -137,9 +137,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                  wall_placements = closest_wall->getLargeTiles();
                 if (!wall_placements.empty()) {
                     for (auto &tile : wall_placements) {
-                        int plength;
+                        int plength = 0;
                         auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-                        if (plength)
+                        if (plength > 0)
                             viable_placements.insert({ plength, tile });
                     }
                 }
@@ -151,9 +151,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 block_placements = block.getLargeTiles();
                 if (!block_placements.empty()) {
                     for (auto &tile : block_placements) {
-                        int plength;
+                        int plength = 0;
                         auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-                        if (plength)
+                        if (plength > 0)
                             viable_placements.insert({ plength, tile });
                     }
                 }
