@@ -100,7 +100,7 @@ bool TechManager::updateTech_Avail() {
     }
 
     for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.building_cartridge_) {
-        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) == 0) {
+        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
             return tech_avail_;
         }
@@ -114,8 +114,9 @@ bool TechManager::updateTech_Avail() {
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
 bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv) {
+
     bool busy = false;
-    bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
+    bool upgrade_bool = (CUNYAIModule::tech_starved || checkResourceSlack());
     bool have_declared_lurkers = BWAPI::Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
     bool have_declared_mutas = CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) > 0;
     bool cannot_build_major_unit_type = !CUNYAIModule::checkInCartridge(UnitTypes::Zerg_Lurker) && !CUNYAIModule::checkInCartridge(UnitTypes::Zerg_Mutalisk);
@@ -168,13 +169,23 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Queens_Nest) > 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
 
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Greater_Spire, building, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hive) > 0 &&
         building->getType() == UnitTypes::Zerg_Spire &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Greater_Spire) == 0); //If you're tech-starved at this point, don't make random hives.
+
+    if (busy) {
+        Diagnostics::DiagnosticText("Looks like we wanted to upgrade something. Here's the general inputs I was thinking about:");
+        Diagnostics::DiagnosticText("Slackness: %s", checkResourceSlack() ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("Tech Starved: %s", CUNYAIModule::tech_starved ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("For this %s", building->getType().getName().c_str());
+        for (auto potential_up : local_upgrade_cycle) {
+            Diagnostics::DiagnosticText("Upgrades: %s, %d", potential_up.first.c_str(), potential_up.second);
+        }
+    }
 
     return busy;
 }
@@ -327,4 +338,9 @@ bool TechManager::canTech(TechType type, const bool checkAffordable, const Unit 
         return false;
 
     return Broodwar->setLastError();
+}
+
+bool TechManager::checkResourceSlack()
+{
+    return (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100) || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0;
 }

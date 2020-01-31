@@ -40,7 +40,7 @@ std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
 {
-    if (CUNYAIModule::checkDesirable(unit, building, extra_critera)) {
+    if (CUNYAIModule::checkDesirable(unit, building, extra_critera, 50)) { // assume you have to walk 100 pixels.
         Position unit_pos = unit->getPosition();
         bool unit_can_morph_intended_target = unit->canMorph(building);
         //Check simple upgrade into lair/hive.
@@ -321,12 +321,11 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool buildings_started = false;
     bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
-    bool upgrade_bool = (CUNYAIModule::tech_starved || (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 && !CUNYAIModule::army_starved));
+    bool upgrade_bool = (CUNYAIModule::tech_starved || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0) || (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100);  // upgrade if resources are slack, you're tech starved, or there are no valid larva expendatures.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
     bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery);
     bool can_upgrade_colonies = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
-    bool enemy_mostly_ground = CUNYAIModule::enemy_player_model.units_.stock_ground_units_ > CUNYAIModule::enemy_player_model.units_.stock_fighting_total_ * 0.75;
     bool nearby_enemy = CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
     bool drone_death = false;
     bool prefer_hydra_den_over_spire = max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) }) ||
@@ -338,20 +337,18 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     int number_of_spires_wanted =
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
         static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
-    int count_of_spire_decendents = CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire);
-    int count_tech_buildings = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern);
-
-    bool fight_without_reinforcements = CUNYAIModule::army_starved && (CUNYAIModule::larva_starved || CUNYAIModule::supply_starved || CUNYAIModule::gas_starved);
+    int count_of_spire_decendents = CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire);
+    int count_tech_buildings = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true);
 
     Unit_Inventory e_loc;
     Unit_Inventory u_loc;
 
     //if (nearby_enemy) {
-    e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
+    /*e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
     u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, drone->getPosition());
     e_loc.updateUnitInventorySummary();
     u_loc.updateUnitInventorySummary();
-    drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);
+    drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);*/
     //}
 
     // Trust the build order. If there is a build order and it wants a building, build it!
@@ -376,26 +373,25 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
 
     //First Building needed!
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
 
     //Consider an organized build plan.
     if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
+            CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
+            CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
             CUNYAIModule::current_map_inventory.hatches_ > 1);
     }
 
     //Muta or lurker for main body of units. Short-circuit for lurkers if they have no detection. Build both if hive is present.
     if (prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0) { 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) == 0 &&
+            CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
     }
     if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) == 0 &&
+            CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
     }
@@ -403,9 +399,9 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //For getting to hive: See techmanager for hive, it will trigger after queens nest is built!
     if (returnUnitRank(UnitTypes::Zerg_Guardian) == 0 || returnUnitRank(UnitTypes::Zerg_Devourer) == 0 || returnUnitRank(UnitTypes::Zerg_Ultralisk) == 0) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) == 0 &&
+            CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            (CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
+            (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
             CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
@@ -413,12 +409,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     for (auto r : { 0,1,2,3,4,5 }) {
         if (returnUnitRank(UnitTypes::Zerg_Ultralisk) == r) {
             if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
-                CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) == 0 &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true) == 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
         }
         if (returnUnitRank(UnitTypes::Zerg_Guardian) == r || returnUnitRank(UnitTypes::Zerg_Devourer) == r || returnUnitRank(UnitTypes::Zerg_Mutalisk) == r) {
             if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
+                CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
@@ -430,11 +427,11 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) < number_of_evos_wanted &&
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         Broodwar->self()->gas() > 100 * CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) &&
         Broodwar->self()->minerals() > 100 * CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_evos_ || CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        (!have_idle_evos_ || CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0) &&
         (upgrade_worth_melee || upgrade_worth_ranged) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -448,9 +445,9 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) == 0 &&
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hydralisk_Den, CUNYAIModule::friendly_player_model.units_) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
+        (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
     Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
@@ -480,6 +477,16 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     //
     //}
 
+    if (buildings_started) {
+        Diagnostics::DiagnosticText("Looks like we wanted to build something. Here's the general inputs I was thinking about:");
+        Diagnostics::DiagnosticText("Distance Mining: %s", distance_mining ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("Upgrade Time: %s", upgrade_bool ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("Enemies Ground: %s", upgrade_bool ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("Hydras Preferred: %s", prefer_hydra_den_over_spire ? "TRUE" : "FALSE");
+        Diagnostics::DiagnosticText("MaxEvos (for ups): %d", number_of_evos_wanted);
+        Diagnostics::DiagnosticText("MaxSpires (for ups): %d", number_of_spires_wanted);
+        Diagnostics::DiagnosticText("CountTech buildings: %d, Extractors: %d", count_tech_buildings, CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor));
+    }
 
     return buildings_started;
 };
@@ -657,7 +664,11 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // Build it.
     if (!building_optimal_unit && morph_canidate->getType() != build_type) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
     if (building_optimal_unit || morph_canidate->getType() == build_type) {
-        //if (Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("Best sim score is: %d, building %s", best_sim_score, build_type.c_str());
+        Diagnostics::DiagnosticText("We are choosing to build a: %s", build_type.c_str());
+        Diagnostics::DiagnosticText("Out of the subset:");
+        for (auto s : combat_types) {
+            Diagnostics::DiagnosticText("%s, score: %d", s.first.c_str(), s.second);
+        }
         return true;
     }
     return false;
@@ -675,9 +686,12 @@ UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_type
             //Diagnostics::DiagnosticText("Found a Best_sim_score of %d, for %s", best_sim_score, build_type.c_str());
         }
         else if (potential_type.second == best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            //build_type =
-            if (build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
-            else if (potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+            bool current_best_flexible = build_type.airWeapon() != WeaponTypes::None && build_type.groundWeapon() != WeaponTypes::None;
+            bool new_best_flexible = potential_type.first.airWeapon() != WeaponTypes::None && potential_type.first.groundWeapon() != WeaponTypes::None;
+
+            if (current_best_flexible && !new_best_flexible) continue; // if the current unit is "flexible" with regard to air and ground units, then keep it and continue to consider the next unit.
+            else if (new_best_flexible && !current_best_flexible) build_type = potential_type.first; // if the tying unit is "flexible", then let's use that one.
+            else if (current_best_flexible == new_best_flexible) build_type = build_type.buildTime() < potential_type.first.buildTime() ? build_type : potential_type.first; // If they both are poor choices or both are good choices, get the faster building one.
             //Diagnostics::DiagnosticText("Found a tie, favoring the flexible unit %d, for %s", best_sim_score, build_type.c_str());
         }
     }
@@ -723,8 +737,8 @@ void AssemblyManager::updateOptimalCombatUnit() {
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
-        else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24); //moving average over 24 simulations, 1 seconds.
-//if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
+        else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
+        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
     have_idle_evos_ = false;
@@ -938,7 +952,7 @@ bool AssemblyManager::assignUnitAssembly()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    resources_are_slack_ = CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
+    resources_are_slack_ = checkSlackResources();
     subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army > CUNYAIModule::friendly_player_model.spending_model_.alpha_econ;
     subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army < CUNYAIModule::friendly_player_model.spending_model_.alpha_econ; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
@@ -955,8 +969,8 @@ bool AssemblyManager::assignUnitAssembly()
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager.
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
-            Base air_base = CUNYAIModule::basemanager.getClosestBaseAir(creep_colony.second.pos_);
             Base ground_base = CUNYAIModule::basemanager.getClosestBaseGround(creep_colony.second.pos_);
+            Base air_base = CUNYAIModule::basemanager.getClosestBaseAir(creep_colony.second.pos_);
             bool force_air = air_base.emergency_spore_ && canMakeCUNY(UnitTypes::Zerg_Spore_Colony, true, creep_colony.first) && air_base.spore_count_ < 6;
             bool force_ground = ground_base.emergency_sunken_ && canMakeCUNY(UnitTypes::Zerg_Sunken_Colony, true, creep_colony.first) && ground_base.sunken_count_ < 6;
             buildStaticDefence(creep_colony.first, force_air, force_ground); // checks globally but not bad, info is mostly already there.
@@ -1211,6 +1225,11 @@ bool AssemblyManager::canMakeCUNY(const UnitType & type, const bool can_afford, 
         return Broodwar->setLastError(Errors::Insufficient_Tech);
 
     return true;
+}
+
+bool AssemblyManager::checkSlackResources()
+{
+    return  CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
 }
 
 

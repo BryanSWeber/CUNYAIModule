@@ -30,7 +30,7 @@ void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk)
 
     econ_derivative = alpha_econ * pow(tech_stock, alpha_tech * alpha_army) * pow(safeDiv(army_stock, worker_stock), alpha_army) * econ_possible; // worker stock is incorperated on the RHS to save on a calculation.
     army_derivative = alpha_army * pow(safeDiv(worker_stock, army_stock), alpha_econ) * pow(tech_stock, alpha_tech * alpha_army) * army_possible;  // army stock is incorperated on the RHS to save on a calculation.  
-    tech_derivative = alpha_tech * alpha_army * pow(worker_stock, alpha_econ) *              pow(tech_stock, alpha_tech * alpha_army - 1) * pow(army_stock, alpha_army) * tech_possible;
+    tech_derivative = alpha_tech * alpha_army * pow(worker_stock, alpha_econ) * pow(tech_stock, alpha_tech * alpha_army - 1) * pow(army_stock, alpha_army) * tech_possible;
 }
 
 // Identifies the value of our main priority.

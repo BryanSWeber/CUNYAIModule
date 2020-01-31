@@ -21,19 +21,20 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
 constexpr bool PRINT_WD = false; // print a file to the current working directory.
+constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring movement and reatreating.
 
-constexpr bool GENETIC_HISTORY = false; // use hand-crafted genetic history.
+constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
-constexpr bool UNIT_WEIGHTING = false; // under development.
-constexpr bool PY_RF_LEARNING = true; // use the random forest to filter unwanted parameters.
+constexpr bool UNIT_WEIGHTING = true; // under development.
+constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 
 //Cheats:  Like, literal single player cheats.
 constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
@@ -256,8 +257,8 @@ public:
     static int countSuccessorUnits(const UnitType & type, const Unit_Inventory & ui = CUNYAIModule::friendly_player_model.units_);
     // Counts the tally of a particular unit type in a reservation queue.
     static int countUnits(const UnitType &type, const Reservation &res);
-    // Counts the tally of all created units in my personal inventory of that type.
-    static int countUnits(const UnitType & type);
+    // Counts the tally of all created units in my personal inventory of that type
+    static int countUnits(const UnitType &type, bool reservations_included = false);
     // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).
     static int countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const Unitset &unit_set);
     static int countUnitsDoing(const UnitType & type, const UnitCommandType & u_command_type, const Unit_Inventory & ui);

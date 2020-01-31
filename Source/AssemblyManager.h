@@ -70,7 +70,8 @@ public:
     static void getDefensiveWalls();
     // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
-
+    // Check if resources are slack from an army assembly perspective.
+    static bool checkSlackResources();
     //Returns the maximum gas cost of all currently builable units.
     static int getMaxGas();
 };

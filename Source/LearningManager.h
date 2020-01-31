@@ -52,6 +52,8 @@ struct LearningManager {
     int detectors_t0;
 
     map<UnitType,double> unit_weights;
-    int max_value;
+    int max_value_;
+
+    int resetScale(const UnitType ut);
 
 };

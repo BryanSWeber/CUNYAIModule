@@ -354,23 +354,6 @@ void CUNYAIModule::onFrame()
     writePlayerModel(friendly_player_model, "friendly");
     writePlayerModel(enemy_player_model, "enemy");
 
-    //if ((starting_enemy_race == Races::Random || starting_enemy_race == Races::Unknown) && Broodwar->enemy()->getRace() != starting_enemy_race) {
-    //    //Initialize model variables.
-    //    gene_history = GeneticHistory();
-    //    gene_history.initializeHistory();
-
-    //    gas_proportion = gene_history.gas_proportion_out_mutate_; //gas starved parameter. Triggers state if: ln_gas/(ln_min + ln_gas) < gas_proportion;  Higher is more gas.
-    //    supply_ratio = gene_history.supply_ratio_out_mutate_; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
-
-    //                                            //Cobb-Douglas Production exponents.  Can be normalized to sum to 1.
-    //    friendly_player_model.spending_model_.alpha_army = gene_history.a_army_out_mutate_; // army starved parameter.
-    //    friendly_player_model.spending_model_.alpha_econ = gene_history.a_econ_out_mutate_; // econ starved parameter.
-    //    friendly_player_model.spending_model_.alpha_tech = gene_history.a_tech_out_mutate_; // tech starved parameter.
-    //    adaptation_rate = gene_history.r_out_mutate_; //rate of worker growth.
-    //    win_rate = (1 - gene_history.loss_rate_);
-    //    Broodwar->sendText("WHOA! %s is broken. That's a good random.", Broodwar->enemy()->getRace().c_str());
-    //}
-
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
     gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) || 
@@ -455,8 +438,8 @@ void CUNYAIModule::onFrame()
     current_map_inventory.drawExpoPositions();
     current_map_inventory.drawBasePositions();
 
-    if(tech_starved) techmanager.updateTech_Avail();
-    if(army_starved) assemblymanager.updateOptimalCombatUnit();
+    if(tech_starved || techmanager.checkResourceSlack() ) techmanager.updateTech_Avail();
+    if(army_starved || assemblymanager.checkSlackResources()) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 
     if (t_game % FAP_SIM_DURATION == 0) {

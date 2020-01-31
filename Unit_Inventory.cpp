@@ -289,6 +289,7 @@ void Stored_Unit::updateStoredUnit(const Unit &unit) {
     command_ = unit->getLastCommand();
     areaID_ = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
     time_since_last_command_ = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+    angle_ = unit->getAngle();
 
     if (unit->isVisible()) time_since_last_seen_ = 0;
     else time_since_last_seen_++;
@@ -738,14 +739,20 @@ Stored_Unit::Stored_Unit(const UnitType &unittype, const bool &carrierUpgrade, c
 
     //Get unit's status. Precalculated, precached.
 
-    map<UnitType, double>::iterator it = CUNYAIModule::learned_plan.unit_weights.find(unittype);
-    if (it!= CUNYAIModule::learned_plan.unit_weights.end()) {
-        stock_value_ = (CUNYAIModule::learned_plan.unit_weights.at(unittype) + 1.0)/2.0 * CUNYAIModule::learned_plan.max_value; // need to denormalize them, since they are ints everything will round to zero
+    stock_value_ = getGrownWeight(type_, carrierUpgrade, reaverUpgrade);
+    if(stock_value_ == 0 ){
+        stock_value_ = getTraditionalWeight(type_, carrierUpgrade, reaverUpgrade);
     }
-    else{
-        modified_supply_ = unittype.supplyRequired();
-        modified_min_cost_ = unittype.mineralPrice();
-        modified_gas_cost_ = unittype.gasPrice();
+
+    current_stock_value_ = stock_value_; // Precalculated, precached.
+    future_fap_value_ = stock_value_;
+};
+
+int Stored_Unit::getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade, const bool &reaverUpgrade){
+        int modified_supply_ = unittype.supplyRequired();
+        int modified_min_cost_ = unittype.mineralPrice();
+        int modified_gas_cost_ = unittype.gasPrice();
+        int stock_value_ = 0;
 
         if ((unittype.getRace() == Races::Zerg && unittype.isBuilding()) || unittype == UnitTypes::Terran_Bunker) {
             modified_supply_ += 2;
@@ -800,12 +807,23 @@ Stored_Unit::Stored_Unit(const UnitType &unittype, const bool &carrierUpgrade, c
 
         stock_value_ = static_cast<int>(modified_min_cost_ + 1.25 * modified_gas_cost_ + 25 * modified_supply_);
 
-        stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
+        return stock_value_ /= (1 + static_cast<int>(unittype.isTwoUnitsInOneEgg())); // condensed /2 into one line to avoid if-branch prediction.
+}
+
+int Stored_Unit::getGrownWeight(const UnitType unittype, const bool &carrierUpgrade, const bool &reaverUpgrade) {
+    int stock_value_ = CUNYAIModule::learned_plan.resetScale(unittype);
+
+    if (unittype == UnitTypes::Protoss_Carrier) { //Assume carriers are loaded with 4 interceptors.
+        stock_value_ += CUNYAIModule::learned_plan.resetScale(UnitTypes::Protoss_Interceptor) * (4 + 4 * carrierUpgrade);
     }
 
-    current_stock_value_ = stock_value_; // Precalculated, precached.
-    future_fap_value_ = stock_value_;
-};
+    if (unittype == UnitTypes::Protoss_Reaver) { // Assume Reavers are loaded with 5 scarabs unless upgraded
+        stock_value_ += CUNYAIModule::learned_plan.resetScale(UnitTypes::Protoss_Scarab) * (5 + 5 * reaverUpgrade);
+    }
+
+    return stock_value_; // all other features are static features
+}
+
 
 // We must be able to create Stored_Unit objects as well.
 Stored_Unit::Stored_Unit(const Unit &unit) {
@@ -828,6 +846,7 @@ Stored_Unit::Stored_Unit(const Unit &unit) {
     count_of_consecutive_predicted_deaths_ = 0;
     circumference_ = type_.height() * 2 + type_.width() * 2;
     circumference_remaining_ = circumference_;
+    angle_ = unit->getAngle();
 
     shoots_down_ = type_.groundWeapon() != WeaponTypes::None;
     shoots_up_ = type_.airWeapon() != WeaponTypes::None;

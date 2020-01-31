@@ -75,7 +75,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
         target_pos = CUNYAIModule::current_map_inventory.front_line_base_;
     }
 
-    if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = adjust_lurker_burrow(target_pos) || it_worked;
+    if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = prepareLurkerToAttack(target_pos) || it_worked;
 
     if (it_worked && target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange()) {
         forward_movement ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
@@ -216,8 +216,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
         target = pickTarget(temp_max_divable, LowPriority);
     }
 
-    if (target) {
-        if (!adjust_lurker_burrow(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
+    if (target && !DISABLE_ATTACKING) {
+        if (!prepareLurkerToAttack(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
             if (melee && !unit_->isFlying()) { // Attempting surround code.
                 Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
                 permenent_target.circumference_remaining_ -= widest_dim;
@@ -422,7 +422,7 @@ bool Mobility::checkSafeGroundPath(const Position &finish) {
 }
 
 // returns TRUE if the lurker needed fixing. For Attack.
-bool Mobility::adjust_lurker_burrow(const Position position_of_target) {
+bool Mobility::prepareLurkerToAttack(const Position position_of_target) {
     int dist_to_threat_or_target = unit_->getDistance(position_of_target);
     bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
 
@@ -726,6 +726,12 @@ bool Mobility::checkEnemyApproachingUs(Unit e) {
     Position vector_to_me = pos_ - e->getPosition();
     double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
     return checkAngleSimilar(e->getAngle(), angle_to_me);
+}
+
+bool Mobility::checkEnemyApproachingUs(Stored_Unit & e) {
+    Position vector_to_me = pos_ - e.pos_;
+    double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
+    return checkAngleSimilar(e.angle_, angle_to_me);
 }
 
 int getEnemySpeed(Unit e) {

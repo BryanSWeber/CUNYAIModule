@@ -21,6 +21,9 @@ struct Stored_Unit {
     //Creates a steryotyped ideal of the unit. For comparisons.
     Stored_Unit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
 
+    static int getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
+    static int getGrownWeight(const UnitType unittype, const bool & carrierUpgrade, const bool & reaverUpgrade);
+
     // Creates an enemy unit object, an abbreviated version of the original.
     Stored_Unit(const Unit &unit);
     Stored_Unit();
@@ -73,6 +76,7 @@ struct Stored_Unit {
     int areaID_;
     int time_since_last_dmg_;
     bool is_on_island_;
+    double angle_;
 
     enum Phase
     {

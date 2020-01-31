@@ -142,12 +142,12 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ( (!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack) {
+                    if ( (!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Attacking) && prepping_attack && !my_unit->burrowed_) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surroundLogic(e_closest->pos_);
                         }
                         else {
-                            mobility.adjust_lurker_burrow(u->getPosition()); //attacking here exactly should burrow it.
+                            mobility.prepareLurkerToAttack(u->getPosition()); //attacking here exactly should burrow it.
                             return true; // now the lurker should be burrowed.
                         }
                     }

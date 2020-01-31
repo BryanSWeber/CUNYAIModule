@@ -46,6 +46,7 @@ struct Diagnostics {
     static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const Building_Gene & bo);
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
     static void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
+    
 
     //Sends a diagnostic text message, accepts another argument..
     template<typename ...Ts>
@@ -54,7 +55,9 @@ struct Diagnostics {
             Broodwar->sendText(fmt, std::forward<Ts>(vals) ...);
             ofstream output; // Prints to brood war file while in the WRITE file.
             output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
-            output << fmt << endl;
+            output << fmt;
+            ((output << ',' << std::forward<Ts>(vals)), ...);
+            output << endl;
             output.close();
         }
     }

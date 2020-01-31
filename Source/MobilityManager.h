@@ -49,7 +49,7 @@ public:
     //Checks first area for safety.
     bool checkSafeGroundPath(const Position & finish);
 
-    bool adjust_lurker_burrow(const Position position_of_target);
+    bool prepareLurkerToAttack(const Position position_of_target);
 
     // gives a vector that has the direction towards center on (map). returns a direction.
     Position getVectorTowardsMap(const vector<vector<int>>& map) const;
@@ -72,7 +72,9 @@ public:
     Unit pickTarget(int MaxDiveDistance, Unit_Inventory & ui); // selects a target from a unit map. Can return NULL
 
     bool checkGoingDifferentDirections(Unit e);
+
     bool checkEnemyApproachingUs(Unit e);
+    bool checkEnemyApproachingUs(Stored_Unit & e);
 
     Position getVectorToEnemyDestination(Unit e);
 

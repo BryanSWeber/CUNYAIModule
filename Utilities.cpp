@@ -414,15 +414,20 @@ int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
 }
 
 // Counts all units of one type in existance and owned by me. Counts units under construction.
-int CUNYAIModule::countUnits(const UnitType &type)
+int CUNYAIModule::countUnits(const UnitType &type, bool reservations_included)
 {
+    int count = 0;
+    for (auto it : CUNYAIModule::my_reservation.reservation_map_) {
+        if (it.second == type) count++;
+    }
+
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);
     if (c_iter == CUNYAIModule::friendly_player_model.unit_type_.end()) {
-        return 0;
+        return count;
     }
     else {
         int distance = std::distance(CUNYAIModule::friendly_player_model.unit_type_.begin(), c_iter);
-        return CUNYAIModule::friendly_player_model.unit_count_[distance];
+        return CUNYAIModule::friendly_player_model.unit_count_[distance] + count;
     }
 
 }
@@ -1308,7 +1313,7 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     int cd_frames = 0;
 
     if (cd_frames_chosen == 99) {// if default value, then we assume 0 cd frames. This is nearly always the case.
-        cd_frames = 9;
+        cd_frames = 0;
     } 
     else { // if the person has selected some specific delay they are looking for, check that.
         ready_to_move = unit->getLastCommandFrame() < Broodwar->getFrameCount() - cd_frames_chosen;
@@ -1325,32 +1330,35 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
         UnitType u_type = unit->getType();
         //cd_frames = Broodwar->getLatencyFrames();
-        //if (u_type == UnitTypes::Zerg_Drone) {
-        //    cd_frames = 1;
-        //}
-        //else if (u_type == UnitTypes::Zerg_Zergling) {
-        //    cd_frames = 5;
-        //}
-        //else if (u_type == UnitTypes::Zerg_Hydralisk) {
-        //    cd_frames = 7;
-        //}
-        //else if (u_type == UnitTypes::Zerg_Lurker) {
-        //    cd_frames = 2;
-        //}
-        //else if (u_type == UnitTypes::Zerg_Mutalisk) {
-        //    cd_frames = 1;
-        //}
-        //else if (u_type == UnitTypes::Zerg_Ultralisk) {
-        //    cd_frames = 15;
-        //}
+        if (u_type == UnitTypes::Zerg_Drone) {
+            cd_frames = 2;
+        }
+        else if (u_type == UnitTypes::Zerg_Zergling) {
+            cd_frames = 5;
+        }
+        else if (u_type == UnitTypes::Zerg_Hydralisk) {
+            cd_frames = 7;
+        }
+        else if (u_type == UnitTypes::Zerg_Lurker) {
+            cd_frames = 2; // Lurkers take 125 frames to prepare to strike after burrowing.
+        }
+        else if (u_type == UnitTypes::Zerg_Mutalisk || u_type == UnitTypes::Zerg_Guardian) {
+            cd_frames = 1;
+        }
+        else if (u_type == UnitTypes::Zerg_Ultralisk) {
+            cd_frames = 15;
+        }
         //wait_for_cooldown = unit->getGroundWeaponCooldown() > 0 || unit->getAirWeaponCooldown() > 0;
         if (u_type == UnitTypes::Zerg_Devourer) {
-            cd_frames = 28; // this is an INSANE cooldown.
+            cd_frames = 12; // this is an INSANE cooldown.
         }
     }
 
-    if (u_command == UnitCommandTypes::Burrow || u_command == UnitCommandTypes::Unburrow) {
-        cd_frames = 14;
+    if (u_command == UnitCommandTypes::Burrow) {
+        cd_frames = 20 + 125; // LurkerLocal103?
+    }
+    if (u_command == UnitCommandTypes::Unburrow) {
+        cd_frames = 9;
     }
 
     if (u_command == UnitCommandTypes::Morph || u_command == UnitCommandTypes::Build) {

@@ -38,4 +38,6 @@ public:
     static bool canUpgradeCUNY(const UpgradeType type, const bool checkAffordable = false, const Unit &builder = nullptr);
     // a modification of the BWAPI canResearch (canTech in my parlance). Has an option to -exclude- cost. Affordability is min, gas, and supply.
     static bool canTech(TechType type, const bool checkAffordable = false, const Unit &builder = nullptr);
+    // checks if resources are slack for tech - floating minerals or larva are gone.
+    static bool checkResourceSlack();
 };   

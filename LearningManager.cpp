@@ -72,9 +72,9 @@ bool LearningManager::confirmLearningFilesPresent()
     }
     unitweightsFile.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    max_value = 0;
+    max_value_ = 0;
     for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-        max_value = max(max_value, Stored_Unit(u).stock_value_);
+        max_value_ = max(max_value_, Stored_Unit::getTraditionalWeight(u));
     }
 
     //Provide default starting values if there is nothing else to use.
@@ -92,7 +92,7 @@ bool LearningManager::confirmLearningFilesPresent()
 
         string weight_of_units = "";
         for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_) / static_cast<double>(max_value) - 1.0);
+            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_) / static_cast<double>(max_value_) - 1.0);
             weight_of_units += temp + ",";
         }
         weight_of_units += "100";
@@ -596,4 +596,13 @@ void LearningManager::initializeGAUnitWeighting()
         unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));
         pos++;
     }
+}
+
+int LearningManager::resetScale(const UnitType ut)
+{
+    map<UnitType, double>::iterator it = CUNYAIModule::learned_plan.unit_weights.find(ut);
+    if (it != CUNYAIModule::learned_plan.unit_weights.end()) {
+        return (CUNYAIModule::learned_plan.unit_weights.at(ut) + 1.0) / 2.0 * CUNYAIModule::learned_plan.max_value_;
+    }
+    return 0;
 }

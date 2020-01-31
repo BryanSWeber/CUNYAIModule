@@ -473,7 +473,7 @@ int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const P
         int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         int B = map_out_from_enemy_ground_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
-            return abs(A - B);
+            return abs(A - B) * 8;
         }
     }
 
@@ -486,7 +486,7 @@ int Map_Inventory::getRadialDistanceOutFromEnemy(const Position A) const
         WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
         }
     }
 
@@ -502,7 +502,7 @@ int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Po
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         int B = map_out_from_home_[(size_t)wp_b.x][(size_t)wp_b.y];
         if (A > 1 && B > 1) {
-            return abs(A - B);
+            return abs(A - B) * 8;
         }
     }
 
@@ -515,7 +515,7 @@ int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vect
         WalkPosition wp_a = WalkPosition(A);
         int A = map[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
         }
     }
 
@@ -555,7 +555,7 @@ int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const
         WalkPosition wp_a = WalkPosition(A);
         int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
         if (A > 1) {
-            return map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
+            return map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
         }
     }
 
