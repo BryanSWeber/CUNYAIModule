@@ -42,6 +42,12 @@ public:
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken);
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
+
+    static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp);
+    static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp);
+    static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);
+
+    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u);
     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building.
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera);
     // Check and grow a unit using larva.

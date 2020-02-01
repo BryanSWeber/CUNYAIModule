@@ -593,7 +593,16 @@ void CUNYAIModule::onFrame()
         if (u->getType().isWorker()) workermanager.workerWork(u);
         auto end_worker = std::chrono::high_resolution_clock::now();
 
-        //Upgrade loop:
+        detector_time += end_detector - start_detector;
+        worker_time += end_worker - start_worker;
+        combat_time += end_combat - start_combat;
+    } // closure: unit iterator
+
+    //Upgrade loop- happens AFTER buildings.
+    for (auto &u : Broodwar->self()->getUnits())
+    {
+        if (!checkUnitTouchable(u)) continue; // can we mess with it at all?
+        UnitType u_type = u->getType();
         auto start_upgrade = std::chrono::high_resolution_clock::now();
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
         //Upgrades only occur on a specific subtype of units.
@@ -604,13 +613,8 @@ void CUNYAIModule::onFrame()
             //PrintError_Unit( u );
         }
         auto end_upgrade = std::chrono::high_resolution_clock::now();
-
-        detector_time += end_detector - start_detector;
-        worker_time += end_worker - start_worker;
-        combat_time += end_combat - start_combat;
         upgrade_time += end_upgrade - start_upgrade;
-    } // closure: unit iterator
-
+    }
 
     auto end = std::chrono::high_resolution_clock::now();
     total_frame_time = end - start_playermodel;

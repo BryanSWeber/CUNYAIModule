@@ -49,66 +49,51 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             CUNYAIModule::countUnits(UnitTypes::Zerg_Lair, local_area) > 0 ||
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hive, local_area) > 0;
 
+        TilePosition tileOfClosestBase = TilePositions::Origin;
+        Base nearest_base = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition());
+
+        if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
+            tileOfClosestBase = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_->getTilePosition();
+        }
+        else {
+            tileOfClosestBase = unit->getTilePosition();
+        }
+
+        map<int, TilePosition> viable_placements = {};
+
         //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
         if (unit->getType().isBuilding() && unit->morph(building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
             return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
         }
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
-            auto danger_hatch = CUNYAIModule::getClosestStored(production_facility_bank_, CUNYAIModule::current_map_inventory.enemy_base_ground_, 9999999);
-            auto build_tile = CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ? TilePosition(danger_hatch->pos_) : unit->getTilePosition();
 
-            if (!CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                auto closest_wall = BWEB::Walls::getClosestWall(build_tile);
-                if (closest_wall) {
-                    for (auto &tile : closest_wall->getDefenses()) {
-                        if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
-                            unit->stop();
-                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                        }
-                    }
-                }
-            }
+            //Do the nearest wall if it is for ground.
+            map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+            if (nearest_base.emergency_sunken_ && !wall_spots.empty())
+                viable_placements.insert(wall_spots.begin(), wall_spots.end());
+            if (buildAtNearestPlacement(building, viable_placements, unit))
+                return true;
 
-            // simply attempt this if the previous did not find.
-            auto closest_station = BWEB::Stations::getClosestStation(build_tile);
-            if (closest_station && (closest_station->getDefenseLocations().size() > 1 || CUNYAIModule::friendly_player_model.u_have_active_air_problem_)) {
-                for (auto &tile : closest_station->getDefenseLocations()) {
-                    if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
-                        unit->stop();
-                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                    }
-                }
-            }
 
-            map<int, set<TilePosition>> viable_placements;
+            // simply attempt the nearest station if the previous did not find.
+            map<int, TilePosition> station_spots = addClosestStation(building, tileOfClosestBase);
+            if (!station_spots.empty())
+                viable_placements.insert(station_spots.begin(), station_spots.end());
+            if (buildAtNearestPlacement(building, viable_placements, unit))
+                return true;
+
             //Otherwise, use blocks.
-            for (auto block : BWEB::Blocks::getBlocks()) {
-                set<TilePosition> placements;
-                if (building.tileSize() == TilePosition{ 2,2 })
-                    placements = block.getSmallTiles();
-                if (!placements.empty()) {
-                    viable_placements.insert({ static_cast<int>(unit->getTilePosition().getDistance(block.getTilePosition())), placements });
-                }
-            }
-            for (auto good_block : viable_placements) { // should automatically search by distance.
-                for (auto &tile : good_block.second) {
-                    if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) { // bug is here, need to build and reserve at the same time.
-                        CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                        unit->stop();
-                        return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                    }
-                }
-            }
+            map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+            if (!block_spots.empty())
+                viable_placements.insert(block_spots.begin(), block_spots.end());
+            if (buildAtNearestPlacement(building, viable_placements, unit))
+                return true;
 
         }
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
             Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
             if (closest_gas && closest_gas->occupied_resource_ && closest_gas->bwapi_unit_) {
-                //TilePosition buildPosition = closest_gas->bwapi_unit_->getTilePosition();
-                //TilePosition buildPosition = CUNYAIModule::getBuildablePosition(TilePosition(closest_gas->pos_), building, 5);  // Not viable for extractors
                 TilePosition tile = Broodwar->getBuildLocation(building, TilePosition(closest_gas->pos_), 5);
                 if (CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object, the geyser.
                     CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -122,114 +107,36 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             }
         }
         else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
-            map<int, TilePosition> viable_placements;
 
-            //for (auto tile : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
-            //    int plength;
-            //    auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-            //    if (plength)
-            //        viable_placements.insert({ plength, tile });
-            //}
-
-            auto closest_wall = BWEB::Walls::getClosestWall(unit->getTilePosition());
-            if (closest_wall && CUNYAIModule::basemanager.getBaseCount() >= 2 ) {
-                set<TilePosition> wall_placements;
-                 wall_placements = closest_wall->getLargeTiles();
-                if (!wall_placements.empty()) {
-                    for (auto &tile : wall_placements) {
-                        int plength = 0;
-                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-                        if (plength > 0)
-                            viable_placements.insert({ plength, tile });
-                    }
-                }
-            }
-
-            //Otherwise, use blocks.
-            for (auto block : BWEB::Blocks::getBlocks()) {
-                set<TilePosition> block_placements;
-                block_placements = block.getLargeTiles();
-                if (!block_placements.empty()) {
-                    for (auto &tile : block_placements) {
-                        int plength = 0;
-                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(tile), &plength);
-                        if (plength > 0)
-                            viable_placements.insert({ plength, tile });
-                    }
-                }
-            }
-
-            for (auto good_tile : viable_placements) { // should automatically search by distance.
-                if (isPlaceableCUNY(building, good_tile.second) && CUNYAIModule::my_reservation.addReserveSystem(good_tile.second, building)) {
-                    CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                    unit->stop();
-                    return CUNYAIModule::updateUnitBuildIntent(unit, building, good_tile.second);
-                }
-            }
+            //walls or blocks are equally good for macro hatches.
+            map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+            if (!wall_spots.empty())
+                viable_placements.insert(wall_spots.begin(), wall_spots.end());
+            map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+            if (!block_spots.empty())
+                viable_placements.insert(block_spots.begin(), block_spots.end());
+            if (buildAtNearestPlacement(building, viable_placements, unit))
+                return true;
 
         }
         else if (canMakeCUNY(building, false, unit)) {
             if (CUNYAIModule::checkSafeBuildLoc(unit_pos)) {
 
-                map<int, set<TilePosition>> viable_placements;
+               // We want walls first before anywhere else.
+               map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
+               if (!wall_spots.empty())
+                   viable_placements.insert(wall_spots.begin(), wall_spots.end());
+               if (buildAtNearestPlacement(building, viable_placements, unit))
+                   return true;
 
-                //check walls first
-                auto closest_wall = BWEB::Walls::getClosestWall(TilePosition(CUNYAIModule::current_map_inventory.enemy_base_ground_));
-                if (closest_wall) {
-                    set<TilePosition> placements;
-                    if (building.tileSize() == TilePosition{ 2,2 })
-                        placements = closest_wall->getSmallTiles();
-                    else if (building.tileSize() == TilePosition{ 3 , 2 })
-                        placements = closest_wall->getMediumTiles();
-                    else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        placements = closest_wall->getLargeTiles();
-                    if (!placements.empty()) {
-                        for (auto &tile : placements) {
-                            if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                                CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                                return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                            }
-                        }
-                    }
-                }
+               // Then try a block,
+               map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+               if (!block_spots.empty())
+                   viable_placements.insert(block_spots.begin(), block_spots.end());
+               if (buildAtNearestPlacement(building, viable_placements, unit))
+                   return true;
 
-                //Otherwise, use blocks.
-                for (auto block : BWEB::Blocks::getBlocks()) {
-                    set<TilePosition> placements;
-                    set<TilePosition> backup_placements;
-                    if (building.tileSize() == TilePosition{ 2,2 })
-                        placements = block.getSmallTiles();
-                    else if (building.tileSize() == TilePosition{ 3 , 2 }) { // allow to build medium tile at large blocks that are not walls. If you need a building, you *need* it.
-                        placements = block.getMediumTiles();
-                        backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks.
-                    }
-                    else if (building.tileSize() == TilePosition{ 4 , 3 })
-                        placements = block.getLargeTiles();
-                    if (!placements.empty()) {
-                        int plength;
-                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(block.getTilePosition()), &plength);
-                        if (plength)
-                            viable_placements.insert({ plength, placements });
-                    }
-                    if (!backup_placements.empty()) {
-                        int plength;
-                        auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(block.getTilePosition()), &plength);
-                        if (plength)
-                            viable_placements.insert({ plength, backup_placements });
-                    }
-                }
-
-                for (auto good_block : viable_placements) { // should automatically search by distance.
-                    for (auto &tile : good_block.second) {
-                        if (isPlaceableCUNY(building, tile) && CUNYAIModule::my_reservation.addReserveSystem(tile, building)) {
-                            CUNYAIModule::buildorder.announceBuildingAttempt(building);
-                            unit->stop();
-                            return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
-                        }
-                    }
-                }
             }
-
         }
     }
 
@@ -426,6 +333,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool upgrade_worth_melee = CUNYAIModule::friendly_player_model.units_.ground_melee_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Zergling).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0; // first upgrade is +1
     bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
 
+    // For extra upgrades:
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         Broodwar->self()->gas() > 100 * CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) &&
@@ -440,7 +348,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
         Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_spires_ || count_of_spire_decendents == 0) &&
+        (!have_idle_spires_ && count_of_spire_decendents >= 1) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings);
 
@@ -670,6 +578,106 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
             Diagnostics::DiagnosticText("%s, score: %d", s.first.c_str(), s.second);
         }
         return true;
+    }
+    return false;
+}
+
+map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building, const TilePosition &tp)
+{
+    map<int, TilePosition> viable_placements = {};
+
+    //check walls first
+    auto closest_wall = BWEB::Walls::getClosestWall(tp);
+    if (closest_wall) {
+        set<TilePosition> placements;
+        if (building.tileSize() == TilePosition{ 2,2 })
+            placements = closest_wall->getSmallTiles();
+        else if (building.tileSize() == TilePosition{ 3 , 2 })
+            placements = closest_wall->getMediumTiles();
+        else if (building.tileSize() == TilePosition{ 4 , 3 })
+            placements = closest_wall->getLargeTiles();
+        if (!placements.empty()) {
+            for (auto &tile : placements) {
+                int plength = 0;
+                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
+                if (plength > 0)
+                    viable_placements.insert({ plength, tile });
+            }
+        }
+    }
+    return viable_placements;
+}
+
+map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & building, const TilePosition & tp)
+{
+
+    map<int, TilePosition> viable_placements = {};
+
+    // Get each block
+    for (auto block : BWEB::Blocks::getBlocks()) {
+
+        set<TilePosition> placements;
+        set<TilePosition> backup_placements;
+
+        //For each block get all placements
+        if (building.tileSize() == TilePosition{ 2,2 })
+            placements = block.getSmallTiles();
+        else if (building.tileSize() == TilePosition{ 3 , 2 }) { // allow to build medium tile at large blocks that are not walls. If you need a building, you *need* it.
+            placements = block.getMediumTiles();
+            backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks.
+        }
+        else if (building.tileSize() == TilePosition{ 4 , 3 })
+            placements = block.getLargeTiles();
+
+        // If there's a good placement, let's use it.
+        if (!placements.empty()) {
+            for (auto &tile : placements) {
+                int plength  = 0;
+                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(block.getTilePosition()), &plength);
+                if (plength > 0)
+                    viable_placements.insert({ plength, tile });
+            }
+        }
+        // Otherwise, let's fall back on the backup placements
+        else if (!backup_placements.empty()) {
+            for (auto &tile : placements) {
+                int plength = 0;
+                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(block.getTilePosition()), &plength);
+                if (plength > 0)
+                    viable_placements.insert({ plength, tile });
+            }
+        }
+    }
+
+    return viable_placements;
+}
+
+//The distance from the station doesn't make much sense since they all are within 1 tile of the station.
+map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & building, const TilePosition & tp)
+{
+    map<int, TilePosition> viable_placements = {};
+
+    auto closest_station = BWEB::Stations::getClosestStation(tp);
+    if (closest_station) {
+        for (auto &tile : closest_station->getDefenseLocations()) {
+            int plength = 0;
+            auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tp), &plength);
+            if (plength > 0)
+                viable_placements.insert({ plength, tile });
+        }
+    }
+
+    return viable_placements;
+}
+
+bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u)
+{
+    for (auto good_block : placements) { // should automatically search by distance.
+        if (isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
+            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+            u->stop();
+            return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
+        }
     }
     return false;
 }
