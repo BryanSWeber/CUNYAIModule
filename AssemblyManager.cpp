@@ -38,7 +38,7 @@ bool AssemblyManager::subgoal_army_ = false;
 std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_unit_cartridge_;
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
-bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera)
+bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
     if (CUNYAIModule::checkDesirable(unit, building, extra_critera, 96)) { // assume you have to walk 3 tiles.
         Position unit_pos = unit->getPosition();
@@ -49,14 +49,16 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             CUNYAIModule::countUnits(UnitTypes::Zerg_Lair, local_area) > 0 ||
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hive, local_area) > 0;
 
-        TilePosition tileOfClosestBase = TilePositions::Origin;
+        TilePosition tileOfClosestBase = tp;
         Base nearest_base = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition());
 
-        if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
-            tileOfClosestBase = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_->getTilePosition();
-        }
-        else {
-            tileOfClosestBase = unit->getTilePosition();
+        if (tileOfClosestBase == TilePositions::Origin) {
+            if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
+                tileOfClosestBase = CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_->getTilePosition();
+            }
+            else {
+                tileOfClosestBase = unit->getTilePosition();
+            }
         }
 
         map<int, TilePosition> viable_placements = {};
@@ -230,7 +232,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0) || (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100);  // upgrade if resources are slack, you're tech starved, or there are no valid larva expendatures.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
-    bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery);
+    bool one_tech_per_base = CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) /*+ Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect)*/ + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern) < CUNYAIModule::basemanager.getBaseCount();
     bool can_upgrade_colonies = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0) ||
         (CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0); // There is a building complete that will allow either creep colony upgrade.
     bool nearby_enemy = CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
@@ -287,20 +289,20 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
-            CUNYAIModule::current_map_inventory.hatches_ > 1);
+            CUNYAIModule::basemanager.getBaseCount() > 1);
     }
 
     //Muta or lurker for main body of units. Short-circuit for lurkers if they have no detection. Build both if hive is present.
     if (prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0) { 
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hydralisk_Den, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) == 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
+            CUNYAIModule::basemanager.getBaseCount() >= 2);
     }
     if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 2);
+            CUNYAIModule::basemanager.getBaseCount() >= 2);
     }
 
     //For getting to hive: See techmanager for hive, it will trigger after queens nest is built!
@@ -309,7 +311,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
             CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
             (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
-            CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
+            CUNYAIModule::basemanager.getBaseCount() >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
     }
 
     //For your capstone tech:
@@ -318,14 +320,14 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Ultralisk_Cavern, drone, upgrade_bool && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true) == 0 &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) >= 0 &&
-                CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
+                CUNYAIModule::basemanager.getBaseCount() >= 3);
         }
         if (returnUnitRank(UnitTypes::Zerg_Guardian) == r || returnUnitRank(UnitTypes::Zerg_Devourer) == r || returnUnitRank(UnitTypes::Zerg_Mutalisk) == r) {
             if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
                 CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) == 0 &&
                 CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-                CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3);
+                CUNYAIModule::basemanager.getBaseCount() >= 3);
         }
     }
 
@@ -341,7 +343,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (!have_idle_evos_ || CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0) &&
         (upgrade_worth_melee || upgrade_worth_ranged) &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings);
+        CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&
         count_of_spire_decendents < number_of_spires_wanted &&
@@ -350,13 +352,13 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (!have_idle_spires_ && count_of_spire_decendents >= 1) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings);
+        CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
+        CUNYAIModule::basemanager.getBaseCount() >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
     Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
     morphing_unit.updateStoredUnit(drone); // don't give him a phase.

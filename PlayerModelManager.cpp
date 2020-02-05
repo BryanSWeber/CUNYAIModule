@@ -23,15 +23,19 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     //Update Researches
     researches_.updateResearch(other_player);
 
-    evaluatePotentialArmyExpenditures(); // how much is being bought?
+    evaluatePotentialUnitExpenditures(); // how much is being bought?
     evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
-    evaluatePotentialWorkerCount();
-    int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
-    int estimated_worker_stock = static_cast<int>(round(estimated_workers_) * worker_value);
-    //if (other_player->isEnemy(Broodwar->self())) Broodwar->printf("%3.0f, %3.3f", estimated_bases_, estimated_workers_);
-    evaluateCurrentWorth(); // how much do they appear to have?
 
-    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock);
+    evaluateCurrentWorth(); // how much do they appear to have?
+    if (unseen_units_.at(bwapi_player_->getRace().getWorker()))
+        estimated_workers_ = units_.worker_count_ + unseen_units_.at(bwapi_player_->getRace().getWorker());
+    else
+        estimated_workers_ = units_.worker_count_;
+
+    int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
+    int estimated_worker_stock_ = estimated_workers_ * worker_value;
+
+    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock_);
     spending_model_.storeStocks(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_* worker_value);
 
     updatePlayerAverageCD();
@@ -54,11 +58,11 @@ void Player_Model::updateSelfOnFrame()
     //Update Researches
     researches_.updateResearch(Broodwar->self());
 
-    int worker_value = Stored_Unit(UnitTypes::Zerg_Drone).stock_value_;
+    int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
     spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
-        if (Broodwar->elapsedTime() % 15 == 0) {
+        if (Broodwar->getFrameCount() % (30 * 24) == 0) {
             //Update existing CD functions to more closely mirror opponent. Do every 15 sec or so.
             if (!CUNYAIModule::enemy_player_model.units_.unit_map_.empty()) {
                 spending_model_.enemy_mimic(CUNYAIModule::enemy_player_model, CUNYAIModule::adaptation_rate);
@@ -96,176 +100,196 @@ void Player_Model::updateSelfOnFrame()
 void Player_Model::imputeUnits(const Unit &unit)
 {
     Stored_Unit eu = Stored_Unit(unit);
+    int temp_estimated_unseen_army_ = 0;
 
-    for (auto u : imputedUnits_.unit_map_) {
-        if (u.second.type_ == eu.type_) {
-            imputedUnits_.removeStored_Unit(u.first); // if we've imputed that type, and we just discovered it, let's remove one.
-            break;
+    //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistend error. Otherwise I have to remove Y itself or guess.
+    auto matching_unseen_units = unseen_units_.find(eu.type_);
+    if (matching_unseen_units != unseen_units_.end())
+        unseen_units_.at(eu.type_)--; // reduce the count of this unite by one.
+    else {
+        auto alternative_uts = findAlternativeProducts(eu.type_);
+        for (auto ut : alternative_uts) {
+            auto mistakenly_assumed_produced = unseen_units_.find(ut);
+            if (mistakenly_assumed_produced != unseen_units_.end() && mistakenly_assumed_produced->second >= static_cast<double>(eu.type_.buildTime()) / static_cast<double>(mistakenly_assumed_produced->first.buildTime()) ) {
+                mistakenly_assumed_produced->second -= static_cast<double>(eu.type_.buildTime()) / static_cast<double>(mistakenly_assumed_produced->first.buildTime());
+                break;
+            }
         }
     }
 
-    if (CUNYAIModule::isFightingUnit(unit->getType())) {
-        estimated_unseen_army_ -= eu.stock_value_;
-        estimated_unseen_ground_ -= eu.stock_value_ * !eu.is_flying_;
-        estimated_unseen_flyers_ -= eu.stock_value_ * eu.is_flying_;
+    //Check if we have overdrafted our units.
+    for (auto ut : unseen_units_) {
+        if (CUNYAIModule::isFightingUnit(ut.first)) {
+            temp_estimated_unseen_army_ += Stored_Unit(ut.first).stock_value_ * ut.second;
+        }
     }
 
-    if (estimated_unseen_army_ < 0) {
-
+    //insert some unseen units if we have overdrafted.
+    if (temp_estimated_unseen_army_ < 0) {
         UnitType expected_producer = UnitTypes::None;
-
         if (eu.type_.whatBuilds().first.isBuilding()) {
             Stored_Unit imputed_unit = Stored_Unit(eu.type_.whatBuilds().first);
             imputed_unit.time_first_observed_ = eu.type_.buildTime(); // it must be at least old enough to build it.
-            imputedUnits_.unit_map_.insert({ unit , imputed_unit }); // note this map is not how I typically create them!
+            incrementUnseenUnits(imputed_unit.type_);
             expected_producer = eu.type_.whatBuilds().first;
         }
         if (eu.type_.whatBuilds().first == UnitTypes::Zerg_Larva) {
             Stored_Unit imputed_unit = UnitTypes::Zerg_Hatchery;
-            imputed_unit.time_first_observed_ = eu.type_.buildTime();
-            imputedUnits_.unit_map_.insert({ unit ,  imputed_unit });
+            imputed_unit.time_first_observed_ = eu.type_.buildTime() + LARVA_BUILD_TIME;
+            incrementUnseenUnits(imputed_unit.type_);
             expected_producer = UnitTypes::Zerg_Hatchery;
         }
 
         // This buffer is pretty critical. How much production has been made from the unseen facility?
         int longest_known_unit = 0;
         for (auto u : units_.unit_map_) {
-            if (u.second.type_ == expected_producer) {
+            if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
                 longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
             }
         }
 
-        for (auto u : imputedUnits_.unit_map_) {
-            if (u.second.type_ == expected_producer) {
+        for (auto u : casualties_.unit_map_) {
+            if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
                 longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
             }
         }
 
-        estimated_unseen_army_ = eu.stock_value_ / static_cast<double>(eu.type_.buildTime()) * max(longest_known_unit, eu.type_.buildTime());
+        UnitType the_worst_unit = getWorstProduct(expected_producer);
+        double maximum_possible_missed_product = static_cast<double>(max(longest_known_unit, eu.type_.buildTime())) / static_cast<double>(eu.type_.buildTime());
+        if (the_worst_unit != UnitTypes::None) {
+            //Add it to the simply map tallying enemy units.
+            auto found = unseen_units_.find(the_worst_unit);
+            if (found != unseen_units_.end())
+                unseen_units_[the_worst_unit] += maximum_possible_missed_product;
+            else
+                unseen_units_.insert({ the_worst_unit , maximum_possible_missed_product });
+        }
     }
-
-    estimated_unseen_army_ = max(estimated_unseen_army_, 0.0);
-    estimated_unseen_flyers_ = max(estimated_unseen_flyers_, 0.0);
-    estimated_unseen_ground_ = max(estimated_unseen_ground_, 0.0);
 }
 
+void Player_Model::incrementUnseenUnits(const UnitType & ut)
+{
+    auto matching_unseen_units = unseen_units_.find(ut);
+    if (matching_unseen_units != unseen_units_.end())
+        unseen_units_.at(ut)++; // reduce the count of this unite by one.
+    else {
+        unseen_units_.insert({ ut, 1 });
+    }
+}
 
-void Player_Model::evaluatePotentialWorkerCount() {
+void Player_Model::decrementUnseenUnits(const UnitType & ut)
+{
+    auto matching_unseen_units = unseen_units_.find(ut);
+    if (matching_unseen_units != unseen_units_.end())
+        unseen_units_.at(ut)--; // reduce the count of this unite by one.
+}
+
+double Player_Model::countUnseenUnits(const UnitType & ut)
+{
+    auto matching_unseen_units = unseen_units_.find(ut);
+    if (matching_unseen_units != unseen_units_.end())
+        return unseen_units_.at(ut); // reduce the count of this unite by one.
+    return 0.0;
+}
+
+//void Player_Model::evaluatePotentialWorkerCount() {
+//
+//    if (Broodwar->getFrameCount() == 0) {
+//        estimated_workers_ = 4;
+//    }
+//    else {
+//        int count_of_occupied_bases = 0;
+//        int bases_in_start_positions = 0;
+//        for (auto & a : BWEM::Map::Instance().Areas()) {
+//            bool found_a_base = false;
+//            if (!units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty() && !a.Bases().empty()) {
+//                count_of_occupied_bases++;
+//                found_a_base = true;
+//            }
+//            if (found_a_base) {
+//                for (auto start_pos : CUNYAIModule::current_map_inventory.start_positions_) {
+//                    if (BWEM::Map::Instance().GetArea(TilePosition(start_pos))->Id() == a.Id()) {
+//                        bases_in_start_positions++;
+//                    }
+//                }
+//            }
+//        }
+//        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
+//        count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
+//        estimated_bases_ = static_cast<double>(max(units_.resource_depot_count_, count_of_occupied_bases));
+//        //double functional_worker_cap = static_cast<double>(estimated_bases_ * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
+//
+//        //estimated_workers_ += static_cast<double>(estimated_bases_) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
+//        //estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
+//        //estimated_workers_ = min(estimated_workers_, static_cast<double>(85)); // there exists a maximum reasonable number of workers.
+//
+//
+//    }
+//    //estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
+//}
+
+void Player_Model::evaluatePotentialUnitExpenditures() {
+    int temp_estimated_unseen_supply_ = 0;
+    int temp_estimated_unseen_army_ = 0;
+    int temp_estimated_unseen_flyers_ = 0;
+    int temp_estimated_unseen_ground_ = 0;
+    int temp_estimated_worker_supply = 0;
+    int temp_estimated_army_supply = 0;
 
     if (Broodwar->getFrameCount() == 0) {
-        estimated_workers_ = 4;
+        for(int i = 0; i < 4; i++)
+        incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // at game start there are 4 workers.
+        incrementUnseenUnits(bwapi_player_->getRace().getCenter()); // there is also one base.
+    }
+
+    if (countUnseenUnits(bwapi_player_->getRace().getCenter()) <= 0) 
+        incrementUnseenUnits(bwapi_player_->getRace().getCenter()); // there is always one base.
+    if (countUnseenUnits(bwapi_player_->getRace().getWorker()) <= 0)
+        incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // there is always one worker.
+
+    //consider how the production of the enemy you can see.
+    considerWorstUnseenProducts(units_);
+    //consider how the production of the enemy you imagine.
+    considerWorstUnseenProducts(unseen_units_);
+
+    for (auto ut : unseen_units_) {
+        temp_estimated_unseen_supply_ += ut.first.supplyRequired() * ut.second;
+        if (CUNYAIModule::isFightingUnit(ut.first)) {
+            temp_estimated_army_supply += ut.first.supplyRequired() * ut.second;
+            temp_estimated_unseen_army_ += Stored_Unit(ut.first).stock_value_ * ut.second;
+            temp_estimated_unseen_flyers_ += Stored_Unit(ut.first).stock_value_ * ut.first.isFlyer() * ut.second;
+            temp_estimated_unseen_ground_ += Stored_Unit(ut.first).stock_value_ * !ut.first.isFlyer() * ut.second;
+        }
+        if (ut.first.isWorker()) {
+            temp_estimated_worker_supply += ut.first.supplyRequired() * ut.second;
+        }
+    }
+
+    double remaining_supply_capacity = (400 - units_.total_supply_);
+    double army_proportion = temp_estimated_army_supply / static_cast<double>(temp_estimated_army_supply + temp_estimated_worker_supply);
+    double worker_proportion = temp_estimated_worker_supply / static_cast<double>(temp_estimated_army_supply + temp_estimated_worker_supply);
+
+    if (temp_estimated_unseen_supply_ > remaining_supply_capacity) {
+        estimated_unseen_army_ = max(army_proportion * remaining_supply_capacity, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
+        estimated_workers_ = max((worker_proportion * remaining_supply_capacity) / bwapi_player_->getRace().getWorker().supplyRequired(), 0.0); //Their unseen workers is the proportion of remaining units that are not army.
+
+        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(estimated_unseen_army_) * remaining_supply_capacity, 0.0); //Their unseen fliers remain proportional
+        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(estimated_unseen_army_) * remaining_supply_capacity, 0.0); //Their unseen ground remains proportional
     }
     else {
-        int count_of_occupied_bases = 0;
-        int bases_in_start_positions = 0;
-        for (auto & a : BWEM::Map::Instance().Areas()) {
-            bool found_a_base = false;
-            if (!units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty() && !a.Bases().empty()) {
-                count_of_occupied_bases++;
-                found_a_base = true;
-            }
-            if (found_a_base) {
-                for (auto start_pos : CUNYAIModule::current_map_inventory.start_positions_) {
-                    if (BWEM::Map::Instance().GetArea(TilePosition(start_pos))->Id() == a.Id()) {
-                        bases_in_start_positions++;
-                    }
-                }
-            }
-        }
-        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
-        count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
-        estimated_bases_ = static_cast<double>(max(units_.resource_depot_count_, count_of_occupied_bases));
-        double functional_worker_cap = static_cast<double>(estimated_bases_ * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
-
-        estimated_workers_ += static_cast<double>(estimated_bases_) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
-        estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
-
-    }
-    estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
-}
-
-void Player_Model::evaluatePotentialArmyExpenditures() {
-    double value_possible_ = 0;
-    double value_possible_per_frame_ = 0;
-    double value_possible_fliers_ = 0;
-    double value_possible_fliers_per_frame_ = 0;
-
-    //consider how much of the enemy you can see.
-    for (auto i : units_.unit_map_) {
-
-        double value_holder_ = 0;
-        double value_holder_flyer_ = 0;
-
-        // These are possible troop expenditures.
-        if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
-            continue;
-        }
-        else if (i.second.type_.producesLarva()) {
-            for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
-                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
-                }
-            }
-
-            value_possible_per_frame_ += value_holder_;
-            value_possible_fliers_per_frame_ += value_holder_flyer_;
-        }
-        else {
-            for (auto p : i.second.type_.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
-                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
-                }
-            }
-            value_possible_per_frame_ += value_holder_;
-            value_possible_fliers_per_frame_ += value_holder_flyer_;
-        }
+        estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0);
+        estimated_workers_ = max(temp_estimated_worker_supply / bwapi_player_->getRace().getWorker().supplyRequired(), 0);
+        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_, 0);
+        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_, 0);
     }
 
-    //consider how much of the enemy you imagine. Note you cannot combine these two maps since the KEY for the imputed units is the unit which triggered the imputation and deletions may occur.
-    for (auto i : imputedUnits_.unit_map_) {
 
-        double value_holder_ = 0;
-        double value_holder_flyer_ = 0;
-
-        // These are possible troop expenditures.
-        if (i.second.type_ == UnitTypes::Zerg_Larva || i.second.type_.isWorker()) {
-            continue;
-        }
-        else if (i.second.type_.producesLarva()) {
-            for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
-                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
-                }
-            }
-
-            value_possible_per_frame_ += value_holder_;
-            value_possible_fliers_per_frame_ += value_holder_flyer_;
-        }
-        else {
-            for (auto p : i.second.type_.buildsWhat()) {
-                if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
-                    value_holder_ = max(value_holder_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
-                    value_holder_flyer_ = max(value_holder_ * p.isFlyer(), value_holder_flyer_); // is the priciest unit a flier?
-                }
-            }
-            value_possible_per_frame_ += value_holder_;
-            value_possible_fliers_per_frame_ += value_holder_flyer_;
-        }
+    if (Broodwar->getFrameCount() % (60 * 24) == 0) {
+        Diagnostics::DiagnosticText("What do we think is happening behind the scenes?");
+        for (auto ut : unseen_units_)
+            Diagnostics::DiagnosticText("They have %4.2f of %s", ut.second, ut.first.c_str());
+        Diagnostics::DiagnosticText("I count an unused supply of %4.2f and imagine units taking %4.2f supply", remaining_supply_capacity, temp_estimated_unseen_supply_);
     }
-
-    estimated_unseen_army_per_frame_ = value_possible_per_frame_;
-    estimated_unseen_army_ += value_possible_per_frame_;
-    estimated_unseen_flyers_ += value_possible_fliers_per_frame_;
-    estimated_unseen_ground_ += value_possible_per_frame_ - value_possible_fliers_per_frame_;
-
-    estimated_unseen_army_ = max(min(estimated_unseen_army_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
-    estimated_unseen_flyers_ = max(min(estimated_unseen_flyers_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
-    estimated_unseen_ground_ = max(min(estimated_unseen_ground_, units_.stock_fighting_total_ / static_cast<double>(units_.total_supply_) * (400 - units_.total_supply_)), 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
-
-    //estimated_unseen_army_ = max(estimated_unseen_army_, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
 }
 
 void Player_Model::evaluatePotentialTechExpenditures() {
@@ -417,15 +441,118 @@ void Player_Model::evaluateCurrentWorth()
     }
 }
 
+//Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This includes depots producing workers.
+void Player_Model::considerWorstUnseenProducts(const Unit_Inventory &ui)
+{
+    for (auto i : ui.unit_map_) {
+
+        UnitType the_worst_unit = getWorstProduct(i.second.type_);
+
+        if (the_worst_unit != UnitTypes::None) {
+            //Add it to the simply map tallying enemy units.
+            auto found = unseen_units_.find(the_worst_unit);
+            if (found != unseen_units_.end())
+                unseen_units_[the_worst_unit] += 1.0 / static_cast<double>(max(the_worst_unit.buildTime(), 1));
+            else
+                unseen_units_.insert({ the_worst_unit , 1.0 / static_cast<double>(max(the_worst_unit.buildTime(),1)) });
+        }
+    }
+}
+
+
+//Takes an unseen unit map and increments the unseen_units map as if everything in the unit map was producing.  This includes depots producing workers.
+void Player_Model::considerWorstUnseenProducts(const map< UnitType, double>  &ui)
+{
+    for (auto i : ui) {
+
+        UnitType the_worst_unit = getWorstProduct(i.first);
+
+        if (the_worst_unit != UnitTypes::None) {
+            //Add it to the simply map tallying enemy units.
+            auto found = unseen_units_.find(the_worst_unit);
+            if (found != unseen_units_.end())
+                unseen_units_[the_worst_unit] += 1.0 / static_cast<double>(max(the_worst_unit.buildTime(), 1));
+            else
+                unseen_units_.insert({ the_worst_unit , 1.0 / static_cast<double>(max(the_worst_unit.buildTime(),1)) });
+        }
+    }
+}
+
+//Assumes each unit produces the worst possible output of whatever type it can make. This includes depots producing workers.
+UnitType Player_Model::getWorstProduct(const UnitType &ut) {
+    map< UnitType, double> value_holder_;
+
+    // These are possible troop expenditures. find the "worst" one they could make.
+    if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk) {
+        //Do nothing.
+    }
+    else if (ut.producesLarva()) {
+        for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+                value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+            }
+        }
+    }
+    else {
+        for (auto p : ut.buildsWhat()) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+                value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+            }
+        }
+    }
+
+    //Assume they're making that one.
+    double max_value = 0.0;
+    UnitType the_worst_unit = UnitTypes::None;
+    for (auto v : value_holder_) {
+        if (v.second > max_value) {
+            the_worst_unit = v.first;
+        }
+    }
+
+    //Workers are made automatically.
+    if (ut.isResourceDepot()) {
+        the_worst_unit = ut.getRace().getWorker();
+    }
+
+    return the_worst_unit;
+}
+
+vector<UnitType> Player_Model::findAlternativeProducts(const UnitType & ut)
+{
+    vector<UnitType> possible_products;
+
+    UnitType creatorUnit = ut.whatBuilds().first;
+    // These are possible troop expenditures. find the "worst" one they could make.
+    if (creatorUnit == UnitTypes::Zerg_Larva) {
+        for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+                possible_products.push_back(p); // assume the largest of these. (worst for me, risk averse).
+            }
+        }
+    }
+    else {
+        for (auto p : creatorUnit.buildsWhat()) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+                possible_products.push_back(p); // assume the largest of these. (worst for me, risk averse).
+            }
+        }
+    }
+
+    return vector<UnitType>();
+}
+
 bool Player_Model::opponentHasRequirements(const UnitType &ut)
 {
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
+    
     for (auto u : ut.requiredUnits()) {
-        bool has_necessity = (CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.units_) + CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.imputedUnits_) < u.second);
-        if (u.first != UnitTypes::Zerg_Larva && !u.first.isResourceDepot() && has_necessity) return false;
+        bool unit_present_but_unseen = CUNYAIModule::enemy_player_model.countUnseenUnits(u.first) >= u.second;
+        bool has_necessity = (CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.units_) + unit_present_but_unseen);
+        if (u.first == UnitTypes::Zerg_Larva || u.first.isResourceDepot() || has_necessity) return true;
     }
-    return true;
+    return false;
 }
 
 bool Player_Model::opponentHasRequirements(const TechType &tech)

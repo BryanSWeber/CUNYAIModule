@@ -4,6 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\CobbDouglas.h"
 #include "Source\PlayerModelManager.h"
+#include "Source\Diagnostics.h"
 #include <iostream>
 #include <fstream>
 
@@ -134,6 +135,11 @@ void CobbDouglas::storeStocks(int e_army_stock, int e_tech_stock, int e_worker_s
 //Sets enemy utility function parameters based on known information.
 void CobbDouglas::enemy_mimic(const Player_Model & enemy, const double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
+
+    Diagnostics::DiagnosticText("We're updating our model to mimic our opponents.");
+    Diagnostics::DiagnosticText("Alpha_army: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_army, alpha_army);
+    Diagnostics::DiagnosticText("Alpha_econ: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_econ, alpha_econ);
+    Diagnostics::DiagnosticText("Alpha_tech: Enemy %4.2f, Self %4.2f", enemy.spending_model_.alpha_tech, alpha_tech);
 
     //Shift alpha towards enemy choices.
     alpha_army += adaptation_rate * (enemy.spending_model_.alpha_army - alpha_army);

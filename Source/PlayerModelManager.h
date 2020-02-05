@@ -12,7 +12,7 @@ struct Player_Model {
 private:
 
 public:
-    Player bwapi_player_; // this is a pointer, explicitly.
+    Player bwapi_player_;
     double estimated_workers_ = 0;
     double estimated_bases_ = 0;
     double estimated_cumulative_worth_ = 0;
@@ -24,24 +24,37 @@ public:
     double estimated_unseen_flyers_ = 0; // a subset of estimated army.
     double estimated_unseen_ground_ = 0; // a subset of estimated army.
     double estimated_unseen_tech_ = 0;
+    double estimated_unseen_workers_ = 0;
+
 
     Unit_Inventory units_;
     Unit_Inventory casualties_;
-    Unit_Inventory imputedUnits_; // Note this map will be {unit triggering imputation, imputeded unit}, a shift from the previous standard.
+    map< UnitType, double> unseen_units_ = {}; //These units may never have been built, but they COULD be built out.
+
     Research_Inventory researches_;
     CobbDouglas spending_model_;
-    //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
 
+    //Other player-based factoids that may be useful should eventually go here- fastest time to air, popular build items, etc.
     bool u_have_active_air_problem_;
     bool e_has_air_vunerability_;
 
     void updateOtherOnFrame(const Player &other_player);
     void updateSelfOnFrame();
     void imputeUnits(const Unit &unit);
-    void evaluatePotentialWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
-    void evaluatePotentialArmyExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
+    void incrementUnseenUnits(const UnitType &ut); // adds a unit to the unseen unit collection.
+    void decrementUnseenUnits(const UnitType &ut); // removes a unit from the unseen unit collection.
+    double countUnseenUnits(const UnitType & ut); // safely returns the count of a unit from the unseen unit collection and 0 if it's not there.
+    //void evaluatePotentialWorkerCount(); // Estimates how many workers they have, assuming continuous building with observed platforms.
+    void evaluatePotentialUnitExpenditures(); // Estimates the value of troops that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
     void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress. Conflates times and costs to make a rough estimate.
     void evaluateCurrentWorth(); // under development. 
+
+     //Takes a map of imputed units and guesses the "worst" thing they could have produced.
+    void considerWorstUnseenProducts(const Unit_Inventory &ui);
+    //Takes a map of imputed units and guesses the "worst" thing they could have produced.
+    void considerWorstUnseenProducts(const map<UnitType, double>& ui);
+    UnitType getWorstProduct(const UnitType & ut); // gets the "worst" unit that might be made by a unit.
+    vector<UnitType> findAlternativeProducts(const UnitType &ut); //Takes a unittype and returns a vector of the possible types of units that could have been made instead of that unittype.
 
     bool opponentHasRequirements(const UnitType &ut);
     bool opponentHasRequirements(const TechType & tech);
