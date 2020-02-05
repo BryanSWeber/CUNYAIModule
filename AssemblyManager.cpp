@@ -40,6 +40,7 @@ std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
+
     if (CUNYAIModule::checkDesirable(unit, building, extra_critera, 96)) { // assume you have to walk 3 tiles.
         Position unit_pos = unit->getPosition();
         bool unit_can_morph_intended_target = unit->canMorph(building);
@@ -62,6 +63,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
 
         map<int, TilePosition> viable_placements = {};
+
 
         //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
         if (unit->getType().isBuilding() && unit->morph(building)) {

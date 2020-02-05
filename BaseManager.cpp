@@ -55,10 +55,12 @@ void BaseManager::updateBases()
 {
     baseMap_.clear();
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery) && !u.second.bwapi_unit_->getBuildType() == UnitTypes::Zerg_Hatchery)
-            for (auto expo : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
-                if(u.second.bwapi_unit_->getTilePosition() == expo)
-                    baseMap_.insert({ u.second.pos_, Base(u.first) });
+        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
+            if (!(u.second.bwapi_unit_->getBuildType() == UnitTypes::Zerg_Hatchery && u.second.bwapi_unit_->isMorphing())) { // if the unit is morphing into a hatchery for the first time, don't count it as a base.
+                for (auto expo : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+                    if (u.second.bwapi_unit_->getTilePosition() == expo)
+                        baseMap_.insert({ u.second.pos_, Base(u.first) });
+                }
             }
     }
 
