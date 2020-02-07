@@ -347,14 +347,14 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         (upgrade_worth_melee || upgrade_worth_ranged) &&
         CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&
-        count_of_spire_decendents < number_of_spires_wanted &&
-        Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
-        Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
-        CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_spires_ && count_of_spire_decendents >= 1) &&
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
-        CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
+    //if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&
+    //    count_of_spire_decendents < number_of_spires_wanted &&
+    //    Broodwar->self()->gas() > 100 * count_of_spire_decendents &&
+    //    Broodwar->self()->minerals() > 100 * count_of_spire_decendents &&
+    //    CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+    //    (!have_idle_spires_ && count_of_spire_decendents >= 1) &&
+    //    CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0 &&
+    //    CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
