@@ -321,8 +321,8 @@ void Diagnostics::Print_Test_Case(const int &screen_x, const int &screen_y) {
     // Announces to player the name and count of all units in the unit inventory. Bland but practical.
 void Diagnostics::Print_Cached_Inventory(const int &screen_x, const int &screen_y) {
     int another_row_of_printing = 0;
-    for (auto i : CUNYAIModule::friendly_player_model.unit_type_)
-    { // iterating through all known combat units. See unit type for enumeration, also at end of page.
+    for (auto i : UnitTypes::allUnitTypes())
+    { // iterating through all known units. See unit type for enumeration, also at end of page.
         int u_count = CUNYAIModule::countUnits(i);
         int u_incomplete_count = CUNYAIModule::countUnitsInProgress(i);
         if (u_count > 0) {
@@ -477,7 +477,7 @@ void Diagnostics::onFrame()
     Broodwar->drawTextScreen(250, 40, "Alpha_Econ: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.alpha_econ * 100);  // As %s
     Broodwar->drawTextScreen(250, 50, "Alpha_Army: %4.2f %%", CUNYAIModule::friendly_player_model.spending_model_.alpha_army * 100); //
     Broodwar->drawTextScreen(250, 60, "Alpha_Tech: %4.2f ", CUNYAIModule::friendly_player_model.spending_model_.alpha_tech * 100); // No longer a % with capital-augmenting technology.
-    Broodwar->drawTextScreen(250, 70, "gas_proportion_gas: %4.2f", CUNYAIModule::gas_proportion); //
+    Broodwar->drawTextScreen(250, 70, "gas_proportion: %4.2f", CUNYAIModule::gas_proportion); //
     Broodwar->drawTextScreen(250, 80, "supply_ratio_supply: %4.2f", CUNYAIModule::supply_ratio); //
     //Broodwar->drawTextScreen(250, 90, "Time to Completion: %d", my_reservation.building_timer_); //
     //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
@@ -502,7 +502,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
     //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
     Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(CUNYAIModule::enemy_player_model.estimated_workers_));
-    Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", CUNYAIModule::enemy_player_model.estimated_resources_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_army_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_tech_per_frame_);
+    //Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", CUNYAIModule::enemy_player_model.estimated_resources_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_army_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_tech_per_frame_);
     Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
     Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_army_);  //
     Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_tech_);  //

@@ -129,4 +129,12 @@ void Research_Inventory::updateResearch(const Player & player)
     research_stock_ = tech_stock_ + upgrade_stock_ + building_stock_;
 }
 
+int Research_Inventory::countResearchBuildings(const UnitType & ut)
+{
+    auto matching_unseen_units = tech_buildings_.find(ut);
+    if (matching_unseen_units != tech_buildings_.end())
+        return tech_buildings_.at(ut); // reduce the count of this unite by one.
+    return 0;
+}
+
 

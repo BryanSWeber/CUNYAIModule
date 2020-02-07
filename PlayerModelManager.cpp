@@ -13,32 +13,41 @@ using namespace BWAPI;
 
 void Player_Model::updateOtherOnFrame(const Player & other_player)
 {
+    // Store Player
     bwapi_player_ = other_player;
-    //Update Enemy Units
+
+    // Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
     units_.purgeBrokenUnits();
     units_.updateUnitInventorySummary();
     casualties_.updateUnitInventorySummary();
 
-    //Update Researches
+    // Update Researches
     researches_.updateResearch(other_player);
 
-    evaluatePotentialUnitExpenditures(); // how much is being bought?
+    evaluatePotentialUnitExpenditures(); // How much is being bought?
     evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
 
-    evaluateCurrentWorth(); // how much do they appear to have?
+    evaluateCurrentWorth(); // How much do they appear to have?
+
+    // Combine unseen and seen workers for a total worker count.
     if (unseen_units_.at(bwapi_player_->getRace().getWorker()))
         estimated_workers_ = units_.worker_count_ + unseen_units_.at(bwapi_player_->getRace().getWorker());
     else
         estimated_workers_ = units_.worker_count_;
 
     int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
-    int estimated_worker_stock_ = estimated_workers_ * worker_value;
+    int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
 
-    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_), researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_), estimated_worker_stock_);
-    spending_model_.storeStocks(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_* worker_value);
+    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
+        researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
+        estimated_worker_stock_);
 
-    updatePlayerAverageCD();
+    spending_model_.storeStocks(units_.stock_fighting_total_,
+        researches_.research_stock_,
+        units_.worker_count_* worker_value);
+
+    updatePlayerAverageCD(); // For saving/printing on game end, what is this guy's style like?
 };
 
 void Player_Model::updateSelfOnFrame()
@@ -100,7 +109,7 @@ void Player_Model::updateSelfOnFrame()
 void Player_Model::imputeUnits(const Unit &unit)
 {
     Stored_Unit eu = Stored_Unit(unit);
-    int temp_estimated_unseen_army_ = 0;
+    double temp_estimated_unseen_army_ = 0;
 
     //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistend error. Otherwise I have to remove Y itself or guess.
     auto matching_unseen_units = unseen_units_.find(eu.type_);
@@ -120,7 +129,7 @@ void Player_Model::imputeUnits(const Unit &unit)
     //Check if we have overdrafted our units.
     for (auto ut : unseen_units_) {
         if (CUNYAIModule::isFightingUnit(ut.first)) {
-            temp_estimated_unseen_army_ += Stored_Unit(ut.first).stock_value_ * ut.second;
+            temp_estimated_unseen_army_ += static_cast<double>(Stored_Unit(ut.first).stock_value_) * ut.second;
         }
     }
 
@@ -229,28 +238,30 @@ double Player_Model::countUnseenUnits(const UnitType & ut)
 //}
 
 void Player_Model::evaluatePotentialUnitExpenditures() {
-    int temp_estimated_unseen_supply_ = 0;
-    int temp_estimated_unseen_army_ = 0;
-    int temp_estimated_unseen_flyers_ = 0;
-    int temp_estimated_unseen_ground_ = 0;
-    int temp_estimated_worker_supply = 0;
-    int temp_estimated_army_supply = 0;
+    double temp_estimated_unseen_supply_ = 0;
+    double temp_estimated_unseen_army_ = 0;
+    double temp_estimated_unseen_flyers_ = 0;
+    double temp_estimated_unseen_ground_ = 0;
+    double temp_estimated_worker_supply = 0;
+    double temp_estimated_army_supply = 0;
 
     if (Broodwar->getFrameCount() == 0) {
         for(int i = 0; i < 4; i++)
         incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // at game start there are 4 workers.
-        incrementUnseenUnits(bwapi_player_->getRace().getCenter()); // there is also one base.
+        incrementUnseenUnits(bwapi_player_->getRace().getResourceDepot()); // there is also one base.
     }
 
-    if (countUnseenUnits(bwapi_player_->getRace().getCenter()) <= 0) 
-        incrementUnseenUnits(bwapi_player_->getRace().getCenter()); // there is always one base.
+    if (countUnseenUnits(bwapi_player_->getRace().getResourceDepot()) <= 0) 
+        incrementUnseenUnits(bwapi_player_->getRace().getResourceDepot()); // there is always one base.
     if (countUnseenUnits(bwapi_player_->getRace().getWorker()) <= 0)
         incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // there is always one worker.
 
     //consider how the production of the enemy you can see.
     considerWorstUnseenProducts(units_);
+    considerWorkerUnseenProducts(units_);
     //consider how the production of the enemy you imagine.
     considerWorstUnseenProducts(unseen_units_);
+    considerWorkerUnseenProducts(unseen_units_);
 
     for (auto ut : unseen_units_) {
         temp_estimated_unseen_supply_ += ut.first.supplyRequired() * ut.second;
@@ -277,10 +288,10 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
         estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(estimated_unseen_army_) * remaining_supply_capacity, 0.0); //Their unseen ground remains proportional
     }
     else {
-        estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0);
-        estimated_workers_ = max(temp_estimated_worker_supply / bwapi_player_->getRace().getWorker().supplyRequired(), 0);
-        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_, 0);
-        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_, 0);
+        estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0.0);
+        estimated_workers_ = max(temp_estimated_worker_supply / bwapi_player_->getRace().getWorker().supplyRequired(), 0.0);
+        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_, 0.0);
+        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_, 0.0);
     }
 
 
@@ -444,7 +455,7 @@ void Player_Model::evaluateCurrentWorth()
 //Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This includes depots producing workers.
 void Player_Model::considerWorstUnseenProducts(const Unit_Inventory &ui)
 {
-    for (auto i : ui.unit_map_) {
+    for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 
         UnitType the_worst_unit = getWorstProduct(i.second.type_);
 
@@ -463,9 +474,30 @@ void Player_Model::considerWorstUnseenProducts(const Unit_Inventory &ui)
 //Takes an unseen unit map and increments the unseen_units map as if everything in the unit map was producing.  This includes depots producing workers.
 void Player_Model::considerWorstUnseenProducts(const map< UnitType, double>  &ui)
 {
-    for (auto i : ui) {
+    for (auto i : ui) { // each unit type is collectively stored in this unit map.
 
         UnitType the_worst_unit = getWorstProduct(i.first);
+
+        if (the_worst_unit != UnitTypes::None) {
+            //Add it to the simply map tallying enemy units.
+            auto found = unseen_units_.find(the_worst_unit);
+            if (found != unseen_units_.end())
+                unseen_units_[the_worst_unit] += 1.0 / static_cast<double>(max(the_worst_unit.buildTime(), 1)) * i.second; // there could be multiple producers.
+            else
+                unseen_units_.insert({ the_worst_unit , 1.0 / static_cast<double>(max(the_worst_unit.buildTime(),1)) });
+        }
+    }
+}
+
+void Player_Model::considerWorkerUnseenProducts(const Unit_Inventory & ui)
+{
+    for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
+
+        UnitType the_worst_unit = UnitTypes::None;
+        //Workers are made automatically.
+        if (i.second.type_.isResourceDepot()) {
+            the_worst_unit = i.second.type_.getRace().getWorker();
+        }
 
         if (the_worst_unit != UnitTypes::None) {
             //Add it to the simply map tallying enemy units.
@@ -478,12 +510,33 @@ void Player_Model::considerWorstUnseenProducts(const map< UnitType, double>  &ui
     }
 }
 
+void Player_Model::considerWorkerUnseenProducts(const map<UnitType, double>& ui)
+{
+    for (auto i : ui) {  // each unit type is collectively stored in this unit map.
+
+        UnitType the_worst_unit = UnitTypes::None;
+        //Workers are made automatically.
+        if (i.first.isResourceDepot()) {
+            the_worst_unit = i.first.getRace().getWorker();
+        }
+
+        if (the_worst_unit != UnitTypes::None) {
+            //Add it to the simply map tallying enemy units.
+            auto found = unseen_units_.find(the_worst_unit);
+            if (found != unseen_units_.end())
+                unseen_units_[the_worst_unit] += 1.0 / static_cast<double>(max(the_worst_unit.buildTime(), 1)) * i.second; // there could be multiple producers.
+            else
+                unseen_units_.insert({ the_worst_unit , 1.0 / static_cast<double>(max(the_worst_unit.buildTime(),1)) });
+        }
+    }
+}
+
 //Assumes each unit produces the worst possible output of whatever type it can make. This includes depots producing workers.
 UnitType Player_Model::getWorstProduct(const UnitType &ut) {
     map< UnitType, double> value_holder_;
 
     // These are possible troop expenditures. find the "worst" one they could make.
-    if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk) {
+    if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk || ut == UnitTypes::Zerg_Creep_Colony) {
         //Do nothing.
     }
     else if (ut.producesLarva()) {
@@ -508,11 +561,6 @@ UnitType Player_Model::getWorstProduct(const UnitType &ut) {
         if (v.second > max_value) {
             the_worst_unit = v.first;
         }
-    }
-
-    //Workers are made automatically.
-    if (ut.isResourceDepot()) {
-        the_worst_unit = ut.getRace().getWorker();
     }
 
     return the_worst_unit;
@@ -548,11 +596,12 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
     
     for (auto u : ut.requiredUnits()) {
-        bool unit_present_but_unseen = CUNYAIModule::enemy_player_model.countUnseenUnits(u.first) >= u.second;
+        bool unit_present_but_unseen = CUNYAIModule::enemy_player_model.countUnseenUnits(u.first) + CUNYAIModule::enemy_player_model.researches_.countResearchBuildings(u.first) >= u.second;
         bool has_necessity = (CUNYAIModule::countUnits(u.first, CUNYAIModule::enemy_player_model.units_) + unit_present_but_unseen);
-        if (u.first == UnitTypes::Zerg_Larva || u.first.isResourceDepot() || has_necessity) return true;
+        if (u.first == UnitTypes::Zerg_Larva || u.first.isResourceDepot() || has_necessity) continue; // if you have the requirements, keep going.
+        return false; // If you do not, you do not and exit.
     }
-    return false;
+    return true;
 }
 
 bool Player_Model::opponentHasRequirements(const TechType &tech)
@@ -611,16 +660,16 @@ void Player_Model::updateUnit_Counts() {
 }
 
 // sample command set to explore zergling rushing.
-void Player_Model::setLockedOpeningValues() {
+void Player_Model::setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order) {
 
     // sample command set to explore zergling rushing.
-    spending_model_.alpha_army = CUNYAIModule::alpha_army_original = 0.90;
-    spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = 0.10;
-    spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = 0.05;
+    spending_model_.alpha_army = CUNYAIModule::alpha_army_original = alpha_army;
+    spending_model_.alpha_econ = CUNYAIModule::alpha_econ_original = alpha_econ;
+    spending_model_.alpha_tech = CUNYAIModule::alpha_tech_original = alpha_tech;
 
-    CUNYAIModule::gas_proportion = 0.00;
-    CUNYAIModule::supply_ratio = 0.55;
-    CUNYAIModule::buildorder = Building_Gene("drone pool drone drone ling ling ling overlord");
+    CUNYAIModule::gas_proportion = gas_proportion;
+    CUNYAIModule::supply_ratio = supply_ratio;
+    CUNYAIModule::buildorder = Building_Gene(build_order.c_str());
 
     //This no longer works after declaring the inventories as const.
     //combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
@@ -629,6 +678,21 @@ void Player_Model::setLockedOpeningValues() {
     //upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
     //tech_cartridge_ = {  };
 
+}
+
+double Player_Model::getCumArmy()
+{
+    return average_army_;
+}
+
+double Player_Model::getCumEco()
+{
+    return average_econ_;
+}
+
+double Player_Model::getCumTech()
+{
+    return average_tech_;
 }
 
 void Player_Model::updatePlayerAverageCD()

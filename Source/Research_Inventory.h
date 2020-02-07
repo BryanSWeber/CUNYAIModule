@@ -22,5 +22,5 @@ struct Research_Inventory {
     void updateResearchBuildings(const Player & player); // This function can be trimmed up a lot. Should add directly into imputed units.
     void updateBuildingStock();
     void updateResearch(const Player & player);
-
+    int countResearchBuildings(const UnitType &ut); // Returns the count of buildings in the research building map.
 };
