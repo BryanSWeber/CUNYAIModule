@@ -573,17 +573,27 @@ void LearningManager::initializeGAUnitWeighting()
     }
 
     Diagnostics::DiagnosticText("%d",matrix_of_unit_weights.size());
+    vector<vector<double>> matrix_of_unit_weights_reversed;
+
+    //We only want the 50 most recent wins, so older genes will "die".
+    if (!matrix_of_unit_weights.empty()) {
+        for (auto r = matrix_of_unit_weights.rbegin(); r < matrix_of_unit_weights.rend(); r++) {
+            matrix_of_unit_weights_reversed.push_back(*r);
+            if (matrix_of_unit_weights.size() > 50)
+                break;
+        }
+    }
 
     //Generate more if we don't have enough, otherwise combine some winners with a mutation chance:
-    if (matrix_of_unit_weights.empty() || matrix_of_unit_weights.size() <= 200) {
+    if (matrix_of_unit_weights_reversed.empty() || matrix_of_unit_weights_reversed.size() <= 50) {
         //We're good, use the random one.
     }
     else {
-        std::uniform_int_distribution<size_t> rand_bo(0, matrix_of_unit_weights.size() - 1);
+        std::uniform_int_distribution<size_t> rand_bo(0, matrix_of_unit_weights_reversed.size() - 1);
         size_t row_choice1 = rand_bo(gen);
         size_t row_choice2 = rand_bo(gen);
         for (int x = 0; x <= BWAPI::UnitTypes::allUnitTypes().size(); ++x) {
-            passed_unit_weights[x] = (matrix_of_unit_weights[row_choice1][x] + matrix_of_unit_weights[row_choice2][x])/2.0;
+            passed_unit_weights[x] = (matrix_of_unit_weights_reversed[row_choice1][x] + matrix_of_unit_weights_reversed[row_choice2][x])/2.0;
             if (dis(gen) > 0.10) { // 5% chance of mutation.
                 passed_unit_weights[x] = dis(gen);
             }

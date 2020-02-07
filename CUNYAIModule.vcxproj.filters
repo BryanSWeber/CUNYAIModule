@@ -123,5 +123,8 @@
     <None Include="Source\kiwook.py">
       <Filter>Utilities</Filter>
     </None>
+    <None Include="Source\evo_test.py">
+      <Filter>Utilities</Filter>
+    </None>
   </ItemGroup>
 </Project>
