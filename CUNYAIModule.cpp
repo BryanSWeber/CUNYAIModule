@@ -154,9 +154,8 @@ void CUNYAIModule::onStart()
     alpha_econ_original = friendly_player_model.spending_model_.alpha_econ = learned_plan.a_econ_t0; // econ starved parameter.
     alpha_tech_original = friendly_player_model.spending_model_.alpha_tech = learned_plan.a_tech_t0; // tech starved parameter.
     adaptation_rate = learned_plan.r_out_t0; //rate of worker growth.
-    win_rate = (1 - learned_plan.loss_rate_);
-    //get initial build order.
-    buildorder.getInitialBuildOrder(learned_plan.build_order_t0);
+
+    buildorder.getInitialBuildOrder(learned_plan.build_order_t0);  //get initial build order.
     Diagnostics::DiagnosticText(string("The build order is: " + learned_plan.build_order_t0).c_str());
 
     //update Map Grids

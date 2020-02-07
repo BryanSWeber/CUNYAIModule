@@ -1,5 +1,7 @@
 #pragma once
 
+//Controls most ML processes, including Genetic algorithms, random forest.  Only point of interaction with python. Used for learning between games. Does not control any learning or adaptation within games.
+
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 
@@ -12,13 +14,13 @@ struct LearningManager {
     string writeDirectory = "..//..//write//";
 
 
-    bool confirmLearningFilesPresent();
-    void initializeGeneticLearning();
-    void initializeRFLearning();
-    void initializeTestStart();
-    void initializeRandomStart();
-    void initializeCMAESUnitWeighting();
-    void initializeGAUnitWeighting();
+    bool confirmLearningFilesPresent(); //Copy all important files to the write folder so they are present for access and modification during the game. 
+    void initializeGeneticLearning(); //Use a handcrafted GA in order to determine the best opening. 
+    void initializeRFLearning(); // Use random forest (and python) to filter out unwanted opening parameters.
+    void initializeTestStart(); // Use a specific opening (hardcoded) so there is no variation in bot behavior.
+    void initializeRandomStart(); // Use a random opening to get a broad idea of the action space of the bot over several hundred games.
+    void initializeCMAESUnitWeighting(); // In development. Use python's CMAES algorithim to choose unit weights.
+    void initializeGAUnitWeighting(); // In development. Use a simple c++ genetic algorithm to choose the unit weights.
 
     vector<string> build_order_list = {
     "drone drone drone drone drone overlord pool drone creep drone drone", // The blind sunken. For the bots that just won't take no for an answer.
@@ -39,21 +41,19 @@ struct LearningManager {
    "drone drone drone drone overlord drone drone drone hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone muscular_augments hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract" //zerg_2hatchhydra - speed. added an overlord.
     };
 
-    double gas_proportion_t0;
-    double supply_ratio_t0;
-    double a_army_t0;
-    double a_vis_t0;
-    double a_econ_t0;
-    double a_tech_t0;
-    double r_out_t0;
-    double loss_rate_;
-    string build_order_t0;
-    int fliers_t0;
-    int detectors_t0;
+    double gas_proportion_t0; // Gas ratio at time 0.
+    double supply_ratio_t0; // Supply ratio at time 0.
+    double a_army_t0; // Army alpha value at time 0.
+    double a_vis_t0; // Now defunct. Value of visibility at time 0.
+    double a_econ_t0; // Econ alpha value at time 0.
+    double a_tech_t0; // Tech alpha value at time 0.
+    double r_out_t0; // Parameter controlling how rapidly bot adapts to mimic the opponent.
+    string build_order_t0; // Starting build order.
+    int fliers_t0; // Flier count at time zero, it's a placeholder for the count of fliers.
+    int detectors_t0; // Detector count at time 0, it's a placeholder for the count of detectors.
 
-    map<UnitType,double> unit_weights;
-    int max_value_;
-
-    int resetScale(const UnitType ut);
+    map<UnitType,double> unit_weights; //Weights designed to approximate the value of each unit in FAP sims and production estimations. Will affect weight of macro parmeters indirectly.
+    int max_value_; // The value of the most expensive unit in the model. Needed for normalizing and denormalizing.
+    int resetScale(const UnitType ut); // takes the unit weights (which will be passed from) the UnitWeights file (bound between -1 and 1) and converts them back into the orginal scale (0 and the cost of the most expensive units).
 
 };

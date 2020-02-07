@@ -187,8 +187,6 @@ void LearningManager::initializeGeneticLearning() {
     std::set<string> build_orders_partial_match;
     std::set<string> build_orders_untried;
 
-    loss_rate_ = 1;
-
     ifstream input; // brings in info;
     input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
     string line;
@@ -361,7 +359,6 @@ void LearningManager::initializeGeneticLearning() {
     }
 
     prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
-    loss_rate_ = 1 - prob_win_given_opponent;
 
     //From genetic history, random parent for each gene. Mutate the genome
     std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 6);
