@@ -5,8 +5,8 @@
 #include "Source/MobilityManager.h"
 
 Base::Base() {
-    gas_taken_ = false;
-    gas_tolerable_ = false;
+    //gas_taken_ = false;
+    //gas_tolerable_ = false;
     spore_count_ = 0;
     sunken_count_ = 0;
     creep_count_ = 0;
@@ -22,8 +22,8 @@ Base::Base() {
 
 Base::Base(const Unit & u)
 {
-    gas_taken_ = false;
-    gas_tolerable_ = false;
+    //gas_taken_ = false;
+    //gas_tolerable_ = false;
     spore_count_ = 0;
     sunken_count_ = 0;
     creep_count_ = 0;
@@ -95,9 +95,9 @@ void BaseManager::updateBases()
         bool they_are_moving_out_air = false;
 
         if (CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first))
-            they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 && base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)) || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)->pos_.getApproxDistance(b.first) < 500;
+            they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 /*&& base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first))*/ || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)->pos_.getApproxDistance(b.first) < 500;
         if(CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))
-            they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 && base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)) || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
+            they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 /*&& base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))*/ || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
 
         bool too_close_by_ground = true;
         if (distance_to_alarming_ground.size() >= 2) {
