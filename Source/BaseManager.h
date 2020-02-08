@@ -23,6 +23,7 @@ public:
     bool emergency_spore_; //Do we want an emergency spore?
     bool emergency_sunken_; // Do we want an emerency sunken?
     Unit unit_; // Directly to the base hatchery itself.
+    bool checkHasGroundBuffer(const Position& threat_pos); // checks if there is another base on the ground path between the enemy and this base.
 };
 
 class BaseManager {

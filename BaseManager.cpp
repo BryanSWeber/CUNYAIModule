@@ -102,13 +102,13 @@ void BaseManager::updateBases()
         bool too_close_by_ground = true;
         if (distance_to_alarming_ground.size() >= 2) {
             std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
-            too_close_by_ground = b.second.distance_to_ground_ < *std::next(ground_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Sunken_Colony.buildTime());
+            too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter) && !b.second.checkHasGroundBuffer(CUNYAIModule::current_map_inventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
         }
 
         bool too_close_by_air = true;
         if (distance_to_alarming_air.size() >= 2) {
             std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
-            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Spore_Colony.buildTime());
+            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter);
         }
 
         b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
@@ -206,4 +206,26 @@ Base BaseManager::getClosestBaseAir(const Position & pos)
         return baseMap_.at(basePos);
     else
         return nullBase;
+}
+
+bool Base::checkHasGroundBuffer(const Position& threat_pos)
+{
+    int plength = 0;
+    bool unit_sent = false;
+    auto cpp = BWEM::Map::Instance().GetPath(threat_pos, unit_->getPosition(), &plength);
+
+    if (!cpp.empty()) { // if there's an actual path to follow...
+        for (auto choke_point : cpp) {
+            BWEM::Area area = *choke_point->GetAreas().first;
+            BWEM::Area area2 = *choke_point->GetAreas().second;
+            for (auto b : CUNYAIModule::basemanager.getBases()) { // if another base blocks the path.
+                if (b.second.unit_ == this->unit_) continue; // The same base cannot block the path.
+                int id = BWEM::Map::Instance().GetNearestArea(b.second.unit_->getTilePosition())->Id();
+                if ((area.Id() == id) || (area2.Id() == id)) return true; // return true if it is being blocked.
+            }
+        }
+        return false; // If there's a cpp and everything is unblocked, there is no ground buffer, and it's not safe.
+    }
+
+    return true; // there is no path, so it's safe!
 }
