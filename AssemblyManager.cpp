@@ -660,8 +660,12 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 
     auto closest_station = BWEB::Stations::getClosestStation(tp);
     if (closest_station) {
+        int i = 0;
         for (auto &tile : closest_station->getDefenseLocations()) {
-              viable_placements.insert({ 0, tile });
+            int plength = 0;
+            auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
+            if (plength > 0)
+                viable_placements.insert({ plength, tile });
         }
     }
 
@@ -671,7 +675,9 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera)
 {
     for (auto good_block : placements) { // should automatically search by distance.
-        if (CUNYAIModule::checkDesirable(u, building, extra_critera, good_block.first) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
+        int plength = 0;
+        auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
+        if (CUNYAIModule::checkDesirable(u, building, extra_critera, plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();
             return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);

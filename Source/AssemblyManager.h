@@ -17,17 +17,17 @@ private:
     static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
     static std::map<UnitType, int> specialization_buildings_; // persistent set of intended buildings.
 
-    static Unit_Inventory larva_bank_;
-    static Unit_Inventory hydra_bank_;
-    static Unit_Inventory muta_bank_;
-    static Unit_Inventory builder_bank_;
-    static Unit_Inventory creep_colony_bank_;
-    static Unit_Inventory production_facility_bank_;
+    static Unit_Inventory larva_bank_; // collection of larva interested in morphing units.
+    static Unit_Inventory hydra_bank_; // colleciton of hydras that may morph into lurkers.
+    static Unit_Inventory muta_bank_; // collection of mutas that may morph into mutas.
+    static Unit_Inventory builder_bank_; // collection of drones that could build.
+    static Unit_Inventory creep_colony_bank_; // collection of creep colonies that could morph into sunkens/spores.
+    static Unit_Inventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
     static bool have_idle_evos_;
     static bool have_idle_spires_;
-    static bool resources_are_slack_;
-    static bool subgoal_econ_;
-    static bool subgoal_army_;
+    static bool resources_are_slack_; // The definition of floating to the assembly manager, may vary.
+    static bool subgoal_econ_; // If econ is preferred to army. Useful for slackness conditions.
+    static bool subgoal_army_; // If army is preferred to econ. Useful for slackness conditions.
 
     static int last_frame_of_larva_morph_command;
     static int last_frame_of_hydra_morph_command;
@@ -36,22 +36,20 @@ private:
 
 public:
     static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
-    static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness);
+    static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
-    static int returnUnitRank(const UnitType &ut);
+    static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim.
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
-    static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken);
-    static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types);
+    static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken); // take a creep colony and morph it into another type of static defence. 
+    static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
 
-    static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp);
-    static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp);
-    static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);
+    static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
+    static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
+    static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
 
-    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera);
-    //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building.
-    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);
-    // Check and grow a unit using larva.
-    static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);
+    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera); //  build at the nearest position in that map<int, TilePosition>.
+    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
+    static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
     // Builds the next building you can afford. Area of constant improvement.
     static bool buildBuilding(const Unit & drone);
