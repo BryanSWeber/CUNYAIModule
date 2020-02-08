@@ -243,7 +243,9 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     double temp_estimated_unseen_flyers_ = 0;
     double temp_estimated_unseen_ground_ = 0;
     double temp_estimated_worker_supply = 0;
+    double temp_estimated_worker_value = 0;
     double temp_estimated_army_supply = 0;
+    double temp_estimated_unseen_value = 0;
 
     if (Broodwar->getFrameCount() == 0) {
         for(int i = 0; i < 4; i++)
@@ -265,6 +267,7 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
 
     for (auto ut : unseen_units_) {
         temp_estimated_unseen_supply_ += ut.first.supplyRequired() * ut.second;
+        temp_estimated_unseen_value += Stored_Unit(ut.first).stock_value_ * ut.second;
         if (CUNYAIModule::isFightingUnit(ut.first)) {
             temp_estimated_army_supply += ut.first.supplyRequired() * ut.second;
             temp_estimated_unseen_army_ += Stored_Unit(ut.first).stock_value_ * ut.second;
@@ -273,23 +276,27 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
         }
         if (ut.first.isWorker()) {
             temp_estimated_worker_supply += ut.first.supplyRequired() * ut.second;
+            temp_estimated_worker_value += Stored_Unit(ut.first).stock_value_ * ut.second;
         }
     }
 
     double remaining_supply_capacity = (400 - units_.total_supply_);
-    double army_proportion = temp_estimated_army_supply / static_cast<double>(temp_estimated_army_supply + temp_estimated_worker_supply);
-    double worker_proportion = temp_estimated_worker_supply / static_cast<double>(temp_estimated_army_supply + temp_estimated_worker_supply);
+    double average_army_per_supply = temp_estimated_unseen_army_ / temp_estimated_army_supply;
+    double average_worker_per_supply = temp_estimated_worker_value / temp_estimated_worker_supply;
+    double army_proportion = temp_estimated_army_supply / temp_estimated_unseen_supply_;
+    double worker_proportion = temp_estimated_worker_supply / temp_estimated_unseen_supply_;
+    double supply_cost_per_worker = Broodwar->enemy()->getRace().getWorker().supplyRequired();
 
     if (temp_estimated_unseen_supply_ > remaining_supply_capacity) {
-        estimated_unseen_army_ = max(army_proportion * remaining_supply_capacity, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
-        estimated_workers_ = max((worker_proportion * remaining_supply_capacity) / bwapi_player_->getRace().getWorker().supplyRequired(), 0.0); //Their unseen workers is the proportion of remaining units that are not army.
+        estimated_unseen_army_ = max(remaining_supply_capacity * average_army_per_supply * army_proportion, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
+        estimated_workers_ = max(remaining_supply_capacity / supply_cost_per_worker * worker_proportion, 0.0); //Their unseen workers is the proportion of remaining units that are not army.
 
-        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(estimated_unseen_army_) * remaining_supply_capacity, 0.0); //Their unseen fliers remain proportional
-        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(estimated_unseen_army_) * remaining_supply_capacity, 0.0); //Their unseen ground remains proportional
+        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen fliers remain proportional
+        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen ground remains proportional
     }
     else {
         estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0.0);
-        estimated_workers_ = max(temp_estimated_worker_supply / bwapi_player_->getRace().getWorker().supplyRequired(), 0.0);
+        estimated_workers_ = max(temp_estimated_worker_supply / supply_cost_per_worker, 0.0);
         estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_, 0.0);
         estimated_unseen_ground_ = max(temp_estimated_unseen_ground_, 0.0);
     }
