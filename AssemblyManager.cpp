@@ -78,7 +78,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
-
         // simply attempt the nearest station if the previous did not find.
         map<int, TilePosition> station_spots = addClosestStation(building, tileOfClosestBase);
         if (!station_spots.empty())
@@ -635,7 +634,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & buildin
         if (!placements.empty()) {
             for (auto &tile : placements) {
                 int plength  = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(block.getTilePosition()), &plength);
+                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
                 if (plength > 0)
                     viable_placements.insert({ plength, tile });
             }
@@ -644,7 +643,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & buildin
         else if (!backup_placements.empty()) {
             for (auto &tile : placements) {
                 int plength = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(block.getTilePosition()), &plength);
+                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
                 if (plength > 0)
                     viable_placements.insert({ plength, tile });
             }
@@ -662,10 +661,7 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     auto closest_station = BWEB::Stations::getClosestStation(tp);
     if (closest_station) {
         for (auto &tile : closest_station->getDefenseLocations()) {
-            int plength = 0;
-            auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tp), &plength);
-            if (plength > 0)
-                viable_placements.insert({ plength, tile });
+              viable_placements.insert({ 0, tile });
         }
     }
 
