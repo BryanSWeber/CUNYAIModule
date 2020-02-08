@@ -166,6 +166,8 @@ void BaseManager::displayBaseData()
             Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);
             Broodwar->drawTextMap(b.first + Position(5, 30), "Ground Dist: %d", b.second.distance_to_ground_);
             Broodwar->drawTextMap(b.first + Position(5, 40), "Air Dist: %d", b.second.distance_to_air_);
+            Broodwar->drawTextMap(b.first + Position(5, 60), "Sunkens: %s", b.second.emergency_sunken_ ? "TRUE":"FALSE" );
+            Broodwar->drawTextMap(b.first + Position(5, 70), "Spores: %s", b.second.emergency_spore_ ? "TRUE" : "FALSE");
         }
     }
 }
