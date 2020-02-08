@@ -825,6 +825,24 @@ Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Positio
     return return_unit;
 }
 
+Stored_Unit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, const Position &origin) {
+    int min_dist = 999999;
+    int temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
+            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_ && hasPriority(u->second.type_)) {
+                min_dist = temp_dist;
+                return_unit = &(u->second);
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
 Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
@@ -1012,6 +1030,29 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &
             can_attack = Can_Fight(unit, e->second);
             can_be_attacked_by = Can_Fight(e->second, unit);
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
+                temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = pos;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;

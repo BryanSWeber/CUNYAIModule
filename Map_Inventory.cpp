@@ -1148,7 +1148,7 @@ void Map_Inventory::updateCurrentMap() {
 
         //otherwise go to their weakest base.
         Position suspected_enemy_base = Positions::Origin;
-        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundWithPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
         if (center_ground) { // let's go to the strongest enemy base if we've seen them!
             suspected_enemy_base = center_ground->pos_;
@@ -1180,7 +1180,7 @@ void Map_Inventory::updateCurrentMap() {
 
     if (frames_since_enemy_base_air_ > 24 * 5) {
 
-        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStored(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanAirLocation()); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
         if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
