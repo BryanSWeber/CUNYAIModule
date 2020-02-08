@@ -1,4 +1,8 @@
 #pragma once
+/*
+    Manages both the assembly of units and (below) the fixed/immutable build order at the start of the game. 
+*/
+
 #include "CUNYAIModule.h"
 #include "Map_Inventory.h"
 #include "Unit_Inventory.h"
@@ -47,37 +51,26 @@ public:
     static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
 
-    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera); //  build at the nearest position in that map<int, TilePosition>.
-    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
+    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera); // build at the nearest position in that map<int, TilePosition>.
+    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
-    // Builds the next building you can afford. Area of constant improvement.
-    static bool buildBuilding(const Unit & drone);
-    // Moves all units except for the Stored exeption_unit elsewhere.
-    static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit);
-    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
-    static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);
-    // Checks if a build position is occupied.
-    static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);
-    // Checks if I can see every tile in a build location. 
-    static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);
-    // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
-    static bool Reactive_BuildFAP(const Unit & morph_canidate);
-    // print the assembly cycle we're thinking about.
-    static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);
-    // Updates all units that might build something at this time.
-    static void updatePotentialBuilders();
-    static bool creepColonyInArea(const Position & pos);
-    // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
-    static bool assignUnitAssembly();
+    static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
+    static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit); // Moves all units except for the Stored exeption_unit elsewhere.
+    static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
+    static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if a build position is occupied.
+    static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if I can see every tile in a build location. 
+    static bool Reactive_BuildFAP(const Unit & morph_canidate);     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
+    static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);     // print the assembly cycle we're thinking about.
+    static void updatePotentialBuilders(); // Updates all units that might build something at this time.
+    static bool creepColonyInArea(const Position & pos); // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
+    static bool assignUnitAssembly(); // Assigns units to appropriate bank and builds them when needed.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
-    static void getDefensiveWalls();
-    // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
-    static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);
-    // Check if resources are slack from an army assembly perspective.
-    static bool checkSlackResources();
-    //Returns the maximum gas cost of all currently builable units.
-    static int getMaxGas();
+    static void getDefensiveWalls(); // Creates a Z-sim city at the natural.
+    static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr);     // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
+    static bool checkSlackResources();   // Check if resources are slack from an army assembly perspective.
+    static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.
+
 };
 
 
