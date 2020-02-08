@@ -32,11 +32,11 @@ constexpr bool PRINT_WD = false; // print a file to the current working director
 constexpr bool DISABLE_ATTACKING = false; // never attack - for exploring movement and reatreating.
 
 constexpr bool GENETIC_HISTORY = true; // use hand-crafted genetic history.
+constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwanted parameters.
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
-constexpr bool UNIT_WEIGHTING = false; // under development.
-constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwanted parameters.
+constexpr bool UNIT_WEIGHTING = true; // under development.
 
 //Cheats:  Like, literal single player cheats.
 constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
@@ -207,6 +207,7 @@ public:
     static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
     static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin);
     static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
+    static Stored_Unit * getClosestAirStoredWithPriority(Unit_Inventory & ui, const Position & origin);
     static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
@@ -223,6 +224,7 @@ public:
     static Stored_Unit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
     static Stored_Unit * getClosestThreatOrTargetExcluding(Unit_Inventory & ui, const UnitType ut, const Unit & unit, const int & dist);
     static Stored_Unit * getClosestThreatOrTargetWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist);
+    static Stored_Unit * getClosestGroundWithPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
     static bool hasPriority(Stored_Unit e);
     static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
     static Stored_Unit * getMostAdvancedThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
