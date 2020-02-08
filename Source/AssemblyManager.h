@@ -47,7 +47,7 @@ public:
     static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp);
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);
 
-    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u);
+    static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera);
     //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building.
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);
     // Check and grow a unit using larva.

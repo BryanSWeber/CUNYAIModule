@@ -95,20 +95,20 @@ void BaseManager::updateBases()
         bool they_are_moving_out_air = false;
 
         if (CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first))
-            they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 /*&& base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first))*/ || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)->pos_.getApproxDistance(b.first) < 500;
+            they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)->pos_.getApproxDistance(b.first) < 500;
         if(CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))
-            they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 /*&& base_mobility.checkEnemyApproachingUs(*CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))*/ || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
+            they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
 
         bool too_close_by_ground = true;
         if (distance_to_alarming_ground.size() >= 2) {
             std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
-            too_close_by_ground = b.second.distance_to_ground_ < *std::next(ground_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Sunken_Colony.buildTime() + 128);
+            too_close_by_ground = b.second.distance_to_ground_ < *std::next(ground_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Sunken_Colony.buildTime());
         }
 
         bool too_close_by_air = true;
         if (distance_to_alarming_air.size() >= 2) {
             std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
-            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Spore_Colony.buildTime() + 128);
+            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter) && b.second.distance_to_ground_ < CUNYAIModule::enemy_player_model.units_.max_speed_ * (UnitTypes::Zerg_Creep_Colony.buildTime() + UnitTypes::Zerg_Spore_Colony.buildTime());
         }
 
         b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
