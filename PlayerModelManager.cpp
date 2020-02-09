@@ -543,19 +543,19 @@ UnitType Player_Model::getWorstProduct(const UnitType &ut) {
     map< UnitType, double> value_holder_;
 
     // These are possible troop expenditures. find the "worst" one they could make.
-    if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk || ut == UnitTypes::Zerg_Creep_Colony) {
+    if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk || ut == UnitTypes::Zerg_Creep_Colony || ut.isAddon() ) {
         //Do nothing.
     }
     else if (ut.producesLarva()) {
         for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
-            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
                 value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
             }
         }
     }
     else {
         for (auto p : ut.buildsWhat()) {
-            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p)) {
+            if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
                 value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
             }
         }
