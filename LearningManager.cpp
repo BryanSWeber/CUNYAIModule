@@ -589,9 +589,11 @@ void LearningManager::initializeGAUnitWeighting()
         std::uniform_int_distribution<size_t> rand_bo(0, matrix_of_unit_weights_reversed.size() - 1);
         size_t row_choice1 = rand_bo(gen);
         size_t row_choice2 = rand_bo(gen);
+        size_t row_choice3 = rand_bo(gen); // three parents. More stability since each set (funtionally) only trains one race.
+
         for (int x = 0; x <= BWAPI::UnitTypes::allUnitTypes().size(); ++x) {
-            passed_unit_weights[x] = (matrix_of_unit_weights_reversed[row_choice1][x] + matrix_of_unit_weights_reversed[row_choice2][x])/2.0;
-            if (dis(gen) > 0.10) { // 5% chance of mutation.
+            passed_unit_weights[x] = (matrix_of_unit_weights_reversed[row_choice1][x] + matrix_of_unit_weights_reversed[row_choice2][x] + matrix_of_unit_weights_reversed[row_choice3][x]) / 3.0;
+            if (dis(gen) > 0.98) { // 1% chance of mutation.
                 passed_unit_weights[x] = dis(gen);
             }
         }
