@@ -50,7 +50,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive, local_area) > 0;
 
     TilePosition tileOfClosestBase = tp;
-    Base nearest_base = CUNYAIModule::basemanager.getClosestBaseGround(Position(tp));
 
     if (tileOfClosestBase == TilePositions::Origin) {
         if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
@@ -73,12 +72,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
         //Do the nearest wall if it is for ground.
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
-        if (nearest_base.emergency_sunken_ && !wall_spots.empty())
+        if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
-        // simply attempt the nearest station if the previous did not find.
+        //simply attempt the nearest station if the previous did not find.
         map<int, TilePosition> station_spots = addClosestStation(building, tileOfClosestBase);
         if (!station_spots.empty())
             viable_placements.insert(station_spots.begin(), station_spots.end());
@@ -672,7 +671,7 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     return viable_placements;
 }
 
-bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera)
+bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
     for (auto good_block : placements) { // should automatically search by distance.
         int plength = 0;
@@ -978,7 +977,7 @@ bool AssemblyManager::assignUnitAssembly()
         distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
     }
 
-    // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager.
+    // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager. There is a logic error in here, since the creep colony may have been built because of a threat at a nearby base B, but the closest viable building location to B was actually closer to A than B.
     if (last_frame_of_creep_command < Broodwar->getFrameCount() - 12) {
         for (auto creep_colony : creep_colony_bank_.unit_map_) {
             Base ground_base = CUNYAIModule::basemanager.getClosestBaseGround(creep_colony.second.pos_);
