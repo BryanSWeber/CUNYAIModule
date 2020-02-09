@@ -35,7 +35,7 @@ public:
     int getBaseCount(); // Gets base count, must be nonnegative.
     void updateBases(); // Run on frame.
     void displayBaseData(); //vital for testing.
-    Base getClosestBaseGround(const Position &pos); // Gets a closest base. will return something but could return a mock "Null base"
-    Base getClosestBaseAir(const Position &pos); // Gets a closest base. will return something but could return a mock "Null base"
+    Base getClosestBaseGround(const Position &pos); // Gets the closest base by ground from position. will return something but could return a mock "Null base"
+    Base getClosestBaseAir(const Position &pos); // Gets the closest base by air from position. will return something but could return a mock "Null base"
     string test;
 };

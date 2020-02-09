@@ -178,10 +178,11 @@ Base BaseManager::getClosestBaseGround(const Position & pos)
     Position basePos = Positions::Origin;
     Base nullBase;
     for (auto & b : baseMap_) {
-        int currentDist = CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(b.first);
+        int currentDist = 0;
+        auto cpp = BWEM::Map::Instance().GetPath(pos, b.first, &currentDist);
         if (currentDist < minDist) {
-             minDist = currentDist;
-             basePos = b.first;
+            minDist = currentDist;
+            basePos = b.first;
         }
     }
     if (basePos != Positions::Origin)
@@ -196,7 +197,7 @@ Base BaseManager::getClosestBaseAir(const Position & pos)
     Position basePos = Positions::Origin;
     Base nullBase;
     for (auto & b : baseMap_) {
-        int currentDist = static_cast<int>(b.first.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_));
+        int currentDist = pos.getDistance(Position(b.first));
         if (currentDist < minDist) {
             minDist = currentDist;
             basePos = b.first;
