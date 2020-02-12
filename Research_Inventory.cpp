@@ -65,8 +65,8 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto u : unit_types) {
-        if ((u.isBuilding() || u.isAddon()) && !CUNYAIModule::isFightingUnit(u) && u != UnitTypes::Zerg_Creep_Colony && u != UnitTypes::Protoss_Pylon && u != UnitTypes::Terran_Supply_Depot && u != UnitTypes::Protoss_Nexus && u != UnitTypes::Terran_Command_Center && u != UnitTypes::Zerg_Hatchery)
-            tech_buildings_[u] = max( CUNYAIModule::countUnits(u, player_model_to_compare.units_) + CUNYAIModule::enemy_player_model.countUnseenUnits(u), 1.0); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
+        if ((u.isBuilding() || u.isAddon()) && u.upgradesWhat().contains(UpgradeTypes::None) && u.researchesWhat().contains(TechTypes::None))
+            tech_buildings_[u] = max(CUNYAIModule::countUnits(u, player_model_to_compare.units_) + player_model_to_compare.countUnseenUnits(u), 1.0); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
     for (auto i : upgrades_) {
@@ -79,7 +79,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto &i : tech_buildings_) {// for every unit type they have.
-        i.second = max(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_), i.second); // we update the count of them that we hve seen so far.
+        i.second = max( static_cast<double>(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_)), i.second ); // we update the count of them that we hve seen so far.
         //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(Stored_Unit(i.first));
     }
 

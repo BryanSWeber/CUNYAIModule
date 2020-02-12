@@ -10,7 +10,7 @@ struct Research_Inventory {
 
     map<UpgradeType, int> upgrades_;
     map<TechType, bool> tech_;
-    map<UnitType, int> tech_buildings_;
+    map<UnitType, double> tech_buildings_;
     int tech_stock_ = 0;
     int upgrade_stock_ = 0;
     int research_stock_ = 0;

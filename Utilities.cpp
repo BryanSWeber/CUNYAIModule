@@ -1042,6 +1042,52 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &
     return return_unit;
 }
 
+Stored_Unit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            can_be_attacked_by = Can_Fight(e->second, unit);
+            if (can_be_attacked_by && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
+                temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+Stored_Unit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = unit->getPosition();
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            can_attack = Can_Fight(unit, e->second);
+            if (can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
+                temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 Stored_Unit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;

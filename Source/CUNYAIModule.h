@@ -36,7 +36,7 @@ constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwant
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
-constexpr bool UNIT_WEIGHTING = true; // under development.
+constexpr bool UNIT_WEIGHTING = false; // under development.
 
 //Cheats:  Like, literal single player cheats.
 constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
@@ -224,6 +224,8 @@ public:
     static Stored_Unit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
     static Stored_Unit * getClosestThreatOrTargetExcluding(Unit_Inventory & ui, const UnitType ut, const Unit & unit, const int & dist);
     static Stored_Unit * getClosestThreatOrTargetWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist);
+    static Stored_Unit * getClosestThreatWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).
+    static Stored_Unit * getClosestTargettWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
     static Stored_Unit * getClosestGroundWithPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
     static bool hasPriority(Stored_Unit e);
     static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);

@@ -75,12 +75,13 @@ public:
     void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress, only a rough estimate.
     void evaluateCurrentWorth(); // under development. 
 
-    void considerWorstUnseenProducts(const Unit_Inventory &ui); //Takes a map of imputed units and guesses the "worst" thing they could have produced. Applies exclusively to unit inventory's unit_map_
-    void considerWorstUnseenProducts(const map<UnitType, double>& ui); //Takes a map of imputed units and guesses the "worst" thing they could have produced. Intended to apply to unseen_unit_ maps, but prepared to eventually go onto something else.
+    void considerUnseenProducts(const Unit_Inventory &ui); //Takes a map of imputed units and guesses what they could have produced. Applies exclusively to unit inventory's unit_map_
+    void considerUnseenProducts(const map<UnitType, double>& ui); //Takes a map of imputed units and guesses what they they could have produced. Intended to apply to unseen_unit_ maps, but prepared to eventually go onto something else.
+
     void considerWorkerUnseenProducts(const Unit_Inventory &ui); //Takes a map of imputed units and assumes workers are produced at every facility, the "worst" thing they could have produced. Applies exclusively to unit inventory's unit_map_
     void considerWorkerUnseenProducts(const map<UnitType, double>& ui); //Takes a map of imputed units and assumes workers are produced at every facility, the "worst" thing they could have produced. Intended to apply to unseen_unit_ maps, but prepared to eventually go onto something else.
 
-    UnitType getWorstProduct(const UnitType & ut); // gets the "worst" unit that might be made by a unit.
+    UnitType getDistributedProduct(const UnitType & ut); // gets the "worst" unit that might be made by a unit.
     vector<UnitType> findAlternativeProducts(const UnitType &ut); //Takes a unittype and returns a vector of the possible types of units that could have been made instead of that unittype.
 
     bool opponentHasRequirements(const UnitType &ut); // Can they make this unit type? Does not check if it is already done.

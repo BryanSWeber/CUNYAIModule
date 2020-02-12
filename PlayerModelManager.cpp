@@ -113,8 +113,11 @@ void Player_Model::imputeUnits(const Unit &unit)
 
     //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistend error. Otherwise I have to remove Y itself or guess.
     auto matching_unseen_units = unseen_units_.find(eu.type_);
-    if (matching_unseen_units != unseen_units_.end())
+    if (matching_unseen_units != unseen_units_.end()) {
         unseen_units_.at(eu.type_)--; // reduce the count of this unite by one.
+        if (eu.type_.isBuilding())
+            unseen_units_.at(eu.type_) = max(unseen_units_.at(eu.type_), 0.0); // there cannot be negative buildings, this would lead to some awkward problems as they could (?) produce negative amounts of troops.
+    }
     else {
         auto alternative_uts = findAlternativeProducts(eu.type_);
         for (auto ut : alternative_uts) {
@@ -163,15 +166,15 @@ void Player_Model::imputeUnits(const Unit &unit)
             }
         }
 
-        UnitType the_worst_unit = getWorstProduct(expected_producer);
+        UnitType produced_unit = getDistributedProduct(expected_producer);
         double maximum_possible_missed_product = static_cast<double>(max(longest_known_unit, eu.type_.buildTime())) / static_cast<double>(eu.type_.buildTime());
-        if (the_worst_unit != UnitTypes::None) {
+        if (produced_unit != UnitTypes::None) {
             //Add it to the simply map tallying enemy units.
-            auto found = unseen_units_.find(the_worst_unit);
+            auto found = unseen_units_.find(produced_unit);
             if (found != unseen_units_.end())
-                unseen_units_[the_worst_unit] += maximum_possible_missed_product;
+                unseen_units_[produced_unit] += maximum_possible_missed_product;
             else
-                unseen_units_.insert({ the_worst_unit , maximum_possible_missed_product });
+                unseen_units_.insert({ produced_unit , maximum_possible_missed_product });
         }
     }
 }
@@ -258,11 +261,17 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     if (countUnseenUnits(bwapi_player_->getRace().getWorker()) <= 0)
         incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // there is always one worker.
 
+    //Add research buildings to unseen buildings.
+    for (auto rb : researches_.tech_buildings_) {
+         if(countUnseenUnits(rb.first) + CUNYAIModule::countUnits(rb.first) + CUNYAIModule::countUnits(rb.first, CUNYAIModule::enemy_player_model.casualties_) <= rb.second)
+             incrementUnseenUnits(rb.first);
+    }
+
     //consider how the production of the enemy you can see.
-    considerWorstUnseenProducts(units_);
+    considerUnseenProducts(units_);
     considerWorkerUnseenProducts(units_);
     //consider how the production of the enemy you imagine.
-    considerWorstUnseenProducts(unseen_units_);
+    considerUnseenProducts(unseen_units_);
     considerWorkerUnseenProducts(unseen_units_);
 
     for (auto ut : unseen_units_) {
@@ -459,12 +468,12 @@ void Player_Model::evaluateCurrentWorth()
     }
 }
 
-//Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This includes depots producing workers.
-void Player_Model::considerWorstUnseenProducts(const Unit_Inventory &ui)
+//Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This does not include depots producing workers.
+void Player_Model::considerUnseenProducts(const Unit_Inventory &ui)
 {
     for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 
-        UnitType the_worst_unit = getWorstProduct(i.second.type_);
+        UnitType the_worst_unit = getDistributedProduct(i.second.type_);
 
         if (the_worst_unit != UnitTypes::None) {
             //Add it to the simply map tallying enemy units.
@@ -478,12 +487,12 @@ void Player_Model::considerWorstUnseenProducts(const Unit_Inventory &ui)
 }
 
 
-//Takes an unseen unit map and increments the unseen_units map as if everything in the unit map was producing.  This includes depots producing workers.
-void Player_Model::considerWorstUnseenProducts(const map< UnitType, double>  &ui)
+//Takes an unseen unit map and increments the unseen_units map as if everything in the unit map was producing.  This does not include depots producing workers.
+void Player_Model::considerUnseenProducts(const map< UnitType, double>  &ui)
 {
     for (auto i : ui) { // each unit type is collectively stored in this unit map.
 
-        UnitType the_worst_unit = getWorstProduct(i.first);
+        UnitType the_worst_unit = getDistributedProduct(i.first);
 
         if (the_worst_unit != UnitTypes::None) {
             //Add it to the simply map tallying enemy units.
@@ -495,6 +504,7 @@ void Player_Model::considerWorstUnseenProducts(const map< UnitType, double>  &ui
         }
     }
 }
+
 
 void Player_Model::considerWorkerUnseenProducts(const Unit_Inventory & ui)
 {
@@ -538,10 +548,10 @@ void Player_Model::considerWorkerUnseenProducts(const map<UnitType, double>& ui)
     }
 }
 
-//Assumes each unit produces the worst possible output of whatever type it can make. This includes depots producing workers.
-UnitType Player_Model::getWorstProduct(const UnitType &ut) {
+//Assumes each unit produces the a random output of whatever type it can make. This does not include depots producing workers.
+UnitType Player_Model::getDistributedProduct(const UnitType &ut) {
     map< UnitType, double> value_holder_;
-
+    vector<UnitType> unittype_holder_;
     // These are possible troop expenditures. find the "worst" one they could make.
     if (ut == UnitTypes::Zerg_Larva || ut.isWorker() || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Templar || ut == UnitTypes::Zerg_Hydralisk || ut == UnitTypes::Zerg_Mutalisk || ut == UnitTypes::Zerg_Creep_Colony || ut.isAddon() ) {
         //Do nothing.
@@ -550,6 +560,7 @@ UnitType Player_Model::getWorstProduct(const UnitType &ut) {
         for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
             if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
                 value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+                unittype_holder_.push_back(p);
             }
         }
     }
@@ -557,17 +568,25 @@ UnitType Player_Model::getWorstProduct(const UnitType &ut) {
         for (auto p : ut.buildsWhat()) {
             if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
                 value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+                unittype_holder_.push_back(p);
             }
         }
     }
 
     //Assume they're making that one.
-    double max_value = 0.0;
+    //double max_value = 0.0;
     UnitType the_worst_unit = UnitTypes::None;
-    for (auto v : value_holder_) {
-        if (v.second > max_value) {
-            the_worst_unit = v.first;
-        }
+    //for (auto v : value_holder_) {
+    //    if (v.second > max_value) {
+    //        the_worst_unit = v.first;
+    //    }
+    //}
+
+    if (!unittype_holder_.empty()) {
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+        std::uniform_int_distribution<size_t> rand_unit(0, unittype_holder_.size() - 1);
+        the_worst_unit = unittype_holder_[rand_unit(gen)];
     }
 
     return the_worst_unit;

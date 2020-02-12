@@ -62,7 +62,7 @@ bool CombatManager::combatScript(const Unit & u)
 
         Mobility mobility = Mobility(u);
         int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
-        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatOrTargetWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        Stored_Unit* e_closest = CUNYAIModule::getClosestThreatWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
 
@@ -157,10 +157,10 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran: 
-                    if (my_unit->phase_ != Stored_Unit::Phase::Attacking && overstacked_units) {
+                    if ((my_unit->phase_ == Stored_Unit::Phase::PathingOut || my_unit->phase_ == Stored_Unit::Phase::Surrounding) && overstacked_units) {
                         return mobility.Scatter_Logic(overstacked_units->pos_);
                     }
-                    else if (!(standard_fight_reasons && my_unit->phase_ == Stored_Unit::Phase::PathingOut && my_unit->phase_ != Stored_Unit::Phase::Attacking) && prepping_attack) {
+                    else if (!standard_fight_reasons && my_unit->phase_ == Stored_Unit::Phase::PathingOut && prepping_attack) {
                         return mobility.surroundLogic(e_closest->pos_);
                     }
                     else if (standard_fight_reasons || my_unit->phase_ == Stored_Unit::Phase::Attacking) {
@@ -194,6 +194,16 @@ bool CombatManager::combatScript(const Unit & u)
                 return mobility.surroundLogic(e_closest->pos_);
             }
         }
+
+        e_closest = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        if (e_closest) {
+            Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
+            Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
+            enemy_loc.updateUnitInventorySummary();
+            friend_loc.updateUnitInventorySummary();
+            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+        }
+
     }
     return false;
 }
