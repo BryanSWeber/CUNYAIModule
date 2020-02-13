@@ -3,7 +3,7 @@
 
 # include "Source\CUNYAIModule.h"
 # include "Source\TechManager.h"
-#include "Source/Diagnostics.h"
+# include "Source\Diagnostics.h"
 # include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 
@@ -11,8 +11,8 @@
 using namespace BWAPI;
 
 bool TechManager::tech_avail_ = true;
-std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::upgrade_cartridge_; // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
-std::map<TechType, int> TechManager::tech_cycle_ = Player_Model::tech_cartridge_; // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
+std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::getUpgradeCartridge(); // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+std::map<TechType, int> TechManager::tech_cycle_ = Player_Model::getTechCartridge(); // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
 
 int TechManager::max_gas_value_ = 0;
 
@@ -99,7 +99,7 @@ bool TechManager::updateTech_Avail() {
         return tech_avail_;
     }
 
-    for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.building_cartridge_) {
+    for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
         if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
             return tech_avail_;
@@ -193,7 +193,8 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
-    bool upgrade_in_cartridges = CUNYAIModule::friendly_player_model.upgrade_cartridge_.find(ups) != CUNYAIModule::friendly_player_model.upgrade_cartridge_.end();
+    auto mapUps = CUNYAIModule::friendly_player_model.getUpgradeCartridge();
+    bool upgrade_in_cartridges = mapUps.find(ups) != mapUps.end();
     if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
@@ -210,7 +211,8 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
 //Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
-    bool research_in_cartridges = CUNYAIModule::friendly_player_model.tech_cartridge_.find(tech) != CUNYAIModule::friendly_player_model.tech_cartridge_.end();
+    auto mapTech = CUNYAIModule::friendly_player_model.getTechCartridge();
+    bool research_in_cartridges = mapTech.find(tech) != mapTech.end();
     if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
@@ -240,8 +242,7 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
 }
 
 void TechManager::clearSimulationHistory() {
-    upgrade_cycle_ = CUNYAIModule::friendly_player_model.upgrade_cartridge_;
-    for (auto upgrade : upgrade_cycle_) {
+    for (auto upgrade : CUNYAIModule::friendly_player_model.getUpgradeCartridge()) {
         upgrade.second = 0;
     }
     upgrade_cycle_[UpgradeTypes::None] = 0;

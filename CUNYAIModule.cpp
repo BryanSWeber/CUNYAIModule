@@ -424,6 +424,17 @@ void CUNYAIModule::onFrame()
             Broodwar->sendText("Cough Cough: Power Overwhelming! (Please work!)");
         }
 
+        for (auto i : CUNYAIModule::friendly_player_model.getBuildingCartridge())
+            Diagnostics::DiagnosticText("Our Legal Buildings are: %s", i.first.c_str());
+
+        for (auto i : CUNYAIModule::friendly_player_model.getCombatUnitCartridge())
+            Diagnostics::DiagnosticText("Our Legal combatants are: %s", i.first.c_str());
+
+        for (auto i : CUNYAIModule::friendly_player_model.getTechCartridge())
+            Diagnostics::DiagnosticText("Our techs are: %s", i.first.c_str());
+
+        for (auto i : CUNYAIModule::friendly_player_model.getUpgradeCartridge())
+            Diagnostics::DiagnosticText("Our upgrades are: %s", i.first.c_str());
     }
 
     if (t_game % (24 * 60) == 0 && RIP_REPLAY) {
@@ -469,8 +480,13 @@ void CUNYAIModule::onFrame()
             }
         }
 
+
+        bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
-        if (need_gas_now && no_extractor) {
+        for (auto r : CUNYAIModule::my_reservation.reservation_map_) {
+            reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
+        }
+        if (need_gas_now && no_extractor && !reserved_extractor) {
             buildorder.clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticText("Uh oh, something's went wrong with building an extractor!");
         }
@@ -833,7 +849,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-            else if (unit->getType() == UnitTypes::Zerg_Drone || stored_unit && (stored_unit->phase_ == Stored_Unit::Phase::Building || stored_unit->phase_ == Stored_Unit::Phase::Morphing)) {
+            else if (unit->getType() == UnitTypes::Zerg_Drone && stored_unit && stored_unit->phase_ != Stored_Unit::Phase::Building && stored_unit->phase_ != Stored_Unit::Phase::Morphing) {
                 buildorder.clearRemainingBuildOrder( false );
             }
         }

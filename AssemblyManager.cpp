@@ -35,7 +35,7 @@ bool AssemblyManager::resources_are_slack_ = false;
 bool AssemblyManager::subgoal_econ_ = false;
 bool AssemblyManager::subgoal_army_ = false;
 
-std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::combat_unit_cartridge_;
+std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::getCombatUnitCartridge();
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
@@ -120,7 +120,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
             return true;
 
     }
-    else if (canMakeCUNY(building, false, unit)) {
+    else if (canMakeCUNY(building, false, unit) && !building.whatBuilds().first.isBuilding() ) { // We do not want to have drones reserving hives or greater spire locations anywhere. Hatcheries are specially built above.
         if (CUNYAIModule::checkSafeBuildLoc(unit_pos)) {
 
             // We want walls first before anywhere else.
@@ -283,7 +283,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
 
     //Consider an organized build plan.
-    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
+    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0)) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
@@ -355,6 +355,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Queens_Nest, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest, true) == 0 &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) > 0 &&
         (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
         CUNYAIModule::basemanager.getBaseCount() >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
@@ -682,6 +683,8 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
             return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
         }
     }
+    if(CUNYAIModule::checkDesirable(u, building, extra_critera))
+        Diagnostics::DiagnosticText("I couldn't place a %s!", building.c_str());
     return false;
 }
 
@@ -1092,7 +1095,7 @@ bool AssemblyManager::assignUnitAssembly()
 
 void AssemblyManager::clearSimulationHistory()
 {
-    assembly_cycle_ = CUNYAIModule::friendly_player_model.combat_unit_cartridge_;
+    assembly_cycle_ = CUNYAIModule::friendly_player_model.getCombatUnitCartridge();
     for (auto unit : assembly_cycle_) {
         unit.second = 0;
     }
@@ -1248,25 +1251,30 @@ bool AssemblyManager::checkSlackResources()
 int AssemblyManager::getMaxGas()
 {
     int max_gas_ = 0;
-    for (auto u : CUNYAIModule::friendly_player_model.combat_unit_cartridge_) {
+    for (auto u : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
         if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
     }
-    for (auto u : CUNYAIModule::friendly_player_model.building_cartridge_) {
+    for (auto u : CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
         if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
     }
     return max_gas_;
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
-    return friendly_player_model.combat_unit_cartridge_.find(ut) != friendly_player_model.combat_unit_cartridge_.end() || friendly_player_model.building_cartridge_.find(ut) != friendly_player_model.building_cartridge_.end() || friendly_player_model.eco_unit_cartridge_.find(ut) != friendly_player_model.eco_unit_cartridge_.end();
+    auto mapCombat = friendly_player_model.getCombatUnitCartridge();
+    auto mapBuild = friendly_player_model.getBuildingCartridge();
+    auto mapEco = friendly_player_model.getEcoUnitCartridge();
+    return mapCombat.find(ut) != mapCombat.end() || mapBuild.find(ut) != mapBuild.end() || mapEco.find(ut) != mapEco.end();
 }
 
 bool CUNYAIModule::checkInCartridge(const UpgradeType &ut) {
-    return friendly_player_model.upgrade_cartridge_.find(ut) != friendly_player_model.upgrade_cartridge_.end();
+    auto mapUps = friendly_player_model.getUpgradeCartridge();
+    return mapUps.find(ut) != mapUps.end();
 }
 
 bool CUNYAIModule::checkInCartridge(const TechType &ut) {
-    return friendly_player_model.tech_cartridge_.find(ut) != friendly_player_model.tech_cartridge_.end();
+    auto mapTechs = friendly_player_model.getTechCartridge();
+    return mapTechs.find(ut) != mapTechs.end();
 }
 
 bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {

@@ -185,10 +185,9 @@ bool CobbDouglas::evalArmyPossible()
     double K_over_L = safeDiv(army_stock, worker_stock); // avoid NAN's
 
     bool can_build_army = false;
-    auto combat_types = CUNYAIModule::friendly_player_model.combat_unit_cartridge_; // safe copy.
 
     // drop all units types I cannot assemble at this time. 
-    for (auto unit_selection : combat_types) {
+    for (auto unit_selection : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
         for (auto u : unit_selection.first.requiredUnits()) {
             if (CUNYAIModule::countUnits(u.first) >= u.second) {
                 can_build_army = true;

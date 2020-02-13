@@ -738,3 +738,28 @@ void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)
     Broodwar->drawTextScreen(screen_x, screen_y + 20, "Econ: %.2g", average_econ_);
     Broodwar->drawTextScreen(screen_x, screen_y + 30, "Tech: %.2g", average_tech_);
 }
+
+std::map<UnitType, int> Player_Model::getCombatUnitCartridge()
+{
+    return combat_unit_cartridge_;
+}
+
+std::map<UnitType, int> Player_Model::getEcoUnitCartridge()
+{
+    return eco_unit_cartridge_;
+}
+
+std::map<UnitType, int> Player_Model::getBuildingCartridge()
+{
+    return building_cartridge_;
+}
+
+std::map<UpgradeType, int> Player_Model::getUpgradeCartridge()
+{
+    return upgrade_cartridge_;
+}
+
+std::map<TechType, int> Player_Model::getTechCartridge()
+{
+    return tech_cartridge_;
+}

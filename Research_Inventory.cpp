@@ -65,7 +65,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
 
     for (auto u : unit_types) {
-        if ((u.isBuilding() || u.isAddon()) && u.upgradesWhat().contains(UpgradeTypes::None) && u.researchesWhat().contains(TechTypes::None))
+        if ( isTechBuilding(u) )
             tech_buildings_[u] = max(CUNYAIModule::countUnits(u, player_model_to_compare.units_) + player_model_to_compare.countUnseenUnits(u), 1.0); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
 
@@ -106,13 +106,26 @@ void Research_Inventory::updateTechStock() {
     tech_stock_ = temp_tech_stock;
 }
 
-void Research_Inventory::updateBuildingStock() {
+void Research_Inventory::updateBuildingStock(const Player & player) {
+    Player_Model player_model_to_compare;
+    if (player == Broodwar->self())
+        player_model_to_compare = CUNYAIModule::friendly_player_model;
+    else
+        player_model_to_compare = CUNYAIModule::enemy_player_model;
+
     int temp_building_stock = 0;
-    for (auto i : tech_buildings_)//Max number of possible upgrade types
+    for (auto i : player_model_to_compare.researches_.tech_buildings_)//Max number of possible upgrade types
     {
         int value = Stored_Unit(i.first).stock_value_;
         temp_building_stock += i.second * value; // include value of drone if race is zerg.
     }
+
+    if (player == Broodwar->self()) {
+        for (auto i : CUNYAIModule::my_reservation.reservation_map_)
+            if(isTechBuilding(i.second))
+                temp_building_stock += i.second * Stored_Unit(i.second).stock_value_; // include value of drone if race is zerg.
+    }
+
     building_stock_ = temp_building_stock;
 }
 
@@ -124,7 +137,7 @@ void Research_Inventory::updateResearch(const Player & player)
     updateResearchBuildings(player);
     updateUpgradeStock();
     updateTechStock();
-    updateBuildingStock();
+    updateBuildingStock(player);
 
     research_stock_ = tech_stock_ + upgrade_stock_ + building_stock_;
 }
@@ -137,4 +150,7 @@ int Research_Inventory::countResearchBuildings(const UnitType & ut)
     return 0;
 }
 
+bool Research_Inventory::isTechBuilding(const UnitType &u) {
+    return (u.isBuilding() || u.isAddon()) && !(u.upgradesWhat().contains(UpgradeTypes::None) && u.researchesWhat().contains(TechTypes::None)) && !u.isResourceDepot();
+}
 

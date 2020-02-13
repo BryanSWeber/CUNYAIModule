@@ -27,6 +27,12 @@ private:
 
 public:
 
+    static std::map<UnitType, int> getCombatUnitCartridge();
+    static std::map<UnitType, int> getEcoUnitCartridge();
+    static std::map<UnitType, int> getBuildingCartridge();
+    static std::map<UpgradeType, int> getUpgradeCartridge();
+    static std::map<TechType, int> getTechCartridge();
+
     // Important variables.
     Player bwapi_player_;
     double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
