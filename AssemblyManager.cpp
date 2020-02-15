@@ -40,6 +40,8 @@ std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::getComb
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
+    if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
+        return false;
 
     Position unit_pos = unit->getPosition();
     bool unit_can_morph_intended_target = unit->canMorph(building);
@@ -64,7 +66,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
-    if (unit->getType().isBuilding() && CUNYAIModule::checkDesirable(unit, building, extra_critera) && unit->morph(building)) {
+    if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
         CUNYAIModule::buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
         return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
     }
@@ -101,10 +103,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 unit->stop();
                 return CUNYAIModule::updateUnitBuildIntent(unit, building, tile);
             } //extractors must have buildings nearby or we shouldn't build them.
-
-            else if (BWAPI::Broodwar->isVisible(tile)) {
-                Diagnostics::DiagnosticText("I can't put a %s at (%d, %d) for you. Clear the build order...", building.c_str(), tile.x, tile.y);
-            }
         }
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
@@ -140,7 +138,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
     }
 
-    if (CUNYAIModule::buildorder.checkBuilding_Desired(building)) {
+    if (CUNYAIModule::buildorder.checkBuildingNextInBO(building)) {
         //Diagnostics::DiagnosticText("I can't place a %s for you. Freeze here please!...", building.c_str());
         //buildorder.updateRemainingBuildOrder(building); // skips the building.
     }
@@ -152,7 +150,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, const bool &extra_critera)
 {
 
-    if (CUNYAIModule::checkDesirable(larva, unittype, extra_critera))
+    if (CUNYAIModule::checkWillingAndAble(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
             CUNYAIModule::updateUnitPhase(larva, Stored_Unit::Phase::Morphing);
@@ -191,7 +189,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 1;
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
-                bool can_afford_with_travel = CUNYAIModule::checkDesirable(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
+                bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
 
                 if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
@@ -464,7 +462,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
 
-    if (CUNYAIModule::buildorder.checkBuilding_Desired(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) {
+    if (CUNYAIModule::buildorder.checkBuildingNextInBO(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) {
         CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
         Diagnostics::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
         return true;
@@ -496,10 +494,10 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // drop all units types I cannot assemble at this time.
     auto pt_type = combat_types.begin();
     while (pt_type != combat_types.end()) {
-        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkDesirable(morph_canidate, pt_type->first, true);
+        bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkDesirable(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkDesirable(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkDesirable(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
@@ -522,9 +520,9 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     // Check if unit is even feasible, or the unit already IS that type, or is needed for that type.
     auto potential_type = combat_types.begin();
     while (potential_type != combat_types.end()) {
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkDesirable(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkDesirable(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
-        if (CUNYAIModule::checkDesirable(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && potential_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && potential_type->first == UnitTypes::Zerg_Devourer));
+        if (CUNYAIModule::checkWillingAndAble(morph_canidate, potential_type->first, true) || morph_canidate->getType() == potential_type->first || can_morph_into_prerequisite_hydra || can_morph_into_prerequisite_muta) potential_type++;
         else combat_types.erase(potential_type++);
     }
 
@@ -565,8 +563,8 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
 
 
     //A catch for prerequisite build units.
-    bool morph_into_prerequisite_hydra = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker && morph_canidate->getType() == UnitTypes::Zerg_Larva;
-    bool morph_into_prerequisite_muta = CUNYAIModule::checkDesirable(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer) && morph_canidate->getType() == UnitTypes::Zerg_Larva;
+    bool morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && build_type == UnitTypes::Zerg_Lurker && morph_canidate->getType() == UnitTypes::Zerg_Larva;
+    bool morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && (build_type == UnitTypes::Zerg_Guardian || build_type == UnitTypes::Zerg_Devourer) && morph_canidate->getType() == UnitTypes::Zerg_Larva;
     if (morph_into_prerequisite_hydra) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Hydralisk, morph_canidate, true);
     else if (morph_into_prerequisite_muta) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Mutalisk, morph_canidate, true);
 
@@ -677,13 +675,13 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
     for (auto good_block : placements) { // should automatically search by distance.
         int plength = 0;
         auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
-        if (CUNYAIModule::checkDesirable(u, building, extra_critera, plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
+        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();
             return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
         }
     }
-    if(CUNYAIModule::checkDesirable(u, building, extra_critera))
+    if(CUNYAIModule::checkWillingAndAble(u, building, extra_critera))
         Diagnostics::DiagnosticText("I couldn't place a %s!", building.c_str());
     return false;
 }
@@ -1277,26 +1275,29 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
     return mapTechs.find(ut) != mapTechs.end();
 }
 
-bool CUNYAIModule::checkDesirable(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criteria) {
+    return checkInCartridge(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
-bool CUNYAIModule::checkDesirable(const UpgradeType &ut, const bool &extra_criteria) {
+bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
+}
+
+bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
     return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgrade_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
-bool CUNYAIModule::checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
+bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
     if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgrade_Desired(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
     return false;
 }
 
-// checks if player wants the unit, in general.
-bool CUNYAIModule::checkDesirable(const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkBuilding_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) {
+    return Broodwar->canMake(ut) && my_reservation.checkAffordablePurchase(ut) && checkOpenToBuild(ut, extra_criteria);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuilding_Desired(ut);
+    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && buildorder.checkBuildingNextInBO(ut);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
@@ -1342,7 +1343,7 @@ void Building_Gene::announceBuildingAttempt(UnitType ut) {
     }
 }
 
-bool Building_Gene::checkBuilding_Desired(UnitType ut) {
+bool Building_Gene::checkBuildingNextInBO(UnitType ut) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
 }

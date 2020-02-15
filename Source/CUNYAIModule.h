@@ -131,15 +131,15 @@ public:
     static bool checkInCartridge(const UnitType & ut);
     static bool checkInCartridge(const UpgradeType & ut);
     static bool checkInCartridge(const TechType & ut);
-    // checks if ut is willing and able to be built next by unit. Used in many assembly functions.
-    static bool checkDesirable(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);
-    static bool checkDesirable(const UpgradeType & ut, const bool & extra_criteria);
-    static bool checkDesirable(const Unit &unit, const UpgradeType &up, const bool &extra_criteria);
-    static bool checkDesirable(const UnitType & ut, const bool & extra_criteria);
-    // checks if ut is required and can be built by unit at this time.
-    static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);
-    // checks if up is required and can be built by unit at this time.
-    static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);
+    static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
+    static bool checkWillingAndAble(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);     // checks if UT is willing and able to be built next by unit. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
+    static bool checkWillingAndAble(const UpgradeType & ut, const bool & extra_criteria);  // checks if UT is willing and able to be built. Used in many assembly functions.  Requires it's part of BO or extra critera is met.
+    static bool checkWillingAndAble(const Unit &unit, const UpgradeType &up, const bool &extra_criteria); // checks if UP is willing and able to be built. Used in many assembly functions.  Requires it's part of BO or extra critera is met.
+    static bool checkWilling(const UnitType & ut, const bool & extra_criteria); // checks if player is willing ito build the unit, in general. Does not care about ability to build it.
+
+    static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);     // checks if ut is required and can be built by unit at this time.
+    static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);     // checks if up is required and can be built by unit at this time.
+
 
     //Forces selected unit (drone, hopefully!) to expo:
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);

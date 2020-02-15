@@ -135,7 +135,7 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
         if (!busy && potential_up->first) {
-            if (!CUNYAIModule::checkDesirable(building, potential_up->first, true)) {
+            if (!CUNYAIModule::checkWillingAndAble(building, potential_up->first, true)) {
                 local_upgrade_cycle.erase(potential_up++);
             }
         }

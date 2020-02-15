@@ -849,8 +849,9 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
                 buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
             }
-            else if (unit->getType() == UnitTypes::Zerg_Drone && stored_unit && stored_unit->phase_ != Stored_Unit::Phase::Building && stored_unit->phase_ != Stored_Unit::Phase::Morphing) {
+            else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
                 buildorder.clearRemainingBuildOrder( false );
+                Diagnostics::DiagnosticText("Uh oh! A drone has died and this means we need to ditch our build order!");
             }
         }
 

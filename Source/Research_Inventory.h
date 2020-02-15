@@ -1,3 +1,8 @@
+/*
+    Tracks tech, upgrades and buildings which permit the creation of more powerful units and upgrade. Does not count buildings which produce, however.
+    Backs out the production that must be behind a given unit.
+*/
+
 #pragma once
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
