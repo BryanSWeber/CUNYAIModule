@@ -417,8 +417,10 @@ int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
 int CUNYAIModule::countUnits(const UnitType &type, bool reservations_included)
 {
     int count = 0;
-    for (auto it : CUNYAIModule::my_reservation.reservation_map_) {
-        if (it.second == type) count++;
+    if (reservations_included) {
+        for (auto it : CUNYAIModule::my_reservation.reservation_map_) {
+            if (it.second == type) count++;
+        }
     }
 
     auto c_iter = find(CUNYAIModule::friendly_player_model.unit_type_.begin(), CUNYAIModule::friendly_player_model.unit_type_.end(), type);

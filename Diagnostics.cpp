@@ -363,7 +363,7 @@ void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &scree
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //
-            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_buildings * 10, "%s: %d", r.first.c_str(), r.second);  //
+            Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_buildings * 10, "%s: %4.0f", r.first.c_str(), r.second);  //
             another_row_of_printing_buildings++;
         }
     }

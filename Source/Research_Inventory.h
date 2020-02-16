@@ -6,6 +6,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
+#include <set>
 
 using namespace std;
 using namespace BWAPI;
@@ -30,3 +31,5 @@ struct Research_Inventory {
     int countResearchBuildings(const UnitType &ut); // Returns the count of buildings in the research building map.
     bool isTechBuilding(const UnitType & u); // Returns true if the building is a technical building.
 };
+
+std::set<UnitType> inferUnits(const std::set<UnitType>& unitsIn); // returns a set of the units that must exist in order to create the unitsIn set.

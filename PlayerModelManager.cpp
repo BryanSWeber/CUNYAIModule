@@ -4,7 +4,7 @@
 #include "Source\Research_Inventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\CobbDouglas.h"
-#include "Source/Diagnostics.h"
+#include "Source\Diagnostics.h"
 #include <numeric>
 
 using namespace std;
@@ -31,10 +31,8 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     evaluateCurrentWorth(); // How much do they appear to have?
 
     // Combine unseen and seen workers for a total worker count.
-    if (unseen_units_.at(bwapi_player_->getRace().getWorker()))
-        estimated_workers_ = units_.worker_count_ + unseen_units_.at(bwapi_player_->getRace().getWorker());
-    else
-        estimated_workers_ = units_.worker_count_;
+    estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;
+
 
     int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
     int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
@@ -185,7 +183,17 @@ void Player_Model::incrementUnseenUnits(const UnitType & ut)
     if (matching_unseen_units != unseen_units_.end())
         unseen_units_.at(ut)++; // reduce the count of this unite by one.
     else {
-        unseen_units_.insert({ ut, 1 });
+        unseen_units_.insert({ ut, 1.0 });
+    }
+}
+
+void Player_Model::setUnseenUnits(const UnitType & ut, const double &d)
+{
+    auto matching_unseen_units = unseen_units_.find(ut);
+    if (matching_unseen_units != unseen_units_.end())
+        unseen_units_.at(ut)++; // reduce the count of this unite by one.
+    else {
+        unseen_units_.insert({ ut, 1.0 });
     }
 }
 
@@ -249,6 +257,7 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     double temp_estimated_worker_value = 0;
     double temp_estimated_army_supply = 0;
     double temp_estimated_unseen_value = 0;
+    std::set<UnitType> unitTypeExist = {};
 
     if (Broodwar->getFrameCount() == 0) {
         for(int i = 0; i < 4; i++)
@@ -261,11 +270,23 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     if (countUnseenUnits(bwapi_player_->getRace().getWorker()) <= 0)
         incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // there is always one worker.
 
-    //Add research buildings to unseen buildings.
-    for (auto rb : researches_.tech_buildings_) {
-         if(countUnseenUnits(rb.first) + CUNYAIModule::countUnits(rb.first) + CUNYAIModule::countUnits(rb.first, CUNYAIModule::enemy_player_model.casualties_) <= rb.second)
-             incrementUnseenUnits(rb.first);
+    //Add logically necessary units to the unit inventory.
+    for (auto u : units_.unit_map_) {
+        unitTypeExist.insert(u.second.type_);
     }
+    for (auto i : researches_.upgrades_) {
+        if (i.second && i.first.whatsRequired(i.second) != UnitTypes::None)
+            unitTypeExist.insert(i.first.whatsRequired(i.second));
+    }
+    for (auto i : researches_.tech_) {
+        if (i.second && i.first.whatResearches() != UnitTypes::None)
+            unitTypeExist.insert(i.first.whatResearches());
+    }
+    for (auto u : inferUnits(unitTypeExist)) { // if we needed it for observed units, observed upgrades, or observed tech, there has to have been at least 1 of them.
+        if (countUnseenUnits(u) + CUNYAIModule::countUnits(u,casualties_)  == 0)
+            incrementUnseenUnits(u);
+    }
+
 
     //consider how the production of the enemy you can see.
     considerUnseenProducts(units_);
@@ -289,6 +310,22 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
         }
     }
 
+    //for (auto ut : units_.unit_map_) {
+    //    temp_estimated_unseen_supply_ += ut.second.type_.supplyRequired();
+    //    temp_estimated_unseen_value += ut.second.stock_value_;
+    //    if (CUNYAIModule::isFightingUnit(ut.second.type_)) {
+    //        temp_estimated_army_supply += ut.second.type_.supplyRequired() ;
+    //        temp_estimated_unseen_army_ += ut.second.stock_value_;
+    //        temp_estimated_unseen_flyers_ += ut.second.stock_value_ * ut.second.type_.isFlyer();
+    //        temp_estimated_unseen_ground_ += ut.second.stock_value_ * !ut.second.type_.isFlyer();
+    //    }
+    //    if (ut.second.type_.isWorker()) {
+    //        temp_estimated_worker_supply += ut.second.type_.supplyRequired();
+    //        temp_estimated_worker_value += ut.second.stock_value_;
+    //    }
+    //}
+
+
     double remaining_supply_capacity = (400 - units_.total_supply_);
     double average_army_per_supply = temp_estimated_unseen_army_ / temp_estimated_army_supply;
     double average_worker_per_supply = temp_estimated_worker_value / temp_estimated_worker_supply;
@@ -296,16 +333,16 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     double worker_proportion = temp_estimated_worker_supply / temp_estimated_unseen_supply_;
     double supply_cost_per_worker = Broodwar->enemy()->getRace().getWorker().supplyRequired();
 
-    if (temp_estimated_unseen_supply_ > remaining_supply_capacity) {
+    if (remaining_supply_capacity < temp_estimated_unseen_supply_) {
         estimated_unseen_army_ = max(remaining_supply_capacity * average_army_per_supply * army_proportion, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
-        estimated_workers_ = max(remaining_supply_capacity / supply_cost_per_worker * worker_proportion, 0.0); //Their unseen workers is the proportion of remaining units that are not army.
+        estimated_unseen_workers_ = max(remaining_supply_capacity / supply_cost_per_worker * worker_proportion, 0.0); //Their unseen workers is the proportion of remaining units that are not army.
 
         estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen fliers remain proportional
         estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen ground remains proportional
     }
     else {
         estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0.0);
-        estimated_workers_ = max(temp_estimated_worker_supply / supply_cost_per_worker, 0.0);
+        estimated_unseen_workers_ = max(temp_estimated_worker_supply / supply_cost_per_worker, 0.0);
         estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_, 0.0);
         estimated_unseen_ground_ = max(temp_estimated_unseen_ground_, 0.0);
     }
@@ -313,6 +350,7 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
 
     if (Broodwar->getFrameCount() % (60 * 24) == 0) {
         Diagnostics::DiagnosticText("What do we think is happening behind the scenes?");
+        Diagnostics::DiagnosticText("This is the unseen units of an %s:", this->bwapi_player_->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
         for (auto ut : unseen_units_)
             Diagnostics::DiagnosticText("They have %4.2f of %s", ut.second, ut.first.c_str());
         Diagnostics::DiagnosticText("I count an unused supply of %4.2f and imagine units taking %4.2f supply", remaining_supply_capacity, temp_estimated_unseen_supply_);

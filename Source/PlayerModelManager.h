@@ -73,6 +73,7 @@ public:
     // Updating the map of unseen units. Might make this a seperate class.
     void imputeUnits(const Unit &unit); //Takes a single unit that has just been discovered and checks if it is in the unseen_unit_ map. We then remove it from the unseen unit map. If the unseen_unit_ becomes negative in net worth, we assume they must have had another producer of units hidden from us.
     void incrementUnseenUnits(const UnitType &ut); // adds a unit to the unseen unit collection.
+    void setUnseenUnits(const UnitType & ut, const double & d); // sets the number of units in for a type in the unseen unit collection.
     void decrementUnseenUnits(const UnitType &ut); // removes a unit from the unseen unit collection.
     double countUnseenUnits(const UnitType & ut); // safely returns the count of a unit from the unseen unit collection and 0 if it's not there.
 

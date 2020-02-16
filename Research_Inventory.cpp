@@ -5,6 +5,7 @@
 #include "Source\PlayerModelManager.h"
 #include "Source\Unit_Inventory.h"
 #include <set>
+#include "Source\Diagnostics.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -52,34 +53,25 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
 
     unit_types.insert(temp_unit_types.begin(), temp_unit_types.end());
 
-    int n = 0;
-    while (n < 4) {
-        temp_unit_types.clear();
-        for (auto u : unit_types) { // for any unit that is needed in the construction of the units above.
-            for (auto i : u.requiredUnits()) {
-                temp_unit_types.insert(i.first);
-            }
-        }
-        unit_types.insert(temp_unit_types.begin(), temp_unit_types.end()); // this could be repeated with some clever stop condition. Or just crudely repeated a few times.
-        n++;
-    }
+    unit_types = inferUnits(unit_types);
 
     for (auto u : unit_types) {
         if ( isTechBuilding(u) )
-            tech_buildings_[u] = max(CUNYAIModule::countUnits(u, player_model_to_compare.units_) + player_model_to_compare.countUnseenUnits(u), 1.0); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
+            tech_buildings_[u] = max(CUNYAIModule::countUnits(u, player_model_to_compare.units_), 1); // If a required building is present. If it has been destroyed then we have to rely on the visible count of them, though.
     }
-
     for (auto i : upgrades_) {
-        if (i.second > 0)
-            tech_buildings_[i.first.whatsRequired(i.second)] = (i.first.whatsRequired(i.second) != UnitTypes::None); // requirements might be "none".
+        if (i.second && isTechBuilding(i.first.whatsRequired(i.second)))
+            tech_buildings_[i.first.whatsRequired(i.second)] = max(tech_buildings_[i.first.whatsRequired(i.second)], 1.0); // requirements might be "none".
     }
     for (auto i : tech_) {
-        if (i.second)
-            tech_buildings_[i.first.whatResearches()] = (i.first.whatResearches() != UnitTypes::None); // requirements might be "none".
+        if (i.second && isTechBuilding(i.first.whatResearches()))
+            tech_buildings_[i.first.whatResearches()] = max(tech_buildings_[i.first.whatResearches()],1.0); // requirements might be "none".
     }
 
     for (auto &i : tech_buildings_) {// for every unit type they have.
-        i.second = max( static_cast<double>(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_)), i.second ); // we update the count of them that we hve seen so far.
+        double value = max(static_cast<double>(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_)), i.second);
+        if(value > 0)
+          i.second = value; // we update the count of them that we hve seen so far.
         //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(Stored_Unit(i.first));
     }
 
@@ -140,6 +132,13 @@ void Research_Inventory::updateResearch(const Player & player)
     updateBuildingStock(player);
 
     research_stock_ = tech_stock_ + upgrade_stock_ + building_stock_;
+
+    if (Broodwar->getFrameCount() % (60 * 24) == 0) {
+        Diagnostics::DiagnosticText("What do we think is happening for researches?");
+        Diagnostics::DiagnosticText("This is the research units of an %s:", player->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
+        for (auto ut : tech_buildings_)
+            Diagnostics::DiagnosticText("They have %4.2f of %s", ut.second, ut.first.c_str());
+    }
 }
 
 int Research_Inventory::countResearchBuildings(const UnitType & ut)
@@ -151,6 +150,23 @@ int Research_Inventory::countResearchBuildings(const UnitType & ut)
 }
 
 bool Research_Inventory::isTechBuilding(const UnitType &u) {
-    return (u.isBuilding() || u.isAddon()) && !(u.upgradesWhat().contains(UpgradeTypes::None) && u.researchesWhat().contains(TechTypes::None)) && !u.isResourceDepot();
+    return (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u.buildsWhat().empty() && !u.isResourceDepot();
 }
 
+std::set<UnitType> inferUnits(const std::set<UnitType>& unitsIn){
+    std::set<UnitType> temp_unit_types;
+    std::set<UnitType> unitsOut;
+
+    int n = 0;
+    while (n < 4) {
+        temp_unit_types.clear();
+        for (auto u : unitsIn) { // for any unit that is needed in the construction of the units above.
+            for (auto i : u.requiredUnits()) {
+                temp_unit_types.insert(i.first);
+            }
+        }
+        unitsOut.insert(temp_unit_types.begin(), temp_unit_types.end()); // this could be repeated with some clever stop condition. Or just crudely repeated a few times.
+        n++;
+    }
+    return unitsOut;
+};

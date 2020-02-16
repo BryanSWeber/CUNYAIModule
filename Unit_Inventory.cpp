@@ -81,6 +81,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
         }
 
     }
+
 }
 
 void Unit_Inventory::purgeBrokenUnits()
