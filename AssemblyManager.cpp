@@ -589,7 +589,9 @@ map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building,
     auto closest_wall = BWEB::Walls::getClosestWall(tp);
     if (closest_wall) {
         set<TilePosition> placements;
-        if (building.tileSize() == TilePosition{ 2,2 })
+        if (building == UnitTypes::Zerg_Creep_Colony)
+            placements = closest_wall->getDefenses();
+        else if (building.tileSize() == TilePosition{ 2,2 })
             placements = closest_wall->getSmallTiles();
         else if (building.tileSize() == TilePosition{ 3 , 2 })
             placements = closest_wall->getMediumTiles();
