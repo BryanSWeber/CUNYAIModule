@@ -371,7 +371,7 @@ Position Mobility::avoid_edges() {
         pair<BWEM::altitude_t, WalkPosition> targeted_pair = *CUNYAIModule::select_randomly(higher_ground.begin(), higher_ground.end());
         Position vector_to = Position(targeted_pair.second) - pos_;
         double theta = atan2(vector_to.y, vector_to.x);
-        walkability_vector_ = Position(static_cast<int>(cos(theta) * 64), static_cast<int>(sin(theta) * 64)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+        walkability_vector_ = Position(static_cast<int>(cos(theta) * distance_metric_), static_cast<int>(sin(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
         return walkability_vector_;
     }
 }

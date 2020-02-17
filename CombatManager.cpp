@@ -61,7 +61,7 @@ bool CombatManager::combatScript(const Unit & u)
         int u_safeAreaID = BWEM::Map::Instance().GetNearestArea(TilePosition(CUNYAIModule::current_map_inventory.safe_base_))->Id();
 
         Mobility mobility = Mobility(u);
-        int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
+        int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric()/24.0 * 12.0; // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
         Stored_Unit* e_closest = CUNYAIModule::getClosestThreatWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         Stored_Unit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = unit_building = my_unit->phase_ == Stored_Unit::Phase::Building || my_unit->phase_ == Stored_Unit::Phase::Prebuilding;
@@ -78,7 +78,7 @@ bool CombatManager::combatScript(const Unit & u)
             Unit_Inventory friend_loc;
             Unit_Inventory enemy_loc;
             Unit_Inventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest->pos_, max(enemy_loc.max_range_ground_, 200) );
-            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest->pos_, 160);
+            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest->pos_, max(enemy_loc.max_range_ground_, 200));
 
             //Unit_Inventory enemy_loc_around_target = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, e_closest->pos_, search_radius);
             Unit_Inventory enemy_loc_around_self = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
@@ -226,7 +226,7 @@ bool CombatManager::scoutScript(const Unit & u)
             }
         }
     }
-    else if(CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
+    else if(CUNYAIModule::basemanager.getBaseCount() > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
         //Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
         //if(explore_vector != Positions::Origin)
@@ -234,7 +234,7 @@ bool CombatManager::scoutScript(const Unit & u)
         //else {
             Stored_Unit* closest = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, u->getPosition(), u->getType().sightRange() * 2);
             if (closest)
-                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.approach(closest->pos_), Stored_Unit::Phase::PathingOut);
+                return mobility.moveTo(u->getPosition(), u->getPosition() - mobility.approach(closest->pos_) + mobility.avoid_edges(), Stored_Unit::Phase::PathingOut);
         //}
     }
     return false;
@@ -243,6 +243,7 @@ bool CombatManager::scoutScript(const Unit & u)
 // Protects a unit (primarily overlords) that is otherwise simply a liability.
 bool CombatManager::liabilitiesScript(const Unit &u)
 {
+    removeScout(u);
     liabilities_squad_.addStored_Unit(u);
     Stored_Unit* closestSpore = CUNYAIModule::getClosestStored(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Spore_Colony, u->getPosition(), 500);
     if (closestSpore && u->getPosition().getDistance(closestSpore->pos_) < 32) // If they're there at the destination, they are doing nothing.
