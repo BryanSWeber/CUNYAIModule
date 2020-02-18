@@ -227,6 +227,7 @@ public:
     static Stored_Unit * getClosestThreatWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).
     static Stored_Unit * getClosestTargettWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
     static Stored_Unit * getClosestGroundWithPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
+    static Stored_Unit * getClosestGroundNonWorkerPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
     static bool hasPriority(Stored_Unit e);
     static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
     static Stored_Unit * getMostAdvancedThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);

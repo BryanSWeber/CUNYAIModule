@@ -1113,6 +1113,29 @@ Stored_Unit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, cons
     return return_unit;
 }
 
+//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+Stored_Unit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+    int min_dist = dist;
+    bool can_attack, can_be_attacked_by;
+    double temp_dist = 999999;
+    Stored_Unit* return_unit = nullptr;
+    Position origin = pos;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second) && !e->second.type_.isWorker()) {
+                temp_dist = e->second.pos_.getDistance(origin);
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
 bool CUNYAIModule::hasPriority(Stored_Unit e) {
     return (e.type_.mineralPrice() >= 50 || e.type_.gasPrice() >= 25) && e.type_ != UnitTypes::Zerg_Egg && e.type_ != UnitTypes::Zerg_Larva;
 }
@@ -1835,7 +1858,7 @@ int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
         base_range += 8 * 32;
     }
     else if (u_type == UnitTypes::Protoss_Carrier) {
-        base_range += 8 * 32;
+        base_range += 12 * 32; // deploy range is 8, but attack range is 12.
     }
     else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
         base_range += 1 * 32;

@@ -1148,7 +1148,7 @@ void Map_Inventory::updateCurrentMap() {
 
         //otherwise go to their weakest base.
         Position suspected_enemy_base = Positions::Origin;
-        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundWithPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
 
         if (center_ground) { // let's go to the strongest enemy base if we've seen them!
             suspected_enemy_base = center_ground->pos_;

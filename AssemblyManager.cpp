@@ -119,8 +119,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
     }
     else if (canMakeCUNY(building, false, unit) && !building.whatBuilds().first.isBuilding() ) { // We do not want to have drones reserving hives or greater spire locations anywhere. Hatcheries are specially built above.
-        if (CUNYAIModule::checkSafeBuildLoc(unit_pos)) {
-
             // We want walls first before anywhere else.
             map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
             if (!wall_spots.empty())
@@ -134,8 +132,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 viable_placements.insert(block_spots.begin(), block_spots.end());
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
                 return true;
-
-        }
     }
 
     if (CUNYAIModule::buildorder.checkBuildingNextInBO(building)) {
@@ -183,7 +179,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
             for (auto &p : inv.expo_tilepositions_) {
                 int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
                 int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
-                bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
+                //bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
 
                 bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 1;
@@ -191,7 +187,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && safe_expo && path_available && safe_path_available_or_needed && can_afford_with_travel) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && path_available && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
