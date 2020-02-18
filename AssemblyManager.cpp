@@ -171,23 +171,21 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
         int worker_areaID = BWEM::Map::Instance().GetNearestArea(unit->getTilePosition())->Id();
 
-        bool safe_worker = CUNYAIModule::enemy_player_model.units_.getInventoryAtArea(worker_areaID).unit_map_.empty();
+        bool safe_worker = CUNYAIModule::enemy_player_model.units_.getCombatInventoryAtArea(worker_areaID).unit_map_.empty();
         Mobility drone_pathing_options = Mobility(unit);
 
         // Let's build at the safest close canidate position.
         if (safe_worker) {
             for (auto &p : inv.expo_tilepositions_) {
                 int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
-                int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
-                //bool safe_expo = CUNYAIModule::checkSafeBuildLoc(Position(p));
+                //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
 
-                bool path_available = !BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p)).empty();
-                bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 1;
+                bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && path_available && safe_path_available_or_needed && can_afford_with_travel) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && plength > 0 && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -263,7 +261,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getBaseCount() < 2 ) && path_available && !macro_hatch_timings, CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
