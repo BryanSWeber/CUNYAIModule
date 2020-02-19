@@ -151,9 +151,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->first && e->first->isDetected()) { // only target observable units.
             UnitType e_type = e->second.type_;
-            int e_priority = 0;
             //bool can_continue_to_surround = !melee || (melee && e->second.circumference_remaining_ > widest_dim * 0.75);
-            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_ && CUNYAIModule::isFightingUnit(e->second.type_))) {
+            if (!suicide_unit || (suicide_unit && e->second.stock_value_ >= stored_unit_->stock_value_ && CUNYAIModule::isFightingUnit(e->second.type_))) { // do not suicide into units less valuable than you are.
                 bool critical_target = e_type.groundWeapon().innerSplashRadius() > 0 ||
                     (e_type.isSpellcaster() && !e_type.isBuilding()) ||
                     (e_type.isDetector() && ui.cloaker_count_ >= ei.detector_count_) ||
@@ -173,7 +172,7 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     SecondOrderThreats.addStored_Unit(e->second);
                 }
 
-                if (CUNYAIModule::hasPriority(e->second)) { // don't target larva or noncosting units.
+                if (CUNYAIModule::hasPriority(e->second) || e_type == UnitTypes::Protoss_Interceptor) { // don't target larva, eggs, or trivia, but you must shoot interceptors eventually.
                     LowPriority.addStored_Unit(e->second);
                 }
             }
@@ -240,8 +239,8 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 
 
     Diagnostics::DiagnosticText("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
-    Diagnostics::DiagnosticText("This is the local unit map");
-    for (auto u : LowPriority.unit_map_) {
+    Diagnostics::DiagnosticText("This is the passed unit map");
+    for (auto u : ei.unit_map_) {
         Diagnostics::DiagnosticText("%s", u.second.type_.c_str());
     }
 

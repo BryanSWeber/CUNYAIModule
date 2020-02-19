@@ -177,7 +177,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     else if (standard_fight_reasons) {
                         bool target_is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
-                        bool kiting = 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64  // only kite if he's in range,
+                        bool kiting = e_closest_threat && e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64  // only kite if he's in range,
                             && CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(u->getPosition()).x][WalkPosition(u->getPosition()).y] > 8;  //only kite in open areas.
                         if (distance_to_ground > max(mobility.getDistanceMetric() , CUNYAIModule::getFunctionalRange(u))/2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker) // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
                             return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground->bwapi_unit_), Stored_Unit::Phase::Surrounding);
@@ -195,21 +195,22 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
             
             if (CUNYAIModule::isInDanger(u->getType(), enemy_loc) && e_closest_threat) {
-                    return mobility.Retreat_Logic(*e_closest_threat);
+                return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {
                 return mobility.surroundLogic(e_closest->pos_);
             }
         }
 
-        e_closest = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
-        if (e_closest) {
-            Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
-            Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
-            enemy_loc.updateUnitInventorySummary();
-            friend_loc.updateUnitInventorySummary();
-            return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
-        }
+        //Here seems to be the "false combats."
+        //e_closest = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
+        //if (e_closest) {
+        //    Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
+        //    Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
+        //    enemy_loc.updateUnitInventorySummary();
+        //    friend_loc.updateUnitInventorySummary();
+        //    return mobility.Tactical_Logic(*e_closest, enemy_loc, friend_loc, search_radius, Colors::White);
+        //}
 
     }
     return false;

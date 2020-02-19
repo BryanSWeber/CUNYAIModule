@@ -319,8 +319,8 @@ bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
 
 // Returns True if UnitType UT can attack anything in Unit_Inventory ENEMY; 
 bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory enemy) {
-    bool shooting_up = ut.airWeapon() != WeaponTypes::None && (enemy.stock_air_fodder_ + enemy.stock_fliers_ > 0);
-    bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver || ut == UnitTypes::Zerg_Lurker) && (enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0);
+    bool shooting_up = ut.airWeapon() != WeaponTypes::None && enemy.stock_fliers_ + enemy.stock_air_fodder_ > 0;
+    bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver || ut == UnitTypes::Zerg_Lurker) && enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0;
     bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Terran_Science_Vessel || ut == UnitTypes::Terran_Medic || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Archon || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen;
     return shooting_up || shooting_down || shoots_without_weapons;
 }
@@ -1047,7 +1047,7 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &
 Stored_Unit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    int temp_dist = 999999;
     Stored_Unit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
@@ -1137,7 +1137,7 @@ Stored_Unit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui,
 }
 
 bool CUNYAIModule::hasPriority(Stored_Unit e) {
-    return (e.type_.mineralPrice() >= 50 || e.type_.gasPrice() >= 25) && e.type_ != UnitTypes::Zerg_Egg && e.type_ != UnitTypes::Zerg_Larva;
+    return e.type_ != UnitTypes::Zerg_Egg && e.type_ != UnitTypes::Zerg_Larva && e.type_ != UnitTypes::Zerg_Broodling && e.type_ != UnitTypes::Protoss_Interceptor;
 }
 
 //Gets pointer to closest threat to unit within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
@@ -1221,8 +1221,8 @@ Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inv
 Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const Position &origin, const int &dist) {
     Unit_Inventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-        if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_) {
-            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+        if (static_cast<int>(e->second.pos_.getDistance(origin)) <= dist && e->second.valid_pos_) {
+            ui_out.addStored_Unit(e->second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1232,8 +1232,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
     Unit_Inventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-        if ((*e).second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
-            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+        if (e->second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
+            ui_out.addStored_Unit(e->second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1243,8 +1243,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inventory &ri, const Position &origin, const int &dist) {
     Resource_Inventory ri_out;
 	for (auto & e = ri.resource_inventory_.begin(); e != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); e++) {
-		if ((*e).second.pos_.getDistance(origin) <= dist) {
-			ri_out.addStored_Resource((*e).second); // if we take any distance and they are in inventory.
+		if (e->second.pos_.getDistance(origin) <= dist) {
+			ri_out.addStored_Resource(e->second); // if we take any distance and they are in inventory.
 		}
 	}
 	return ri_out;
