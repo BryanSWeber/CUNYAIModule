@@ -107,10 +107,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
 
-        //walls or blocks are equally good for macro hatches.
+        //walls are catagorically better than macro hatches.
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
         if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+            return true;
+
         map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
