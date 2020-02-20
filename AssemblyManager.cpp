@@ -180,13 +180,15 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
         // Let's build at the safest close canidate position.
         if (safe_worker) {
             for (auto &p : inv.expo_tilepositions_) {
-                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))); // closer is better, further from enemy is better.
                 //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
 
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
-                bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, plength);
+                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))) - plength; // closer is better, further from enemy is better.
+                bool min_plength = min(plength, 500);
+
+                bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
                 if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && plength > 0 && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
@@ -493,7 +495,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWillingAndAble(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
         bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
 
 
@@ -674,7 +676,8 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
     for (auto good_block : placements) { // should automatically search by distance.
         int plength = 0;
         auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
-        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
+        bool min_plength = min(plength, cap_distance);
+        if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();
             return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
@@ -1279,7 +1282,11 @@ bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criter
 }
 
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
-    return Broodwar->canMake(ut, unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
+     return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding(), unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
+}
+
+bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
+    return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding()) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
 }
 
 bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
@@ -1292,7 +1299,7 @@ bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, 
 }
 
 bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) {
-    return Broodwar->canMake(ut) && my_reservation.checkAffordablePurchase(ut) && checkOpenToBuild(ut, extra_criteria);
+    return AssemblyManager::canMakeCUNY(ut, false) && checkOpenToBuild(ut, extra_criteria);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {

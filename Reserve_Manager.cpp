@@ -78,7 +78,8 @@ bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
 }
 
 bool Reservation::checkAffordablePurchase(const UnitType type, const int distance) {
-    bool affordable = Broodwar->self()->minerals() + 0.046 * CUNYAIModule::workermanager.min_workers_ * distance / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) - min_reserve_ >= type.mineralPrice() && Broodwar->self()->gas() + 0.069 * CUNYAIModule::workermanager.gas_workers_ * distance / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) - gas_reserve_ >= type.gasPrice();
+    bool affordable = Broodwar->self()->minerals() + 0.046 * static_cast<double>(CUNYAIModule::workermanager.min_workers_) * static_cast<double>(distance) / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) - min_reserve_ >= type.mineralPrice() &&
+                      Broodwar->self()->gas() + 0.069 * static_cast<double>(CUNYAIModule::workermanager.gas_workers_) * static_cast<double>(distance) / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) - gas_reserve_ >= type.gasPrice();
     bool already_making_one = false;
     for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
         if (it->second == type) {
