@@ -266,7 +266,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getInactiveBaseCount(3) < 2 && CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.

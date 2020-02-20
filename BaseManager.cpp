@@ -51,8 +51,22 @@ int BaseManager::getBaseCount()
     return 0;
 }
 
+int BaseManager::getInactiveBaseCount(const int minimum_workers)
+{
+    int inactive_bases = 0;
+    if (!baseMap_.empty()) {
+        for (auto base : baseMap_) {
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers)
+                inactive_bases++;
+        }
+    }
+    return inactive_bases;
+}
+
 void BaseManager::updateBases()
 {
+    int enemy_unit_count_ = 0;
+
     baseMap_.clear();
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
@@ -89,6 +103,14 @@ void BaseManager::updateBases()
         auto u_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
+
+        enemy_unit_count_ += e_loc.ground_count_;
+
+        if (enemy_unit_count_ >= 2 && !CUNYAIModule::buildorder.ever_clear_) {
+            CUNYAIModule::buildorder.clearRemainingBuildOrder(false);
+            Diagnostics::DiagnosticText("Clearing Build order since there are %d baddies nearby.", enemy_unit_count_);
+        }
+
 
         Mobility base_mobility = Mobility(b.second.unit_);
         bool they_are_moving_out_ground = false;

@@ -33,6 +33,7 @@ public:
     //Returns a copy.
     map<Position, Base> getBases(); //returns the baseMap_
     int getBaseCount(); // Gets base count, must be nonnegative.
+    int getInactiveBaseCount(const int minimum_workers); // Counts bases that have less than (minimum workers) mining/returning something.
     void updateBases(); // Run on frame.
     void displayBaseData(); //vital for testing.
     Base getClosestBaseGround(const Position &pos); // Gets the closest base by ground from position. will return something but could return a mock "Null base"
