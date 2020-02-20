@@ -310,22 +310,6 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
         }
     }
 
-    //for (auto ut : units_.unit_map_) {
-    //    temp_estimated_unseen_supply_ += ut.second.type_.supplyRequired();
-    //    temp_estimated_unseen_value += ut.second.stock_value_;
-    //    if (CUNYAIModule::isFightingUnit(ut.second.type_)) {
-    //        temp_estimated_army_supply += ut.second.type_.supplyRequired() ;
-    //        temp_estimated_unseen_army_ += ut.second.stock_value_;
-    //        temp_estimated_unseen_flyers_ += ut.second.stock_value_ * ut.second.type_.isFlyer();
-    //        temp_estimated_unseen_ground_ += ut.second.stock_value_ * !ut.second.type_.isFlyer();
-    //    }
-    //    if (ut.second.type_.isWorker()) {
-    //        temp_estimated_worker_supply += ut.second.type_.supplyRequired();
-    //        temp_estimated_worker_value += ut.second.stock_value_;
-    //    }
-    //}
-
-
     double remaining_supply_capacity = (400 - units_.total_supply_);
     double average_army_per_supply = temp_estimated_unseen_army_ / temp_estimated_army_supply;
     double average_worker_per_supply = temp_estimated_worker_value / temp_estimated_worker_supply;
@@ -337,8 +321,8 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
         estimated_unseen_army_ = max(remaining_supply_capacity * average_army_per_supply * army_proportion, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
         estimated_unseen_workers_ = max(remaining_supply_capacity / supply_cost_per_worker * worker_proportion, 0.0); //Their unseen workers is the proportion of remaining units that are not army.
 
-        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen fliers remain proportional
-        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(temp_estimated_unseen_value) * estimated_unseen_army_, 0.0); //Their unseen ground remains proportional
+        estimated_unseen_flyers_ = max(temp_estimated_unseen_flyers_ / static_cast<double>(temp_estimated_unseen_army_) * estimated_unseen_army_, 0.0); //Their unseen fliers remain proportional
+        estimated_unseen_ground_ = max(temp_estimated_unseen_ground_ / static_cast<double>(temp_estimated_unseen_army_) * estimated_unseen_army_, 0.0); //Their unseen ground remains proportional
     }
     else {
         estimated_unseen_army_ = max(temp_estimated_unseen_army_, 0.0);
