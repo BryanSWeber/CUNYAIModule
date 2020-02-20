@@ -7,6 +7,8 @@ Link to complete bot description here: https://ieeexplore.ieee.org/document/8490
 
 Recent Development Notes: 
 
+(2/19/2020)  This is a huge update. The bot now uses Python via pybind11.  This permits (easy) access to the python libraries, but greatly increases the size of the bot. Installation now requires manually downloading python36.dll and using pip to install the requisite dependancies.  An option to compile without these dependancies is still available.
+
 (9-26-2018) Incorperated FAP fully, BWEM is now used for pathing and movement, and BWEB is now used for building, including some walls at the natural. Several functions have been deeply refactored (particularly workers) and combat has been deeply streamlined for student use. The bot now makes some estimates of what opponents may have behind the fog of war, and better responds to observed technical investments.
 
 (9-6-2018) Current drafts of CUNYBot are responding to opponent's choice of *t* as well, and the overall observed behavior remains a tit-for-tat style.  Technology has been closely integrated and better improved in current versions, but have not yet released these to SSCAIT. Tasks at hand are generally production choices, and reducing waste in combat.  To that end, FAP has been added as a combat simulator. It also serves as an agnostic method of choosing which units to produce, with some caveats.
