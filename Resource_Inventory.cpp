@@ -99,7 +99,7 @@ Stored_Resource::Stored_Resource(Unit resource) {
     bwemMin ? blocking_mineral_ = bwemMin->Blocking() : blocking_mineral_ = false;
 }
 
-//void Stored_Resource::addMiner(Stored_Unit miner) {
+//void Stored_Resource::addMiner(StoredUnit miner) {
 //    if (miner.bwapi_unit_ && miner.bwapi_unit_->exists()){
 //        miner_inventory_.push_back(miner.bwapi_unit_);
 //        number_of_miners_++;
@@ -110,7 +110,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
     // Update "My Bases"
     Unit_Inventory hatches;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted()) hatches.addStored_Unit(u.second);
+        if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted()) hatches.addStoredUnit(u.second);
     }
     vector<Position> my_bases_;
 
@@ -151,7 +151,7 @@ void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Invent
                 }
 
                 if (r->first->getPlayer()->isEnemy(Broodwar->self())) { // if his gas is taken, sometimes they become enemy units. We'll insert it as such.
-                    Stored_Unit eu = Stored_Unit(r->first);
+                    StoredUnit eu = StoredUnit(r->first);
                     if (ei.unit_map_.insert({ r->first, eu }).second) {
                         Diagnostics::DiagnosticText("Huh, a geyser IS an enemy. Even the map is against me now...");
                     }

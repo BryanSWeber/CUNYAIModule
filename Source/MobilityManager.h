@@ -22,13 +22,13 @@ public:
     };
 
     // Basic retreat logic
-    bool Retreat_Logic(const Stored_Unit &su);
+    bool Retreat_Logic(const StoredUnit &su);
     // Scatter (from given position, or if blank, any present storms or spells)
     bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
-    bool Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
+    bool Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
-    bool local_pathing(const int &passed_distance, const Position &e_pos, const Stored_Unit::Phase phase);
+    bool local_pathing(const int &passed_distance, const Position &e_pos, const StoredUnit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
     bool BWEM_Movement(const bool & in_or_out);
 
@@ -60,21 +60,21 @@ public:
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
     Position getVectorAwayField(const vector<vector<int>>& field) const;
 
-    bool moveTo(const Position & start, const Position & finish, const Stored_Unit::Phase phase);
+    bool moveTo(const Position & start, const Position & finish, const StoredUnit::Phase phase);
     //Gets the next waypoint the unit would move to if using the moveTo command.
     Position getNextWaypoint(const Position & start, const Position & finish);
     // gives how far the unit can move in one second.
     int getDistanceMetric();
 
     // Returns true if the enemy unit is too far up another hill.
-    bool isOnDifferentHill(const Stored_Unit &e);
+    bool isOnDifferentHill(const StoredUnit &e);
 
     Unit pickTarget(int MaxDiveDistance, Unit_Inventory & ui); // selects a target from a unit map. Can return NULL
 
     bool checkGoingDifferentDirections(Unit e);
 
     bool checkEnemyApproachingUs(Unit e);
-    bool checkEnemyApproachingUs(Stored_Unit & e);
+    bool checkEnemyApproachingUs(StoredUnit & e);
 
     Position getVectorToEnemyDestination(Unit e);
 
@@ -83,7 +83,7 @@ public:
 private:
     Position pos_;
     Unit unit_;
-    Stored_Unit* stored_unit_;
+    StoredUnit* stored_unit_;
     UnitType u_type_;
     double distance_metric_;
     Position stutter_vector_ = Positions::Origin;

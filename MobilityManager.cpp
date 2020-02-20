@@ -17,12 +17,12 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
-bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos, const Stored_Unit::Phase phase) {
+bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos, const StoredUnit::Phase phase) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
         unit_->unburrow();
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
     }
 
     Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
@@ -48,40 +48,40 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
         if (CUNYAIModule::combat_manager.isScout(unit_)) {
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_, Stored_Unit::Phase::PathingOut);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_, StoredUnit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, Stored_Unit::Phase::PathingOut);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
         }
         else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, Stored_Unit::Phase::PathingOut);
+            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
             target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
         }
         else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, Stored_Unit::Phase::PathingOut);
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
                 target_pos = CUNYAIModule::current_map_inventory.enemy_base_air_;
             }
             else {
-                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, Stored_Unit::Phase::PathingOut);
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
                 target_pos = CUNYAIModule::current_map_inventory.enemy_base_ground_;
             }
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, Stored_Unit::Phase::PathingHome);
+        it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, StoredUnit::Phase::PathingHome);
         target_pos = CUNYAIModule::current_map_inventory.front_line_base_;
     }
 
     if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = prepareLurkerToAttack(target_pos) || it_worked;
 
     if (it_worked && target_pos != Positions::Origin && pos_.getDistance(target_pos) > stored_unit_->type_.sightRange()) {
-        forward_movement ? CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::PathingHome);
+        forward_movement ? CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut) : CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingHome);
     }
     else {
-        CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::None);
+        CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::None);
     }
     return it_worked;
 }
@@ -99,7 +99,7 @@ bool Mobility::surroundLogic(const Position & pos)
         //Diagnostics::drawLine(pos_ + seperation_vector_ + walkability_vector_ + get_proper_surround_distance, pos_ + seperation_vector_ + walkability_vector_ + get_proper_surround_distance + encircle_vector_, CUNYAIModule::current_map_inventory.screen_position_, Colors::White);//show we're avoiding low ground.
         //Diagnostics::drawLine(pos_, pos, CUNYAIModule::current_map_inventory.screen_position_, Colors::Red);//show what we're surrounding.
         //Diagnostics::DiagnosticTrack(pos_ + encircle_vector_ + walkability_vector_);
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Surrounding);
     }
     return false;
 }
@@ -120,7 +120,7 @@ bool Mobility::isolate()
 }
 
 // This is basic combat logic for nonspellcasting units.
-bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
+bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
 
 {
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
@@ -161,19 +161,19 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                     e_type == UnitTypes::Protoss_Reaver; // Prioritise these guys: Splash, crippled combat units
 
                 if ((e_type.isWorker() || critical_target) && CUNYAIModule::canContributeToFight(e_type, ui)) {
-                    DiveableTargets.addStored_Unit(e->second);
+                    DiveableTargets.addStoredUnit(e->second);
                 }
 
                 if (CUNYAIModule::Can_Fight(e_type, unit_)) {
-                    ThreateningTargets.addStored_Unit(e->second);
+                    ThreateningTargets.addStoredUnit(e->second);
                 }
 
                 if (CUNYAIModule::canContributeToFight(e_type, ui) || e_type.spaceProvided() > 0) {
-                    SecondOrderThreats.addStored_Unit(e->second);
+                    SecondOrderThreats.addStoredUnit(e->second);
                 }
 
                 if (CUNYAIModule::hasPriority(e->second) || e_type == UnitTypes::Protoss_Interceptor) { // don't target larva, eggs, or trivia, but you must shoot interceptors eventually.
-                    LowPriority.addStored_Unit(e->second);
+                    LowPriority.addStoredUnit(e->second);
                 }
             }
         }
@@ -218,11 +218,11 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
     if (target && !DISABLE_ATTACKING) {
         if (!prepareLurkerToAttack(target->getPosition())) {// adjust lurker if neccesary, otherwise attack.
             if (melee && !unit_->isFlying()) { // Attempting surround code.
-                Stored_Unit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
+                StoredUnit& permenent_target = *CUNYAIModule::enemy_player_model.units_.getStoredUnit(target);
                 permenent_target.circumference_remaining_ -= widest_dim;
                 if (permenent_target.circumference_remaining_ < permenent_target.circumference_ / 4 && unit_->getDistance(target) > CUNYAIModule::getFunctionalRange(unit_) && permenent_target.type_.isBuilding()) {
                         unit_->move(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
-                    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Surrounding);
+                    return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Surrounding);
                 }
             }
             if (target->exists())
@@ -231,10 +231,10 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
                 unit_->attack(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
         }
         Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, color);
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
     //else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
-    //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Attacking);
+    //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     //}
 
 
@@ -252,32 +252,32 @@ bool Mobility::Tactical_Logic(const Stored_Unit &e_unit, Unit_Inventory &ei, con
 //}
 
 // Basic retreat logic
-bool Mobility::Retreat_Logic(const Stored_Unit &e) {
+bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
         unit_->unburrow();
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
     Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_map_inventory.safe_base_);
 
-    if ( (!unit_->isFlying() && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(e.pos_) && !checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == Stored_Unit::Phase::Surrounding)) {
+    if ( (!unit_->isFlying() && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(e.pos_) && !checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
         approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
-        moveTo(pos_, pos_ - attract_vector_, Stored_Unit::Phase::Retreating);
+        moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
-        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, Stored_Unit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::current_map_inventory.front_line_base_, StoredUnit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
         approach(CUNYAIModule::current_map_inventory.safe_base_);
         //encircle(threat->pos_);
-        moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, Stored_Unit::Phase::Retreating);
+        moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, StoredUnit::Phase::Retreating);
     }
     else {
-        moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_, Stored_Unit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::current_map_inventory.safe_base_, StoredUnit::Phase::Retreating);
     }
-    return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+    return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
 }
 
 bool Mobility::Scatter_Logic(const Position pos)
@@ -287,7 +287,7 @@ bool Mobility::Scatter_Logic(const Position pos)
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
         unit_->unburrow();
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
 
@@ -321,7 +321,7 @@ bool Mobility::Scatter_Logic(const Position pos)
 
     approach(problem_pos);
     if (unit_->move(pos_ - attract_vector_))
-        return CUNYAIModule::updateUnitPhase(unit_, Stored_Unit::Phase::Retreating);
+        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     else
         return false;
 }
@@ -640,7 +640,7 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     return  return_vector;
 }
 
-bool Mobility::moveTo(const Position &start, const Position &finish, const Stored_Unit::Phase phase)
+bool Mobility::moveTo(const Position &start, const Position &finish, const StoredUnit::Phase phase)
 {
     int plength = 0;
     bool unit_sent = false;
@@ -696,7 +696,7 @@ int Mobility::getDistanceMetric()
     return distance_metric_;
 }
 
-bool Mobility::isOnDifferentHill(const Stored_Unit &e) {
+bool Mobility::isOnDifferentHill(const StoredUnit &e) {
     int altitude = BWEM::Map::Instance().GetMiniTile(WalkPosition(e.pos_)).Altitude();
     return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getFunctionalRange(unit_);
 }
@@ -727,7 +727,7 @@ bool Mobility::checkEnemyApproachingUs(Unit e) {
     return checkAngleSimilar(e->getAngle(), angle_to_me);
 }
 
-bool Mobility::checkEnemyApproachingUs(Stored_Unit & e) {
+bool Mobility::checkEnemyApproachingUs(StoredUnit & e) {
     Position vector_to_me = pos_ - e.pos_;
     double angle_to_me = atan2(vector_to_me.y, vector_to_me.x);
     return checkAngleSimilar(e.angle_, angle_to_me);

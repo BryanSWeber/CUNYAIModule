@@ -65,10 +65,10 @@ bool CUNYAIModule::isIdleEmpty(const Unit &unit) {
 }
 
 // Did the unit fight in the last few moments?
-bool CUNYAIModule::isRecentCombatant(const Stored_Unit &su) {
+bool CUNYAIModule::isRecentCombatant(const StoredUnit &su) {
     bool fighting_now = (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Move) || (su.bwapi_unit_->getLastCommand().getType() == UnitCommandTypes::Attack_Unit);
     bool recent_order = su.bwapi_unit_->getLastCommandFrame() + 24 > Broodwar->getFrameCount();
-    bool retreat_or_fight = (su.phase_ == Stored_Unit::Retreating || su.phase_ == Stored_Unit::Attacking);
+    bool retreat_or_fight = (su.phase_ == StoredUnit::Retreating || su.phase_ == StoredUnit::Attacking);
     return (fighting_now || retreat_or_fight) && recent_order;
 }
 
@@ -86,7 +86,7 @@ bool CUNYAIModule::isFightingUnit(const Unit &unit)
 }
 
 // Checks if a stored unit is a combat unit.
-bool CUNYAIModule::isFightingUnit(const Stored_Unit &unit)
+bool CUNYAIModule::isFightingUnit(const StoredUnit &unit)
 {
     if (!unit.valid_pos_)
         return false;
@@ -294,7 +294,7 @@ bool CUNYAIModule::Can_Fight( Unit unit, Unit enemy ) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
+bool CUNYAIModule::Can_Fight( Unit unit, StoredUnit enemy ) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit->getType();
     if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
@@ -302,7 +302,7 @@ bool CUNYAIModule::Can_Fight( Unit unit, Stored_Unit enemy ) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
+bool CUNYAIModule::Can_Fight(StoredUnit unit, StoredUnit enemy) {
     UnitType e_type = enemy.type_;
     UnitType u_type = unit.type_;
     if (enemy.bwapi_unit_ && !enemy.bwapi_unit_->isDetected()) return false;
@@ -310,7 +310,7 @@ bool CUNYAIModule::Can_Fight(Stored_Unit unit, Stored_Unit enemy) {
 }
 
 // Outlines the case where UNIT can attack ENEMY; 
-bool CUNYAIModule::Can_Fight( Stored_Unit unit, Unit enemy ) {
+bool CUNYAIModule::Can_Fight( StoredUnit unit, Unit enemy ) {
     UnitType e_type = enemy->getType();
     UnitType u_type = unit.type_;
     if (enemy && !enemy->isDetected()) return false;
@@ -522,7 +522,7 @@ int CUNYAIModule::countUnitsAvailableToPerform(const TechType &techType) {
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
 int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
-    int cost = Stored_Unit(building).stock_value_;
+    int cost = StoredUnit(building).stock_value_;
     int instances = countUnits( building , ui );
     int total_stock = cost * instances;
     return total_stock;
@@ -665,7 +665,7 @@ Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
     return e_set;
 }
 
-Stored_Unit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
+StoredUnit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
 {
 	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
 	bool found = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end();
@@ -673,10 +673,10 @@ Stored_Unit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit 
 }
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
+StoredUnit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if ( !ui.unit_map_.empty() ) {
         for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
@@ -692,10 +692,10 @@ Stored_Unit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position 
 }
 
 //Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+StoredUnit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
@@ -732,10 +732,10 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
 }
 
 //Gets pointer to closest unit of a type to point in Unit_inventory EXCLUDING the unit. Checks range. Careful about visiblity.
-Stored_Unit* CUNYAIModule::getClosestStored(const Unit unit, Unit_Inventory &ui, const UnitType &u_type, const int &dist = 999999) {
+StoredUnit* CUNYAIModule::getClosestStored(const Unit unit, Unit_Inventory &ui, const UnitType &u_type, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
@@ -790,11 +790,11 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin) {
 
     int min_dist = 999999;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
@@ -809,10 +809,10 @@ Stored_Unit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posi
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
@@ -827,10 +827,10 @@ Stored_Unit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Positio
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
@@ -846,10 +846,10 @@ Stored_Unit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, c
 }
 
 //Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-Stored_Unit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
+StoredUnit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
@@ -921,11 +921,11 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Un
 }
 
 //Gets pointer to closest attackable unit from unit in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
-Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
+StoredUnit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
     bool can_attack;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
@@ -944,11 +944,11 @@ Stored_Unit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const 
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
 
     if ( !ui.unit_map_.empty() ) {
         for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
@@ -968,11 +968,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, c
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -994,11 +994,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, co
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui, const UnitType ut, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui, const UnitType ut, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -1020,11 +1020,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui,
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -1044,11 +1044,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -1067,11 +1067,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, cons
     return return_unit;
 }
 
-Stored_Unit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -1091,11 +1091,11 @@ Stored_Unit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, con
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = pos;
 
     if (!ui.unit_map_.empty()) {
@@ -1114,11 +1114,11 @@ Stored_Unit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, cons
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = pos;
 
     if (!ui.unit_map_.empty()) {
@@ -1136,16 +1136,16 @@ Stored_Unit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui,
     return return_unit;
 }
 
-bool CUNYAIModule::hasPriority(Stored_Unit e) {
+bool CUNYAIModule::hasPriority(StoredUnit e) {
     return e.type_ != UnitTypes::Zerg_Egg && e.type_ != UnitTypes::Zerg_Larva && e.type_ != UnitTypes::Zerg_Broodling && e.type_ != UnitTypes::Protoss_Interceptor;
 }
 
 //Gets pointer to closest threat to unit within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_be_attacked_by;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
     if (!ui.unit_map_.empty()) {
@@ -1166,11 +1166,11 @@ Stored_Unit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit
 }
 
 //Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-Stored_Unit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     double temp_dist = 999999;
-    Stored_Unit* return_unit = nullptr;
+    StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
     we_are_a_flyer = unit->getType().isFlyer();
 
@@ -1203,14 +1203,14 @@ Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inv
     if (air_attack) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Overlord)) {
-                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
             }
         }
     }
     else {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Drone)) {
-                ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
             }
         }
     }
@@ -1222,7 +1222,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
     Unit_Inventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (static_cast<int>(e->second.pos_.getDistance(origin)) <= dist && e->second.valid_pos_) {
-            ui_out.addStored_Unit(e->second); // if we take any distance and they are in inventory.
+            ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1233,7 +1233,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
     Unit_Inventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (e->second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
-            ui_out.addStored_Unit(e->second); // if we take any distance and they are in inventory.
+            ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1270,7 +1270,7 @@ Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
     Unit_Inventory ui_out;
     for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
         if (u->second.valid_pos_ && ( !(*u).second.bwapi_unit_->canMove() && !(*u).second.bwapi_unit_->isInWeaponRange(target) ) ) {
-            ui_out.addStored_Unit((*u).second); // if we take any distance and they are in inventory.
+            ui_out.addStoredUnit((*u).second); // if we take any distance and they are in inventory.
         }
     }
     return ui_out;
@@ -1286,7 +1286,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
             int area_id = area->Id();
             for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
                 if (e->second.areaID_ == area_id) {
-                    ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                    ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
                 }
             }
         }
@@ -1300,7 +1300,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
 
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (e->second.areaID_ == AreaID) {
-            ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+            ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
         }
     }
 
@@ -1318,7 +1318,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInNeighborhood(const Unit_Inventory
             for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
                 for (auto & a : area->AccessibleNeighbours()) {
                     if (e->second.areaID_ == area_id || e->second.areaID_ == a->Id()) {
-                        ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                        ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
                     }
                 }
             }
@@ -1337,7 +1337,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
             int area_id = area->Id();
             for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
                 if (e->second.areaID_ == area_id && e->second.type_ == ut) {
-                    ui_out.addStored_Unit((*e).second); // if we take any distance and they are in inventory.
+                    ui_out.addStoredUnit((*e).second); // if we take any distance and they are in inventory.
                 }
             }
         }
@@ -1403,7 +1403,7 @@ bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 //    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
 //        if (e->second.pos_.x < origin.x + dist && e->second.pos_.x > origin.x - dist &&
 //            e->second.pos_.y < origin.y + dist && e->second.pos_.y > origin.y - dist &&
-//            CUNYAIModule::Can_Fight(e->second.type_, Stored_Unit(type) ) ) {
+//            CUNYAIModule::Can_Fight(e->second.type_, StoredUnit(type) ) ) {
 //            return true;
 //        }
 //    }
@@ -2023,7 +2023,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     bool it_is_home_ = false;
     Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
     Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
-    Stored_Unit* e_closest = getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, pos, 9999999);
+    StoredUnit* e_closest = getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, pos, 9999999);
 
     int radial_distance_to_closest_enemy = 0;
     int radial_distance_to_build_position = 0;
@@ -2088,7 +2088,7 @@ double CUNYAIModule::bindBetween(double x, double lower_bound, double upper_boun
 //Anabolic_Synthesis = 53,
 
 //Some safety checks if it can't find FAP objects, say at game start.
-int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool friendly_player) {
+int CUNYAIModule::getFAPScore(FAP::FastAPproximation<StoredUnit*> &fap, bool friendly_player) {
     if (friendly_player && fap.getState().first && !fap.getState().first->empty())                       return std::accumulate(fap.getState().first->begin(), fap.getState().first->end(), 0,   [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
     else if(!friendly_player && fap.getState().second && !fap.getState().second->empty())                return std::accumulate(fap.getState().second->begin(), fap.getState().second->end(), 0, [](int currentScore, auto FAPunit) { return static_cast<int>(currentScore + FAPunit.data->stock_value_ * static_cast<double>(FAPunit.health + FAPunit.shields) / static_cast<double>(FAPunit.maxHealth + FAPunit.maxShields)); });
     else return 0;
@@ -2101,7 +2101,7 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<Stored_Unit*> &fap, bool fr
 //}
 
 bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei, const bool equality_is_win) {
-    FAP::FastAPproximation<Stored_Unit*> MiniFap; // integrating FAP into combat with a produrbation.
+    FAP::FastAPproximation<StoredUnit*> MiniFap; // integrating FAP into combat with a produrbation.
     ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
     ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
     MiniFap.simulate(FAP_SIM_DURATION);
@@ -2124,21 +2124,21 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * Stored_Unit(UnitTypes::Terran_Marine).stock_value_)) * Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
-            //total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * fighting_may_save;
-            total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
-            total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
+            bool fighting_may_save = u.second.phase_ != StoredUnit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            //total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+            total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
         }
     }
 
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
             bool fighting_may_save =  e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * Stored_Unit(UnitTypes::Terran_Marine).stock_value_)) * Stored_Unit::unitDeadInFuture(e.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(e.second.type_, ui);
-            //total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * fighting_may_save;
-            total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * fighting_may_save;
+            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(e.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(e.second.type_, ui);
+            //total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+            total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * fighting_may_save;
+            total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * fighting_may_save;
         }
     }
 
@@ -2173,16 +2173,16 @@ int CUNYAIModule::getFAPDamageForecast(const Unit_Inventory &ui, const Unit_Inve
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        total_dying_ui += u.second.stock_value_ * Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
+        total_dying_ui += u.second.stock_value_ * StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second); // remember, FAP ignores non-fighting units.
+        total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second);
+        total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_;
+        total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:
@@ -2207,16 +2207,16 @@ int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_I
     int total_dying_ei = 0;
 
     for (auto u : ui.unit_map_) {
-        bool fighting_may_save = u.second.phase_ != Stored_Unit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-        total_surviving_ui += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
-        total_surviving_ui_up += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
-        total_surviving_ui_down += u.second.stock_value_ * !Stored_Unit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
+        bool fighting_may_save = u.second.phase_ != StoredUnit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+        total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * fighting_may_save;
+        total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
+        total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, duration) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
     }
     for (auto e : ei.unit_map_) {
-        total_dying_ei += e.second.stock_value_ * Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
-        total_surviving_ei_up += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
-        total_surviving_ei_down += e.second.stock_value_ * !Stored_Unit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
+        total_dying_ei += e.second.stock_value_ * StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second);
+        total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_;
+        total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, duration) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_;
     }
 
     // Calculate if the surviving side can destroy the fodder:
@@ -2255,10 +2255,10 @@ bool CUNYAIModule::checkUnitTouchable(const Unit &u) {
     return true;
 }
 
-bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase) {
+bool CUNYAIModule::updateUnitPhase(const Unit &u, const StoredUnit::Phase phase) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-        Stored_Unit& morphing_unit = found_item->second;
+        StoredUnit& morphing_unit = found_item->second;
         morphing_unit.phase_ = phase;
         morphing_unit.updateStoredUnit(u);
         return true;
@@ -2269,9 +2269,9 @@ bool CUNYAIModule::updateUnitPhase(const Unit &u, const Stored_Unit::Phase phase
 bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended_build_type, const TilePosition &intended_build_tile) {
     auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
     if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end()) {
-        Stored_Unit& morphing_unit = found_item->second;
+        StoredUnit& morphing_unit = found_item->second;
         morphing_unit.stopMine();
-        morphing_unit.phase_ = Stored_Unit::Prebuilding;
+        morphing_unit.phase_ = StoredUnit::Prebuilding;
         morphing_unit.intended_build_type_ = intended_build_type;
         morphing_unit.intended_build_tile_ = intended_build_tile;
         morphing_unit.updateStoredUnit(u);

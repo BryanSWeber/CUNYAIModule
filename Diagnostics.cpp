@@ -66,7 +66,7 @@ void Diagnostics::drawCircle(const Position &s_pos, const Position &screen_pos, 
     }
 }
 
-void Diagnostics::drawHitPoints(const Stored_Unit unit, const Position &screen_pos) {
+void Diagnostics::drawHitPoints(const StoredUnit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.current_hp_ != unit.type_.maxHitPoints() + unit.type_.maxShields()) {
@@ -94,7 +94,7 @@ void Diagnostics::drawHitPoints(const Stored_Unit unit, const Position &screen_p
     }
 }
 
-void Diagnostics::drawFAP(const Stored_Unit unit, const Position &screen_pos) {
+void Diagnostics::drawFAP(const StoredUnit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.future_fap_value_ > 0) {
@@ -121,7 +121,7 @@ void Diagnostics::drawFAP(const Stored_Unit unit, const Position &screen_pos) {
         }
     }
 }
-void Diagnostics::drawEstimatedDeath(const Stored_Unit unit, const Position &screen_pos) {
+void Diagnostics::drawEstimatedDeath(const StoredUnit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.count_of_consecutive_predicted_deaths_ > 0) {
@@ -148,7 +148,7 @@ void Diagnostics::drawEstimatedDeath(const Stored_Unit unit, const Position &scr
     }
 }
 
-void Diagnostics::drawLastDamage(const Stored_Unit unit, const Position &screen_pos) {
+void Diagnostics::drawLastDamage(const StoredUnit unit, const Position &screen_pos) {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
         if (unit.valid_pos_ && CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.time_since_last_dmg_ > 0) {
@@ -199,7 +199,7 @@ void Diagnostics::drawMineralsRemaining(const Stored_Resource resource, const Po
     }
 }
 
-void Diagnostics::drawSpamGuard(const Stored_Unit unit, const Position & screen_pos)
+void Diagnostics::drawSpamGuard(const StoredUnit unit, const Position & screen_pos)
 {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
@@ -230,7 +230,7 @@ void Diagnostics::drawSpamGuard(const Stored_Unit unit, const Position & screen_
     }
 }
 
-void Diagnostics::printLastOrder(const Stored_Unit unit, const Position & screen_pos)
+void Diagnostics::printLastOrder(const StoredUnit unit, const Position & screen_pos)
 {
     if constexpr (DIAGNOSTIC_MODE) {
         Position upper_left = unit.pos_;
@@ -240,29 +240,29 @@ void Diagnostics::printLastOrder(const Stored_Unit unit, const Position & screen
     }
 }
 
-void Diagnostics::printPhase(const Stored_Unit unit, const Position & screen_pos)
+void Diagnostics::printPhase(const StoredUnit unit, const Position & screen_pos)
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        map<Stored_Unit::Phase, string> enum_to_string = { { Stored_Unit::Phase::None,"None" } ,
-        { Stored_Unit::Phase::Attacking,"Attacking" },
-        { Stored_Unit::Phase::Retreating,"Retreating" },
-        { Stored_Unit::Phase::Prebuilding,"Prebuilding" },
-        { Stored_Unit::Phase::PathingOut,"PathingOut" },
-        { Stored_Unit::Phase::PathingHome,"PathingHome" },
-        { Stored_Unit::Phase::Surrounding,"Surrounding" },
-        { Stored_Unit::Phase::NoRetreat,"NoRetreat" },
-        { Stored_Unit::Phase::MiningMin,"Gather Min" },
-        { Stored_Unit::Phase::MiningGas,"Gather Gas" },
-        { Stored_Unit::Phase::Returning,"Returning" },
-        { Stored_Unit::Phase::DistanceMining,"DistanceMining" },
-        { Stored_Unit::Phase::Clearing,"Clearing" },
-        { Stored_Unit::Phase::Upgrading,"Upgrading" },
-        { Stored_Unit::Phase::Researching,"Researching" },
-        { Stored_Unit::Phase::Morphing,"Morphing" },
-        { Stored_Unit::Phase::Building,"Building" },
-        { Stored_Unit::Phase::Detecting,"Detecting" } };
+        map<StoredUnit::Phase, string> enum_to_string = { { StoredUnit::Phase::None,"None" } ,
+        { StoredUnit::Phase::Attacking,"Attacking" },
+        { StoredUnit::Phase::Retreating,"Retreating" },
+        { StoredUnit::Phase::Prebuilding,"Prebuilding" },
+        { StoredUnit::Phase::PathingOut,"PathingOut" },
+        { StoredUnit::Phase::PathingHome,"PathingHome" },
+        { StoredUnit::Phase::Surrounding,"Surrounding" },
+        { StoredUnit::Phase::NoRetreat,"NoRetreat" },
+        { StoredUnit::Phase::MiningMin,"Gather Min" },
+        { StoredUnit::Phase::MiningGas,"Gather Gas" },
+        { StoredUnit::Phase::Returning,"Returning" },
+        { StoredUnit::Phase::DistanceMining,"DistanceMining" },
+        { StoredUnit::Phase::Clearing,"Clearing" },
+        { StoredUnit::Phase::Upgrading,"Upgrading" },
+        { StoredUnit::Phase::Researching,"Researching" },
+        { StoredUnit::Phase::Morphing,"Morphing" },
+        { StoredUnit::Phase::Building,"Building" },
+        { StoredUnit::Phase::Detecting,"Detecting" } };
         Position upper_left = unit.pos_;
-        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.phase_ != Stored_Unit::Phase::None) {
+        if (CUNYAIModule::isOnScreen(upper_left, screen_pos) && unit.phase_ != StoredUnit::Phase::None) {
             Broodwar->drawTextMap(unit.pos_ + Position(unit.type_.dimensionDown(), unit.type_.dimensionRight()), enum_to_string[unit.phase_].c_str());
         }
     }

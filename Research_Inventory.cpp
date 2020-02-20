@@ -72,7 +72,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
         double value = max(static_cast<double>(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_)), i.second);
         if(value > 0)
           i.second = value; // we update the count of them that we hve seen so far.
-        //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(Stored_Unit(i.first));
+        //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(StoredUnit(i.first));
     }
 
 }
@@ -108,14 +108,14 @@ void Research_Inventory::updateBuildingStock(const Player & player) {
     int temp_building_stock = 0;
     for (auto i : player_model_to_compare.researches_.tech_buildings_)//Max number of possible upgrade types
     {
-        int value = Stored_Unit(i.first).stock_value_;
+        int value = StoredUnit(i.first).stock_value_;
         temp_building_stock += i.second * value; // include value of drone if race is zerg.
     }
 
     if (player == Broodwar->self()) {
         for (auto i : CUNYAIModule::my_reservation.reservation_map_)
             if(isTechBuilding(i.second))
-                temp_building_stock += i.second * Stored_Unit(i.second).stock_value_; // include value of drone if race is zerg.
+                temp_building_stock += i.second * StoredUnit(i.second).stock_value_; // include value of drone if race is zerg.
     }
 
     building_stock_ = temp_building_stock;

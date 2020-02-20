@@ -52,7 +52,7 @@ Player_Model CUNYAIModule::neutral_player_model;
 Resource_Inventory CUNYAIModule::land_inventory; // resources.
 Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
 CombatManager CUNYAIModule::combat_manager;
-FAP::FastAPproximation<Stored_Unit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
+FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
 TechManager CUNYAIModule::techmanager;
 AssemblyManager CUNYAIModule::assemblymanager;
 Building_Gene CUNYAIModule::buildorder; //
@@ -563,7 +563,7 @@ void CUNYAIModule::onFrame()
                 int dist = 999999;
                 int dist_temp = 0;
                 bool detector_found = false;
-                Stored_Unit detector_of_choice;
+                StoredUnit detector_of_choice;
                 for (auto d : friendly_player_model.units_.unit_map_) {
                     if (d.second.type_ == UnitTypes::Zerg_Overlord &&
                         d.second.bwapi_unit_ &&
@@ -584,13 +584,13 @@ void CUNYAIModule::onFrame()
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
                         Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
                         Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
-                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting); // Update the detector not the calling unit.
+                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
                         Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
                         Diagnostics::drawLine(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
-                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, Stored_Unit::Phase::Detecting);  // Update the detector not the calling unit.
+                        CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
                 }
             }
@@ -726,7 +726,7 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
 
     if (unit->getPlayer()->isEnemy(Broodwar->self()) && !unit->isInvincible()) { // safety check.
                                                                                              //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
-        Stored_Unit eu = Stored_Unit(unit);
+        StoredUnit eu = StoredUnit(unit);
 
         if (enemy_player_model.units_.unit_map_.insert({ unit, eu }).second) { // if the insertion succeeded
                                                                                //Diagnostics::DiagnosticText( "A %s just was discovered. Added to unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
@@ -745,8 +745,8 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
 
     if (unit->getPlayer()->isNeutral() && !unit->isInvincible()) { // safety check.
                                                                                  //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
-        Stored_Unit nu = Stored_Unit(unit);
-        neutral_player_model.units_.addStored_Unit(nu);
+        StoredUnit nu = StoredUnit(unit);
+        neutral_player_model.units_.addStoredUnit(nu);
 
     }
 
@@ -772,7 +772,7 @@ void CUNYAIModule::onUnitEvade(BWAPI::Unit unit)
 {
     //if ( unit && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check.
     //                                                                //Diagnostics::DiagnosticText( "I just gained vision of a %s", unit->getType().c_str() );
-    //    Stored_Unit eu = Stored_Unit( unit );
+    //    StoredUnit eu = StoredUnit( unit );
 
     //    if ( enemy_player_model.units_.unit_inventory_.insert( { unit, eu } ).second ) { // if the insertion succeeded
     //        Diagnostics::DiagnosticText( "A %s just evaded me. Added to hiddent unit inventory, size %d", eu.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
@@ -786,7 +786,7 @@ void CUNYAIModule::onUnitEvade(BWAPI::Unit unit)
 void CUNYAIModule::onUnitShow(BWAPI::Unit unit)
 {
     //if ( unit && unit->exists() && unit->getPlayer()->isEnemy( Broodwar->self() ) ) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.. (old comment?)
-    //    Stored_Unit eu = Stored_Unit( unit );
+    //    StoredUnit eu = StoredUnit( unit );
     //    auto found_ptr = enemy_player_model.units_.unit_inventory_.find( unit );
     //    if ( found_ptr != enemy_player_model.units_.unit_inventory_.end() ) {
     //        enemy_player_model.units_.unit_inventory_.erase( unit );
@@ -858,7 +858,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         auto found_ptr = friendly_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
             friendly_player_model.units_.unit_map_.erase(unit);
-            friendly_player_model.casualties_.addStored_Unit(unit);
+            friendly_player_model.casualties_.addStoredUnit(unit);
             //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {
@@ -874,7 +874,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         if (found_ptr) {
             if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
             enemy_player_model.units_.unit_map_.erase(unit);
-            enemy_player_model.casualties_.addStored_Unit(unit);
+            enemy_player_model.casualties_.addStoredUnit(unit);
             //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.unit_inventory_.size() );
         }
         else {

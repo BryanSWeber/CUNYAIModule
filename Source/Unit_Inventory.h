@@ -16,27 +16,27 @@ using namespace BWAPI;
 struct Map_Inventory;
 struct Reservation;
 
-struct Stored_Unit {
+struct StoredUnit {
 
     //Creates a steryotyped ideal of the unit. For comparisons.
-    Stored_Unit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
+    StoredUnit(const UnitType & unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
 
     static int getTraditionalWeight(const UnitType unittype, const bool &carrierUpgrade = false, const bool &reaverUpgrade = false);
     static int getGrownWeight(const UnitType unittype, const bool & carrierUpgrade, const bool & reaverUpgrade);
 
     // Creates an enemy unit object, an abbreviated version of the original.
-    Stored_Unit(const Unit &unit);
-    Stored_Unit();
+    StoredUnit(const Unit &unit);
+    StoredUnit();
     auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
     auto convertToFAPPosition(const Position & chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
     auto convertToFAPDisabled(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an immobile unit.
     auto convertToFAPAnitAir(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an anti-air only tool.
     auto convertToFAPflying(const Position & chosen_pos, const Research_Inventory & ri);
 
-    static void updateFAPvalue(FAP::FAPUnit<Stored_Unit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
+    static void updateFAPvalue(FAP::FAPUnit<StoredUnit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
 
-    static bool unitDeadInFuture(const Stored_Unit &unit, const int & number_of_frames_voted_death); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
+    static bool unitDeadInFuture(const StoredUnit &unit, const int & number_of_frames_voted_death); // returns true if the unit has a MA forcast that implies it will be alive in X frames.
 
     void updateStoredUnit(const Unit &unit);
 
@@ -100,7 +100,7 @@ struct Stored_Unit {
         Detecting = 17
     };
     Phase phase_ = Phase::None;
-    Stored_Unit(Phase p) : phase_(p) {}
+    StoredUnit(Phase p) : phase_(p) {}
     operator Phase () const { return phase_; }
 
     //Needed commands for workers.
@@ -189,33 +189,33 @@ struct Unit_Inventory {
     int is_shooting_ = 0;
     int island_count_ = 0;
 
-    map<Stored_Unit::Phase, int > count_of_each_phase_ = { { Stored_Unit::Phase::None, 0 } ,
-    { Stored_Unit::Phase::Attacking, 0 },
-    { Stored_Unit::Phase::Retreating, 0 },
-    { Stored_Unit::Phase::Prebuilding, 0 },
-    { Stored_Unit::Phase::PathingOut, 0 },
-    { Stored_Unit::Phase::PathingHome, 0 },
-    { Stored_Unit::Phase::Surrounding, 0 },
-    { Stored_Unit::Phase::NoRetreat, 0 },
-    { Stored_Unit::Phase::MiningMin, 0 },
-    { Stored_Unit::Phase::MiningGas, 0 },
-    { Stored_Unit::Phase::Returning, 0 },
-    { Stored_Unit::Phase::DistanceMining, 0 },
-    { Stored_Unit::Phase::Clearing, 0 },
-    { Stored_Unit::Phase::Upgrading, 0 },
-    { Stored_Unit::Phase::Researching, 0 },
-    { Stored_Unit::Phase::Morphing, 0 },
-    { Stored_Unit::Phase::Building, 0 },
-    { Stored_Unit::Phase::Detecting, 0 } };
+    map<StoredUnit::Phase, int > count_of_each_phase_ = { { StoredUnit::Phase::None, 0 } ,
+    { StoredUnit::Phase::Attacking, 0 },
+    { StoredUnit::Phase::Retreating, 0 },
+    { StoredUnit::Phase::Prebuilding, 0 },
+    { StoredUnit::Phase::PathingOut, 0 },
+    { StoredUnit::Phase::PathingHome, 0 },
+    { StoredUnit::Phase::Surrounding, 0 },
+    { StoredUnit::Phase::NoRetreat, 0 },
+    { StoredUnit::Phase::MiningMin, 0 },
+    { StoredUnit::Phase::MiningGas, 0 },
+    { StoredUnit::Phase::Returning, 0 },
+    { StoredUnit::Phase::DistanceMining, 0 },
+    { StoredUnit::Phase::Clearing, 0 },
+    { StoredUnit::Phase::Upgrading, 0 },
+    { StoredUnit::Phase::Researching, 0 },
+    { StoredUnit::Phase::Morphing, 0 },
+    { StoredUnit::Phase::Building, 0 },
+    { StoredUnit::Phase::Detecting, 0 } };
 
-    std::map <Unit, Stored_Unit> unit_map_;
+    std::map <Unit, StoredUnit> unit_map_;
 
     // Updates the count of units.
-    bool addStored_Unit(const Unit &unit);
-    bool addStored_Unit(const Stored_Unit &stored_unit);
+    bool addStoredUnit(const Unit &unit);
+    bool addStoredUnit(const StoredUnit &StoredUnit);
 
     //Removes units
-    void removeStored_Unit(Unit unit);
+    void removeStoredUnit(Unit unit);
 
     //Updates summary of inventory, stored here.
     void updateUnitInventorySummary();
@@ -236,20 +236,20 @@ struct Unit_Inventory {
 
 
     // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.
-    void addToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
-    void addDisabledToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addAntiAirToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addFlyingToFAPatPos(FAP::FastAPproximation<Stored_Unit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addToMCFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
-    void addToBuildFAP(FAP::FastAPproximation<Stored_Unit*>& fap_object, const bool friendly, const Research_Inventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
+    void addToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
+    void addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
+    void addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
+    void addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
+    void addToMCFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
+    void addToBuildFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const Research_Inventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
 
 
-    void pullFromFAP(vector<FAP::FAPUnit<Stored_Unit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
+    void pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.
 
     // Pass pointers
-    Stored_Unit* getStoredUnit(const Unit &unit);
+    StoredUnit* getStoredUnit(const Unit &unit);
     // Passing values for const-safety.
-    Stored_Unit getStoredUnitValue(const Unit & unit) const;
+    StoredUnit getStoredUnitValue(const Unit & unit) const;
 
     Position getMeanLocation() const;
     Position getMeanBuildingLocation() const;
@@ -257,7 +257,7 @@ struct Unit_Inventory {
     Position getStrongestLocation() const; //in progress
     Position getMeanCombatLocation() const;
     Position getMeanArmyLocation() const;
-    static Position positionMCFAP(const Stored_Unit & su);
+    static Position positionMCFAP(const StoredUnit & su);
     static Position positionBuildFap(const bool friendly);
     //Position getClosestMeanArmyLocation() const;
 

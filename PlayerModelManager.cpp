@@ -34,7 +34,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;
 
 
-    int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
+    int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
     int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
 
     spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
@@ -65,7 +65,7 @@ void Player_Model::updateSelfOnFrame()
     //Update Researches
     researches_.updateResearch(Broodwar->self());
 
-    int worker_value = Stored_Unit(bwapi_player_->getRace().getWorker()).stock_value_;
+    int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
     spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
@@ -106,7 +106,7 @@ void Player_Model::updateSelfOnFrame()
 
 void Player_Model::imputeUnits(const Unit &unit)
 {
-    Stored_Unit eu = Stored_Unit(unit);
+    StoredUnit eu = StoredUnit(unit);
     double temp_estimated_unseen_army_ = 0;
 
     //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistend error. Otherwise I have to remove Y itself or guess.
@@ -130,7 +130,7 @@ void Player_Model::imputeUnits(const Unit &unit)
     //Check if we have overdrafted our units.
     for (auto ut : unseen_units_) {
         if (CUNYAIModule::isFightingUnit(ut.first)) {
-            temp_estimated_unseen_army_ += static_cast<double>(Stored_Unit(ut.first).stock_value_) * ut.second;
+            temp_estimated_unseen_army_ += static_cast<double>(StoredUnit(ut.first).stock_value_) * ut.second;
         }
     }
 
@@ -138,13 +138,13 @@ void Player_Model::imputeUnits(const Unit &unit)
     if (temp_estimated_unseen_army_ < 0) {
         UnitType expected_producer = UnitTypes::None;
         if (eu.type_.whatBuilds().first.isBuilding()) {
-            Stored_Unit imputed_unit = Stored_Unit(eu.type_.whatBuilds().first);
+            StoredUnit imputed_unit = StoredUnit(eu.type_.whatBuilds().first);
             imputed_unit.time_first_observed_ = eu.type_.buildTime(); // it must be at least old enough to build it.
             incrementUnseenUnits(imputed_unit.type_);
             expected_producer = eu.type_.whatBuilds().first;
         }
         if (eu.type_.whatBuilds().first == UnitTypes::Zerg_Larva) {
-            Stored_Unit imputed_unit = UnitTypes::Zerg_Hatchery;
+            StoredUnit imputed_unit = UnitTypes::Zerg_Hatchery;
             imputed_unit.time_first_observed_ = eu.type_.buildTime() + LARVA_BUILD_TIME;
             incrementUnseenUnits(imputed_unit.type_);
             expected_producer = UnitTypes::Zerg_Hatchery;
@@ -297,16 +297,16 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
 
     for (auto ut : unseen_units_) {
         temp_estimated_unseen_supply_ += ut.first.supplyRequired() * ut.second;
-        temp_estimated_unseen_value += Stored_Unit(ut.first).stock_value_ * ut.second;
+        temp_estimated_unseen_value += StoredUnit(ut.first).stock_value_ * ut.second;
         if (CUNYAIModule::isFightingUnit(ut.first)) {
             temp_estimated_army_supply += ut.first.supplyRequired() * ut.second;
-            temp_estimated_unseen_army_ += Stored_Unit(ut.first).stock_value_ * ut.second;
-            temp_estimated_unseen_flyers_ += Stored_Unit(ut.first).stock_value_ * ut.first.isFlyer() * ut.second;
-            temp_estimated_unseen_ground_ += Stored_Unit(ut.first).stock_value_ * !ut.first.isFlyer() * ut.second;
+            temp_estimated_unseen_army_ += StoredUnit(ut.first).stock_value_ * ut.second;
+            temp_estimated_unseen_flyers_ += StoredUnit(ut.first).stock_value_ * ut.first.isFlyer() * ut.second;
+            temp_estimated_unseen_ground_ += StoredUnit(ut.first).stock_value_ * !ut.first.isFlyer() * ut.second;
         }
         if (ut.first.isWorker()) {
             temp_estimated_worker_supply += ut.first.supplyRequired() * ut.second;
-            temp_estimated_worker_value += Stored_Unit(ut.first).stock_value_ * ut.second;
+            temp_estimated_worker_value += StoredUnit(ut.first).stock_value_ * ut.second;
         }
     }
 
@@ -425,7 +425,7 @@ void Player_Model::evaluatePotentialTechExpenditures() {
                 }
             }
             if (opponentHasRequirements(p) && !CUNYAIModule::isFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.tech_buildings_[p]) {
-                value_holder_building_ = max(value_holder_building_, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
+                value_holder_building_ = max(value_holder_building_, StoredUnit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                 slowest_building_class_ = max(p.buildTime(), slowest_building_class_); // is the priciest unit a flier?
             }
         }
@@ -597,7 +597,7 @@ UnitType Player_Model::getDistributedProduct(const UnitType &ut) {
     else if (ut.producesLarva()) {
         for (auto p : UnitTypes::Zerg_Larva.buildsWhat()) {
             if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
-                value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+                value_holder_.insert({ p, StoredUnit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
                 unittype_holder_.push_back(p);
             }
         }
@@ -605,7 +605,7 @@ UnitType Player_Model::getDistributedProduct(const UnitType &ut) {
     else {
         for (auto p : ut.buildsWhat()) {
             if (opponentHasRequirements(p) && CUNYAIModule::isFightingUnit(p) && !p.isAddon()) {
-                value_holder_.insert({ p, Stored_Unit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
+                value_holder_.insert({ p, StoredUnit(p).stock_value_ / static_cast<double>(p.buildTime()) }); // assume the largest of these. (worst for me, risk averse).
                 unittype_holder_.push_back(p);
             }
         }

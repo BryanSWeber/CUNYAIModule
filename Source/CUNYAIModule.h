@@ -94,7 +94,7 @@ public:
     static CombatManager combat_manager;
     static Resource_Inventory land_inventory; // resources.
     static Map_Inventory current_map_inventory;  // macro variables, not every unit I have.
-    static FAP::FastAPproximation<Stored_Unit*> MCfap; // integrating FAP into combat with a produrbation.
+    static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
     static TechManager techmanager;
     static AssemblyManager assemblymanager;
     static Building_Gene buildorder; //
@@ -155,11 +155,11 @@ public:
     bool isInLine(const Unit &unit);
     // evaluates the value of a stock of buildings, in terms of total cost (min+gas). Assumes building is zerg and therefore, a drone was spent on it.
     static bool isFightingUnit(const Unit &unit);
-    static bool isFightingUnit(const Stored_Unit & unit);
+    static bool isFightingUnit(const StoredUnit & unit);
     static bool isFightingUnit(const UnitType & unittype);
 
     // evaluates if it was order to fight recently.
-    static bool isRecentCombatant(const Stored_Unit &su);
+    static bool isRecentCombatant(const StoredUnit &su);
     static void writePlayerModel(const Player_Model &player, const string label);   //writes aribtrary player model to file.
 
 
@@ -168,9 +168,9 @@ public:
     // Outlines the case where you can attack their type (air/ground/cloaked)
     static bool Can_Fight(UnitType u_type, UnitType e_type);
     static bool Can_Fight(Unit unit, Unit enemy);
-    static bool Can_Fight(Unit unit, Stored_Unit enemy);
-    static bool Can_Fight(Stored_Unit unit, Stored_Unit enemy);
-    static bool Can_Fight(Stored_Unit unit, Unit enemy);
+    static bool Can_Fight(Unit unit, StoredUnit enemy);
+    static bool Can_Fight(StoredUnit unit, StoredUnit enemy);
+    static bool Can_Fight(StoredUnit unit, Unit enemy);
     static bool canContributeToFight(const UnitType & ut, const Unit_Inventory enemy);
     static bool isInDanger(const UnitType & ut, const Unit_Inventory enemy);
 
@@ -201,36 +201,36 @@ public:
     //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
     Unitset getUnit_Set(const Unit_Inventory & ui, const Position & origin, const int & dist);
     // Directly looks up unit in Unitinventory. Returns null if it is not found.
-    static Stored_Unit * getStoredUnit(const Unit_Inventory & ui, const Unit & u);
+    static StoredUnit * getStoredUnit(const Unit_Inventory & ui, const Unit & u);
     //Gets pointer to closest unit to origin in appropriate inventory. Checks range. Careful about visiblity.
-    static Stored_Unit* getClosestStored(Unit_Inventory & ui, const Position & origin, const int & dist);
-    static Stored_Unit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
-    static Stored_Unit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin);
-    static Stored_Unit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
-    static Stored_Unit * getClosestAirStoredWithPriority(Unit_Inventory & ui, const Position & origin);
-    static Stored_Unit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
+    static StoredUnit* getClosestStored(Unit_Inventory & ui, const Position & origin, const int & dist);
+    static StoredUnit* getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist);
+    static StoredUnit * getClosestGroundStored(Unit_Inventory & ui, const Position & origin);
+    static StoredUnit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
+    static StoredUnit * getClosestAirStoredWithPriority(Unit_Inventory & ui, const Position & origin);
+    static StoredUnit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
-    static Stored_Unit * getClosestStored(const Unit unit, Unit_Inventory & ui, const UnitType & u_type, const int & dist);
+    static StoredUnit * getClosestStored(const Unit unit, Unit_Inventory & ui, const UnitType & u_type, const int & dist);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
     //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
     //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
-    static Stored_Unit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
+    static StoredUnit * getClosestAttackableStored(Unit_Inventory & ui, const Unit unit, const int & dist);
     //Gets pointer to closest threat or target to unit in Unit_inventory. Checks range. Careful about visiblity.
-    static Stored_Unit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist);
-    static Stored_Unit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
-    static Stored_Unit * getClosestThreatOrTargetExcluding(Unit_Inventory & ui, const UnitType ut, const Unit & unit, const int & dist);
-    static Stored_Unit * getClosestThreatOrTargetWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist);
-    static Stored_Unit * getClosestThreatWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).
-    static Stored_Unit * getClosestTargettWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
-    static Stored_Unit * getClosestGroundWithPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
-    static Stored_Unit * getClosestGroundNonWorkerPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
-    static bool hasPriority(Stored_Unit e);
-    static Stored_Unit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
-    static Stored_Unit * getMostAdvancedThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+    static StoredUnit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist);
+    static StoredUnit * getClosestThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
+    static StoredUnit * getClosestThreatOrTargetExcluding(Unit_Inventory & ui, const UnitType ut, const Unit & unit, const int & dist);
+    static StoredUnit * getClosestThreatOrTargetWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist);
+    static StoredUnit * getClosestThreatWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest threat that is considered worth attacking (no interceptors, for example).
+    static StoredUnit * getClosestTargettWithPriority(Unit_Inventory & ui, const Unit & unit, const int & dist); // gets the closest target that is considered worth attacking (no interceptors, for example).
+    static StoredUnit * getClosestGroundWithPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
+    static StoredUnit * getClosestGroundNonWorkerPriority(Unit_Inventory & ui, const Position & pos, const int & dist = 999999);
+    static bool hasPriority(StoredUnit e);
+    static StoredUnit * getClosestThreatStored(Unit_Inventory & ui, const Unit & unit, const int & dist);
+    static StoredUnit * getMostAdvancedThreatOrTargetStored(Unit_Inventory & ui, const Unit & unit, const int & dist = 999999);
 
 
     //Searches an enemy inventory for units of a type within a range. Returns enemy inventory meeting that critera. Returns pointers even if the unit is lost, but the pointers are empty.
@@ -313,8 +313,8 @@ public:
     bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
 
     static double bindBetween(double x, double lower_bound, double upper_bound);
-    // Gets total value of FAP structure using Stored_Units. If friendly player option is chose, it uses P1, the standard for friendly player.
-    static int getFAPScore(FAP::FastAPproximation<Stored_Unit*>& fap, bool friendly_player);
+    // Gets total value of FAP structure using StoredUnits. If friendly player option is chose, it uses P1, the standard for friendly player.
+    static int getFAPScore(FAP::FastAPproximation<StoredUnit*>& fap, bool friendly_player);
     static bool checkMiniFAPForecast(Unit_Inventory & ui, Unit_Inventory & ei, const bool equality_is_win);
     // Tells if we will be dealing more damage than we recieve, proportionally or total.
     static bool checkSuperiorFAPForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const bool equality_is_win = false);
@@ -326,7 +326,7 @@ public:
     static bool checkUnitTouchable(const Unit & u);
     static void DiagnosticTrack(const Unit & u);
     static void DiagnosticTrack(const Position & p);
-    static bool updateUnitPhase(const Unit & u, const Stored_Unit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
+    static bool updateUnitPhase(const Unit & u, const StoredUnit::Phase phase); // finds the unit in friendly unit inventory and updates its phase. Function updates that the unit has been touched.
     static bool updateUnitBuildIntent(const Unit & u, const UnitType & intended_build_type, const TilePosition & intended_build_tile); // finds the unit in friendly unit inventory and updates its phase to prebuild , its intended build type to Type, and its intended build tile to the listed tileposition. Function updates that the unit has been touched.
     // Checks if an area (by position) is dangerous for a unit to be in. If it is dangerous, returns TRUE.
     static bool checkDangerousArea(const UnitType ut, const Position pos);

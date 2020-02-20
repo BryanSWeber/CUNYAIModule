@@ -68,7 +68,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
     if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
         CUNYAIModule::buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
-        return CUNYAIModule::updateUnitPhase(unit, Stored_Unit::Phase::Building);
+        return CUNYAIModule::updateUnitPhase(unit, StoredUnit::Phase::Building);
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 
@@ -149,7 +149,7 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
     if (CUNYAIModule::checkWillingAndAble(larva, unittype, extra_critera))
     {
         if (larva->morph(unittype)) {
-            CUNYAIModule::updateUnitPhase(larva, Stored_Unit::Phase::Morphing);
+            CUNYAIModule::updateUnitPhase(larva, StoredUnit::Phase::Morphing);
             return true;
         }
     }
@@ -247,7 +247,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, drone->getPosition());
     e_loc.updateUnitInventorySummary();
     u_loc.updateUnitInventorySummary();
-    drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && Stored_Unit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);*/
+    drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && StoredUnit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);*/
     //}
 
     // Trust the build order. If there is a build order and it wants a building, build it!
@@ -322,8 +322,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     // Always:
-    bool upgrade_worth_melee = CUNYAIModule::friendly_player_model.units_.ground_melee_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Zergling).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0; // first upgrade is +1
-    bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / Stored_Unit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
+    bool upgrade_worth_melee = CUNYAIModule::friendly_player_model.units_.ground_melee_count_ > (100 + 100 * 1.25) / StoredUnit(UnitTypes::Zerg_Zergling).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) > 0; // first upgrade is +1
+    bool upgrade_worth_ranged = CUNYAIModule::friendly_player_model.units_.ground_range_count_ > (100 + 100 * 1.25) / StoredUnit(UnitTypes::Zerg_Hydralisk).stock_value_ && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0; // first upgrade is +1
 
     // For extra upgrades:
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
@@ -351,7 +351,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
         (CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den) > 0 || CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Spire, CUNYAIModule::friendly_player_model.units_) > 0) && // need spire or hydra to tech beyond lair please.
         CUNYAIModule::basemanager.getBaseCount() >= 3); // no less than 3 bases for hive please. // Spires are expensive and it will probably skip them unless it is floating a lot of gas.
 
-    Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
+    StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(drone)->second;
     morphing_unit.updateStoredUnit(drone); // don't give him a phase.
 
 
@@ -730,17 +730,17 @@ void AssemblyManager::updateOptimalCombatUnit() {
     bool building_optimal_unit = false;
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
-    FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
+    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
     CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
         //if (CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] != 0 || potential_type.first == UnitTypes::None) { // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
-        Stored_Unit su = Stored_Unit(potential_type.first);
+        StoredUnit su = StoredUnit(potential_type.first);
         Unit_Inventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
-        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStored_Unit(su); // do it twice if you're making 2.
+        friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
+        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
         friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
@@ -752,9 +752,9 @@ void AssemblyManager::updateOptimalCombatUnit() {
     have_idle_evos_ = false;
     have_idle_spires_ = false;
     for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_evos_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == Stored_Unit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_evos_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_spires_ = true;
+        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_spires_ = true;
     }
 }
 
@@ -769,7 +769,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
-    FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
+    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
 
     Unit_Inventory potentially_weak_team;
     Research_Inventory potentially_weak_team_researches;
@@ -799,11 +799,11 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         // test sunkens
         buildfap_temp.clear();
         buildfap_temp = buildFAP; // restore the buildfap temp.
-        Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Sunken_Colony);
+        StoredUnit su = StoredUnit(UnitTypes::Zerg_Sunken_Colony);
         // enemy units do not change.
         Unit_Inventory friendly_units_under_consideration; // new every time.
         for (int i = 0; i < 5; ++i) {
-            friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+            friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
         }
         friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -818,7 +818,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         // enemy units do not change.
         Unit_Inventory friendly_units_under_consideration2; // new every time.
         for (int i = 0; i < 5; ++i) {
-            friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+            friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
         }
         friendly_units_under_consideration2.addAntiAirToFAPatPos(buildfap_temp, comparision_spot, true, ri);
         buildfap_temp.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -836,7 +836,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
-    FAP::FastAPproximation<Stored_Unit*> buildFAP; // attempting to integrate FAP into building decisions.
+    FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
     int value_of_flyers = 0;
     int value_of_ground = 0;
     Unit_Inventory potentially_weak_team;
@@ -865,11 +865,11 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     // test ground hydras.
     buildfap_temp.clear();
     buildfap_temp = buildFAP; // restore the buildfap temp.
-    Stored_Unit su = Stored_Unit(UnitTypes::Zerg_Hydralisk);
+    StoredUnit su = StoredUnit(UnitTypes::Zerg_Hydralisk);
     // enemy units do not change.
     Unit_Inventory friendly_units_under_consideration; // new every time.
     for (int i = 0; i < 5; ++i) {
-        friendly_units_under_consideration.addStored_Unit(su); //add unit we are interested in to the inventory:
+        friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
     }
     friendly_units_under_consideration.addToFAPatPos(buildfap_temp, comparision_spot, true, ri);
     buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -884,7 +884,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
                               // enemy units do not change.
     Unit_Inventory friendly_units_under_consideration2; // new every time.
     for (int i = 0; i < 5; ++i) {
-        friendly_units_under_consideration2.addStored_Unit(su); //add unit we are interested in to the inventory:
+        friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
     }
     friendly_units_under_consideration2.addFlyingToFAPatPos(buildfap_temp, comparision_spot, true, ri);
     buildfap_temp.simulate(24 * 5); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -922,12 +922,12 @@ void AssemblyManager::updatePotentialBuilders()
     production_facility_bank_.unit_map_.clear();
 
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.type_ == UnitTypes::Zerg_Larva) larva_bank_.addStored_Unit(u.second);
-        if (u.second.type_ == UnitTypes::Zerg_Hydralisk) hydra_bank_.addStored_Unit(u.second);
-        if (u.second.type_ == UnitTypes::Zerg_Mutalisk) muta_bank_.addStored_Unit(u.second);
-        if (u.second.type_ == UnitTypes::Zerg_Creep_Colony) creep_colony_bank_.addStored_Unit(u.second);
-        if (u.second.type_ == Broodwar->self()->getRace().getWorker()) builder_bank_.addStored_Unit(u.second);
-        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) production_facility_bank_.addStored_Unit(u.second);
+        if (u.second.type_ == UnitTypes::Zerg_Larva) larva_bank_.addStoredUnit(u.second);
+        if (u.second.type_ == UnitTypes::Zerg_Hydralisk) hydra_bank_.addStoredUnit(u.second);
+        if (u.second.type_ == UnitTypes::Zerg_Mutalisk) muta_bank_.addStoredUnit(u.second);
+        if (u.second.type_ == UnitTypes::Zerg_Creep_Colony) creep_colony_bank_.addStoredUnit(u.second);
+        if (u.second.type_ == Broodwar->self()->getRace().getWorker()) builder_bank_.addStoredUnit(u.second);
+        if (u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) production_facility_bank_.addStoredUnit(u.second);
     }
 
     larva_bank_.updateUnitInventorySummary();
@@ -1014,36 +1014,36 @@ bool AssemblyManager::assignUnitAssembly()
             bool found_noncombat_use = false;
 
             if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
-                immediate_drone_larva.addStored_Unit(larva.second);
+                immediate_drone_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
             if (drones_are_needed_elsewhere || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
-                transfer_drone_larva.addStored_Unit(larva.second);
+                transfer_drone_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
             if (CUNYAIModule::supply_starved || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
-                overlord_larva.addStored_Unit(larva.second);
+                overlord_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
-            combat_creators.addStored_Unit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
+            combat_creators.addStoredUnit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
         }
     }
 
     if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12) {
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
-            bool bad_phase = (potential_lurker.second.phase_ == Stored_Unit::Attacking || potential_lurker.second.phase_ == Stored_Unit::Retreating || potential_lurker.second.phase_ == Stored_Unit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
+            bool bad_phase = (potential_lurker.second.phase_ == StoredUnit::Attacking || potential_lurker.second.phase_ == StoredUnit::Retreating || potential_lurker.second.phase_ == StoredUnit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
-            if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStored_Unit(potential_lurker.second);
+            if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStoredUnit(potential_lurker.second);
         }
     }
 
     if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12) {
         bool endgame_fliers_permissable = CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
-            bool bad_phase = (potential_endgame_flier.second.phase_ == Stored_Unit::Attacking || potential_endgame_flier.second.phase_ == Stored_Unit::Retreating || potential_endgame_flier.second.phase_ == Stored_Unit::Surrounding) /*&& potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields())*/;
+            bool bad_phase = (potential_endgame_flier.second.phase_ == StoredUnit::Attacking || potential_endgame_flier.second.phase_ == StoredUnit::Retreating || potential_endgame_flier.second.phase_ == StoredUnit::Surrounding) /*&& potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) || bad_phase) continue;
-            if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStored_Unit(potential_endgame_flier.second);
+            if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStoredUnit(potential_endgame_flier.second);
         }
     }
 

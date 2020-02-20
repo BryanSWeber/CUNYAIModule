@@ -126,7 +126,7 @@ void Reservation::confirmOngoingReservations() {
         bool keep = false;
 
         for (auto unit_it = CUNYAIModule::friendly_player_model.units_.unit_map_.begin(); unit_it != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && !CUNYAIModule::friendly_player_model.units_.unit_map_.empty(); unit_it++) {
-            Stored_Unit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit_it->first); // we will want DETAILED information about this unit.
+            StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit_it->first); // we will want DETAILED information about this unit.
             if (miner.intended_build_type_ == res_it->second && miner.intended_build_tile_ == res_it->first)
                 keep = true;
 

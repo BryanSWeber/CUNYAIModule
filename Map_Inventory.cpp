@@ -1148,7 +1148,7 @@ void Map_Inventory::updateCurrentMap() {
 
         //otherwise go to their weakest base.
         Position suspected_enemy_base = Positions::Origin;
-        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
+        StoredUnit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
         if (center_ground) { // let's go to the strongest enemy base if we've seen them!
             suspected_enemy_base = center_ground->pos_;
@@ -1180,7 +1180,7 @@ void Map_Inventory::updateCurrentMap() {
 
     if (frames_since_enemy_base_air_ > 24 * 5) {
 
-        Stored_Unit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
+        StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
 
         if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
             updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
@@ -1232,7 +1232,7 @@ void Map_Inventory::updateCurrentMap() {
 
     if ((frames_since_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(scouting_base_))) || scouting_base_ == Positions::Origin) {
         //Scout a base that's determined at random based on distance from their assumed main.
-        Stored_Unit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
+        StoredUnit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
         CUNYAIModule::enemy_player_model.casualties_.updateUnitInventorySummary();
         if (!center_ground && CUNYAIModule::enemy_player_model.casualties_.stock_total_ == 0) { // if they don't exist yet use the starting location proceedure we've established earlier.
             updateMapVeinsOut(enemy_base_ground_, scouting_base_, map_out_from_scouting_, false);
@@ -1388,7 +1388,7 @@ vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const v
 
     if (!map.empty() && !ui.unit_map_.empty()) {
         for (auto u : ui.unit_map_) {
-            if (u.second.type_.canAttack() && u.second.phase_ != Stored_Unit::Phase::Retreating || !combat_units) {
+            if (u.second.type_.canAttack() && u.second.phase_ != StoredUnit::Phase::Retreating || !combat_units) {
                 return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
             }
         }

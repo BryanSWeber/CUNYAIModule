@@ -74,7 +74,7 @@ bool LearningManager::confirmLearningFilesPresent()
 
     max_value_ = 0;
     for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-        max_value_ = max(max_value_, Stored_Unit::getTraditionalWeight(u));
+        max_value_ = max(max_value_, StoredUnit::getTraditionalWeight(u));
     }
 
     //Provide default starting values if there is nothing else to use.
@@ -92,7 +92,7 @@ bool LearningManager::confirmLearningFilesPresent()
 
         string weight_of_units = "";
         for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-            string temp = to_string(2.0*static_cast<double>(Stored_Unit(u).stock_value_) / static_cast<double>(max_value_) - 1.0);
+            string temp = to_string(2.0*static_cast<double>(StoredUnit(u).stock_value_) / static_cast<double>(max_value_) - 1.0);
             weight_of_units += temp + ",";
         }
         weight_of_units += "100";

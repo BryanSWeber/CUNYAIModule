@@ -40,7 +40,7 @@ void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
-            FAP::FastAPproximation<Stored_Unit*> upgradeFAP; // attempting to integrate FAP into building decisions.
+            FAP::FastAPproximation<StoredUnit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
             upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
@@ -198,8 +198,8 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
     if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-            morphing_unit.phase_ = Stored_Unit::Phase::Upgrading;
+            StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
+            morphing_unit.phase_ = StoredUnit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
             Diagnostics::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
@@ -216,8 +216,8 @@ bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const
     if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
-            Stored_Unit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
-            morphing_unit.phase_ = Stored_Unit::Phase::Researching;
+            StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
+            morphing_unit.phase_ = StoredUnit::Phase::Researching;
             morphing_unit.updateStoredUnit(unit);
             Diagnostics::DiagnosticText("Researching %s.", tech.c_str());
             return true;
