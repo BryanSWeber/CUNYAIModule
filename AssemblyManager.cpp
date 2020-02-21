@@ -643,7 +643,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLarger(const Un
         }
         // Otherwise, let's fall back on the backup placements
         if (!backup_placements.empty()) {
-            for (auto &tile : placements) {
+            for (auto &tile : backup_placements) {
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
                 if (plength > 0)
