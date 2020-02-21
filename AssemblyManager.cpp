@@ -86,12 +86,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
-        //Otherwise, use blocks.
-        map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
-        if (!block_spots.empty())
-            viable_placements.insert(block_spots.begin(), block_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
-            return true;
+        ////Otherwise, use blocks.  No longer used after BWEB update, since it takes away precious spots for spire.
+        //map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+        //if (!block_spots.empty())
+        //    viable_placements.insert(block_spots.begin(), block_spots.end());
+        //if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+        //    return true;
 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
@@ -114,7 +114,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
-        map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+        map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
@@ -130,7 +130,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 return true;
 
             // Then try a block,
-            map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
+            map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
             if (!block_spots.empty())
                 viable_placements.insert(block_spots.begin(), block_spots.end());
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
@@ -266,7 +266,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getInactiveBaseCount(3) < 2 && CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, (CUNYAIModule::basemanager.getInactiveBaseCount(5) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot())) < 1 && 
+                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings)), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
@@ -608,7 +609,7 @@ map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building,
     return viable_placements;
 }
 
-map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & building, const TilePosition & tp)
+map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLarger(const UnitType & building, const TilePosition & tp)
 {
 
     map<int, TilePosition> viable_placements = {};
@@ -620,8 +621,10 @@ map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & buildin
         set<TilePosition> backup_placements;
 
         //For each block get all placements
-        if (building.tileSize() == TilePosition{ 2,2 })
+        if (building.tileSize() == TilePosition{ 2,2 }) {
             placements = block.getSmallTiles();
+            backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks. Need backup positions if a medium doe snot exist.
+        }
         else if (building.tileSize() == TilePosition{ 3 , 2 }) { // allow to build medium tile at large blocks that are not walls. If you need a building, you *need* it.
             placements = block.getMediumTiles();
             backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks.
@@ -639,7 +642,7 @@ map<int, TilePosition> AssemblyManager::addClosestBlock(const UnitType & buildin
             }
         }
         // Otherwise, let's fall back on the backup placements
-        else if (!backup_placements.empty()) {
+        if (!backup_placements.empty()) {
             for (auto &tile : placements) {
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);

@@ -3,11 +3,38 @@
 using namespace std;
 using namespace BWAPI;
 
-namespace BWEB::Stations {
+namespace BWEB {
 
     namespace {
         vector<Station> stations;
     }
+
+    int Station::getGroundDefenseCount() {
+        int count = 0;
+        for (auto &defense : defenses) {
+            auto type = Map::isUsed(defense);
+            if (type == UnitTypes::Protoss_Photon_Cannon
+                || type == UnitTypes::Zerg_Sunken_Colony
+                || type == UnitTypes::Terran_Bunker)
+                count++;
+        }
+        return count;
+    }
+
+    int Station::getAirDefenseCount() {
+        int count = 0;
+        for (auto &defense : defenses) {
+            auto type = Map::isUsed(defense);
+            if (type == UnitTypes::Protoss_Photon_Cannon
+                || type == UnitTypes::Zerg_Spore_Colony
+                || type == UnitTypes::Terran_Missile_Turret)
+                count++;
+        }
+        return count;
+    }
+}
+
+namespace BWEB::Stations {
 
     set<TilePosition> stationDefenses(TilePosition here, bool mirrorHorizontal, bool mirrorVertical)
     {
@@ -20,6 +47,7 @@ namespace BWEB::Stations {
         const auto &topLeft = [&]() {
             defenses.insert({
                 offset(-2, -2),
+                offset(0, -2),
                 offset(2, -2),
                 offset(-2, 1) });
             if (here != Map::getMainTile() && here != Map::getNaturalTile())
@@ -35,11 +63,13 @@ namespace BWEB::Stations {
             if (Broodwar->self()->getRace() == Races::Terran)
                 defenses.insert({
                 offset(4, -2),
-                offset(0, -2) });
+                offset(0, -2),
+                offset(2, -2) });
             else {
                 defenses.insert({
                 offset(4, -2),
                 offset(0, -2),
+                offset(2, -2),
                 offset(4, 1) });
 
                 if (here != Map::getMainTile() && here != Map::getNaturalTile())
@@ -55,6 +85,7 @@ namespace BWEB::Stations {
         const auto &bottomLeft = [&]() {
             defenses.insert({
                 offset(-2, 3),
+                offset(0, 3),
                 offset(-2, 0),
                 offset(2, 3) });
 
@@ -71,11 +102,13 @@ namespace BWEB::Stations {
             if (Broodwar->self()->getRace() == Races::Terran)
                 defenses.insert({
                 offset(0, 3),
+                offset(2, 3),
                 offset(4, 3) });
             else {
                 defenses.insert({
                 offset(4, 0),
                 offset(0, 3),
+                offset(2, 3),
                 offset(4, 3) });
 
                 if (here != Map::getMainTile() && here != Map::getNaturalTile())
@@ -131,8 +164,8 @@ namespace BWEB::Stations {
                     TilePosition t(x, y);
                     if (!t.isValid())
                         continue;
-                    if (t.getDistance(start) <= 4)
-                        Map::addReserve(t, 1, 1);
+                    //if (t.getDistance(start) <= 2)
+                        //Map::addReserve(t, 1, 1);
                 }
             }
         };
@@ -170,12 +203,13 @@ namespace BWEB::Stations {
                     Map::addReserve(g->TopLeft(), 4, 2);
 
                 Station newStation(genCenter, stationDefenses(base.Location(), h, v), &base);
-                stations.push_back(newStation);
-                Map::addReserve(base.Location(), 4, 3);
+                stations.push_back(newStation);               
                 addResourceOverlap(genCenter);
 
                 if (Broodwar->self()->getRace() == Races::Zerg)
-                    Map::addReserve(base.Location() - TilePosition(1,1), 6, 5);
+                    Map::addReserve(base.Location(), 4, 4);
+                else
+                    Map::addReserve(base.Location(), 4, 3);
             }
         }
     }

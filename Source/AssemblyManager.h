@@ -48,7 +48,7 @@ public:
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
-    static map<int, TilePosition> addClosestBlock(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
+    static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
 
     static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera, const int max_travel_distance_contributing = 500); // build at the nearest position in that map<int, TilePosition> using unit u. Confirms extra criteria is met. Will not consider more than (max_travel_distance_contributing) pixels of travel time into cost.

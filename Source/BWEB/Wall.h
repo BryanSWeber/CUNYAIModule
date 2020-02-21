@@ -15,13 +15,15 @@ namespace BWEB {
         std::vector<BWAPI::UnitType> rawBuildings, rawDefenses;
         std::map<BWAPI::TilePosition, BWAPI::UnitType> currentLayout, bestLayout;
 
+        BWAPI::TilePosition node1Tight = BWAPI::TilePositions::Invalid, node2Tight = BWAPI::TilePositions::Invalid;
         const BWEM::Area * area;
         const BWEM::ChokePoint * choke;
-        bool pylonWall, openWall, requireTight;
+        const BWEM::Base * base;
+        bool pylonWall, openWall, requireTight, movedStart;
         double chokeAngle;
 
         std::vector<BWAPI::UnitType>::iterator typeIterator;
-        BWAPI::TilePosition initialStart, initialEnd, startTile, endTile;
+        BWAPI::TilePosition initialPathStart, initialPathEnd, pathStart, pathEnd;
         double bestWallScore = 0.0;
         double jpsDist = 0.0;
 
@@ -31,6 +33,7 @@ namespace BWEB {
         bool tightCheck(const BWAPI::UnitType, const BWAPI::TilePosition);
         bool spawnCheck(const BWAPI::UnitType, const BWAPI::TilePosition);
 
+        void cleanup();
         void initializePathPoints();
         void checkPathPoints();
         Path findOpeningInWall();
@@ -51,15 +54,16 @@ namespace BWEB {
             tightType = _tightType;
 
             bestWallScore = 0.0;
-            startTile = BWAPI::TilePositions::None;
-            endTile = BWAPI::TilePositions::None;
-            initialStart = BWAPI::TilePositions::None;
-            initialEnd = BWAPI::TilePositions::None;
+            pathStart = BWAPI::TilePositions::None;
+            pathEnd = BWAPI::TilePositions::None;
+            initialPathStart = BWAPI::TilePositions::None;
+            initialPathEnd = BWAPI::TilePositions::None;
 
             initialize();
             addCentroid();
             addOpening();
             addDefenses();
+            cleanup();
         }
 
         void addToWall(BWAPI::TilePosition here, BWAPI::UnitType building) {
@@ -106,6 +110,12 @@ namespace BWEB {
         std::vector<BWAPI::UnitType>& getRawDefenses() { return rawDefenses; }
 
         bool isPylonWall() { return pylonWall; }
+
+        /// <summary> Returns the number of ground defenses associated with this Wall. </summary>
+        int getGroundDefenseCount();
+
+        /// <summary> Returns the number of air defenses associated with this Wall. </summary>
+        int getAirDefenseCount();
     };
 
     namespace Walls {

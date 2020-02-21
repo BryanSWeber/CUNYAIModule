@@ -22,29 +22,57 @@ namespace BWEB::Blocks
         vector<Piece> whichPieces(int width, int height)
         {
             vector<Piece> pieces;
-            const auto  race = Broodwar->self()->getRace();
-            if (height == 2) {
-                if (width == 2)
-                    pieces = { Piece::Small };
+
+            // Zerg Block pieces
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                if (height == 3) {
+                    if (width == 4)
+                        pieces = { Piece::Large };
+                    if (width == 8)
+                        pieces = { Piece::Large, Piece::Large };
+                    if (width == 12)
+                        pieces = { Piece::Large, Piece::Large, Piece::Large };
+                    if (width == 16)
+                        pieces = { Piece::Large, Piece::Large, Piece::Large, Piece::Large };
+                }
+                else if (height == 4) {
+                    if (width == 5)
+                        pieces = { Piece::Small, Piece::Medium, Piece::Row, Piece::Medium , Piece::Small };
+                }
             }
-            else if (height == 3) {
-                if (width == 4)
-                    pieces = { Piece::Large };
-            }
-            else if (height == 5) {
-                if (width == 4)
-                    pieces = { Piece::Small, Piece::Small, Piece::Row, Piece::Large };
-                if (width == 8)
-                    pieces = { Piece::Medium, Piece::Small, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
+
+            // Protos Block pieces
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (height == 2) {
+                    if (width == 5)
+                        pieces ={ Piece::Small, Piece::Medium };
+                }
+                else if (height == 4) {
+                    if (width == 5)
+                        pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                }
+                else if (height == 5) {
+                    if (width == 4)
+                        pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
+                }
+                else if (height == 6) {
+                    if (width == 10)
+                        pieces ={ Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
+                    if (width == 18)
+                        pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
+                }
+                else if (height == 8) {
+                    if (width == 8)
+                        pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small, Piece::Row, Piece::Large, Piece::Large };
+                    if (width == 5)
+                        pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+                }
             }
             return pieces;
         }
 
         bool canAddBlock(const TilePosition here, const int width, const int height)
         {
-            if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
-                return false;
-
             // Check if a block of specified size would overlap any bases, resources or other blocks
             for (auto x = here.x - 1; x < here.x + width + 1; x++) {
                 for (auto y = here.y - 1; y < here.y + height + 1; y++) {
@@ -58,9 +86,6 @@ namespace BWEB::Blocks
 
         bool canAddProxyBlock(const TilePosition here, const int width, const int height)
         {
-            if (!TilePosition(here.x + width + 1, here.y + height + 1).isValid())
-                return false;
-
             // Check if a proxy block of specified size is not buildable here
             for (auto x = here.x - 1; x < here.x + width + 1; x++) {
                 for (auto y = here.y - 1; y < here.y + height + 1; y++) {
@@ -100,7 +125,7 @@ namespace BWEB::Blocks
             bool blockFacesLeft, blockFacesUp;
 
             const auto creepOnCorners = [&](TilePosition here, int width, int height) {
-                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width, 0)) && Broodwar->hasCreep(here + TilePosition(0, height)) && Broodwar->hasCreep(here + TilePosition(width, height));
+                return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width - 1, 0)) && Broodwar->hasCreep(here + TilePosition(0, height - 1)) && Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
             };
 
             auto tileBest = TilePositions::Invalid;
@@ -108,12 +133,11 @@ namespace BWEB::Blocks
             auto start = TilePosition(here);
 
             // Try to find a block near our starting location
-            for (auto x = start.x - 20; x <= start.x + 20; x++) {
-                for (auto y = start.y - 20; y <= start.y + 20; y++) {
+            for (auto x = start.x - 12; x <= start.x + 12; x++) {
+                for (auto y = start.y - 12; y <= start.y + 12; y++) {
                     const TilePosition tile(x, y);
 
-                    if (!tile.isValid()
-                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
+                    if (!tile.isValid())
                         continue;
 
                     const auto blockCenter = Position(tile) + Position(128, 80);
@@ -121,7 +145,7 @@ namespace BWEB::Blocks
 
                     if (dist < distBest && ((race == Races::Protoss && canAddBlock(tile, 8, 5))
                         || (race == Races::Terran && canAddBlock(tile, 6, 5))
-                        || (race == Races::Zerg && creepOnCorners(tile, 3, 6) && canAddBlock(tile, 3, 6)))) {
+                        || (race == Races::Zerg && creepOnCorners(tile, 5, 4) && canAddBlock(tile, 5, 4)))) {
                         tileBest = tile;
                         distBest = dist;
 
@@ -144,8 +168,7 @@ namespace BWEB::Blocks
                         const auto dist = blockCenter.getDistance(Map::getMainPosition()) + blockCenter.getDistance(Position(Map::getMainChoke()->Center()));
                         if (dist < distBest &&
                             ((race == Races::Protoss && canAddBlock(tile, 8, 5))
-                                || (race == Races::Terran && canAddBlock(tile, 6, 5))
-                                || (race == Races::Zerg && creepOnCorners(tile, 3, 6) && canAddBlock(tile, 3, 6)))) {
+                                || (race == Races::Terran && canAddBlock(tile, 6, 5)))) {
                             tileBest = tile;
                             distBest = dist;
 
@@ -179,23 +202,11 @@ namespace BWEB::Blocks
             }
 
             // Mirror the block vertically/horizontally for better placement
-            else if (tileBest.isValid()) {
+            if (tileBest.isValid()) {
 
                 // TODO: Add T/Z mirroring
-                if (race == Races::Zerg) {
-                    if (blockFacesLeft) {
-                        if (blockFacesUp)
-                            pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
-                        else
-                            pieces = { Piece::Small, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium };
-                    }
-                    else {
-                        if (blockFacesUp)
-                            pieces = { Piece::Medium, Piece::Row, Piece::Medium, Piece::Row, Piece::Small };
-                        else
-                            pieces = { Piece::Small, Piece::Row, Piece::Medium, Piece::Row, Piece::Medium };
-                    }
-                }
+                if (race == Races::Zerg)
+                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Medium, Piece::Small };
                 else if (race == Races::Terran)
                     pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Medium, Piece::Medium };
                 else if (race == Races::Protoss) {
@@ -219,6 +230,9 @@ namespace BWEB::Blocks
 
         void findMainDefenseBlock()
         {
+            if (Broodwar->self()->getRace() == Races::Zerg)
+                return;
+
             // Added a block that allows a good shield battery placement or bunker placement
             auto tileBest = TilePositions::Invalid;
             auto start = TilePosition(Map::getMainChoke()->Center());
@@ -226,12 +240,14 @@ namespace BWEB::Blocks
             for (auto x = start.x - 12; x <= start.x + 16; x++) {
                 for (auto y = start.y - 12; y <= start.y + 16; y++) {
                     const TilePosition tile(x, y);
-
-                    if (!tile.isValid() || Map::mapBWEM.GetArea(tile) != Map::getMainArea())
-                        continue;
-
                     const auto blockCenter = Position(tile) + Position(80, 32);
                     const auto dist = (blockCenter.getDistance((Position)Map::getMainChoke()->Center()));
+
+                    if (!tile.isValid()
+                        || Map::mapBWEM.GetArea(tile) != Map::getMainArea()
+                        || dist < 96.0)
+                        continue;
+
                     if (dist < distBest && canAddBlock(tile, 5, 2)) {
                         tileBest = tile;
                         distBest = dist;
@@ -256,7 +272,7 @@ namespace BWEB::Blocks
                     const TilePosition t(x, y);
                     if (t.isValid() && Broodwar->isBuildable(t)) {
                         const auto p = Position(x * 32, y * 32);
-                        const auto dist = Map::getNaturalChoke() ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(Map::getMainPosition());
+                        const auto dist = (Map::getNaturalChoke() && Broodwar->self()->getRace() != Races::Zerg) ? p.getDistance(Position(Map::getNaturalChoke()->Center())) : p.getDistance(Map::getMainPosition());
                         tilesByPathDist.insert(make_pair(dist, t));
                     }
                 }
@@ -271,15 +287,24 @@ namespace BWEB::Blocks
                     if (pieces.empty())
                         continue;
 
+                    const auto smallCount = countPieces(pieces, Piece::Small);
                     const auto mediumCount = countPieces(pieces, Piece::Medium);
                     const auto largeCount = countPieces(pieces, Piece::Large);
 
                     for (auto &[_, tile] : tilesByPathDist) {
 
-                        //if (totalMedium > 16 && mediumCount > 0 && Map::mapBWEM.GetArea(tile) != Map::getMainArea() && Broodwar->self()->getRace() == Races::Protoss)
-                        //    continue;
-                        if (largeCount > 0 && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 12 && mainPieces[Piece::Medium] < 10)
-                            continue;
+                        // Protoss caps large pieces in the main at 12 if we don't have necessary medium pieces
+                        if (Broodwar->self()->getRace() == Races::Protoss) {
+                            if (largeCount > 0 && Map::mapBWEM.GetArea(tile) == Map::getMainArea() && mainPieces[Piece::Large] >= 12 && mainPieces[Piece::Medium] < 10)
+                                continue;
+                        }
+
+                        // Zerg only need 8 medium pieces and 2 small pieces
+                        if (Broodwar->self()->getRace() == Races::Zerg) {
+                            if ((mediumCount > 0 && mainPieces[Piece::Medium] >= 8)
+                                || (smallCount > 0 && mainPieces[Piece::Small] >= 2))
+                                continue;
+                        }
 
                         if (canAddBlock(tile, i, j)) {
                             insertBlock(tile, pieces);
@@ -403,10 +428,15 @@ namespace BWEB::Blocks
 
     void findBlocks()
     {
+        const auto race = Broodwar->self()->getRace();
+
+        auto secondBlockMiddle = (Position(Map::getMainChoke()->Center()) + Position(Map::getMainPosition())) / 2;
+
         // Customized: want 2 start blocks
-        findMainStartBlock(Position(Map::getMainChoke()->Center()));
-        findMainStartBlock(Map::getMainPosition());
         findMainDefenseBlock();
+        findMainStartBlock(Map::getMainPosition());
+        if (race == Races::Zerg)
+            findMainStartBlock(Map::getMainPosition());
         findProxyBlock();
         findProductionBlocks();
     }
