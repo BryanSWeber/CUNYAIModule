@@ -19,8 +19,9 @@ public:
 
     static bool combatScript(const Unit &u);   // Runs basic combat script, and if there is no combat, it returns false.
     static bool scoutScript(const Unit &u);       // Runs a basic scouting script, primarily for overlords but valid for non-overlords.
-    static bool liabilitiesScript(const Unit &u);
+    static bool liabilitiesScript(const Unit &u); // Runs liability units towards static defence.
     static bool pathingScript(const Unit &u);      // Runs a basic pathing script. Home if concerned, out if safe.
+    static bool checkNeedMoreWorkersToHold(const Unit_Inventory & friendly, const Unit_Inventory & enemy); // Returns true if we are using enough workers to defend some rush.
 
     //Grouping for inventories, mostly unused.
     bool addAntiAir(const Unit &u);      //Adds to appropriate inventory. May move differently.

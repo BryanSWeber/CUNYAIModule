@@ -112,27 +112,21 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if (isWorkerFight(expanded_friend_loc, enemy_loc)) { // if this is a worker battle, eg stone , a mean worker scout, or a static defense rush.
-                        if (expanded_friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) < ( (enemy_loc.worker_count_ > 0) + (enemy_loc.worker_count_ > 1) * enemy_loc.worker_count_ + (enemy_loc.building_count_ > 0)*(enemy_loc.building_count_ + 3)) && CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::MiningMin) > expanded_friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking)) {
-                            if (!resource_loc.resource_inventory_.empty() && ((enemy_loc.building_count_ + enemy_loc.worker_count_ > 1) || my_unit->future_fap_value_ > 0) ) { // Do you need to join in?
-                                return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White); 
-                            }
-                            else{
-                                break; // exit this section and retreat.
-                            }
-                        }
-                        else {
-                            return false; // Too many workers are fighting, so let us have you continue your task.
-                        }
-                    }
-                    else { // this fight is a regular fight.
-                        if (!resource_loc.resource_inventory_.empty() && standard_fight_reasons) {
+                    if (checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc)) {
+                        if (!resource_loc.resource_inventory_.empty() && my_unit->future_fap_value_ > 0) { // Do you need to join in?
                             return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
+                        else if (CUNYAIModule::basemanager.getBaseCount() > 1)
+                            break; // exit this section and retreat if there is somewhere to go or you are about to die.
+                        else
+                            return false; // if there's no where to go or you are about to die.... keep mining.
+                    }
+                    else {
+                        return false; // Too many workers are fighting, so let us have you continue your task.
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ( (!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking) && prepping_attack && !my_unit->burrowed_) {
+                    if ((!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking) && prepping_attack && !my_unit->burrowed_) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surroundLogic(e_closest_threat->pos_);
                         }
@@ -146,7 +140,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Scourge: // Suicide Units
-                case UnitTypes::Zerg_Infested_Terran: 
+                case UnitTypes::Zerg_Infested_Terran:
                     if ((my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding) && overstacked_units) {
                         return mobility.Scatter_Logic(overstacked_units->pos_);
                     }
@@ -157,20 +151,22 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
-                // Most simple combat units behave like this:
+                    // Most simple combat units behave like this:
                 default:
                     if (!standard_fight_reasons && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking) && prepping_attack) {
-                         return mobility.surroundLogic(e_closest_threat->pos_);
+                        return mobility.surroundLogic(e_closest_threat->pos_);
                     }
                     else if (standard_fight_reasons) {
                         bool target_is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
-                        bool kiting = e_closest_threat && e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64  // only kite if he's in range,
+                        bool surround_is_viable = (distance_to_ground > max(mobility.getDistanceMetric(), CUNYAIModule::getFunctionalRange(u)) / 2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker); // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
+                        bool kiting_away = e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64  // only kite if he's in range,
                             && CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(u->getPosition()).x][WalkPosition(u->getPosition()).y] > 8;  //only kite in open areas.
-                        if (distance_to_ground > max(mobility.getDistanceMetric() , CUNYAIModule::getFunctionalRange(u))/2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker) // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
+                        bool kiting_in = e_closest_threat->bwapi_unit_ && CUNYAIModule::getExactRange(u) < CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+                        if ((kiting_in || surround_is_viable) && e_closest_ground)
                             return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground->bwapi_unit_), StoredUnit::Phase::Surrounding);
-                        if (kiting)
+                        if (kiting_away)
                             break; // if kiting, just exit and we will retreat.
-                        else 
+                        else
                             return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
@@ -188,7 +184,7 @@ bool CombatManager::combatScript(const Unit & u)
             }
         }
 
-        //Here seems to be the "false combats."
+        //If there are no threats, let's smash stuff under these conditions.
         StoredUnit* e_closest_target = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         if (e_closest_target) {
             Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
@@ -264,6 +260,13 @@ bool CombatManager::pathingScript(const Unit & u)
     }
 
     return false;
+}
+
+bool CombatManager::checkNeedMoreWorkersToHold(const Unit_Inventory &friendly, const Unit_Inventory &enemy)
+{
+    bool check_enough_mining = CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::MiningMin) + CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::Returning) + CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::MiningGas) > friendly.count_of_each_phase_.at(StoredUnit::Phase::Attacking) + 1;
+    bool bare_minimum_defenders = friendly.count_of_each_phase_.at(StoredUnit::Phase::Attacking) < (enemy.worker_count_ > 0) + (enemy.worker_count_ > 1) * enemy.worker_count_ + (enemy.building_count_ > 0)*(enemy.building_count_ + 3) + (enemy.ground_count_ > 0)*(enemy.ground_count_ + 3); // If there is 1 worker, bring 1, if 2+, bring workers+1, if buildings, buildings + 3, if troops, troops+3;
+    return bare_minimum_defenders && check_enough_mining;
 }
 
 bool CombatManager::addAntiAir(const Unit & u)
