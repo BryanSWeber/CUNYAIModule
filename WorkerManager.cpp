@@ -303,8 +303,6 @@ bool WorkerManager::workerWork(const Unit &u) {
     }
     bool task_guard = false;
 
-    bool build_check_this_frame_ = (t_game % 12 == 0);
-
     //if (CUNYAIModule::spamGuard(miner.bwapi_unit_)) { // careful about interactions between spam guards.
     //Do not disturb fighting workers or workers assigned to clear a position. Do not spam. Allow them to remain locked on their task.
     switch (miner.phase_)
@@ -356,7 +354,10 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case StoredUnit::Returning: // this command is very complex. Only consider reassigning if reassignment is NEEDED. Otherwise reassign to locked mine (every 14 frames) and move to the proper phase.
         if (isEmptyWorker(u)) {
-            if (miner.locked_mine_) {
+            if (CUNYAIModule::assemblymanager.buildBuilding(u)) { // try to build, if succesful we break otherwise mine more.
+                break;
+            }
+            else if (miner.locked_mine_) {
                 if (miner.locked_mine_->getType().isMineralField() && excess_gas_capacity_ && CUNYAIModule::gas_starved) {
                     task_guard = workersCollect(u, 500);
                 }
@@ -364,7 +365,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                     task_guard = workersCollect(u, 500);
                 }
                 else if ((miner.locked_mine_->getType().isMineralField() && !excess_gas_capacity_) || (miner.locked_mine_->getType().isRefinery() && CUNYAIModule::gas_starved)) { // if they're doing the proper thing, consider reassigning them.
-                    if (workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u))) {
+                    if (workersClear(u) || CUNYAIModule::assemblymanager.buildBuilding(u)) {
                         task_guard = true;
                     }
                     else {
@@ -386,7 +387,7 @@ bool WorkerManager::workerWork(const Unit &u) {
             task_guard = workersReturn(u); // mark worker as returning.
         }
         else {
-            task_guard = workersClear(u) || (!build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u)) || workersCollect(u, 500);
+            task_guard = workersClear(u) || CUNYAIModule::assemblymanager.buildBuilding(u) || workersCollect(u, 500);
         }
         break;
     case StoredUnit::Building:
@@ -395,7 +396,7 @@ bool WorkerManager::workerWork(const Unit &u) {
                 Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
                 return CUNYAIModule::updateUnitPhase(u, StoredUnit::Building);
             }
-            task_guard = !build_check_this_frame_ && CUNYAIModule::assemblymanager.buildBuilding(u);
+            task_guard = CUNYAIModule::assemblymanager.buildBuilding(u);
         }
         break;
     case StoredUnit::Attacking:
