@@ -111,13 +111,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
         if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 300))
             return true;
 
         map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 250))
             return true;
 
     }
@@ -223,7 +223,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     bool buildings_started = false;
-    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0.0625 * CUNYAIModule::workermanager.min_workers_; // 1/16 workers LD mining is too much.
+    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0; // 1/16 workers LD mining is too much.
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0) || (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100);  // upgrade if resources are slack, you're tech starved, or there are no valid larva expendatures.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);

@@ -56,7 +56,7 @@ int BaseManager::getInactiveBaseCount(const int minimum_workers)
     int inactive_bases = 0;
     if (!baseMap_.empty()) {
         for (auto base : baseMap_) {
-            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers)
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ > minimum_workers)
                 inactive_bases++;
         }
     }
@@ -101,6 +101,9 @@ void BaseManager::updateBases()
     for (auto & b : baseMap_) {
         auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
         auto u_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
+        auto r_loc = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, b.first);
+
+        r_loc.updateMines();
         e_loc.updateUnitInventorySummary();
         u_loc.updateUnitInventorySummary();
 
@@ -141,6 +144,8 @@ void BaseManager::updateBases()
         b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::MiningMin);
         b.second.gas_gatherers_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::MiningGas);
         b.second.returners_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::Returning);
+        b.second.mineral_patches_ = r_loc.getLocalMinPatches();
+        b.second.gas_geysers_ = r_loc.getLocalRefineries();
 
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
@@ -179,8 +184,8 @@ void BaseManager::displayBaseData()
 {
     if (DIAGNOSTIC_MODE) {
         for (auto b : baseMap_) {
-            Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d", b.second.gas_gatherers_);
-            Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d", b.second.mineral_gatherers_);
+            Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d / %d", b.second.gas_gatherers_, b.second.gas_geysers_ * 3);
+            Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d / %d", b.second.mineral_gatherers_, b.second.mineral_patches_);
             Broodwar->drawTextMap(b.first + Position(5, -20), "Returners: %d", b.second.returners_);
             Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
             Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);

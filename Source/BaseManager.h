@@ -20,6 +20,8 @@ public:
     int overlords_;
     int distance_to_ground_; // Very good pixel ground distance approximation to nearest ground unit.
     int distance_to_air_; // Pixel distance to nearest air unit, as the crow flies.
+    int mineral_patches_;
+    int gas_geysers_;
     bool emergency_spore_; //Do we want an emergency spore?
     bool emergency_sunken_; // Do we want an emerency sunken?
     Unit unit_; // Directly to the base hatchery itself.
