@@ -388,6 +388,7 @@ void CUNYAIModule::onFrame()
     workermanager.updateMin_Workers();
     workermanager.updateWorkersClearing();
     workermanager.updateWorkersLongDistanceMining();
+    workermanager.updateWorkersOverstacked();
     workermanager.updateExcessCapacity();
 
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.

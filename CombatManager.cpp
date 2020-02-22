@@ -35,7 +35,7 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
             task_assigned = true;
-        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord || u->getType() == UnitTypes::Zerg_Zergling) && !u->isBlind() && scoutScript(u))
+        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord) && !u->isBlind() && scoutScript(u))
             task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
@@ -209,7 +209,7 @@ bool CombatManager::scoutScript(const Unit & u)
             Mobility mobility = Mobility(u);
             StoredUnit* e_closest = CUNYAIModule::getClosestThreatStored(CUNYAIModule::enemy_player_model.units_, u, 400); // maximum sight distance of 352, siege tanks in siege mode are about 382
             if (!e_closest) { // if there are no bad guys nearby, feel free to explore outwards.
-                pathingScript(u);
+                return pathingScript(u);
             }
             else {
                 return mobility.Retreat_Logic(*e_closest);
