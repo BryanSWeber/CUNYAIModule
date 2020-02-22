@@ -56,7 +56,7 @@ int BaseManager::getInactiveBaseCount(const int minimum_workers)
     int inactive_bases = 0;
     if (!baseMap_.empty()) {
         for (auto base : baseMap_) {
-            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ > minimum_workers)
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ * 2 > minimum_workers)
                 inactive_bases++;
         }
     }
@@ -185,7 +185,7 @@ void BaseManager::displayBaseData()
     if (DIAGNOSTIC_MODE) {
         for (auto b : baseMap_) {
             Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d / %d", b.second.gas_gatherers_, b.second.gas_geysers_ * 3);
-            Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d / %d", b.second.mineral_gatherers_, b.second.mineral_patches_);
+            Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d / %d", b.second.mineral_gatherers_, b.second.mineral_patches_ * 2);
             Broodwar->drawTextMap(b.first + Position(5, -20), "Returners: %d", b.second.returners_);
             Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
             Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
