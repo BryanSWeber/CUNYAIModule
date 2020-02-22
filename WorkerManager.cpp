@@ -492,6 +492,20 @@ void WorkerManager::updateWorkersLongDistanceMining()
     workers_distance_mining_ = long_distance_miners_found;
 }
 
+void WorkerManager::updateWorkersOverstacked()
+{
+    int overstacked_workers = 0;
+    for (auto & w = CUNYAIModule::land_inventory.resource_inventory_.begin(); w != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); w++) {
+        if (w->second.type_.isMineralField() && w->second.number_of_miners_ - 2 > 0) {
+            overstacked_workers += w->second.number_of_miners_ - 2;
+        }
+        if (w->second.type_.isRefinery() && w->second.number_of_miners_ - 3 > 0) {
+            overstacked_workers += w->second.number_of_miners_ - 3;
+        }
+    }
+    workers_overstacked_ = overstacked_workers;
+}
+
 void WorkerManager::updateExcessCapacity()
 {
     //excess_gas_capacity_ = CUNYAIModule::land_inventory.local_gas_collectors_ <= CUNYAIModule::land_inventory.local_refineries_ * 2 && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;

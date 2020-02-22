@@ -54,12 +54,23 @@ int BaseManager::getBaseCount()
 int BaseManager::getInactiveBaseCount(const int minimum_workers)
 {
     int inactive_bases = 0;
+
+    // if it has less than Y patches or less than X gatherers, it's inactive.
     if (!baseMap_.empty()) {
         for (auto base : baseMap_) {
             if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ * 2 > minimum_workers)
                 inactive_bases++;
         }
     }
+
+    // if the unit is morphing into a hatchery for the first time, it's an inactive base.
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
+            if ((u.second.bwapi_unit_->getBuildType() == UnitTypes::Zerg_Hatchery && u.second.bwapi_unit_->isMorphing())) { 
+                inactive_bases++;
+            }
+    }
+
     return inactive_bases;
 }
 

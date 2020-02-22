@@ -223,7 +223,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     bool buildings_started = false;
-    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ > 0; // 1/16 workers LD mining is too much.
+    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ + CUNYAIModule::workermanager.workers_overstacked_ > 0; // 1/16 workers LD mining is too much.
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0) || (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100);  // upgrade if resources are slack, you're tech starved, or there are no valid larva expendatures.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
@@ -266,7 +266,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (CUNYAIModule::basemanager.getInactiveBaseCount(5) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot())) < 1 && 
+    if (!buildings_started) buildings_started = Expo(drone, (CUNYAIModule::basemanager.getInactiveBaseCount(5) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) ) < 1 && 
                                                             (CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings)), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
