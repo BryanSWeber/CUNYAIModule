@@ -74,6 +74,21 @@ int BaseManager::getInactiveBaseCount(const int minimum_workers)
     return inactive_bases;
 }
 
+int BaseManager::getLoadedBaseCount(const int maximum_workers)
+{
+    int loaded_bases = 0;
+
+    // if it has less than Y patches or less than X gatherers, it's inactive.
+    if (!baseMap_.empty()) {
+        for (auto base : baseMap_) {
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ > maximum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ * 2 > maximum_workers)
+                loaded_bases++;
+        }
+    }
+
+    return loaded_bases;
+}
+
 void BaseManager::updateBases()
 {
     int enemy_unit_count_ = 0;

@@ -185,7 +185,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
-                int score_temp = static_cast<int>(std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p)))) - plength; // closer is better, further from enemy is better.
+                int score_temp = std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))); // closer is better, further from enemy is better.
                 bool min_plength = min(plength, 500);
 
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
@@ -267,7 +267,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Macro-related Buildings.
     if (!buildings_started) buildings_started = Expo(drone, (CUNYAIModule::basemanager.getInactiveBaseCount(5) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) ) < 1 && 
-                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved ) && path_available && !macro_hatch_timings)), CUNYAIModule::current_map_inventory);
+                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(12) > CUNYAIModule::basemanager.getBaseCount() - 1) && path_available && !macro_hatch_timings)), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.

@@ -380,7 +380,9 @@ bool WorkerManager::workerWork(const Unit &u) {
             }
             if (!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::None);
         }
-
+        else if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+            if (!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::None);
+        }
         break;
     case StoredUnit::None:
         if (!isEmptyWorker(u)) { //auto return if needed.
