@@ -111,13 +111,13 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
         if (!wall_spots.empty())
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 150))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 124))
             return true;
 
         map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
-        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 150))
+        if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 124))
             return true;
 
     }
