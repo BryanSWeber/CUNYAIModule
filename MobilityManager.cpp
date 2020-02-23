@@ -660,6 +660,12 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
         //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
     }
 
+    //Below uses JPS, will need to test to convert.
+    //BWEB::Path newPath;
+    //newPath.createUnitPath(start, finish);
+    //if (newPath.isReachable()) {
+    //    unit_sent = unit_->move(Position(newPath.getTiles()[0]));
+    //}
 
     // then try traveling with local travel. Should have plength > 0
     if (!unit_sent && plength) unit_sent = local_pathing(plength, finish, phase);

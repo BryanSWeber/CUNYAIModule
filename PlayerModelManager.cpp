@@ -109,12 +109,12 @@ void Player_Model::imputeUnits(const Unit &unit)
     StoredUnit eu = StoredUnit(unit);
     double temp_estimated_unseen_army_ = 0;
 
-    //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistend error. Otherwise I have to remove Y itself or guess.
+    //subtracted observations from estimates. The estimates could be quite wrong, but the discovery of X when Y is already imputed leads to a surplus of (Y-X) which will be a persistent error. Otherwise I have to remove Y itself or guess.
     auto matching_unseen_units = unseen_units_.find(eu.type_);
     if (matching_unseen_units != unseen_units_.end()) {
         unseen_units_.at(eu.type_)--; // reduce the count of this unite by one.
         if (eu.type_.isBuilding())
-            unseen_units_.at(eu.type_) = max(unseen_units_.at(eu.type_), 0.0); // there cannot be negative buildings, this would lead to some awkward problems as they could (?) produce negative amounts of troops.
+            unseen_units_.at(eu.type_) = max(unseen_units_.at(eu.type_), 0.0); // there cannot be negative buildings, this may lead to some awkward problems as they could (?) produce negative amounts of troops, maybe.
     }
     else {
         auto alternative_uts = findAlternativeProducts(eu.type_);
@@ -151,18 +151,20 @@ void Player_Model::imputeUnits(const Unit &unit)
         }
 
         // This buffer is pretty critical. How much production has been made from the unseen facility?
-        int longest_known_unit = 0;
-        for (auto u : units_.unit_map_) {
-            if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
-                longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
-            }
-        }
+        int longest_known_unit = inferEarliestPossible(eu.type_);
 
-        for (auto u : casualties_.unit_map_) {
-            if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
-                longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
-            }
-        }
+        //Infer based on what we have seen!
+        //for (auto u : units_.unit_map_) {
+        //    if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
+        //        longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
+        //    }
+        //}
+
+        //for (auto u : casualties_.unit_map_) {
+        //    if (u.second.type_ == expected_producer || u.second.type_ == eu.type_) {
+        //        longest_known_unit = max(Broodwar->getFrameCount() - u.second.time_first_observed_, longest_known_unit);
+        //    }
+        //}
 
         UnitType produced_unit = getDistributedProduct(expected_producer);
         double maximum_possible_missed_product = static_cast<double>(max(longest_known_unit, eu.type_.buildTime())) / static_cast<double>(eu.type_.buildTime());

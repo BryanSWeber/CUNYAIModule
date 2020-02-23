@@ -33,3 +33,5 @@ struct Research_Inventory {
 };
 
 std::set<UnitType> inferUnits(const std::set<UnitType>& unitsIn); // returns a set of the units that must exist in order to create the unitsIn set.
+
+int inferEarliestPossible(const UnitType & ut); // returns an estimate of the earliest possible time for a particular unit.
