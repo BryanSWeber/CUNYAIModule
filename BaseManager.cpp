@@ -281,5 +281,8 @@ bool Base::checkHasGroundBuffer(const Position& threat_pos)
         return false; // If there's a cpp and everything is unblocked, there is no ground buffer, and it's not safe.
     }
 
-    return true; // there is no path, so it's safe!
+    if (plength == 0)
+        return true; // there is no path, so it's safe!
+    else
+        return false;// They are literally on us right now.
 }
