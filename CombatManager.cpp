@@ -61,7 +61,7 @@ bool CombatManager::combatScript(const Unit & u)
         int u_safeAreaID = BWEM::Map::Instance().GetNearestArea(TilePosition(CUNYAIModule::current_map_inventory.safe_base_))->Id();
 
         Mobility mobility = Mobility(u);
-        int search_radius = max({ CUNYAIModule::enemy_player_model.units_.max_range_, CUNYAIModule::enemy_player_model.casualties_.max_range_, CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
+        int search_radius = max({ u->isFlying() ? CUNYAIModule::enemy_player_model.units_.max_range_air_ : CUNYAIModule::enemy_player_model.units_.max_range_ground_, u->isFlying() ? CUNYAIModule::enemy_player_model.casualties_.max_range_air_ : CUNYAIModule::enemy_player_model.casualties_.max_range_ground_ , CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
         StoredUnit* e_closest_threat = CUNYAIModule::getClosestThreatWithPriority(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         StoredUnit* my_unit = CUNYAIModule::getStoredUnit(CUNYAIModule::friendly_player_model.units_, u);
         bool unit_building = (my_unit->phase_ == StoredUnit::Phase::Building) || (my_unit->phase_ == StoredUnit::Phase::Prebuilding);
