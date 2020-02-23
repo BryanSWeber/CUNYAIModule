@@ -501,21 +501,26 @@ namespace BWEB::Map
     bool isPlaceable(UnitType type, const TilePosition location)
     {
         const auto creepCheck = type.requiresCreep() ? true : false;
+
+        if (creepCheck) {
+            for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
+                const TilePosition creepTile(x, location.y + type.tileHeight());
+                if (!Broodwar->isBuildable(creepTile))
+                    return false;
+            }
+        }
+
+        if (type.isResourceDepot() && !Broodwar->canBuildHere(location, type))
+            return false;
+
         for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
             for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
-
-                if (creepCheck && y == location.y + type.tileHeight() - 1) {
-                    const TilePosition creepTile(x, y + 1);
-                    if (!Broodwar->isBuildable(creepTile))
-                        return false;
-                }
 
                 const TilePosition tile(x, y);
                 if (!tile.isValid()
                     || !Broodwar->isBuildable(tile)
                     || !Broodwar->isWalkable(WalkPosition(tile))
-                    || Map::isUsed(tile) != UnitTypes::None
-                    || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type)))
+                    || Map::isUsed(tile) != UnitTypes::None)
                     return false;
             }
         }
