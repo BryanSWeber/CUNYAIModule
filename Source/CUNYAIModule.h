@@ -210,6 +210,7 @@ public:
     static StoredUnit * getClosestAirStored(Unit_Inventory & ui, const Position & origin);
     static StoredUnit * getClosestAirStoredWithPriority(Unit_Inventory & ui, const Position & origin);
     static StoredUnit * getClosestStoredBuilding(Unit_Inventory & ui, const Position & origin, const int & dist);
+    static StoredUnit * getClosestStoredAvailable(Unit_Inventory & ui, const UnitType & u_type, const Position & origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory &ri, const Position &origin, const int & dist);
     static Stored_Resource* getClosestStored(Resource_Inventory & ri, const UnitType & r_type, const Position & origin, const int & dist);
     static StoredUnit * getClosestStored(const Unit unit, Unit_Inventory & ui, const UnitType & u_type, const int & dist);
