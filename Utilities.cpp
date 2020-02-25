@@ -866,6 +866,28 @@ StoredUnit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Pos
     return return_unit;
 }
 
+//Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity. Confirms unit is available
+StoredUnit* CUNYAIModule::getClosestStoredAvailable(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+    int min_dist = dist;
+    int temp_dist = 999999;
+    StoredUnit* return_unit = nullptr;
+
+    if (!ui.unit_map_.empty()) {
+        for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
+            if (e->second.type_ == u_type && e->second.valid_pos_ && e->second.bwapi_unit_ && CUNYAIModule::spamGuard(e->second.bwapi_unit_)) {
+                temp_dist = static_cast<int>((*e).second.pos_.getDistance(origin));
+                if (temp_dist <= min_dist) {
+                    min_dist = temp_dist;
+                    return_unit = &(e->second);
+                }
+            }
+        }
+    }
+
+    return return_unit;
+}
+
+
 //Gets position of closest occupied expo to position. Checks range. Careful about visiblity.
 //Position CUNYAIModule::getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist) {
 //    //int min_dist = dist;
@@ -2124,21 +2146,23 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool fighting_may_save = u.second.phase_ != StoredUnit::Phase::Retreating && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(u.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
+            bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_);
+            bool may_survive_and_fight = !escaping && u.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
+            total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(u.second, 6) * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             //total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * fighting_may_save;
-            total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * fighting_may_save;
-            total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * fighting_may_save;
+            total_surviving_ui_up += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_up_ * may_survive_and_fight;
+            total_surviving_ui_down += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 6) * CUNYAIModule::isFightingUnit(u.second) * u.second.shoots_down_ * may_survive_and_fight;
         }
     }
 
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
-            bool fighting_may_save =  e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
-            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(e.second, 6) * fighting_may_save * CUNYAIModule::canContributeToFight(e.second.type_, ui);
+            bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
+            bool may_survive_and_fight = !escaping && e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are hard to calculate for enemies, they may about-face at any time.
+            total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(e.second, 6) * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
             //total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
-            total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * fighting_may_save;
-            total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * fighting_may_save;
+            total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
+            total_surviving_ei_down += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_down_ * may_survive_and_fight;
         }
     }
 

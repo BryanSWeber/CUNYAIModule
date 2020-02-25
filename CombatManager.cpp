@@ -191,7 +191,12 @@ bool CombatManager::combatScript(const Unit & u)
             Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
             enemy_loc.updateUnitInventorySummary();
             friend_loc.updateUnitInventorySummary();
-            return mobility.Tactical_Logic(*e_closest_target, enemy_loc, friend_loc, search_radius, Colors::White);
+
+            bool kiting_in = !u->isFlying() && CUNYAIModule::getExactRange(u) > 64 && static_cast<int>(e_closest_target->pos_.getDistance(u->getPosition())) > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+            if (kiting_in)
+                return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_target->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_target->bwapi_unit_), StoredUnit::Phase::Surrounding);
+            else
+                return mobility.Tactical_Logic(*e_closest_target, enemy_loc, friend_loc, search_radius, Colors::White);
         }
 
     }
