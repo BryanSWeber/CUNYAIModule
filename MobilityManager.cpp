@@ -17,7 +17,7 @@ using namespace std;
 
 //Forces a unit to stutter in a Mobility manner. Size of stutter is unit's (vision range * n ). Will attack if it sees something.  Overlords & lings stop if they can see minerals.
 
-bool Mobility::local_pathing(const int &passed_distance, const Position &e_pos, const StoredUnit::Phase phase) {
+bool Mobility::local_pathing(const Position &e_pos, const StoredUnit::Phase phase) {
 
     // lurkers should move when we need them to scout.
     if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
@@ -642,33 +642,44 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
 
 bool Mobility::moveTo(const Position &start, const Position &finish, const StoredUnit::Phase phase)
 {
-    int plength = 0;
     bool unit_sent = false;
     if (!start.isValid() || !finish.isValid()) {
         return false;
     }
-    auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
 
-    if (!cpp.empty() && !unit_->isFlying()) {
-        // first try traveling with CPP.
-        Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
-        friendly_blocks.updateUnitInventorySummary();
-        bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0 );
-        bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
-        if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
-        if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
-        //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
-    }
-
-    //Below uses JPS, will need to test to convert.
+    // first, let us try to get there with JPS.
     //BWEB::Path newPath;
     //newPath.createUnitPath(start, finish);
-    //if (newPath.isReachable()) {
-    //    unit_sent = unit_->move(Position(newPath.getTiles()[0]));
+    //if (newPath.isReachable() && !unit_->isFlying()) { 
+    //    // lurker fix
+    //    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && !CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, unit_, max(UnitTypes::Zerg_Lurker.groundWeapon().maxRange(), CUNYAIModule::enemy_player_model.units_.max_range_))) {
+    //        unit_->unburrow();
+    //        return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
+    //    }
+    //    else {
+    //        unit_sent = unit_->move(Position(newPath.getTiles()[0]));
+    //    }
     //}
 
+    // Then let us try CPP.
+    if (!unit_sent) {
+        int plength = 0;
+        auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
+        if (!cpp.empty() && !unit_->isFlying()) {
+            // first try traveling with CPP.
+            Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
+            friendly_blocks.updateUnitInventorySummary();
+            bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0);
+            bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
+            if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center())); // if you're not too close, get closer.
+            if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center())); // if you're too close to one choke point, move to the next one!
+            //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
+        }
+    }
+
     // then try traveling with local travel. Should have plength > 0
-    if (!unit_sent && plength) unit_sent = local_pathing(plength, finish, phase);
+    if (!unit_sent) unit_sent = local_pathing(finish, phase);
+
 
     return unit_sent;
 }
