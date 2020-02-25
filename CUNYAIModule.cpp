@@ -278,7 +278,7 @@ void CUNYAIModule::onEnd(bool isWinner)
         for (auto uw : learned_plan.unit_weights) {
             output << uw.second << ",";
         }
-        output << sqrt(isWinner * 100000) + (1 - isWinner)*sqrt(Broodwar->self()->getBuildingScore() + Broodwar->self()->getKillScore() + Broodwar->self()->getRazingScore() + Broodwar->self()->getUnitScore()) << endl;
+        output << learned_plan.getOutcomeScore(isWinner, Broodwar->self()->getBuildingScore(), Broodwar->self()->getKillScore(), Broodwar->self()->getRazingScore(),Broodwar->self()->getBuildingScore()) << endl;
         output.close();
     }
 }

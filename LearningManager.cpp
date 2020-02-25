@@ -114,7 +114,7 @@ void LearningManager::initializeGeneticLearning() {
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
     double gas_proportion_out = dis(gen);
-    double supply_ratio_out = dis(gen) * 0.6; // Artifically chosen upper bounds. But above this, they often get truely silly.
+    double supply_ratio_out = dis(gen) * 0.3 + 0.3; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
     // the values below will be normalized to 1.
     double a_army_out = dis(gen);
     double a_econ_out = dis(gen);
@@ -124,12 +124,13 @@ void LearningManager::initializeGeneticLearning() {
     //No longer used.
     double a_vis_out = dis(gen);
 
-    // drone drone drone drone drone overlord drone drone drone hatch pool   // 12-hatch
-    // drone drone drone drone drone overlord pool extractor// overpool
-    // drone pool ling ling ling // 5-pool.
-    // drone drone drone drone drone overlord drone drone drone hatch pool extract ling lair drone drone drone drone drone ovi speed spire extract ovi ovi muta muta muta muta muta muta muta muta muta muta muta // 12 hatch into muta.
-    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone drone drone muta muta muta muta muta muta muta muta muta muta muta muta hatch"; //zerg_3hatchmuta:
-    // "drone drone drone drone overlord drone drone drone drone hatch drone drone pool drone drone extract drone drone drone drone drone drone lair drone drone drone drone drone drone drone drone drone drone spire overlord drone overlord hatch drone drone drone drone drone drone drone drone hatch drone extract drone hatch scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge scourge hatch extract extract hatch"; // zerg_3hatchscourge ??? UAB
+    string e_name = Broodwar->enemy()->getName().c_str();
+    string e_race = Broodwar->enemy()->getRace().c_str();
+    string map_name = Broodwar->mapFileName().c_str();
+
+
+    HistoryEntry parent_1;
+    HistoryEntry parent_2;
 
     string build_order_out;
 
@@ -169,14 +170,10 @@ void LearningManager::initializeGeneticLearning() {
     //vector<string> map_name_total;
     //vector<string> build_order_total;
 
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> a_game; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_1; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> parent_2; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_well_matched;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_partial_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector<HistoryEntry> game_data; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector<HistoryEntry> game_data_well_matched;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    vector<HistoryEntry> game_data_partial_match; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+    //vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
 
     vector<double> r_win;
@@ -196,18 +193,11 @@ void LearningManager::initializeGeneticLearning() {
     }
     input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
 
-    input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
-    csv_length = 0;
-    while (getline(input, line)) {
-        ++csv_length;
-    }
-    input.close(); // I have read the entire file already, need to close it and begin again.  Lacks elegance, but works.
-
     input.open( (writeDirectory + "history.txt").c_str(), ios::in);
     getline(input, line); //skip the first line of the document.
     csv_length--; // that means the remaining csv is shorter by 1 line.
     for (int j = 0; j < csv_length; ++j) {
-        // The ugly tuple.
+        // Adding each line as a HistoryEntry class.
         double gas_proportion_total;
         double supply_ratio_total;
         double a_army_total;
@@ -225,16 +215,21 @@ void LearningManager::initializeGeneticLearning() {
         double enemy_average_econ_;
         double enemy_average_tech_;
         string build_order_total;
+        int score_building;
+        int score_kills;
+        int score_raze;
+        int score_units;
+        int detector_count;
+        int flyers;
+        int duration;
 
         getline(input, entry, ',');
         gas_proportion_total = stod(entry);
-
         getline(input, entry, ',');
         supply_ratio_total = stod(entry);
 
         getline(input, entry, ',');
         a_army_total = stod(entry);
-
         getline(input, entry, ',');
         a_econ_total = stod(entry);
         getline(input, entry, ',');
@@ -270,41 +265,54 @@ void LearningManager::initializeGeneticLearning() {
         getline(input, entry, ',');
         build_order_total = entry;
 
-        //Remaining entries for score, dectectors , game duration - skip.
+        getline(input, entry, ',');
+        score_building = stoi(entry);
+        getline(input, entry, ',');
+        score_kills = stoi(entry);
+        getline(input, entry, ',');
+        score_raze = stoi(entry);
+        getline(input, entry, ',');
+        score_units = stoi(entry);
+        getline(input, entry, ',');
+        detector_count = stoi(entry);
+        getline(input, entry, ',');
+        flyers = stoi(entry);
 
         getline(input, entry); //diff. End of line char, not ','
+        duration = stoi(entry);
 
-        a_game = std::make_tuple(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total);
+
+        HistoryEntry a_game = HistoryEntry(gas_proportion_total, supply_ratio_total,
+                                            a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total,
+                                            sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total,
+                                            enemy_average_army_, enemy_average_econ_, enemy_average_tech_, build_order_total,
+                                            score_building, score_kills, score_raze, score_units, detector_count, flyers, duration);
         game_data.push_back(a_game);
     } // closure for each row
     input.close();
-
-    string e_name = Broodwar->enemy()->getName().c_str();
-    string e_race = Broodwar->enemy()->getRace().c_str();
-    string map_name = Broodwar->mapFileName().c_str();
 
 
     for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
                                            //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
 
-        if (std::get<11>(game_data[j]) == e_name) {
-            if (std::get<7>(game_data[j]) == 1) {
+        if (game_data[j].name_total_ == e_name) {
+            if ((game_data[j]).win_total_ == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[0]++;
             }
             else lose_count[0]++;
         }
 
-        if (std::get<6>(game_data[j]) == e_race) {
-            if (std::get<7>(game_data[j]) == 1) {
+        if (game_data[j].race_total_ == e_race) {
+            if ((game_data[j]).win_total_ == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[1]++;
             }
             else lose_count[1]++;
         }
 
-        if (std::get<12>(game_data[j]) == map_name) {
-            if (std::get<7>(game_data[j]) == 1) {
+        if (game_data[j].map_name_total_ == map_name) {
+            if ((game_data[j]).win_total_ == 1) {
                 game_data_partial_match.push_back(game_data[j]);
                 win_count[2]++;
             }
@@ -316,26 +324,32 @@ void LearningManager::initializeGeneticLearning() {
     //What model is this? It's greedy...
 
 
-    double rand_value = dis(gen);
+
 
 
 
     // start from most recent and count our way back from there.
-    for (vector<tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string>>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
         //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
+
+        double rand_value = dis(gen);
 
         bool conditions_for_inclusion = true;
         int counter = 0;
 
-        bool name_matches = std::get<11>(*game_iter) == e_name;
-        bool race_matches = std::get<6>(*game_iter) == e_race;
-        bool map_matches = std::get<12>(*game_iter) == map_name;
-        bool game_won = std::get<7>(*game_iter);
+        bool name_matches = game_iter->name_total_ == e_name;
+        bool race_matches = game_iter->race_total_ == e_race;
+        bool map_matches = game_iter->map_name_total_ == map_name;
+        bool game_won = game_iter->win_total_;
 
-        for (int i = 0; i < name_matches + race_matches + map_matches; i++) { //add once for each match, 3x if it matches well.
+        double weight_of_match_quality = 0.50 * name_matches + 0.25 * race_matches + 0.25 * map_matches;
+        double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_) / sqrt(1000000);
+
+        if (weight_of_match_quality * weighted_game_score >= rand_value * 0.75 + 0.25) // either you won in a match or you did fairly well by our standards
             game_data_well_matched.push_back(*game_iter);
-        }
 
+        if (game_data_partial_match.size() > 10)
+            break;
     } //or widest hunt possible.
 
 
@@ -349,13 +363,13 @@ void LearningManager::initializeGeneticLearning() {
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-        gas_proportion_out = CUNYAIModule::bindBetween(pow(std::get<0>(parent_1), crossover) * pow(std::get<0>(parent_2), (1 - crossover)), 0., 1.);
-        supply_ratio_out = CUNYAIModule::bindBetween(pow(std::get<1>(parent_1), crossover) * pow(std::get<1>(parent_2), (1 - crossover)), 0., 1.);
-        a_army_out = CUNYAIModule::bindBetween(pow(std::get<2>(parent_1), crossover) * pow(std::get<2>(parent_2), (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-        a_econ_out = CUNYAIModule::bindBetween(pow(std::get<3>(parent_1), crossover) * pow(std::get<3>(parent_2), (1 - crossover)), 0., 1.);
-        a_tech_out = CUNYAIModule::bindBetween(pow(std::get<4>(parent_1), crossover) * pow(std::get<4>(parent_2), (1 - crossover)), 0., 3.);
-        r_out = CUNYAIModule::bindBetween(pow(std::get<5>(parent_1), crossover) * pow(std::get<5>(parent_2), (1 - crossover)), 0., 1.);
-        build_order_out = dis(gen) > 0.5 ? std::get<16>(parent_1) : std::get<16>(parent_2);
+        gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1 - crossover)), 0., 1.);
+        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1 - crossover)), 0., 1.);
+        a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+        a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1 - crossover)), 0., 1.);
+        a_tech_out = CUNYAIModule::bindBetween(pow(parent_1.a_tech_total_, crossover) * pow(parent_2.a_tech_total_, (1 - crossover)), 0., 3.);
+        r_out = CUNYAIModule::bindBetween(pow(parent_1.r_total_, crossover) * pow(parent_2.r_total_, (1 - crossover)), 0., 1.);
+        build_order_out = dis(gen) > 0.5 ? parent_1.opening_ : parent_2.opening_;
     }
 
     prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
@@ -377,7 +391,7 @@ void LearningManager::initializeGeneticLearning() {
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
         a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 3.) : a_tech_out;
         r_out_t0 = mutation_0 == 5 ? CUNYAIModule::bindBetween(r_out + mutation, 0., 1.) : r_out;
-        build_order_t0 = mutation_0 == 6 ? std::get<16>(parent_1) : build_order_out;
+        build_order_t0 = mutation_0 == 6 ? build_order_list[build_order_rand] : build_order_out;
 
     }
     else {
@@ -614,4 +628,41 @@ int LearningManager::resetScale(const UnitType ut)
         return (CUNYAIModule::learned_plan.unit_weights.at(ut) + 1.0) / 2.0 * CUNYAIModule::learned_plan.max_value_;
     }
     return 0;
+}
+
+double LearningManager::getOutcomeScore(const bool isWinner, const int buildScore, const int killScore, const int razeScore, const int unitScore) {
+    return sqrt(isWinner * 1000000) + (1 - isWinner) * sqrt(buildScore + killScore + razeScore + unitScore);
+}
+
+HistoryEntry::HistoryEntry()
+{
+
+}
+
+HistoryEntry::HistoryEntry(double gas_proportion_total, double supply_ratio_total, double a_army_total, double a_econ_total, double a_tech_total, double r_total, string race_total, bool win_total, int sdelay_total, int mdelay_total, int ldelay_total, string name_total, string map_name_total, double enemy_average_army, double enemy_average_econ, double enemy_average_tech, string opening, int score_building, int score_kills, int score_raze, int score_units, int detector_count, int flyers, int duration)
+{
+    gas_proportion_total_ = gas_proportion_total;
+    supply_ratio_total_ = supply_ratio_total;
+    a_army_total_ = a_army_total;
+    a_econ_total_ = a_econ_total;
+    a_tech_total_ = a_tech_total;
+    r_total_ = r_total;
+    race_total_ = race_total;
+    win_total_ = win_total;
+    sdelay_total_ = sdelay_total;
+    mdelay_total_ = mdelay_total;
+    ldelay_total_ = ldelay_total;
+    name_total_ = name_total;
+    map_name_total_ = map_name_total;
+    enemy_average_army_ = enemy_average_army;
+    enemy_average_econ_ = enemy_average_econ;
+    enemy_average_tech_ = enemy_average_tech;
+    opening_ = opening;
+    score_building_ = score_building;
+    score_kills_ = score_kills;
+    score_raze_ = score_raze;
+    score_units_ = score_units;
+    detector_count_ = detector_count;
+    flyers_ = flyers;
+    duration_ = duration;
 }

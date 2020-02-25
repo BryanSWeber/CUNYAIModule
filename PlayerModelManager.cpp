@@ -151,7 +151,7 @@ void Player_Model::imputeUnits(const Unit &unit)
         }
 
         // This buffer is pretty critical. How much production has been made from the unseen facility?
-        int longest_known_unit = inferEarliestPossible(eu.type_);
+        int longest_known_unit = Broodwar->getFrameCount() - inferEarliestPossible(eu.type_);
 
         //Infer based on what we have seen!
         //for (auto u : units_.unit_map_) {

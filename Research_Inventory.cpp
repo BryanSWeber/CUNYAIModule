@@ -175,7 +175,7 @@ int inferEarliestPossible(const UnitType & ut) {
     std::set<UnitType> temp_unit_types;
     std::set<UnitType> unitsOut;
 
-    int fastest_possible_pool = 2 * 60 + 14; //just a guess, 2:14.
+    int fastest_possible_pool = 24*(2 * 60 + 14); //just a guess, 2:14.
     int build_time = fastest_possible_pool - UnitTypes::Zerg_Spawning_Pool.buildTime();
 
     int n = 0;
@@ -183,18 +183,28 @@ int inferEarliestPossible(const UnitType & ut) {
         temp_unit_types.clear();
         for ( auto u : inferUnits({ ut }) ) { // for any unit that is needed in the construction of the ut above.
             for (auto i : u.requiredUnits()) {
-                temp_unit_types.insert(i.first);
+                if(!i.first.isResourceDepot() && !i.first.isWorker())
+                    temp_unit_types.insert(i.first);
             }
         }
         unitsOut.insert(temp_unit_types.begin(), temp_unit_types.end()); // this could be repeated with some clever stop condition. Or just crudely repeated a few times.
         n++;
     }
 
+    if (ut.getRace() != Races::Zerg)
+        unitsOut.insert(ut.getRace().getSupplyProvider());
+
     for (auto & u : unitsOut) {
         build_time += u.buildTime();
     }
 
+
+
+
     Diagnostics::DiagnosticText("The earliest possible %s is %d frames, by my guess.", ut.c_str(), build_time);
+    for(auto u : unitsOut)
+        Diagnostics::DiagnosticText("I'd have to build a %s, takes %d frames.", u.c_str(), u.buildTime());
+    Diagnostics::DiagnosticText("And you can't really build anything before %d frames.", fastest_possible_pool - UnitTypes::Zerg_Spawning_Pool.buildTime());
 
     return build_time;
 };

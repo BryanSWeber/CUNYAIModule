@@ -4,6 +4,7 @@
 
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
+#include <string>
 
 using namespace std;
 using namespace BWAPI;
@@ -56,4 +57,61 @@ struct LearningManager {
     int max_value_; // The value of the most expensive unit in the model. Needed for normalizing and denormalizing.
     int resetScale(const UnitType ut); // takes the unit weights (which will be passed from) the UnitWeights file (bound between -1 and 1) and converts them back into the orginal scale (0 and the cost of the most expensive units).
 
+    double getOutcomeScore(const bool isWinner, const int buildScore, const int killScore, const int razeScore, const int unitScore);
+
+};
+
+struct HistoryEntry {
+    HistoryEntry();
+    HistoryEntry(
+        double gas_proportion_total,
+        double supply_ratio_total,
+        double a_army_total,
+        double a_econ_total,
+        double a_tech_total,
+        double r_total,
+        string race_total,
+        bool win_total,
+        int sdelay_total,
+        int mdelay_total,
+        int ldelay_total,
+        string name_total,
+        string map_name_total,
+        double enemy_average_army,
+        double enemy_average_econ,
+        double enemy_average_tech,
+        string opening,
+        int score_building,
+        int score_kills,
+        int score_raze,
+        int score_units,
+        int detector_count,
+        int flyers,
+        int duration
+    );
+
+    double gas_proportion_total_;
+    double supply_ratio_total_;
+    double a_army_total_;
+    double a_econ_total_;
+    double a_tech_total_;
+    double r_total_;
+    string race_total_;
+    bool win_total_;
+    int sdelay_total_;
+    int mdelay_total_;
+    int ldelay_total_;
+    string name_total_;
+    string map_name_total_;
+    double enemy_average_army_;
+    double enemy_average_econ_;
+    double enemy_average_tech_;
+    string opening_;
+    int score_building_;
+    int score_kills_;
+    int score_raze_;
+    int score_units_;
+    int detector_count_;
+    int flyers_;
+    int duration_;
 };
