@@ -112,14 +112,14 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if (checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc)) {
-                        if (!resource_loc.resource_inventory_.empty() && my_unit->future_fap_value_ > 0) { // Do you need to join in?
+                    if (checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) && !resource_loc.resource_inventory_.empty()) {
+                        if (my_unit->future_fap_value_ > 0) { // Do you need to join in?
                             return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                         }
-                        else if (CUNYAIModule::basemanager.getBaseCount() > 1)
-                            break; // exit this section and retreat if there is somewhere to go or you are about to die.
+                        else if (CUNYAIModule::basemanager.getBaseCount() > 1 && my_unit->future_fap_value_ == 0)
+                            break; // exit this section and retreat if there is somewhere to go and you are about to die.
                         else
-                            return false; // if there's no where to go or you are about to die.... keep mining.
+                            return false; // if there's no where to go and you are about to die.... keep mining.
                     }
                     else {
                         return false; // Too many workers are fighting, so let us have you continue your task.
