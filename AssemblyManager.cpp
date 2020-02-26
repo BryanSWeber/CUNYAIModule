@@ -266,8 +266,9 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, (CUNYAIModule::basemanager.getInactiveBaseCount(5) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) ) < 1 && 
-                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 || ((distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(12) > CUNYAIModule::basemanager.getBaseCount() - 1) && path_available && !macro_hatch_timings)), CUNYAIModule::current_map_inventory);
+    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1 && 
+                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 ||
+                                                            (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
@@ -542,7 +543,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
         if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
-        if (potential_type.first == UnitTypes::Zerg_Scourge && CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
+        if (potential_type.first == UnitTypes::Zerg_Scourge && 2 * CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
     }
 
     // remove undesireables.
