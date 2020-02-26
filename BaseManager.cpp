@@ -150,13 +150,13 @@ void BaseManager::updateBases()
         if(CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))
             they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
 
-        bool too_close_by_ground = true;
-        if (distance_to_alarming_ground.size() >= 2) {
+        bool too_close_by_ground = false;
+        if (distance_to_alarming_ground.size() >= 2 || b.second.distance_to_ground_ < 640 ) {
             std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
             too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter) && !b.second.checkHasGroundBuffer(CUNYAIModule::current_map_inventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
         }
 
-        bool too_close_by_air = true;
+        bool too_close_by_air = false;
         if (distance_to_alarming_air.size() >= 2) {
             std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
             too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter);
@@ -179,8 +179,8 @@ void BaseManager::updateBases()
         bool getting_hit_ground = (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0);
         bool getting_hit_air = (e_loc.stock_fliers_ > 0);
         bool on_one_base = baseMap_.size() - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery) <= 1;
-        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken;
-        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore;
+        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && b.second.sunken_count_ <= max(alarming_enemy_ground.ground_count_,2);
+        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && b.second.spore_count_ <= max(alarming_enemy_air.flyer_count_,2);
         
         if (b.second.emergency_sunken_ && Broodwar->getFrameCount() % 24 == 0) {
             StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
