@@ -65,7 +65,7 @@ bool WorkerManager::workersClear(const Unit & unit)
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
 
      //Workers need to clear empty patches.
-    bool time_to_start_clearing_a_path = CUNYAIModule::current_map_inventory.hatches_ >= 2 && checkBlockingMinerals(unit, CUNYAIModule::friendly_player_model.units_);
+    bool time_to_start_clearing_a_path = CUNYAIModule::basemanager.getBaseCount() >= 2 && checkBlockingMinerals(unit, CUNYAIModule::friendly_player_model.units_);
     if (time_to_start_clearing_a_path && CUNYAIModule::workermanager.workers_clearing_ == 0 && isEmptyWorker(unit)) {
         if (assignClear(unit)) {
             CUNYAIModule::workermanager.updateWorkersClearing();
