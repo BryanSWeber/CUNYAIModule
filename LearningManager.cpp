@@ -324,7 +324,12 @@ void LearningManager::initializeGeneticLearning() {
     //What model is this? It's greedy...
 
 
-
+    int game_score = 0;
+    int game_count = 0;
+    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+        game_score += getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
+        game_count++;
+    }
 
 
 
@@ -343,9 +348,9 @@ void LearningManager::initializeGeneticLearning() {
         bool game_won = game_iter->win_total_;
 
         double weight_of_match_quality = 0.50 * name_matches + 0.25 * race_matches + 0.25 * map_matches;
-        double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_) / sqrt(1000000);
+        double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
 
-        if (weight_of_match_quality * weighted_game_score >= rand_value * 0.75 + 0.25) // either you won in a match or you did fairly well by our standards
+        if (weight_of_match_quality * weighted_game_score >= max(game_score/game_count, 100)) // either you won in a match or you did fairly well by our standards
             game_data_well_matched.push_back(*game_iter);
 
         if (game_data_partial_match.size() > 10)
@@ -364,7 +369,7 @@ void LearningManager::initializeGeneticLearning() {
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
         gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1 - crossover)), 0., 1.);
-        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1 - crossover)), 0., 1.);
+        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1 - crossover)), 0.0, 1.0);
         a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
         a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1 - crossover)), 0., 1.);
         a_tech_out = CUNYAIModule::bindBetween(pow(parent_1.a_tech_total_, crossover) * pow(parent_2.a_tech_total_, (1 - crossover)), 0., 3.);
@@ -386,7 +391,7 @@ void LearningManager::initializeGeneticLearning() {
         double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
         gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
-        supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0., 1.) : supply_ratio_out;
+        supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0.3, 0.6) : supply_ratio_out;
         a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
         a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 3.) : a_tech_out;
@@ -568,6 +573,22 @@ void LearningManager::initializeGAUnitWeighting()
     vector<vector<double>> matrix_of_unit_weights;
     vector<double> entire_vector(BWAPI::UnitTypes::allUnitTypes().size()+1);
 
+    //Get benchmarks for inclusion as "good scores"
+    int game_score = 0;
+    int game_count = 0;
+    for (int j = 0; j < csv_length; ++j) {
+        vector<double> local_copy = entire_vector;
+        for (auto &i : local_copy) {
+            getline(input, val, ',');
+            i = stod(val);
+        }
+        if (local_copy.back() > 0) {
+            game_score += local_copy.back();
+            game_count++;
+        }
+    }
+
+    //Include all "good scores" appropriately.
     for (int j = 0; j < csv_length; ++j) {
         vector<double> local_copy = entire_vector;
         for (auto &i:local_copy) {
@@ -576,9 +597,8 @@ void LearningManager::initializeGAUnitWeighting()
         }
         if (local_copy.back() > 0) {
             int weight = local_copy.back();
-            while (weight > 0) {
+            if (weight >= max(game_score/game_count,100)) {
                 matrix_of_unit_weights.push_back(local_copy); //if we did well, keep it.
-                weight -= 100;
             }
         }
     }
