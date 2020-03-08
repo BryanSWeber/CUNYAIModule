@@ -492,7 +492,7 @@ void LearningManager::initializeTestStart(){
     a_tech_t0 = 0.52895;
     r_out_t0 = 0.5097605;
 
-    build_order_t0 = "drone drone drone drone drone overlord drone drone drone hatch pool extract drone drone drone drone ling ling ling overlord lair drone drone drone speed drone drone drone overlord hydra_den drone drone drone drone lurker_tech creep drone creep drone sunken sunken drone drone drone drone drone overlord overlord hydra hydra hydra hydra ling ling lurker lurker lurker lurker ling ling"; // 2h lurker; //Standard Opener
+    build_order_t0 = "drone drone drone drone drone overlord drone drone drone pool extract drone hatch drone drone ling ling lair drone drone drone speed hydra_den ling ling lurker_tech overlord hydra hydra hydra hydra extract lurker lurker lurker lurker"; // 2h lurker; //Standard Opener
 
 }
 
