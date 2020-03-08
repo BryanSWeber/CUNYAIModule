@@ -41,5 +41,6 @@ public:
     void displayBaseData(); //vital for testing.
     Base getClosestBaseGround(const Position &pos); // Gets the closest base by ground from position. will return something but could return a mock "Null base"
     Base getClosestBaseAir(const Position &pos); // Gets the closest base by air from position. will return something but could return a mock "Null base"
+    Base getBase(const Position &pos); // Gets the base at position. will return something but could return a mock "Null base"
     string test;
 };

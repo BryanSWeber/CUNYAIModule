@@ -780,9 +780,6 @@ bool checkSameDirection(const Position vector_a, const Position vector_b) {
 }
 
 bool checkAngleSimilar(double angle1, double angle2) {
-    double diff = abs(angle1 - angle2);
-    if (diff > 3.14) {
-        diff -= 3.14;
-    }
+    double diff = min({ abs(angle1 - angle2), abs(angle1 - angle2 - 2 * 3.1415), abs(angle1 - angle2 + 2 * 3.1415) } );
     return diff < 0.50 * 3.1415;
 }

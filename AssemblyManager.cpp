@@ -1006,15 +1006,18 @@ bool AssemblyManager::assignUnitAssembly()
             bool wasting_larva_soon = true;
             bool hatch_wants_drones = true;
             bool prep_for_transfer = true;
+            bool minerals_on_left = false;
 
             if (larva.first->getHatchery()) {
                 wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 2 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
-                Resource_Inventory local_resources = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, larva.first->getHatchery()->getPosition());
-                if (!local_resources.resource_inventory_.empty()) {
-                    local_resources.updateMines();
-                    hatch_wants_drones = 2 * local_resources.getLocalMinPatches() + 3 * local_resources.getLocalRefineries() > local_resources.getLocalMiners() + local_resources.getLocalGasCollectors();
-                }
+                Base b = CUNYAIModule::basemanager.getBase(larva.first->getHatchery()->getPosition());
+                hatch_wants_drones = 2 * b.mineral_patches_ + 3 * b.gas_geysers_ > b.mineral_gatherers_ + b.gas_gatherers_;
                 prep_for_transfer = CUNYAIModule::countUnitsInProgress(Broodwar->self()->getRace().getResourceDepot()) > 0;
+
+                Position hatch_spot = larva.first->getHatchery()->getPosition();
+                Position centroid = BWEB::Stations::getClosestStation(TilePosition(hatch_spot))->getResourceCentroid();
+                Position left_of_base = hatch_spot - Position(124, 0); // left of base.
+                minerals_on_left = checkSameDirection(centroid - hatch_spot, left_of_base - hatch_spot);
             }
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
@@ -1022,6 +1025,11 @@ bool AssemblyManager::assignUnitAssembly()
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
             bool found_noncombat_use = false;
+
+            if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
+                larva.first->stop(); // this will larva trick them to the left.
+                larva.second.updateStoredUnit(larva.first);
+            }
 
             if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
                 immediate_drone_larva.addStoredUnit(larva.second);

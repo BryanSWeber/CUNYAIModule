@@ -18,6 +18,8 @@ Base::Base() {
     distance_to_air_ = 0;
     emergency_spore_ = false;
     emergency_sunken_ = false;
+    mineral_patches_ = 0;
+    gas_geysers_ = 0;
 };
 
 Base::Base(const Unit & u)
@@ -35,6 +37,8 @@ Base::Base(const Unit & u)
     distance_to_air_ = 0;
     emergency_spore_ = false;
     emergency_sunken_ = false;
+    mineral_patches_ = 0;
+    gas_geysers_ = 0;
     unit_ = u;
 };
 
@@ -260,6 +264,16 @@ Base BaseManager::getClosestBaseAir(const Position & pos)
         return baseMap_.at(basePos);
     else
         return nullBase;
+}
+
+Base BaseManager::getBase(const Position & pos)
+{
+    Base nullBase;
+    auto base_it = baseMap_.find(pos);
+    if (base_it == baseMap_.end())
+        return nullBase;
+    else
+        return base_it->second;
 }
 
 bool Base::checkHasGroundBuffer(const Position& threat_pos)

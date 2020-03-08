@@ -597,7 +597,7 @@ void LearningManager::initializeGAUnitWeighting()
         }
         if (local_copy.back() > 0) {
             int weight = local_copy.back();
-            if (weight >= max(game_score/game_count,100)) {
+            if (weight >= max(game_score/game_count, 100)) {
                 matrix_of_unit_weights.push_back(local_copy); //if we did well, keep it.
             }
         }
@@ -651,7 +651,7 @@ int LearningManager::resetScale(const UnitType ut)
 }
 
 double LearningManager::getOutcomeScore(const bool isWinner, const int buildScore, const int killScore, const int razeScore, const int unitScore) {
-    return sqrt(isWinner * 1000000) + (1 - isWinner) * sqrt(buildScore + killScore + razeScore + unitScore);
+    return sqrt(isWinner * 500000) + (1 - isWinner) * sqrt(buildScore + killScore + razeScore + unitScore);
 }
 
 HistoryEntry::HistoryEntry()
