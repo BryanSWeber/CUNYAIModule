@@ -1522,6 +1522,48 @@ void Building_Gene::getInitialBuildOrder(string s) {
         else if (build == "muscular_augments") {
             building_gene_.push_back(muscular_augments);
         }
+        else if (build == "5pool") { //shortcuts.
+            building_gene_.push_back(drone);
+            building_gene_.push_back(pool);
+        }
+        else if (build == "7pool") {
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(pool);
+        }
+        else if (build == "9pool") {
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(pool);
+        }
+        else if (build == "12pool") {
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(ovi);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(drone);
+            building_gene_.push_back(pool);
+        }
+        else if (build == "12hatch") {
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(ovi);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(drone);
+        building_gene_.push_back(hatch);
+        }
     }
     getCumulativeResources();
 }
