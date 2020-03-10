@@ -183,14 +183,15 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
                 //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
 
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
-                int plength = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(unit->getPosition(), Position(p), &plength);
+                BWEB::Path newPath;
+                newPath.createUnitPath(unit->getPosition(), Position(p));
+
                 int score_temp = std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))); // closer is better, further from enemy is better.
-                bool min_plength = min(plength, 500);
+                bool min_plength = min(static_cast<int>(newPath.getDistance()), 500);
 
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && plength > 0 && safe_path_available_or_needed && can_afford_with_travel) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() > 0 && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -600,10 +601,10 @@ map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building,
             placements = closest_wall->getLargeTiles();
         if (!placements.empty()) {
             for (auto &tile : placements) {
-                int plength = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
-                if (plength > 0)
-                    viable_placements.insert({ plength, tile });
+                BWEB::Path newPath;
+                newPath.createUnitPath(Position(tp), Position(tile));
+                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
+                    viable_placements.insert({ newPath.getDistance(), tile });
             }
         }
     }
@@ -636,19 +637,19 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLarger(const Un
         // If there's a good placement, let's use it.
         if (!placements.empty()) {
             for (auto &tile : placements) {
-                int plength  = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
-                if (plength > 0)
-                    viable_placements.insert({ plength, tile });
+                BWEB::Path newPath;
+                newPath.createUnitPath(Position(tp), Position(tile));
+                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
+                    viable_placements.insert({ newPath.getDistance(), tile });
             }
         }
         // Otherwise, let's fall back on the backup placements
         if (!backup_placements.empty()) {
             for (auto &tile : backup_placements) {
-                int plength = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
-                if (plength > 0)
-                    viable_placements.insert({ plength, tile });
+                BWEB::Path newPath;
+                newPath.createUnitPath(Position(tp), Position(tile));
+                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
+                    viable_placements.insert({ newPath.getDistance(), tile });
             }
         }
     }
@@ -665,10 +666,10 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
     if (closest_station) {
         int i = 0;
         for (auto &tile : closest_station->getDefenseLocations()) {
-            int plength = 0;
-            auto cpp = BWEM::Map::Instance().GetPath(Position(tp), Position(tile), &plength);
-            if (plength > 0)
-                viable_placements.insert({ plength, tile });
+            BWEB::Path newPath;
+            newPath.createUnitPath(Position(tp), Position(tile));
+            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
+                viable_placements.insert({ newPath.getDistance(), tile });
         }
     }
 
@@ -678,9 +679,9 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
     for (auto good_block : placements) { // should automatically search by distance.
-        int plength = 0;
-        auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
-        bool min_plength = min(plength, cap_distance);
+        BWEB::Path newPath;
+        newPath.createUnitPath(u->getPosition(), Position(good_block.second));
+        bool min_plength = min(static_cast<int>(newPath.getDistance()), cap_distance);
         if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();

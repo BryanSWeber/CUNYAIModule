@@ -1049,15 +1049,15 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
 }
 
 Position Map_Inventory::getBaseNearest() {
-    int plength = 0;
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
         Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
         ui_mini.updateUnitInventorySummary();
-        auto cpp = BWEM::Map::Instance().GetPath(b.first, enemy_base_ground_, &plength);
-        if (plength && plength < shortest_path && ui_mini.stock_ground_fodder_ > 0) {
-            shortest_path = plength;
+        BWEB::Path newPath;
+        newPath.createUnitPath(b.first, enemy_base_ground_);
+        if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() < shortest_path){
+            shortest_path = newPath.getDistance();
             closest_base = b.first;
         }
     }

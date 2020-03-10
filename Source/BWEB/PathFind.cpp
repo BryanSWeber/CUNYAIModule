@@ -9,11 +9,13 @@ namespace BWEB
 {
     namespace {
 
-        list<Path> unitPathCache;
-        map<pair<TilePosition, TilePosition>, list<Path>::iterator> unitPathCacheRefs;
+        struct PathCache {
+            map<pair<TilePosition, TilePosition>, list<Path>::iterator> iteratorList;
+            list<Path> pathCache;
+        };
 
-        list<Path> customPathCache;
-        map<pair<TilePosition, TilePosition>, list<Path>::iterator> customPathCacheRefs;
+        PathCache unitPathCache;
+        map<function <bool(const TilePosition&)>*, PathCache> customPathCache;
 
         int maxCacheSize = 10000;
         map<const BWEM::Area *, int> notReachableThisFrame;
@@ -47,24 +49,24 @@ namespace BWEB
 
         // If this path does not exist in cache, remove last reference and erase reference
         auto pathPoints = make_pair(source, target);
-        if (unitPathCacheRefs.find(pathPoints) == unitPathCacheRefs.end()) {
-            if (unitPathCache.size() == maxCacheSize) {
-                auto last = unitPathCache.back();
-                unitPathCache.pop_back();
-                unitPathCacheRefs.erase(make_pair(last.getSource(), last.getTarget()));
+        if (unitPathCache.iteratorList.find(pathPoints) == unitPathCache.iteratorList.end()) {
+            if (unitPathCache.pathCache.size() == maxCacheSize) {
+                auto last = unitPathCache.pathCache.back();
+                unitPathCache.pathCache.pop_back();
+                unitPathCache.iteratorList.erase(make_pair(last.getSource(), last.getTarget()));
             }
         }
 
         // If it does exist, set this path as cached version, update reference and push cached path to the front
         else {
-            auto &oldPath = unitPathCacheRefs[pathPoints];
+            auto &oldPath = unitPathCache.iteratorList[pathPoints];
             dist = oldPath->getDistance();
             tiles = oldPath->getTiles();
             reachable = oldPath->isReachable();
 
-            unitPathCache.erase(unitPathCacheRefs[pathPoints]);
-            unitPathCache.push_front(*this);
-            unitPathCacheRefs[pathPoints] = unitPathCache.begin();
+            unitPathCache.pathCache.erase(unitPathCache.iteratorList[pathPoints]);
+            unitPathCache.pathCache.push_front(*this);
+            unitPathCache.iteratorList[pathPoints] = unitPathCache.pathCache.begin();
             return;
         }
 
@@ -101,12 +103,10 @@ namespace BWEB
                 tiles.push_back(t);
             }
             reachable = true;
-            tiles.push_back(target);
-            tiles.push_back(source);
 
             // Update cache 
-            unitPathCache.push_front(*this);
-            unitPathCacheRefs[pathPoints] = unitPathCache.begin();
+            unitPathCache.pathCache.push_front(*this);
+            unitPathCache.iteratorList[pathPoints] = unitPathCache.pathCache.begin();
         }
 
         // If not found, set destination area as unreachable for this frame
@@ -117,7 +117,7 @@ namespace BWEB
         }
     }
 
-    void Path::bfsPath(const Position s, const Position t, function <bool(const TilePosition)> isWalkable, bool diagonal)
+    void Path::bfsPath(const Position s, const Position t, function <bool(const TilePosition&)> isWalkable, bool diagonal)
     {
         TilePosition source = TilePosition(s);
         TilePosition target = TilePosition(t);
@@ -193,31 +193,33 @@ namespace BWEB
         dist = DBL_MAX;
     }
 
-    void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition)> passedWalkable, bool diagonal)
+    void Path::jpsPath(const Position s, const Position t, function <bool(const TilePosition&)> passedWalkable, bool diagonal)
     {
         target = TilePosition(t);
         source = TilePosition(s);
 
         // If this path does not exist in cache, remove last reference and erase reference
-        auto pathPoints = make_pair(source, target);
-        if (customPathCacheRefs.find(pathPoints) == customPathCacheRefs.end()) {
-            if (customPathCache.size() == maxCacheSize) {
-                auto last = customPathCache.back();
-                customPathCache.pop_back();
-                customPathCacheRefs.erase(make_pair(last.getSource(), last.getTarget()));
+        auto &pathPoints = make_pair(source, target);
+        auto &thisCached = customPathCache[&passedWalkable];
+
+        if (thisCached.iteratorList.find(pathPoints) == thisCached.iteratorList.end()) {
+            if (thisCached.pathCache.size() == maxCacheSize) {
+                auto last = thisCached.pathCache.back();
+                thisCached.pathCache.pop_back();
+                thisCached.iteratorList.erase(make_pair(last.getSource(), last.getTarget()));
             }
         }
 
         // If it does exist, set this path as cached version, update reference and push cached path to the front
         else {
-            auto &oldPath = customPathCacheRefs[pathPoints];
+            auto &oldPath = thisCached.iteratorList[pathPoints];
             dist = oldPath->getDistance();
             tiles = oldPath->getTiles();
             reachable = oldPath->isReachable();
 
-            customPathCache.erase(customPathCacheRefs[pathPoints]);
-            customPathCache.push_front(*this);
-            customPathCacheRefs[pathPoints] = customPathCache.begin();
+            thisCached.pathCache.erase(thisCached.iteratorList[pathPoints]);
+            thisCached.pathCache.push_front(*this);
+            thisCached.iteratorList[pathPoints] = thisCached.pathCache.begin();
             return;
         }
 
@@ -253,13 +255,14 @@ namespace BWEB
                 current = Position(t);
                 tiles.push_back(t);
 
-                // Update cache 
-                customPathCache.push_front(*this);
-                customPathCacheRefs[pathPoints] = customPathCache.begin();
+                if (isWalkable(t.x, t.y))
+                    Broodwar->drawCircleMap(Position(t) + Position(16, 16), 4, Colors::Yellow, true);
             }
+
+            // Update cache 
+            thisCached.pathCache.push_front(*this);
+            thisCached.iteratorList[pathPoints] = thisCached.pathCache.begin();
             reachable = true;
-            tiles.push_back(target);
-            tiles.push_back(source);
         }
 
         // If not found, set destination area as unreachable for this frame
@@ -273,25 +276,25 @@ namespace BWEB
     namespace Pathfinding {
         void clearCache()
         {
-            unitPathCache.clear();
-            unitPathCacheRefs.clear();
+            unitPathCache.iteratorList.clear();
+            unitPathCache.pathCache.clear();
             customPathCache.clear();
-            customPathCacheRefs.clear();
         }
 
-        bool terrainWalkable(TilePosition tile)
+        void clearCache(function <bool(const TilePosition&)> passedWalkable) {
+            customPathCache[&passedWalkable].iteratorList.clear();
+            customPathCache[&passedWalkable].pathCache.clear();
+        }
+
+        bool terrainWalkable(const TilePosition &tile)
         {
-            if (tile.x > Broodwar->mapWidth() || tile.y > Broodwar->mapHeight() || tile.x < 0 || tile.y < 0)
-                return false;
             if (Map::isWalkable(tile))
                 return true;
             return false;
         }
 
-        bool unitWalkable(TilePosition tile)
+        bool unitWalkable(const TilePosition &tile)
         {
-            if (tile.x > Broodwar->mapWidth() || tile.y > Broodwar->mapHeight() || tile.x < 0 || tile.y < 0)
-                return false;
             if (Map::isWalkable(tile) && Map::isUsed(tile) == UnitTypes::None)
                 return true;
             return false;

@@ -34,10 +34,10 @@ namespace BWEB
         void createWallPath(const BWAPI::Position, const BWAPI::Position, bool, double);
 
         /// <summary> Creates a path from the source to the target using JPS, your provided walkable function, and whether diagonals are allowed. </summary>
-        void jpsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, bool diagonal = true);
+        void jpsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition&)> collision, bool diagonal = true);
 
         /// <summary> Creates a path from the source to the target using BFS, your provided walkable function, and whether diagonals are allowed. </summary>
-        void bfsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition)> collision, bool diagonal = true);
+        void bfsPath(const BWAPI::Position source, const BWAPI::Position target, std::function <bool(const BWAPI::TilePosition&)> collision, bool diagonal = true);
 
 
         ///
@@ -47,7 +47,8 @@ namespace BWEB
 
     namespace Pathfinding {
         void clearCache();
-        bool terrainWalkable(BWAPI::TilePosition);
-        bool unitWalkable(BWAPI::TilePosition);
+        void clearCache(std::function <bool(const BWAPI::TilePosition&)>);
+        bool terrainWalkable(const BWAPI::TilePosition&);
+        bool unitWalkable(const BWAPI::TilePosition&);
     }
 }
