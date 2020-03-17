@@ -16,11 +16,23 @@ bool WorkerManager::isEmptyWorker(const Unit &unit) {
 }
 bool WorkerManager::workerPrebuild(const Unit & unit)
 {
+    bool has_path = false;
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     AssemblyManager::clearBuildingObstuctions(miner.intended_build_type_, miner.intended_build_tile_, unit);
 
     if (CUNYAIModule::my_reservation.addReserveSystem(miner.intended_build_tile_, miner.intended_build_type_)) // get it in the build system if it is not already there.
         Diagnostics::DiagnosticText("We seem to be overzealous with keeping our reserve system clean, sir!");
+
+    BWEB::Path newPath;
+    newPath.createUnitPath(miner.pos_, Position(miner.intended_build_tile_));
+    has_path = newPath.isReachable() && !newPath.getTiles().empty();
+
+    //If no JPS path, try CPP paths:
+    int plength = 0;
+    if (!has_path) {
+        auto cpp = BWEM::Map::Instance().GetPath(miner.pos_, Position(miner.intended_build_tile_), &plength);
+        has_path = has_path || plength > 0;
+    }
 
     //if we can build it with an offical build order, and it is in the reserve system, do so now.
     if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && unit->build(miner.intended_build_type_, miner.intended_build_tile_)) {
@@ -28,15 +40,15 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
         return CUNYAIModule::updateUnitPhase(unit, StoredUnit::Building);
     }
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
-    else {
-        unit->move(Position(miner.intended_build_tile_));
+    else if(has_path && !AssemblyManager::isOccupiedBuildLocation(miner.intended_build_type_, miner.intended_build_tile_)) {
+        Mobility(unit).moveTo(unit->getPosition(), Position(miner.intended_build_tile_) + Position(16,16), StoredUnit::Phase::Prebuilding);
         //Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
-    //else if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && !AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
-    //    CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
-    //    CUNYAIModule::updateUnitPhase(unit, StoredUnit::None);
-    //}
+    else {
+        CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
+        CUNYAIModule::updateUnitPhase(unit, StoredUnit::None);
+    }
 
     return false;
 }

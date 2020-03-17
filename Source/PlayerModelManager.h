@@ -36,7 +36,6 @@ public:
     // Important variables.
     Player bwapi_player_;
     double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
-    double estimated_bases_ = 0;
     double estimated_cumulative_worth_ = 0; // prototyping.
     double estimated_net_worth_ = 0; // prototyping.
     double estimated_resources_per_frame_ = 0; // prot0typing.

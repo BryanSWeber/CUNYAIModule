@@ -214,42 +214,6 @@ double Player_Model::countUnseenUnits(const UnitType & ut)
     return 0.0;
 }
 
-//void Player_Model::evaluatePotentialWorkerCount() {
-//
-//    if (Broodwar->getFrameCount() == 0) {
-//        estimated_workers_ = 4;
-//    }
-//    else {
-//        int count_of_occupied_bases = 0;
-//        int bases_in_start_positions = 0;
-//        for (auto & a : BWEM::Map::Instance().Areas()) {
-//            bool found_a_base = false;
-//            if (!units_.getBuildingInventoryAtArea(a.Id()).unit_map_.empty() && !a.Bases().empty()) {
-//                count_of_occupied_bases++;
-//                found_a_base = true;
-//            }
-//            if (found_a_base) {
-//                for (auto start_pos : CUNYAIModule::current_map_inventory.start_positions_) {
-//                    if (BWEM::Map::Instance().GetArea(TilePosition(start_pos))->Id() == a.Id()) {
-//                        bases_in_start_positions++;
-//                    }
-//                }
-//            }
-//        }
-//        if (bases_in_start_positions == 0 && count_of_occupied_bases > 0) count_of_occupied_bases++; // if they have no bases in start positions but have an expansion, they have another base in a start position.
-//        count_of_occupied_bases = max(count_of_occupied_bases, 1); // surely, they occupy at least one base.
-//        estimated_bases_ = static_cast<double>(max(units_.resource_depot_count_, count_of_occupied_bases));
-//        //double functional_worker_cap = static_cast<double>(estimated_bases_ * 21);// 9 * 2 patches per base + 3 workers on gas = 21 per base max.
-//
-//        //estimated_workers_ += static_cast<double>(estimated_bases_) / static_cast<double>(UnitTypes::Zerg_Drone.buildTime());
-//        //estimated_workers_ = min(estimated_workers_, min(static_cast<double>(85), functional_worker_cap)); // there exists a maximum reasonable number of workers.
-//        //estimated_workers_ = min(estimated_workers_, static_cast<double>(85)); // there exists a maximum reasonable number of workers.
-//
-//
-//    }
-//    //estimated_workers_ = min(max(static_cast<double>(units_.worker_count_), estimated_workers_), 85.0);
-//}
-
 void Player_Model::evaluatePotentialUnitExpenditures() {
     double temp_estimated_unseen_supply_ = 0;
     double temp_estimated_unseen_army_ = 0;

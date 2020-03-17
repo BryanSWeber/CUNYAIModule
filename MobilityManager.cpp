@@ -262,7 +262,7 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_map_inventory.safe_base_);
 
-    if ( (!unit_->isFlying() && pos_.getApproxDistance(next_waypoint) > pos_.getApproxDistance(e.pos_) && !checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
+    if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
         approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
     }
@@ -657,7 +657,23 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
             return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
         }
         else {
-            unit_sent = unit_->move(Position(newPath.getTiles()[0]));
+            unit_sent = unit_->move(Position(newPath.getTiles()[0]) + Position(16,16));
+        }
+    }
+
+    // Then let us try CPP.
+    if (!unit_sent) {
+        int plength = 0;
+        auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
+        if (!cpp.empty() && !unit_->isFlying()) {
+            // first try traveling with CPP.
+            Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
+            friendly_blocks.updateUnitInventorySummary();
+            bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0);
+            bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
+            if (!too_close && cpp.size() >= 1)  unit_sent = unit_->move(Position(cpp[0]->Center()) + Position(16, 16)); // if you're not too close, get closer.
+            if (too_close && cpp.size() > 1) unit_sent = unit_->move(Position(cpp[1]->Center()) + Position(16, 16)); // if you're too close to one choke point, move to the next one!
+            //if (too_close && cpp.size() == 1) continue; // we're too close too the end of the CPP. Congratulations!  now use your local pathing.
         }
     }
 
