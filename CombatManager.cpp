@@ -157,11 +157,13 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.surroundLogic(e_closest_threat->pos_);
                     }
                     else if (standard_fight_reasons) {
+                        bool is_near_choke = false;
+                        if(BWEB::Map::getClosestChokeTile(u->getPosition()).isValid())
+                            is_near_choke = (BWEB::Map::getClosestChokeTile(u->getPosition()) + Position(16,16)).getDistance(u->getPosition()) < 64;
                         bool target_is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
                         bool surround_is_viable = (distance_to_ground > max(mobility.getDistanceMetric(), CUNYAIModule::getFunctionalRange(u)) / 2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker); // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
-                        bool kiting_away = e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64  // only kite if he's in range,
-                            && CUNYAIModule::current_map_inventory.map_veins_[WalkPosition(u->getPosition()).x][WalkPosition(u->getPosition()).y] > 8;  //only kite in open areas.
-                        bool kiting_in = !u->isFlying() && e_closest_threat->bwapi_unit_ && CUNYAIModule::getExactRange(u) < CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+                        bool kiting_away = e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64;  // only kite if he's in range,
+                        bool kiting_in = !u->isFlying() && is_near_choke && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
                         if ((kiting_in || surround_is_viable) && e_closest_ground)
                             return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground->bwapi_unit_), StoredUnit::Phase::Surrounding);
                         if (kiting_away)
