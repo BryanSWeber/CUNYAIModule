@@ -423,7 +423,7 @@ bool Mobility::checkSafeGroundPath(const Position &finish) {
 // returns TRUE if the lurker needed fixing. For Attack.
 bool Mobility::prepareLurkerToAttack(const Position position_of_target) {
     int dist_to_threat_or_target = unit_->getDistance(position_of_target);
-    bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange();
+    bool dist_condition = dist_to_threat_or_target < UnitTypes::Zerg_Lurker.groundWeapon().maxRange() + (UnitTypes::Zerg_Lurker.dimensionRight() + UnitTypes::Zerg_Lurker.dimensionUp())/2;
 
     if (u_type_ == UnitTypes::Zerg_Lurker) {
         if (!unit_->isBurrowed() && dist_condition) {

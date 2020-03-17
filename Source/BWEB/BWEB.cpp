@@ -646,6 +646,22 @@ namespace BWEB::Map
         return {};
     }
 
+    BWAPI::Position getClosestChokeTile(const BWAPI::Position p)
+    {
+        int distance = INT_MAX;
+        BWAPI::Position closest_pos = BWAPI::Positions::Invalid;
+        auto area = BWEM::Map::Instance().GetArea(TilePosition(p));
+        if(area)
+            for (auto &choke : area->ChokePoints()) {
+                auto test_pos = getClosestChokeTile(choke, p) + BWAPI::Position(16,16);
+                if (p.getDistance(test_pos) < distance) {
+                    distance = p.getDistance(test_pos);
+                    closest_pos = test_pos;
+                }
+            }
+        return closest_pos;
+    }
+
     pair<Position, Position> lineOfBestFit(const BWEM::ChokePoint * choke)
     {
         if (choke)

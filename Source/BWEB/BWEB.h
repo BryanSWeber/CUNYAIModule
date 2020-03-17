@@ -68,6 +68,8 @@ namespace BWEB::Map
 
     /// Returns the closest BWAPI::Position that makes up the geometry of a BWEM::ChokePoint to another BWAPI::Position.
     BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint *, BWAPI::Position);
+    /// Returns the closest BWAPI::Position that makes up the geometry of a BWEM::ChokePoint to another BWAPI::Position. An overload of the previous that doesn't require a choke point.
+    BWAPI::Position getClosestChokeTile(const BWAPI::Position p);
 
     /// Returns a set of BWAPI::TilePositions that make up the geometry of a BWEM::ChokePoint.
     std::set<BWAPI::TilePosition> getChokeTiles(const BWEM::ChokePoint *);
