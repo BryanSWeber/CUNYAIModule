@@ -191,7 +191,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() > 0 && safe_path_available_or_needed && can_afford_with_travel) {
+                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -268,7 +268,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Macro-related Buildings.
     if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1 && 
-                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 ||
+                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_) ||
                                                             (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
@@ -410,7 +410,7 @@ void AssemblyManager::clearBuildingObstuctions(const UnitType &ut, const TilePos
     }
 }
 
-bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location)
+bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location, const bool checkExplored)
 {
     if (isOccupiedBuildLocation(type, location))
         return false;
@@ -424,15 +424,14 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
             if (!tile.isValid()
                 || !Broodwar->isBuildable(tile)
                 || !Broodwar->isWalkable(WalkPosition(tile))
-                || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type))
+                || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type, nullptr, checkExplored))
                 || (!Broodwar->hasCreep(tile) && creepCheck))
                 return false;
         }
     }
-
     return true;
-
 }
+
 bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePosition &location) {
     auto units_in_area = Broodwar->getUnitsInRectangle(Position(location), Position(location) + Position(type.width(), type.height()));
     if (!units_in_area.empty()) {
@@ -443,6 +442,7 @@ bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePo
     }
     return false;
 }
+
 bool AssemblyManager::isFullyVisibleBuildLocation(const UnitType &type, const TilePosition &location) {
     for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
         for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
@@ -679,9 +679,19 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
     for (auto good_block : placements) { // should automatically search by distance.
+        int plength = INT_MAX;
+
+        //Try JPS pathing.
         BWEB::Path newPath;
         newPath.createUnitPath(u->getPosition(), Position(good_block.second));
-        bool min_plength = min(static_cast<int>(newPath.getDistance()), cap_distance);
+
+        //Otherwise try CPP pathing.
+        if (!newPath.isReachable()) {
+            auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
+        }
+
+        bool min_plength = min({ static_cast<int>(newPath.getDistance()), cap_distance, plength });
+
         if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
             u->stop();
@@ -746,18 +756,20 @@ void AssemblyManager::updateOptimalCombatUnit() {
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
-        //if (CUNYAIModule::checkDesirable(potential_type.first, true) || assembly_cycle_[potential_type.first] != 0 || potential_type.first == UnitTypes::None) { // while this runs faster, it will potentially get biased towards lings and hydras and other lower-cost units?
         StoredUnit su = StoredUnit(potential_type.first);
         Unit_Inventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
-        friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
-        if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
+        for (int i = 0; i <= getWaveSize(potential_type.first); i++) {
+            friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
+            if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
+        }
         friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
-        //if(Broodwar->getFrameCount() % 96 == 0) Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
+        if(Broodwar->getFrameCount() % 96 == 0) 
+            Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
     have_idle_evos_ = false;
@@ -1271,6 +1283,27 @@ int AssemblyManager::getMaxGas()
         if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
     }
     return max_gas_;
+}
+
+int AssemblyManager::getWaveSize(const UnitType & ut)
+{
+    if(!canMakeCUNY(ut, true))
+        return 0;
+    else {
+        int gas = CUNYAIModule::my_reservation.getExcessGas();
+        int min = CUNYAIModule::my_reservation.getExcessMineral();
+        int supply = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
+        int larva = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva);
+        int nUnits = 0;
+        while (gas > 0 && min > 0  && larva > 0 && supply > 0) {
+            gas -= ut.gasPrice();
+            min -= ut.mineralPrice();
+            larva--;
+            supply -= ut.supplyRequired();
+            nUnits++;
+        }
+        return nUnits++;
+    }
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
