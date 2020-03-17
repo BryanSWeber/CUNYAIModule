@@ -191,7 +191,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inve
 
                 bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
-                if (!isOccupiedBuildLocation(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
+                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
                     inv.setNextExpo(p);
                     //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
@@ -410,25 +410,37 @@ void AssemblyManager::clearBuildingObstuctions(const UnitType &ut, const TilePos
     }
 }
 
-bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location, const bool checkExplored)
+bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location)
 {
+    // Modifies BWEB's isPlaceable()
     if (isOccupiedBuildLocation(type, location))
         return false;
-    // Modifies BWEB's isPlaceable()
-    // Placeable is valid if buildable and not overlapping neutrals
-    // Note: Must check neutrals due to the terrain below them technically being buildable
-    const bool creepCheck = type.requiresCreep();
-    for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
-        for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
-            TilePosition tile(x, y);
-            if (!tile.isValid()
-                || !Broodwar->isBuildable(tile)
-                || !Broodwar->isWalkable(WalkPosition(tile))
-                || (type.isResourceDepot() && !Broodwar->canBuildHere(tile, type, nullptr, checkExplored))
-                || (!Broodwar->hasCreep(tile) && creepCheck))
+
+    const auto creepCheck = type.requiresCreep() ? true : false;
+
+    if (creepCheck) {
+        for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
+            const TilePosition creepTile(x, location.y + type.tileHeight());
+            if (!Broodwar->hasCreep(creepTile))
                 return false;
         }
     }
+
+    if (type.isResourceDepot() && !Broodwar->canBuildHere(location, type))
+        return false;
+
+    for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
+        for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
+
+            const TilePosition tile(x, y);
+            if (!tile.isValid()
+                || !Broodwar->isBuildable(tile)
+                || !Broodwar->isWalkable(WalkPosition(tile))
+                || BWEB::Map::isUsed(tile) != UnitTypes::None)
+                return false;
+        }
+    }
+    return true;
     return true;
 }
 

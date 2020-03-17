@@ -57,7 +57,7 @@ public:
     static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv); // Build an expo at a internally chosen position, granting extra critera is true. Asks to be fed a map inventory so it knows what positions are safe.
     static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
     static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit); // Moves all units except for the Stored exeption_unit elsewhere.
-    static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile, const bool checkExplored = false);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
+    static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
     static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if a build position is occupied.
     static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if I can see every tile in a build location. 
     static bool Reactive_BuildFAP(const Unit & morph_canidate);     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
