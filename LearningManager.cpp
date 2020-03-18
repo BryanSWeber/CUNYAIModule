@@ -124,9 +124,9 @@ void LearningManager::initializeGeneticLearning() {
     //No longer used.
     double a_vis_out = dis(gen);
 
-    string e_name = Broodwar->enemy()->getName().c_str();
-    string e_race = Broodwar->enemy()->getRace().c_str();
-    string map_name = Broodwar->mapFileName().c_str();
+    string e_name = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+    string e_race = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    string map_name = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
 
 
     HistoryEntry parent_1;
@@ -154,27 +154,9 @@ void LearningManager::initializeGeneticLearning() {
     double prob_win_given_opponent;
 
     string entry; // entered string from stream
-    //std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, string>;  // all stats for the game.
-    //vector<double> gas_proportion_total;
-    //vector<double> supply_ratio_total;
-    //vector<double> a_army_total;
-    //vector<double> a_econ_total;
-    //vector<double> a_tech_total;
-    //vector<double> r_total;
-    //vector<string> race_total;
-    //vector<int> win_total;
-    //vector<int> sdelay_total;
-    //vector<int> mdelay_total;
-    //vector<int> ldelay_total;
-    //vector<string> name_total;
-    //vector<string> map_name_total;
-    //vector<string> build_order_total;
 
-    vector<HistoryEntry> game_data; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector<HistoryEntry> game_data_well_matched;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    vector<HistoryEntry> game_data_partial_match; //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-    //vector< std::tuple< double, double, double, double, double, double, string, bool, int, int, int, string, string, double, double, double, string> > game_data_parent_match;//(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-
+    vector<HistoryEntry> game_data;
+    vector<HistoryEntry> game_data_well_matched;
 
     vector<double> r_win;
     vector<string> map_name_win;
@@ -291,57 +273,19 @@ void LearningManager::initializeGeneticLearning() {
     } // closure for each row
     input.close();
 
-
-    for (int j = 0; j < csv_length; ++j) { // what is the best conditional to use? Keep in mind we would like variation.
-                                           //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-
-        if (game_data[j].name_total_ == e_name) {
-            if ((game_data[j]).win_total_ == 1) {
-                game_data_partial_match.push_back(game_data[j]);
-                win_count[0]++;
-            }
-            else lose_count[0]++;
-        }
-
-        if (game_data[j].race_total_ == e_race) {
-            if ((game_data[j]).win_total_ == 1) {
-                game_data_partial_match.push_back(game_data[j]);
-                win_count[1]++;
-            }
-            else lose_count[1]++;
-        }
-
-        if (game_data[j].map_name_total_ == map_name) {
-            if ((game_data[j]).win_total_ == 1) {
-                game_data_partial_match.push_back(game_data[j]);
-                win_count[2]++;
-            }
-            else lose_count[2]++;
-        }
-
-    }
-
     //What model is this? It's greedy...
 
 
     int game_score = 0;
     int game_count = 0;
-    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
+    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
         game_score += getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
         game_count++;
     }
 
 
-
     // start from most recent and count our way back from there.
-    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data_partial_match.rbegin(); game_iter != game_data_partial_match.rend(); game_iter++) {
-        //(gas_proportion_total, supply_ratio_total, a_army_total, a_econ_total, a_tech_total, r_total, race_total, win_total, sdelay_total, mdelay_total, ldelay_total, name_total, map_name_total, enemy_average_army_, enemy_average_econ_, enemy_average_tech_, opening)
-
-        double rand_value = dis(gen);
-
-        bool conditions_for_inclusion = true;
-        int counter = 0;
-
+    for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
         bool name_matches = game_iter->name_total_ == e_name;
         bool race_matches = game_iter->race_total_ == e_race;
         bool map_matches = game_iter->map_name_total_ == map_name;
@@ -353,12 +297,12 @@ void LearningManager::initializeGeneticLearning() {
         if (weight_of_match_quality * weighted_game_score >= max(game_score/game_count, 100)) // either you won in a match or you did fairly well by our standards
             game_data_well_matched.push_back(*game_iter);
 
-        if (game_data_partial_match.size() > 10)
+        if (game_data_well_matched.size() >= 3)
             break;
     } //or widest hunt possible.
 
 
-    if (game_data_well_matched.size() > 5) { // redefine final output.
+    if (game_data_well_matched.size() >= 3) { // redefine final output.
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_well_matched.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
@@ -606,17 +550,17 @@ void LearningManager::initializeGAUnitWeighting()
     Diagnostics::DiagnosticText("%d",matrix_of_unit_weights.size());
     vector<vector<double>> matrix_of_unit_weights_reversed;
 
-    //We only want the 50 most recent wins, so older genes will "die".
+    //We only want the N most recent wins, so older genes will "die".
     if (!matrix_of_unit_weights.empty()) {
         for (auto r = matrix_of_unit_weights.rbegin(); r < matrix_of_unit_weights.rend(); r++) {
             matrix_of_unit_weights_reversed.push_back(*r);
-            if (matrix_of_unit_weights.size() > 50)
+            if (matrix_of_unit_weights_reversed.size() >= 5)
                 break;
         }
     }
 
     //Generate more if we don't have enough, otherwise combine some winners with a mutation chance:
-    if (matrix_of_unit_weights_reversed.empty() || matrix_of_unit_weights_reversed.size() <= 50) {
+    if (matrix_of_unit_weights_reversed.empty() || matrix_of_unit_weights_reversed.size() < 5) {
         //We're good, use the random one.
     }
     else {
@@ -651,7 +595,7 @@ int LearningManager::resetScale(const UnitType ut)
 }
 
 double LearningManager::getOutcomeScore(const bool isWinner, const int buildScore, const int killScore, const int razeScore, const int unitScore) {
-    return sqrt(isWinner * 500000) + (1 - isWinner) * sqrt(buildScore + killScore + razeScore + unitScore);
+    return isWinner * sqrt(500000) + (1 - isWinner) * sqrt(buildScore + killScore + razeScore + unitScore);
 }
 
 HistoryEntry::HistoryEntry()
