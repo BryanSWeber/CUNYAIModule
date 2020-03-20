@@ -112,6 +112,7 @@ void LearningManager::initializeGeneticLearning() {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+    int population_size = build_order_list.size(); // default size of "breeding population". Typically, larger sizes are better to ensure a maximum but smaller sizes converge faster.
 
     double gas_proportion_out = dis(gen);
     double supply_ratio_out = dis(gen) * 0.3 + 0.3; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
@@ -137,7 +138,7 @@ void LearningManager::initializeGeneticLearning() {
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
     size_t build_order_rand = rand_bo(gen);
 
-    build_order_out = build_order_list[build_order_rand];
+    build_order_out = build_order_list[0];
 
     int selected_win_count = 0;
     int selected_lose_count = 0;
@@ -157,14 +158,6 @@ void LearningManager::initializeGeneticLearning() {
 
     vector<HistoryEntry> game_data;
     vector<HistoryEntry> game_data_well_matched;
-
-    vector<double> r_win;
-    vector<string> map_name_win;
-    vector<string> build_order_win;
-
-    std::set<string> build_orders_best_match;
-    std::set<string> build_orders_partial_match;
-    std::set<string> build_orders_untried;
 
     ifstream input; // brings in info;
     input.open( (writeDirectory + "history.txt").c_str(), ios::in);   // for each row
@@ -278,11 +271,22 @@ void LearningManager::initializeGeneticLearning() {
 
     int game_score = 0;
     int game_count = 0;
+    int matched_games = 0;
+
     for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
-        game_score += getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
-        game_count++;
+        if (game_iter->name_total_ == e_name) {
+            matched_games++;
+            game_score += getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
+            game_count++;
+        }
     }
 
+    if (matched_games <= build_order_list.size() - 1) {
+        build_order_out = build_order_list[matched_games];
+    }
+    else {
+        build_order_out = build_order_list[build_order_rand];
+    }
 
     // start from most recent and count our way back from there.
     for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
@@ -291,18 +295,18 @@ void LearningManager::initializeGeneticLearning() {
         bool map_matches = game_iter->map_name_total_ == map_name;
         bool game_won = game_iter->win_total_;
 
-        double weight_of_match_quality = 0.50 * name_matches + 0.25 * race_matches + 0.25 * map_matches;
+        double weight_of_match_quality = 0.80 * name_matches + 0.10 * race_matches + 0.10 * map_matches;
         double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
 
-        if (weight_of_match_quality * weighted_game_score >= max(game_score/game_count, 100)) // either you won in a match or you did fairly well by our standards
+        if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score/game_count : 0, 100)) // either you won in a match or you did fairly well by our standards
             game_data_well_matched.push_back(*game_iter);
 
-        if (game_data_well_matched.size() >= 3)
+        if (game_data_well_matched.size() >= population_size)
             break;
     } //or widest hunt possible.
 
 
-    if (game_data_well_matched.size() >= 3) { // redefine final output.
+    if (game_data_well_matched.size() >= population_size) { // redefine final output.
 
         std::uniform_int_distribution<size_t> unif_dist_to_win_count(0, game_data_well_matched.size() - 1); // safe even if there is only 1 win., index starts at 0.
         size_t rand_parent_1 = unif_dist_to_win_count(gen); // choose a random 'parent'.
@@ -312,16 +316,14 @@ void LearningManager::initializeGeneticLearning() {
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-        gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1 - crossover)), 0., 1.);
-        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1 - crossover)), 0.0, 1.0);
-        a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1 - crossover)), 0., 1.);  //geometric crossover, interior of parents.
-        a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1 - crossover)), 0., 1.);
-        a_tech_out = CUNYAIModule::bindBetween(pow(parent_1.a_tech_total_, crossover) * pow(parent_2.a_tech_total_, (1 - crossover)), 0., 3.);
-        r_out = CUNYAIModule::bindBetween(pow(parent_1.r_total_, crossover) * pow(parent_2.r_total_, (1 - crossover)), 0., 1.);
+        gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1. - crossover)), 0., 1.);
+        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1. - crossover)), 0.0, 1.);
+        a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1. - crossover)), 0., 1.);  //geometric crossover, interior of parents.
+        a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1. - crossover)), 0., 1.);
+        a_tech_out = CUNYAIModule::bindBetween(pow(parent_1.a_tech_total_, crossover) * pow(parent_2.a_tech_total_, (1. - crossover)), 0., 3.);
+        r_out = CUNYAIModule::bindBetween(pow(parent_1.r_total_, crossover) * pow(parent_2.r_total_, (1. - crossover)), 0., 1.);
         build_order_out = dis(gen) > 0.5 ? parent_1.opening_ : parent_2.opening_;
     }
-
-    prob_win_given_opponent = fmax(win_count[0] / static_cast<double>(win_count[0] + lose_count[0]), 0.0);
 
     //From genetic history, random parent for each gene. Mutate the genome
     std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 6);
