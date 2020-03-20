@@ -271,18 +271,21 @@ void LearningManager::initializeGeneticLearning() {
 
     int game_score = 0;
     int game_count = 0;
-    int matched_games = 0;
 
     for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
-        if (game_iter->name_total_ == e_name) {
-            matched_games++;
-            game_score += getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
+        bool name_matches = game_iter->name_total_ == e_name;
+        bool race_matches = game_iter->race_total_ == e_race;
+        bool map_matches = game_iter->map_name_total_ == map_name;
+
+        if (name_matches) {
+            double weight_of_match_quality = 0.80 * name_matches + 0.10 * race_matches + 0.10 * map_matches;
+            game_score += weight_of_match_quality * getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
             game_count++;
         }
     }
 
-    if (matched_games <= build_order_list.size() - 1) {
-        build_order_out = build_order_list[matched_games];
+    if (game_count <= build_order_list.size() - 1) {
+        build_order_out = build_order_list[game_count];
     }
     else {
         build_order_out = build_order_list[build_order_rand];
@@ -293,14 +296,19 @@ void LearningManager::initializeGeneticLearning() {
         bool name_matches = game_iter->name_total_ == e_name;
         bool race_matches = game_iter->race_total_ == e_race;
         bool map_matches = game_iter->map_name_total_ == map_name;
-        bool game_won = game_iter->win_total_;
+        bool opening_matches = game_iter->opening_ == build_order_out;
 
         double weight_of_match_quality = 0.80 * name_matches + 0.10 * race_matches + 0.10 * map_matches;
         double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
 
-        if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score/game_count : 0, 100)) // either you won in a match or you did fairly well by our standards
-            game_data_well_matched.push_back(*game_iter);
-
+        if (game_count > build_order_list.size() - 1) {
+            if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score / game_count : 0, 100)) // either you won in a match or you did fairly well by our standards
+                game_data_well_matched.push_back(*game_iter);
+        }
+        else {
+            if (opening_matches && game_iter->win_total_) // Or you won wit this opening
+                game_data_well_matched.push_back(*game_iter);
+        }
         if (game_data_well_matched.size() >= population_size)
             break;
     } //or widest hunt possible.
@@ -327,7 +335,7 @@ void LearningManager::initializeGeneticLearning() {
 
     //From genetic history, random parent for each gene. Mutate the genome
     std::uniform_int_distribution<size_t> unif_dist_to_mutate(0, 6);
-    std::normal_distribution<double> normal_mutation_size(0, 0.10);
+    std::normal_distribution<double> normal_mutation_size(0, 0.5);
 
     // Chance of mutation.
     if (dis(gen) > 0.25) {
