@@ -2157,8 +2157,8 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 
     for (auto e : ei.unit_map_) {
         if (!e.first->isBeingConstructed()) { // don't count constructing units.
-            bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
-            bool may_survive_and_fight = !escaping && e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are hard to calculate for enemies, they may about-face at any time.
+            //bool escaping = (e.second.order_ == Orders::Move && getProperSpeed(e.second.type_) > ui.max_speed_);
+            bool may_survive_and_fight = /*!escaping &&*/ e.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && e.second.type_ != UnitTypes::Zerg_Scourge && e.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are hard to calculate for enemies, they may about-face at any time.
             total_dying_ei += (e.second.stock_value_ - (e.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(e.second, 6) * may_survive_and_fight * CUNYAIModule::canContributeToFight(e.second.type_, ui);
             //total_surviving_ei += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second);
             total_surviving_ei_up += e.second.stock_value_ * !StoredUnit::unitDeadInFuture(e.second, 6) * CUNYAIModule::isFightingUnit(e.second) * e.second.shoots_up_ * may_survive_and_fight;
