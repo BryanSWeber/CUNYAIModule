@@ -291,7 +291,7 @@ void LearningManager::initializeGeneticLearning() {
         build_order_out = build_order_list[build_order_rand];
     }
 
-    if (e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()) && game_count <= 2)
+    if (e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()))
         build_order_out = build_order_list[build_order_rand % 3]; // if opponent is zerg there are really only 3 viable openings (the first 3)
 
     // start from most recent and count our way back from there.
