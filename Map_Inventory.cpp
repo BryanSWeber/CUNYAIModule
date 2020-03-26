@@ -1307,8 +1307,8 @@ void Map_Inventory::updateCurrentMap() {
             // Create a map <log(distance), Position> of all base locations on map
             for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
                 int plength = 0;
-                auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, Position(Broodwar->self()->getStartLocation()), &plength);
-                int air_distance = r.second.pos_.getDistance(Position(Broodwar->self()->getStartLocation()));
+                auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, enemy_base_ground_, &plength);
+                int air_distance = r.second.pos_.getDistance(enemy_base_ground_);
                 int ground_distance = plength;
 
                 int air_differential = air_differential - ground_distance;
