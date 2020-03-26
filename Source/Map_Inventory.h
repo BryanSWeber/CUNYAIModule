@@ -47,6 +47,8 @@ struct Map_Inventory {
     Position front_line_base_;
     Position safe_base_;
     Position scouting_base_;
+    Position air_scouting_base_;
+
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
@@ -59,6 +61,7 @@ struct Map_Inventory {
     vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_safety_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > map_out_from_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    vector< vector<int> > map_out_from_air_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -76,6 +79,7 @@ struct Map_Inventory {
     int frames_since_enemy_base_ground_ = 0;
     int frames_since_enemy_base_air_ = 0;
     int frames_since_scouting_base_ = 0;
+    int frames_since_air_scouting_base_ = 0;
 
     //Fields:
     vector< vector<int> > pf_threat_;

@@ -48,8 +48,14 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
     // Units should head towards enemies when there is a large gap in our knowledge, OR when it's time to pick a fight.
     if (forward_movement) {
         if (CUNYAIModule::combat_manager.isScout(unit_)) {
-            it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_, StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
+            if (unit_->isFlying()) {
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.air_scouting_base_, StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::current_map_inventory.air_scouting_base_;
+            }
+            else {
+                it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.scouting_base_, StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::current_map_inventory.scouting_base_;
+            }
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
             it_worked = moveTo(pos_, CUNYAIModule::current_map_inventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
