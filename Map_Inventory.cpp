@@ -1048,14 +1048,14 @@ Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly, const boo
     return strongest_base;
 }
 
-Position Map_Inventory::getBaseNearest() {
+Position Map_Inventory::getBaseNearest(Position &p) {
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
         Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
         ui_mini.updateUnitInventorySummary();
         BWEB::Path newPath;
-        newPath.createUnitPath(b.first, enemy_base_ground_);
+        newPath.createUnitPath(b.first, p);
         if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() < shortest_path){
             shortest_path = newPath.getDistance();
             closest_base = b.first;
@@ -1201,7 +1201,7 @@ void Map_Inventory::updateCurrentMap() {
         Position suspected_friendly_base = Positions::Origin;
 
         if (enemy_base_ground_ != Positions::Origin) {
-            suspected_friendly_base = getBaseNearest();
+            suspected_friendly_base = getBaseNearest(enemy_base_ground_);
         }
 
         if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base != Positions::Origin) {
@@ -1291,7 +1291,7 @@ void Map_Inventory::updateCurrentMap() {
             for (auto i : Broodwar->getStartLocations()) {
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(Position(i), Position(Broodwar->self()->getStartLocation()), &plength);
-                if (plength > max_dist && !Broodwar->isVisible(i)) {
+                if (plength > max_dist && !Broodwar->isVisible(i) && i != TilePosition(scouting_base_)) {
                     max_dist = plength;
                     scout_loc = Position(i);
                 }
