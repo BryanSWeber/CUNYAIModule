@@ -563,8 +563,9 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     auto potential_type2 = combat_types.begin();
     while (potential_type2 != combat_types.end()) {
         if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++; // if you need it.
-        else if (resources_are_slack_ && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure.
+        else if ((potential_type2->first == UnitTypes::Zerg_Hydralisk || potential_type2->first == UnitTypes::Zerg_Lurker) && Broodwar->enemy()->getRace() == Races::Zerg) combat_types.erase(potential_type2++); //No hydras in ZvZ.
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
+        else if (resources_are_slack_ && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
         else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
         else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
         else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
