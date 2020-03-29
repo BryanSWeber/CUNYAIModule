@@ -90,7 +90,6 @@ bool WorkerManager::workersClear(const Unit & unit)
 bool WorkerManager::workersReturn(const Unit & unit)
 {
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
-    StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     if (miner.bwapi_unit_->returnCargo()) {
         miner.phase_ = StoredUnit::Returning;
         miner.updateStoredUnit(unit);
