@@ -46,7 +46,7 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     else {
-        CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, false);
+        CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, true);
         CUNYAIModule::updateUnitPhase(unit, StoredUnit::None);
     }
 
@@ -89,6 +89,7 @@ bool WorkerManager::workersClear(const Unit & unit)
 
 bool WorkerManager::workersReturn(const Unit & unit)
 {
+    StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     StoredUnit& miner = *CUNYAIModule::friendly_player_model.units_.getStoredUnit(unit); // we will want DETAILED information about this unit.
     if (miner.bwapi_unit_->returnCargo()) {
         miner.phase_ = StoredUnit::Returning;
@@ -415,6 +416,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case StoredUnit::Attacking:
     case StoredUnit::Retreating:
+        CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, true); // workers ought to be free of obligations
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             auto enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
             enemy_loc.updateUnitInventorySummary();
