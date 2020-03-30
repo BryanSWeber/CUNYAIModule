@@ -73,41 +73,38 @@ bool TechManager::checkTechAvail()
 
 
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-bool TechManager::updateTech_Avail() {
+bool TechManager::canMakeTechExpendituresUpdate() {
 
     //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
     //    if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  tech_avail_ = true; // If we can make it and don't have it yet, we have tech we can make.
     //}
-
-    updateOptimalTech();
     updateMaxGas();
-
-    UpgradeType up_type = UpgradeTypes::None;
-    int best_sim_score = upgrade_cycle_[up_type];// Baseline, an upgrade must be BETTER than null upgrade.  May cause freezing in tech choices. Restored to simple plausibility.
+    tech_avail_ = false;
 
     for (auto &potential_up : upgrade_cycle_) {
-        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first) && potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            best_sim_score = potential_up.second;
-            up_type = potential_up.first;
-            //Broodwar->sendText("Found a Best_sim_score of %d, for %s", best_sim_score, up_type.c_str());
+        if (canUpgradeCUNY(potential_up.first)){
+            tech_avail_ = true;
+            Diagnostics::DiagnosticText("I can make a: %s, gas is important.", potential_up.first.c_str());
+            return tech_avail_;
         }
-    }
-    int up_level = CUNYAIModule::friendly_player_model.researches_.upgrades_.at(up_type);
-
-    if (up_type != UpgradeTypes::None) {
-        tech_avail_ = true; // If we can make it and don't have it.
-        return tech_avail_;
     }
 
     for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
+        if ((building.first == UnitTypes::Zerg_Lair || building.first == UnitTypes::Zerg_Hydralisk_Den) && CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < 12) // lair & den are only worth considering if we have 12 or more workers.
+            continue;
+        if (building.first == UnitTypes::Zerg_Evolution_Chamber && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) == 0) // Evo is not worth considering unless lair is done.
+            continue;
+        if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0)
+            continue;
+
         if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
+            Diagnostics::DiagnosticText("I can make a: %s, gas is important.", building.first.c_str());
             return tech_avail_;
         }
     }
 
     //Otherwise, nothing's available.
-    tech_avail_ = false;
     return tech_avail_;
 }
 

@@ -16,7 +16,7 @@ public:
     // Checks if a research can be built, and passes additional boolean critera, if all criteria are passed, then it performs the research. 
     static bool Check_N_Research(const TechType & tech, const Unit & unit, const bool & extra_critera);
     static void Print_Upgrade_FAP_Cycle(const int & screen_x, const int & screen_y);
-    static bool updateTech_Avail();
+    static bool canMakeTechExpendituresUpdate();
     static void updateOptimalTech();
     static void updateMaxGas();
     // Return True if there's something I might want to make that is a tech building.

@@ -355,8 +355,7 @@ void CUNYAIModule::onFrame()
 
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
-    gas_starved = (current_map_inventory.getGasRatio() < gas_proportion && workermanager.checkGasOutlet()) || 
-        (workermanager.checkGasOutlet() && Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()})) || // you cannot buy something because of gas.
+    gas_starved = (workermanager.checkGasOutlet() && (current_map_inventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
         (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (current_map_inventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
@@ -449,7 +448,7 @@ void CUNYAIModule::onFrame()
     current_map_inventory.drawExpoPositions();
     current_map_inventory.drawBasePositions();
 
-    if(tech_starved || techmanager.checkResourceSlack() ) techmanager.updateTech_Avail();
+    if (techmanager.canMakeTechExpendituresUpdate() && ( tech_starved || techmanager.checkResourceSlack()) ) techmanager.updateOptimalTech();
     if(army_starved || assemblymanager.checkSlackResources()) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 
