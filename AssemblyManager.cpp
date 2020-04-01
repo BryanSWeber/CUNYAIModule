@@ -109,7 +109,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
         //walls are catagorically better than macro hatches.
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
-        if (!wall_spots.empty())
+        if (!wall_spots.empty() && CUNYAIModule::basemanager.getBaseCount() >= 2) // don't build at the wall if you have 1 base.
             viable_placements.insert(wall_spots.begin(), wall_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 96))
             return true;
@@ -267,9 +267,10 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    if (!buildings_started) buildings_started = Expo(drone, CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1 && 
-                                                            (CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_) ||
-                                                            (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
+    bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
+    bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
+    if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
+                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
