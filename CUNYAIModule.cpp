@@ -944,6 +944,8 @@ void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
 
+    BWEB::Map::onUnitMorph(unit);
+
     if (Broodwar->isReplay())
     {
         // if we are in a replay, then we will print out the build order of the structures
@@ -976,7 +978,6 @@ void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
             buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Upgrading building morphs are not reserved... (ex greater spire)
         }
     }
-
 }
 
 void CUNYAIModule::onUnitRenegade(BWAPI::Unit unit) // Should be a line-for-line copy of onUnitDestroy.
