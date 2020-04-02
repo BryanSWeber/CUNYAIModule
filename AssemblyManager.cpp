@@ -421,9 +421,11 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
 
     if (creepCheck) {
         for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
-            const TilePosition creepTile(x, location.y + type.tileHeight());
-            if (!Broodwar->hasCreep(creepTile))
-                return false;
+            for (auto y = location.y; y < location.y + type.tileHeight(); y++) { //0,0 is top left.
+                const TilePosition creepTile(x, location.y + type.tileHeight());
+                if (!Broodwar->hasCreep(creepTile))
+                    return false;
+            }
         }
     }
 
