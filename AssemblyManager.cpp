@@ -559,14 +559,13 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
         if (potential_type.first.airWeapon() != WeaponTypes::None && CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && up_shooting_class)  it_needs_to_shoot_up = true; // can't build things that shoot up if you don't have the gas or larva.
         if (potential_type.first.groundWeapon() != WeaponTypes::None && !CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && down_shooting_class)  it_needs_to_shoot_down = true;
         if (potential_type.first.isFlyer() && CUNYAIModule::friendly_player_model.e_has_air_vunerability_ && flying_class) it_needs_to_fly = true;
-        if (potential_type.first == UnitTypes::Zerg_Scourge && 2 * CUNYAIModule::enemy_player_model.units_.flyer_count_ <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
+        if (potential_type.first == UnitTypes::Zerg_Scourge && 2 * CUNYAIModule::enemy_player_model.units_.flyer_count_ + 4 * CUNYAIModule::countUnits(UnitTypes::Terran_Battlecruiser, CUNYAIModule::enemy_player_model.units_) + 4 * CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) <= CUNYAIModule::countUnits(UnitTypes::Zerg_Scourge) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Scourge))  too_many_scourge = true;
     }
 
     // remove undesireables.
     auto potential_type2 = combat_types.begin();
     while (potential_type2 != combat_types.end()) {
         if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++; // if you need it.
-        else if ((potential_type2->first == UnitTypes::Zerg_Hydralisk || potential_type2->first == UnitTypes::Zerg_Lurker) && Broodwar->enemy()->getRace() == Races::Zerg) combat_types.erase(potential_type2++); //No hydras in ZvZ.
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
         else if (resources_are_slack_ && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
         else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
@@ -770,6 +769,14 @@ void AssemblyManager::updateOptimalCombatUnit() {
     FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
     CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
+
+    for (auto potential_type = assembly_cycle_.begin(); potential_type != assembly_cycle_.end();) {
+        if ((potential_type->first == UnitTypes::Zerg_Hydralisk || potential_type->first == UnitTypes::Zerg_Lurker) && Broodwar->enemy()->getRace() == Races::Zerg)
+            assembly_cycle_.erase(potential_type++); //No hydras in ZvZ.
+        else
+            potential_type++;
+    }
+
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
         StoredUnit su = StoredUnit(potential_type.first);
