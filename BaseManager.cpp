@@ -129,15 +129,15 @@ void BaseManager::updateBases()
     }
 
     for (auto & b : baseMap_) {
-        auto e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
-        auto u_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
-        auto r_loc = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, b.first);
+        b.second.e_loc_ = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
+        b.second.u_loc_ = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
+        b.second.r_loc_ = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, b.first);
 
-        r_loc.updateMines();
-        e_loc.updateUnitInventorySummary();
-        u_loc.updateUnitInventorySummary();
+        b.second.r_loc_.updateMines();
+        b.second.e_loc_.updateUnitInventorySummary();
+        b.second.u_loc_.updateUnitInventorySummary();
 
-        enemy_unit_count_ += e_loc.ground_count_;
+        enemy_unit_count_ += b.second.e_loc_.ground_count_;
 
         if (enemy_unit_count_ >= 2 && !CUNYAIModule::buildorder.ever_clear_) {
             CUNYAIModule::buildorder.clearRemainingBuildOrder(false);
@@ -166,42 +166,42 @@ void BaseManager::updateBases()
             too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter);
         }
 
-        b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, u_loc);
-        b.second.spore_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, u_loc);
-        b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, u_loc);
-        b.second.overlords_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, u_loc);
+        b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, b.second.u_loc_);
+        b.second.spore_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, b.second.u_loc_);
+        b.second.creep_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony, b.second.u_loc_);
+        b.second.overlords_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, b.second.u_loc_);
 
-        b.second.mineral_gatherers_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::MiningMin);
-        b.second.gas_gatherers_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::MiningGas);
-        b.second.returners_ = u_loc.count_of_each_phase_.at(StoredUnit::Phase::Returning);
-        b.second.mineral_patches_ = r_loc.getLocalMinPatches();
-        b.second.gas_geysers_ = r_loc.getLocalRefineries();
+        b.second.mineral_gatherers_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::MiningMin);
+        b.second.gas_gatherers_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::MiningGas);
+        b.second.returners_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::Returning);
+        b.second.mineral_patches_ = b.second.r_loc_.getLocalMinPatches();
+        b.second.gas_geysers_ = b.second.r_loc_.getLocalRefineries();
 
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
         bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        bool getting_hit_ground = (e_loc.worker_count_ > 1 || e_loc.building_count_ > 0 || e_loc.stock_ground_units_ > 0);
-        bool getting_hit_air = (e_loc.stock_fliers_ > 0);
+        bool getting_hit_ground = (b.second.e_loc_.worker_count_ > 1 || b.second.e_loc_.building_count_ > 0 || b.second.e_loc_.stock_ground_units_ > 0);
+        bool getting_hit_air = (b.second.e_loc_.stock_fliers_ > 0);
         bool on_one_base = baseMap_.size() - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery) <= 1;
         b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && b.second.sunken_count_ <= max(alarming_enemy_ground.ground_count_,2);
         b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && b.second.spore_count_ <= max(alarming_enemy_air.flyer_count_,2);
         
         if (b.second.emergency_sunken_ && Broodwar->getFrameCount() % 24 == 0) {
-            StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
+            StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(b.second.u_loc_, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
                 CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
                     b.second.sunken_count_ + b.second.creep_count_ < 6, b.second.unit_->getTilePosition()); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
         }
         if (b.second.emergency_spore_ && Broodwar->getFrameCount() % 24 == 0) {
-            StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(u_loc, Broodwar->self()->getRace().getWorker(), b.first, 999999);
+            StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(b.second.u_loc_, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
                 CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Creep_Colony, drone->bwapi_unit_, CUNYAIModule::countUnits(UnitTypes::Zerg_Creep_Colony) * 50 <= CUNYAIModule::my_reservation.getExcessMineral() && // Only build a creep colony if we can afford to upgrade the ones we have.
                     b.second.sunken_count_ + b.second.creep_count_ < 6, b.second.unit_->getTilePosition()); // and you're not flooded with sunkens. Spores could be ok if you need AA.  as long as you have sum(hatches+hatches-1+hatches-2...)>sunkens.
             }
         }
 
-        Unit_Inventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(u_loc, UnitTypes::Zerg_Creep_Colony, b.first);
+        Unit_Inventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(b.second.u_loc_, UnitTypes::Zerg_Creep_Colony, b.first);
         for (auto u : creep_colonies.unit_map_) {
             if (u.first) AssemblyManager::buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
         }

@@ -118,7 +118,9 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     miner.stopMine();// will reassign later.
     Mobility drone_pathing_options = Mobility(unit);
     int max_drone = 3;
-    int min_drone_on_mine = INT_MAX;
+    int safe_resource_min = INT_MAX;
+    int escape_resource_min = INT_MAX;
+
     bool mine_minerals = mine.isMineralField();
     bool found_low_occupied_mine = false;
 
@@ -137,6 +139,8 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
         bool safe = drone_pathing_options.checkSafeGroundPath(unit->getPosition()) && potential_escape; // If there's no escape, it is not safe.
 
         bool mine_is_unoccupied_by_enemy = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
+        bool mine_is_occupied = CUNYAIModule::basemanager.getClosestBaseGround(r.second.pos_).r_loc_.resource_inventory_.count(r.first) > 0;
+
         bool path_exists = CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_);
 
         if (mine_minerals) {
@@ -153,16 +157,17 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
         }
 
         if (mine_is_right_type) {
-            if (safe) {
+            if (safe && mine_is_occupied) {
                 there_exists_a_safe_mine = safe || there_exists_a_safe_mine;
                 safe_fields.addStored_Resource(r.second);
+                safe_resource_min = max(min(safe_resource_min, r.second.number_of_miners_), 0);
             }
-            if (potential_escape) {
+            if (potential_escape && mine_is_occupied) {
                 there_exists_an_escape_mine = potential_escape || there_exists_an_escape_mine;
                 escape_fields.addStored_Resource(r.second);
+                escape_resource_min = max(min(escape_resource_min, r.second.number_of_miners_), 0);
             }
             desperation_fields.addStored_Resource(r.second);
-            min_drone_on_mine = min(min_drone_on_mine, r.second.number_of_miners_);
         }
 
     } // find drone minima, and mark if there are ANY safe mines for this worker, regardless of type.
@@ -170,7 +175,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     //We have to go over each type otherwise we may accidentially enter a mode without qualifiers.
     if (there_exists_a_safe_mine) {
         for (auto r : safe_fields.resource_inventory_) {
-            if (r.second.number_of_miners_ < max_drone) {
+            if (r.second.number_of_miners_ < max_drone && r.second.number_of_miners_ == safe_resource_min) {
                 long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
                 if (r.second.occupied_resource_)
                     local_fields.addStored_Resource(r.second);
@@ -180,7 +185,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
     
     if (there_exists_an_escape_mine) {
         for (auto r : escape_fields.resource_inventory_) {
-            if (r.second.number_of_miners_ < max_drone) {
+            if (r.second.number_of_miners_ < max_drone && r.second.number_of_miners_ == escape_resource_min) {
                 long_dist_fields.addStored_Resource(r.second); // if it doesn't have a closeby base, then it is a long distance field and not a priority.
                 if (r.second.occupied_resource_)
                     local_fields.addStored_Resource(r.second);
@@ -190,7 +195,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
 
     for (auto r : desperation_fields.resource_inventory_) {
         if (r.second.occupied_resource_) // if the area has workers and is not occupied, then it is now a desperate choice. Just go anywhere occupied.
-            if (r.second.number_of_miners_ >= min_drone_on_mine)
+            if (r.second.number_of_miners_ >= 0)
                 overmining_fields.addStored_Resource(r.second); //
     }
 

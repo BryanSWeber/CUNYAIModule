@@ -49,21 +49,14 @@ public:
     Resource_Inventory(); // for blank construction.
     Resource_Inventory(const Unitset &unit_set);
 
-    //what about their upgrades?
-    //Other details?
-
     std::map <Unit, Stored_Resource> resource_inventory_;
 
-    // Updates the count of resource units.
-    void addStored_Resource(Unit unit);
-    void addStored_Resource(Stored_Resource stored_resource);
+    void addStored_Resource(Unit unit);     // Updates the count of resource units.
+    void addStored_Resource(Stored_Resource stored_resource);     // Updates the count of resource units.
 
-    //Removes Resource
-    void removeStored_Resource(Unit unit);
+    void removeStored_Resource(Unit unit);    //Removes Resource
 
-    //Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
-
-    Position getMeanLocation() const;
+    Position getMeanLocation() const; //Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
     void updateResourceInventory(Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
     void updateMines(); //counts number of viable gas mines and local mineral patches.
