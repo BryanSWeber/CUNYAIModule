@@ -47,7 +47,7 @@ struct Map_Inventory {
     Position front_line_base_;
     Position safe_base_;
     vector<Position> scouting_bases_;
-    Position air_scouting_base_;
+    vector<Position> air_scouting_bases_;
 
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
@@ -79,7 +79,6 @@ struct Map_Inventory {
     int frames_since_enemy_base_ground_ = 0;
     int frames_since_enemy_base_air_ = 0;
     int frames_since_scouting_base_ = 0;
-    int frames_since_air_scouting_base_ = 0;
 
     //Fields:
     vector< vector<int> > pf_threat_;
@@ -181,6 +180,7 @@ struct Map_Inventory {
 
     void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
     Position Map_Inventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
+    bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false); //returns true if a position is being scouted or marched towards. checks for area ID matchs.
     Position getDistanceWeightedScoutPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
 };
 
