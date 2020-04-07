@@ -84,7 +84,8 @@ bool TechManager::canMakeTechExpendituresUpdate() {
     for (auto &potential_up : upgrade_cycle_) {
         if (canUpgradeCUNY(potential_up.first)){
             tech_avail_ = true;
-            Diagnostics::DiagnosticText("I can make a: %s, gas is important.", potential_up.first.c_str());
+            if(Broodwar->getFrameCount() % 24 * 30 == 0)
+                Diagnostics::DiagnosticText("I can make a: %s, gas is important.", potential_up.first.c_str());
             return tech_avail_;
         }
     }
@@ -99,7 +100,8 @@ bool TechManager::canMakeTechExpendituresUpdate() {
 
         if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
-            Diagnostics::DiagnosticText("I can make a: %s, gas is important.", building.first.c_str());
+            if (Broodwar->getFrameCount() % 24 * 30 == 0)
+                Diagnostics::DiagnosticText("I can make a: %s, gas is important.", building.first.c_str());
             return tech_avail_;
         }
     }
