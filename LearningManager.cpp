@@ -108,26 +108,28 @@ bool LearningManager::confirmLearningFilesPresent()
 void LearningManager::initializeGeneticLearning() {
 
     //srand( Broodwar->getRandomSeed() ); // don't want the BW seed if the seed is locked.
+    string e_name = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+    string e_race = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+    string map_name = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
 
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
-    int population_size = build_order_list.size(); // default size of "breeding population". Typically, larger sizes are better to ensure a maximum but smaller sizes converge faster.
+    int population_size = e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()) ? 3 : build_order_list.size(); // default size of "breeding population". Typically, larger sizes are better to ensure a maximum but smaller sizes converge faster. ZvZ has fewer viable openings.
 
     double gas_proportion_out = dis(gen);
     double supply_ratio_out = dis(gen) * 0.3 + 0.3; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
+
     // the values below will be normalized to 1.
     double a_army_out = dis(gen);
     double a_econ_out = dis(gen);
     double a_tech_out = 3*dis(gen);
-    //double r_out = log(85 / (double)4) / (double)(14400 + dis(gen) * (25920 - 14400)); //Typical game maxes vary from 12.5min to 16 min according to antiga. Assumes a range from 4 to max in 10 minutes, (14400 frames) to 18 minutes 25920 frames
+
     double r_out = dis(gen);
     //No longer used.
     double a_vis_out = dis(gen);
 
-    string e_name = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
-    string e_race = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    string map_name = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
+
 
 
     HistoryEntry parent_1;
@@ -284,7 +286,7 @@ void LearningManager::initializeGeneticLearning() {
         }
     }
 
-    if (game_count <= build_order_list.size() - 1) {
+    if (game_count <= population_size - 1) {
         build_order_out = build_order_list[game_count];
     }
     else {
@@ -292,7 +294,7 @@ void LearningManager::initializeGeneticLearning() {
     }
 
     if (e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()))
-        build_order_out = build_order_list[build_order_rand % 3]; // if opponent is zerg there are really only 3 viable openings (the first 3)
+        build_order_out = build_order_list[build_order_rand % population_size]; // if opponent is zerg there are really only 3 viable openings (the first 3)
 
     // start from most recent and count our way back from there.
     for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
@@ -304,14 +306,15 @@ void LearningManager::initializeGeneticLearning() {
         double weight_of_match_quality = 0.80 * name_matches + 0.10 * race_matches + 0.10 * map_matches;
         double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
 
-        if (game_count > build_order_list.size() - 1) {
+        if (game_count > population_size) {
             if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score / game_count : 0, 100)) // either you won in a match or you did fairly well by our standards
                 game_data_well_matched.push_back(*game_iter);
         }
         else {
-            if (opening_matches && game_iter->win_total_) // Or you won wit this opening
+            if (opening_matches && game_iter->win_total_) // Or you won with this opening (for broad cross-pollination).
                 game_data_well_matched.push_back(*game_iter);
         }
+
         if (game_data_well_matched.size() >= population_size)
             break;
     } //or widest hunt possible.

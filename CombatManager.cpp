@@ -207,8 +207,7 @@ bool CombatManager::combatScript(const Unit & u)
 
 bool CombatManager::scoutScript(const Unit & u)
 {
-
-    if (scout_squad_.unit_map_.empty() || isScout(u)) { // if the scout squad is empty or this unit is in it.
+    if (scoutCount() < 2 || isScout(u)) { // if the scout squad is empty or this unit is in it.
         auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
         if (found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end() && found_item->second.phase_ != StoredUnit::Phase::Detecting) {
             addScout(u);
@@ -235,6 +234,19 @@ bool CombatManager::scoutScript(const Unit & u)
         //}
     }
     return false;
+}
+
+int CombatManager::scoutCount() {
+    if(!scout_squad_.unit_map_.empty())
+        return scout_squad_.unit_map_.size();
+    return 0;
+};
+
+int CombatManager::scoutPosition(const Unit & u) {
+    auto found_item = CUNYAIModule::combat_manager.scout_squad_.unit_map_.find(u);
+    if (found_item != CUNYAIModule::combat_manager.scout_squad_.unit_map_.end())
+        return distance(CUNYAIModule::combat_manager.scout_squad_.unit_map_.begin(), found_item);
+    return 0;
 }
 
 // Protects a unit (primarily overlords) that is otherwise simply a liability.

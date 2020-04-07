@@ -46,7 +46,7 @@ struct Map_Inventory {
     Position enemy_base_air_;
     Position front_line_base_;
     Position safe_base_;
-    Position scouting_base_;
+    vector<Position> scouting_bases_;
     Position air_scouting_base_;
 
 
@@ -179,4 +179,8 @@ struct Map_Inventory {
 
     void DiagnosticTile();
 
+    void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
+    Position Map_Inventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
+    Position getDistanceWeightedScoutPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
 };
+

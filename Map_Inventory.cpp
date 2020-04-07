@@ -1122,7 +1122,6 @@ void Map_Inventory::updateCurrentMap() {
     frames_since_map_veins++;
     frames_since_safe_base++;
     frames_since_unwalkable++;
-    frames_since_scouting_base_++;
     frames_since_air_scouting_base_++;
 
     //every 10 sec check if we're sitting at our destination.
@@ -1231,55 +1230,9 @@ void Map_Inventory::updateCurrentMap() {
         return;
     }
 
-    if ((frames_since_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(scouting_base_))) || scouting_base_ == Positions::Origin) {
-        //Scout a base that's determined at random based on distance from their assumed main.
-        StoredUnit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
-        CUNYAIModule::enemy_player_model.casualties_.updateUnitInventorySummary();
-        if (!center_ground && CUNYAIModule::enemy_player_model.casualties_.stock_total_ == 0) { // if they don't exist yet use the starting location proceedure we've established earlier.
-            updateMapVeinsOut(enemy_base_ground_, scouting_base_, map_out_from_scouting_, false);
-        }
-        else {
-            //From Dolphin Bot 2018 (with paraphrasing):
-            double total_distance = 0;
-            double sum_log_p = 0;
 
-            vector<tuple<double, Position>> scout_expo_vector;
-            // Create a map <log(distance), Position> of all base locations on map
-            for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
-                int base_distance = getRadialDistanceOutFromEnemy(r.second.pos_);
-                if (base_distance != 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
-                    total_distance += base_distance;
-                    scout_expo_vector.push_back({ base_distance, r.second.pos_ });
-                }
-            }
+    updateScoutLocations(2);
 
-            for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
-                sum_log_p += log(get<0>(*itr) / total_distance);
-            }
-
-            // Assign scout locations
-            bool found_base = false;
-            std::random_device rd;  //Will be used to obtain a seed for the random number engine
-            std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-            std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
-            int attempts = 0;
-
-            while (!scout_expo_vector.empty() && !found_base && attempts < 100) {
-                for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
-                    Position potential_scout_target = get<1>(*itr);
-                    double weighted_p_of_selection = log(get<0>(*itr) / total_distance) / sum_log_p; // sums to one, actually.
-
-                    if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr)))) {
-                        updateMapVeinsOut(potential_scout_target, scouting_base_, map_out_from_scouting_, false);
-                        found_base = true;
-                    }
-                }
-                attempts++;
-            }
-        }
-        frames_since_scouting_base_ = 0;
-        return;
-    }
 
     if ((frames_since_air_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(air_scouting_base_))) || air_scouting_base_ == Positions::Origin) {
         //Scout a base that's determined at random based on distance from their assumed main.
@@ -1291,7 +1244,7 @@ void Map_Inventory::updateCurrentMap() {
             for (auto i : Broodwar->getStartLocations()) {
                 int plength = 0;
                 auto cpp = BWEM::Map::Instance().GetPath(Position(i), Position(Broodwar->self()->getStartLocation()), &plength);
-                if (plength > max_dist && !Broodwar->isVisible(i) && i != TilePosition(scouting_base_)) {
+                if (plength > max_dist && !Broodwar->isVisible(i) && (scouting_bases_.empty() || i != TilePosition(scouting_bases_.front())) ) {
                     max_dist = plength;
                     scout_loc = Position(i);
                 }
@@ -1386,8 +1339,8 @@ void Map_Inventory::drawBasePositions() const
         Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
         Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);
 
-        Broodwar->drawCircleMap(scouting_base_, 25, Colors::White, false);
-
+        for(auto i:scouting_bases_)
+            Broodwar->drawCircleMap(i, 25, Colors::White, false);
     }
 }
 
@@ -1610,4 +1563,81 @@ void Map_Inventory::DiagnosticTile() {
         }
         // Pretty to look at!
     }
+}
+
+void Map_Inventory::updateScoutLocations(const int &nScouts)
+{
+    //Fill with origins if empty.
+    if (scouting_bases_.empty()) {
+        for (auto i = 0; i <= nScouts; i++) {
+            scouting_bases_.push_back(Positions::Origin);
+        }
+    }
+
+    //Try initial scouting locations then, please.
+    for (auto &i : scouting_bases_) {
+        if (Broodwar->isVisible(TilePosition(i)) || i == Positions::Origin) {
+            i = createStartScoutLocation();
+        }
+    }
+
+    //If those don't work try nearby the enemy positions:
+    for (auto &i : scouting_bases_) {
+        if (Broodwar->isVisible(TilePosition(i)) || i == Positions::Origin) {
+            i = getDistanceWeightedScoutPosition(enemy_base_ground_);
+        }
+    }
+};
+
+Position Map_Inventory::createStartScoutLocation() {
+    for (int i = 0; i <= Broodwar->getStartLocations().size() - 1; i++) {
+        if (!Broodwar->isExplored(Broodwar->getStartLocations()[i]) && scouting_bases_.end() == find(scouting_bases_.begin(), scouting_bases_.end(), Position(Broodwar->getStartLocations()[i]))) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            return Position(Broodwar->getStartLocations()[i]);
+        }
+    }
+    Diagnostics::DiagnosticText("Oof, no scouting position?");
+    return Positions::Origin;
+}
+
+
+Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target_pos) {
+    //From Dolphin Bot 2018 (with paraphrasing):
+    double total_distance = 0;
+    double sum_log_p = 0;
+
+    vector<tuple<double, Position>> scout_expo_vector;
+    // Create a map <log(distance), Position> of all base locations on map
+    for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
+        int plength = 0;
+        auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, target_pos, &plength);
+
+        int distance = plength;
+        if (distance != 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
+            total_distance += distance;
+            scout_expo_vector.push_back({ distance, r.second.pos_ });
+        }
+    }
+
+    for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
+        sum_log_p += log(get<0>(*itr) / total_distance); // sums to one, actually.
+    }
+
+    // Assign scout locations
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
+    int attempts = 0;
+    while (attempts < 100) {
+        for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
+            Position potential_scout_target = get<1>(*itr);
+            double weighted_p_of_selection = log(get<0>(*itr) / total_distance) / sum_log_p; 
+
+            if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr))) && find(scouting_bases_.begin(), scouting_bases_.end(), get<1>(*itr)) == scouting_bases_.end()) {
+                return potential_scout_target;
+            }
+        }
+        attempts++;
+    }
+    Diagnostics::DiagnosticText("Oof, no scouting position?");
+    return Positions::Origin;
 }
