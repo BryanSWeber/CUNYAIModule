@@ -1643,10 +1643,19 @@ Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target
 
 bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient) {
 
+    bool prohibit_overexploring = true;
+
+    if(Broodwar->getStartLocations().size() < 3){ // if the map is not fully explored we can race to a location even if the army is headed there...
+        prohibit_overexploring = false;
+        for (auto i : Broodwar->getStartLocations())
+            if (!Broodwar->isExplored(TilePosition(i)))
+                prohibit_overexploring = false;
+    }
+
     bool explored = Broodwar->isExplored(TilePosition(pos));
     bool visible = Broodwar->isVisible(TilePosition(pos));
     bool being_marched_towards = static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
     bool being_scouted = scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 
-    return being_marched_towards || being_scouted || visible || (explored && explored_sufficient);
+    return (being_marched_towards && prohibit_overexploring) || being_scouted || visible || (explored && explored_sufficient);
 }
