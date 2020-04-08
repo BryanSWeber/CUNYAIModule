@@ -420,10 +420,22 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
     const auto creepCheck = type.requiresCreep() ? true : false;
 
     if (creepCheck) {
+        for (auto x = location.x; x < location.x + type.tileWidth() ; x++) {
+            for (auto y = location.y; y < location.y + type.tileHeight(); y++) { //0,0 is top left.
+                const TilePosition creepTile(x,y);
+                if (!Broodwar->hasCreep(creepTile))
+                    return false;
+            }
+        }
+    }
+
+    const auto psiCheck = type.requiresPsi() ? true : false;
+
+    if (psiCheck) {
         for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
             for (auto y = location.y; y < location.y + type.tileHeight(); y++) { //0,0 is top left.
-                const TilePosition creepTile(x, location.y + type.tileHeight());
-                if (!Broodwar->hasCreep(creepTile))
+                const TilePosition psiTile(x, y);
+                if (!Broodwar->hasPower(psiTile))
                     return false;
             }
         }
@@ -434,7 +446,6 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
 
     for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
         for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
-
             const TilePosition tile(x, y);
             if (!tile.isValid()
                 || !Broodwar->isBuildable(tile)
