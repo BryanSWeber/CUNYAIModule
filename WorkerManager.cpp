@@ -421,7 +421,7 @@ bool WorkerManager::workerWork(const Unit &u) {
     case StoredUnit::Attacking:
     case StoredUnit::Retreating:
         CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, true); // workers ought to be free of obligations
-        if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
+        if (CUNYAIModule::spamGuard(u) && u->isIdle()) {
             auto enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
             enemy_loc.updateUnitInventorySummary();
             if (!CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {

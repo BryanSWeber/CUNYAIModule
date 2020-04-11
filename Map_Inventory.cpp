@@ -339,11 +339,11 @@ void Map_Inventory::updateMapVeins() {
 
 }
 
-int Map_Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
-{
-    WalkPosition startloc = WalkPosition(pos);
-    return map[startloc.x][startloc.y];
-}
+//int Map_Inventory::getMapValue(const Position & pos, const vector<vector<int>>& map)
+//{
+//    WalkPosition startloc = WalkPosition(pos);
+//    return map[startloc.x][startloc.y];
+//}
 
 int Map_Inventory::getFieldValue(const Position & pos, const vector<vector<int>>& field)
 {
@@ -351,130 +351,138 @@ int Map_Inventory::getFieldValue(const Position & pos, const vector<vector<int>>
     return field[startloc.x][startloc.y];
 }
 
-void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
+//void Map_Inventory::updateMapVeinsOut(const Position &newCenter, Position &oldCenter, vector<vector<int>> &map, const bool &print) { //in progress.
+//
+//    int map_x = Broodwar->mapWidth() * 4;
+//    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
+//
+//    if (WalkPosition(oldCenter) == WalkPosition(newCenter)) return;
+//
+//    oldCenter = newCenter; // Must update old center manually.
+//    WalkPosition startloc = WalkPosition(newCenter);
+//    std::stringstream ss;
+//    ss << WalkPosition(newCenter);
+//    string base = ss.str();
+//
+//    ifstream newVeins(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
+//    if (!newVeins)         //The file does not exist, we need to write it.
+//    {
+//
+//        map = unwalkable_barriers_;
+//
+//        int minitile_x, minitile_y, distance_right_x, distance_below_y;
+//        minitile_x = startloc.x;
+//        minitile_y = startloc.y;
+//        distance_right_x = max(map_x - minitile_x, map_x);
+//        distance_below_y = max(map_y - minitile_y, map_y);
+//        int t = std::max(map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y);
+//        //int maxI = t*t; // total number of spiral steps we have to make.
+//        int total_squares_filled = 2; // If you start at 1 you will be implicitly marking certain squares as unwalkable. 1 is the short code for unwalkable.
+//
+//        vector <WalkPosition> fire_fill_queue;
+//        vector <WalkPosition> fire_fill_queue_holder;
+//
+//        //begin with a flood fill.
+//        map[minitile_x][minitile_y] = total_squares_filled;
+//        fire_fill_queue.push_back({ minitile_x, minitile_y });
+//
+//        int minitile_x_temp = minitile_x;
+//        int minitile_y_temp = minitile_y;
+//        bool filled_a_square = false;
+//
+//        // let us fill the map- counting outward from our destination.
+//        while (!fire_fill_queue.empty() || !fire_fill_queue_holder.empty()) {
+//
+//            filled_a_square = false;
+//
+//            while (!fire_fill_queue.empty()) { // this portion is now a flood fill, iteratively filling from its interior. Seems to be very close to fastest reasonable implementation. May be able to remove diagonals without issue.
+//
+//                minitile_x_temp = fire_fill_queue.begin()->x;
+//                minitile_y_temp = fire_fill_queue.begin()->y;
+//                fire_fill_queue.erase(fire_fill_queue.begin());
+//
+//                // north
+//                if (minitile_y_temp + 1 < map_y && map[minitile_x_temp][minitile_y_temp + 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp , minitile_y_temp + 1 });
+//                }
+//                // north east
+//                if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
+//                }
+//                // north west
+//                if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
+//                }
+//                //south
+//                if (0 < minitile_y_temp - 1 && map[minitile_x_temp][minitile_y_temp - 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp, minitile_y_temp - 1 });
+//                }
+//                //south east
+//                if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
+//                }
+//                //south west
+//                if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
+//                }
+//                // east
+//                if (minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp });
+//                }
+//                //west
+//                if (0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp] == 0) {
+//                    filled_a_square = true;
+//                    map[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
+//                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp });
+//                }
+//            }
+//            total_squares_filled += filled_a_square;
+//            fire_fill_queue.clear();
+//            fire_fill_queue.swap(fire_fill_queue_holder);
+//            fire_fill_queue_holder.clear();
+//        }
+//
+//        if (print) writeMap(map, WalkPosition(newCenter));
+//    }
+//    else
+//    {
+//        readMap(map, WalkPosition(newCenter));
+//    }
+//    newVeins.close();
+//}
 
-    int map_x = Broodwar->mapWidth() * 4;
-    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    if (WalkPosition(oldCenter) == WalkPosition(newCenter)) return;
-
-    oldCenter = newCenter; // Must update old center manually.
-    WalkPosition startloc = WalkPosition(newCenter);
-    std::stringstream ss;
-    ss << WalkPosition(newCenter);
-    string base = ss.str();
-
-    ifstream newVeins(CUNYAIModule::learned_plan.writeDirectory + Broodwar->mapFileName() + "Veins" + base + ".txt", ios_base::in);
-    if (!newVeins)         //The file does not exist, we need to write it.
-    {
-
-        map = unwalkable_barriers_;
-
-        int minitile_x, minitile_y, distance_right_x, distance_below_y;
-        minitile_x = startloc.x;
-        minitile_y = startloc.y;
-        distance_right_x = max(map_x - minitile_x, map_x);
-        distance_below_y = max(map_y - minitile_y, map_y);
-        int t = std::max(map_x + distance_right_x + distance_below_y, map_y + distance_right_x + distance_below_y);
-        //int maxI = t*t; // total number of spiral steps we have to make.
-        int total_squares_filled = 2; // If you start at 1 you will be implicitly marking certain squares as unwalkable. 1 is the short code for unwalkable.
-
-        vector <WalkPosition> fire_fill_queue;
-        vector <WalkPosition> fire_fill_queue_holder;
-
-        //begin with a flood fill.
-        map[minitile_x][minitile_y] = total_squares_filled;
-        fire_fill_queue.push_back({ minitile_x, minitile_y });
-
-        int minitile_x_temp = minitile_x;
-        int minitile_y_temp = minitile_y;
-        bool filled_a_square = false;
-
-        // let us fill the map- counting outward from our destination.
-        while (!fire_fill_queue.empty() || !fire_fill_queue_holder.empty()) {
-
-            filled_a_square = false;
-
-            while (!fire_fill_queue.empty()) { // this portion is now a flood fill, iteratively filling from its interior. Seems to be very close to fastest reasonable implementation. May be able to remove diagonals without issue.
-
-                minitile_x_temp = fire_fill_queue.begin()->x;
-                minitile_y_temp = fire_fill_queue.begin()->y;
-                fire_fill_queue.erase(fire_fill_queue.begin());
-
-                // north
-                if (minitile_y_temp + 1 < map_y && map[minitile_x_temp][minitile_y_temp + 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp][minitile_y_temp + 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp , minitile_y_temp + 1 });
-                }
-                // north east
-                if (minitile_y_temp + 1 < map_y && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp + 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp + 1][minitile_y_temp + 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp + 1 });
-                }
-                // north west
-                if (minitile_y_temp + 1 < map_y && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp + 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp - 1][minitile_y_temp + 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp + 1 });
-                }
-                //south
-                if (0 < minitile_y_temp - 1 && map[minitile_x_temp][minitile_y_temp - 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp][minitile_y_temp - 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp, minitile_y_temp - 1 });
-                }
-                //south east
-                if (0 < minitile_y_temp - 1 && minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp - 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp + 1][minitile_y_temp - 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp - 1 });
-                }
-                //south west
-                if (0 < minitile_y_temp - 1 && 0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp - 1] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp - 1][minitile_y_temp - 1] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp - 1 });
-                }
-                // east
-                if (minitile_x_temp + 1 < map_x && map[minitile_x_temp + 1][minitile_y_temp] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp + 1][minitile_y_temp] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp + 1, minitile_y_temp });
-                }
-                //west
-                if (0 < minitile_x_temp - 1 && map[minitile_x_temp - 1][minitile_y_temp] == 0) {
-                    filled_a_square = true;
-                    map[minitile_x_temp - 1][minitile_y_temp] = total_squares_filled;
-                    fire_fill_queue_holder.push_back({ minitile_x_temp - 1, minitile_y_temp });
-                }
-            }
-            total_squares_filled += filled_a_square;
-            fire_fill_queue.clear();
-            fire_fill_queue.swap(fire_fill_queue_holder);
-            fire_fill_queue_holder.clear();
-        }
-
-        if (print) writeMap(map, WalkPosition(newCenter));
+int Map_Inventory::getDistanceBetween(const Position A, const Position B) const
+{
+    int plength = 0;
+    auto cpp = BWEM::Map::Instance().GetPath(A, B, &plength);
+    if (A.isValid() && B.isValid() && plength > -1) {
+        return plength;
     }
-    else
-    {
-        readMap(map, WalkPosition(newCenter));
-    }
-    newVeins.close();
+
+    return 9999999;
 }
 
 int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const
 {
-    if (map_out_from_enemy_ground_.size() > 0 && A.isValid() && B.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        WalkPosition wp_b = WalkPosition(B);
-        int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_out_from_enemy_ground_[(size_t)wp_b.x][(size_t)wp_b.y];
-        if (A > 1 && B > 1) {
-            return abs(A - B) * 8;
-        }
+    int dist_home_A = getDistanceBetween(A, enemy_base_ground_);
+    int dist_home_B = getDistanceBetween(B, enemy_base_ground_);
+
+    if (dist_home_A >= 0 && dist_home_B >= 0) {
+        return abs(dist_home_A - dist_home_B);
     }
 
     return 9999999;
@@ -482,85 +490,54 @@ int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const P
 
 int Map_Inventory::getRadialDistanceOutFromEnemy(const Position A) const
 {
-    if (map_out_from_enemy_ground_.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        int A = map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 1) {
-            return map_out_from_enemy_ground_[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
-        }
-    }
-
-    return 9999999;
-
+    return getDistanceBetween(A, enemy_base_ground_);
 }
 
 int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const
 {
-    if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        WalkPosition wp_b = WalkPosition(B);
-        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_out_from_home_[(size_t)wp_b.x][(size_t)wp_b.y];
-        if (A > 1 && B > 1) {
-            return abs(A - B) * 8;
-        }
+    int dist_home_A = getDistanceBetween(A, safe_base_);
+    int dist_home_B = getDistanceBetween(B, safe_base_);
+
+    if (dist_home_A >= 0 && dist_home_B >= 0) {
+        return abs(dist_home_A - dist_home_B);
     }
 
     return 9999999;
 }
 
-int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
-{
-    if (map.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        int A = map[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 1) {
-            return map[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
-        }
-    }
-
-    return 9999999;
-
-}
+//int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
+//{
+//    if (map.size() > 0 && A.isValid()) {
+//        WalkPosition wp_a = WalkPosition(A);
+//        int A = map[(size_t)wp_a.x][(size_t)wp_a.y];
+//        if (A > 1) {
+//            return map[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
+//        }
+//    }
+//
+//    return 9999999;
+//
+//}
 
 bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const
 {
-    if (map_out_from_home_.size() > 0 && A.isValid() && B.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        WalkPosition wp_b = WalkPosition(B);
-        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
-        int B = map_out_from_home_[(size_t)wp_b.x][(size_t)wp_b.y];
-        if (A > 1 && B > 1) {
-            return true;
-        }
+    int plength = 0;
+    auto cpp = BWEM::Map::Instance().GetPath(A, B, &plength);
+
+    if (plength >= 0 && A.isValid() && B.isValid()) {
+        return true;
     }
     return false;
 }
 
 bool Map_Inventory::isOnIsland(const Position A) const
 {
-    if (map_out_from_home_.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 1) {
-            return false;
-        }
-    }
-    return true;
+    return checkViableGroundPath(A, safe_base_);
 }
 
 int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const
 {
-    if (map_out_from_home_.size() > 0 && A.isValid()) {
-        WalkPosition wp_a = WalkPosition(A);
-        int A = map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y];
-        if (A > 1) {
-            return map_out_from_home_[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
-        }
-    }
-
-    return 9999999;
-
+    return getDistanceBetween(A, safe_base_);
 }
 
 //void Map_Inventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
@@ -1107,20 +1084,15 @@ void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
 
 void Map_Inventory::updateCurrentMap() {
 
-    if (Broodwar->getFrameCount() % 17 == 0) 
+    if (Broodwar->getFrameCount() % 17 == 0)
         updateGroundDangerousAreas(); // every second or so update ground frames.
 
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-    int frames_this_cycle = Broodwar->getFrameCount() % (24 * 4); // technically more.
 
     // every frame this is incremented.
-    frames_since_enemy_base_ground_++;
-    frames_since_enemy_base_air_++;
-    frames_since_front_line_base++;
     frames_since_map_veins++;
-    frames_since_safe_base++;
     frames_since_unwalkable++;
 
     //every 10 sec check if we're sitting at our destination.
@@ -1143,161 +1115,72 @@ void Map_Inventory::updateCurrentMap() {
         return;
     }
 
-    if (frames_since_enemy_base_ground_ > 24 * 5) {
+    //Update Enemy Base
+    Position suspected_enemy_base = Positions::Origin;
+    StoredUnit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
-        //otherwise go to their weakest base.
-        Position suspected_enemy_base = Positions::Origin;
-        StoredUnit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
-
-        if (center_ground) { // let's go to the strongest enemy base if we've seen them!
-            suspected_enemy_base = center_ground->pos_;
+    if (center_ground) { // let's go to the strongest enemy base if we've seen them!
+        suspected_enemy_base = center_ground->pos_;
+    }
+    else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
+        int attempts = 0;
+        while (attempts < static_cast<int>(start_positions_.size()) && !Broodwar->isExplored(TilePosition(start_positions_[0]))) {
+            std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
+            attempts++;
         }
-        else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
-            int attempts = 0;
-            while (attempts < static_cast<int>(start_positions_.size()) && !Broodwar->isExplored(TilePosition(start_positions_[0]))) {
-                std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
-                attempts++;
-            }
-            suspected_enemy_base = start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+        suspected_enemy_base = start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    }
+    else if (!expo_tilepositions_.empty() && expo_tilepositions_[0] && expo_tilepositions_[0] != TilePositions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
+        int attempts = 0;
+        while (attempts < static_cast<int>(expo_tilepositions_.size()) && !Broodwar->isVisible(expo_tilepositions_[0])) {
+            std::rotate(expo_tilepositions_.begin(), expo_tilepositions_.begin() + 1, expo_tilepositions_.end());
+            attempts++;
         }
-        else if (!expo_tilepositions_.empty() && expo_tilepositions_[0] && expo_tilepositions_[0] != TilePositions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
-            int attempts = 0;
-            while (attempts < static_cast<int>(expo_tilepositions_.size()) && !Broodwar->isVisible(expo_tilepositions_[0])) {
-                std::rotate(expo_tilepositions_.begin(), expo_tilepositions_.begin() + 1, expo_tilepositions_.end());
-                attempts++;
-            }
-            suspected_enemy_base = Position(expo_tilepositions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
-        }
-
-        if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ground_ && suspected_enemy_base != Positions::Origin) { // if it's there.
-            updateMapVeinsOut(suspected_enemy_base, enemy_base_ground_, map_out_from_enemy_ground_, false);
-        }
-
-        frames_since_enemy_base_ground_ = 0;
-        return;
+        suspected_enemy_base = Position(expo_tilepositions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
     }
 
-    if (frames_since_enemy_base_air_ > 24 * 5) {
-
-        StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
-
-        if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
-            updateMapVeinsOut(center_flyer->pos_, enemy_base_air_, map_out_from_enemy_air_, false);
-        }
-        else {
-            enemy_base_air_ = enemy_base_ground_;
-            map_out_from_enemy_air_ = map_out_from_enemy_ground_;
-        }
-        frames_since_enemy_base_air_ = 0;
-        return;
-
+    if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ground_ && suspected_enemy_base != Positions::Origin) { // if it's there.
+        enemy_base_ground_ = suspected_enemy_base;
     }
 
-    if (frames_since_front_line_base > 24 * 5) {
 
+    //Update Enemy Base Air
+    StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
+
+    if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
+        enemy_base_air_ = center_flyer->pos_;
+    }
+    else {
+        enemy_base_air_ = enemy_base_ground_;
+    }
+
+    //Update Front Line Base
         //otherwise go to your weakest base.
-        Position suspected_friendly_base = Positions::Origin;
+    Position suspected_friendly_base = Positions::Origin;
 
-        if (enemy_base_ground_ != Positions::Origin) {
-            suspected_friendly_base = getBaseNearest(enemy_base_ground_);
-        }
-
-        if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base != Positions::Origin) {
-            updateMapVeinsOut(suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), front_line_base_, map_out_from_home_);
-        }
-
-        frames_since_front_line_base = 0;
-        return;
+    if (enemy_base_ground_ != Positions::Origin) {
+        suspected_friendly_base = getBaseNearest(enemy_base_ground_);
     }
 
-    if (frames_since_safe_base > 24 * 10) {
+    if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base != Positions::Origin) {
+        front_line_base_ = suspected_friendly_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    }
 
+    // Update Safe Base
         //otherwise go to your safest base - the one with least deaths near it and most units.
-        Position suspected_safe_base = Positions::Origin;
+    Position suspected_safe_base = Positions::Origin;
 
-        suspected_safe_base = getBaseWithMostSurvivors(true, false);
+    suspected_safe_base = getBaseWithMostSurvivors(true, false);
 
-        if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
-            updateMapVeinsOut(suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), safe_base_, map_out_from_safety_);
-        }
-        else {
-            safe_base_ = front_line_base_;
-            map_out_from_safety_ = map_out_from_home_;
-        }
-
-        frames_since_safe_base = 0;
-        return;
+    if (suspected_safe_base.isValid() && suspected_safe_base != safe_base_ && suspected_safe_base != Positions::Origin) {
+        safe_base_ = suspected_safe_base + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    }
+    else {
+        safe_base_ = front_line_base_;
     }
 
-
+    //Update Scout locations
     updateScoutLocations(2);
-
-
-    //if ((frames_since_air_scouting_base_ > 24 * 5 && Broodwar->isVisible(TilePosition(air_scouting_base_))) || air_scouting_base_ == Positions::Origin) {
-    //    //Scout a base that's determined at random based on distance from their assumed main.
-    //    StoredUnit* center_ground = CUNYAIModule::getClosestGroundStored(CUNYAIModule::enemy_player_model.units_, front_line_base_); // If the mean location is over water, nothing will be updated. Current problem: Will not update if on
-    //    CUNYAIModule::enemy_player_model.casualties_.updateUnitInventorySummary();
-    //    if (!center_ground && CUNYAIModule::enemy_player_model.casualties_.stock_total_ == 0) { // if they don't exist yet use the furthest ground distance starting position.
-    //        Position scout_loc = Positions::Origin;
-    //        int max_dist = 0;
-    //        for (auto i : Broodwar->getStartLocations()) {
-    //            int plength = 0;
-    //            auto cpp = BWEM::Map::Instance().GetPath(Position(i), Position(Broodwar->self()->getStartLocation()), &plength);
-    //            if (plength > max_dist && !Broodwar->isVisible(i) && (scouting_bases_.empty() || i != TilePosition(scouting_bases_.front())) ) {
-    //                max_dist = plength;
-    //                scout_loc = Position(i);
-    //            }
-    //        }
-    //        updateMapVeinsOut(scout_loc, air_scouting_base_, map_out_from_air_scouting_, false);
-    //    }
-    //    else {
-    //        //From Dolphin Bot 2018 (with paraphrasing):
-    //        double total_differential = 0;
-    //        double sum_log_p = 0;
-
-    //        vector<tuple<double, Position>> scout_expo_vector;
-    //        // Create a map <log(distance), Position> of all base locations on map
-    //        for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
-    //            int plength = 0;
-    //            auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, enemy_base_ground_, &plength);
-    //            int air_distance = r.second.pos_.getDistance(enemy_base_ground_);
-    //            int ground_distance = plength;
-
-    //            int air_differential = air_differential - ground_distance;
-    //            if (air_differential != 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
-    //                total_differential += air_differential;
-    //                scout_expo_vector.push_back({ air_differential, r.second.pos_ });
-    //            }
-    //        }
-
-    //        for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
-    //            sum_log_p += log(get<0>(*itr) / total_differential);
-    //        }
-
-    //        // Assign scout locations
-    //        bool found_base = false;
-    //        std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    //        std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-    //        std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
-    //        int attempts = 0;
-
-    //        while (!scout_expo_vector.empty() && !found_base && attempts < 100) {
-    //            for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
-    //                Position potential_scout_target = get<1>(*itr);
-    //                double weighted_p_of_selection = log(get<0>(*itr) / total_differential) / sum_log_p; // sums to one, actually.
-
-    //                if (dis(gen) < weighted_p_of_selection && !Broodwar->isVisible(TilePosition(get<1>(*itr)))) {
-    //                    updateMapVeinsOut(potential_scout_target, air_scouting_base_, map_out_from_air_scouting_, false);
-    //                    found_base = true;
-    //                }
-    //            }
-    //            attempts++;
-    //        }
-    //    }
-
-    //    frames_since_air_scouting_base_ = 0;
-    //    return;
-    //}
 }
 
 
@@ -1400,17 +1283,16 @@ void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &ce
 }
 
 
-vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const vector<vector<int>>& map, const bool combat_units)
+vector<int> Map_Inventory::getRadialDistances(const Unit_Inventory & ui, const bool combat_units)
 {
     vector<int> return_vector;
 
-    if (!map.empty() && !ui.unit_map_.empty()) {
-        for (auto u : ui.unit_map_) {
-            if (u.second.type_.canAttack() && u.second.phase_ != StoredUnit::Phase::Retreating || !combat_units) {
-                return_vector.push_back(map[WalkPosition(u.second.pos_).x][WalkPosition(u.second.pos_).y]);
-            }
+    for (auto u : ui.unit_map_) {
+        if (u.second.type_.canAttack() && u.second.phase_ != StoredUnit::Phase::Retreating || !combat_units) {
+            return_vector.push_back(this->getRadialDistanceOutFromHome(u.second.pos_));
         }
     }
+
     if (!return_vector.empty()) return return_vector;
     else return return_vector = { 0 };
 }

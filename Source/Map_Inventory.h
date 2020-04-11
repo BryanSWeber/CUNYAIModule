@@ -56,12 +56,12 @@ struct Map_Inventory {
     vector< vector<int> > unwalkable_barriers_with_buildings_; // unwalkable = 1, otherwise 0.
     vector< vector<int> > smoothed_barriers_; // unwalkablity+buffer >= 1, otherwise 0. Totally cool idea but a trap. Base nothing off this.
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
-    vector< vector<int> > map_out_from_home_; // distance from our own main. 1 if blocked/inaccessable by ground.
-    vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base. 1 if blocked/inaccessable by ground.
-    vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
-    vector< vector<int> > map_out_from_safety_; // distance from enemy base. 1 if blocked/inaccessable by ground.
-    vector< vector<int> > map_out_from_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
-    vector< vector<int> > map_out_from_air_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_home_; // distance from our own main. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_enemy_ground_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_enemy_air_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_safety_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
+    //vector< vector<int> > map_out_from_air_scouting_; // distance from enemy base. 1 if blocked/inaccessable by ground.
     vector< vector<int> > base_values_;
     vector< vector<int> > map_chokes_;
 
@@ -115,7 +115,7 @@ struct Map_Inventory {
     void Map_Inventory::updateMapVeins();
 
     // simply gets the map value at a particular position.
-    static int getMapValue(const Position &pos, const vector<vector<int>> &map);
+    //static int getMapValue(const Position &pos, const vector<vector<int>> &map);
     static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
 
     // Updates the visible map arteries. Only checks buildings.
@@ -124,7 +124,9 @@ struct Map_Inventory {
     // Updates the chokes on the map.
     //void Map_Inventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
-    void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
+    //void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
+
+    int getDistanceBetween(const Position A, const Position B) const;
 
     // Gets distance using
     int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
@@ -133,10 +135,10 @@ struct Map_Inventory {
     int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const;
     bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const;
     bool Map_Inventory::isOnIsland(const Position A) const;
-    int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
+    //int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
 
     // gets the radial distance of all units to the enemy base.
-    static vector<int> getRadialDistances(const Unit_Inventory &ui, const vector<vector<int>> &map, const bool combat_units);
+    vector<int> getRadialDistances(const Unit_Inventory &ui, const bool combat_units);
 
     // Returns the position of the base with the most casualtis. Friendly is true (by default) to checking -yourself- for the weakest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
     //Position Map_Inventory::getBaseWithMostCausalties(const bool &friendly = true, const bool &fodder = true) const;

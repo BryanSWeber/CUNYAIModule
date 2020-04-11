@@ -163,7 +163,7 @@ void CUNYAIModule::onStart()
     current_map_inventory.updateUnwalkable();
     //inventory.updateSmoothPos();
     current_map_inventory.updateMapVeins();
-    current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_);
+    //current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_);
     //inventory.updateMapChokes();
     current_map_inventory.getStartPositions();
 
@@ -400,7 +400,7 @@ void CUNYAIModule::onFrame()
 
     if (t_game == 0) {
         //update local resources
-        current_map_inventory.updateMapVeinsOut(current_map_inventory.start_positions_[0], current_map_inventory.enemy_base_ground_, current_map_inventory.map_out_from_enemy_ground_);
+        //current_map_inventory.updateMapVeinsOut(current_map_inventory.start_positions_[0], current_map_inventory.enemy_base_ground_, current_map_inventory.map_out_from_enemy_ground_);
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.

@@ -573,16 +573,16 @@ void Diagnostics::onFrame()
     //    }
     //} // Pretty to look at!
 
-    for (vector<int>::size_type i = 0; i < CUNYAIModule::current_map_inventory.map_out_from_safety_.size(); ++i) {
-        for (vector<int>::size_type j = 0; j < CUNYAIModule::current_map_inventory.map_out_from_safety_[i].size(); ++j) {
-            if (CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] % 25 == 0 && CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] > 1) {
-                if (CUNYAIModule::isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, CUNYAIModule::current_map_inventory.screen_position_)) {
-                    Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j]);
-                    //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
-                }
-            }
-        }
-    } // Pretty to look at!
+    //for (vector<int>::size_type i = 0; i < CUNYAIModule::current_map_inventory.map_out_from_safety_.size(); ++i) {
+    //    for (vector<int>::size_type j = 0; j < CUNYAIModule::current_map_inventory.map_out_from_safety_[i].size(); ++j) {
+    //        if (CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] % 25 == 0 && CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j] > 1) {
+    //            if (CUNYAIModule::isOnScreen({ static_cast<int>(i) * 8 + 4, static_cast<int>(j) * 8 + 4 }, CUNYAIModule::current_map_inventory.screen_position_)) {
+    //                Broodwar->drawTextMap(i * 8 + 4, j * 8 + 4, "%d", CUNYAIModule::current_map_inventory.map_out_from_safety_[i][j]);
+    //                //Broodwar->drawCircleMap(i * 8 + 4, j * 8 + 4, 1, Colors::Green);
+    //            }
+    //        }
+    //    }
+    //} // Pretty to look at!
 
     //for (vector<int>::size_type i = 0; i < inventory.smoothed_barriers_.size(); ++i) {
     //    for (vector<int>::size_type j = 0; j < inventory.smoothed_barriers_[i].size(); ++j) {

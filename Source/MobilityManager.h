@@ -51,10 +51,6 @@ public:
 
     bool prepareLurkerToAttack(const Position position_of_target);
 
-    // gives a vector that has the direction towards center on (map). returns a direction.
-    Position getVectorTowardsMap(const vector<vector<int>>& map) const;
-    // gives a vector that has the direction towards a radial distance of (value) on (map). returns a direction.
-    Position getVectorTowardsMap(const vector<vector<int>>& map, const int value) const;
     // gives a vector that has the direction towards higher values on the field.  returns a direction.
     Position getVectorTowardsField(const vector<vector<int>>& field) const;
     // gives a vector that has the direction towards lower values on the field.  returns a direction.
