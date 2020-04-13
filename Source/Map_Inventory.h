@@ -34,8 +34,8 @@ struct Map_Inventory {
     int my_portion_of_the_map_;
     int expo_portion_of_the_map_;
     int estimated_enemy_workers_;
-    int map_x;
-    int map_y;
+    int map_x; //Map width in tiles.
+    int map_y; //Map height in tiles.
 
     //Marks Data for each area if it is "ground safe"
     void updateGroundDangerousAreas();

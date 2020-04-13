@@ -200,7 +200,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, cons
     LowPriority.updateUnitInventorySummary();
 
     // Dive some modest distance if they're critical to kill.
-    int temp_max_divable = max(CUNYAIModule::getChargableDistance(unit_) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getFunctionalRange(unit_)));
+    int temp_max_divable = static_cast<int>(max(static_cast<double>(CUNYAIModule::getChargableDistance(unit_)) / static_cast<double>(limit_units_diving), static_cast<double>(CUNYAIModule::getFunctionalRange(unit_))));
     if (!target) { // repeated calls should be functionalized.
         target = pickTarget(temp_max_divable, DiveableTargets);
     }
@@ -607,7 +607,7 @@ Position Mobility::getNextWaypoint(const Position &start, const Position &finish
 
 int Mobility::getDistanceMetric()
 {
-    return distance_metric_;
+    return static_cast<int>(distance_metric_);
 }
 
 bool Mobility::isOnDifferentHill(const StoredUnit &e) {

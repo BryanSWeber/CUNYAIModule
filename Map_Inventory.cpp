@@ -1117,33 +1117,22 @@ void Map_Inventory::updateCurrentMap() {
 
     //Update Enemy Base
     Position suspected_enemy_base = Positions::Origin;
-    StoredUnit* center_ground = CUNYAIModule::getClosestGroundNonWorkerPriority(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
+    StoredUnit* center_ground = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
     if (center_ground) { // let's go to the strongest enemy base if we've seen them!
         suspected_enemy_base = center_ground->pos_;
     }
-    else if (!start_positions_.empty() && start_positions_[0] && start_positions_[0] != Positions::Origin && !cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
-        int attempts = 0;
-        while (attempts < static_cast<int>(start_positions_.size()) && !Broodwar->isExplored(TilePosition(start_positions_[0]))) {
-            std::rotate(start_positions_.begin(), start_positions_.begin() + 1, start_positions_.end());
-            attempts++;
-        }
-        suspected_enemy_base = start_positions_[0] + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    else if (!cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
+        suspected_enemy_base = createStartScoutLocation();
     }
-    else if (!expo_tilepositions_.empty() && expo_tilepositions_[0] && expo_tilepositions_[0] != TilePositions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
-        int attempts = 0;
-        while (attempts < static_cast<int>(expo_tilepositions_.size()) && !Broodwar->isVisible(expo_tilepositions_[0])) {
-            std::rotate(expo_tilepositions_.begin(), expo_tilepositions_.begin() + 1, expo_tilepositions_.end());
-            attempts++;
-        }
-        suspected_enemy_base = Position(expo_tilepositions_[0]) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp());
+    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_))) { // Let's just go hunt through the expos in some orderly fashion then.
+        suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
     }
 
-    if (suspected_enemy_base.isValid() && suspected_enemy_base != enemy_base_ground_ && suspected_enemy_base != Positions::Origin) { // if it's there.
+    if (suspected_enemy_base.isValid() && suspected_enemy_base != Positions::Origin) { // if it's there.
         enemy_base_ground_ = suspected_enemy_base;
     }
-
-
+    
     //Update Enemy Base Air
     StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
 

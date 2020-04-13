@@ -1056,7 +1056,7 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &u
             if ((can_attack || can_be_attacked_by) && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1136,7 +1136,7 @@ StoredUnit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const
 }
 
 //Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestIndicatorOfArmy(Unit_Inventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -1145,7 +1145,7 @@ StoredUnit* CUNYAIModule::getClosestGroundNonWorkerPriority(Unit_Inventory &ui, 
 
     if (!ui.unit_map_.empty()) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
-            if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second) && !e->second.type_.isWorker()) {
+            if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second) && e->second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && !e->second.type_.isWorker()) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
                     min_dist = temp_dist;
