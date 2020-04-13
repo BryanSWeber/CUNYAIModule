@@ -337,6 +337,8 @@ public:
     // Removes ( ) and " " from string.
     static string safeString(string input);
 
+    static int convertTileDistanceToPixelDistance(int numberOfTiles);
+
 // Vision Functions
     // returns number of visible tiles.
     int Vision_Count();

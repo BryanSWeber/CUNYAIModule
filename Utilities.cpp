@@ -1844,25 +1844,25 @@ int CUNYAIModule::getExactRange(const Unit u) {
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
 
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
-        base_range += 1 * 32;
+        base_range += convertTileDistanceToPixelDistance(1);
     }
     else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
-        base_range += 2 * 32;
+        base_range += convertTileDistanceToPixelDistance(2);
     }
     else if (u_type == UnitTypes::Protoss_Reaver) {
-        base_range += 8 * 32;
+        base_range += convertTileDistanceToPixelDistance(8);
     }
     else if (u_type == UnitTypes::Protoss_Carrier) {
-        base_range += 8 * 32;
+        base_range += convertTileDistanceToPixelDistance(8);
     }
     else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
-        base_range += 1 * 32;
+        base_range += convertTileDistanceToPixelDistance(1);
     }
     else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
-        base_range += 3 * 32;
+        base_range += convertTileDistanceToPixelDistance(3);
     }
     else if ( u_type == UnitTypes::Terran_Barracks ) {
-        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + 32 + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + convertTileDistanceToPixelDistance(1) + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * convertTileDistanceToPixelDistance(1);
     }
 
     return base_range;
@@ -1871,36 +1871,36 @@ int CUNYAIModule::getExactRange(const Unit u) {
 int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
     int base_range = max(u_type.groundWeapon().maxRange(), u_type.airWeapon().maxRange());
     if (u_type == UnitTypes::Zerg_Hydralisk && owner->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0) {
-        base_range += 1 * 32;
+        base_range += convertTileDistanceToPixelDistance(1);
     }
     else if (u_type == UnitTypes::Protoss_Dragoon && owner->getUpgradeLevel(UpgradeTypes::Singularity_Charge) > 0) {
-        base_range += 2 * 32;
+        base_range += convertTileDistanceToPixelDistance(2);
     }
     else if (u_type == UnitTypes::Protoss_Reaver) {
-        base_range += 8 * 32;
+        base_range += convertTileDistanceToPixelDistance(8);
     }
     else if (u_type == UnitTypes::Protoss_Carrier) {
-        base_range += 12 * 32; // deploy range is 8, but attack range is 12.
+        base_range += convertTileDistanceToPixelDistance(12); // deploy range is 8, but attack range is 12.
     }
     else if (u_type == UnitTypes::Terran_Marine && owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) {
-        base_range += 1 * 32;
+        base_range += convertTileDistanceToPixelDistance(1);
     }
     else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
-        base_range += 3 * 32;
+        base_range += convertTileDistanceToPixelDistance(3);
     }
     else if ( u_type == UnitTypes::Terran_Barracks ) {
-        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + 32 + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) * 32;
+        base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + convertTileDistanceToPixelDistance(1) + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) *  convertTileDistanceToPixelDistance(1);
     }
 
     return base_range;
 }
 
 int CUNYAIModule::getFunctionalRange(const UnitType u_type, const Player owner) {
-    return max(getExactRange(u_type, owner), 32 );
+    return max(getExactRange(u_type, owner), convertTileDistanceToPixelDistance(1) );
 }
 
 int CUNYAIModule::getFunctionalRange(const Unit u) {
-    return max(getExactRange(u), 32);
+    return max(getExactRange(u), convertTileDistanceToPixelDistance(1) );
 }
 
 //How far can the unit move in one MAFAP sim (120 frames)? Currently too large.
@@ -2329,3 +2329,6 @@ string CUNYAIModule::safeString(string input)
     return input;
 }
 
+int CUNYAIModule::convertTileDistanceToPixelDistance(int numberOfTiles) {
+    return numberOfTiles * 32; // Tiles are 32x32 pixels, so the route across them diagonally is STILL 32 pixels because grids.;
+}

@@ -1183,16 +1183,16 @@ void Map_Inventory::drawExpoPositions() const
         for (auto &p : expo_tilepositions_) {
             Position lower_left = Position(p);
             if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
-                lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-                lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+                lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
+                lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
                 Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
             }
         }
 
         Position lower_left = Position(next_expo_);
         if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
-            lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + 32;
-            lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + 32;
+            lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
+            lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
             Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
         }
     }
