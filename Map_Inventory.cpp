@@ -1103,7 +1103,7 @@ void Map_Inventory::updateCurrentMap() {
     else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
         suspected_enemy_base = getStartEnemyLocation();
     }
-    else { // Let's just go hunt through the expos in some orderly fashion then.
+    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) || enemy_base_ground_ == Positions::Origin){ // Let's just go hunt through the expos in some orderly fashion then.
         suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
     }
 
@@ -1121,7 +1121,7 @@ void Map_Inventory::updateCurrentMap() {
     else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
         suspected_enemy_base = getStartEnemyLocation();
     }
-    else { // Let's just go hunt through the expos in some orderly fashion then.
+    else if (Broodwar->isVisible(TilePosition(enemy_base_air_)) || enemy_base_air_ == Positions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
         suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
     }
 
