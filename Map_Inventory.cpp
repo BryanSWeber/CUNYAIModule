@@ -71,10 +71,6 @@ Map_Inventory::Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory 
         }
         Diagnostics::DiagnosticText("There are %d roughly tiles, %d veins.", map_veins_.size(), vein_ct);
     }
-
-    if (start_positions_.empty() && !cleared_all_start_positions_) {
-        getStartPositions();
-    }
 }
 
 //Marks Data for each area if it is "ground safe"
@@ -1055,31 +1051,13 @@ void Map_Inventory::getExpoPositions() {
 
 }
 
-void Map_Inventory::getStartPositions() {
+
+bool Map_Inventory::checkExploredAllStartPositions() {
     for (auto loc : Broodwar->getStartLocations()) {
-        start_positions_.push_back(Position(loc));
+        if (!Broodwar->isExplored(loc))
+            return false;
     }
-}
-
-void Map_Inventory::updateStartPositions(const Unit_Inventory &ei) {
-    for (auto visible_base = start_positions_.begin(); visible_base != start_positions_.end() && !start_positions_.empty();) {
-        if (Broodwar->isExplored(TilePosition(*visible_base)) || Broodwar->self()->getStartLocation() == TilePosition(*visible_base)) {
-            visible_base = start_positions_.erase(visible_base);
-            //if ( *visible_base == start_positions_[0] ) {
-            //    updateMapVeinsOutFromFoe(start_positions_[0]);
-            //}
-        }
-        else {
-            ++visible_base;
-        }
-    }
-
-    if (start_positions_.empty()) {
-        cleared_all_start_positions_ = true;
-    }
-    //else if (ei.getMeanBuildingLocation() == Position(0,0) && enemy_base_ground_ != start_positions_[0]){ // should start precaching the mean building location.
-    //    updateMapVeinsOutFromFoe(start_positions_[0]);
-    //}
+    return true;
 }
 
 void Map_Inventory::updateCurrentMap() {
@@ -1122,10 +1100,10 @@ void Map_Inventory::updateCurrentMap() {
     if (center_ground) { // let's go to the strongest enemy base if we've seen them!
         suspected_enemy_base = center_ground->pos_;
     }
-    else if (!cleared_all_start_positions_) { // maybe it's an starting base we havent' seen yet?
-        suspected_enemy_base = createStartScoutLocation();
+    else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
+        suspected_enemy_base = getStartEnemyLocation();
     }
-    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_))) { // Let's just go hunt through the expos in some orderly fashion then.
+    else { // Let's just go hunt through the expos in some orderly fashion then.
         suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
     }
 
@@ -1469,6 +1447,15 @@ Position Map_Inventory::createStartScoutLocation() {
     return Positions::Origin;
 }
 
+Position Map_Inventory::getStartEnemyLocation() {
+    for (int i = 0; i <= Broodwar->getStartLocations().size() - 1; i++) {
+        if (!isScoutingOrMarchingOnPosition(Position(Broodwar->getStartLocations()[i]), true, false)) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            return Position(Broodwar->getStartLocations()[i]);
+        }
+    }
+    Diagnostics::DiagnosticText("Oof, no scouting position?");
+    return Positions::Origin;
+}
 
 Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target_pos) {
     //From Dolphin Bot 2018 (with paraphrasing):
@@ -1482,7 +1469,7 @@ Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target
         auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, target_pos, &plength);
 
         int distance = plength;
-        if (distance != 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
+        if (distance >= 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
             total_distance += distance;
             scout_expo_vector.push_back({ distance, r.second.pos_ });
         }
@@ -1512,7 +1499,7 @@ Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target
     return Positions::Origin;
 }
 
-bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient) {
+bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient, const bool &check_marching) {
 
     bool prohibit_overexploring = true;
 
@@ -1528,5 +1515,5 @@ bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bo
     bool being_marched_towards = static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
     bool being_scouted = scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 
-    return (being_marched_towards && prohibit_overexploring) || being_scouted || visible || (explored && explored_sufficient);
+    return (being_marched_towards && prohibit_overexploring && check_marching) || being_scouted || visible || (explored && explored_sufficient);
 }

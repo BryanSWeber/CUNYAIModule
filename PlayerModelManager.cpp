@@ -52,6 +52,14 @@ void Player_Model::updateSelfOnFrame()
 {
     bwapi_player_ = Broodwar->self();
 
+
+    //Bans units you don't want for a particular matchup.
+    if (CUNYAIModule::enemy_player_model.bwapi_player_->getRace() == Races::Zerg) {
+        dropBuildingType(UnitTypes::Zerg_Hydralisk_Den);
+        dropUnitType(UnitTypes::Zerg_Hydralisk);
+        dropUnitType(UnitTypes::Zerg_Lurker);
+    }
+
     //Update Enemy Units
     //Update friendly unit inventory.
     updateUnit_Counts();
@@ -684,14 +692,6 @@ void Player_Model::setLockedOpeningValues(const double alpha_army, const double 
     CUNYAIModule::gas_proportion = gas_proportion;
     CUNYAIModule::supply_ratio = supply_ratio;
     CUNYAIModule::buildorder = Building_Gene(build_order.c_str());
-
-    //This no longer works after declaring the inventories as const.
-    //combat_unit_cartridge_ = { { UnitTypes::Zerg_Zergling , INT_MIN } };
-    //eco_unit_cartridge_ = // Don't change this unless you plan on changing races. Needs some more time to correct, also.
-    //building_cartridge_ = { { UnitTypes::Zerg_Hatchery, INT_MIN }, { UnitTypes::Zerg_Spawning_Pool, INT_MIN } , {UnitTypes::Zerg_Evolution_Chamber, INT_MIN},{ UnitTypes::Zerg_Queens_Nest, INT_MIN },{ UnitTypes::Zerg_Lair, INT_MIN }, { UnitTypes::Zerg_Hive, INT_MIN } };
-    //upgrade_cartridge_ = { { UpgradeTypes::Zerg_Carapace, INT_MIN } ,{ UpgradeTypes::Zerg_Melee_Attacks, INT_MIN },{ UpgradeTypes::Pneumatized_Carapace, INT_MIN },{ UpgradeTypes::Metabolic_Boost, INT_MIN }, { UpgradeTypes::Adrenal_Glands, INT_MIN } };
-    //tech_cartridge_ = {  };
-
 }
 
 double Player_Model::getCumArmy()
@@ -750,4 +750,14 @@ std::map<UpgradeType, int> Player_Model::getUpgradeCartridge()
 std::map<TechType, int> Player_Model::getTechCartridge()
 {
     return tech_cartridge_;
+}
+
+bool Player_Model::dropBuildingType(UnitType u)
+{
+    return building_cartridge_.erase(u);
+}
+
+bool Player_Model::dropUnitType(UnitType u)
+{
+    return combat_unit_cartridge_.erase(u);
 }

@@ -32,6 +32,8 @@ public:
     static std::map<UnitType, int> getBuildingCartridge();
     static std::map<UpgradeType, int> getUpgradeCartridge();
     static std::map<TechType, int> getTechCartridge();
+    static bool dropBuildingType(UnitType u); //Drops a building. 
+    static bool dropUnitType(UnitType u); //drops a combat unit.
 
     // Important variables.
     Player bwapi_player_;

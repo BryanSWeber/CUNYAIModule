@@ -165,7 +165,6 @@ void CUNYAIModule::onStart()
     current_map_inventory.updateMapVeins();
     //current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_);
     //inventory.updateMapChokes();
-    current_map_inventory.getStartPositions();
 
     //update timers.
     short_delay = 0;
@@ -393,7 +392,6 @@ void CUNYAIModule::onFrame()
     current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
     current_map_inventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2))) / static_cast<double>(Broodwar->getStartLocations().size()) );
     current_map_inventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(current_map_inventory.expo_tilepositions_.size())) );
-    current_map_inventory.updateStartPositions(enemy_player_model.units_);
     current_map_inventory.updateScreen_Position();
 
     basemanager.updateBases();

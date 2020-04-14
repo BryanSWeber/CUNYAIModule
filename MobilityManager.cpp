@@ -569,7 +569,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
         if (!unit_sent) {
             int plength = 0;
             auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
-            if (!cpp.empty() && !unit_->isFlying()) {
+            if (!cpp.empty() && plength > 0) {
                 // first try traveling with CPP.
                 Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
                 friendly_blocks.updateUnitInventorySummary();

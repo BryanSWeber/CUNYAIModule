@@ -40,7 +40,6 @@ struct Map_Inventory {
     //Marks Data for each area if it is "ground safe"
     void updateGroundDangerousAreas();
 
-    vector<Position> start_positions_;
     vector<TilePosition> expo_tilepositions_;  //Contains all possible expos and starting bases, found with BWEM.
     Position enemy_base_ground_;
     Position enemy_base_air_;
@@ -69,7 +68,6 @@ struct Map_Inventory {
     int est_enemy_stock_;
 
     TilePosition next_expo_;
-    bool cleared_all_start_positions_;
     bool checked_all_expo_positions_ = false;
 
     int frames_since_unwalkable = 0;
@@ -160,11 +158,7 @@ struct Map_Inventory {
     void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
     void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
 
-    // Adds start positions to inventory object.
-    void Map_Inventory::getStartPositions();
-    // Updates map positions and removes all visible ones;
-    void Map_Inventory::updateStartPositions(const Unit_Inventory &ei);
-
+    bool checkExploredAllStartPositions(); //returns true if you have explored all start positions, false otherwise.
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void updateCurrentMap();
@@ -182,7 +176,8 @@ struct Map_Inventory {
 
     void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
     Position Map_Inventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
-    bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false); //returns true if a position is being scouted or marched towards. checks for area ID matchs.
+    Position getStartEnemyLocation(); // gets an enemy start location that hasn't been explored. Will not move it if I am already marching towards it.
+    bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false, const bool &check_marching = true); //returns true if a position is being scouted or marched towards. checks for area ID matchs.
     Position getDistanceWeightedScoutPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
 };
 

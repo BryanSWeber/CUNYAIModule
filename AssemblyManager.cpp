@@ -782,9 +782,6 @@ void AssemblyManager::updateOptimalCombatUnit() {
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
 
     for (auto potential_type = assembly_cycle_.begin(); potential_type != assembly_cycle_.end();) {
-        if ((potential_type->first == UnitTypes::Zerg_Hydralisk || potential_type->first == UnitTypes::Zerg_Lurker) && Broodwar->enemy()->getRace() == Races::Zerg)
-            assembly_cycle_.erase(potential_type++); //No hydras in ZvZ.
-        else
             potential_type++;
     }
 
