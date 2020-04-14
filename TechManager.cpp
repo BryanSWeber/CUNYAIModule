@@ -40,11 +40,12 @@ void TechManager::updateOptimalTech() {
     for (auto potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
+            bool isOneTimeUpgrade = potential_up.first.maxRepeats() == 1 && potential_up.first != UpgradeTypes::None; //Speed, range, adrenal glands, etc. are regularly undervalued. This is an ad-hoc adjustment.
             FAP::FastAPproximation<StoredUnit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
             upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
+            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true)) * 0.25 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;
             else upgrade_cycle_[potential_up.first] = static_cast<int>((23 * upgrade_cycle_[potential_up.first] + score) / 24); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
@@ -250,13 +251,15 @@ void TechManager::clearSimulationHistory() {
 //Simply returns the techtype that is the "best" of a BuildFAP sim.
 int TechManager::returnTechRank(const UpgradeType &ut) {
     int postion_in_line = 0;
-    multimap<int, UpgradeType> sorted_list;
+    vector<tuple<int, UpgradeType>> sorted_list;
     for (auto it : upgrade_cycle_) {
-        sorted_list.insert({ it.second, it.first });
+        sorted_list.push_back(tuple{ it.second, it.first });
     }
 
-    for (auto unit_idea = sorted_list.rbegin(); unit_idea != sorted_list.rend(); ++unit_idea) {
-        if (unit_idea->second == ut) {
+    sort(sorted_list.begin(), sorted_list.end()); //by default sorts by first element of tuples!
+
+    for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
+        if (std::get<1>(*tech_idea) == ut) {
             return postion_in_line;
         }
         else postion_in_line++;

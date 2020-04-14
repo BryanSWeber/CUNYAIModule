@@ -337,11 +337,11 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     // For extra upgrades:
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
-        Broodwar->self()->gas() > 100 * CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) &&
-        Broodwar->self()->minerals() > 100 * CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
         (!have_idle_evos_ || CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0) &&
         (upgrade_worth_melee || upgrade_worth_ranged) &&
+        CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings &&
+        count_tech_buildings >= 1 &&
         CUNYAIModule::basemanager.getBaseCount() > count_tech_buildings);
 
     //if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool &&
