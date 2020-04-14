@@ -759,7 +759,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, co
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
@@ -778,7 +778,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
             bool right_type = (type == r->second.type_ || type.isMineralField() && r->second.type_.isMineralField()); //WARNING:: Minerals have 4 types.
             if (temp_dist <= min_dist && right_type ) { 
                 min_dist = temp_dist;
@@ -798,7 +798,7 @@ StoredUnit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posit
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -816,7 +816,7 @@ StoredUnit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -834,7 +834,7 @@ StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, co
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_map_inventory.getDifferentialDistanceOutFromHome(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::current_map_inventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_ && hasPriority(u->second.type_)) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);

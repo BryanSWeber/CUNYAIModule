@@ -1112,13 +1112,21 @@ void Map_Inventory::updateCurrentMap() {
     }
     
     //Update Enemy Base Air
+    suspected_enemy_base = Positions::Origin;
     StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
 
-    if (CUNYAIModule::enemy_player_model.units_.getMeanBuildingLocation() != Positions::Origin && center_flyer && center_flyer->pos_) { // Sometimes buildings get invalid positions. Unclear why. Then we need to use a more traditioanl method.
-        enemy_base_air_ = center_flyer->pos_;
+    if (center_flyer) { // let's go to the strongest enemy base if we've seen them!
+        suspected_enemy_base = center_flyer->pos_;
     }
-    else {
-        enemy_base_air_ = enemy_base_ground_;
+    else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
+        suspected_enemy_base = getStartEnemyLocation();
+    }
+    else { // Let's just go hunt through the expos in some orderly fashion then.
+        suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
+    }
+
+    if (suspected_enemy_base.isValid() && suspected_enemy_base != Positions::Origin) { // if it's there.
+        enemy_base_air_ = suspected_enemy_base;
     }
 
     //Update Front Line Base
@@ -1443,7 +1451,7 @@ Position Map_Inventory::createStartScoutLocation() {
             return Position(Broodwar->getStartLocations()[i]);
         }
     }
-    Diagnostics::DiagnosticText("Oof, no scouting position?");
+    Diagnostics::DiagnosticText("Oof, no unexplored start positions left for scouting?");
     return Positions::Origin;
 }
 
@@ -1453,7 +1461,7 @@ Position Map_Inventory::getStartEnemyLocation() {
             return Position(Broodwar->getStartLocations()[i]);
         }
     }
-    Diagnostics::DiagnosticText("Oof, no scouting position?");
+    Diagnostics::DiagnosticText("Oof, no unexplored start position left to march on?");
     return Positions::Origin;
 }
 
