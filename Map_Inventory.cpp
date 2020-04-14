@@ -1025,12 +1025,8 @@ Position Map_Inventory::getBaseNearest(Position &p) {
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
-        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
-        ui_mini.updateUnitInventorySummary();
-        BWEB::Path newPath;
-        newPath.createUnitPath(b.first, p);
-        if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() < shortest_path){
-            shortest_path = newPath.getDistance();
+        if (getDistanceBetween(b.first, p) < shortest_path){
+            shortest_path = getDistanceBetween(b.first, p);
             closest_base = b.first;
         }
     }
@@ -1510,12 +1506,23 @@ Position Map_Inventory::getDistanceWeightedScoutPosition(const Position & target
 bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient, const bool &check_marching) {
 
     bool prohibit_overexploring = true;
+    int times_overexploring = 0;
+    int unexplored_starts = 0;
+    for(auto s : Broodwar->getStartLocations()) {
+        if (!Broodwar->isExplored(TilePosition(s)))
+            unexplored_starts++;
+    }
 
-    if(Broodwar->getStartLocations().size() < 3){ // if the map is not fully explored we can race to a location even if the army is headed there...
+    int number_of_permissible_overlaps = max(3 - unexplored_starts, 0); //nScouts = 2 + 1 army searcher.
+    if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(enemy_base_ground_)))
+        times_overexploring++;
+    for (auto s : scouting_bases_) {
+        if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(s)))
+            times_overexploring++;
+    }
+
+    if(unexplored_starts < scouting_bases_.size() + 1){ // if the map is not fully explored we can race to a location even if the army is headed there...
         prohibit_overexploring = false;
-        for (auto i : Broodwar->getStartLocations())
-            if (!Broodwar->isExplored(TilePosition(i)))
-                prohibit_overexploring = false;
     }
 
     bool explored = Broodwar->isExplored(TilePosition(pos));
@@ -1523,5 +1530,5 @@ bool Map_Inventory::isScoutingOrMarchingOnPosition(const Position &pos, const bo
     bool being_marched_towards = static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
     bool being_scouted = scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
 
-    return (being_marched_towards && prohibit_overexploring && check_marching) || being_scouted || visible || (explored && explored_sufficient);
+    return (being_marched_towards && prohibit_overexploring && check_marching) || being_scouted && times_overexploring > number_of_permissible_overlaps || visible || (explored && explored_sufficient);
 }
