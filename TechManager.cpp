@@ -113,7 +113,7 @@ bool TechManager::canMakeTechExpendituresUpdate() {
 
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
-bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv) {
+bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const MapInventory &inv) {
 
     bool busy = false;
     bool upgrade_bool = (CUNYAIModule::tech_starved || checkResourceSlack());

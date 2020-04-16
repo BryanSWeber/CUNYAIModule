@@ -1,6 +1,6 @@
 #pragma once
 #include "Source\CUNYAIModule.h"
-#include "Source\Map_Inventory.h"
+#include "Source\MapInventory.h"
 #include "Source\AssemblyManager.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\MobilityManager.h"
@@ -161,7 +161,7 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 }
 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
-bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv) {
+bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv) {
 
         int expo_score = -99999999;
 
@@ -219,7 +219,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool path_available = false;
 
     // Check if worker has any path to an expo.
-    for (auto &p : CUNYAIModule::current_map_inventory.expo_tilepositions_) {
+    for (auto &p : CUNYAIModule::current_MapInventory.expo_tilepositions_) {
         path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafeGroundPath(Position(p)));
     }
 
@@ -260,7 +260,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         UnitType next_in_build_order = CUNYAIModule::buildorder.building_gene_.front().getUnit();
         if (!next_in_build_order.isBuilding()) return false;
-        if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::current_map_inventory);
+        if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::current_MapInventory);
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
     }
 
@@ -270,7 +270,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
     bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
     if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
-                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_map_inventory);
+                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_MapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
@@ -365,7 +365,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
 
     //std::map<UnitType, int> local_map;
-    //int sustainable_tech = min( CUNYAIModule::current_map_inventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
+    //int sustainable_tech = min( CUNYAIModule::current_MapInventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
 
     //switch (sustainable_tech) {
     //case 0:
@@ -1008,8 +1008,8 @@ bool AssemblyManager::assignUnitAssembly()
     Unit_Inventory transfer_drone_larva;
     Unit_Inventory combat_creators;
 
-    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_ground_);
-    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_map_inventory.enemy_base_air_);
+    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_ground_);
+    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_air_);
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -1024,8 +1024,8 @@ bool AssemblyManager::assignUnitAssembly()
     int distance_to_alarming_air = INT_MAX;
 
     for (auto hatch : production_facility_bank_.unit_map_) {
-        distance_to_alarming_ground = min(CUNYAIModule::current_map_inventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
-        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_map_inventory.enemy_base_air_)), distance_to_alarming_air);
+        distance_to_alarming_ground = min(CUNYAIModule::current_MapInventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
+        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_MapInventory.enemy_base_air_)), distance_to_alarming_air);
     }
 
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager. There is a logic error in here, since the creep colony may have been built because of a threat at a nearby base B, but the closest viable building location to B was actually closer to A than B.

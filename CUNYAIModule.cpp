@@ -2,7 +2,7 @@
 
 #include "Source\CUNYAIModule.h"
 #include "Source\CobbDouglas.h"
-#include "Source\Map_Inventory.h"
+#include "Source\MapInventory.h"
 #include "Source\Unit_Inventory.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Research_Inventory.h"
@@ -50,7 +50,7 @@ Player_Model CUNYAIModule::friendly_player_model;
 Player_Model CUNYAIModule::enemy_player_model;
 Player_Model CUNYAIModule::neutral_player_model;
 Resource_Inventory CUNYAIModule::land_inventory; // resources.
-Map_Inventory CUNYAIModule::current_map_inventory;  // macro variables, not every unit I have.
+MapInventory CUNYAIModule::current_MapInventory;  // macro variables, not every unit I have.
 CombatManager CUNYAIModule::combat_manager;
 FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
 TechManager CUNYAIModule::techmanager;
@@ -159,11 +159,11 @@ void CUNYAIModule::onStart()
     Diagnostics::DiagnosticText(string("The build order is: " + learned_plan.build_order_t0).c_str());
 
     //update Map Grids
-    current_map_inventory.updateBuildablePos();
-    current_map_inventory.updateUnwalkable();
+    current_MapInventory.updateBuildablePos();
+    current_MapInventory.updateUnwalkable();
     //inventory.updateSmoothPos();
-    current_map_inventory.updateMapVeins();
-    //current_map_inventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_map_inventory.front_line_base_, current_map_inventory.map_out_from_home_);
+    current_MapInventory.updateMapVeins();
+    //current_MapInventory.updateMapVeinsOut(Position(Broodwar->self()->getStartLocation()) + Position(UnitTypes::Zerg_Hatchery.dimensionLeft(), UnitTypes::Zerg_Hatchery.dimensionUp()), current_MapInventory.front_line_base_, current_MapInventory.map_out_from_home_);
     //inventory.updateMapChokes();
 
     //update timers.
@@ -266,7 +266,7 @@ void CUNYAIModule::onEnd(bool isWinner)
         print_value += buildorder.building_gene_.front().getUpgrade().c_str();
 
         output << "Couldn't build: " << print_value << endl;
-        output << "Hatches Left?:" << current_map_inventory.hatches_ << endl;
+        output << "Hatches Left?:" << current_MapInventory.hatches_ << endl;
         output << "Win:" << isWinner << endl;
         output.close();
     }; // testing build order stuff intensively.
@@ -313,7 +313,7 @@ void CUNYAIModule::onFrame()
 
     // Update enemy player model. Draw all associated units.
     enemy_player_model.updateOtherOnFrame(Broodwar->enemy());
-    //enemy_player_model.units_.drawAllHitPoints(current_map_inventory);
+    //enemy_player_model.units_.drawAllHitPoints(current_MapInventory);
     enemy_player_model.units_.drawAllLocations();
 
     //Update neutral units
@@ -329,9 +329,9 @@ void CUNYAIModule::onFrame()
     //friendly_player_model.units_.drawAllVelocities(inventory);
     //friendly_player_model.units_.drawAllHitPoints(inventory);
     Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
-    //friendly_player_model.units_.drawAllWorkerTasks(current_map_inventory, land_inventory);
-    //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_map_inventory);
-    //land_inventory.drawUnreachablePatch(current_map_inventory);
+    //friendly_player_model.units_.drawAllWorkerTasks(current_MapInventory, land_inventory);
+    //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_MapInventory);
+    //land_inventory.drawUnreachablePatch(current_MapInventory);
     // Update FAPS with units.
     MCfap.clear();
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
@@ -354,16 +354,16 @@ void CUNYAIModule::onFrame()
 
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
-    gas_starved = (workermanager.checkGasOutlet() && (current_map_inventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
+    gas_starved = (workermanager.checkGasOutlet() && (current_MapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
         (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
-    supply_starved = (current_map_inventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
+    supply_starved = (current_MapInventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
         Broodwar->self()->supplyTotal() < 399); // you have hit your supply limit, in which case you are not supply blocked. The real supply goes from 0-400, since lings are 0.5 observable supply.
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
 
-    current_map_inventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
+    current_MapInventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
     combat_manager.updateReadiness();
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
@@ -373,14 +373,14 @@ void CUNYAIModule::onFrame()
     auto start_map = std::chrono::high_resolution_clock::now();
 
     //Update posessed minerals. Erase those that are mined out.
-    land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, current_map_inventory);
+    land_inventory.updateResourceInventory(friendly_player_model.units_, enemy_player_model.units_, current_MapInventory);
     land_inventory.drawMineralRemaining();
 
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
-    current_map_inventory.updateVision_Count();
+    current_MapInventory.updateVision_Count();
 
-    current_map_inventory.updateLn_Supply_Remain();
-    current_map_inventory.updateLn_Supply_Total();
+    current_MapInventory.updateLn_Supply_Remain();
+    current_MapInventory.updateLn_Supply_Total();
 
     workermanager.updateGas_Workers();
     workermanager.updateMin_Workers();
@@ -389,20 +389,20 @@ void CUNYAIModule::onFrame()
     workermanager.updateWorkersOverstacked();
     workermanager.updateExcessCapacity();
 
-    current_map_inventory.updateHatcheries();  // macro variables, not every unit I have.
-    current_map_inventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2))) / static_cast<double>(Broodwar->getStartLocations().size()) );
-    current_map_inventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(current_map_inventory.expo_tilepositions_.size())) );
-    current_map_inventory.updateScreen_Position();
+    current_MapInventory.updateHatcheries();  // macro variables, not every unit I have.
+    current_MapInventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2))) / static_cast<double>(Broodwar->getStartLocations().size()) );
+    current_MapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(current_MapInventory.expo_tilepositions_.size())) );
+    current_MapInventory.updateScreen_Position();
 
     basemanager.updateBases();
 
     if (t_game == 0) {
         //update local resources
-        //current_map_inventory.updateMapVeinsOut(current_map_inventory.start_positions_[0], current_map_inventory.enemy_base_ground_, current_map_inventory.map_out_from_enemy_ground_);
+        //current_MapInventory.updateMapVeinsOut(current_MapInventory.start_positions_[0], current_MapInventory.enemy_base_ground_, current_MapInventory.map_out_from_enemy_ground_);
         Resource_Inventory mineral_inventory = Resource_Inventory(Broodwar->getStaticMinerals());
         Resource_Inventory geyser_inventory = Resource_Inventory(Broodwar->getStaticGeysers());
         land_inventory = mineral_inventory + geyser_inventory; // for first initialization.
-        current_map_inventory.getExpoPositions(); // prime this once on game start.
+        current_MapInventory.getExpoPositions(); // prime this once on game start.
 
 
         if (INF_MONEY) {
@@ -442,9 +442,9 @@ void CUNYAIModule::onFrame()
         enemy_player_model.casualties_.printUnitInventory(Broodwar->enemy(), "casualties");
     }
 
-    current_map_inventory.updateCurrentMap();
-    current_map_inventory.drawExpoPositions();
-    current_map_inventory.drawBasePositions();
+    current_MapInventory.updateCurrentMap();
+    current_MapInventory.drawExpoPositions();
+    current_MapInventory.drawBasePositions();
 
     if (techmanager.canMakeTechExpendituresUpdate() && ( tech_starved || techmanager.checkResourceSlack()) ) techmanager.updateOptimalTech();
     if(army_starved || assemblymanager.checkSlackResources()) assemblymanager.updateOptimalCombatUnit();
@@ -492,7 +492,7 @@ void CUNYAIModule::onFrame()
 
     my_reservation.decrementReserveTimer();
     my_reservation.confirmOngoingReservations();
-    Diagnostics::drawReservations(my_reservation, current_map_inventory.screen_position_);
+    Diagnostics::drawReservations(my_reservation, current_MapInventory.screen_position_);
 
     vector<UnitType> types_of_units_checked_for_upgrades_this_frame = {};// starts empty.
 
@@ -502,14 +502,14 @@ void CUNYAIModule::onFrame()
     int map_area = map_x * map_y; // map area in tiles.
 
    // if (Broodwar->mapWidth() && Broodwar->mapHeight()) {
-    //current_map_inventory.createThreatField(enemy_player_model);
-    //current_map_inventory.createAttractField(enemy_player_model);
-    //current_map_inventory.createExploreField();
-    //current_map_inventory.createAAField(enemy_player_model);
+    //current_MapInventory.createThreatField(enemy_player_model);
+    //current_MapInventory.createAttractField(enemy_player_model);
+    //current_MapInventory.createExploreField();
+    //current_MapInventory.createAAField(enemy_player_model);
     // }
 
-     //current_map_inventory.DiagnosticField(current_map_inventory.pf_explore_);
-     //current_map_inventory.DiagnosticTile();
+     //current_MapInventory.DiagnosticField(current_MapInventory.pf_explore_);
+     //current_MapInventory.DiagnosticTile();
 
 
     auto end_map = std::chrono::high_resolution_clock::now();
@@ -580,14 +580,14 @@ void CUNYAIModule::onFrame()
                     Position closest_loc_to_c_that_gives_vision = Position(c.x + static_cast<int>(cos(theta) * 0.75) * detector_of_choice.type_.sightRange(), c.y + static_cast<int>(sin(theta) * 0.75) * detector_of_choice.type_.sightRange());
                     if (closest_loc_to_c_that_gives_vision.isValid() && closest_loc_to_c_that_gives_vision != Positions::Origin) {
                         detector_of_choice.bwapi_unit_->move(closest_loc_to_c_that_gives_vision);
-                        Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_map_inventory.screen_position_, Colors::Cyan);
+                        Diagnostics::drawCircle(c, CUNYAIModule::current_MapInventory.screen_position_, 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, closest_loc_to_c_that_gives_vision, current_MapInventory.screen_position_, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting); // Update the detector not the calling unit.
                     }
                     else {
                         detector_of_choice.bwapi_unit_->move(c);
-                        Diagnostics::drawCircle(c, CUNYAIModule::current_map_inventory.screen_position_, 25, Colors::Cyan);
-                        Diagnostics::drawLine(detector_of_choice.pos_, current_map_inventory.screen_position_, c, Colors::Cyan);
+                        Diagnostics::drawCircle(c, CUNYAIModule::current_MapInventory.screen_position_, 25, Colors::Cyan);
+                        Diagnostics::drawLine(detector_of_choice.pos_, current_MapInventory.screen_position_, c, Colors::Cyan);
                         CUNYAIModule::updateUnitPhase(detector_of_choice.bwapi_unit_, StoredUnit::Phase::Detecting);  // Update the detector not the calling unit.
                     }
                 }
@@ -621,7 +621,7 @@ void CUNYAIModule::onFrame()
         //Upgrades only occur on a specific subtype of units.
         if (isIdleEmpty(u) && !u_type.canAttack() && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
-            techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_map_inventory);
+            techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_MapInventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }

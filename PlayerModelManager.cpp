@@ -107,7 +107,7 @@ void Player_Model::updateSelfOnFrame()
     if(CUNYAIModule::army_starved) e_has_air_vunerability_ = (bool)(CUNYAIModule::assemblymanager.testActiveAirProblem(researches_, false) || CUNYAIModule::assemblymanager.testPotentialAirVunerability(researches_, true));
 
     //Update map inventory
-    //radial_distances_from_enemy_ground_ = CUNYAIModule::current_map_inventory.getRadialDistances(units_, true);
+    //radial_distances_from_enemy_ground_ = CUNYAIModule::current_MapInventory.getRadialDistances(units_, true);
     //closest_ground_combatant_ = *std::min_element(radial_distances_from_enemy_ground_.begin(), radial_distances_from_enemy_ground_.end());
 
 }

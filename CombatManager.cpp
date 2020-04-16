@@ -58,7 +58,7 @@ bool CombatManager::combatScript(const Unit & u)
     if (CUNYAIModule::spamGuard(u))
     {
         int u_areaID = BWEM::Map::Instance().GetNearestArea(u->getTilePosition())->Id();
-        int u_safeAreaID = BWEM::Map::Instance().GetNearestArea(TilePosition(CUNYAIModule::current_map_inventory.safe_base_))->Id();
+        int u_safeAreaID = BWEM::Map::Instance().GetNearestArea(TilePosition(CUNYAIModule::current_MapInventory.safe_base_))->Id();
 
         Mobility mobility = Mobility(u);
         int search_radius = max({ u->isFlying() ? CUNYAIModule::enemy_player_model.units_.max_range_air_ : CUNYAIModule::enemy_player_model.units_.max_range_ground_, u->isFlying() ? CUNYAIModule::enemy_player_model.casualties_.max_range_air_ : CUNYAIModule::enemy_player_model.casualties_.max_range_ground_ , CUNYAIModule::friendly_player_model.units_.max_range_, 192 }) + mobility.getDistanceMetric(); // minimum range is 5 tiles, roughly 1 hydra, so we notice enemies BEFORE we get shot.
@@ -175,8 +175,8 @@ bool CombatManager::combatScript(const Unit & u)
                 }
             }
 
-            Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::current_map_inventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
-            Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::current_map_inventory.screen_position_, search_radius, Colors::Green);
+            Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::current_MapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
+            Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::current_MapInventory.screen_position_, search_radius, Colors::Green);
 
             if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                 return mobility.Retreat_Logic(*e_closest_threat);
@@ -224,7 +224,7 @@ bool CombatManager::scoutScript(const Unit & u)
     }
     else if(CUNYAIModule::basemanager.getBaseCount() > 5 && CUNYAIModule::enemy_player_model.units_.building_count_ == 0) {
         Mobility mobility = Mobility(u);
-        //Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_map_inventory.pf_explore_);
+        //Position explore_vector = mobility.getVectorTowardsField(CUNYAIModule::current_MapInventory.pf_explore_);
         //if(explore_vector != Positions::Origin)
         //    return mobility.moveTo(u->getPosition(), u->getPosition() + explore_vector, StoredUnit::Phase::PathingOut);
         //else {

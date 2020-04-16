@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Unit_Inventory.h"
-#include "Source\Map_Inventory.h"
+#include "Source\MapInventory.h"
 #include "Source\Reservation_Manager.h"
 #include "Source/Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
@@ -129,8 +129,8 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit)
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
-            if (command.getTargetTilePosition() == CUNYAIModule::current_map_inventory.next_expo_) {
-                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
+            if (command.getTargetTilePosition() == CUNYAIModule::current_MapInventory.next_expo_) {
+                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_MapInventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         unit->stop();
@@ -156,8 +156,8 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
             if (command.getType() == UnitCommandTypes::Morph || command.getType() == UnitCommandTypes::Build) {
                 CUNYAIModule::my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), true);
             }
-            if (command.getTargetTilePosition() == CUNYAIModule::current_map_inventory.next_expo_) {
-                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_map_inventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
+            if (command.getTargetTilePosition() == CUNYAIModule::current_MapInventory.next_expo_) {
+                CUNYAIModule::my_reservation.removeReserveSystem(CUNYAIModule::current_MapInventory.next_expo_, UnitTypes::Zerg_Hatchery, true);
             }
         }
         miner.time_of_last_purge_ = Broodwar->getFrameCount();
@@ -170,7 +170,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, Map_Inventory &inv, Reservation &res)
+void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, MapInventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -199,20 +199,20 @@ void Unit_Inventory::drawAllWorkerTasks() const
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
             if (u.second.locked_mine_ && !u.second.isAssignedResource() && !u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::White);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_MapInventory.screen_position_, Colors::White);
             }
             else if (u.second.isAssignedMining()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Green);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_MapInventory.screen_position_, Colors::Green);
             }
             else if (u.second.isAssignedGas()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Brown);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_MapInventory.screen_position_, Colors::Brown);
             }
             else if (u.second.isAssignedClearing()) {
-                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_map_inventory.screen_position_, Colors::Blue);
+                Diagnostics::drawLine(u.second.pos_, u.second.locked_mine_->getPosition(), CUNYAIModule::current_MapInventory.screen_position_, Colors::Blue);
             }
 
             if (u.second.isAssignedBuilding()) {
-                Diagnostics::drawDot(u.second.pos_, CUNYAIModule::current_map_inventory.screen_position_, Colors::Purple);
+                Diagnostics::drawDot(u.second.pos_, CUNYAIModule::current_MapInventory.screen_position_, Colors::Purple);
             }
         }
     }
@@ -223,10 +223,10 @@ void Unit_Inventory::drawAllLocations() const
 {
     for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
         if (e->second.valid_pos_) {
-            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
+            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::current_MapInventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red); // Plot their last known position.
         }
         else if (!e->second.valid_pos_) {
-            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
+            Diagnostics::drawCircle(e->second.pos_, CUNYAIModule::current_MapInventory.screen_position_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue); // Plot their last known position.
         }
 
     }
@@ -238,11 +238,11 @@ void Unit_Inventory::drawAllMisplacedGroundUnits() const
 {
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
-            if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::current_map_inventory.screen_position_) && !e->second.type_.isBuilding()) {
-                if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1) {
+            if (CUNYAIModule::isOnScreen(e->second.pos_, CUNYAIModule::current_MapInventory.screen_position_) && !e->second.type_.isBuilding()) {
+                if (CUNYAIModule::current_MapInventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
                 }
-                else if (CUNYAIModule::current_map_inventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 0) {
+                else if (CUNYAIModule::current_MapInventory.unwalkable_barriers_with_buildings_[WalkPosition(e->second.pos_).x][WalkPosition(e->second.pos_).y] == 0) {
                     Broodwar->drawCircleMap(e->second.pos_, (e->second.type_.dimensionUp() + e->second.type_.dimensionLeft()) / 2, Colors::Blue, true); // Mark as RED if not in a walkable spot.
                 }
             }
@@ -855,7 +855,7 @@ StoredUnit::StoredUnit(const Unit &unit) {
     //Needed for FAP.
     is_flying_ = unit->isFlying();
     elevation_ = BWAPI::Broodwar->getGroundHeight(TilePosition(pos_));
-    is_on_island_ = CUNYAIModule::current_map_inventory.isOnIsland(pos_) && !is_flying_;
+    is_on_island_ = CUNYAIModule::current_MapInventory.isOnIsland(pos_) && !is_flying_;
 
     cd_remaining_ = unit->getAirWeaponCooldown();
     stimmed_ = unit->isStimmed();

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <BWAPI.h> //4.2.0 BWAPI
-#include "Map_Inventory.h"
+#include "MapInventory.h"
 #include "Unit_Inventory.h"
 #include "Resource_Inventory.h"
 #include "Research_Inventory.h"
@@ -93,7 +93,7 @@ public:
     static Player_Model neutral_player_model;
     static CombatManager combat_manager;
     static Resource_Inventory land_inventory; // resources.
-    static Map_Inventory current_map_inventory;  // macro variables, not every unit I have.
+    static MapInventory current_MapInventory;  // macro variables, not every unit I have.
     static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
     static TechManager techmanager;
     static AssemblyManager assemblymanager;
@@ -143,7 +143,7 @@ public:
 
 
     //Forces selected unit (drone, hopefully!) to expo:
-    static bool Expo(const Unit &unit, const bool &extra_critera, Map_Inventory &inv);
+    static bool Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv);
 
     // Utility Functions
         // Prints unit's last error directly onto it.
@@ -191,11 +191,11 @@ public:
     //checks if there is a clear path to target. in minitiles. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
     static bool isClearRayTrace(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     // Same but only checks the map itself.
-    //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const Map_Inventory & inv );
+    //static bool isMapClearRayTrace( const Position & initialp, const Position & finalp, const MapInventory & inv );
     //counts the number of minitiles in a smooth path to target that are less than that value. May now choose the map directly, and threshold will break as FALSE for values greater than or equal to. More flexible than previous versions.
     static int getClearRayTraceSquares(const Position &initialp, const Position &finalp, const vector<vector<int>> &target_map, const int &threshold);
     //gets the nearest choke by simple counting along in the direction of the final unit.
-    static Position getNearestChoke(const Position & initial, const Position &final, const Map_Inventory & inv);
+    static Position getNearestChoke(const Position & initial, const Position &final, const MapInventory & inv);
 
     //Strips the RACE_ from the front of the unit type string.
     static const char * noRaceName(const char *name);
@@ -216,7 +216,7 @@ public:
     static StoredUnit * getClosestStored(const Unit unit, Unit_Inventory & ui, const UnitType & u_type, const int & dist);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const Position & origin);
     static Stored_Resource * getClosestGroundStored(Resource_Inventory & ri, const UnitType type, const Position & origin);
-    //static Position getClosestExpo(const Map_Inventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
+    //static Position getClosestExpo(const MapInventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist = 999999);
 
 
     //Gets pointer to closest attackable unit to point in Unit_inventory. Checks range. Careful about visiblity.
@@ -312,7 +312,7 @@ public:
     // checks if it is safe to build, uses heuristic critera.
     static bool checkSafeBuildLoc(const Position pos);;
     // Checks if it is safe to mine, uses heuristic critera.
-    bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const Map_Inventory &inv);
+    bool checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const MapInventory &inv);
 
     static double bindBetween(double x, double lower_bound, double upper_bound);
     // Gets total value of FAP structure using StoredUnits. If friendly player option is chose, it uses P1, the standard for friendly player.

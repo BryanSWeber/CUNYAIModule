@@ -32,9 +32,6 @@
     <ClCompile Include="PlayerModelManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Map_Inventory.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="Source\BWEB\Block.cpp">
       <Filter>BWEB</Filter>
     </ClCompile>
@@ -74,6 +71,9 @@
     <ClCompile Include="BaseManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="MapInventory.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
@@ -84,7 +84,6 @@
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
-    <ClInclude Include="Source\Map_Inventory.h" />
     <ClInclude Include="Source\BWEB\Block.h">
       <Filter>BWEB</Filter>
     </ClInclude>
@@ -110,6 +109,7 @@
     <ClInclude Include="Source\Diagnostics.h" />
     <ClInclude Include="Source\LearningManager.h" />
     <ClInclude Include="Source\BaseManager.h" />
+    <ClInclude Include="Source\MapInventory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

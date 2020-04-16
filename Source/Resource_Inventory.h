@@ -3,14 +3,14 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Unit_Inventory.h"
-#include "Map_Inventory.h"
+#include "MapInventory.h"
 #include <bwem.h>
 
 using namespace std;
 using namespace BWAPI;
 
 struct Unit_Inventory; //forward declaration permits use of Unit_Inventory class within resource_inventory.
-struct Map_Inventory;
+struct MapInventory;
 
 struct Stored_Resource {
 
@@ -58,10 +58,10 @@ public:
 
     Position getMeanLocation() const; //Updates summary of inventory, stored here. Needs to potentially inject enemy extractors into the enemy inventory, ei.
 
-    void updateResourceInventory(Unit_Inventory & ui, Unit_Inventory & ei, Map_Inventory &inv); // updates values of units in mine.
+    void updateResourceInventory(Unit_Inventory & ui, Unit_Inventory & ei, MapInventory &inv); // updates values of units in mine.
     void updateMines(); //counts number of viable gas mines and local mineral patches.
     void drawMineralRemaining() const;
-    void drawUnreachablePatch(const Map_Inventory & inv) const;;
+    void drawUnreachablePatch(const MapInventory & inv) const;;
     friend Resource_Inventory operator + (const Resource_Inventory & lhs, const Resource_Inventory& rhs);
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
 

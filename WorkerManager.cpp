@@ -141,7 +141,7 @@ bool WorkerManager::assignGather(const Unit &unit, const UnitType mine, const in
         bool mine_is_unoccupied_by_enemy = CUNYAIModule::enemy_player_model.units_.getBuildingInventoryAtArea(r.second.areaID_).unit_map_.empty();
         bool mine_is_occupied = CUNYAIModule::basemanager.getClosestBaseGround(r.second.pos_).r_loc_.resource_inventory_.count(r.first) > 0;
 
-        bool path_exists = CUNYAIModule::current_map_inventory.checkViableGroundPath(r.second.pos_, miner.pos_);
+        bool path_exists = CUNYAIModule::current_MapInventory.checkViableGroundPath(r.second.pos_, miner.pos_);
 
         if (mine_minerals) {
             int plength = 0;
@@ -258,7 +258,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     miner.stopMine();
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_map_inventory.front_line_base_.getDistance(r->second.pos_) < CUNYAIModule::current_map_inventory.my_portion_of_the_map_) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::current_MapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::current_MapInventory.front_line_base_.getDistance(r->second.pos_) < CUNYAIModule::current_MapInventory.my_portion_of_the_map_) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.
@@ -280,7 +280,7 @@ bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui
     Resource_Inventory available_fields;
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, r->second.pos_) && CUNYAIModule::current_map_inventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && !CUNYAIModule::checkOccupiedNeighborhood(CUNYAIModule::enemy_player_model.units_, r->second.pos_) && CUNYAIModule::current_MapInventory.checkViableGroundPath(r->second.pos_, miner.pos_)) {
             return true;
         }
     } //find closest mine meeting this criteria.

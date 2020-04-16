@@ -20,10 +20,11 @@ using namespace BWAPI;
 // map_veins_, depends on unwalkable barriers WITH buildings.
 // Map veins in and out from enemy - depends on Unwalkable barriers. Does not depend on buildings.
 
-struct Map_Inventory {
-    Map_Inventory();
-    Map_Inventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
+struct MapInventory {
+    MapInventory();
+    MapInventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
 
+    int nScouts = 2; // How many scouts will we have? Set by fiat.
     Position screen_position_;
 
     double ln_supply_remain_;
@@ -69,6 +70,7 @@ struct Map_Inventory {
 
     TilePosition next_expo_;
     bool checked_all_expo_positions_ = false;
+    bool enemy_found = false;
 
     int frames_since_unwalkable = 0;
     int frames_since_map_veins = 0;
@@ -98,65 +100,65 @@ struct Map_Inventory {
     double getLn_Supply_Ratio();
 
     // Updates the number of hatcheries (and decendents).
-    void Map_Inventory::updateHatcheries();
+    void MapInventory::updateHatcheries();
 
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
-    void Map_Inventory::updateBuildablePos();
+    void MapInventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
-    void Map_Inventory::updateUnwalkable();
+    void MapInventory::updateUnwalkable();
     // Updates unwalkable portions with existing blockades. Currently flawed.
-    void Map_Inventory::updateUnwalkableWithBuildings();
+    void MapInventory::updateUnwalkableWithBuildings();
 
     // Marks and smooths the edges of the map. Dangerous- In progress.
-    void Map_Inventory::updateSmoothPos();
+    void MapInventory::updateSmoothPos();
     // Marks the distance from each obstacle. Requires updateunwalkablewithbuildings. //[Old usage:]Marks the main arteries of the map. 
-    void Map_Inventory::updateMapVeins();
+    void MapInventory::updateMapVeins();
 
     // simply gets the map value at a particular position.
     //static int getMapValue(const Position &pos, const vector<vector<int>> &map);
     static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
 
     // Updates the visible map arteries. Only checks buildings.
-    //void Map_Inventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
-    //void Map_Inventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
+    //void MapInventory::updateLiveMapVeins( const Unit & building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri );
+    //void MapInventory::updateLiveMapVeins( const Unit_Inventory & ui, const Unit_Inventory & ei, const Resource_Inventory & ri );
     // Updates the chokes on the map.
-    //void Map_Inventory::updateMapChokes(); //in progress
+    //void MapInventory::updateMapChokes(); //in progress
     // Updates the spiral counting out from the new_center. Replaces old (map), prints.
-    //void Map_Inventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
+    //void MapInventory::updateMapVeinsOut(const Position & newCenter, Position & oldCenter, vector<vector<int>>& map, const bool &print = false);
 
     int getDistanceBetween(const Position A, const Position B) const;
 
     // Gets distance using
-    int Map_Inventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
-    int Map_Inventory::getRadialDistanceOutFromEnemy(const Position A) const;
-    int Map_Inventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
-    int Map_Inventory::getRadialDistanceOutFromHome(const Position A) const;
-    bool Map_Inventory::checkViableGroundPath(const Position A, const Position B) const;
-    bool Map_Inventory::isOnIsland(const Position A) const;
-    //int Map_Inventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
+    int MapInventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const;
+    int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const;
+    int MapInventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const;
+    int MapInventory::getRadialDistanceOutFromHome(const Position A) const;
+    bool MapInventory::checkViableGroundPath(const Position A, const Position B) const;
+    bool MapInventory::isOnIsland(const Position A) const;
+    //int MapInventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>>& map) const;
 
     // gets the radial distance of all units to the enemy base.
     vector<int> getRadialDistances(const Unit_Inventory &ui, const bool combat_units);
 
     // Returns the position of the base with the most casualtis. Friendly is true (by default) to checking -yourself- for the weakest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
-    //Position Map_Inventory::getBaseWithMostCausalties(const bool &friendly = true, const bool &fodder = true) const;
+    //Position MapInventory::getBaseWithMostCausalties(const bool &friendly = true, const bool &fodder = true) const;
     // Returns the Position of the base with the most surviving units. Friendly is true (by default) to checking -yourself- for the strongest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
-    Position Map_Inventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;
+    Position MapInventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;
 
     Position getBaseNearest(Position &p);
 
 
     // updates the next target expo.
-    void Map_Inventory::getExpoPositions();
+    void MapInventory::getExpoPositions();
     // Changes the next expo to X:
-    void Map_Inventory::setNextExpo(const TilePosition tp);
+    void MapInventory::setNextExpo(const TilePosition tp);
 
     //Visualizations
-    void Map_Inventory::drawExpoPositions() const;
-    void Map_Inventory::drawBasePositions() const;
+    void MapInventory::drawExpoPositions() const;
+    void MapInventory::drawBasePositions() const;
 
-    void Map_Inventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
-    void Map_Inventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
+    void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
+    void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
 
     bool checkExploredAllStartPositions(); //returns true if you have explored all start positions, false otherwise.
 
@@ -175,9 +177,12 @@ struct Map_Inventory {
     void DiagnosticTile();
 
     void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
-    Position Map_Inventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
+    Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
     Position getStartEnemyLocation(); // gets an enemy start location that hasn't been explored. Will not move it if I am already marching towards it.
     bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false, const bool &check_marching = true); //returns true if a position is being scouted or marched towards. checks for area ID matchs.
+    Position getClosestInVector(vector<Position>& posVector); // This command returns the closest position to my safe_base_.
+    Position getFurthestInVector(vector<Position>& posVector); // This command returns the furthest position to my safe_base_.
+    bool isStartPosition(const Position & p); //returns true if the position is a start position.
     Position getDistanceWeightedScoutPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
 };
 

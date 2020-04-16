@@ -115,7 +115,7 @@
     <ClCompile Include="CUNYClient.cpp" />
     <ClCompile Include="Diagnostics.cpp" />
     <ClCompile Include="BaseManager.cpp" />
-    <ClCompile Include="Map_Inventory.cpp" />
+    <ClCompile Include="MapInventory.cpp" />
     <ClCompile Include="PlayerModelManager.cpp" />
     <ClCompile Include="Research_Inventory.cpp" />
     <ClCompile Include="Reserve_Manager.cpp" />
@@ -148,7 +148,7 @@
     <ClInclude Include="Source\CUNYAIModule.h" />
     <ClInclude Include="Source\Diagnostics.h" />
     <ClInclude Include="Source\MobilityManager.h" />
-    <ClInclude Include="Source\Map_Inventory.h" />
+    <ClInclude Include="Source\MapInventory.h" />
     <ClInclude Include="Source\PlayerModelManager.h" />
     <ClInclude Include="Source\Research_Inventory.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />

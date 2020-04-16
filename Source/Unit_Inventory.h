@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Resource_Inventory.h"
-#include "Map_Inventory.h"
+#include "MapInventory.h"
 #include "Reservation_Manager.h"
 #include "Research_Inventory.h"
 #include "FAP\FAP\include\FAP.hpp"
@@ -13,7 +13,7 @@ using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-struct Map_Inventory;
+struct MapInventory;
 struct Reservation;
 
 struct StoredUnit {
@@ -225,7 +225,7 @@ struct Unit_Inventory {
     void purgeUnseenUnits(); //drops all unseen units. Useful to make sure you don't have dead units in your own inventory.
     void purgeWorkerRelationsStop(const Unit & unit);
     void purgeWorkerRelationsNoStop(const Unit & unit);
-    void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, Map_Inventory & inv, Reservation & res);
+    void purgeWorkerRelationsOnly(const Unit & unit, Resource_Inventory & ri, MapInventory & inv, Reservation & res);
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllMisplacedGroundUnits() const;

@@ -4,7 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Resource_Inventory.h"
 #include "Source\Unit_Inventory.h"
-#include "Source\Map_Inventory.h"
+#include "Source\MapInventory.h"
 #include "Source/Diagnostics.h"
 #include <bwem.h>
 
@@ -106,7 +106,7 @@ Stored_Resource::Stored_Resource(Unit resource) {
 //    }
 //}
 
-void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, Map_Inventory &inv) {
+void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, MapInventory &inv) {
     // Update "My Bases"
     Unit_Inventory hatches;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
@@ -192,16 +192,16 @@ void Resource_Inventory::updateMines() {
 void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::current_map_inventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::current_MapInventory.screen_position_);
     }
 
 }
 
-void Resource_Inventory::drawUnreachablePatch(const Map_Inventory & inv) const
+void Resource_Inventory::drawUnreachablePatch(const MapInventory & inv) const
 {
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::current_map_inventory.screen_position_)) {
+            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::current_MapInventory.screen_position_)) {
                 if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
                 }

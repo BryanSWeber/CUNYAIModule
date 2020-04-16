@@ -29,7 +29,7 @@ public:
     static bool checkBuildingReady(const TechType tech);
     // Check if I have a unit that could use this upgrade, ex melee damage with only hydras.
     static bool checkUpgradeUseable(const UpgradeType up);
-    static bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Map_Inventory &inv);
+    static bool Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const MapInventory &inv);
     static void clearSimulationHistory(); //Clears the MA history. Should run every time a relevant comabat unit is made/destroyed to prevent the MA from having weight in dissimilar situations.
     static int returnTechRank(const UpgradeType & ut);
     // Returns the most expensive piece of Tech we've considered making.
