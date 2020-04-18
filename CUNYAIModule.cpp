@@ -442,7 +442,7 @@ void CUNYAIModule::onFrame()
         enemy_player_model.casualties_.printUnitInventory(Broodwar->enemy(), "casualties");
     }
 
-    current_MapInventory.updateCurrentMap();
+    current_MapInventory.mainCurrentMap();
     current_MapInventory.drawExpoPositions();
     current_MapInventory.drawBasePositions();
 

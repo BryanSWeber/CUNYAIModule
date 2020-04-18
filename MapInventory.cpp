@@ -1056,7 +1056,7 @@ bool MapInventory::checkExploredAllStartPositions() {
     return true;
 }
 
-void MapInventory::updateCurrentMap() {
+void MapInventory::mainCurrentMap() {
 
     if (Broodwar->getFrameCount() % 17 == 0)
         updateGroundDangerousAreas(); // every second or so update ground frames.
@@ -1069,61 +1069,15 @@ void MapInventory::updateCurrentMap() {
     frames_since_map_veins++;
     frames_since_unwalkable++;
 
-    //every 10 sec check if we're sitting at our destination.
-    //if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) && Broodwar->getFrameCount() % (24 * 5) == 0) {
-    //    fram = true;
-    //}
     if (unit_calculation_frame) return;
 
-    //If we need updating (from building destruction or any other source) - begin the cautious chain of potential updates.
-    if (frames_since_unwalkable > 24 * 30) {
-        getExpoPositions();
-        updateUnwalkableWithBuildings();
-        frames_since_unwalkable = 0;
-        return;
-    }
+    StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
+    discovered_enemy_this_frame = (enemy_found == false && currently_visible_enemy);
+    enemy_found = enemy_found || currently_visible_enemy;
 
-    if (frames_since_map_veins > 24 * 30) { // impose a second wait here because we don't want to update this if we're discovering buildings rapidly.
-        updateMapVeins();
-        frames_since_map_veins = 0;
-        return;
-    }
-
-    //Update Enemy Base
-    Position suspected_enemy_base = Positions::Origin;
-    StoredUnit* center_ground = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
-
-    if (center_ground) { // let's go to the strongest enemy base if we've seen them!
-        suspected_enemy_base = center_ground->pos_;
-    }
-    else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
-        suspected_enemy_base = getStartEnemyLocation();
-    }
-    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) || enemy_base_ground_ == Positions::Origin){ // Let's just go hunt through the expos in some orderly fashion then.
-        suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
-    }
-
-    if (suspected_enemy_base.isValid() && suspected_enemy_base != Positions::Origin) { // if it's there.
-        enemy_base_ground_ = suspected_enemy_base;
-    }
-    
-    //Update Enemy Base Air
-    suspected_enemy_base = Positions::Origin;
-    StoredUnit* center_flyer = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
-
-    if (center_flyer) { // let's go to the strongest enemy base if we've seen them!
-        suspected_enemy_base = center_flyer->pos_;
-    }
-    else if (!checkExploredAllStartPositions()) { // maybe it's an starting base we havent' seen yet?
-        suspected_enemy_base = getStartEnemyLocation();
-    }
-    else if (Broodwar->isVisible(TilePosition(enemy_base_air_)) || enemy_base_air_ == Positions::Origin) { // Let's just go hunt through the expos in some orderly fashion then.
-        suspected_enemy_base = getDistanceWeightedScoutPosition(createStartScoutLocation());
-    }
-
-    if (suspected_enemy_base.isValid() && suspected_enemy_base != Positions::Origin) { // if it's there.
-        enemy_base_air_ = suspected_enemy_base;
-    }
+    assignArmyDestinations();
+    assignAirDestinations();
+    assignScoutDestinations();
 
     //Update Front Line Base
         //otherwise go to your weakest base.
@@ -1150,8 +1104,6 @@ void MapInventory::updateCurrentMap() {
         safe_base_ = front_line_base_;
     }
 
-    //Update Scout locations
-    updateScoutLocations(nScouts);
 }
 
 
@@ -1417,39 +1369,24 @@ void MapInventory::DiagnosticTile() {
     }
 }
 
-void MapInventory::updateScoutLocations(const int &nScouts)
-{
-    StoredUnit* center_ground = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
-    bool discovered_enemy_this_frame = (enemy_found == false && center_ground);
-    enemy_found = enemy_found || center_ground;
+Position MapInventory::getEarlyGameScoutPosition() {
+    // need to consider we could send 2 scouts to same position if it is unscouted. So filter by unexplore and unscouted and if nothing, then just try unexplored.
 
-    //Fill with origins if empty.
-    if (scouting_bases_.empty()) {
-        for (auto i = 0; i <= nScouts; i++) {
-            scouting_bases_.push_back(Positions::Origin);
-        }
-    }
-
-    //Try initial scouting locations then, please.
-    for (auto &i : scouting_bases_) {
-        if ((Broodwar->isVisible(TilePosition(i)) || i == Positions::Origin) && !enemy_found){ // we don't scout start locations if enemy has been found.
-            i = createStartScoutLocation();
-        }
-    }
-
-    //If those don't work try nearby the enemy positions:
-    for (auto &i : scouting_bases_) {
-        if (Broodwar->isVisible(TilePosition(i)) || i == Positions::Origin || discovered_enemy_this_frame) { // we reassign our scouts if the enemy has been found.
-            i = getDistanceWeightedScoutPosition(enemy_base_ground_);
-        }
-    }
-};
-
-Position MapInventory::createStartScoutLocation() {
     vector<Position> viable_options;
-    for (int i = 0; i <= Broodwar->getStartLocations().size() - 1; i++) {
-        if (!isScoutingOrMarchingOnPosition(Position(Broodwar->getStartLocations()[i]), 3, true)) { // if they don't exist yet use the starting location proceedure we've established earlier.
-            viable_options.push_back(Position(Broodwar->getStartLocations()[i]));
+    for (auto i: Broodwar->getStartLocations()) {
+        if ( !Broodwar->isExplored(i) && !isScoutingPosition(Position(i)) ) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            viable_options.push_back(Position(i));
+        }
+    }
+
+    if (getFurthestInVector(viable_options) != Positions::Origin) {
+            return getFurthestInVector(viable_options);
+    }
+
+    viable_options.clear();
+    for (auto i : Broodwar->getStartLocations()) {
+        if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            viable_options.push_back(Position(i));
         }
     }
 
@@ -1457,16 +1394,16 @@ Position MapInventory::createStartScoutLocation() {
         return getFurthestInVector(viable_options);
     }
     else {
-        Diagnostics::DiagnosticText("Oof, no unexplored start positions left for scouting?");
+        Diagnostics::DiagnosticText("Oof, no unexplored start position left to march on?");
         return Positions::Origin;
     }
 }
 
-Position MapInventory::getStartEnemyLocation() {
+Position MapInventory::getEarlyGameArmyPosition() {
     vector<Position> viable_options;
-    for (int i = 0; i <= Broodwar->getStartLocations().size() - 1; i++) {
-        if (!isScoutingOrMarchingOnPosition(Position(Broodwar->getStartLocations()[i]), true, false)) { // if they don't exist yet use the starting location proceedure we've established earlier.
-            viable_options.push_back(Position(Broodwar->getStartLocations()[i]));
+    for (auto i : Broodwar->getStartLocations()) {
+        if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            viable_options.push_back(Position(i));
         }
     }
 
@@ -1479,26 +1416,53 @@ Position MapInventory::getStartEnemyLocation() {
     }
 }
 
-Position MapInventory::getDistanceWeightedScoutPosition(const Position & target_pos) {
+Position MapInventory::getEarlyGameAirPosition() {
+    vector<Position> viable_options;
+    for (auto i : Broodwar->getStartLocations()) {
+        if (!Broodwar->isExplored(i)) { // if they don't exist yet use the starting location proceedure we've established earlier.
+            viable_options.push_back(Position(i));
+        }
+    }
+
+    if (getClosestInVector(viable_options) != Positions::Origin) {
+        return getClosestInVector(viable_options);
+    }
+    else {
+        Diagnostics::DiagnosticText("Oof, no unexplored start position left to march on?");
+        return Positions::Origin;
+    }
+}
+
+Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) {
     //From Dolphin Bot 2018 (with paraphrasing):
     double total_distance = 0;
     double sum_log_p = 0;
 
     vector<tuple<double, Position>> scout_expo_vector;
-    // Create a map <log(distance), Position> of all base locations on map
+    vector<Position> chokesOrMineralPositions;
     for (const auto& r : CUNYAIModule::land_inventory.resource_inventory_) {
-        int plength = 0;
-        auto cpp = BWEM::Map::Instance().GetPath(r.second.pos_, target_pos, &plength);
+        chokesOrMineralPositions.push_back(r.second.pos_);
+    }
+    for (const auto& a : BWEM::Map::Instance().Areas()) {
+        for (const auto& c : a.ChokePoints()) {
+            chokesOrMineralPositions.push_back(Position(c->Center()));
+        }
+        chokesOrMineralPositions.push_back(Position(a.Top()));
+    }
 
-        int distance = plength;
-        if (distance >= 0 && !Broodwar->isVisible(TilePosition(r.second.pos_))) {
+    // Create a map <log(distance), Position> of all base locations on map
+    for (const auto& p : chokesOrMineralPositions) {
+        int distance = getDistanceBetween(p, target_pos);
+        if (distance >= 0 && !Broodwar->isVisible(TilePosition(p))) {
             total_distance += distance;
-            scout_expo_vector.push_back({ distance, r.second.pos_ });
+            scout_expo_vector.push_back({ distance, p });
         }
     }
 
+    sort(scout_expo_vector.begin(), scout_expo_vector.end()); //sorts by first element of tuple in acending order.
+
     for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
-        sum_log_p += log(get<0>(*itr) / total_distance); // sums to one, actually.
+        sum_log_p += distanceTransformation(get<0>(*itr)); // sums to one, actually.
     }
 
     // Assign scout locations
@@ -1509,9 +1473,9 @@ Position MapInventory::getDistanceWeightedScoutPosition(const Position & target_
     while (attempts < 100) {
         for (auto itr = scout_expo_vector.begin(); itr != scout_expo_vector.end(); ++itr) {
             Position potential_scout_target = get<1>(*itr);
-            double weighted_p_of_selection = log(get<0>(*itr) / total_distance) / sum_log_p; 
+            double weighted_p_of_selection = distanceTransformation(get<0>(*itr)) / static_cast<double>(sum_log_p);
 
-            if (dis(gen) < weighted_p_of_selection && !isScoutingOrMarchingOnPosition(potential_scout_target)) {
+            if (dis(gen) < weighted_p_of_selection) {
                 return potential_scout_target;
             }
         }
@@ -1521,31 +1485,100 @@ Position MapInventory::getDistanceWeightedScoutPosition(const Position & target_
     return Positions::Origin;
 }
 
-bool MapInventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient, const bool &check_marching) {
+//bool MapInventory::isScoutingOrMarchingOnPosition(const Position &pos, const bool &explored_sufficient, const bool &check_marching) {
+//
+//    int times_overexploring = 0;
+//    int times_marching_against = 0; // we reject positions that are being scouted if 
+//    int unexplored_starts = 0; // we reject positions that are being marched on if there is no other start position to scout.
+//    
+//    //If you are scouting, 
+//    for(auto s : Broodwar->getStartLocations()) {
+//        if (!Broodwar->isExplored(TilePosition(s)))
+//            unexplored_starts++;
+//    }
+//    int number_of_excess_scouts = max(nScouts + 1 - unexplored_starts, 0);
+//    if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(enemy_base_ground_)))
+//        times_marching_against++;
+//    for (auto s : scouting_bases_) {
+//        if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(s)))
+//            times_overexploring++;
+//    }
+//
+//    bool explored = Broodwar->isExplored(TilePosition(pos));
+//    bool visible = Broodwar->isVisible(TilePosition(pos));
+//    return (isMarchingPosition(pos) && unexplored_starts == 0 && check_marching) || (isScoutingPosition(pos) && (times_overexploring + times_marching_against >= number_of_excess_scouts)) || visible || (explored && explored_sufficient);
+//}
 
-    int times_overexploring = 0;
-    int times_marching_against = 0;
-    int unexplored_starts = 0;
-    
-    //If you are scouting, 
-    for(auto s : Broodwar->getStartLocations()) {
-        if (!Broodwar->isExplored(TilePosition(s)))
-            unexplored_starts++;
+void MapInventory::assignArmyDestinations() {
+    StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
+
+    if (enemy_found) {
+        if (currently_visible_enemy) {
+            assignLateArmyMovement(currently_visible_enemy->pos_);
+        }
+        else {
+            assignLateArmyMovement(Positions::Origin);
+        }
     }
-    int number_of_manditory_overlaps = max(nScouts + 1 - unexplored_starts, 0);
-    if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(enemy_base_ground_)))
-        times_marching_against++;
-    for (auto s : scouting_bases_) {
-        if (Broodwar->getStartLocations().end() != find(Broodwar->getStartLocations().begin(), Broodwar->getStartLocations().end(), TilePosition(s)))
-            times_overexploring++;
+    else {
+        //assign army to closest position. The army should move as little as possible.
+        if (Broodwar->isExplored(TilePosition(enemy_base_ground_)) || enemy_base_ground_ == Positions::Origin)
+            enemy_base_ground_ = getEarlyGameArmyPosition();
     }
+}
 
-    bool explored = Broodwar->isExplored(TilePosition(pos));
-    bool visible = Broodwar->isVisible(TilePosition(pos));
-    bool being_marched_towards = static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
-    bool being_scouted = scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
+void MapInventory::assignScoutDestinations() {
+    StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
-    return (being_marched_towards && number_of_manditory_overlaps == 0 && check_marching) || being_scouted && times_overexploring + times_marching_against >= number_of_manditory_overlaps || visible || (explored && explored_sufficient);
+    if (enemy_found) {
+        if (currently_visible_enemy) {
+            assignLateScoutMovement(currently_visible_enemy->pos_);
+        }
+        else {
+            assignLateScoutMovement(Positions::Origin);
+        }
+
+    }
+    else {
+        // create scouting position if bases are empty.
+        if (scouting_bases_.empty()) {
+            for (int i = 0; i < nScouts; i++) {
+                scouting_bases_.push_back(Positions::Origin);
+            }
+        }
+        //assign scouts to furthest position.
+        for (auto& p : scouting_bases_) {
+            if (Broodwar->isExplored(TilePosition(p)) || p == Positions::Origin)
+                p = getEarlyGameScoutPosition();
+        }
+        //If they overlap with army, that's OK because we are minimizing the maximum time it takes to get the army to the enemy base in this pattern.
+    }
+}
+
+void MapInventory::assignAirDestinations() {
+    StoredUnit* currently_visible_air = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
+
+    if (enemy_found) {
+        if (currently_visible_air) {
+            assignLateAirMovement(currently_visible_air->pos_);
+        }
+        else {
+            assignLateAirMovement(Positions::Origin);
+        }
+    }
+    else {
+        //assign air army to closest position. The air army should move as little as possible.
+        if (Broodwar->isExplored(TilePosition(enemy_base_air_)) || enemy_base_air_ == Positions::Origin)
+            enemy_base_air_ = getEarlyGameAirPosition();
+    }
+}
+
+bool MapInventory::isScoutingPosition(const Position &pos) {
+    return scouting_bases_.end() != find(scouting_bases_.begin(), scouting_bases_.end(), pos);
+}
+
+bool MapInventory::isMarchingPosition(const Position &pos) {
+    return static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(pos))->Id()) == static_cast<int>(BWEM::Map::Instance().GetNearestArea(TilePosition(enemy_base_ground_))->Id());
 }
 
 Position MapInventory::getClosestInVector(vector<Position> &posVector){
@@ -1578,4 +1611,41 @@ bool MapInventory::isStartPosition(const Position &p) {
             return true;
     }
     return false;
+}
+
+double MapInventory::distanceTransformation(const int distanceFromTarget) {
+        return distanceFromTarget ==  0 ? 0.30 : 100.0/static_cast<double>(distanceFromTarget);
+}
+
+void MapInventory::assignLateArmyMovement(const Position closest_enemy){
+    if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
+        enemy_base_ground_ = closest_enemy;
+    }
+    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) || enemy_base_ground_ != Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
+        enemy_base_ground_ = getDistanceWeightedPosition(enemy_base_ground_);
+    }
+}
+
+void MapInventory::assignLateAirMovement(const Position closest_enemy) {
+    if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
+        enemy_base_air_ = closest_enemy;
+    }
+    else if (Broodwar->isVisible(TilePosition(enemy_base_air_)) || enemy_base_air_ != Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
+        enemy_base_air_ = getDistanceWeightedPosition(enemy_base_air_);
+    }
+}
+
+void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
+    if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to hunt near the closest enemy if we've seen 'em!
+        for (auto& p : scouting_bases_) {
+            if (Broodwar->isVisible(TilePosition(p)) || discovered_enemy_this_frame)
+                p = getDistanceWeightedPosition(closest_enemy);
+        }
+    }
+    else { //Let's hunt near the last visible enemy otherwise.
+        for (auto& p : scouting_bases_) {
+            if (Broodwar->isVisible(TilePosition(p)))
+                p = getDistanceWeightedPosition(enemy_base_ground_);
+        }
+    }
 }

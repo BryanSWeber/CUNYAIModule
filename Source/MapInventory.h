@@ -26,7 +26,8 @@ struct MapInventory {
 
     int nScouts = 2; // How many scouts will we have? Set by fiat.
     Position screen_position_;
-
+    bool discovered_enemy_this_frame = false;
+    bool enemy_found = false;
     double ln_supply_remain_;
     double ln_supply_total_;
 
@@ -69,8 +70,6 @@ struct MapInventory {
     int est_enemy_stock_;
 
     TilePosition next_expo_;
-    bool checked_all_expo_positions_ = false;
-    bool enemy_found = false;
 
     int frames_since_unwalkable = 0;
     int frames_since_map_veins = 0;
@@ -163,7 +162,7 @@ struct MapInventory {
     bool checkExploredAllStartPositions(); //returns true if you have explored all start positions, false otherwise.
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
-    void updateCurrentMap();
+    void mainCurrentMap();
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
@@ -176,13 +175,26 @@ struct MapInventory {
 
     void DiagnosticTile();
 
-    void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
-    Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
-    Position getStartEnemyLocation(); // gets an enemy start location that hasn't been explored. Will not move it if I am already marching towards it.
-    bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false, const bool &check_marching = true); //returns true if a position is being scouted or marched towards. checks for area ID matchs.
+    //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
+    //Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
+    //Position getStartEnemyLocation(); // gets an enemy start location that hasn't been explored. Will not move it if I am already marching towards it.
+    //bool isScoutingOrMarchingOnPosition(const Position & pos, const bool & explored_sufficient = false, const bool &check_marching = true);
+    void assignArmyDestinations();
+    void assignScoutDestinations();
+    void assignAirDestinations();
+    //returns true if a position is being scouted or marched towards. checks for area ID matchs.
+    bool isScoutingPosition(const Position & pos);
+    bool isMarchingPosition(const Position & pos);
     Position getClosestInVector(vector<Position>& posVector); // This command returns the closest position to my safe_base_.
     Position getFurthestInVector(vector<Position>& posVector); // This command returns the furthest position to my safe_base_.
     bool isStartPosition(const Position & p); //returns true if the position is a start position.
-    Position getDistanceWeightedScoutPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
+    double distanceTransformation(const int currentDistance); //transforms the distance into a weighted distance based on time of game, distance from enemy, and size of map.
+    void assignLateArmyMovement(const Position closest_enemy);
+    void assignLateAirMovement(const Position closest_enemy);
+    void assignLateScoutMovement(const Position closest_enemy);
+    Position getEarlyGameScoutPosition();
+    Position getEarlyGameArmyPosition();
+    Position getEarlyGameAirPosition();
+    Position getDistanceWeightedPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
 };
 

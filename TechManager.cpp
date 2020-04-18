@@ -256,7 +256,7 @@ int TechManager::returnTechRank(const UpgradeType &ut) {
         sorted_list.push_back(tuple{ it.second, it.first });
     }
 
-    sort(sorted_list.begin(), sorted_list.end()); //by default sorts by first element of tuples!
+    sort(sorted_list.end(), sorted_list.begin()); //by default sorts by first element of tuples in DECENDING order! 
 
     for (auto tech_idea = sorted_list.rbegin(); tech_idea != sorted_list.rend(); ++tech_idea) {
         if (std::get<1>(*tech_idea) == ut) {
