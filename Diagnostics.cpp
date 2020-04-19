@@ -271,7 +271,7 @@ void Diagnostics::printPhase(const StoredUnit unit, const Position & screen_pos)
 void Diagnostics::drawReservations(const Reservation reservations, const Position & screen_pos)
 {
     if constexpr (DIAGNOSTIC_MODE) {
-        for (auto res : reservations.reservation_map_) {
+        for (auto const res : reservations.getReservedUnits()) {
             Position upper_left = Position(res.first);
             Position lower_right = Position(res.first) + Position(res.second.width(), res.second.height()); //thank goodness I overloaded the + operator for the pathing operations!
             if (CUNYAIModule::isOnScreen(upper_left, screen_pos)) {
@@ -422,6 +422,12 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
             another_row_of_printing++;
         }
     }
+    int current_row = another_row_of_printing;
+    for (auto const r : res.getReservedUpgrades()) {
+        Broodwar->drawTextScreen(screen_x, screen_y + 20 + current_row * 10, "Reserved Upgrades:");  //
+        Broodwar->drawTextScreen(screen_x, screen_y + 30 + another_row_of_printing * 10, "%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
+        another_row_of_printing++;
+    }
 }
 
 void Diagnostics::onFrame()
@@ -434,11 +440,10 @@ void Diagnostics::onFrame()
     //Print_Test_Case(0, 50);
     Print_Reservations(250, 190, CUNYAIModule::my_reservation);
     //enemy_player_model.Print_Average_CD(500, 170);
-    //techmanager.Print_Upgrade_FAP_Cycle(500, 170);
     if (CUNYAIModule::buildorder.isEmptyBuildOrder()) {
-        //    techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-            //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
-        Print_Research_Inventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
+        CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+        //Print_Research_Inventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
     }
     else {
         Print_Build_Order_Remaining(500, 170, CUNYAIModule::buildorder);

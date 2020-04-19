@@ -236,12 +236,12 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool prefer_hydra_den_over_spire = max(returnUnitRank(UnitTypes::Zerg_Lurker), returnUnitRank(UnitTypes::Zerg_Hydralisk)) >= max({ returnUnitRank(UnitTypes::Zerg_Mutalisk), returnUnitRank(UnitTypes::Zerg_Scourge), returnUnitRank(UnitTypes::Zerg_Zergling) }) ||
         CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0;
     int number_of_evos_wanted =
-        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
-        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnTechRank(UpgradeTypes::None)) +
-        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
+        static_cast<int>(TechManager::returnUpgradeRank(UpgradeTypes::Zerg_Carapace) > TechManager::returnUpgradeRank(UpgradeTypes::None)) +
+        static_cast<int>(TechManager::returnUpgradeRank(UpgradeTypes::Zerg_Melee_Attacks) > TechManager::returnUpgradeRank(UpgradeTypes::None)) +
+        static_cast<int>(TechManager::returnUpgradeRank(UpgradeTypes::Zerg_Missile_Attacks) > TechManager::returnUpgradeRank(UpgradeTypes::None));
     int number_of_spires_wanted =
-        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Carapace) > TechManager::returnTechRank(UpgradeTypes::None)) +
-        static_cast<int>(TechManager::returnTechRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnTechRank(UpgradeTypes::None));
+        static_cast<int>(TechManager::returnUpgradeRank(UpgradeTypes::Zerg_Flyer_Carapace) > TechManager::returnUpgradeRank(UpgradeTypes::None)) +
+        static_cast<int>(TechManager::returnUpgradeRank(UpgradeTypes::Zerg_Flyer_Attacks) > TechManager::returnUpgradeRank(UpgradeTypes::None));
     int count_of_spire_decendents = CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire);
     int count_tech_buildings = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true);
 
@@ -267,7 +267,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     ////Combat Buildings are now done on assignUnitAssembly
 
     //Macro-related Buildings.
-    bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
+    bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.isInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
     bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
     if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
                                                             (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_MapInventory);
@@ -297,6 +297,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
             CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) == 0 &&
             CUNYAIModule::basemanager.getBaseCount() >= 2);
     }
+
     if (!prefer_hydra_den_over_spire || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0){
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spire, drone, upgrade_bool && one_tech_per_base &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) == 0 && CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) == 0 &&
@@ -1463,6 +1464,10 @@ void Building_Gene::addBuildOrderElement(const UnitType & ut)
 void Building_Gene::retryBuildOrderElement(const UnitType & ut)
 {
     building_gene_.insert(building_gene_.begin(), Build_Order_Object(ut));
+}
+void Building_Gene::retryBuildOrderElement(const UpgradeType & up)
+{
+    building_gene_.insert(building_gene_.begin(), Build_Order_Object(up));
 }
 
 void Building_Gene::getCumulativeResources()

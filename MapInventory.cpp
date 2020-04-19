@@ -1621,7 +1621,7 @@ void MapInventory::assignLateArmyMovement(const Position closest_enemy){
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_ground_ = closest_enemy;
     }
-    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) || enemy_base_ground_ != Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
+    else if (Broodwar->isVisible(TilePosition(enemy_base_ground_)) || enemy_base_ground_ == Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
         enemy_base_ground_ = getDistanceWeightedPosition(enemy_base_ground_);
     }
 }
@@ -1630,7 +1630,7 @@ void MapInventory::assignLateAirMovement(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to the closest enemy if we've seen 'em!
         enemy_base_air_ = closest_enemy;
     }
-    else if (Broodwar->isVisible(TilePosition(enemy_base_air_)) || enemy_base_air_ != Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
+    else if (Broodwar->isVisible(TilePosition(enemy_base_air_)) || enemy_base_air_ == Positions::Origin) { //Let's hunt near the last visible enemy otherwise.
         enemy_base_air_ = getDistanceWeightedPosition(enemy_base_air_);
     }
 }

@@ -149,6 +149,8 @@ struct Building_Gene {
 
     void retryBuildOrderElement(const UnitType & ut); // Adds the element to the front of the list again.
 
+    void retryBuildOrderElement(const UpgradeType & up);
+
     void getCumulativeResources();
     //bool checkExistsInBuild( UnitType unit );
 };

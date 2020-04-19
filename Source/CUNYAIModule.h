@@ -265,7 +265,7 @@ public:
     // Counts all units of a type or successors of that type.
     static int countSuccessorUnits(const UnitType & type, const Unit_Inventory & ui = CUNYAIModule::friendly_player_model.units_);
     // Counts the tally of a particular unit type in a reservation queue.
-    static int countUnits(const UnitType &type, const Reservation &res);
+    static int const countUnits(const UnitType &type, const Reservation &res);
     // Counts the tally of all created units in my personal inventory of that type
     static int countUnits(const UnitType &type, bool reservations_included = false);
     // Counts the tally of a particular unit type performing X. Includes those in production, those in inventory (passed by value).

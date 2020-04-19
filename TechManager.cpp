@@ -6,15 +6,13 @@
 # include "Source\Diagnostics.h"
 # include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-
+# include "Source/Reservation_Manager.h"
 
 using namespace BWAPI;
 
 bool TechManager::tech_avail_ = true;
 std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::getUpgradeCartridge(); // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
 std::map<TechType, int> TechManager::tech_cycle_ = Player_Model::getTechCartridge(); // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
-
-int TechManager::max_gas_value_ = 0;
 
 bool TechManager::checkBuildingReady(const UpgradeType up) {
     return CUNYAIModule::countUnitsAvailableToPerform(up) > 0;
@@ -37,32 +35,17 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
-    for (auto potential_up : upgrade_cycle_) {
+    for (auto & potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if ((checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && checkUpgradeUseable(potential_up.first)) || potential_up.first == UpgradeTypes::None) {
+        if (!checkUpgradeFull(potential_up.first) || potential_up.first == UpgradeTypes::None) {
             bool isOneTimeUpgrade = potential_up.first.maxRepeats() == 1 && potential_up.first != UpgradeTypes::None; //Speed, range, adrenal glands, etc. are regularly undervalued. This is an ad-hoc adjustment.
             FAP::FastAPproximation<StoredUnit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
-            upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
+            upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot always be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true)) * 0.25 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
-            if (upgrade_cycle_.find(potential_up.first) == upgrade_cycle_.end()) upgrade_cycle_[potential_up.first] = score;
-            else upgrade_cycle_[potential_up.first] = static_cast<int>((23 * upgrade_cycle_[potential_up.first] + score) / 24); //moving average over 24 simulations, 1 second.  Short because units lose types very often.
-        }
-    }
-}
-
-void TechManager::updateMaxGas() {
-    max_gas_value_ = 0;
-    for (auto potential_up : upgrade_cycle_) {
-        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first)) {
-            max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
-        }
-    }
-    for (auto potential_tech : tech_cycle_) {
-        if (checkBuildingReady(potential_tech.first) && canTech(potential_tech.first)) {
-            max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
+            potential_up.second = static_cast<int>( ((24.0 * 20.0 - 1) * upgrade_cycle_[potential_up.first] + score) / (24.0 * 20.0) ); //moving average over 24*20 * 1 simulations. Long because the asymtotics really do not take hold easily.
         }
     }
 }
@@ -74,12 +57,12 @@ bool TechManager::checkTechAvail()
 
 
 // Returns true if there are any new technology improvements available at this time (new buildings, upgrades, researches, mutations).
-bool TechManager::canMakeTechExpendituresUpdate() {
+bool TechManager::updateCanMakeTechExpenditures() {
 
     //for (auto tech : CUNYAIModule::friendly_player_model.tech_cartridge_) {
     //    if (CUNYAIModule::Count_Units(tech.first.requiredUnit()))  tech_avail_ = true; // If we can make it and don't have it yet, we have tech we can make.
     //}
-    updateMaxGas();
+
     tech_avail_ = false;
 
     for (auto &potential_up : upgrade_cycle_) {
@@ -99,7 +82,7 @@ bool TechManager::canMakeTechExpendituresUpdate() {
         if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0)
             continue;
 
-        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.checkTypeInReserveSystem(building.first) == 0) {
+        if (AssemblyManager::canMakeCUNY(building.first) && CUNYAIModule::countUnits(building.first) + CUNYAIModule::countSuccessorUnits(building.first, CUNYAIModule::friendly_player_model.units_) + CUNYAIModule::my_reservation.isInReserveSystem(building.first) == 0) {
             tech_avail_ = true; // If we can make it and don't have it.
             if (Broodwar->getFrameCount() % 24 * 30 == 0)
                 Diagnostics::DiagnosticText("I can make a: %s, gas is important.", building.first.c_str());
@@ -113,7 +96,7 @@ bool TechManager::canMakeTechExpendituresUpdate() {
 
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
-bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const MapInventory &inv) {
+bool TechManager::tryToTech(Unit building, Unit_Inventory &ui, const MapInventory &inv) {
 
     bool busy = false;
     bool upgrade_bool = (CUNYAIModule::tech_starved || checkResourceSlack());
@@ -133,9 +116,15 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
     std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
     int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
 
+    //first let's do reserved upgrades:
+    for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {
+        busy = Check_N_Upgrade(up, building, true);
+        if (busy) break;
+    }
+
     for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
         if (!busy && potential_up->first) {
-            if (!CUNYAIModule::checkWillingAndAble(building, potential_up->first, true)) {
+            if (!canUpgradeCUNY(potential_up->first, false, building)) {
                 local_upgrade_cycle.erase(potential_up++);
             }
         }
@@ -152,11 +141,15 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
         }
     }
 
+    //If we have not reserved because it is unaffordable now, let us reserve it now.
+    if (!busy && canUpgradeCUNY(up_type, false, building) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
+        CUNYAIModule::my_reservation.addReserveSystem(up_type);
+    }
     if (!busy) busy = Check_N_Upgrade(up_type, building, true);
 
     // Will probably not improve combat performance in FAP (will get units killed instead).
-    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && have_declared_a_major_unit_type && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) > 0);
-    if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Antennae, building, CUNYAIModule::tech_starved && have_hive); //This upgrade is terrible, thus last. It's actually been removed in the cartridge, since it's so distracting. This will stop it from upgrading, but the logic is best I have so far.
+    //if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && have_declared_a_major_unit_type && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) > 0);
+    //if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Antennae, building, CUNYAIModule::tech_starved && have_hive); //This upgrade is terrible, thus last. It's actually been removed in the cartridge, since it's so distracting. This will stop it from upgrading, but the logic is best I have so far.
 
     //should auto upgrade if there is a build order requirement for any of these three types.
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
@@ -193,14 +186,13 @@ bool TechManager::Tech_BeginBuildFAP(Unit building, Unit_Inventory &ui, const Ma
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
-    auto mapUps = CUNYAIModule::friendly_player_model.getUpgradeCartridge();
-    bool upgrade_in_cartridges = mapUps.find(ups) != mapUps.end();
-    if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.checkAffordablePurchase(ups) && upgrade_in_cartridges && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
+    if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.isInReserveSystem(ups) && isInUpgradeCartridge(ups) && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
             morphing_unit.phase_ = StoredUnit::Phase::Upgrading;
             morphing_unit.updateStoredUnit(unit);
+            CUNYAIModule::my_reservation.removeReserveSystem(ups, false);
             Diagnostics::DiagnosticText("Upgrading %s.", ups.c_str());
             return true;
         }
@@ -211,9 +203,7 @@ bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, cons
 //Checks if a research can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Research(const TechType &tech, const Unit &unit, const bool &extra_critera)
 {
-    auto mapTech = CUNYAIModule::friendly_player_model.getTechCartridge();
-    bool research_in_cartridges = mapTech.find(tech) != mapTech.end();
-    if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && research_in_cartridges && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
+    if (unit->canResearch(tech) && CUNYAIModule::my_reservation.checkAffordablePurchase(tech) && isInResearchCartridge(tech) && (CUNYAIModule::buildorder.checkResearch_Desired(tech) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
         if (unit->research(tech)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(tech);
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;
@@ -242,14 +232,13 @@ void TechManager::Print_Upgrade_FAP_Cycle(const int &screen_x, const int &screen
 }
 
 void TechManager::clearSimulationHistory() {
-    for (auto upgrade : CUNYAIModule::friendly_player_model.getUpgradeCartridge()) {
+    for (auto & upgrade : CUNYAIModule::friendly_player_model.getUpgradeCartridge()) {
         upgrade.second = 0;
     }
-    upgrade_cycle_[UpgradeTypes::None] = 0;
 }
 
 //Simply returns the techtype that is the "best" of a BuildFAP sim.
-int TechManager::returnTechRank(const UpgradeType &ut) {
+int TechManager::returnUpgradeRank(const UpgradeType &ut) {
     int postion_in_line = 0;
     vector<tuple<int, UpgradeType>> sorted_list;
     for (auto it : upgrade_cycle_) {
@@ -269,6 +258,18 @@ int TechManager::returnTechRank(const UpgradeType &ut) {
 
 int TechManager::getMaxGas()
 {
+    int max_gas_value_ = 0;
+    for (auto potential_up : upgrade_cycle_) {
+        if (checkBuildingReady(potential_up.first) && !checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first)) {
+            max_gas_value_ = max(potential_up.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
+        }
+    }
+    for (auto potential_tech : tech_cycle_) {
+        if (checkBuildingReady(potential_tech.first) && canResearchCUNY(potential_tech.first)) {
+            max_gas_value_ = max(potential_tech.first.gasPrice(), max_gas_value_); // just a check to stay sharp on max gas.
+        }
+    }
+
     return max_gas_value_;
 }
 
@@ -307,7 +308,7 @@ bool TechManager::canUpgradeCUNY(const UpgradeType type, const bool checkAfforda
     return true;
 }
 
-bool TechManager::canTech(TechType type, const bool checkAffordable, const Unit &builder)
+bool TechManager::canResearchCUNY(TechType type, const bool checkAffordable, const Unit &builder)
 {
     // Error checking
     if (!Broodwar->self())
@@ -345,5 +346,26 @@ bool TechManager::canTech(TechType type, const bool checkAffordable, const Unit 
 
 bool TechManager::checkResourceSlack()
 {
-    return (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100) || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0;
+    bool idle_buildings = false;
+    for (auto up : upgrade_cycle_) {
+        if (CUNYAIModule::countUnitsAvailableToPerform(up.first) > 0) {
+            idle_buildings = true;
+            break;
+        }
+    }
+    return (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100) || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0 || idle_buildings;
+}
+
+bool TechManager::isInUpgradeCartridge(const UpgradeType & ut)
+{
+    auto mapTech = CUNYAIModule::friendly_player_model.getUpgradeCartridge();
+    bool upgradeIsInCartridge = mapTech.find(ut) != mapTech.end();
+    return upgradeIsInCartridge;
+}
+
+bool TechManager::isInResearchCartridge(const TechType & ut)
+{
+    auto mapTech = CUNYAIModule::friendly_player_model.getTechCartridge();
+    bool techIsInCartridge = mapTech.find(ut) != mapTech.end();
+    return techIsInCartridge;
 }

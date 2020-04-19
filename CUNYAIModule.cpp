@@ -446,7 +446,8 @@ void CUNYAIModule::onFrame()
     current_MapInventory.drawExpoPositions();
     current_MapInventory.drawBasePositions();
 
-    if (techmanager.canMakeTechExpendituresUpdate() && ( tech_starved || techmanager.checkResourceSlack()) ) techmanager.updateOptimalTech();
+    //if (techmanager.canMakeTechExpendituresUpdate() && ( tech_starved || techmanager.checkResourceSlack()) ) 
+    techmanager.updateOptimalTech();
     if(army_starved || assemblymanager.checkSlackResources()) assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 
@@ -481,7 +482,7 @@ void CUNYAIModule::onFrame()
 
         bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
-        for (auto r : CUNYAIModule::my_reservation.reservation_map_) {
+        for (auto r : CUNYAIModule::my_reservation.getReservedUnits()) {
             reserved_extractor = r.second == UnitTypes::Zerg_Extractor || reserved_extractor;
         }
         if (need_gas_now && no_extractor && !reserved_extractor) {
@@ -621,7 +622,7 @@ void CUNYAIModule::onFrame()
         //Upgrades only occur on a specific subtype of units.
         if (isIdleEmpty(u) && !u_type.canAttack() && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
             (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
-            techmanager.Tech_BeginBuildFAP(u, friendly_player_model.units_, current_MapInventory);
+            techmanager.tryToTech(u, friendly_player_model.units_, current_MapInventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );
         }

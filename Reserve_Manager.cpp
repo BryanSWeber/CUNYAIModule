@@ -32,6 +32,16 @@ bool Reservation::addReserveSystem(TilePosition pos, UnitType type) {
     return safe;
 }
 
+void Reservation::addReserveSystem(UpgradeType up)
+{
+    reserved_upgrades_.push_back(up);
+    int level = Broodwar->self()->getUpgradeLevel(up);
+    min_reserve_ += up.mineralPrice(level);
+    gas_reserve_ += up.gasPrice(level);
+    building_timer_ = up.upgradeTime(level) > building_timer_ ? up.upgradeTime(level) : building_timer_;
+    CUNYAIModule::buildorder.updateRemainingBuildOrder(up);
+}
+
 bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retry_this_building = false) {
     map<TilePosition, UnitType>::iterator it = reservation_map_.find(pos);
     if (it != reservation_map_.end() && !reservation_map_.empty()) {
@@ -43,11 +53,27 @@ bool Reservation::removeReserveSystem(TilePosition pos, UnitType type, bool retr
     return false;
 };
 
-bool Reservation::checkTypeInReserveSystem(UnitType type) {
+bool Reservation::removeReserveSystem(UpgradeType up, bool retry_this_upgrade) {
+    auto it = find(reserved_upgrades_.begin(), reserved_upgrades_.end(), up);
+    if (it != reserved_upgrades_.end() && !reserved_upgrades_.empty()) {
+        if (!CUNYAIModule::buildorder.isEmptyBuildOrder() && retry_this_upgrade) CUNYAIModule::buildorder.retryBuildOrderElement(up);
+        if (it->mineralPrice()) min_reserve_ -= it->mineralPrice();
+        if (it->gasPrice()) gas_reserve_ -= it->gasPrice();
+        reserved_upgrades_.erase(it);
+        return true;
+    }
+    return false;
+};
+
+bool Reservation::isInReserveSystem(const UnitType & type) {
     for (auto reservation : reservation_map_) {
         if (reservation.second == type) return true;
     }
     return false;
+};
+
+bool Reservation::isInReserveSystem(const UpgradeType & up) {
+    return find(reserved_upgrades_.begin(), reserved_upgrades_.end(), up) != reserved_upgrades_.end();
 };
 
 void Reservation::decrementReserveTimer() {
@@ -65,6 +91,16 @@ int Reservation::getExcessMineral() {
 
 int Reservation::getExcessGas() {
     return max(Broodwar->self()->gas() - gas_reserve_, 0);
+}
+
+map<TilePosition, UnitType> Reservation::getReservedUnits() const
+{
+    return reservation_map_;
+}
+
+vector<UpgradeType> Reservation::getReservedUpgrades() const
+{
+    return reserved_upgrades_;
 }
 
 bool Reservation::checkExcessIsGreaterThan(const UnitType &type) const {

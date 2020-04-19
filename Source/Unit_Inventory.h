@@ -14,7 +14,7 @@ using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
 struct MapInventory;
-struct Reservation;
+class Reservation;
 
 struct StoredUnit {
 
@@ -232,6 +232,7 @@ struct Unit_Inventory {
     Unit_Inventory getInventoryAtArea(const int areaID) const;
     Unit_Inventory getCombatInventoryAtArea(const int areaID) const;
     Unit_Inventory getBuildingInventoryAtArea(const int areaID) const;
+    Unit_Inventory getBuildingInventory() const;
 
 
 

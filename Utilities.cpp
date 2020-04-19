@@ -403,10 +403,10 @@ int CUNYAIModule::countUnits( const UnitType &type, const Unitset &unit_set )
 }
 
 // Overload. Counts all units in a set of one type in the reservation system. Does not reserve larva units. 
-int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
+const int CUNYAIModule::countUnits( const UnitType &type, const Reservation &res )
 {
     int count = 0;
-    for (auto it : res.reservation_map_ ) {
+    for (auto const it : res.getReservedUnits() ) {
         if( it.second == type ) count++;
     }
 
@@ -418,7 +418,7 @@ int CUNYAIModule::countUnits(const UnitType &type, bool reservations_included)
 {
     int count = 0;
     if (reservations_included) {
-        for (auto it : CUNYAIModule::my_reservation.reservation_map_) {
+        for (auto it : CUNYAIModule::my_reservation.getReservedUnits()) {
             if (it.second == type) count++;
         }
     }
