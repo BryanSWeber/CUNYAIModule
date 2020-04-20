@@ -326,20 +326,14 @@ void CUNYAIModule::onFrame()
     neutral_player_model.units_.drawAllLocations();
 
     friendly_player_model.updateSelfOnFrame(); // So far, mimics the only other enemy player.
-    //friendly_player_model.units_.drawAllVelocities(inventory);
-    //friendly_player_model.units_.drawAllHitPoints(inventory);
     Diagnostics::drawAllSpamGuards(friendly_player_model.units_);
-    //friendly_player_model.units_.drawAllWorkerTasks(current_MapInventory, land_inventory);
-    //friendly_player_model.units_.drawAllMisplacedGroundUnits(current_MapInventory);
-    //land_inventory.drawUnreachablePatch(current_MapInventory);
+
     // Update FAPS with units.
     MCfap.clear();
     enemy_player_model.units_.addToMCFAP(MCfap, false, enemy_player_model.researches_);
-    //enemy_player_model.units_.drawAllMAFAPaverages();
     Diagnostics::drawAllFutureDeaths(enemy_player_model.units_);
 
     friendly_player_model.units_.addToMCFAP(MCfap, true, friendly_player_model.researches_);
-    //friendly_player_model.units_.drawAllMAFAPaverages();
     Diagnostics::drawAllFutureDeaths(friendly_player_model.units_);
 
     // Let us estimate FAP values.
@@ -446,9 +440,9 @@ void CUNYAIModule::onFrame()
     current_MapInventory.drawExpoPositions();
     current_MapInventory.drawBasePositions();
 
-    //if (techmanager.canMakeTechExpendituresUpdate() && ( tech_starved || techmanager.checkResourceSlack()) ) 
     techmanager.updateOptimalTech();
-    if(army_starved || assemblymanager.checkSlackResources()) assemblymanager.updateOptimalCombatUnit();
+    if(army_starved || assemblymanager.checkSufficientSlack()) 
+        assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 
     if (t_game % FAP_SIM_DURATION == 0) {
@@ -478,7 +472,6 @@ void CUNYAIModule::onFrame()
                 buildorder.building_gene_.front().getUpgrade().gasPrice() > 0 ? need_gas_now = true : need_gas_now = false;
             }
         }
-
 
         bool reserved_extractor = false;
         bool no_extractor = countUnits(UnitTypes::Zerg_Extractor) == 0;
@@ -620,8 +613,7 @@ void CUNYAIModule::onFrame()
         auto start_upgrade = std::chrono::high_resolution_clock::now();
         bool unconsidered_unit_type = std::find(types_of_units_checked_for_upgrades_this_frame.begin(), types_of_units_checked_for_upgrades_this_frame.end(), u_type) == types_of_units_checked_for_upgrades_this_frame.end();
         //Upgrades only occur on a specific subtype of units.
-        if (isIdleEmpty(u) && !u_type.canAttack() && u_type != UnitTypes::Zerg_Drone && unconsidered_unit_type && spamGuard(u) &&
-            (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
+        if (isIdleEmpty(u) && !u_type.canAttack() && unconsidered_unit_type && spamGuard(u) && (u->canUpgrade() || u->canResearch() || u->canMorph())) { // this will need to be revaluated once I buy units that cost gas.
             techmanager.tryToTech(u, friendly_player_model.units_, current_MapInventory);
             types_of_units_checked_for_upgrades_this_frame.push_back(u_type); // only check each type once.
             //PrintError_Unit( u );

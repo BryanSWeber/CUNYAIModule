@@ -29,7 +29,7 @@ private:
     static Unit_Inventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
     static bool have_idle_evos_;
     static bool have_idle_spires_;
-    static bool resources_are_slack_; // The definition of floating to the assembly manager, may vary.
+
     static bool subgoal_econ_; // If econ is preferred to army. Useful for slackness conditions.
     static bool subgoal_army_; // If army is preferred to econ. Useful for slackness conditions.
 
@@ -60,7 +60,7 @@ public:
     static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
     static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if a build position is occupied.
     static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if I can see every tile in a build location. 
-    static bool Reactive_BuildFAP(const Unit & morph_canidate);     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
+    static bool buildBestCombatUnit(const Unit & morph_canidate);     // returns a combat unit of usefulness. Determined by a series of FAP simulations stored in assembly_cycle_.
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);     // print the assembly cycle we're thinking about.
     static void updatePotentialBuilders(); // Updates all units that might build something at this time.
     static bool creepColonyInArea(const Position & pos); // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
@@ -68,7 +68,11 @@ public:
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
     static void getDefensiveWalls(); // Creates a Z-sim city at the natural.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr); // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
-    static bool checkSlackResources();   // Check if resources are slack from an army assembly perspective.
+    static bool checkSlackLarvae(); // Checks if there is slack larva (eg 2 floating).
+    static bool checkSlackMinerals(); // Checks if there is slack minerals.
+    static bool checkSlackGas(); // Checks if there is slack gas.
+    static bool checkSufficientSlack(const UnitType &ut = UnitTypes::Zerg_Zergling); // Checks if there is sufficient slack to build an XYZ. Defaults to zergling, the minimum unit.
+    // Check if resources are slack from an army assembly perspective.
     static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.
     static int getWaveSize(const UnitType &ut); //Returns the number of a unit that can be made at this moment.
 };

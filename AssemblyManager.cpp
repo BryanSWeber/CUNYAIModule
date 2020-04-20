@@ -31,7 +31,6 @@ int AssemblyManager::last_frame_of_muta_morph_command = 0;
 int AssemblyManager::last_frame_of_creep_command = 0;
 bool AssemblyManager::have_idle_evos_ = false;
 bool AssemblyManager::have_idle_spires_ = false;
-bool AssemblyManager::resources_are_slack_ = false;
 bool AssemblyManager::subgoal_econ_ = false;
 bool AssemblyManager::subgoal_army_ = false;
 
@@ -482,7 +481,7 @@ bool AssemblyManager::isFullyVisibleBuildLocation(const UnitType &type, const Ti
 }
 
 
-bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
+bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
 
     //Am I sending this command to a larva or a hydra?
     UnitType u_type = morph_canidate->getType();
@@ -498,7 +497,7 @@ bool AssemblyManager::Reactive_BuildFAP(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || resources_are_slack_ && u_type == UnitTypes::Zerg_Larva) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || checkSufficientSlack(UnitTypes::Zerg_Zergling) && u_type == UnitTypes::Zerg_Larva) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 
@@ -579,7 +578,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     while (potential_type2 != combat_types.end()) {
         if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++; // if you need it.
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
-        else if (resources_are_slack_ && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
+        else if (checkSufficientSlack(potential_type2->first) && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
         else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
         else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
         else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
@@ -1015,7 +1014,6 @@ bool AssemblyManager::assignUnitAssembly()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    resources_are_slack_ = checkSlackResources();
     subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army > CUNYAIModule::friendly_player_model.spending_model_.alpha_econ;
     subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army < CUNYAIModule::friendly_player_model.spending_model_.alpha_econ; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
@@ -1067,8 +1065,8 @@ bool AssemblyManager::assignUnitAssembly()
 
             bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
 
-            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
-            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || (resources_are_slack_ && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
+            bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
             bool found_noncombat_use = false;
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
@@ -1139,7 +1137,7 @@ bool AssemblyManager::assignUnitAssembly()
 
     //We will fall through to this case if resources are slack and a drone is not created.
     for (auto c : combat_creators.unit_map_) {
-        if (Reactive_BuildFAP(c.first)) {
+        if (buildBestCombatUnit(c.first)) {
             if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
@@ -1298,12 +1296,25 @@ bool AssemblyManager::canMakeCUNY(const UnitType & type, const bool can_afford, 
     return true;
 }
 
-bool AssemblyManager::checkSlackResources()
+bool AssemblyManager::checkSlackLarvae()
 {
-    return  CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300 && CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
+    return  CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) >= 2;
 }
 
+bool AssemblyManager::checkSlackMinerals()
+{
+    return  CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300;
+}
 
+bool AssemblyManager::checkSlackGas()
+{
+    return  CUNYAIModule::my_reservation.getExcessGas() > 50 && Broodwar->self()->gas() > 300;
+}
+
+bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
+{
+    return ut.whatBuilds().first == UnitTypes::Zerg_Larva ? checkSlackLarvae() : true && ut.mineralPrice() > 0 ? checkSlackMinerals() : true && ut.gasPrice() > 0 ? checkSlackGas() : true;
+}
 
 int AssemblyManager::getMaxGas()
 {
@@ -1386,6 +1397,10 @@ bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
     return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
+}
+
+bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
+    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
 }
 
 void Building_Gene::updateRemainingBuildOrder(const Unit &u) {

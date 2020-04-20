@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -140,6 +140,7 @@ public:
 
     static bool checkFeasibleRequirement(const Unit & unit, const UnitType & ut);     // checks if ut is required and can be built by unit at this time.
     static bool checkFeasibleRequirement(const Unit & unit, const UpgradeType & up);     // checks if up is required and can be built by unit at this time.
+    static bool checkFeasibleRequirement(const UpgradeType & up);   //checks if up is required and can be built.
 
 
     //Forces selected unit (drone, hopefully!) to expo:
