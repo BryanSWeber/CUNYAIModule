@@ -415,7 +415,9 @@ bool WorkerManager::workerWork(const Unit &u) {
                 Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
                 return CUNYAIModule::updateUnitPhase(u, StoredUnit::Building);
             }
-            task_guard = CUNYAIModule::assemblymanager.buildBuilding(u);
+            if (CUNYAIModule::assemblymanager.buildBuilding(u))
+                task_guard = true;
+            if (!task_guard) task_guard = CUNYAIModule::updateUnitPhase(u, StoredUnit::Phase::None);
         }
         break;
     case StoredUnit::Attacking:
