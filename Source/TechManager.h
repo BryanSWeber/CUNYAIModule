@@ -14,7 +14,8 @@ private:
 
 public:
     static bool updateCanMakeTechExpenditures(); //Checks if a tech item can be purchased (usually has gas).
-    static void updateOptimalTech(); //Runs a round of FAP sims and then updates the scores of all the tech in the upgrade cycle. Will consider tech if the upgrade is not full and in the upgrade cartridge.
+    static void updateOptimalTech(); //Runs a round of FAP sims and then updates the scores of all the tech in the upgrade cycle. Will consider tech if the upgrade is not full and in the upgrade cartridge. Calls chooseTech();
+    static bool chooseTech(); //Chooses the next best upgrade to make. subroutine of updateOptimalTech().
     static bool tryToTech(Unit building, Unit_Inventory &ui, const MapInventory &inv); //Orders the bot to begin a tech (upgrade or research).  Not guaranteed to tech anything.
 
     static bool Check_N_Upgrade(const UpgradeType & ups, const Unit & unit, const bool & extra_critera);     //Checks if an upgrade can be built, and passes additional boolean criteria. Upgrade must be *reserved* first If all critera are passed, then it performs the upgrade. Requires extra critera.

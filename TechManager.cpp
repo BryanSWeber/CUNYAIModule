@@ -37,7 +37,7 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 void TechManager::updateOptimalTech() {
     for (auto & potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if (!checkUpgradeFull(potential_up.first) || potential_up.first == UpgradeTypes::None) {
+        if (!checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first) || potential_up.first == UpgradeTypes::None) {
             bool isOneTimeUpgrade = potential_up.first.maxRepeats() == 1 && potential_up.first != UpgradeTypes::None; //Speed, range, adrenal glands, etc. are regularly undervalued. This is an ad-hoc adjustment.
             FAP::FastAPproximation<StoredUnit*> upgradeFAP; // attempting to integrate FAP into building decisions.
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
@@ -47,7 +47,12 @@ void TechManager::updateOptimalTech() {
             upgradeFAP.clear();
             potential_up.second = static_cast<int>( ((24.0 * 20.0 - 1) * upgrade_cycle_[potential_up.first] + score) / (24.0 * 20.0) ); //moving average over 24*20 * 1 simulations. Long because the asymtotics really do not take hold easily.
         }
+        else {
+            potential_up.second = upgrade_cycle_[UpgradeTypes::None]; // If you can't use it yet, keep it up to date as equivilent to "none"
+        }
     }
+
+    chooseTech();
 }
 
 bool TechManager::checkTechAvail()
@@ -94,6 +99,44 @@ bool TechManager::updateCanMakeTechExpenditures() {
     return tech_avail_;
 }
 
+bool TechManager::chooseTech() {
+    UpgradeType up_type = UpgradeTypes::None;
+    std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
+    int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
+
+    //Only consider upgrades we can do.
+    for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
+        if (!canUpgradeCUNY(potential_up->first, false)) {
+            local_upgrade_cycle.erase(potential_up++);
+        }
+    }
+
+    //Identify the best upgrade. Requirements override this, reserve them first.
+    for (auto potential_up : local_upgrade_cycle) {
+        if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
+            best_sim_score = potential_up.second;
+            up_type = potential_up.first;
+        }
+        if (CUNYAIModule::checkFeasibleRequirement(potential_up.first)) {
+            up_type = potential_up.first;
+            break; // if it's required, we are done. Build it!
+        }
+    }
+
+    //Check to make sure there are not 2 upgrades for a single building type. 
+    UpgradeType matching_upgrade = UpgradeTypes::None;
+    for (auto match_check : CUNYAIModule::my_reservation.getReservedUpgrades()){
+        if (up_type.whatUpgrades() == match_check.whatUpgrades()) {
+            matching_upgrade = match_check;
+        }
+    }
+    CUNYAIModule::my_reservation.removeReserveSystem(matching_upgrade, false);
+
+    //If we have not reserved because it is unaffordable now, let us reserve it now.
+    if (canUpgradeCUNY(up_type, false) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
+        CUNYAIModule::my_reservation.addReserveSystem(up_type);
+    }
+}
 
 // Tells a building to begin the next tech on our list. Now updates the unit if something has changed.
 bool TechManager::tryToTech(Unit building, Unit_Inventory &ui, const MapInventory &inv) {
@@ -112,40 +155,13 @@ bool TechManager::tryToTech(Unit building, Unit_Inventory &ui, const MapInventor
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, (upgrade_bool || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0) && (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0));
 
-    UpgradeType up_type = UpgradeTypes::None;
-    std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
-    int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
+    if (building->getType() == UnitTypes::Zerg_Hydralisk_Den) Diagnostics::DiagnosticText("Let's look at a Hydra Den!");
 
     //first let's do reserved upgrades:
     for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {
         busy = Check_N_Upgrade(up, building, true);
         if (busy) break;
     }
-
-    for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
-        if (!busy && potential_up->first) {
-            if (!canUpgradeCUNY(potential_up->first, false, building)) {
-                local_upgrade_cycle.erase(potential_up++);
-            }
-        }
-    }
-
-    for (auto potential_up : local_upgrade_cycle) {
-        if (potential_up.second > best_sim_score) { // there are several cases where the test return ties, ex: cannot see enemy units and they appear "empty", extremely one-sided combat...
-            best_sim_score = potential_up.second;
-            up_type = potential_up.first;
-        }
-        if (CUNYAIModule::checkFeasibleRequirement(building, potential_up.first)) {
-            up_type = potential_up.first;
-            break; // if it's required, we are done. Build it!
-        }
-    }
-
-    //If we have not reserved because it is unaffordable now, let us reserve it now.
-    if (!busy && canUpgradeCUNY(up_type, false, building) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
-        CUNYAIModule::my_reservation.addReserveSystem(up_type);
-    }
-    if (!busy) busy = Check_N_Upgrade(up_type, building, true);
 
     // Will probably not improve combat performance in FAP (will get units killed instead).
     //if (!busy) busy = Check_N_Upgrade(UpgradeTypes::Pneumatized_Carapace, building, upgrade_bool && have_declared_a_major_unit_type && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) > 0);
@@ -175,7 +191,7 @@ bool TechManager::tryToTech(Unit building, Unit_Inventory &ui, const MapInventor
         Diagnostics::DiagnosticText("Slackness: %s", checkResourceSlack() ? "TRUE" : "FALSE");
         Diagnostics::DiagnosticText("Tech Starved: %s", CUNYAIModule::tech_starved ? "TRUE" : "FALSE");
         Diagnostics::DiagnosticText("For this %s", building->getType().getName().c_str());
-        for (auto potential_up : local_upgrade_cycle) {
+        for (auto potential_up : upgrade_cycle_) {
             Diagnostics::DiagnosticText("Upgrades: %s, %d", potential_up.first.c_str(), potential_up.second);
         }
     }
