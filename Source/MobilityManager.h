@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CUNYAIModule.h"
-#include "Unit_Inventory.h"
+#include "UnitInventory.h"
 #include <bwem.h>
 
 //Movement and Combat Functions
@@ -26,7 +26,7 @@ public:
     // Scatter (from given position, or if blank, any present storms or spells)
     bool Scatter_Logic(const Position pos = Positions::Origin);
     // Tells the unit to fight. Uses a simple priority system and a diving limit for targeting.
-    bool Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory & ei, const Unit_Inventory &ui, const int &passed_dist, const Color & color);
+    bool Tactical_Logic(const StoredUnit &e_unit, UnitInventory & ei, const UnitInventory &ui, const int &passed_dist, const Color & color);
     //Forces a unit to flock in a (previously) Mobility manner. Will attack if it sees something. Now a backup.
     bool local_pathing(const Position &e_pos, const StoredUnit::Phase phase);
     // Uses choke points when outside of local area, otherwise uses basic rules of attraction. Positive means move out, negative means move home.
@@ -65,7 +65,7 @@ public:
     // Returns true if the enemy unit is too far up another hill.
     bool isOnDifferentHill(const StoredUnit &e);
 
-    Unit pickTarget(int MaxDiveDistance, Unit_Inventory & ui); // selects a target from a unit map. Can return NULL
+    Unit pickTarget(int MaxDiveDistance, UnitInventory & ui); // selects a target from a unit map. Can return NULL
 
     bool checkGoingDifferentDirections(Unit e);
 

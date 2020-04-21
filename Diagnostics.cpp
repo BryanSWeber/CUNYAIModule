@@ -36,7 +36,7 @@ void Diagnostics::watchTile(TilePosition &tp) {
 
 
     // This function limits the drawing that needs to be done by the bot.
-void Diagnostics::drawDestination(const Unit_Inventory &ui, const Position &screen_pos, Color col = Colors::White) {
+void Diagnostics::drawDestination(const UnitInventory &ui, const Position &screen_pos, Color col = Colors::White) {
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto u : ui.unit_map_) {
             Position fin = u.second.pos_;
@@ -291,7 +291,7 @@ void Diagnostics::DiagnosticTrack(const Position &p) {
 
 
     // Announces to player the name and count of all units in the unit inventory. Bland but practical.
-void Diagnostics::Print_Unit_Inventory(const int &screen_x, const int &screen_y, const Unit_Inventory &ui) {
+void Diagnostics::Print_UnitInventory(const int &screen_x, const int &screen_y, const UnitInventory &ui) {
     int another_row_of_printing = 0;
     for (int i = 0; i != 229; i++)
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
@@ -432,7 +432,7 @@ void Diagnostics::onFrame()
 {
     //bwemMap.Draw(BWAPI::BroodwarPtr);
     BWEB::Map::draw();
-    Print_Unit_Inventory(0, 50, CUNYAIModule::friendly_player_model.units_);
+    Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
     //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
     //Print_Test_Case(0, 50);
@@ -440,7 +440,7 @@ void Diagnostics::onFrame()
     //enemy_player_model.Print_Average_CD(500, 170);
     if (CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
-        //Print_Unit_Inventory(500, 170, enemy_player_model.units_); // actual units on ground.
+        //Print_UnitInventory(500, 170, enemy_player_model.units_); // actual units on ground.
         //Print_Research_Inventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
     }
     else {
@@ -448,9 +448,9 @@ void Diagnostics::onFrame()
     }
 
     Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::land_inventory.getLocalMinPatches());
-    Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", CUNYAIModule::workermanager.min_workers_, CUNYAIModule::workermanager.gas_workers_);  //
-    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workermanager.min_workers_, CUNYAIModule::land_inventory.getLocalMiners()); // This a misuse of local miners.
-    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workermanager.gas_workers_, CUNYAIModule::land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
+    Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::workermanager.getGasWorkers());  //
+    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::land_inventory.getLocalMiners()); // This a misuse of local miners.
+    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workermanager.getGasWorkers(), CUNYAIModule::land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
 
     Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
     Broodwar->drawTextScreen(125, 10, "Army Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
@@ -459,7 +459,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(125, 40, "Supply Starved: %s", supply_starved ? "TRUE" : "FALSE");
     Broodwar->drawTextScreen(125, 50, "Gas Starved: %s", CUNYAIModule::gas_starved ? "TRUE" : "FALSE");
     Broodwar->drawTextScreen(125, 60, "Gas Outlet: %s", CUNYAIModule::workermanager.checkGasOutlet() ? "TRUE" : "FALSE");  //
-    Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", CUNYAIModule::workermanager.excess_gas_capacity_ ? "TRUE" : "FALSE");  //
+    Broodwar->drawTextScreen(125, 70, "Xtra Gas Avail: %s", CUNYAIModule::workermanager.checkExcessGasCapacity() ? "TRUE" : "FALSE");  //
 
 
     //Broodwar->drawTextScreen(125, 80, "Ln Y/L: %4.2f", friendly_player_model.spending_model_.getlny()); //
@@ -614,7 +614,7 @@ void Diagnostics::onFrame()
 
 }
 
-void Diagnostics::drawAllVelocities(const Unit_Inventory ui)
+void Diagnostics::drawAllVelocities(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
@@ -622,7 +622,7 @@ void Diagnostics::drawAllVelocities(const Unit_Inventory ui)
     }
 }
 
-void Diagnostics::drawAllHitPoints(const Unit_Inventory ui)
+void Diagnostics::drawAllHitPoints(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Diagnostics::drawHitPoints(u.second, CUNYAIModule::currentMapInventory.screen_position_);
@@ -630,7 +630,7 @@ void Diagnostics::drawAllHitPoints(const Unit_Inventory ui)
 
 }
 
-void Diagnostics::drawAllMAFAPaverages(const Unit_Inventory ui)
+void Diagnostics::drawAllMAFAPaverages(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Diagnostics::drawFAP(u.second, CUNYAIModule::currentMapInventory.screen_position_);
@@ -638,7 +638,7 @@ void Diagnostics::drawAllMAFAPaverages(const Unit_Inventory ui)
 
 }
 
-void Diagnostics::drawAllFutureDeaths(const Unit_Inventory ui)
+void Diagnostics::drawAllFutureDeaths(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::currentMapInventory.screen_position_);
@@ -646,7 +646,7 @@ void Diagnostics::drawAllFutureDeaths(const Unit_Inventory ui)
 
 }
 
-void Diagnostics::drawAllLastDamage(const Unit_Inventory ui)
+void Diagnostics::drawAllLastDamage(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Diagnostics::drawLastDamage(u.second, CUNYAIModule::currentMapInventory.screen_position_);
@@ -655,7 +655,7 @@ void Diagnostics::drawAllLastDamage(const Unit_Inventory ui)
 }
 
 
-void Diagnostics::drawAllSpamGuards(const Unit_Inventory ui)
+void Diagnostics::drawAllSpamGuards(const UnitInventory ui)
 {
     for (auto u : ui.unit_map_) {
         Diagnostics::drawSpamGuard(u.second, CUNYAIModule::currentMapInventory.screen_position_);

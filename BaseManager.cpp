@@ -112,8 +112,8 @@ void BaseManager::updateBases()
         return;
     }
 
-    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
-    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
+    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -201,7 +201,7 @@ void BaseManager::updateBases()
             }
         }
 
-        Unit_Inventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(b.second.u_loc_, UnitTypes::Zerg_Creep_Colony, b.first);
+        UnitInventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(b.second.u_loc_, UnitTypes::Zerg_Creep_Colony, b.first);
         for (auto u : creep_colonies.unit_map_) {
             if (u.first) AssemblyManager::buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
         }

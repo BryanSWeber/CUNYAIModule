@@ -3,7 +3,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\Research_Inventory.h"
 #include "Source\PlayerModelManager.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include <set>
 #include "Source\Diagnostics.h"
 

@@ -2,7 +2,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Research_Inventory.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\CobbDouglas.h"
 #include "Source\Diagnostics.h"
 #include <numeric>
@@ -63,7 +63,7 @@ void Player_Model::updateSelfOnFrame()
     //Update Enemy Units
     //Update friendly unit inventory.
     updateUnit_Counts();
-    if (units_.unit_map_.size() == 0) units_ = Unit_Inventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
+    if (units_.unit_map_.size() == 0) units_ = UnitInventory(Broodwar->self()->getUnits()); // if you only do this you will lose track of all of your locked minerals. 
     else units_.updateUnitInventory(Broodwar->self()->getUnits()); // safe for locked minerals.
     units_.purgeBrokenUnits();
     units_.purgeUnseenUnits(); //Critical for self!
@@ -465,7 +465,7 @@ void Player_Model::evaluateCurrentWorth()
 }
 
 //Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This does not include depots producing workers.
-void Player_Model::considerUnseenProducts(const Unit_Inventory &ui)
+void Player_Model::considerUnseenProducts(const UnitInventory &ui)
 {
     for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 
@@ -502,7 +502,7 @@ void Player_Model::considerUnseenProducts(const map< UnitType, double>  &ui)
 }
 
 
-void Player_Model::considerWorkerUnseenProducts(const Unit_Inventory & ui)
+void Player_Model::considerWorkerUnseenProducts(const UnitInventory & ui)
 {
     for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Source\CUNYAIModule.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\CombatManager.h"
 #include "Source/Diagnostics.h"
@@ -12,8 +12,8 @@ CUNYAIModule::enemy_player_model.units_.unit_map_.empty() ||
 CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech) < CUNYAIModule::friendly_player_model.spending_model_.getlnY() ||
 (CUNYAIModule::enemy_player_model.estimated_unseen_army_ + CUNYAIModule::enemy_player_model.estimated_unseen_tech_ > CUNYAIModule::enemy_player_model.estimated_resources_per_frame_ * 24 * 60 && CUNYAIModule::enemy_player_model.spending_model_.army_stock < CUNYAIModule::friendly_player_model.spending_model_.army_stock); // or we haven't scouted for an approximate minute. 
 
-Unit_Inventory CombatManager::scout_squad_;
-Unit_Inventory CombatManager::liabilities_squad_;
+UnitInventory CombatManager::scout_squad_;
+UnitInventory CombatManager::liabilities_squad_;
 
 bool CombatManager::grandStrategyScript(const Unit & u) {
 
@@ -75,11 +75,11 @@ bool CombatManager::combatScript(const Unit & u)
             int distance_to_threat = 0;
             int distance_to_ground = 0;
 
-            Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
+            UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
             enemy_loc.updateUnitInventorySummary();
-            Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
+            UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
             friend_loc.updateUnitInventorySummary();
-            Unit_Inventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200) );
+            UnitInventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200) );
             trigger_loc.updateUnitInventorySummary();
             Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200));
             //resource_loc.updateResourceInventory();
@@ -95,7 +95,7 @@ bool CombatManager::combatScript(const Unit & u)
             bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
             bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInDanger(u->getType(), enemy_loc);
-            Unit_Inventory expanded_friend_loc;
+            UnitInventory expanded_friend_loc;
             bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest_threat) || u->isFlying()) && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0 && distance_to_threat > (enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
@@ -189,8 +189,8 @@ bool CombatManager::combatScript(const Unit & u)
         //If there are no threats, let's smash stuff under these conditions.
         StoredUnit* e_closest_target = CUNYAIModule::getClosestAttackableStored(CUNYAIModule::enemy_player_model.units_, u, search_radius); // maximum sight distance of 352, siege tanks in siege mode are about 382
         if (e_closest_target) {
-            Unit_Inventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
-            Unit_Inventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
+            UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
+            UnitInventory friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, u->getPosition(), search_radius);
             enemy_loc.updateUnitInventorySummary();
             friend_loc.updateUnitInventorySummary();
 
@@ -281,7 +281,7 @@ bool CombatManager::pathingScript(const Unit & u)
     return false;
 }
 
-bool CombatManager::checkNeedMoreWorkersToHold(const Unit_Inventory &friendly, const Unit_Inventory &enemy)
+bool CombatManager::checkNeedMoreWorkersToHold(const UnitInventory &friendly, const UnitInventory &enemy)
 {
     bool check_enough_mining = CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::MiningMin) + CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::Returning) + CUNYAIModule::friendly_player_model.units_.count_of_each_phase_.at(StoredUnit::Phase::MiningGas) > friendly.count_of_each_phase_.at(StoredUnit::Phase::Attacking) + 1;
     bool bare_minimum_defenders = friendly.count_of_each_phase_.at(StoredUnit::Phase::Attacking) < (enemy.worker_count_ > 0) + (enemy.worker_count_ > 1) * enemy.worker_count_ + (enemy.building_count_ > 0)*(enemy.building_count_ + 3) + (enemy.ground_count_ > 0)*(enemy.ground_count_ + 3); // If there is 1 worker, bring 1, if 2+, bring workers+1, if buildings, buildings + 3, if troops, troops+3;
@@ -359,7 +359,7 @@ void CombatManager::removeLiablity(const Unit & u)
     liabilities_squad_.updateUnitInventorySummary();
 }
 
-bool CombatManager::isWorkerFight(const Unit_Inventory & friendly, const Unit_Inventory & enemy)
+bool CombatManager::isWorkerFight(const UnitInventory & friendly, const UnitInventory & enemy)
 {
     if (enemy.worker_count_ + enemy.building_count_ == static_cast<int>(enemy.unit_map_.size()))
         return true; // They're all workers

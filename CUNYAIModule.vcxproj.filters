@@ -17,9 +17,6 @@
     <ClCompile Include="AssemblyManager.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Unit_Inventory.cpp">
-      <Filter>Utilities</Filter>
-    </ClCompile>
     <ClCompile Include="Resource_Inventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
@@ -74,10 +71,12 @@
     <ClCompile Include="MapInventory.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="UnitInventory.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CobbDouglas.h" />
-    <ClInclude Include="Source\Unit_Inventory.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
@@ -110,6 +109,7 @@
     <ClInclude Include="Source\LearningManager.h" />
     <ClInclude Include="Source\BaseManager.h" />
     <ClInclude Include="Source\MapInventory.h" />
+    <ClInclude Include="Source\UnitInventory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">

@@ -6,12 +6,12 @@
 // Manages various types of important diagnostics and print functions.
 struct Diagnostics {
     static void onFrame();
-    static void drawAllVelocities(const Unit_Inventory ui);
-    static void drawAllHitPoints(const Unit_Inventory ui);
-    static void drawAllMAFAPaverages(const Unit_Inventory ui);
-    static void drawAllFutureDeaths(const Unit_Inventory ui);
-    static void drawAllLastDamage(const Unit_Inventory ui);
-    static void drawAllSpamGuards(const Unit_Inventory ui);
+    static void drawAllVelocities(const UnitInventory ui);
+    static void drawAllHitPoints(const UnitInventory ui);
+    static void drawAllMAFAPaverages(const UnitInventory ui);
+    static void drawAllFutureDeaths(const UnitInventory ui);
+    static void drawAllLastDamage(const UnitInventory ui);
+    static void drawAllSpamGuards(const UnitInventory ui);
     static void drawStats();
     static void drawBullets();
     static void drawVisibilityData();
@@ -20,7 +20,7 @@ struct Diagnostics {
     static void drawLine(const Position &s_pos, const Position &f_pos, const Position &screen_pos, Color col);
     static void drawTiles(const Position & screen_pos, Color col);
     static void watchTile(TilePosition & tp);
-    static void drawDestination(const Unit_Inventory & ui, const Position & screen_pos, Color col);
+    static void drawDestination(const UnitInventory & ui, const Position & screen_pos, Color col);
     static void drawDot(const Position & s_pos, const Position & screen_pos, Color col);
     static void drawCircle(const Position & s_pos, const Position & screen_pos, const int & radius, Color col);
     static void drawHitPoints(const StoredUnit unit, const Position & screen_pos);
@@ -38,7 +38,7 @@ struct Diagnostics {
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
     static void Print_Upgrade_Inventory(const int &screen_x, const int &screen_y);
     // Announces to player the name and type of all known units in set.
-    static void Print_Unit_Inventory(const int &screen_x, const int &screen_y, const Unit_Inventory &ui);
+    static void Print_UnitInventory(const int &screen_x, const int &screen_y, const UnitInventory &ui);
     static void Print_Test_Case(const int & screen_x, const int & screen_y);
     static void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
     static void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);

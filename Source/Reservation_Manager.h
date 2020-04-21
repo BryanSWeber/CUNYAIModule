@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "MapInventory.h"
-#include "Unit_Inventory.h"
+#include "UnitInventory.h"
 #include "Resource_Inventory.h"
 
 class Reservation {

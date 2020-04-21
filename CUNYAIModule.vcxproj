@@ -125,7 +125,7 @@
     <ClCompile Include="Source\BWEB\PathFind.cpp" />
     <ClCompile Include="Source\BWEB\Station.cpp" />
     <ClCompile Include="Source\BWEB\Wall.cpp" />
-    <ClCompile Include="Unit_Inventory.cpp" />
+    <ClCompile Include="UnitInventory.cpp" />
     <ClCompile Include="LearningManager.cpp" />
     <ClCompile Include="TechManager.cpp" />
     <ClCompile Include="VisionManager.cpp" />
@@ -154,7 +154,7 @@
     <ClInclude Include="Source\Reservation_Manager.h" />
     <ClInclude Include="Source\Resource_Inventory.h" />
     <ClInclude Include="Source\TechManager.h" />
-    <ClInclude Include="Source\Unit_Inventory.h" />
+    <ClInclude Include="Source\UnitInventory.h" />
     <ClInclude Include="Source\LearningManager.h" />
     <ClInclude Include="Source\WorkerManager.h" />
   </ItemGroup>

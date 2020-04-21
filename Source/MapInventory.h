@@ -2,7 +2,7 @@
 
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
-#include "Unit_Inventory.h"
+#include "UnitInventory.h"
 #include "Resource_Inventory.h"
 #include "PlayerModelManager.h"
 
@@ -22,7 +22,7 @@ using namespace BWAPI;
 
 struct MapInventory {
     MapInventory();
-    MapInventory(const Unit_Inventory &ui, const Resource_Inventory &ri);
+    MapInventory(const UnitInventory &ui, const Resource_Inventory &ri);
 
     int nScouts = 2; // How many scouts will we have? Set by fiat.
     Position screen_position_;
@@ -106,7 +106,7 @@ struct MapInventory {
     bool MapInventory::checkViableGroundPath(const Position A, const Position B) const; // Is there a viable ground path? CPP, will not fail if thrown at a building.
     bool MapInventory::isOnIsland(const Position A) const; //Is this place pathable from home? Will not return error if your base IS the island.
 
-    vector<int> getRadialDistances(const Unit_Inventory &ui, const bool combat_units);  // gets the radial distance of all units to the enemy base in pixels.
+    vector<int> getRadialDistances(const UnitInventory &ui, const bool combat_units);  // gets the radial distance of all units to the enemy base in pixels.
 
     Position MapInventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;     // Returns the Position of the base with the most surviving units. Friendly is true (by default) to checking -yourself- for the strongest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
 

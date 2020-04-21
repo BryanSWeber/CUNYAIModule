@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\Resource_Inventory.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\MapInventory.h"
 #include "Source/Diagnostics.h"
 #include <bwem.h>
@@ -106,9 +106,9 @@ Stored_Resource::Stored_Resource(Unit resource) {
 //    }
 //}
 
-void Resource_Inventory::updateResourceInventory(Unit_Inventory &ui, Unit_Inventory &ei, MapInventory &inv) {
+void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventory &ei, MapInventory &inv) {
     // Update "My Bases"
-    Unit_Inventory hatches;
+    UnitInventory hatches;
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if ((u.second.type_ != UnitTypes::Zerg_Hatchery && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) || u.second.type_ == UnitTypes::Zerg_Hatchery && u.first->isCompleted()) hatches.addStoredUnit(u.second);
     }
@@ -236,7 +236,7 @@ int Resource_Inventory::getLocalRefineries()
 Resource_Inventory operator+(const Resource_Inventory& lhs, const Resource_Inventory& rhs)
 {
     Resource_Inventory total = lhs;
-    //total.unit_inventory_.insert(lhs.unit_inventory_.begin(), lhs.unit_inventory_.end());
+    //total.UnitInventory_.insert(lhs.UnitInventory_.begin(), lhs.UnitInventory_.end());
     total.resource_inventory_.insert(rhs.resource_inventory_.begin(), rhs.resource_inventory_.end());
     return total;
 }

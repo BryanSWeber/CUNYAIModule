@@ -145,11 +145,11 @@ private:
     operator T () const;
 };
 
-struct Unit_Inventory {
+struct UnitInventory {
 
     //Creates an instance of the Unit inventory class.
-    Unit_Inventory();
-    Unit_Inventory(const Unitset &unit_set);
+    UnitInventory();
+    UnitInventory(const Unitset &unit_set);
 
     //what about their upgrades?
     //Other details?
@@ -229,10 +229,10 @@ struct Unit_Inventory {
     void drawAllWorkerTasks() const;
     void drawAllLocations() const;
     void drawAllMisplacedGroundUnits() const;
-    Unit_Inventory getInventoryAtArea(const int areaID) const;
-    Unit_Inventory getCombatInventoryAtArea(const int areaID) const;
-    Unit_Inventory getBuildingInventoryAtArea(const int areaID) const;
-    Unit_Inventory getBuildingInventory() const;
+    UnitInventory getInventoryAtArea(const int areaID) const;
+    UnitInventory getCombatInventoryAtArea(const int areaID) const;
+    UnitInventory getBuildingInventoryAtArea(const int areaID) const;
+    UnitInventory getBuildingInventory() const;
 
 
 
@@ -265,9 +265,9 @@ struct Unit_Inventory {
     void printUnitInventory(const Player &player, const string &bonus = "");
 
     void stopMine(Unit u);
-    friend Unit_Inventory operator + (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
-    friend Unit_Inventory operator - (const Unit_Inventory & lhs, const Unit_Inventory& rhs);
-    Unit_Inventory(Unit_Inventory const &) = default;
+    friend UnitInventory operator + (const UnitInventory & lhs, const UnitInventory& rhs);
+    friend UnitInventory operator - (const UnitInventory & lhs, const UnitInventory& rhs);
+    UnitInventory(UnitInventory const &) = default;
 
 };
 

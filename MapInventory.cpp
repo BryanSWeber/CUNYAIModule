@@ -3,7 +3,7 @@
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
 #include "Source\MapInventory.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source/Diagnostics.h"
 #include "Source\Resource_Inventory.h"
 #include "Source/BaseManager.h"
@@ -17,7 +17,7 @@ using namespace std;
 
 // Creates a Inventory Object
 MapInventory::MapInventory() {};
-MapInventory::MapInventory(const Unit_Inventory &ui, const Resource_Inventory &ri) {
+MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri) {
 
     updateVision_Count();
 
@@ -500,7 +500,7 @@ int MapInventory::getRadialDistanceOutFromHome(const Position A) const
     return getDistanceBetween(A, safe_base_);
 }
 
-//void MapInventory::updateLiveMapVeins( const Unit &building, const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri ) { // in progress.
+//void MapInventory::updateLiveMapVeins( const Unit &building, const UnitInventory &ui, const UnitInventory &ei, const Resource_Inventory &ri ) { // in progress.
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles
 //    int start_iter = 2;
@@ -711,7 +711,7 @@ void MapInventory::updateUnwalkableWithBuildings() {
 
 }
 
-//void MapInventory::updateLiveMapVeins(const Unit_Inventory &ui, const Unit_Inventory &ei, const Resource_Inventory &ri) { // in progress.
+//void MapInventory::updateLiveMapVeins(const UnitInventory &ui, const UnitInventory &ei, const Resource_Inventory &ri) { // in progress.
 //
 //    int map_x = Broodwar->mapWidth() * 4;
 //    int map_y = Broodwar->mapHeight() * 4; //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -921,10 +921,10 @@ void MapInventory::updateUnwalkableWithBuildings() {
 //    int sample_ground_fodder = 0;
 //
 //    for (auto expo : expo_positions_complete_) {
-//        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
-//        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
-//        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
-//        Unit_Inventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(expo));
+//        UnitInventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, Position(expo));
+//        UnitInventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, Position(expo));
+//        UnitInventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, Position(expo));
+//        UnitInventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, Position(expo));
 //
 //        ei_loc.updateUnitInventorySummary();
 //        ei_mini.updateUnitInventorySummary();
@@ -957,10 +957,10 @@ Position MapInventory::getBaseWithMostSurvivors(const bool &friendly, const bool
     int sample_surviving = 0;
     int sample_ground_fodder = 0;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
-        Unit_Inventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
-        Unit_Inventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, b.first);
-        Unit_Inventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
-        Unit_Inventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, b.first);
+        UnitInventory ei_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
+        UnitInventory ui_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, b.first);
+        UnitInventory ui_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
+        UnitInventory ei_mini = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, b.first);
 
         ei_loc.updateUnitInventorySummary();
         ei_mini.updateUnitInventorySummary();
@@ -1119,7 +1119,7 @@ void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &cen
 }
 
 
-vector<int> MapInventory::getRadialDistances(const Unit_Inventory & ui, const bool combat_units)
+vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const bool combat_units)
 {
     vector<int> return_vector;
 

@@ -23,8 +23,8 @@ public:
     int mineral_patches_;
     int gas_geysers_;
     Resource_Inventory r_loc_;
-    Unit_Inventory u_loc_;
-    Unit_Inventory e_loc_;
+    UnitInventory u_loc_;
+    UnitInventory e_loc_;
     bool emergency_spore_; //Do we want an emergency spore?
     bool emergency_sunken_; // Do we want an emerency sunken?
     Unit unit_; // Directly to the base hatchery itself.

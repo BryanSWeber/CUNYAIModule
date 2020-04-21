@@ -5,7 +5,7 @@
 
 #include "CUNYAIModule.h"
 #include "MapInventory.h"
-#include "Unit_Inventory.h"
+#include "UnitInventory.h"
 #include "FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include "BWEB\BWEB.h"
 #include <bwem.h>
@@ -21,12 +21,12 @@ private:
     static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
     static std::map<UnitType, int> specialization_buildings_; // persistent set of intended buildings.
 
-    static Unit_Inventory larva_bank_; // collection of larva interested in morphing units.
-    static Unit_Inventory hydra_bank_; // colleciton of hydras that may morph into lurkers.
-    static Unit_Inventory muta_bank_; // collection of mutas that may morph into mutas.
-    static Unit_Inventory builder_bank_; // collection of drones that could build.
-    static Unit_Inventory creep_colony_bank_; // collection of creep colonies that could morph into sunkens/spores.
-    static Unit_Inventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
+    static UnitInventory larva_bank_; // collection of larva interested in morphing units.
+    static UnitInventory hydra_bank_; // colleciton of hydras that may morph into lurkers.
+    static UnitInventory muta_bank_; // collection of mutas that may morph into mutas.
+    static UnitInventory builder_bank_; // collection of drones that could build.
+    static UnitInventory creep_colony_bank_; // collection of creep colonies that could morph into sunkens/spores.
+    static UnitInventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
     static bool have_idle_evos_;
     static bool have_idle_spires_;
 

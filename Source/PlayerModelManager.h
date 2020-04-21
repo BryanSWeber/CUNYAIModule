@@ -2,7 +2,7 @@
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
 #include "Research_Inventory.h"
-#include "Unit_Inventory.h"
+#include "UnitInventory.h"
 #include "CobbDouglas.h"
 
 using namespace std;
@@ -50,8 +50,8 @@ public:
     double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
 
     //Classes borrowed from other sources
-    Unit_Inventory units_;
-    Unit_Inventory casualties_;
+    UnitInventory units_;
+    UnitInventory casualties_;
     map< UnitType, double> unseen_units_ = {}; //These units may never have been built, but they COULD have been built and the opposing player would not know. This is a unique map and might be seperated at a later time.
     Research_Inventory researches_;
     CobbDouglas spending_model_;
@@ -83,10 +83,10 @@ public:
     void evaluatePotentialTechExpenditures();  // Estimates the value of Tech that could be incoming this frame given their known production capacity. In progress, only a rough estimate.
     void evaluateCurrentWorth(); // under development. 
 
-    void considerUnseenProducts(const Unit_Inventory &ui); //Takes a map of imputed units and guesses what they could have produced. Applies exclusively to unit inventory's unit_map_
+    void considerUnseenProducts(const UnitInventory &ui); //Takes a map of imputed units and guesses what they could have produced. Applies exclusively to unit inventory's unit_map_
     void considerUnseenProducts(const map<UnitType, double>& ui); //Takes a map of imputed units and guesses what they they could have produced. Intended to apply to unseen_unit_ maps, but prepared to eventually go onto something else.
 
-    void considerWorkerUnseenProducts(const Unit_Inventory &ui); //Takes a map of imputed units and assumes workers are produced at every facility, the "worst" thing they could have produced. Applies exclusively to unit inventory's unit_map_
+    void considerWorkerUnseenProducts(const UnitInventory &ui); //Takes a map of imputed units and assumes workers are produced at every facility, the "worst" thing they could have produced. Applies exclusively to unit inventory's unit_map_
     void considerWorkerUnseenProducts(const map<UnitType, double>& ui); //Takes a map of imputed units and assumes workers are produced at every facility, the "worst" thing they could have produced. Intended to apply to unseen_unit_ maps, but prepared to eventually go onto something else.
 
     UnitType getDistributedProduct(const UnitType & ut); // gets the "worst" unit that might be made by a unit.

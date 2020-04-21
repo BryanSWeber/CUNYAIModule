@@ -2,7 +2,7 @@
 
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\MapInventory.h"
 #include "Source\Reservation_Manager.h"
 #include "Source/Diagnostics.h"
@@ -11,15 +11,15 @@
 #include <fstream>
 #include <filesystem>
 
-//Unit_Inventory functions.
+//UnitInventory functions.
 
-std::default_random_engine Unit_Inventory::generator_;  //Will be used to obtain a seed for the random number engine
+std::default_random_engine UnitInventory::generator_;  //Will be used to obtain a seed for the random number engine
 
 
 //Creates an instance of the unit inventory class.
-Unit_Inventory::Unit_Inventory() {}
+UnitInventory::UnitInventory() {}
 
-Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
+UnitInventory::UnitInventory(const Unitset &unit_set) {
 
     for (const auto & u : unit_set) {
         unit_map_.insert({ u, StoredUnit(u) });
@@ -28,7 +28,7 @@ Unit_Inventory::Unit_Inventory(const Unitset &unit_set) {
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitInventory(const Unitset &unit_set) {
+void UnitInventory::updateUnitInventory(const Unitset &unit_set) {
     for (const auto & u : unit_set) {
         StoredUnit* found_unit = getStoredUnit(u);
         if (found_unit) {
@@ -41,7 +41,7 @@ void Unit_Inventory::updateUnitInventory(const Unitset &unit_set) {
     updateUnitInventorySummary(); //this call is a CPU sink.
 }
 
-void Unit_Inventory::updateUnitsControlledBy(const Player &player)
+void UnitInventory::updateUnitsControlledBy(const Player &player)
 {
     for (auto &e : unit_map_) {
         if (e.second.bwapi_unit_ && e.second.bwapi_unit_->exists()) { // If the unit is visible now, update its position.
@@ -84,7 +84,7 @@ void Unit_Inventory::updateUnitsControlledBy(const Player &player)
 
 }
 
-void Unit_Inventory::purgeBrokenUnits()
+void UnitInventory::purgeBrokenUnits()
 {
     for (auto &e = this->unit_map_.begin(); e != this->unit_map_.end() && !this->unit_map_.empty(); ) {
         if ((e->second.type_ == UnitTypes::Resource_Vespene_Geyser) || // Destroyed refineries revert to geyers, requiring the manual catc.
@@ -97,7 +97,7 @@ void Unit_Inventory::purgeBrokenUnits()
     }
 }
 
-void Unit_Inventory::purgeUnseenUnits()
+void UnitInventory::purgeUnseenUnits()
 {
     for (auto &f = this->unit_map_.begin(); f != this->unit_map_.end() && !this->unit_map_.empty(); ) {
         if (!f->second.bwapi_unit_ || !f->second.bwapi_unit_->exists()) { // sometimes they have a "none" in inventory. This isn't very reasonable, either.
@@ -109,15 +109,15 @@ void Unit_Inventory::purgeUnseenUnits()
     }
 }
 
-//void Unit_Inventory::purgeAllPhases()
+//void UnitInventory::purgeAllPhases()
 //{
-//    for (auto &u = this->unit_inventory_.begin(); u != this->unit_inventory_.end() && !this->unit_inventory_.empty(); ) {
+//    for (auto &u = this->UnitInventory_.begin(); u != this->UnitInventory_.end() && !this->UnitInventory_.empty(); ) {
 //        u->second.phase_ = "None";
 //    }
 //}
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit)
+void UnitInventory::purgeWorkerRelationsStop(const Unit &unit)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -141,7 +141,7 @@ void Unit_Inventory::purgeWorkerRelationsStop(const Unit &unit)
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
+void UnitInventory::purgeWorkerRelationsNoStop(const Unit &unit)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -164,7 +164,7 @@ void Unit_Inventory::purgeWorkerRelationsNoStop(const Unit &unit)
 }
 
 // Decrements all resources worker was attached to, clears all reservations associated with that worker. Stops Unit.
-void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, MapInventory &inv, Reservation &res)
+void UnitInventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Inventory &ri, MapInventory &inv, Reservation &res)
 {
     UnitCommand command = unit->getLastCommand();
     auto found_object = this->unit_map_.find(unit);
@@ -185,7 +185,7 @@ void Unit_Inventory::purgeWorkerRelationsOnly(const Unit &unit, Resource_Invento
     }
 }
 
-void Unit_Inventory::drawAllWorkerTasks() const
+void UnitInventory::drawAllWorkerTasks() const
 {
     for (auto u : unit_map_) {
         if (u.second.type_ == UnitTypes::Zerg_Drone) {
@@ -210,7 +210,7 @@ void Unit_Inventory::drawAllWorkerTasks() const
 }
 
 // Blue if invalid position (lost and can't find), red if valid.
-void Unit_Inventory::drawAllLocations() const
+void UnitInventory::drawAllLocations() const
 {
     for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
         if (e->second.valid_pos_) {
@@ -225,7 +225,7 @@ void Unit_Inventory::drawAllLocations() const
 }
 
 //Marks as red if it's on a minitile that ground units should not be at.
-void Unit_Inventory::drawAllMisplacedGroundUnits() const
+void UnitInventory::drawAllMisplacedGroundUnits() const
 {
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto e = unit_map_.begin(); e != unit_map_.end() && !unit_map_.empty(); e++) {
@@ -242,22 +242,22 @@ void Unit_Inventory::drawAllMisplacedGroundUnits() const
 }
 
 // Updates the count of units.
-bool Unit_Inventory::addStoredUnit(const Unit &unit) {
+bool UnitInventory::addStoredUnit(const Unit &unit) {
     return unit_map_.insert({ unit, StoredUnit(unit) }).second;
 };
 
-bool Unit_Inventory::addStoredUnit(const StoredUnit &stored_unit) {
+bool UnitInventory::addStoredUnit(const StoredUnit &stored_unit) {
     return unit_map_.insert({ stored_unit.bwapi_unit_ , stored_unit }).second;
 };
 
-Position Unit_Inventory::positionBuildFap(bool friendly) {
+Position UnitInventory::positionBuildFap(bool friendly) {
     std::uniform_int_distribution<int> small_map(half_map_ * friendly, half_map_ + half_map_ * friendly);     // default values for output.
     int rand_x = small_map(generator_);
     int rand_y = small_map(generator_);
     return Position(rand_x, rand_y);
 }
 
-Position Unit_Inventory::positionMCFAP(const StoredUnit & su) {
+Position UnitInventory::positionMCFAP(const StoredUnit & su) {
     std::uniform_int_distribution<int> small_noise(static_cast<int>(-CUNYAIModule::getProperSpeed(su.type_)) * 4, static_cast<int>(CUNYAIModule::getProperSpeed(su.type_)) * 4);     // default values for output.
     int rand_x = small_noise(generator_);
     int rand_y = small_noise(generator_);
@@ -321,12 +321,12 @@ void StoredUnit::updateStoredUnit(const Unit &unit) {
 }
 
 //Removes units that have died
-void Unit_Inventory::removeStoredUnit(Unit e_unit) {
+void UnitInventory::removeStoredUnit(Unit e_unit) {
     unit_map_.erase(e_unit);
 };
 
 
-Position Unit_Inventory::getMeanLocation() const {
+Position UnitInventory::getMeanLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -344,7 +344,7 @@ Position Unit_Inventory::getMeanLocation() const {
     return out;
 }
 
-Position Unit_Inventory::getMeanBuildingLocation() const {
+Position UnitInventory::getMeanBuildingLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -364,7 +364,7 @@ Position Unit_Inventory::getMeanBuildingLocation() const {
     }
 }
 
-Position Unit_Inventory::getMeanAirLocation() const {
+Position UnitInventory::getMeanAirLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -384,7 +384,7 @@ Position Unit_Inventory::getMeanAirLocation() const {
     }
 }
 // In progress
-Position Unit_Inventory::getStrongestLocation() const {
+Position UnitInventory::getStrongestLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -410,7 +410,7 @@ Position Unit_Inventory::getStrongestLocation() const {
 }
 
 
-Position Unit_Inventory::getMeanCombatLocation() const {
+Position UnitInventory::getMeanCombatLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -432,7 +432,7 @@ Position Unit_Inventory::getMeanCombatLocation() const {
 }
 
 //for the army that can actually move.
-Position Unit_Inventory::getMeanArmyLocation() const {
+Position UnitInventory::getMeanArmyLocation() const {
     int x_sum = 0;
     int y_sum = 0;
     int count = 0;
@@ -453,7 +453,7 @@ Position Unit_Inventory::getMeanArmyLocation() const {
 }
 
 //for the army that can actually move. Removed for usage of Broodwar->getclosest(), a very slow function.
-//Position Unit_Inventory::getClosestMeanArmyLocation() const {
+//Position UnitInventory::getClosestMeanArmyLocation() const {
 //    Position mean_pos = getMeanArmyLocation();
 //    if( mean_pos && mean_pos != Position(0,0) && mean_pos.isValid()){
 //       Unit nearest_neighbor = Broodwar->getClosestUnit(mean_pos, !IsFlyer && IsOwned, 500);
@@ -470,32 +470,32 @@ Position Unit_Inventory::getMeanArmyLocation() const {
 //    }
 //}
 
-Unit_Inventory Unit_Inventory::getInventoryAtArea(const int areaID) const {
-    Unit_Inventory return_inventory;
+UnitInventory UnitInventory::getInventoryAtArea(const int areaID) const {
+    UnitInventory return_inventory;
     for (const auto &u : this->unit_map_) {
         if (u.second.areaID_ == areaID) { return_inventory.addStoredUnit(u.second); }
     }
     return return_inventory;
 }
 
-Unit_Inventory Unit_Inventory::getCombatInventoryAtArea(const int areaID) const {
-    Unit_Inventory return_inventory;
+UnitInventory UnitInventory::getCombatInventoryAtArea(const int areaID) const {
+    UnitInventory return_inventory;
     for (const auto &u : this->unit_map_) {
         if (u.second.areaID_ == areaID && CUNYAIModule::isFightingUnit(u.second)) { return_inventory.addStoredUnit(u.second); }
     }
     return return_inventory;
 }
 
-Unit_Inventory Unit_Inventory::getBuildingInventoryAtArea(const int areaID) const {
-    Unit_Inventory return_inventory;
+UnitInventory UnitInventory::getBuildingInventoryAtArea(const int areaID) const {
+    UnitInventory return_inventory;
     for (const auto &u : this->unit_map_) {
         if (u.second.areaID_ == areaID && u.second.type_.isBuilding()) { return_inventory.addStoredUnit(u.second); }
     }
     return return_inventory;
 }
 
-Unit_Inventory Unit_Inventory::getBuildingInventory() const {
-    Unit_Inventory return_inventory;
+UnitInventory UnitInventory::getBuildingInventory() const {
+    UnitInventory return_inventory;
     for (const auto &u : this->unit_map_) {
         if (u.second.type_.isBuilding()) { return_inventory.addStoredUnit(u.second); }
     }
@@ -503,17 +503,17 @@ Unit_Inventory Unit_Inventory::getBuildingInventory() const {
 }
 
 
-Unit_Inventory operator+(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+UnitInventory operator+(const UnitInventory& lhs, const UnitInventory& rhs)
 {
-    Unit_Inventory total = lhs;
+    UnitInventory total = lhs;
     total.unit_map_.insert(rhs.unit_map_.begin(), rhs.unit_map_.end());
     total.updateUnitInventorySummary();
     return total;
 }
 
-Unit_Inventory operator-(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
+UnitInventory operator-(const UnitInventory& lhs, const UnitInventory& rhs)
 {
-    Unit_Inventory total;
+    UnitInventory total;
     total.unit_map_.insert(lhs.unit_map_.begin(), lhs.unit_map_.end());
 
     for (map<Unit, StoredUnit>::const_iterator& it = rhs.unit_map_.begin(); it != rhs.unit_map_.end();) {
@@ -528,7 +528,7 @@ Unit_Inventory operator-(const Unit_Inventory& lhs, const Unit_Inventory& rhs)
     return total;
 }
 
-void Unit_Inventory::updateUnitInventorySummary() {
+void UnitInventory::updateUnitInventorySummary() {
     //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     //Set default values to 0;
 
@@ -652,7 +652,7 @@ void Unit_Inventory::updateUnitInventorySummary() {
 
 }
 
-void Unit_Inventory::printUnitInventory(const Player &player, const string &bonus)
+void UnitInventory::printUnitInventory(const Player &player, const string &bonus)
 {
     //string start = "learned_plan.readDirectory + player->getName() + bonus + ".txt";
     //string finish = learned_plan.writeDirectory + player->getName() + bonus + ".txt";
@@ -707,7 +707,7 @@ void Unit_Inventory::printUnitInventory(const Player &player, const string &bonu
     //}
 }
 
-void Unit_Inventory::stopMine(Unit u) {
+void UnitInventory::stopMine(Unit u) {
     if (u->getType().isWorker()) {
         StoredUnit& miner = unit_map_.find(u)->second;
         miner.stopMine();
@@ -1312,28 +1312,28 @@ bool StoredUnit::unitDeadInFuture(const StoredUnit &unit, const int &number_of_f
 }
 
 
-void Unit_Inventory::addToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
-void Unit_Inventory::addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPDisabled(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPDisabled(pos, ri));
     }
 }
 
-void Unit_Inventory::addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPAnitAir(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPAnitAir(pos, ri));
     }
 }
 
-void Unit_Inventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPflying(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPflying(pos, ri));
@@ -1341,7 +1341,7 @@ void Unit_Inventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fa
 }
 
 //adds all nonretreating units to the sim. Retreating units are not simmed, eg, they are assumed dead.
-void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         Position pos = positionMCFAP(u.second);
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
@@ -1350,7 +1350,7 @@ void Unit_Inventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object,
 }
 
 // we no longer build sim against their buildings.
-void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
+void UnitInventory::addToBuildFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
     for (auto &u : unit_map_) {
         Position pos = positionBuildFap(friendly);
         if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));
@@ -1379,7 +1379,7 @@ void Unit_Inventory::addToBuildFAP(FAP::FastAPproximation<StoredUnit*> &fap_obje
 }
 
 //This call seems very inelgant. Check if it can be made better.
-void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &fap_vector)
+void UnitInventory::pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &fap_vector)
 {
     for (auto &u : unit_map_) {
         u.second.updated_fap_this_frame_ = false;
@@ -1397,14 +1397,14 @@ void Unit_Inventory::pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &fap_vector)
 
 }
 
-StoredUnit* Unit_Inventory::getStoredUnit(const Unit & unit)
+StoredUnit* UnitInventory::getStoredUnit(const Unit & unit)
 {
     auto& find_result = unit_map_.find(unit);
     if (find_result != unit_map_.end()) return &find_result->second;
     else return nullptr;
 }
 
-StoredUnit Unit_Inventory::getStoredUnitValue(const Unit & unit) const
+StoredUnit UnitInventory::getStoredUnitValue(const Unit & unit) const
 {
     auto& find_result = unit_map_.find(unit);
     if (find_result != unit_map_.end()) return find_result->second;

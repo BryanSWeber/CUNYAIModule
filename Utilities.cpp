@@ -317,16 +317,16 @@ bool CUNYAIModule::Can_Fight( StoredUnit unit, Unit enemy ) {
     return CUNYAIModule::Can_Fight(u_type, e_type);
 }
 
-// Returns True if UnitType UT can attack anything in Unit_Inventory ENEMY; 
-bool CUNYAIModule::canContributeToFight(const UnitType &ut, const Unit_Inventory enemy) {
+// Returns True if UnitType UT can attack anything in UnitInventory ENEMY; 
+bool CUNYAIModule::canContributeToFight(const UnitType &ut, const UnitInventory enemy) {
     bool shooting_up = ut.airWeapon() != WeaponTypes::None && enemy.stock_fliers_ + enemy.stock_air_fodder_ > 0;
     bool shooting_down = (ut.groundWeapon() != WeaponTypes::None || ut == UnitTypes::Protoss_Reaver || ut == UnitTypes::Zerg_Lurker) && enemy.stock_ground_fodder_ + enemy.stock_ground_units_ > 0;
     bool shoots_without_weapons = ut == UnitTypes::Terran_Bunker || ut == UnitTypes::Protoss_Carrier || ut == UnitTypes::Terran_Science_Vessel || ut == UnitTypes::Terran_Medic || ut == UnitTypes::Protoss_High_Templar || ut == UnitTypes::Protoss_Dark_Archon || ut == UnitTypes::Zerg_Defiler || ut == UnitTypes::Zerg_Queen;
     return shooting_up || shooting_down || shoots_without_weapons;
 }
 
-// Returns True if UnitType UT is in danger from anything in Unit_Inventory ENEMY. Excludes Psions; 
-bool CUNYAIModule::isInDanger(const UnitType &ut, const Unit_Inventory enemy) {
+// Returns True if UnitType UT is in danger from anything in UnitInventory ENEMY. Excludes Psions; 
+bool CUNYAIModule::isInDanger(const UnitType &ut, const UnitInventory enemy) {
     bool shooting_up = ut.isFlyer() && enemy.stock_shoots_up_ > 0;
     bool shooting_down = !ut.isFlyer() && enemy.stock_shoots_down_ > 0;
     bool shoots_without_weapons = CUNYAIModule::containsUnit(UnitTypes::Terran_Bunker, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_Carrier, enemy) + CUNYAIModule::containsUnit(UnitTypes::Terran_Science_Vessel, enemy) + CUNYAIModule::containsUnit(UnitTypes::Terran_Medic, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_High_Templar, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_Dark_Archon, enemy) + CUNYAIModule::containsUnit(UnitTypes::Zerg_Defiler, enemy) + CUNYAIModule::containsUnit(UnitTypes::Zerg_Queen, enemy);
@@ -335,7 +335,7 @@ bool CUNYAIModule::isInDanger(const UnitType &ut, const Unit_Inventory enemy) {
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
-int CUNYAIModule::countUnits( const UnitType &type, const Unit_Inventory &ui )
+int CUNYAIModule::countUnits( const UnitType &type, const UnitInventory &ui )
 {
     int count = 0;
 
@@ -354,7 +354,7 @@ int CUNYAIModule::countUnits( const UnitType &type, const Unit_Inventory &ui )
     return count;
 }
 
-bool CUNYAIModule::containsUnit(const UnitType &type, const Unit_Inventory &ui) {
+bool CUNYAIModule::containsUnit(const UnitType &type, const UnitInventory &ui) {
 
     for (auto & e : ui.unit_map_) {
         if(e.second.type_ == type) return true; 
@@ -364,7 +364,7 @@ bool CUNYAIModule::containsUnit(const UnitType &type, const Unit_Inventory &ui) 
 
 
 // Counts all units of one type in existance and owned by enemies. 
-int CUNYAIModule::countSuccessorUnits(const UnitType &type, const Unit_Inventory &ui)
+int CUNYAIModule::countSuccessorUnits(const UnitType &type, const UnitInventory &ui)
 {
     int count = 0;
 
@@ -464,7 +464,7 @@ int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u
     return count;
 }
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production. 
-int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const Unit_Inventory &ui)
+int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u_command_type, const UnitInventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_map_)
@@ -484,7 +484,7 @@ int CUNYAIModule::countUnitsDoing(const UnitType &type, const UnitCommandType &u
 }
 
 // Overload. Counts all units in a set of one type owned by player. Includes individual units in production.  I have doubts about this function.
-int CUNYAIModule::countUnitsInProgress(const UnitType &type, const Unit_Inventory &ui)
+int CUNYAIModule::countUnitsInProgress(const UnitType &type, const UnitInventory &ui)
 {
     int count = 0;
     for (const auto & unit : ui.unit_map_)
@@ -521,7 +521,7 @@ int CUNYAIModule::countUnitsAvailableToPerform(const TechType &techType) {
 }
 
 // evaluates the value of a stock of buildings, in terms of pythagorian distance of min & gas & supply. Assumes building is zerg and therefore, a drone was spent on it.
-int CUNYAIModule::Stock_Buildings( const UnitType &building, const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Buildings( const UnitType &building, const UnitInventory &ui ) {
     int cost = StoredUnit(building).stock_value_;
     int instances = countUnits( building , ui );
     int total_stock = cost * instances;
@@ -549,7 +549,7 @@ int CUNYAIModule::Stock_Tech(const TechType &tech) {
     return total_stock;
 }
 
-int CUNYAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &ui) {
+int CUNYAIModule::Stock_Units( const UnitType &unit_type, const UnitInventory &ui) {
     int total_stock = 0;
 
     for ( auto & u : ui.unit_map_ ) {
@@ -562,7 +562,7 @@ int CUNYAIModule::Stock_Units( const UnitType &unit_type, const Unit_Inventory &
 }
 
 // evaluates the value of a stock of combat units, for all unit types in a unit inventory. Does not count eggs.
-int CUNYAIModule::Stock_Combat_Units( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Combat_Units( const UnitInventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
     { // iterating through all enemy units we have available and CUNYAI "knows" about. 
@@ -574,7 +574,7 @@ int CUNYAIModule::Stock_Combat_Units( const Unit_Inventory &ui ) {
 }
 
 // Overload. evaluates the value of a stock of units, for all unit types in a unit inventory
-int CUNYAIModule::Stock_Units_ShootUp( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Units_ShootUp( const UnitInventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
     { // iterating through all enemy units we have available and CUNYAI "knows" about. 
@@ -586,7 +586,7 @@ int CUNYAIModule::Stock_Units_ShootUp( const Unit_Inventory &ui ) {
 }
 
 // Overload. evaluates the value of a stock of allied units, for all unit types in a unit inventory
-int CUNYAIModule::Stock_Units_ShootDown( const Unit_Inventory &ui ) {
+int CUNYAIModule::Stock_Units_ShootDown( const UnitInventory &ui ) {
     int total_stock = 0;
     for ( int i = 0; i != 173; i++ )
     { // iterating through all enemy units we have available and CUNYAI "knows" about. 
@@ -606,7 +606,7 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit ) {
 }
 
 // returns helpful_friendly and helpful_enemy units from respective inventories.
-//vector<int> CUNYAIModule::getUsefulStocks(const Unit_Inventory & friend_loc, const Unit_Inventory & enemy_loc)
+//vector<int> CUNYAIModule::getUsefulStocks(const UnitInventory & friend_loc, const UnitInventory & enemy_loc)
 //{
 //    int helpful_e, helpful_u;
 //
@@ -633,14 +633,14 @@ int CUNYAIModule::Stock_Supply( const UnitType &unit ) {
 //        return return_vec;
 //}
 
-int CUNYAIModule::getTargetableStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+int CUNYAIModule::getTargetableStocks(const Unit & u, const UnitInventory & enemy_loc)
 {
     int targetable_e = 0;
     targetable_e = (u->getType().airWeapon() != WeaponTypes::None) * (enemy_loc.stock_fliers_ + enemy_loc.stock_air_fodder_ ) + (u->getType().groundWeapon() != WeaponTypes::None) * (enemy_loc.stock_ground_units_ + enemy_loc.stock_ground_fodder_);
     return targetable_e;
 }
 
-int CUNYAIModule::getThreateningStocks(const Unit & u, const Unit_Inventory & enemy_loc)
+int CUNYAIModule::getThreateningStocks(const Unit & u, const UnitInventory & enemy_loc)
 {
     int threatening_e = 0;
     threatening_e = u->getType().isFlyer() * enemy_loc.stock_shoots_up_  +  !u->getType().isFlyer() * enemy_loc.stock_shoots_down_;
@@ -655,7 +655,7 @@ const char * CUNYAIModule::noRaceName( const char *name ) { //From N00b
 }
 
 //Converts a unit inventory into a unit set directly. Checks range. Careful about visiblity.
-Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &origin, const int &dist ) {
+Unitset CUNYAIModule::getUnit_Set( const UnitInventory &ui, const Position &origin, const int &dist ) {
     Unitset e_set;
     for ( auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++ ) {
         if (static_cast<int>((*e).second.pos_.getDistance( origin )) <= dist ) {
@@ -665,15 +665,15 @@ Unitset CUNYAIModule::getUnit_Set( const Unit_Inventory &ui, const Position &ori
     return e_set;
 }
 
-StoredUnit * CUNYAIModule::getStoredUnit(const Unit_Inventory & ui, const Unit & u)
+StoredUnit * CUNYAIModule::getStoredUnit(const UnitInventory & ui, const Unit & u)
 {
 	auto found_item = CUNYAIModule::friendly_player_model.units_.unit_map_.find(u);
 	bool found = found_item != CUNYAIModule::friendly_player_model.units_.unit_map_.end();
 	if (found) return &found_item->second;
 }
 
-//Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &origin, const int &dist = 999999 ) {
+//Gets pointer to closest unit to point in UnitInventory. Checks range. Careful about visiblity.
+StoredUnit* CUNYAIModule::getClosestStored( UnitInventory &ui, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -691,8 +691,8 @@ StoredUnit* CUNYAIModule::getClosestStored( Unit_Inventory &ui, const Position &
     return return_unit;
 }
 
-//Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+//Gets pointer to closest unit of a type to point in UnitInventory. Checks range. Careful about visiblity.
+StoredUnit* CUNYAIModule::getClosestStored(UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -731,8 +731,8 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Po
     return return_unit;
 }
 
-//Gets pointer to closest unit of a type to point in Unit_inventory EXCLUDING the unit. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStored(const Unit unit, Unit_Inventory &ui, const UnitType &u_type, const int &dist = 999999) {
+//Gets pointer to closest unit of a type to point in UnitInventory EXCLUDING the unit. Checks range. Careful about visiblity.
+StoredUnit* CUNYAIModule::getClosestStored(const Unit unit, UnitInventory &ui, const UnitType &u_type, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -790,7 +790,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestGroundStored(UnitInventory &ui, const Position &origin) {
 
     int min_dist = 999999;
     int temp_dist = 999999;
@@ -809,7 +809,7 @@ StoredUnit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posit
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestAirStored(UnitInventory &ui, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -827,7 +827,7 @@ StoredUnit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, const Position &origin) {
+StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(UnitInventory &ui, const Position &origin) {
     int min_dist = 999999;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -845,8 +845,8 @@ StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, co
     return return_unit;
 }
 
-//Gets pointer to closest unit to point in Unit_inventory. Checks range. Careful about visiblity.
-StoredUnit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Position &origin, const int &dist = 999999) {
+//Gets pointer to closest unit to point in UnitInventory. Checks range. Careful about visiblity.
+StoredUnit* CUNYAIModule::getClosestStoredBuilding(UnitInventory &ui, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -866,8 +866,8 @@ StoredUnit* CUNYAIModule::getClosestStoredBuilding(Unit_Inventory &ui, const Pos
     return return_unit;
 }
 
-//Gets pointer to closest unit of a type to point in Unit_inventory. Checks range. Careful about visiblity. Confirms unit is available
-StoredUnit* CUNYAIModule::getClosestStoredAvailable(Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
+//Gets pointer to closest unit of a type to point in UnitInventory. Checks range. Careful about visiblity. Confirms unit is available
+StoredUnit* CUNYAIModule::getClosestStoredAvailable(UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999) {
     int min_dist = dist;
     int temp_dist = 999999;
     StoredUnit* return_unit = nullptr;
@@ -889,14 +889,14 @@ StoredUnit* CUNYAIModule::getClosestStoredAvailable(Unit_Inventory &ui, const Un
 
 
 //Gets position of closest occupied expo to position. Checks range. Careful about visiblity.
-//Position CUNYAIModule::getClosestExpo(const MapInventory &inv, const Unit_Inventory &ui, const Position &origin, const int &dist) {
+//Position CUNYAIModule::getClosestExpo(const MapInventory &inv, const UnitInventory &ui, const Position &origin, const int &dist) {
 //    //int min_dist = dist;
 //    //int temp_dist = 999999;
 //    //Position return_pos = Positions::Origin;
 //    //vector<Position> hatchery_positions;
 //
 //    ////get all the hatcheries (of any type.).
-//    //for (auto & potential_hatchery : ui.unit_inventory_) {
+//    //for (auto & potential_hatchery : ui.UnitInventory_) {
 //    //    if (potential_hatchery.second.type_.isResourceDepot()) hatchery_positions.push_back(potential_hatchery.second.pos_);
 //    //}
 //
@@ -942,8 +942,8 @@ Stored_Resource* CUNYAIModule::getClosestStored(Resource_Inventory &ri, const Un
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit from unit in Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr.
-StoredUnit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const Unit unit, const int &dist = 999999) {
+//Gets pointer to closest attackable unit from unit in UnitInventory. Checks range. Careful about visiblity.  Can return nullptr.
+StoredUnit* CUNYAIModule::getClosestAttackableStored(UnitInventory &ui, const Unit unit, const int &dist = 999999) {
     int min_dist = dist;
     bool can_attack;
     int temp_dist = 999999;
@@ -965,8 +965,8 @@ StoredUnit* CUNYAIModule::getClosestAttackableStored(Unit_Inventory &ui, const U
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( UnitInventory &ui, const UnitType &u_type, const Position &origin, const int &dist = 999999 ) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -989,8 +989,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored( Unit_Inventory &ui, co
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -1015,8 +1015,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetStored(Unit_Inventory &ui, con
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui, const UnitType ut, const Unit &unit, const int &dist) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetExcluding(UnitInventory &ui, const UnitType ut, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -1041,8 +1041,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetExcluding(Unit_Inventory &ui, 
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -1066,7 +1066,7 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(Unit_Inventory &u
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     int temp_dist = 999999;
@@ -1089,7 +1089,7 @@ StoredUnit* CUNYAIModule::getClosestThreatWithPriority(Unit_Inventory &ui, const
     return return_unit;
 }
 
-StoredUnit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -1112,8 +1112,8 @@ StoredUnit* CUNYAIModule::getClosestTargettWithPriority(Unit_Inventory &ui, cons
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const Position &pos, const int &dist) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestGroundWithPriority(UnitInventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -1135,8 +1135,8 @@ StoredUnit* CUNYAIModule::getClosestGroundWithPriority(Unit_Inventory &ui, const
     return return_unit;
 }
 
-//Gets pointer to closest attackable unit to point within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestIndicatorOfArmy(Unit_Inventory &ui, const Position &pos, const int &dist) {
+//Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestIndicatorOfArmy(UnitInventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by;
     double temp_dist = 999999;
@@ -1162,8 +1162,8 @@ bool CUNYAIModule::hasPriority(StoredUnit e) {
     return e.type_ != UnitTypes::Zerg_Egg && e.type_ != UnitTypes::Zerg_Larva && e.type_ != UnitTypes::Zerg_Broodling && e.type_ != UnitTypes::Protoss_Interceptor;
 }
 
-//Gets pointer to closest threat to unit within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+//Gets pointer to closest threat to unit within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getClosestThreatStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_be_attacked_by;
     double temp_dist = 999999;
@@ -1187,8 +1187,8 @@ StoredUnit* CUNYAIModule::getClosestThreatStored(Unit_Inventory &ui, const Unit 
     return return_unit;
 }
 
-//Gets pointer to closest threat/target unit from home within Unit_inventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
-StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui, const Unit &unit, const int &dist) {
+//Gets pointer to closest threat/target unit from home within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
+StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
     double temp_dist = 999999;
@@ -1220,8 +1220,8 @@ StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inventory &ui, const Position &origin, const int &dist, const bool &air_attack ) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getThreateningUnitInventoryInRadius( const UnitInventory &ui, const Position &origin, const int &dist, const bool &air_attack ) {
+    UnitInventory ui_out;
     if (air_attack) {
         for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
             if ((*e).second.pos_.getDistance(origin) <= dist && e->second.valid_pos_ && Can_Fight(e->second.type_, UnitTypes::Zerg_Overlord)) {
@@ -1240,8 +1240,8 @@ Unit_Inventory CUNYAIModule::getThreateningUnitInventoryInRadius( const Unit_Inv
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const Position &origin, const int &dist) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory &ui, const Position &origin, const int &dist) {
+    UnitInventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (static_cast<int>(e->second.pos_.getDistance(origin)) <= dist && e->second.valid_pos_) {
             ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
@@ -1251,8 +1251,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, 
 }
 
 //Searches an enemy inventory for units within a range. Returns enemy inventory meeting that critera. Can return nullptr. Overloaded for specifi types.
-Unit_Inventory CUNYAIModule::getUnitInventoryInRadius(const Unit_Inventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInRadius(const UnitInventory &ui, const UnitType u_type, const Position &origin, const int &dist) {
+    UnitInventory ui_out;
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (e->second.pos_.getDistance(origin) <= dist && (*e).second.type_== u_type && e->second.valid_pos_ ) {
             ui_out.addStoredUnit(e->second); // if we take any distance and they are in inventory.
@@ -1288,8 +1288,8 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inven
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const Unit &target) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitsOutOfReach(const UnitInventory &ui, const Unit &target) {
+    UnitInventory ui_out;
     for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
         if (u->second.valid_pos_ && ( !(*u).second.bwapi_unit_->canMove() && !(*u).second.bwapi_unit_->isInWeaponRange(target) ) ) {
             ui_out.addStoredUnit((*u).second); // if we take any distance and they are in inventory.
@@ -1299,8 +1299,8 @@ Unit_Inventory CUNYAIModule::getUnitsOutOfReach(const Unit_Inventory &ui, const 
 }
 
 //Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const Position &origin) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInArea(const UnitInventory &ui, const Position &origin) {
+    UnitInventory ui_out;
     TilePosition tp = TilePosition(origin);
     if (tp.isValid()) {
         auto area = BWEM::Map::Instance().GetArea(tp);
@@ -1317,8 +1317,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
 }
 
 //Searches an enemy inventory for units within a BWAPI Area. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const int AreaID) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInArea(const UnitInventory &ui, const int AreaID) {
+    UnitInventory ui_out;
 
     for (auto & e = ui.unit_map_.begin(); e != ui.unit_map_.end() && !ui.unit_map_.empty(); e++) {
         if (e->second.areaID_ == AreaID) {
@@ -1330,8 +1330,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
 }
 
 //Searches an enemy inventory for units within a BWAPI Neighborhood. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInNeighborhood(const Unit_Inventory &ui, const Position &origin) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInNeighborhood(const UnitInventory &ui, const Position &origin) {
+    UnitInventory ui_out;
     TilePosition tp = TilePosition(origin);
     if (tp.isValid()) {
         auto area = BWEM::Map::Instance().GetArea(tp);
@@ -1350,8 +1350,8 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInNeighborhood(const Unit_Inventory
 }
 
 //Searches an enemy inventory for units within a BWAPI Area. Returns enemy inventory meeting that critera. Can return nullptr.
-Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, const UnitType ut, const Position &origin) {
-    Unit_Inventory ui_out;
+UnitInventory CUNYAIModule::getUnitInventoryInArea(const UnitInventory &ui, const UnitType ut, const Position &origin) {
+    UnitInventory ui_out;
     TilePosition tp = TilePosition(origin);
     if (tp.isValid()) {
         auto area = BWEM::Map::Instance().GetArea(tp);
@@ -1368,7 +1368,7 @@ Unit_Inventory CUNYAIModule::getUnitInventoryInArea(const Unit_Inventory &ui, co
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. 
-bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &origin ) {
+bool CUNYAIModule::checkOccupiedArea( const UnitInventory &ui, const Position &origin ) {
     TilePosition tp = TilePosition(origin);
     if (tp.isValid()) {
         auto area = BWEM::Map::Instance().GetArea(tp);
@@ -1385,7 +1385,7 @@ bool CUNYAIModule::checkOccupiedArea( const Unit_Inventory &ui, const Position &
 }
 
 //Searches an inventory for units of within a neighborhood (grouping of areas). Returns TRUE if the neighborhood is occupied. 
-bool CUNYAIModule::checkOccupiedNeighborhood(const Unit_Inventory &ui, const Position &origin) {
+bool CUNYAIModule::checkOccupiedNeighborhood(const UnitInventory &ui, const Position &origin) {
     TilePosition tp = TilePosition(origin);
     if (tp.isValid()) {
         auto area = BWEM::Map::Instance().GetArea(tp);
@@ -1404,7 +1404,7 @@ bool CUNYAIModule::checkOccupiedNeighborhood(const Unit_Inventory &ui, const Pos
 }
 
 //Searches an inventory for units of a type.. Returns TRUE if the area is occupied. 
-bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType type, const Position &origin) {
+bool CUNYAIModule::checkOccupiedArea(const UnitInventory &ui, const UnitType type, const Position &origin) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(origin));
     if (area) {
         int area_id = area->Id();
@@ -1420,9 +1420,9 @@ bool CUNYAIModule::checkOccupiedArea(const Unit_Inventory &ui, const UnitType ty
 }
 
 //Searches an inventory for units of within a range. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
-//bool CUNYAIModule::checkThreatenedArea(const Unit_Inventory &ui, const UnitType &type, const Position &origin, const int &dist) {
+//bool CUNYAIModule::checkThreatenedArea(const UnitInventory &ui, const UnitType &type, const Position &origin, const int &dist) {
 //
-//    for (auto & e = ui.unit_inventory_.begin(); e != ui.unit_inventory_.end() && !ui.unit_inventory_.empty(); e++) {
+//    for (auto & e = ui.UnitInventory_.begin(); e != ui.UnitInventory_.end() && !ui.UnitInventory_.empty(); e++) {
 //        if (e->second.pos_.x < origin.x + dist && e->second.pos_.x > origin.x - dist &&
 //            e->second.pos_.y < origin.y + dist && e->second.pos_.y > origin.y - dist &&
 //            CUNYAIModule::Can_Fight(e->second.type_, StoredUnit(type) ) ) {
@@ -2043,8 +2043,8 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
     auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::currentMapInventory.front_line_base_));
     bool it_is_home_ = false;
-    Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
-    Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
+    UnitInventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
+    UnitInventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
     StoredUnit* e_closest = getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, pos, 9999999);
 
     int radial_distance_to_closest_enemy = 0;
@@ -2072,7 +2072,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
 }
 
 
-bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui, const MapInventory &inv) {
+bool CUNYAIModule::checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv) {
 
     bool desperate_for_minerals = CUNYAIModule::land_inventory.getLocalMinPatches() < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
@@ -2080,7 +2080,7 @@ bool CUNYAIModule::checkSafeMineLoc(const Position pos, const Unit_Inventory &ui
 }
 
 //Checks if enemy air units represent a potential problem. Note: does not check if they HAVE air units. Now defunct, replaced by build FAP evaluations
-//bool CUNYAIModule::checkWeakAgainstAir(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+//bool CUNYAIModule::checkWeakAgainstAir(const UnitInventory &ui, const UnitInventory &ei) {
 //    //bool u_relatively_weak_against_air = ei.stock_fliers_ / (double)(ui.stock_shoots_up_ + 1) vs ei.stock_ground_units_ / (double)(ui.stock_shoots_down_ + 1); // div by zero concern. The larger one is the BIGGER problem.
 //    return -ei.stock_fliers_ / (double)pow((ui.stock_shoots_up_ + 1), 2) < -ei.stock_ground_units_ / (double)pow((ui.stock_shoots_down_ + 1), 2); // div by zero concern. Derivative of the above equation, which ratio is shrunk the most?
 //}
@@ -2116,13 +2116,13 @@ int CUNYAIModule::getFAPScore(FAP::FastAPproximation<StoredUnit*> &fap, bool fri
     else return 0;
 }
 
-//bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei) {
+//bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitInventory &ei) {
 //    return  //((ui.stock_fighting_total_ - ui.moving_average_fap_stock_) * ei.stock_fighting_total_ < (ei.stock_fighting_total_ - ei.moving_average_fap_stock_) * ui.stock_fighting_total_ && ui.squadAliveinFuture(24)) || // Proportional win. fixed division by crossmultiplying. Added squadalive in future so the bot is more reasonable in combat situations.
 //        //(ui.moving_average_fap_stock_ - ui.future_fap_stock_) < (ei.moving_average_fap_stock_ - ei.future_fap_stock_) || //Win by damage.
 //        ui.moving_average_fap_stock_ > ei.moving_average_fap_stock_; //Antipcipated victory.
 //}
 
-bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei, const bool equality_is_win) {
+bool CUNYAIModule::checkMiniFAPForecast(UnitInventory &ui, UnitInventory &ei, const bool equality_is_win) {
     FAP::FastAPproximation<StoredUnit*> MiniFap; // integrating FAP into combat with a produrbation.
     ui.addToBuildFAP(MiniFap, true, CUNYAIModule::friendly_player_model.researches_);
     ei.addToBuildFAP(MiniFap, false, CUNYAIModule::enemy_player_model.researches_);
@@ -2134,7 +2134,7 @@ bool CUNYAIModule::checkMiniFAPForecast(Unit_Inventory &ui, Unit_Inventory &ei, 
     return checkSuperiorFAPForecast(ui, ei, equality_is_win);
 }
 
-bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit_Inventory &ei, const bool equality_is_win) {
+bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitInventory &ei, const bool equality_is_win) {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
     int total_surviving_ui_down = 0;
@@ -2187,7 +2187,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const Unit_Inventory &ui, const Unit
 }
 
 
-int CUNYAIModule::getFAPSurvivalForecast(const Unit_Inventory & ui, const Unit_Inventory & ei, const int duration, const bool fodder)
+int CUNYAIModule::getFAPSurvivalForecast(const UnitInventory & ui, const UnitInventory & ei, const int duration, const bool fodder)
 {
     int total_surviving_ui = 0;
     int total_surviving_ui_up = 0;
@@ -2273,7 +2273,7 @@ bool CUNYAIModule::updateUnitBuildIntent(const Unit &u, const UnitType &intended
 }
 
 bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
-    Unit_Inventory ei_temp;
+    UnitInventory ei_temp;
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
     ei_temp.updateUnitInventorySummary();
 
@@ -2282,7 +2282,7 @@ bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
 }
 
 bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
-    Unit_Inventory ei_temp;
+    UnitInventory ei_temp;
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, AreaID);
     ei_temp.updateUnitInventorySummary();
 

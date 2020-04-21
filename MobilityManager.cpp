@@ -25,7 +25,7 @@ bool Mobility::local_pathing(const Position &e_pos, const StoredUnit::Phase phas
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::PathingOut);
     }
 
-    Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
+    UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
     friendly_blocks.updateUnitInventorySummary();
     bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
 
@@ -113,7 +113,7 @@ bool Mobility::surroundLogic(const Position & pos)
 
 bool Mobility::isolate()
 {
-    Unit_Inventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
+    UnitInventory u_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, pos_, distance_metric_);
     
     Position central_pos = Positions::Origin;
     for (auto u : u_loc.unit_map_) {
@@ -127,7 +127,7 @@ bool Mobility::isolate()
 }
 
 // This is basic combat logic for nonspellcasting units.
-bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, const Unit_Inventory &ui, const int &passed_distance, const Color &color = Colors::White)
+bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const UnitInventory &ui, const int &passed_distance, const Color &color = Colors::White)
 
 {
     //vector<int> useful_stocks = CUNYAIModule::getUsefulStocks(ui, ei);
@@ -150,10 +150,10 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, cons
     double limit_units_diving = weak_enemy_or_small_armies ? (FAP_SIM_DURATION / 12) : (FAP_SIM_DURATION / 12) * log(helpful_e - helpful_u); // should be relatively stable if I reduce the duration.
 
     // Let us bin all potentially interesting units.
-    Unit_Inventory DiveableTargets;
-    Unit_Inventory ThreateningTargets;
-    Unit_Inventory SecondOrderThreats;
-    Unit_Inventory LowPriority;
+    UnitInventory DiveableTargets;
+    UnitInventory ThreateningTargets;
+    UnitInventory SecondOrderThreats;
+    UnitInventory LowPriority;
 
     for (auto e = ei.unit_map_.begin(); e != ei.unit_map_.end() && !ei.unit_map_.empty(); ++e) {
         if (e->first && e->first->isDetected()) { // only target observable units.
@@ -255,7 +255,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, cons
 }
 
 //Essentially, we would like to call the movement script BUT disable any attraction to the enemy since we are trying to only surround.
-//void Mobility::Surrounding_Movement(const Unit & unit, const Unit_Inventory & ui, Unit_Inventory & ei, const MapInventory & inv){
+//void Mobility::Surrounding_Movement(const Unit & unit, const UnitInventory & ui, UnitInventory & ei, const MapInventory & inv){
 //}
 
 // Basic retreat logic
@@ -416,7 +416,7 @@ bool Mobility::checkSafeGroundPath(const Position &finish) {
     int plength = 0;
     bool unit_sent = false;
     auto cpp = BWEM::Map::Instance().GetPath(pos_, finish, &plength);
-    Unit_Inventory ei_temp;
+    UnitInventory ei_temp;
     if (!Mobility::checkSafeEscapePath(finish)) return false;
 
     if (plength) {
@@ -571,7 +571,7 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
             auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
             if (!cpp.empty() && plength > 0) {
                 // first try traveling with CPP.
-                Unit_Inventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
+                UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
                 friendly_blocks.updateUnitInventorySummary();
                 bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0);
                 bool too_close = Position(cpp.front()->Center()).getApproxDistance(unit_->getPosition()) < 32 * (2 + 3.5 * has_a_blocking_item);
@@ -617,7 +617,7 @@ bool Mobility::isOnDifferentHill(const StoredUnit &e) {
     return stored_unit_->areaID_ != e.areaID_ && (stored_unit_->elevation_ != e.elevation_ && stored_unit_->elevation_ % 2 != 0 && e.elevation_ % 2 != 0) && altitude + 96 < CUNYAIModule::getFunctionalRange(unit_);
 }
 
-Unit Mobility::pickTarget(int MaxDiveDistance, Unit_Inventory & ui) {
+Unit Mobility::pickTarget(int MaxDiveDistance, UnitInventory & ui) {
     Unit target = nullptr;
     int dist_to_enemy = 0;
     int target_surviablity = INT_MAX;

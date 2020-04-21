@@ -2,7 +2,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\MapInventory.h"
 #include "Source\AssemblyManager.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source/Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
@@ -18,12 +18,12 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
-Unit_Inventory AssemblyManager::larva_bank_;
-Unit_Inventory AssemblyManager::hydra_bank_;
-Unit_Inventory AssemblyManager::muta_bank_;
-Unit_Inventory AssemblyManager::builder_bank_;
-Unit_Inventory AssemblyManager::creep_colony_bank_;
-Unit_Inventory AssemblyManager::production_facility_bank_;
+UnitInventory AssemblyManager::larva_bank_;
+UnitInventory AssemblyManager::hydra_bank_;
+UnitInventory AssemblyManager::muta_bank_;
+UnitInventory AssemblyManager::builder_bank_;
+UnitInventory AssemblyManager::creep_colony_bank_;
+UnitInventory AssemblyManager::production_facility_bank_;
 
 int AssemblyManager::last_frame_of_larva_morph_command = 0;
 int AssemblyManager::last_frame_of_hydra_morph_command = 0;
@@ -36,7 +36,7 @@ bool AssemblyManager::subgoal_army_ = false;
 
 std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::getCombatUnitCartridge();
 
-//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the Unit_Inventory directly.
+//Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the UnitInventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
     if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
@@ -44,11 +44,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
 
     Position unit_pos = unit->getPosition();
     bool unit_can_morph_intended_target = unit->canMorph(building);
-    //Check simple upgrade into lair/hive.
-    Unit_Inventory local_area = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, unit_pos);
-    bool hatch_nearby = CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery, local_area) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery, local_area) > 0 ||
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Lair, local_area) > 0 ||
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Hive, local_area) > 0;
 
     TilePosition tileOfClosestBase = tp;
 
@@ -162,11 +157,11 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv) {
 
-        int expo_score = -99999999;
+        int expo_score = INT_MIN;
 
         TilePosition base_expo = TilePositions::Origin; // if we find no replacement position, we will know this null postion is never a good build canidate.
 
-        //bool safe_worker = CUNYAIModule::enemy_player_model.units_.unit_inventory_.empty() ||
+        //bool safe_worker = CUNYAIModule::enemy_player_model.units_.UnitInventory_.empty() ||
         //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500) == nullptr ||
         //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500)->type_.isWorker();
 
@@ -221,7 +216,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     }
 
     bool buildings_started = false;
-    bool distance_mining = CUNYAIModule::workermanager.workers_distance_mining_ + CUNYAIModule::workermanager.workers_overstacked_ > 0; // 1/16 workers LD mining is too much.
+    bool distance_mining = CUNYAIModule::workermanager.getDistanceWorkers() + CUNYAIModule::workermanager.getOverstackedWorkers() > 0; // 1/16 workers LD mining is too much.
     bool macro_hatch_timings = (CUNYAIModule::basemanager.getBaseCount() == 3 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 5) || (CUNYAIModule::basemanager.getBaseCount() == 4 && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, CUNYAIModule::friendly_player_model.units_) <= 7);
     bool upgrade_bool = (CUNYAIModule::tech_starved || CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) == 0) || (CUNYAIModule::my_reservation.getExcessMineral() >= 100 && CUNYAIModule::my_reservation.getExcessGas() >= 100);  // upgrade if resources are slack, you're tech starved, or there are no valid larva expendatures.
     bool lurker_tech_progressed = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) + Broodwar->self()->isResearching(TechTypes::Lurker_Aspect);
@@ -242,8 +237,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     int count_of_spire_decendents = CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire);
     int count_tech_buildings = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk_Den, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire, true) + CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk_Cavern, true);
 
-    Unit_Inventory e_loc;
-    Unit_Inventory u_loc;
+    UnitInventory e_loc;
+    UnitInventory u_loc;
 
     //if (nearby_enemy) {
     /*e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
@@ -273,7 +268,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
-        !CUNYAIModule::workermanager.excess_gas_capacity_ && CUNYAIModule::gas_starved &&
+        !CUNYAIModule::workermanager.checkExcessGasCapacity() && CUNYAIModule::gas_starved &&
         CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Extractor) == 0);  // wait till you have a spawning pool to start gathering gas. If your gas is full (or nearly full) get another extractor.  Note that gas_workers count may be off. Sometimes units are in the gas geyser.
 
 
@@ -401,7 +396,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
 // clears all blocking units in an area with size of UT starting at buildtile tile excluding EXCEPTION_UNIT. 
 void AssemblyManager::clearBuildingObstuctions(const UnitType &ut, const TilePosition &tile, const Unit &exception_unit) {
-    Unit_Inventory obstructions = Unit_Inventory(Broodwar->getUnitsInRectangle(Position(tile), Position(tile) + Position(ut.width(), ut.height())));
+    UnitInventory obstructions = UnitInventory(Broodwar->getUnitsInRectangle(Position(tile), Position(tile) + Position(ut.width(), ut.height())));
     for (auto u = obstructions.unit_map_.begin(); u != obstructions.unit_map_.end() && !obstructions.unit_map_.empty(); u++) {
         if (u->second.bwapi_unit_ && u->second.bwapi_unit_ != exception_unit) {
             u->second.bwapi_unit_->move({ Position(tile).x + (rand() % 200 - 100) * max(ut.tileWidth() + 1, ut.tileHeight() + 1) * 32, Position(tile).y + (rand() % 200 - 100) * max(ut.tileWidth() + 1, ut.tileHeight() + 1) * 32 });
@@ -773,7 +768,7 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
 //Updates the assembly cycle to consider the value of each unit.
 void AssemblyManager::updateOptimalCombatUnit() {
     bool building_optimal_unit = false;
-    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
 
     FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
     CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
@@ -786,7 +781,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
         StoredUnit su = StoredUnit(potential_type.first);
-        Unit_Inventory friendly_units_under_consideration; // new every time.
+        UnitInventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
         for (int i = 0; i <= getWaveSize(potential_type.first); i++) {
             friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
@@ -816,14 +811,14 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
     int benifit_of_shooting_ground_targets = 0;
 
     UnitType build_type = UnitTypes::None;
-    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
     FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
 
-    Unit_Inventory potentially_weak_team;
+    UnitInventory potentially_weak_team;
     Research_Inventory potentially_weak_team_researches;
-    Unit_Inventory team_creating_problems;
+    UnitInventory team_creating_problems;
     Research_Inventory team_creating_problems_researches;
 
     if (test_for_self_weakness) {
@@ -851,7 +846,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         buildfap_temp = buildFAP; // restore the buildfap temp.
         StoredUnit su = StoredUnit(UnitTypes::Zerg_Sunken_Colony);
         // enemy units do not change.
-        Unit_Inventory friendly_units_under_consideration; // new every time.
+        UnitInventory friendly_units_under_consideration; // new every time.
         for (int i = 0; i < 5; ++i) {
             friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
         }
@@ -866,7 +861,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
         buildfap_temp.clear();
         buildfap_temp = buildFAP; // restore the buildfap temp.
         // enemy units do not change.
-        Unit_Inventory friendly_units_under_consideration2; // new every time.
+        UnitInventory friendly_units_under_consideration2; // new every time.
         for (int i = 0; i < 5; ++i) {
             friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
         }
@@ -883,15 +878,15 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
 
 //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
 bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri, const bool &test_for_self_weakness) {
-    Position comparision_spot = Unit_Inventory::positionBuildFap(true);// all compared units should begin in the exact same position.
+    Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
     FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
     int value_of_flyers = 0;
     int value_of_ground = 0;
-    Unit_Inventory potentially_weak_team;
+    UnitInventory potentially_weak_team;
     Research_Inventory potentially_weak_team_researches;
-    Unit_Inventory team_creating_problems;
+    UnitInventory team_creating_problems;
     Research_Inventory team_creating_problems_researches;
 
     if (test_for_self_weakness) {
@@ -917,7 +912,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     buildfap_temp = buildFAP; // restore the buildfap temp.
     StoredUnit su = StoredUnit(UnitTypes::Zerg_Hydralisk);
     // enemy units do not change.
-    Unit_Inventory friendly_units_under_consideration; // new every time.
+    UnitInventory friendly_units_under_consideration; // new every time.
     for (int i = 0; i < 5; ++i) {
         friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
     }
@@ -932,7 +927,7 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     buildfap_temp.clear();
     buildfap_temp = buildFAP; // restore the buildfap temp.
                               // enemy units do not change.
-    Unit_Inventory friendly_units_under_consideration2; // new every time.
+    UnitInventory friendly_units_under_consideration2; // new every time.
     for (int i = 0; i < 5; ++i) {
         friendly_units_under_consideration2.addStoredUnit(su); //add unit we are interested in to the inventory:
     }
@@ -991,7 +986,7 @@ void AssemblyManager::updatePotentialBuilders()
 
 bool AssemblyManager::creepColonyInArea(const Position & pos) {
     bool creep_colony_nearby = false;
-    Unit_Inventory units_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Creep_Colony, pos);
+    UnitInventory units_loc = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, UnitTypes::Zerg_Creep_Colony, pos);
     creep_colony_nearby = !units_loc.unit_map_.empty();
     return creep_colony_nearby;
 }
@@ -999,13 +994,13 @@ bool AssemblyManager::creepColonyInArea(const Position & pos) {
 
 bool AssemblyManager::assignUnitAssembly()
 {
-    Unit_Inventory overlord_larva;
-    Unit_Inventory immediate_drone_larva;
-    Unit_Inventory transfer_drone_larva;
-    Unit_Inventory combat_creators;
+    UnitInventory overlord_larva;
+    UnitInventory immediate_drone_larva;
+    UnitInventory transfer_drone_larva;
+    UnitInventory combat_creators;
 
-    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
-    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
+    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -1105,10 +1100,10 @@ bool AssemblyManager::assignUnitAssembly()
     }
 
     //Build from the units as needed: priority queue should be as follows. Note some of these are mutually exclusive.
-    //Unit_Inventory overlord_larva;
-    //Unit_Inventory immediate_drone_larva;
-    //Unit_Inventory transfer_drone_larva;
-    //Unit_Inventory combat_creators;
+    //UnitInventory overlord_larva;
+    //UnitInventory immediate_drone_larva;
+    //UnitInventory transfer_drone_larva;
+    //UnitInventory combat_creators;
 
     if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12) {
         for (auto o : overlord_larva.unit_map_) {

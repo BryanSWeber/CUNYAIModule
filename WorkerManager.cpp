@@ -1,7 +1,7 @@
 #pragma once
 #include "Source\CUNYAIModule.h"
 #include "Source\WorkerManager.h"
-#include "Source\Unit_Inventory.h"
+#include "Source\UnitInventory.h"
 #include "Source\MobilityManager.h"
 #include "Source\AssemblyManager.h"
 #include "Source/Diagnostics.h"
@@ -273,7 +273,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     return false;
 }
 
-bool WorkerManager::checkBlockingMinerals(const Unit & unit, Unit_Inventory & ui)
+bool WorkerManager::checkBlockingMinerals(const Unit & unit, UnitInventory & ui)
 {
     bool already_assigned = false;
     StoredUnit& miner = ui.unit_map_.find(unit)->second;
@@ -534,4 +534,29 @@ void WorkerManager::updateExcessCapacity()
     //excess_gas_capacity_ = CUNYAIModule::land_inventory.local_gas_collectors_ <= CUNYAIModule::land_inventory.local_refineries_ * 2 && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;
     excess_gas_capacity_ = (gas_workers_ <= CUNYAIModule::land_inventory.getLocalRefineries() * 2) && CUNYAIModule::land_inventory.getLocalRefineries() > 0;
 
+}
+
+int WorkerManager::getGasWorkers()
+{
+    return gas_workers_;
+}
+
+int WorkerManager::getMinWorkers()
+{
+    return min_workers_;
+}
+
+bool WorkerManager::checkExcessGasCapacity()
+{
+    return excess_gas_capacity_;
+}
+
+int WorkerManager::getDistanceWorkers()
+{
+    return workers_distance_mining_;
+}
+
+int WorkerManager::getOverstackedWorkers()
+{
+    return workers_overstacked_;
 }
