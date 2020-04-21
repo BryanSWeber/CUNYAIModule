@@ -164,8 +164,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
 
         int expo_score = -99999999;
 
-        inv.getExpoPositions(); // update the possible expo positions.
-        inv.setNextExpo(TilePositions::Origin); // if we find no replacement position, we will know this null postion is never a good build canidate.
+        TilePosition base_expo = TilePositions::Origin; // if we find no replacement position, we will know this null postion is never a good build canidate.
 
         //bool safe_worker = CUNYAIModule::enemy_player_model.units_.unit_inventory_.empty() ||
         //    CUNYAIModule::getClosestThreatOrTargetStored(CUNYAIModule::enemy_player_model.units_, UnitTypes::Zerg_Drone, unit->getPosition(), 500) == nullptr ||
@@ -178,7 +177,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
 
         // Let's build at the safest close canidate position.
         if (safe_worker) {
-            for (auto &p : inv.expo_tilepositions_) {
+            for (auto &p : inv.getExpoTilePositions()) {
                 //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
 
                 bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
@@ -192,8 +191,7 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
 
                 if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
-                    inv.setNextExpo(p);
-                    //Diagnostics::DiagnosticText("Found an expo at ( %d , %d )", inv.next_expo_.x, inv.next_expo_.y);
+                    base_expo = p;
                 }
             }
         }
@@ -202,10 +200,10 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
         }
 
         // If we found -something-
-        if (inv.next_expo_ && inv.next_expo_ != TilePositions::Origin) {
-            if (CUNYAIModule::my_reservation.addReserveSystem(inv.next_expo_, Broodwar->self()->getRace().getResourceDepot())) {
+        if (base_expo != TilePositions::Origin) {
+            if (CUNYAIModule::my_reservation.addReserveSystem(base_expo, Broodwar->self()->getRace().getResourceDepot())) {
                 CUNYAIModule::buildorder.announceBuildingAttempt(Broodwar->self()->getRace().getResourceDepot());
-                return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), inv.next_expo_);
+                return CUNYAIModule::updateUnitBuildIntent(unit, Broodwar->self()->getRace().getResourceDepot(), base_expo);
             }
         }
     return false;
@@ -218,7 +216,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool path_available = false;
 
     // Check if worker has any path to an expo.
-    for (auto &p : CUNYAIModule::current_MapInventory.expo_tilepositions_) {
+    for (auto &p : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
         path_available = (path_available || !BWEM::Map::Instance().GetPath(drone->getPosition(), Position(p)).empty() && drone_pathing_options.checkSafeGroundPath(Position(p)));
     }
 
@@ -259,7 +257,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         UnitType next_in_build_order = CUNYAIModule::buildorder.building_gene_.front().getUnit();
         if (!next_in_build_order.isBuilding()) return false;
-        if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::current_MapInventory);
+        if (next_in_build_order == UnitTypes::Zerg_Hatchery) buildings_started = Expo(drone, false, CUNYAIModule::currentMapInventory);
         else buildings_started = Check_N_Build(next_in_build_order, drone, false);
     }
 
@@ -269,7 +267,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.isInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
     bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
     if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
-                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::current_MapInventory);
+                                                            (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
@@ -799,8 +797,6 @@ void AssemblyManager::updateOptimalCombatUnit() {
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
-        if(Broodwar->getFrameCount() % 96 == 0) 
-            Diagnostics::DiagnosticText("have a sim score of %d, for %s", assembly_cycle_.find(potential_type.first)->second, assembly_cycle_.find(potential_type.first)->first.c_str());
     }
 
     have_idle_evos_ = false;
@@ -1008,8 +1004,8 @@ bool AssemblyManager::assignUnitAssembly()
     Unit_Inventory transfer_drone_larva;
     Unit_Inventory combat_creators;
 
-    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_ground_);
-    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_air_);
+    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -1023,8 +1019,8 @@ bool AssemblyManager::assignUnitAssembly()
     int distance_to_alarming_air = INT_MAX;
 
     for (auto hatch : production_facility_bank_.unit_map_) {
-        distance_to_alarming_ground = min(CUNYAIModule::current_MapInventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
-        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::current_MapInventory.enemy_base_air_)), distance_to_alarming_air);
+        distance_to_alarming_ground = min(CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
+        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::currentMapInventory.enemy_base_air_)), distance_to_alarming_air);
     }
 
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager. There is a logic error in here, since the creep colony may have been built because of a threat at a nearby base B, but the closest viable building location to B was actually closer to A than B.

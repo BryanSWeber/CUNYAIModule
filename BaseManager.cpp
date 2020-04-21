@@ -101,7 +101,7 @@ void BaseManager::updateBases()
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
         if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
             if (!(u.second.bwapi_unit_->getBuildType() == UnitTypes::Zerg_Hatchery && u.second.bwapi_unit_->isMorphing())) { // if the unit is morphing into a hatchery for the first time, don't count it as a base.
-                for (auto expo : CUNYAIModule::current_MapInventory.expo_tilepositions_) {
+                for (auto expo : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
                     if (u.second.bwapi_unit_->getTilePosition() == expo)
                         baseMap_.insert({ u.second.pos_, Base(u.first) });
                 }
@@ -112,8 +112,8 @@ void BaseManager::updateBases()
         return;
     }
 
-    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_ground_);
-    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::current_MapInventory.enemy_base_air_);
+    Unit_Inventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    Unit_Inventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -122,9 +122,9 @@ void BaseManager::updateBases()
     set<int> distance_to_alarming_air;
 
     for (auto & b : baseMap_) {
-        b.second.distance_to_ground_ = CUNYAIModule::current_MapInventory.getRadialDistanceOutFromEnemy(b.first);
+        b.second.distance_to_ground_ = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(b.first);
         distance_to_alarming_ground.insert(b.second.distance_to_ground_);
-        b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::current_MapInventory.enemy_base_air_));
+        b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::currentMapInventory.enemy_base_air_));
         distance_to_alarming_air.insert(b.second.distance_to_air_);
     }
 
@@ -157,7 +157,7 @@ void BaseManager::updateBases()
         bool too_close_by_ground = false;
         if (distance_to_alarming_ground.size() >= 2 || b.second.distance_to_ground_ < 640 ) {
             std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
-            too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter) && !b.second.checkHasGroundBuffer(CUNYAIModule::current_MapInventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
+            too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter) && !b.second.checkHasGroundBuffer(CUNYAIModule::currentMapInventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
         }
 
         bool too_close_by_air = false;

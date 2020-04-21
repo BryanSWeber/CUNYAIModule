@@ -759,7 +759,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri, co
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::current_MapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist) {
                 min_dist = temp_dist;
                 return_unit = &(r->second);
@@ -778,7 +778,7 @@ Stored_Resource* CUNYAIModule::getClosestGroundStored(Resource_Inventory &ri,con
 
     if (!ri.resource_inventory_.empty()) {
         for (auto & r = ri.resource_inventory_.begin(); r != ri.resource_inventory_.end() && !ri.resource_inventory_.empty(); r++) {
-            temp_dist = CUNYAIModule::current_MapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(r->second.pos_, origin); // can't be const because of this line.
             bool right_type = (type == r->second.type_ || type.isMineralField() && r->second.type_.isMineralField()); //WARNING:: Minerals have 4 types.
             if (temp_dist <= min_dist && right_type ) { 
                 min_dist = temp_dist;
@@ -798,7 +798,7 @@ StoredUnit* CUNYAIModule::getClosestGroundStored(Unit_Inventory &ui, const Posit
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_MapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && !u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -816,7 +816,7 @@ StoredUnit* CUNYAIModule::getClosestAirStored(Unit_Inventory &ui, const Position
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_MapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -834,7 +834,7 @@ StoredUnit* CUNYAIModule::getClosestAirStoredWithPriority(Unit_Inventory &ui, co
 
     if (!ui.unit_map_.empty()) {
         for (auto & u = ui.unit_map_.begin(); u != ui.unit_map_.end() && !ui.unit_map_.empty(); u++) {
-            temp_dist = CUNYAIModule::current_MapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
+            temp_dist = CUNYAIModule::currentMapInventory.getDistanceBetween(u->second.pos_, origin); // can't be const because of this line.
             if (temp_dist <= min_dist && u->second.is_flying_ && u->second.valid_pos_ && hasPriority(u->second.type_)) {
                 min_dist = temp_dist;
                 return_unit = &(u->second);
@@ -1205,7 +1205,7 @@ StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(Unit_Inventory &ui
                     temp_dist = unit->getDistance(e->second.pos_);
                 }
                 else {
-                    temp_dist = CUNYAIModule::current_MapInventory.getRadialDistanceOutFromHome(e->second.pos_);
+                    temp_dist = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(e->second.pos_);
                 }
 
                 if (temp_dist <= min_dist) {
@@ -1918,7 +1918,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
     WalkPosition wk_postion = WalkPosition( initial );
     WalkPosition map_dim = WalkPosition( TilePosition( { Broodwar->mapWidth(), Broodwar->mapHeight() } ) );
 
-    int max_observed = CUNYAIModule::current_MapInventory.map_veins_[wk_postion.x][wk_postion.y];
+    int max_observed = CUNYAIModule::currentMapInventory.map_veins_[wk_postion.x][wk_postion.y];
     Position nearest_choke; 
 
     for ( auto i = 0; i < 100; ++i ) {
@@ -1934,7 +1934,7 @@ Position CUNYAIModule::getNearestChoke( const Position &initial, const Position 
                     testing_x > 0 &&
                     testing_y > 0 ) { // check for being within reference space.
 
-                    int temp = CUNYAIModule::current_MapInventory.map_veins_[testing_x][testing_y];
+                    int temp = CUNYAIModule::currentMapInventory.map_veins_[testing_x][testing_y];
 
                     if ( temp >= max_observed ) {
                         max_observed = temp;
@@ -2041,7 +2041,7 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
-    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::current_MapInventory.front_line_base_));
+    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::currentMapInventory.front_line_base_));
     bool it_is_home_ = false;
     Unit_Inventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
     Unit_Inventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
@@ -2058,13 +2058,13 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     if (e_neighborhood.building_count_ > 0) return false; // don't build where they have buildings.
 
     if (!checkSuperiorFAPForecast(friend_loc, e_neighborhood) && e_closest) { // if they could overrun us if they organized and we did not.
-        radial_distance_to_closest_enemy = CUNYAIModule::current_MapInventory.getRadialDistanceOutFromHome(e_closest->pos_);
-        radial_distance_to_build_position = CUNYAIModule::current_MapInventory.getRadialDistanceOutFromHome(pos);
+        radial_distance_to_closest_enemy = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(e_closest->pos_);
+        radial_distance_to_build_position = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromHome(pos);
         enemy_has_not_penetrated = radial_distance_to_closest_enemy > radial_distance_to_build_position;
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        have_to_save = CUNYAIModule::land_inventory.getLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::current_MapInventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::land_inventory.getLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::currentMapInventory.hatches_ == 1;
     }
 
 
@@ -2299,4 +2299,8 @@ string CUNYAIModule::safeString(string input)
 
 int CUNYAIModule::convertTileDistanceToPixelDistance(int numberOfTiles) {
     return numberOfTiles * 32; // Tiles are 32x32 pixels, so the route across them diagonally is STILL 32 pixels because grids.;
+}
+
+int CUNYAIModule::convertPixelDistanceToTileDistance(int numberOfPixels) {
+    return numberOfPixels / 32; // Tiles are 32x32 pixels, so the route across them diagonally is STILL 32 pixels because grids.;
 }

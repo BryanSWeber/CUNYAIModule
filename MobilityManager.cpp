@@ -34,9 +34,9 @@ bool Mobility::local_pathing(const Position &e_pos, const StoredUnit::Phase phas
 
     approach(e_pos);
     if (unit_->move(pos_ + attract_vector_ + encircle_vector_)) {
-        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::current_MapInventory.screen_position_, Colors::Blue);//Run around an obstacle.
-        Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::current_MapInventory.screen_position_, Colors::White);//Run towards it.
-        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::current_MapInventory.screen_position_, Colors::Red);//Run around 
+        Diagnostics::drawLine(pos_, pos_ + encircle_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Blue);//Run around an obstacle.
+        Diagnostics::drawLine(pos_, pos_ + attract_vector_, CUNYAIModule::currentMapInventory.screen_position_, Colors::White);//Run towards it.
+        Diagnostics::drawLine(pos_, e_pos, CUNYAIModule::currentMapInventory.screen_position_, Colors::Red);//Run around 
         return CUNYAIModule::updateUnitPhase(unit_, phase);
     }
     return false;
@@ -54,32 +54,32 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
             //}
             //else {
             int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
-            it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.scouting_bases_.at(scouts), StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::current_MapInventory.scouting_bases_.at(scouts);
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.scouting_bases_.at(scouts), StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.scouting_bases_.at(scouts);
             //}
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
-            it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::current_MapInventory.enemy_base_ground_;
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.enemy_base_ground_;
         }
         else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
-            it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::current_MapInventory.enemy_base_air_;
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.enemy_base_air_;
         }
         else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
-                target_pos = CUNYAIModule::current_MapInventory.enemy_base_air_;
+                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::currentMapInventory.enemy_base_air_;
             }
             else {
-                it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
-                target_pos = CUNYAIModule::current_MapInventory.enemy_base_ground_;
+                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::currentMapInventory.enemy_base_ground_;
             }
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::current_MapInventory.front_line_base_, StoredUnit::Phase::PathingHome);
-        target_pos = CUNYAIModule::current_MapInventory.front_line_base_;
+        it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.front_line_base_, StoredUnit::Phase::PathingHome);
+        target_pos = CUNYAIModule::currentMapInventory.front_line_base_;
     }
 
     if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = prepareLurkerToAttack(target_pos) || it_worked;
@@ -237,7 +237,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, cons
             else
                 unit_->attack(pos_ + getVectorToEnemyDestination(target) + getVectorToBeyondEnemy(target));
         }
-        Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::current_MapInventory.screen_position_, color);
+        Diagnostics::drawLine(pos_, target->getPosition(), CUNYAIModule::currentMapInventory.screen_position_, color);
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     }
     //else if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed()) {
@@ -262,27 +262,27 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, Unit_Inventory &ei, cons
 bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_) ) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
-    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::current_MapInventory.safe_base_);
+    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.safe_base_);
 
     if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
         approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
-        moveTo(pos_, CUNYAIModule::current_MapInventory.front_line_base_, StoredUnit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::currentMapInventory.front_line_base_, StoredUnit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
-        approach(CUNYAIModule::current_MapInventory.safe_base_);
+        approach(CUNYAIModule::currentMapInventory.safe_base_);
         //encircle(threat->pos_);
         moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, StoredUnit::Phase::Retreating);
     }
     else {
-        moveTo(pos_, CUNYAIModule::current_MapInventory.safe_base_, StoredUnit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::currentMapInventory.safe_base_, StoredUnit::Phase::Retreating);
     }
     return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
 }
@@ -292,7 +292,7 @@ bool Mobility::Scatter_Logic(const Position pos)
     Position problem_pos = Positions::Origin;
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && stored_unit_->time_since_last_dmg_ < 14) {
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_)) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
@@ -471,7 +471,7 @@ public:
 
 Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const {
     Position return_vector = Positions::Origin;
-    int my_spot = CUNYAIModule::current_MapInventory.getFieldValue(pos_, field);
+    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
     int temp_x = 0;
     int temp_y = 0;
     int current_best = INT_MAX;
@@ -508,7 +508,7 @@ Position Mobility::getVectorTowardsField(const vector<vector<int>> &field) const
 
 Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
     Position return_vector = Positions::Origin;
-    int my_spot = CUNYAIModule::current_MapInventory.getFieldValue(pos_, field);
+    int my_spot = CUNYAIModule::currentMapInventory.getFieldValue(pos_, field);
     int temp_x = 0;
     int temp_y = 0;
     int current_best = INT_MAX;

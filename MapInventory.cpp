@@ -472,48 +472,12 @@ int MapInventory::getDistanceBetween(const Position A, const Position B) const
     return 9999999;
 }
 
-int MapInventory::getDifferentialDistanceOutFromEnemy(const Position A, const Position B) const
-{
-    int dist_home_A = getDistanceBetween(A, enemy_base_ground_);
-    int dist_home_B = getDistanceBetween(B, enemy_base_ground_);
-
-    if (dist_home_A >= 0 && dist_home_B >= 0) {
-        return abs(dist_home_A - dist_home_B);
-    }
-
-    return 9999999;
-}
 
 int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const
 {
     return getDistanceBetween(A, enemy_base_ground_);
 }
 
-int MapInventory::getDifferentialDistanceOutFromHome(const Position A, const Position B) const
-{
-    int dist_home_A = getDistanceBetween(A, safe_base_);
-    int dist_home_B = getDistanceBetween(B, safe_base_);
-
-    if (dist_home_A >= 0 && dist_home_B >= 0) {
-        return abs(dist_home_A - dist_home_B);
-    }
-
-    return 9999999;
-}
-
-//int MapInventory::getRadialDistanceOutOnMap(const Position A, const vector<vector<int>> &map) const
-//{
-//    if (map.size() > 0 && A.isValid()) {
-//        WalkPosition wp_a = WalkPosition(A);
-//        int A = map[(size_t)wp_a.x][(size_t)wp_a.y];
-//        if (A > 1) {
-//            return map[(size_t)wp_a.x][(size_t)wp_a.y] * 8;
-//        }
-//    }
-//
-//    return 9999999;
-//
-//}
 
 bool MapInventory::checkViableGroundPath(const Position A, const Position B) const
 {
@@ -1021,7 +985,7 @@ Position MapInventory::getBaseWithMostSurvivors(const bool &friendly, const bool
     return strongest_base;
 }
 
-Position MapInventory::getBaseNearest(Position &p) {
+Position MapInventory::getBasePositionNearest(Position &p) {
     int shortest_path = INT_MAX;
     Position closest_base = Positions::Origin;
     for (auto b : CUNYAIModule::basemanager.getBases()) {
@@ -1033,18 +997,14 @@ Position MapInventory::getBaseNearest(Position &p) {
     return closest_base;
 }
 
-void MapInventory::getExpoPositions() {
-
-    expo_tilepositions_.clear();
-
+vector<TilePosition> MapInventory::getExpoTilePositions() {
     std::vector<TilePosition> expo_positions;
     for (auto & area : BWEM::Map::Instance().Areas()) {
         for (auto & base : area.Bases()) {
             expo_positions.push_back(base.Location());
         }
     }
-    expo_tilepositions_ = expo_positions;
-
+    return expo_positions;
 }
 
 
@@ -1058,16 +1018,12 @@ bool MapInventory::checkExploredAllStartPositions() {
 
 void MapInventory::mainCurrentMap() {
 
-    if (Broodwar->getFrameCount() % 17 == 0)
+    if (Broodwar->getFrameCount() % 24 == 0)
         updateGroundDangerousAreas(); // every second or so update ground frames.
 
 
     // Need to update map objects for every building!
     bool unit_calculation_frame = Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0;
-
-    // every frame this is incremented.
-    frames_since_map_veins++;
-    frames_since_unwalkable++;
 
     if (unit_calculation_frame) return;
 
@@ -1084,7 +1040,7 @@ void MapInventory::mainCurrentMap() {
     Position suspected_friendly_base = Positions::Origin;
 
     if (enemy_base_ground_ != Positions::Origin) {
-        suspected_friendly_base = getBaseNearest(enemy_base_ground_);
+        suspected_friendly_base = getBasePositionNearest(enemy_base_ground_);
     }
 
     if (suspected_friendly_base.isValid() && suspected_friendly_base != front_line_base_ && suspected_friendly_base != Positions::Origin) {
@@ -1104,49 +1060,6 @@ void MapInventory::mainCurrentMap() {
         safe_base_ = front_line_base_;
     }
 
-}
-
-
-void MapInventory::setNextExpo(const TilePosition tp) {
-    next_expo_ = tp;
-}
-
-void MapInventory::drawExpoPositions() const
-{
-    if constexpr (DIAGNOSTIC_MODE) {
-        for (auto &p : expo_tilepositions_) {
-            Position lower_left = Position(p);
-            if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
-                lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
-                lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
-                Broodwar->drawBoxMap(Position(p), lower_left, Colors::Green, false);
-            }
-        }
-
-        Position lower_left = Position(next_expo_);
-        if (CUNYAIModule::isOnScreen(lower_left, screen_position_)) {
-            lower_left.x = lower_left.x + UnitTypes::Zerg_Hatchery.width() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
-            lower_left.y = lower_left.y + UnitTypes::Zerg_Hatchery.height() + CUNYAIModule::convertTileDistanceToPixelDistance(1);
-            Broodwar->drawBoxMap(Position(next_expo_), lower_left, Colors::Red, false);
-        }
-    }
-}
-
-void MapInventory::drawBasePositions() const
-{
-    if constexpr (DIAGNOSTIC_MODE) {
-        Broodwar->drawCircleMap(enemy_base_ground_, 15, Colors::Red, true);
-        Broodwar->drawCircleMap(enemy_base_air_, 5, Colors::Orange, true);
-        Broodwar->drawCircleMap(enemy_base_air_, 20, Colors::Orange, false);
-
-        Broodwar->drawCircleMap(front_line_base_, 15, Colors::Green, true);
-
-        Broodwar->drawCircleMap(safe_base_, 5, Colors::Blue, true);
-        Broodwar->drawCircleMap(safe_base_, 20, Colors::Blue, false);
-
-        for(auto i:scouting_bases_)
-            Broodwar->drawCircleMap(i, 25, Colors::White, false);
-    }
 }
 
 void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center)
@@ -1237,7 +1150,7 @@ vector< vector<int> > MapInventory::completeField(vector< vector<int> > pf, cons
 
     bool changed_a_value_last_cycle = true;
 
-    for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value % reduction }); iter++) { // Do less iterations if we can get away with it.
+    for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value / reduction }); iter++) { // Do less iterations if we can get away with it.
         changed_a_value_last_cycle = false;
         for (auto position_to_investigate : needs_filling) { // not last element !
                                                                                                                                               // Psudocode: Mark every point touching value as value-reduction. Then, mark all minitiles touching those points as n+1.
@@ -1277,75 +1190,65 @@ vector< vector<int> > MapInventory::completeField(vector< vector<int> > pf, cons
     return pf;
 }
 
-// IN PROGRESS
-void MapInventory::createThreatField(Player_Model &enemy_player) {
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
-
-    for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.future_fap_value_;
-    }
-
-    pf_threat_ = completeField(pf_clear, 10);
-}
 
 // IN PROGRESS  
-void MapInventory::createAAField(Player_Model &enemy_player) {
+void MapInventory::createAirThreatField(Player_Model &enemy_player) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
-    for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.future_fap_value_ * unit.second.shoots_up_;
+    //set all the nonzero elements to their relevant values.
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
+        int air_range_ = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.bwapi_player_)) * unit.second.shoots_up_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(air_range_, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
-
-    pf_aa_ = completeField(pf_clear, 5);
+    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
+    pf_air_threat_ = completeField(pf_clear, 1);
 
 }
 
-void MapInventory::createExploreField() {
+void MapInventory::createDetectField(Player_Model &enemy_player) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            pf_clear[tile_x][tile_y] += 3 * !Broodwar->isVisible(TilePosition(tile_x, tile_y)) + 6 * !Broodwar->isExplored(TilePosition(tile_x, tile_y));
-        }
+    //set all the nonzero elements to their relevant values.
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
+        int detection_range = unit.second.type_.isDetector() * CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange());
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
-
-    pf_explore_ = completeField(pf_clear, 1);
+    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
+    pf_detect_threat_ = completeField(pf_clear, 1);
 
 }
 
-void MapInventory::createAttractField(Player_Model &enemy_player) {
+void MapInventory::createGroundThreatField(Player_Model &enemy_player) {
+
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
 
     vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
 
-
-    for (auto unit : enemy_player.units_.unit_map_) {
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] += unit.second.current_stock_value_ * !CUNYAIModule::isFightingUnit(unit.second.type_);
+    //set all the nonzero elements to their relevant values.
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
+        int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.bwapi_player_)) * unit.second.shoots_down_;
+        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(ground_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
-
-    pf_attract_ = completeField(pf_clear, 10);
+    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
+    pf_ground_threat_ = completeField(pf_clear, 1);
 
 }
-
 
 void MapInventory::DiagnosticField(vector< vector<int> > &pf) {
     if (DIAGNOSTIC_MODE) {
         for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
             for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
                 if (pf[i][j] > 0) {
-                    if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_MapInventory.screen_position_)) {
+                    if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
                         Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
                     }
                 }
@@ -1360,7 +1263,7 @@ void MapInventory::DiagnosticTile() {
         int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
         for (auto i = 0; i < tile_map_x; ++i) {
             for (auto j = 0; j < tile_map_y; ++j) {
-                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::current_MapInventory.screen_position_)) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
                     Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
@@ -1648,4 +1551,19 @@ void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
                 p = getDistanceWeightedPosition(enemy_base_ground_);
         }
     }
+}
+
+bool MapInventory::isTileDetected(const Position & p)
+{
+    return  CUNYAIModule::currentMapInventory.pf_detect_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+}
+
+bool MapInventory::isTileAirThreatened(const Position & p)
+{
+    return CUNYAIModule::currentMapInventory.pf_air_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+}
+
+bool MapInventory::isTileGroundThreatened(const Position & p)
+{
+    return CUNYAIModule::currentMapInventory.pf_ground_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
 }

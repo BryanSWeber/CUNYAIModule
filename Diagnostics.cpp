@@ -29,10 +29,8 @@ void Diagnostics::drawTiles(const Position &screen_pos, Color col = Colors::Whit
     // This function limits the drawing that needs to be done by the bot.
 void Diagnostics::watchTile(TilePosition &tp) {
     if constexpr (DIAGNOSTIC_MODE) {
-        if (CUNYAIModule::current_MapInventory.next_expo_ != TilePositions::Origin) {
-            Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2, tp.y - 480 / (4 * 16) + 1));
-            Broodwar->setScreenPosition(centered);
-        }
+        Position centered = Position(TilePosition(tp.x - 640 / (4 * 16) + 2, tp.y - 480 / (4 * 16) + 1));
+        Broodwar->setScreenPosition(centered);
     }
 }
 
@@ -488,7 +486,6 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(250, 100, "Freestyling: %s", buildorder.isEmptyBuildOrder() ? "TRUE" : "FALSE"); //
     //Broodwar->drawTextScreen(250, 110, "Last Builder Sent: %d", my_reservation.last_builder_sent_);
     //Broodwar->drawTextScreen(250, 120, "Last Building: %s", buildorder.last_build_order.c_str()); //
-    //Broodwar->drawTextScreen(250, 130, "Next Expo Loc: (%d , %d)", current_MapInventory.next_expo_.x, current_MapInventory.next_expo_.y); //
     //Broodwar->drawTextScreen(250, 140, "FAPP: (%d , %d)", friendly_player_model.units_.moving_average_fap_stock_, enemy_player_model.units_.moving_average_fap_stock_); //
 
     //if (buildorder.isEmptyBuildOrder()) {
@@ -536,7 +533,7 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(500, 160, creep_colony_string);
 
     for (auto p = CUNYAIModule::land_inventory.resource_inventory_.begin(); p != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); ++p) {
-        if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::current_MapInventory.screen_position_)) {
+        if (CUNYAIModule::isOnScreen(p->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
             Broodwar->drawCircleMap(p->second.pos_, (p->second.type_.dimensionUp() + p->second.type_.dimensionLeft()) / 2, Colors::Cyan); // Plot their last known position.
             Broodwar->drawTextMap(p->second.pos_, "%d", p->second.current_stock_value_); // Plot their current value.
             Broodwar->drawTextMap(p->second.pos_.x, p->second.pos_.y + 10, "%d", p->second.number_of_miners_); // Plot their current value.
@@ -607,11 +604,11 @@ void Diagnostics::onFrame()
     //}
 
     for (auto & j : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        printPhase(j.second, CUNYAIModule::current_MapInventory.screen_position_);
+        printPhase(j.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
-    drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::current_MapInventory.screen_position_, Colors::Grey);
+    drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
     //Diagnostic_Watch_Expos();
 
 
@@ -621,14 +618,14 @@ void Diagnostics::drawAllVelocities(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
         Position destination = Position(u.second.pos_.x + u.second.velocity_x_ * 24, u.second.pos_.y + u.second.velocity_y_ * 24);
-        Diagnostics::drawLine(u.second.pos_, destination, CUNYAIModule::current_MapInventory.screen_position_, Colors::Green);
+        Diagnostics::drawLine(u.second.pos_, destination, CUNYAIModule::currentMapInventory.screen_position_, Colors::Green);
     }
 }
 
 void Diagnostics::drawAllHitPoints(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawHitPoints(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawHitPoints(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
@@ -636,7 +633,7 @@ void Diagnostics::drawAllHitPoints(const Unit_Inventory ui)
 void Diagnostics::drawAllMAFAPaverages(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawFAP(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawFAP(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
@@ -644,7 +641,7 @@ void Diagnostics::drawAllMAFAPaverages(const Unit_Inventory ui)
 void Diagnostics::drawAllFutureDeaths(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawEstimatedDeath(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
@@ -652,7 +649,7 @@ void Diagnostics::drawAllFutureDeaths(const Unit_Inventory ui)
 void Diagnostics::drawAllLastDamage(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawLastDamage(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawLastDamage(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
@@ -661,7 +658,7 @@ void Diagnostics::drawAllLastDamage(const Unit_Inventory ui)
 void Diagnostics::drawAllSpamGuards(const Unit_Inventory ui)
 {
     for (auto u : ui.unit_map_) {
-        Diagnostics::drawSpamGuard(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawSpamGuard(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 }
 

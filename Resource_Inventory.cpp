@@ -192,7 +192,7 @@ void Resource_Inventory::updateMines() {
 void Resource_Inventory::drawMineralRemaining() const
 {
     for (auto u : resource_inventory_) {
-        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::current_MapInventory.screen_position_);
+        Diagnostics::drawMineralsRemaining(u.second, CUNYAIModule::currentMapInventory.screen_position_);
     }
 
 }
@@ -201,7 +201,7 @@ void Resource_Inventory::drawUnreachablePatch(const MapInventory & inv) const
 {
     if constexpr (DIAGNOSTIC_MODE) {
         for (auto r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
-            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::current_MapInventory.screen_position_)) {
+            if (CUNYAIModule::isOnScreen(r->second.pos_, CUNYAIModule::currentMapInventory.screen_position_)) {
                 if (inv.unwalkable_barriers_with_buildings_[WalkPosition(r->second.pos_).x][WalkPosition(r->second.pos_).y] == 1) {
                     Broodwar->drawCircleMap(r->second.pos_, (r->second.type_.dimensionUp() + r->second.type_.dimensionLeft()) / 2, Colors::Red, true); // Mark as RED if not in a walkable spot.
                 }

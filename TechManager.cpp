@@ -155,7 +155,7 @@ bool TechManager::tryToTech(Unit building, Unit_Inventory &ui, const MapInventor
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, (upgrade_bool || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0) && (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0));
 
-    if (building->getType() == UnitTypes::Zerg_Hydralisk_Den) Diagnostics::DiagnosticText("Let's look at a Hydra Den!");
+    //if (building->getType() == UnitTypes::Zerg_Hydralisk_Den) Diagnostics::DiagnosticText("Let's look at a Hydra Den!");
 
     //first let's do reserved upgrades:
     for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {
