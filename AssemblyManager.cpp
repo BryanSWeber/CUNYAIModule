@@ -157,8 +157,9 @@ bool AssemblyManager::Check_N_Grow(const UnitType &unittype, const Unit &larva, 
 //Builds an expansion. No recognition of past build sites. Needs a drone=unit, some extra boolian logic that you might need, and your inventory, containing resource locations. Now Updates Friendly inventory when command is sent.
 bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv) {
 
-        int expo_score = INT_MIN;
-
+        int score_temp, min_plength, expo_score = INT_MIN;
+        bool safe_path_available_or_needed, can_afford_with_travel;
+        BWEB::Path newPath;
         TilePosition base_expo = TilePositions::Origin; // if we find no replacement position, we will know this null postion is never a good build canidate.
 
         //bool safe_worker = CUNYAIModule::enemy_player_model.units_.UnitInventory_.empty() ||
@@ -175,14 +176,13 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
             for (auto &p : inv.getExpoTilePositions()) {
                 //int expo_areaID = BWEM::Map::Instance().GetNearestArea(TilePosition(p))->Id();
 
-                bool safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
-                BWEB::Path newPath;
+                safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 newPath.createUnitPath(unit->getPosition(), Position(p));
 
-                int score_temp = std::sqrt(inv.getRadialDistanceOutFromEnemy(Position(p))) - std::sqrt(inv.getRadialDistanceOutFromHome(Position(p))); // closer is better, further from enemy is better.
-                bool min_plength = min(static_cast<int>(newPath.getDistance()), 500);
+                score_temp = inv.getRadialDistanceOutFromEnemy(Position(p)) - inv.getRadialDistanceOutFromHome(Position(p)); // closer is better, further from enemy is better.
+                min_plength = min(static_cast<int>(newPath.getDistance()), 500);
 
-                bool can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
+                can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
                 if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
                     expo_score = score_temp;
