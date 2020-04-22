@@ -1218,7 +1218,7 @@ void MapInventory::createDetectField(Player_Model &enemy_player) {
 
     //set all the nonzero elements to their relevant values.
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
-        int detection_range = unit.second.type_.isDetector() * unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange()); // buildings all detect in a radius of 7, all others are sight range.
+        int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())); // buildings all detect in a radius of 7, all others are sight range.
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
