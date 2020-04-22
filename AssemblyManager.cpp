@@ -697,11 +697,14 @@ map<int, TilePosition> AssemblyManager::addClosestStation(const UnitType & build
 
 bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int, TilePosition>& placements, const Unit u, const bool extra_critera, const int cap_distance)
 {
+    int plength;
+    int min_plength;
+    BWEB::Path newPath;
+
     for (auto good_block : placements) { // should automatically search by distance.
-        int plength = INT_MAX;
+        plength = INT_MIN;
 
         //Try JPS pathing.
-        BWEB::Path newPath;
         newPath.createUnitPath(u->getPosition(), Position(good_block.second));
 
         //Otherwise try CPP pathing.
@@ -709,7 +712,7 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
             auto cpp = BWEM::Map::Instance().GetPath(u->getPosition(), Position(good_block.second), &plength);
         }
 
-        bool min_plength = min({ static_cast<int>(newPath.getDistance()), cap_distance, plength });
+        min_plength = min({ cap_distance, newPath.isReachable() ? static_cast<int>(newPath.getDistance()) : plength }); //use the minimum of cap or the walking distance.
 
         if (CUNYAIModule::checkWillingAndAble(u, building, extra_critera, min_plength) && isPlaceableCUNY(building, good_block.second) && CUNYAIModule::my_reservation.addReserveSystem(good_block.second, building)) {
             CUNYAIModule::buildorder.announceBuildingAttempt(building);
@@ -717,6 +720,8 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
             return CUNYAIModule::updateUnitBuildIntent(u, building, good_block.second);
         }
     }
+
+    //Diagnostics for failsafe
     if(CUNYAIModule::checkWillingAndAble(u, building, extra_critera))
         Diagnostics::DiagnosticText("I couldn't place a %s!", building.c_str());
     return false;
