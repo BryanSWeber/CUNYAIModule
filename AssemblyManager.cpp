@@ -265,7 +265,8 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
                                                             (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
 
-    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300); // only macrohatch if you are short on larvae and can afford to spend.
+    if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Hatchery, drone, !CUNYAIModule::larva_flooded && 
+                                                                                                (CUNYAIModule::larva_starved || macro_hatch_timings || CUNYAIModule::my_reservation.getExcessMineral() > 300)); // only macrohatch if you are short on larvae and can afford to spend.
 
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Extractor, drone,
         !CUNYAIModule::workermanager.checkExcessGasCapacity() && CUNYAIModule::gas_starved &&
