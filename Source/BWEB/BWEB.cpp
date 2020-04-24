@@ -648,7 +648,7 @@ namespace BWEB::Map
 
     BWAPI::Position getClosestChokeTile(const BWAPI::Position p)
     {
-        int distance = INT_MAX;
+        double distance = INT_MAX;
         BWAPI::Position closest_pos = BWAPI::Positions::Invalid;
         auto area = BWEM::Map::Instance().GetArea(TilePosition(p));
         if(area)

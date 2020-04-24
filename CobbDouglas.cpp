@@ -10,7 +10,7 @@
 
 using namespace std;
 
-struct Player_Model;
+class PlayerModel;
 
 //complete but long creator method. Normalizes to 1 automatically.
 void CobbDouglas::evaluateCD(double army_stk, double tech_stk, double wk_stk)
@@ -133,7 +133,7 @@ void CobbDouglas::storeStocks(int e_army_stock, int e_tech_stock, int e_worker_s
 }
 
 //Sets enemy utility function parameters based on known information.
-void CobbDouglas::enemy_mimic(const Player_Model & enemy, const double adaptation_rate) {
+void CobbDouglas::enemy_mimic(const PlayerModel & enemy, const double adaptation_rate) {
     //If optimally chose, the derivatives will all be equal.
 
     Diagnostics::DiagnosticText("We're updating our model to mimic our opponents.");

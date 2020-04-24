@@ -11,8 +11,8 @@
 using namespace BWAPI;
 
 bool TechManager::tech_avail_ = true;
-std::map<UpgradeType, int> TechManager::upgrade_cycle_ = Player_Model::getUpgradeCartridge(); // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
-std::map<TechType, int> TechManager::tech_cycle_ = Player_Model::getTechCartridge(); // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
+std::map<UpgradeType, int> TechManager::upgrade_cycle_ = PlayerModel::getUpgradeCartridge(); // persistent valuation of buildable upgrades. Should build most valuable one every opportunity.
+std::map<TechType, int> TechManager::tech_cycle_ = PlayerModel::getTechCartridge(); // persistent valuation of buildable techs. Only used to determine gas requirements at the moment.
 
 bool TechManager::checkBuildingReady(const UpgradeType up) {
     return CUNYAIModule::countUnitsAvailableToPerform(up) > 0;
@@ -43,7 +43,7 @@ void TechManager::updateOptimalTech() {
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
             upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot always be ran... medics & firebats vs air causes a lockup.
-            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true)) * 0.25 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
+            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true))/4 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
             potential_up.second = static_cast<int>( ((24.0 * 20.0 - 1) * upgrade_cycle_[potential_up.first] + score) / (24.0 * 20.0) ); //moving average over 24*20 * 1 simulations. Long because the asymtotics really do not take hold easily.
         }

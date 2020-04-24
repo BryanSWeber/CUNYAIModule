@@ -124,7 +124,7 @@ bool CUNYAIModule::isFightingUnit(const UnitType &unittype)
 }
 
 
-void CUNYAIModule::writePlayerModel(const Player_Model &player, const string label)
+void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string label)
 {
     if constexpr(ANALYSIS_MODE) {
         ofstream output; // Prints to brood war file while in the WRITE file.
@@ -247,10 +247,10 @@ void CUNYAIModule::writePlayerModel(const Player_Model &player, const string lab
             output << " Tech Types " << smashed_upgrade_types << endl;
             output << " Inferred Buildings " << smashed_inferred_building_types << endl;
 
-            if (player.bwapi_player_) {
-                output << " Unit Score " << player.bwapi_player_->getUnitScore() << endl;
-                output << " Kill Score " << player.bwapi_player_->getKillScore() << endl;
-                output << " Building Score " << player.bwapi_player_->getBuildingScore() << endl;
+            if (player.getPlayer()) {
+                output << " Unit Score " << player.getPlayer()->getUnitScore() << endl;
+                output << " Kill Score " << player.getPlayer()->getKillScore() << endl;
+                output << " Building Score " << player.getPlayer()->getBuildingScore() << endl;
             }
 
             output << " Labor " << player.spending_model_.worker_stock <<  " alpha_L " << player.spending_model_.alpha_econ  << " gradient " << player.spending_model_.econ_derivative << endl;
@@ -1068,8 +1068,8 @@ StoredUnit* CUNYAIModule::getClosestThreatOrTargetWithPriority(UnitInventory &ui
 
 StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
-    int temp_dist = 999999;
+    bool can_be_attacked_by;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
@@ -1079,7 +1079,7 @@ StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const 
             if (can_be_attacked_by && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1091,8 +1091,8 @@ StoredUnit* CUNYAIModule::getClosestThreatWithPriority(UnitInventory &ui, const 
 
 StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    bool can_attack;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
@@ -1102,7 +1102,7 @@ StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const
             if (can_attack && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1115,8 +1115,7 @@ StoredUnit* CUNYAIModule::getClosestTargettWithPriority(UnitInventory &ui, const
 //Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 StoredUnit* CUNYAIModule::getClosestGroundWithPriority(UnitInventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = pos;
 
@@ -1125,7 +1124,7 @@ StoredUnit* CUNYAIModule::getClosestGroundWithPriority(UnitInventory &ui, const 
             if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second)) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1138,8 +1137,7 @@ StoredUnit* CUNYAIModule::getClosestGroundWithPriority(UnitInventory &ui, const 
 //Gets pointer to closest attackable unit to point within UnitInventory. Checks range. Careful about visiblity.  Can return nullptr. Ignores Special Buildings and critters. Does not attract to cloaked.
 StoredUnit* CUNYAIModule::getClosestIndicatorOfArmy(UnitInventory &ui, const Position &pos, const int &dist) {
     int min_dist = dist;
-    bool can_attack, can_be_attacked_by;
-    double temp_dist = 999999;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = pos;
 
@@ -1148,7 +1146,7 @@ StoredUnit* CUNYAIModule::getClosestIndicatorOfArmy(UnitInventory &ui, const Pos
             if (!e->second.is_flying_ && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_ && hasPriority(e->second) && e->second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && !e->second.type_.isWorker()) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1166,7 +1164,7 @@ bool CUNYAIModule::hasPriority(StoredUnit e) {
 StoredUnit* CUNYAIModule::getClosestThreatStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_be_attacked_by;
-    double temp_dist = 999999;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
 
@@ -1177,7 +1175,7 @@ StoredUnit* CUNYAIModule::getClosestThreatStored(UnitInventory &ui, const Unit &
             if (can_be_attacked_by && !e->second.type_.isSpecialBuilding() && !e->second.type_.isCritter() && e->second.valid_pos_) {
                 temp_dist = e->second.pos_.getDistance(origin);
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }
@@ -1191,7 +1189,7 @@ StoredUnit* CUNYAIModule::getClosestThreatStored(UnitInventory &ui, const Unit &
 StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(UnitInventory &ui, const Unit &unit, const int &dist) {
     int min_dist = dist;
     bool can_attack, can_be_attacked_by, we_are_a_flyer;
-    double temp_dist = 999999;
+    double temp_dist = INT_MAX;
     StoredUnit* return_unit = nullptr;
     Position origin = unit->getPosition();
     we_are_a_flyer = unit->getType().isFlyer();
@@ -1209,7 +1207,7 @@ StoredUnit* CUNYAIModule::getMostAdvancedThreatOrTargetStored(UnitInventory &ui,
                 }
 
                 if (temp_dist <= min_dist) {
-                    min_dist = temp_dist;
+                    min_dist = static_cast<int>(temp_dist);
                     return_unit = &(e->second);
                 }
             }

@@ -8,7 +8,7 @@
 using namespace std;
 using namespace BWAPI;
 
-struct Player_Model {
+class PlayerModel {
 private:
     //(while these only are relevant for CUNYBot, they are still passed to all players anyway by default on construction), Combat unit cartridge is all mobile noneconomic units we may consider building(excludes static defense).
     inline static std::map<UnitType, int> combat_unit_cartridge_ = { { UnitTypes::Zerg_Ultralisk, 0 } ,{ UnitTypes::Zerg_Mutalisk, 0 },{ UnitTypes::Zerg_Scourge, 0 },{ UnitTypes::Zerg_Hydralisk, 0 },{ UnitTypes::Zerg_Zergling , 0 },{ UnitTypes::Zerg_Lurker, 0 } ,{ UnitTypes::Zerg_Guardian, 0 } ,{ UnitTypes::Zerg_Devourer, 0 } };
@@ -23,31 +23,41 @@ private:
     double average_econ_; // Cumulative.
     double average_tech_; // Cumulative.
 
+    inline static Player bwapi_player_ = Player();
+    inline static double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
+    inline static double estimated_cumulative_worth_ = 0; // prototyping.
+    inline static double estimated_net_worth_ = 0; // prototyping.
+    inline static double estimated_resources_per_frame_ = 0; // prot0typing.
+    inline static double estimated_unseen_tech_per_frame_ = 0; // prot0typing.
+    inline static double estimated_unseen_army_per_frame_ = 0; // prot0typing.
+    inline static double estimated_unseen_army_ = 0; // how big is their army we have not seen, approximately?
+    inline static double estimated_unseen_flyers_ = 0; // a subset of estimated army. Should sum with ground to be the total unseen army.
+    inline static double estimated_unseen_ground_ = 0; // a subset of estimated army. Should sum with fliers to be the total unseen army.
+    inline static double estimated_unseen_tech_ = 0; // Expenditures on research, upgrades, and buildings that allow better combat units.
+    inline static double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
+
     void Print_Average_CD(const int &screen_x, const int &screen_y); // Onscreen Diagnostic.
 
 public:
 
-    static std::map<UnitType, int> getCombatUnitCartridge();
-    static std::map<UnitType, int> getEcoUnitCartridge();
-    static std::map<UnitType, int> getBuildingCartridge();
-    static std::map<UpgradeType, int> getUpgradeCartridge();
-    static std::map<TechType, int> getTechCartridge();
-    static bool dropBuildingType(UnitType u); //Drops a building. 
-    static bool dropUnitType(UnitType u); //drops a combat unit.
+    //Commands that deal with the limits of viable actions.
+    static std::map<UnitType, int> getCombatUnitCartridge(); //returns a copy of the combat unit cartridge.
+    static std::map<UnitType, int> getEcoUnitCartridge(); // Returns a copy of the eco unit cartridge (usually just resource depots, workers, and extractors).
+    static std::map<UnitType, int> getBuildingCartridge(); // Returns a copy of the buildings that are viable.
+    static std::map<UpgradeType, int> getUpgradeCartridge(); // Returns a copy of the upgrades that are viable.
+    static std::map<TechType, int> getTechCartridge(); // Returns a copy of the technologies (researches) that are viable.
+    static bool dropBuildingType(UnitType u); //Drops a building as if we cannot produce it at all. 
+    static bool dropUnitType(UnitType u); //drops a combat unit as if we cannot produce it at all.
 
-    // Important variables.
-    Player bwapi_player_;
-    double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
-    double estimated_cumulative_worth_ = 0; // prototyping.
-    double estimated_net_worth_ = 0; // prototyping.
-    double estimated_resources_per_frame_ = 0; // prot0typing.
-    double estimated_unseen_tech_per_frame_ = 0; // prot0typing.
-    double estimated_unseen_army_per_frame_ = 0; // prot0typing.
-    double estimated_unseen_army_ = 0;
-    double estimated_unseen_flyers_ = 0; // a subset of estimated army.
-    double estimated_unseen_ground_ = 0; // a subset of estimated army.
-    double estimated_unseen_tech_ = 0;
-    double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
+    //Command that summarize the status of a player.
+    static double getEstimatedUnseenArmy(); //Returns a one number-summary of unseen army size.
+    static double getEstimatedUnseenFliers(); //Returns a one number-summary of unseen flier army size.
+    static double getEstimatedUnseenGround(); // Returns a one number-summary of unseen ground army size.
+    static double getEstimatedUnseenTech(); // Returns a one number-summary of unseen tech upgrades, researches etc.
+    static double getEstimatedUnseenWorkers(); //Returns a one number-summary of the number of unseen workers the player has.
+
+    //In case we need access to BWAPI functions.
+    static Player getPlayer(); //Returns the BWAPI player
 
     //Classes borrowed from other sources
     UnitInventory units_;
@@ -105,5 +115,7 @@ public:
     double getCumArmy(); // getters for the private average alpha army stat.
     double getCumEco(); // getters for the private average alpha eco stat.
     double getCumTech(); // getters for the private average alpha tech stat.
+
+    void decrementUnseenWorkers(); //Reduce the number of unseen workers by 1.
 };
 

@@ -47,9 +47,9 @@ double CUNYAIModule::alpha_tech_original = 0;
 double CUNYAIModule::alpha_econ_original = 0;
 double CUNYAIModule::supply_ratio; // for supply levels.  Supply is an inhibition on growth rather than a resource to spend.  Cost of growth.
 double CUNYAIModule::gas_proportion; // for gas levels. Gas is critical for spending but will be matched with supply.
-Player_Model CUNYAIModule::friendly_player_model;
-Player_Model CUNYAIModule::enemy_player_model;
-Player_Model CUNYAIModule::neutral_player_model;
+PlayerModel CUNYAIModule::friendly_player_model;
+PlayerModel CUNYAIModule::enemy_player_model;
+PlayerModel CUNYAIModule::neutral_player_model;
 Resource_Inventory CUNYAIModule::land_inventory; // resources.
 MapInventory CUNYAIModule::currentMapInventory;  // macro variables, not every unit I have.
 CombatManager CUNYAIModule::combat_manager;
@@ -374,9 +374,6 @@ void CUNYAIModule::onFrame()
     //Update important variables.  Enemy stock has a lot of dependencies, updated above.
     currentMapInventory.updateVision_Count();
 
-    currentMapInventory.updateLn_Supply_Remain();
-    currentMapInventory.updateLn_Supply_Total();
-
     workermanager.updateGas_Workers();
     workermanager.updateMin_Workers();
     workermanager.updateWorkersClearing();
@@ -385,8 +382,8 @@ void CUNYAIModule::onFrame()
     workermanager.updateExcessCapacity();
 
     currentMapInventory.updateHatcheries();  // macro variables, not every unit I have.
-    currentMapInventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2))) / static_cast<double>(Broodwar->getStartLocations().size()) );
-    currentMapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( static_cast<int>(sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(currentMapInventory.getExpoTilePositions().size())) );
+    currentMapInventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()) );
+    currentMapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(currentMapInventory.getExpoTilePositions().size()) );
     currentMapInventory.updateScreen_Position();
     currentMapInventory.mainCurrentMap();
     currentMapInventory.createAirThreatField(enemy_player_model);
@@ -730,7 +727,7 @@ void CUNYAIModule::onUnitDiscover(BWAPI::Unit unit)
         }
 
         if (unit->getType().isBuilding() && unit->getPlayer()->getRace() == Races::Zerg) {
-            enemy_player_model.estimated_workers_--;
+            enemy_player_model.decrementUnseenWorkers();
         }
 
         enemy_player_model.imputeUnits(unit);
@@ -866,7 +863,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
     if (unit->getPlayer()->isEnemy(Broodwar->self())) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
         auto found_ptr = enemy_player_model.units_.getStoredUnit(unit);
         if (found_ptr) {
-            if (found_ptr->type_.isWorker()) enemy_player_model.estimated_workers_--;
+            if (found_ptr->type_.isWorker()) enemy_player_model.decrementUnseenWorkers();
             enemy_player_model.units_.unit_map_.erase(unit);
             enemy_player_model.casualties_.addStoredUnit(unit);
             //Diagnostics::DiagnosticText( "Killed a %s, inventory is now size %d.", found_ptr->second.type_.c_str(), enemy_player_model.units_.UnitInventory_.size() );

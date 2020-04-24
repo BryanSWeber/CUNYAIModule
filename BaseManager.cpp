@@ -250,11 +250,11 @@ Base BaseManager::getClosestBaseGround(const Position & pos)
 
 Base BaseManager::getClosestBaseAir(const Position & pos)
 {
-    int minDist = INT_MAX;
+    double minDist = INT_MAX;
     Position basePos = Positions::Origin;
     Base nullBase;
     for (auto & b : baseMap_) {
-        int currentDist = pos.getDistance(Position(b.first));
+        double currentDist = pos.getDistance(Position(b.first));
         if (currentDist < minDist) {
             minDist = currentDist;
             basePos = b.first;

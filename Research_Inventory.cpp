@@ -37,7 +37,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     std::set<UnitType> unit_types;
     std::set<UnitType> temp_unit_types;
 
-    Player_Model player_model_to_compare;
+    PlayerModel player_model_to_compare;
     if (player == Broodwar->self())
         player_model_to_compare = CUNYAIModule::friendly_player_model;
     else
@@ -61,18 +61,18 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
     }
     for (auto i : upgrades_) {
         if (i.second && isTechBuilding(i.first.whatsRequired(i.second)))
-            tech_buildings_[i.first.whatsRequired(i.second)] = max(tech_buildings_[i.first.whatsRequired(i.second)], 1.0); // requirements might be "none".
+            tech_buildings_[i.first.whatsRequired(i.second)] = max(tech_buildings_[i.first.whatsRequired(i.second)], 1); // requirements might be "none".
     }
     for (auto i : tech_) {
         if (i.second && isTechBuilding(i.first.whatResearches()))
-            tech_buildings_[i.first.whatResearches()] = max(tech_buildings_[i.first.whatResearches()],1.0); // requirements might be "none".
+            tech_buildings_[i.first.whatResearches()] = max(tech_buildings_[i.first.whatResearches()],1); // requirements might be "none".
     }
 
     for (auto &i : tech_buildings_) {// for every unit type they have.
-        double value = max(static_cast<double>(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_)), i.second);
+        int value = max(CUNYAIModule::countUnits(i.first, player_model_to_compare.units_), i.second);
         if(value > 0)
           i.second = value; // we update the count of them that we hve seen so far.
-        //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) Player_Model::imputeUnits(StoredUnit(i.first));
+        //if (CUNYAIModule::Count_Units(i.first, player_model_to_compare.units_) < i.second && player != Broodwar->self()) PlayerModel::imputeUnits(StoredUnit(i.first));
     }
 
 }
@@ -99,7 +99,7 @@ void Research_Inventory::updateTechStock() {
 }
 
 void Research_Inventory::updateBuildingStock(const Player & player) {
-    Player_Model player_model_to_compare;
+    PlayerModel player_model_to_compare;
     if (player == Broodwar->self())
         player_model_to_compare = CUNYAIModule::friendly_player_model;
     else
@@ -137,7 +137,7 @@ void Research_Inventory::updateResearch(const Player & player)
         Diagnostics::DiagnosticText("What do we think is happening for researches?");
         Diagnostics::DiagnosticText("This is the research units of an %s:", player->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
         for (auto ut : tech_buildings_)
-            Diagnostics::DiagnosticText("They have %4.2f of %s", ut.second, ut.first.c_str());
+            Diagnostics::DiagnosticText("They have %d of %s", ut.second, ut.first.c_str());
     }
 }
 

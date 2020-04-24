@@ -98,7 +98,7 @@ private:
 };
 
 // returns the total, nondirected speed of an enemy unit. Highly variable.
-int getEnemySpeed(Unit e);
+double getEnemySpeed(Unit e);
 
 //returns the vector of an enemy unit.
 Position getEnemyVector(Unit e);

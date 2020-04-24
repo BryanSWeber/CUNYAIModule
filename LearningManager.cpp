@@ -271,7 +271,7 @@ void LearningManager::initializeGeneticLearning() {
     //What model is this? It's greedy...
 
 
-    int game_score = 0;
+    double game_score = 0;
     int game_count = 0;
 
     for (vector<HistoryEntry>::reverse_iterator game_iter = game_data.rbegin(); game_iter != game_data.rend(); game_iter++) {
@@ -307,7 +307,7 @@ void LearningManager::initializeGeneticLearning() {
         double weighted_game_score = getOutcomeScore(game_iter->win_total_, game_iter->score_building_, game_iter->score_kills_, game_iter->score_raze_, game_iter->score_units_);
 
         if (game_count > population_size) {
-            if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score / game_count : 0, 100)) // either you won in a match or you did fairly well by our standards
+            if (weight_of_match_quality * weighted_game_score >= max(game_count > 0 ? game_score / game_count : 0, 100.0)) // either you won in a match or you did fairly well by our standards
                 game_data_well_matched.push_back(*game_iter);
         }
         else {

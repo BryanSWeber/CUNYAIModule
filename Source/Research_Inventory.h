@@ -14,9 +14,9 @@ using namespace BWAPI;
 struct Research_Inventory {
     Research_Inventory() {};//need a constructor method.
 
-    map<UpgradeType, int> upgrades_;
-    map<TechType, bool> tech_;
-    map<UnitType, double> tech_buildings_;
+    map<UpgradeType, int> upgrades_; //{Upgrade type, level (3 usually, 1 sometimes)}
+    map<TechType, bool> tech_; // {Tech Type, Complete}
+    map<UnitType, int> tech_buildings_; // {Building type, count}
     int tech_stock_ = 0;
     int upgrade_stock_ = 0;
     int research_stock_ = 0;

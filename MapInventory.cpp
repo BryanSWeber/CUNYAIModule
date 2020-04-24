@@ -20,10 +20,6 @@ MapInventory::MapInventory() {};
 MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri) {
 
     updateVision_Count();
-
-    updateLn_Supply_Remain();
-    updateLn_Supply_Total();
-
     updateHatcheries();
 
     //Fields:
@@ -79,34 +75,7 @@ void MapInventory::updateGroundDangerousAreas()
     for (auto area : BWEM::Map::Instance().Areas()) {
         area.SetData(CUNYAIModule::checkDangerousArea(UnitTypes::Zerg_Drone, area.Id() ));
     }
-}
-;
-
-
-
-// Updates the (safe) log of our supply stock. Looks specifically at our morphing units as "available".
-void MapInventory::updateLn_Supply_Remain() {
-
-    int total = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
-
-    if (total <= 0) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_supply_remain_ = log(total);
 };
-
-// Updates the (safe) log of our consumed supply total.
-void MapInventory::updateLn_Supply_Total() {
-
-    double total = Broodwar->self()->supplyTotal();
-    if (total <= 0) {
-        total = 1;
-    } // no log 0 under my watch!.
-
-    ln_supply_total_ = log(total);
-};
-
 
 // Updates the (safe) log of our gas total. Returns very high int instead of infinity.
 double MapInventory::getGasRatio() {
@@ -119,15 +88,27 @@ double MapInventory::getGasRatio() {
     } // in the alternative case, you have nothing - you're mineral starved, you need minerals, not gas. Define as ~~infty, not 0.
 };
 
-// Updates the (safe) log of our supply total. Returns very high int instead of infinity.
+// Evaluates ln(supply_excess)/ln(supply_available). Returns 0 if supply available is 0.  Considers overlords in production as well as finished ones.
 double MapInventory::getLn_Supply_Ratio() {
+    int supply_total_ = 0;
+    int supply_used_ = 0; //includes production.
+
+    for (auto u : Broodwar->self()->getUnits()) {
+        supply_total_ += u->getType().supplyProvided();
+        supply_total_ += u->getBuildType().supplyProvided();
+
+        supply_used_ += u->getType().supplyRequired();
+        supply_used_ += u->getBuildType().supplyRequired();
+    }
+
+
     // Normally:
-    if (ln_supply_total_ > 0) {
-        return ln_supply_remain_ / ln_supply_total_;
+    if (supply_total_ > 0 && supply_total_ - supply_used_ > 0) {
+        return log(supply_total_ - supply_used_) / log(supply_total_);
     }
     else {
         return 0;
-    } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. Just in case- Define as ~~infty, not 0.
+    } // in the alternative case, you have nothing - you're supply starved. Probably dead, too. 
 };
 
 // Updates the count of our vision total, in tiles
@@ -1192,7 +1173,7 @@ vector< vector<int> > MapInventory::completeField(vector< vector<int> > pf, cons
 
 
 // IN PROGRESS  
-void MapInventory::createAirThreatField(Player_Model &enemy_player) {
+void MapInventory::createAirThreatField(PlayerModel &enemy_player) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1201,7 +1182,7 @@ void MapInventory::createAirThreatField(Player_Model &enemy_player) {
 
     //set all the nonzero elements to their relevant values.
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int air_range_ = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.bwapi_player_)) * unit.second.shoots_up_;
+        int air_range_ = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_;
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(air_range_, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
@@ -1209,7 +1190,7 @@ void MapInventory::createAirThreatField(Player_Model &enemy_player) {
 
 }
 
-void MapInventory::createDetectField(Player_Model &enemy_player) {
+void MapInventory::createDetectField(PlayerModel &enemy_player) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1226,7 +1207,7 @@ void MapInventory::createDetectField(Player_Model &enemy_player) {
 
 }
 
-void MapInventory::createGroundThreatField(Player_Model &enemy_player) {
+void MapInventory::createGroundThreatField(PlayerModel &enemy_player) {
 
     int tile_map_x = Broodwar->mapWidth();
     int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1235,7 +1216,7 @@ void MapInventory::createGroundThreatField(Player_Model &enemy_player) {
 
     //set all the nonzero elements to their relevant values.
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
-        int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.bwapi_player_)) * unit.second.shoots_down_;
+        int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_down_;
         pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(ground_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
@@ -1518,6 +1499,9 @@ bool MapInventory::isStartPosition(const Position &p) {
 
 double MapInventory::distanceTransformation(const int distanceFromTarget) {
         return distanceFromTarget ==  0 ? 0.30 : 100.0/static_cast<double>(distanceFromTarget);
+}
+double MapInventory::distanceTransformation(const double distanceFromTarget) {
+    return distanceFromTarget == 0 ? 0.30 : 100.0 / distanceFromTarget;
 }
 
 void MapInventory::assignLateArmyMovement(const Position closest_enemy){

@@ -34,7 +34,7 @@ bool AssemblyManager::have_idle_spires_ = false;
 bool AssemblyManager::subgoal_econ_ = false;
 bool AssemblyManager::subgoal_army_ = false;
 
-std::map<UnitType, int> AssemblyManager::assembly_cycle_ = Player_Model::getCombatUnitCartridge();
+std::map<UnitType, int> AssemblyManager::assembly_cycle_ = PlayerModel::getCombatUnitCartridge();
 
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the UnitInventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
@@ -260,7 +260,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
 
     //Macro-related Buildings.
     bool bases_are_active = CUNYAIModule::basemanager.getInactiveBaseCount(3) + CUNYAIModule::my_reservation.isInReserveSystem(Broodwar->self()->getRace().getResourceDepot()) < 1;
-    bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.bwapi_player_->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
+    bool less_bases_than_enemy = CUNYAIModule::basemanager.getBaseCount() < 2 + CUNYAIModule::countUnits(CUNYAIModule::enemy_player_model.getPlayer()->getRace().getResourceDepot(), CUNYAIModule::enemy_player_model.units_);
     if (!buildings_started) buildings_started = Expo(drone, bases_are_active &&
                                                             (less_bases_than_enemy || (distance_mining || CUNYAIModule::econ_starved || CUNYAIModule::larva_starved || CUNYAIModule::basemanager.getLoadedBaseCount(8) > 1) && path_available && !macro_hatch_timings), CUNYAIModule::currentMapInventory);
     //buildings_started = expansion_meaningful; // stop if you need an expo!
@@ -277,7 +277,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Spawning_Pool, drone, CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) == 0 && CUNYAIModule::friendly_player_model.units_.resource_depot_count_ > 0);
 
     //Consider an organized build plan.
-    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.estimated_unseen_flyers_ > 0)) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
+    if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_ && (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)) { // Mutas generally sucks against air unless properly massed and manuvered (which mine are not).
         if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0 &&
             CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool, true) > 0 &&
@@ -491,7 +491,7 @@ bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || checkSufficientSlack(UnitTypes::Zerg_Zergling) && u_type == UnitTypes::Zerg_Larva) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva)) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 

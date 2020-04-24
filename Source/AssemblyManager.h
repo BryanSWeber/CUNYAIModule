@@ -39,6 +39,13 @@ private:
     static int last_frame_of_creep_command;
 
 public:
+    static bool assignUnitAssembly(); // Assigns units to appropriate bank and builds them when needed.
+    static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
+
+    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
+    static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
+
+
     static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
@@ -52,10 +59,7 @@ public:
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
 
     static bool buildAtNearestPlacement(const UnitType &building, map<int, TilePosition> &placements, const Unit u, const bool extra_critera, const int max_travel_distance_contributing = 500); // build at the nearest position in that map<int, TilePosition> using unit u. Confirms extra criteria is met. Will not consider more than (max_travel_distance_contributing) pixels of travel time into cost.
-    static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
-    static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
     static bool Expo(const Unit &unit, const bool &extra_critera, MapInventory &inv); // Build an expo at a internally chosen position, granting extra critera is true. Asks to be fed a map inventory so it knows what positions are safe.
-    static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
     static void clearBuildingObstuctions(const UnitType & ut, const TilePosition & tile, const Unit & exception_unit); // Moves all units except for the Stored exeption_unit elsewhere.
     static bool isPlaceableCUNY(const UnitType &building, const TilePosition &tile);    // Checks if a tile position is buildable for a unit of type building and clear of immobile obstructions. Note this will NOT check visiblity.
     static bool isOccupiedBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if a build position is occupied.
@@ -64,7 +68,6 @@ public:
     static void Print_Assembly_FAP_Cycle(const int & screen_x, const int & screen_y);     // print the assembly cycle we're thinking about.
     static void updatePotentialBuilders(); // Updates all units that might build something at this time.
     static bool creepColonyInArea(const Position & pos); // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
-    static bool assignUnitAssembly(); // Assigns units to appropriate bank and builds them when needed.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
     static void getDefensiveWalls(); // Creates a Z-sim city at the natural.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr); // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.

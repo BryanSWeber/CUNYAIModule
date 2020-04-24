@@ -28,8 +28,6 @@ struct MapInventory {
     Position screen_position_;
     bool discovered_enemy_this_frame = false;
     bool enemy_found = false;
-    double ln_supply_remain_;
-    double ln_supply_total_;
 
     int hatches_;
     int last_gas_check_;
@@ -66,10 +64,6 @@ struct MapInventory {
     vector< vector<int> > pf_detect_threat_; // which areas are detected?
     vector< vector<int> > pf_ground_threat_; // which ground areas are under threat?
 
-    // Updates the (safe) log of our supply stock.
-    void updateLn_Supply_Remain();
-    // Updates the (safe) log of our supply total.
-    void updateLn_Supply_Total();
     // Updates the count of our vision total, in tiles
     void updateVision_Count();
     // Updates our screen poisition. A little gratuitous but nevertheless useful.
@@ -122,9 +116,9 @@ struct MapInventory {
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
     vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
-    void createAirThreatField(Player_Model & enemy_player);
-    void createDetectField(Player_Model & enemy_player);
-    void createGroundThreatField(Player_Model & enemy_player);
+    void createAirThreatField(PlayerModel & enemy_player);
+    void createDetectField(PlayerModel & enemy_player);
+    void createGroundThreatField(PlayerModel & enemy_player);
 
 
     void DiagnosticField(vector<vector<int>>& pf); //Diagnostic to show "potential fields"
@@ -144,6 +138,7 @@ struct MapInventory {
     Position getFurthestInVector(vector<Position>& posVector); // This command returns the furthest position to my safe_base_.
     bool isStartPosition(const Position & p); //returns true if the position is a start position.
     double distanceTransformation(const int currentDistance); //transforms the distance into a weighted distance based on time of game, distance from enemy, and size of map.
+    double distanceTransformation(const double distanceFromTarget);  //transforms the distance into a weighted distance based on time of game, distance from enemy, and size of map. Overload.
     void assignLateArmyMovement(const Position closest_enemy);
     void assignLateAirMovement(const Position closest_enemy);
     void assignLateScoutMovement(const Position closest_enemy);

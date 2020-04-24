@@ -649,7 +649,7 @@ bool Mobility::checkEnemyApproachingUs(StoredUnit & e) {
     return checkAngleSimilar(e.angle_, angle_to_me);
 }
 
-int getEnemySpeed(Unit e) {
+double getEnemySpeed(Unit e) {
     return sqrt(pow(e->getVelocityX(),2) + pow(e->getVelocityY(),2));
 }
 

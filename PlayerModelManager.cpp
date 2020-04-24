@@ -11,7 +11,7 @@ using namespace std;
 using namespace BWAPI;
 
 
-void Player_Model::updateOtherOnFrame(const Player & other_player)
+void PlayerModel::updateOtherOnFrame(const Player & other_player)
 {
     // Store Player
     bwapi_player_ = other_player;
@@ -29,9 +29,8 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
 
     evaluateCurrentWorth(); // How much do they appear to have?
+    estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;     // Combine unseen and seen workers for a total worker count.
 
-    // Combine unseen and seen workers for a total worker count.
-    estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;
 
 
     int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
@@ -48,7 +47,7 @@ void Player_Model::updateOtherOnFrame(const Player & other_player)
     updatePlayerAverageCD(); // For saving/printing on game end, what is this guy's style like?
 };
 
-void Player_Model::updateSelfOnFrame()
+void PlayerModel::updateSelfOnFrame()
 {
     bwapi_player_ = Broodwar->self();
 
@@ -112,7 +111,7 @@ void Player_Model::updateSelfOnFrame()
 
 }
 
-void Player_Model::imputeUnits(const Unit &unit)
+void PlayerModel::imputeUnits(const Unit &unit)
 {
     StoredUnit eu = StoredUnit(unit);
     double temp_estimated_unseen_army_ = 0;
@@ -187,7 +186,7 @@ void Player_Model::imputeUnits(const Unit &unit)
     }
 }
 
-void Player_Model::incrementUnseenUnits(const UnitType & ut)
+void PlayerModel::incrementUnseenUnits(const UnitType & ut)
 {
     auto matching_unseen_units = unseen_units_.find(ut);
     if (matching_unseen_units != unseen_units_.end())
@@ -197,7 +196,7 @@ void Player_Model::incrementUnseenUnits(const UnitType & ut)
     }
 }
 
-void Player_Model::setUnseenUnits(const UnitType & ut, const double &d)
+void PlayerModel::setUnseenUnits(const UnitType & ut, const double &d)
 {
     auto matching_unseen_units = unseen_units_.find(ut);
     if (matching_unseen_units != unseen_units_.end())
@@ -207,14 +206,14 @@ void Player_Model::setUnseenUnits(const UnitType & ut, const double &d)
     }
 }
 
-void Player_Model::decrementUnseenUnits(const UnitType & ut)
+void PlayerModel::decrementUnseenUnits(const UnitType & ut)
 {
     auto matching_unseen_units = unseen_units_.find(ut);
     if (matching_unseen_units != unseen_units_.end())
         unseen_units_.at(ut)--; // reduce the count of this unite by one.
 }
 
-double Player_Model::countUnseenUnits(const UnitType & ut)
+double PlayerModel::countUnseenUnits(const UnitType & ut)
 {
     auto matching_unseen_units = unseen_units_.find(ut);
     if (matching_unseen_units != unseen_units_.end())
@@ -222,7 +221,7 @@ double Player_Model::countUnseenUnits(const UnitType & ut)
     return 0.0;
 }
 
-void Player_Model::evaluatePotentialUnitExpenditures() {
+void PlayerModel::evaluatePotentialUnitExpenditures() {
     double temp_estimated_unseen_supply_ = 0;
     double temp_estimated_unseen_army_ = 0;
     double temp_estimated_unseen_flyers_ = 0;
@@ -235,7 +234,7 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
 
     if (Broodwar->getFrameCount() == 0) {
         for(int i = 0; i < 4; i++)
-        incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // at game start there are 4 workers.
+            incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // at game start there are 4 workers.
         incrementUnseenUnits(bwapi_player_->getRace().getResourceDepot()); // there is also one base.
     }
 
@@ -315,7 +314,7 @@ void Player_Model::evaluatePotentialUnitExpenditures() {
     }
 }
 
-void Player_Model::evaluatePotentialTechExpenditures() {
+void PlayerModel::evaluatePotentialTechExpenditures() {
     double min_possible_ = 0;
     double gas_possible_ = 0;
     double supply_possible_ = 0;
@@ -399,7 +398,7 @@ void Player_Model::evaluatePotentialTechExpenditures() {
     estimated_unseen_tech_per_frame_ = value_possible_per_frame_;
 }
 
-void Player_Model::evaluateCurrentWorth()
+void PlayerModel::evaluateCurrentWorth()
 {
     if (Broodwar->getFrameCount() == 0) {
         estimated_cumulative_worth_ = 50;
@@ -465,7 +464,7 @@ void Player_Model::evaluateCurrentWorth()
 }
 
 //Takes a unit inventory and increments the unit map as if everything in the unit map was producing.  This does not include depots producing workers.
-void Player_Model::considerUnseenProducts(const UnitInventory &ui)
+void PlayerModel::considerUnseenProducts(const UnitInventory &ui)
 {
     for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 
@@ -484,7 +483,7 @@ void Player_Model::considerUnseenProducts(const UnitInventory &ui)
 
 
 //Takes an unseen unit map and increments the unseen_units map as if everything in the unit map was producing.  This does not include depots producing workers.
-void Player_Model::considerUnseenProducts(const map< UnitType, double>  &ui)
+void PlayerModel::considerUnseenProducts(const map< UnitType, double>  &ui)
 {
     for (auto i : ui) { // each unit type is collectively stored in this unit map.
 
@@ -502,7 +501,7 @@ void Player_Model::considerUnseenProducts(const map< UnitType, double>  &ui)
 }
 
 
-void Player_Model::considerWorkerUnseenProducts(const UnitInventory & ui)
+void PlayerModel::considerWorkerUnseenProducts(const UnitInventory & ui)
 {
     for (auto i : ui.unit_map_) { // each unit is individually stored in this unit map.
 
@@ -523,7 +522,7 @@ void Player_Model::considerWorkerUnseenProducts(const UnitInventory & ui)
     }
 }
 
-void Player_Model::considerWorkerUnseenProducts(const map<UnitType, double>& ui)
+void PlayerModel::considerWorkerUnseenProducts(const map<UnitType, double>& ui)
 {
     for (auto i : ui) {  // each unit type is collectively stored in this unit map.
 
@@ -545,7 +544,7 @@ void Player_Model::considerWorkerUnseenProducts(const map<UnitType, double>& ui)
 }
 
 //Assumes each unit produces the a random output of whatever type it can make. This does not include depots producing workers.
-UnitType Player_Model::getDistributedProduct(const UnitType &ut) {
+UnitType PlayerModel::getDistributedProduct(const UnitType &ut) {
     map< UnitType, double> value_holder_;
     vector<UnitType> unittype_holder_;
     // These are possible troop expenditures. find the "worst" one they could make.
@@ -588,7 +587,7 @@ UnitType Player_Model::getDistributedProduct(const UnitType &ut) {
     return the_worst_unit;
 }
 
-vector<UnitType> Player_Model::findAlternativeProducts(const UnitType & ut)
+vector<UnitType> PlayerModel::findAlternativeProducts(const UnitType & ut)
 {
     vector<UnitType> possible_products;
 
@@ -612,7 +611,7 @@ vector<UnitType> Player_Model::findAlternativeProducts(const UnitType & ut)
     return vector<UnitType>();
 }
 
-bool Player_Model::opponentHasRequirements(const UnitType &ut)
+bool PlayerModel::opponentHasRequirements(const UnitType &ut)
 {
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
     if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
@@ -626,20 +625,20 @@ bool Player_Model::opponentHasRequirements(const UnitType &ut)
     return true;
 }
 
-bool Player_Model::opponentHasRequirements(const TechType &tech)
+bool PlayerModel::opponentHasRequirements(const TechType &tech)
 {
     if (tech.whatResearches() != UnitTypes::Zerg_Larva && !tech.whatResearches().isResourceDepot() && CUNYAIModule::countUnits(tech.whatResearches(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
     return true;
 }
 
-bool Player_Model::opponentHasRequirements(const UpgradeType &up)
+bool PlayerModel::opponentHasRequirements(const UpgradeType &up)
 {
     if (up.whatUpgrades() != UnitTypes::Zerg_Larva && !up.whatUpgrades().isResourceDepot() && CUNYAIModule::countUnits(up.whatUpgrades(), CUNYAIModule::enemy_player_model.units_) == 0) return false;
     return true;
 }
 
 
-bool Player_Model::opponentCouldBeUpgrading(const UpgradeType &up)
+bool PlayerModel::opponentCouldBeUpgrading(const UpgradeType &up)
 {
     // If they don't have it or it could be further created...
     if (!CUNYAIModule::enemy_player_model.researches_.upgrades_[up] || CUNYAIModule::enemy_player_model.researches_.upgrades_[up] < up.maxRepeats()) {
@@ -648,7 +647,7 @@ bool Player_Model::opponentCouldBeUpgrading(const UpgradeType &up)
     return false;
 }
 
-bool Player_Model::opponentCouldBeTeching(const TechType &tech)
+bool PlayerModel::opponentCouldBeTeching(const TechType &tech)
 {
     // If they have it, they're not building it...
     if (CUNYAIModule::enemy_player_model.researches_.tech_[tech]) {
@@ -660,7 +659,7 @@ bool Player_Model::opponentCouldBeTeching(const TechType &tech)
 
 
 // Tallies up my units for rapid counting.
-void Player_Model::updateUnit_Counts() {
+void PlayerModel::updateUnit_Counts() {
     vector <UnitType> already_seen;
     vector <int> unit_count_temp;
     vector <int> unit_incomplete_temp;
@@ -682,7 +681,7 @@ void Player_Model::updateUnit_Counts() {
 }
 
 // sample command set to explore zergling rushing.
-void Player_Model::setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order) {
+void PlayerModel::setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order) {
 
     // sample command set to explore zergling rushing.
     spending_model_.alpha_army = CUNYAIModule::alpha_army_original = alpha_army;
@@ -694,22 +693,27 @@ void Player_Model::setLockedOpeningValues(const double alpha_army, const double 
     CUNYAIModule::buildorder = Building_Gene(build_order.c_str());
 }
 
-double Player_Model::getCumArmy()
+double PlayerModel::getCumArmy()
 {
     return average_army_;
 }
 
-double Player_Model::getCumEco()
+double PlayerModel::getCumEco()
 {
     return average_econ_;
 }
 
-double Player_Model::getCumTech()
+double PlayerModel::getCumTech()
 {
     return average_tech_;
 }
 
-void Player_Model::updatePlayerAverageCD()
+void PlayerModel::decrementUnseenWorkers()
+{
+    estimated_unseen_workers_--;
+}
+
+void PlayerModel::updatePlayerAverageCD()
 {
     int time = Broodwar->getFrameCount();
     if (time > 0) {
@@ -719,7 +723,7 @@ void Player_Model::updatePlayerAverageCD()
     }
 }
 
-void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)
+void PlayerModel::Print_Average_CD(const int & screen_x, const int & screen_y)
 {
     Broodwar->drawTextScreen(screen_x, screen_y, "CD_History:");  //
     Broodwar->drawTextScreen(screen_x, screen_y + 10, "Army: %.2g", average_army_);
@@ -727,37 +731,67 @@ void Player_Model::Print_Average_CD(const int & screen_x, const int & screen_y)
     Broodwar->drawTextScreen(screen_x, screen_y + 30, "Tech: %.2g", average_tech_);
 }
 
-std::map<UnitType, int> Player_Model::getCombatUnitCartridge()
+std::map<UnitType, int> PlayerModel::getCombatUnitCartridge()
 {
     return combat_unit_cartridge_;
 }
 
-std::map<UnitType, int> Player_Model::getEcoUnitCartridge()
+std::map<UnitType, int> PlayerModel::getEcoUnitCartridge()
 {
     return eco_unit_cartridge_;
 }
 
-std::map<UnitType, int> Player_Model::getBuildingCartridge()
+std::map<UnitType, int> PlayerModel::getBuildingCartridge()
 {
     return building_cartridge_;
 }
 
-std::map<UpgradeType, int> Player_Model::getUpgradeCartridge()
+std::map<UpgradeType, int> PlayerModel::getUpgradeCartridge()
 {
     return upgrade_cartridge_;
 }
 
-std::map<TechType, int> Player_Model::getTechCartridge()
+std::map<TechType, int> PlayerModel::getTechCartridge()
 {
     return tech_cartridge_;
 }
 
-bool Player_Model::dropBuildingType(UnitType u)
+bool PlayerModel::dropBuildingType(UnitType u)
 {
     return building_cartridge_.erase(u);
 }
 
-bool Player_Model::dropUnitType(UnitType u)
+bool PlayerModel::dropUnitType(UnitType u)
 {
     return combat_unit_cartridge_.erase(u);
+}
+
+double PlayerModel::getEstimatedUnseenArmy()
+{
+    return estimated_unseen_army_;
+}
+
+double PlayerModel::getEstimatedUnseenFliers()
+{
+    return estimated_unseen_flyers_;
+}
+
+double PlayerModel::getEstimatedUnseenGround()
+{
+    return estimated_unseen_ground_;
+}
+
+double PlayerModel::getEstimatedUnseenTech()
+{
+    return estimated_unseen_tech_;
+}
+
+double PlayerModel::getEstimatedUnseenWorkers()
+{
+    return estimated_unseen_workers_;
+}
+
+Player PlayerModel::getPlayer()
+{
+    return bwapi_player_;
 }

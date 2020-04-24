@@ -8,7 +8,7 @@
 
 using namespace std;
 
-struct Player_Model;
+class PlayerModel;
 
 struct CobbDouglas
 {
@@ -40,7 +40,7 @@ struct CobbDouglas
 
     void estimateUnknownCD(int e_army_stock, int e_tech_stock, int e_worker_stock);
     void storeStocks(int e_army_stock, int e_tech_stock, int e_worker_stock);
-    void enemy_mimic(const Player_Model &enemy, const double adaptation_rate);
+    void enemy_mimic(const PlayerModel &enemy, const double adaptation_rate);
 
     // prints progress of economy over time every few seconds.  Gets large quickly.
     void printModelParameters();
