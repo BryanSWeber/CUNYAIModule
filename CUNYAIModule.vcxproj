@@ -135,6 +135,7 @@
     <ClCompile Include="Source\Dll.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="StrategySelector.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\BaseManager.h" />
     <ClInclude Include="Source\BWEB\Block.h" />

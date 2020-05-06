@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -36,7 +36,7 @@ constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwant
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
-constexpr bool UNIT_WEIGHTING = false; // under development.
+constexpr bool UNIT_WEIGHTING = true; // under development.
 
 //Cheats:  Like, literal single player cheats.
 constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
@@ -98,7 +98,7 @@ public:
     static FAP::FastAPproximation<StoredUnit*> MCfap; // integrating FAP into combat with a produrbation.
     static TechManager techmanager;
     static AssemblyManager assemblymanager;
-    static Building_Gene buildorder; //
+    static BuildingGene buildorder; //
     static Reservation my_reservation;
     static LearningManager learned_plan;
     static WorkerManager workermanager;

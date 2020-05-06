@@ -368,7 +368,7 @@ void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &scree
 }
 
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
-void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, const Building_Gene &bo) {
+void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &screen_y, const BuildingGene &bo) {
     int another_row_of_printing = 0;
     if (!bo.building_gene_.empty()) {
         for (auto i : bo.building_gene_) { // iterating through all known combat units. See unit type for enumeration, also at end of page.

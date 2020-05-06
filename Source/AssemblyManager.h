@@ -45,7 +45,6 @@ public:
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
 
-
     static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
@@ -81,53 +80,53 @@ public:
 };
 
 
-class Build_Order_Object {
+class BuildOrderObject {
 private:
 
-    UnitType _unit_in_queue;
-    UpgradeType _upgrade_in_queue;
-    TechType _research_in_queue;
+    UnitType unit_in_queue_;
+    UpgradeType upgrade_in_queue_;
+    TechType research_in_queue_;
 
 public:
-    //bool operator==( const Build_Order_Object &rhs );
-    //bool operator!=( const Build_Order_Object &rhs );
+    //bool operator==( const BuildOrderObject &rhs );
+    //bool operator!=( const BuildOrderObject &rhs );
 
-    Build_Order_Object(UnitType unit) {
-        _unit_in_queue = unit;
-        _upgrade_in_queue = UpgradeTypes::None;
-        _research_in_queue = TechTypes::None;
+    BuildOrderObject(UnitType unit) {
+        unit_in_queue_ = unit;
+        upgrade_in_queue_ = UpgradeTypes::None;
+        research_in_queue_ = TechTypes::None;
     };
 
-    Build_Order_Object(UpgradeType up) {
-        _unit_in_queue = UnitTypes::None;
-        _upgrade_in_queue = up;
-        _research_in_queue = TechTypes::None;
+    BuildOrderObject(UpgradeType up) {
+        unit_in_queue_ = UnitTypes::None;
+        upgrade_in_queue_ = up;
+        research_in_queue_ = TechTypes::None;
     };
 
-    Build_Order_Object(TechType tech) {
-        _unit_in_queue = UnitTypes::None;
-        _upgrade_in_queue = UpgradeTypes::None;
-        _research_in_queue = tech;
+    BuildOrderObject(TechType tech) {
+        unit_in_queue_ = UnitTypes::None;
+        upgrade_in_queue_ = UpgradeTypes::None;
+        research_in_queue_ = tech;
     };
 
-    UnitType Build_Order_Object::getUnit() {
-        return _unit_in_queue;
+    UnitType BuildOrderObject::getUnit() {
+        return unit_in_queue_;
     };
 
-    UpgradeType Build_Order_Object::getUpgrade() {
-        return _upgrade_in_queue;
+    UpgradeType BuildOrderObject::getUpgrade() {
+        return upgrade_in_queue_;
     };
 
-    TechType Build_Order_Object::getResearch() {
-        return _research_in_queue;
+    TechType BuildOrderObject::getResearch() {
+        return research_in_queue_;
     };
 };
 
-struct Building_Gene {
-    Building_Gene();
-    Building_Gene(string s);
+struct BuildingGene {
+    BuildingGene();
+    BuildingGene(string s);
 
-    vector<Build_Order_Object> building_gene_;  // how many of each of these do we want?
+    vector<BuildOrderObject> building_gene_;  // how many of each of these do we want?
     string initial_building_gene_;
 
     map<UnitType, int> goal_units;

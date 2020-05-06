@@ -42,7 +42,7 @@ bool WorkerManager::workerPrebuild(const Unit & unit)
     // if it is not capable of an official build order right now, but it is in the reserve system, send it to the end destination.
     else if(has_path && AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_)) {
         Mobility(unit).moveTo(unit->getPosition(), Position(miner.intended_build_tile_) + Position(16,16), StoredUnit::Phase::Prebuilding);
-        //Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+        Diagnostics::DiagnosticText("Unexplored Location at ( %d , %d ). Still moving there to check it out.", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
         return CUNYAIModule::updateUnitBuildIntent(unit, miner.intended_build_type_, miner.intended_build_tile_);
     }
     else {

@@ -56,7 +56,7 @@ CombatManager CUNYAIModule::combat_manager;
 FAP::FastAPproximation<StoredUnit*> CUNYAIModule::MCfap; // integrating FAP into combat with a produrbation.
 TechManager CUNYAIModule::techmanager;
 AssemblyManager CUNYAIModule::assemblymanager;
-Building_Gene CUNYAIModule::buildorder; //
+BuildingGene CUNYAIModule::buildorder; //
 Reservation CUNYAIModule::my_reservation;
 LearningManager CUNYAIModule::learned_plan;
 WorkerManager CUNYAIModule::workermanager;
@@ -838,7 +838,7 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
         if (!buildorder.ever_clear_) {
             auto stored_unit = friendly_player_model.units_.getStoredUnit(unit);
             if (unit->getType() == UnitTypes::Zerg_Overlord) { // overlords do not restart the build order.
-                buildorder.building_gene_.insert(buildorder.building_gene_.begin(), Build_Order_Object(UnitTypes::Zerg_Overlord));
+                buildorder.building_gene_.insert(buildorder.building_gene_.begin(), BuildOrderObject(UnitTypes::Zerg_Overlord));
             }
             else if (unit->getType() == UnitTypes::Zerg_Drone && unit->getLastCommand().getUnitType() != UnitTypes::Zerg_Extractor) { // The extractor needs to be put seperately because BW-specific unit transitions. Drones making extractors die and the geyser morphs into the extractor.
                 buildorder.clearRemainingBuildOrder( false );

@@ -690,7 +690,7 @@ void PlayerModel::setLockedOpeningValues(const double alpha_army, const double a
 
     CUNYAIModule::gas_proportion = gas_proportion;
     CUNYAIModule::supply_ratio = supply_ratio;
-    CUNYAIModule::buildorder = Building_Gene(build_order.c_str());
+    CUNYAIModule::buildorder = BuildingGene(build_order.c_str());
 }
 
 double PlayerModel::getCumArmy()

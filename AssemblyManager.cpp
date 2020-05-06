@@ -1400,7 +1400,7 @@ bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
     return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
 }
 
-void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
+void BuildingGene::updateRemainingBuildOrder(const Unit &u) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getUnit() == u->getType()) {
             building_gene_.erase(building_gene_.begin());
@@ -1408,7 +1408,7 @@ void Building_Gene::updateRemainingBuildOrder(const Unit &u) {
     }
 }
 
-void Building_Gene::updateRemainingBuildOrder(const UnitType &ut) {
+void BuildingGene::updateRemainingBuildOrder(const UnitType &ut) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getUnit() == ut) {
             building_gene_.erase(building_gene_.begin());
@@ -1416,7 +1416,7 @@ void Building_Gene::updateRemainingBuildOrder(const UnitType &ut) {
     }
 }
 
-void Building_Gene::updateRemainingBuildOrder(const UpgradeType &ups) {
+void BuildingGene::updateRemainingBuildOrder(const UpgradeType &ups) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getUpgrade() == ups) {
             building_gene_.erase(building_gene_.begin());
@@ -1424,7 +1424,7 @@ void Building_Gene::updateRemainingBuildOrder(const UpgradeType &ups) {
     }
 }
 
-void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
+void BuildingGene::updateRemainingBuildOrder(const TechType &research) {
     if (!building_gene_.empty()) {
         if (building_gene_.front().getResearch() == research) {
             building_gene_.erase(building_gene_.begin());
@@ -1432,57 +1432,57 @@ void Building_Gene::updateRemainingBuildOrder(const TechType &research) {
     }
 }
 
-void Building_Gene::announceBuildingAttempt(UnitType ut) {
+void BuildingGene::announceBuildingAttempt(UnitType ut) {
     if (ut.isBuilding()) {
         last_build_order = ut;
         Diagnostics::DiagnosticText("Building a %s", last_build_order.c_str());
     }
 }
 
-bool Building_Gene::checkBuildingNextInBO(UnitType ut) {
+bool BuildingGene::checkBuildingNextInBO(UnitType ut) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
 }
 
-bool Building_Gene::checkUpgrade_Desired(UpgradeType upgrade) {
+bool BuildingGene::checkUpgrade_Desired(UpgradeType upgrade) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
 }
 
-bool Building_Gene::checkResearch_Desired(TechType research) {
+bool BuildingGene::checkResearch_Desired(TechType research) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getResearch() == research;
 }
 
-bool Building_Gene::isEmptyBuildOrder() {
+bool BuildingGene::isEmptyBuildOrder() {
     return building_gene_.empty();
 }
 
-void Building_Gene::addBuildOrderElement(const UpgradeType & ups)
+void BuildingGene::addBuildOrderElement(const UpgradeType & ups)
 {
-    building_gene_.push_back(Build_Order_Object(ups));
+    building_gene_.push_back(BuildOrderObject(ups));
 }
 
-void Building_Gene::addBuildOrderElement(const TechType & research)
+void BuildingGene::addBuildOrderElement(const TechType & research)
 {
-    building_gene_.push_back(Build_Order_Object(research));
+    building_gene_.push_back(BuildOrderObject(research));
 }
 
-void Building_Gene::addBuildOrderElement(const UnitType & ut)
+void BuildingGene::addBuildOrderElement(const UnitType & ut)
 {
-    building_gene_.push_back(Build_Order_Object(ut));
+    building_gene_.push_back(BuildOrderObject(ut));
 }
 
-void Building_Gene::retryBuildOrderElement(const UnitType & ut)
+void BuildingGene::retryBuildOrderElement(const UnitType & ut)
 {
-    building_gene_.insert(building_gene_.begin(), Build_Order_Object(ut));
+    building_gene_.insert(building_gene_.begin(), BuildOrderObject(ut));
 }
-void Building_Gene::retryBuildOrderElement(const UpgradeType & up)
+void BuildingGene::retryBuildOrderElement(const UpgradeType & up)
 {
-    building_gene_.insert(building_gene_.begin(), Build_Order_Object(up));
+    building_gene_.insert(building_gene_.begin(), BuildOrderObject(up));
 }
 
-void Building_Gene::getCumulativeResources()
+void BuildingGene::getCumulativeResources()
 {
     cumulative_gas_ = 0;
     cumulative_minerals_ = 0;
@@ -1492,7 +1492,7 @@ void Building_Gene::getCumulativeResources()
     }
 }
 
-void Building_Gene::getInitialBuildOrder(string s) {
+void BuildingGene::getInitialBuildOrder(string s) {
 
     building_gene_.clear();
 
@@ -1503,30 +1503,30 @@ void Building_Gene::getInitialBuildOrder(string s) {
     std::istream_iterator<std::string> end;
     std::vector<std::string> build_string(begin, end);
 
-    Build_Order_Object hatch = Build_Order_Object(UnitTypes::Zerg_Hatchery);
-    Build_Order_Object extract = Build_Order_Object(UnitTypes::Zerg_Extractor);
-    Build_Order_Object drone = Build_Order_Object(UnitTypes::Zerg_Drone);
-    Build_Order_Object ovi = Build_Order_Object(UnitTypes::Zerg_Overlord);
-    Build_Order_Object pool = Build_Order_Object(UnitTypes::Zerg_Spawning_Pool);
-    Build_Order_Object evo = Build_Order_Object(UnitTypes::Zerg_Evolution_Chamber);
-    Build_Order_Object speed = Build_Order_Object(UpgradeTypes::Metabolic_Boost);
-    Build_Order_Object ling = Build_Order_Object(UnitTypes::Zerg_Zergling);
-    Build_Order_Object creep = Build_Order_Object(UnitTypes::Zerg_Creep_Colony);
-    Build_Order_Object sunken = Build_Order_Object(UnitTypes::Zerg_Sunken_Colony);
-    Build_Order_Object spore = Build_Order_Object(UnitTypes::Zerg_Spore_Colony);
-    Build_Order_Object lair = Build_Order_Object(UnitTypes::Zerg_Lair);
-    Build_Order_Object hive = Build_Order_Object(UnitTypes::Zerg_Hive);
-    Build_Order_Object spire = Build_Order_Object(UnitTypes::Zerg_Spire);
-    Build_Order_Object greater_spire = Build_Order_Object(UnitTypes::Zerg_Greater_Spire);
-    Build_Order_Object devourer = Build_Order_Object(UnitTypes::Zerg_Devourer);
-    Build_Order_Object muta = Build_Order_Object(UnitTypes::Zerg_Mutalisk);
-    Build_Order_Object hydra = Build_Order_Object(UnitTypes::Zerg_Hydralisk);
-    Build_Order_Object lurker = Build_Order_Object(UnitTypes::Zerg_Lurker);
-    Build_Order_Object hydra_den = Build_Order_Object(UnitTypes::Zerg_Hydralisk_Den);
-    Build_Order_Object queens_nest = Build_Order_Object(UnitTypes::Zerg_Queens_Nest);
-    Build_Order_Object lurker_tech = Build_Order_Object(TechTypes::Lurker_Aspect);
-    Build_Order_Object grooved_spines = Build_Order_Object(UpgradeTypes::Grooved_Spines);
-    Build_Order_Object muscular_augments = Build_Order_Object(UpgradeTypes::Muscular_Augments);
+    BuildOrderObject hatch = BuildOrderObject(UnitTypes::Zerg_Hatchery);
+    BuildOrderObject extract = BuildOrderObject(UnitTypes::Zerg_Extractor);
+    BuildOrderObject drone = BuildOrderObject(UnitTypes::Zerg_Drone);
+    BuildOrderObject ovi = BuildOrderObject(UnitTypes::Zerg_Overlord);
+    BuildOrderObject pool = BuildOrderObject(UnitTypes::Zerg_Spawning_Pool);
+    BuildOrderObject evo = BuildOrderObject(UnitTypes::Zerg_Evolution_Chamber);
+    BuildOrderObject speed = BuildOrderObject(UpgradeTypes::Metabolic_Boost);
+    BuildOrderObject ling = BuildOrderObject(UnitTypes::Zerg_Zergling);
+    BuildOrderObject creep = BuildOrderObject(UnitTypes::Zerg_Creep_Colony);
+    BuildOrderObject sunken = BuildOrderObject(UnitTypes::Zerg_Sunken_Colony);
+    BuildOrderObject spore = BuildOrderObject(UnitTypes::Zerg_Spore_Colony);
+    BuildOrderObject lair = BuildOrderObject(UnitTypes::Zerg_Lair);
+    BuildOrderObject hive = BuildOrderObject(UnitTypes::Zerg_Hive);
+    BuildOrderObject spire = BuildOrderObject(UnitTypes::Zerg_Spire);
+    BuildOrderObject greater_spire = BuildOrderObject(UnitTypes::Zerg_Greater_Spire);
+    BuildOrderObject devourer = BuildOrderObject(UnitTypes::Zerg_Devourer);
+    BuildOrderObject muta = BuildOrderObject(UnitTypes::Zerg_Mutalisk);
+    BuildOrderObject hydra = BuildOrderObject(UnitTypes::Zerg_Hydralisk);
+    BuildOrderObject lurker = BuildOrderObject(UnitTypes::Zerg_Lurker);
+    BuildOrderObject hydra_den = BuildOrderObject(UnitTypes::Zerg_Hydralisk_Den);
+    BuildOrderObject queens_nest = BuildOrderObject(UnitTypes::Zerg_Queens_Nest);
+    BuildOrderObject lurker_tech = BuildOrderObject(TechTypes::Lurker_Aspect);
+    BuildOrderObject grooved_spines = BuildOrderObject(UpgradeTypes::Grooved_Spines);
+    BuildOrderObject muscular_augments = BuildOrderObject(UpgradeTypes::Muscular_Augments);
 
     for (auto &build : build_string) {
         if (build == "hatch") {
@@ -1650,7 +1650,7 @@ void Building_Gene::getInitialBuildOrder(string s) {
     getCumulativeResources();
 }
 
-void Building_Gene::clearRemainingBuildOrder(const bool diagnostic) {
+void BuildingGene::clearRemainingBuildOrder(const bool diagnostic) {
     if constexpr (ANALYSIS_MODE) {
         if (!building_gene_.empty() && diagnostic) {
 
@@ -1685,9 +1685,9 @@ void Building_Gene::clearRemainingBuildOrder(const bool diagnostic) {
     building_gene_.clear();
 };
 
-Building_Gene::Building_Gene() {};
+BuildingGene::BuildingGene() {};
 
-Building_Gene::Building_Gene(string s) { // unspecified items are unrestricted.
+BuildingGene::BuildingGene(string s) { // unspecified items are unrestricted.
 
     getInitialBuildOrder(s);
 
