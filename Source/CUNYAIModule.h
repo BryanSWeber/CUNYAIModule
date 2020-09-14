@@ -24,7 +24,7 @@
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
 constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
-constexpr bool MOVE_OUTPUT_BACK_TO_READ = true; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
+constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
 constexpr bool RIP_REPLAY = false; // Copy replay information.
@@ -36,10 +36,10 @@ constexpr bool PY_RF_LEARNING = false; // use the random forest to filter unwant
 constexpr bool RANDOM_PLAN = false; // Turn off learning and always use a random set of starting conditions.  
 constexpr bool TEST_MODE = false; // Locks in a build order and defined paramaters. Consider disabling TIT_FOR_TAT otherwise you will adapt towards your opponent and not get exactly the desired utility function.
 constexpr bool PY_UNIT_WEIGHTING = false; // under development.
-constexpr bool UNIT_WEIGHTING = true; // under development.
+constexpr bool UNIT_WEIGHTING = false; // under development.
 
 //Cheats:  Like, literal single player cheats.
-constexpr bool MAP_REVEAL = false; // Just types in black sheep wall for local testing.
+constexpr bool MAP_REVEAL = false; // just types in black sheep wall for local testing.
 constexpr bool NEVER_DIE = false; // just types in power overwhelming for local testing.
 constexpr bool INF_MONEY = false; // just types in show me the money for local testing.
 constexpr bool INSTANT_WIN = false; // just types in there is no cow level for local testing.
