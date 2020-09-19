@@ -411,8 +411,12 @@ bool WorkerManager::workerWork(const Unit &u) {
         break;
     case StoredUnit::Building:
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
-            if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && u->build(miner.intended_build_type_, miner.intended_build_tile_)) {
+            if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && (AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_) || miner.intended_build_type_.isRefinery()) ) {
                 Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+
+                if(!u->build(miner.intended_build_type_, miner.intended_build_tile_))
+                    Diagnostics::DiagnosticText("Can't seem to build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+              
                 return CUNYAIModule::updateUnitPhase(u, StoredUnit::Building);
             }
             if (CUNYAIModule::assemblymanager.buildBuilding(u))

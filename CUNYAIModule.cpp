@@ -813,10 +813,6 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
         }
     }
 
-    if (unit->getType().isBuilding() && unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone && unit->getPlayer() == Broodwar->self()) {
-        my_reservation.removeReserveSystem(TilePosition(unit->getOrderTargetPosition()), unit->getBuildType(), false);
-    }
-
     if (unit->getType().isWorker()) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
     }
@@ -960,14 +956,7 @@ void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
 
     if (unit->getBuildType().isBuilding()) {
         friendly_player_model.units_.purgeWorkerRelationsNoStop(unit);
-        //buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Should be caught on RESERVATION ONLY, this might double catch them...
-
-        if (unit->getType().whatBuilds().first == UnitTypes::Zerg_Drone) {
-            my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType(), false);
-        }
-        else {
-            buildorder.updateRemainingBuildOrder(unit->getBuildType()); // Upgrading building morphs are not reserved... (ex greater spire)
-        }
+        my_reservation.removeReserveSystem(unit->getTilePosition(), unit->getBuildType(), false);
     }
 }
 

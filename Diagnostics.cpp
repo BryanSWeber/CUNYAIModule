@@ -503,13 +503,13 @@ void Diagnostics::onFrame()
     //Broodwar->drawTextScreen(375, 20, "Foe Stock(Est.): %d", current_MapInventory.est_enemy_stock_);
     //Broodwar->drawTextScreen(375, 30, "Foe Army Stock: %d", enemy_player_model.units_.stock_fighting_total_); //
     //Broodwar->drawTextScreen(375, 40, "Foe Tech Stock(Est.): %d", enemy_player_model.researches_.research_stock_);
-    Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(CUNYAIModule::enemy_player_model.estimated_workers_));
+    Broodwar->drawTextScreen(375, 50, "Foe Workers (Est.): %d", static_cast<int>(CUNYAIModule::enemy_player_model.getEstimatedWorkers()));
     //Broodwar->drawTextScreen(375, 60, "Est. Expenditures: %4.2f,  %4.2f, %4.2f", CUNYAIModule::enemy_player_model.estimated_resources_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_army_per_frame_, CUNYAIModule::enemy_player_model.estimated_unseen_tech_per_frame_);
     Broodwar->drawTextScreen(375, 70, "Net lnY (est.): E:%4.2f, F:%4.2f", CUNYAIModule::enemy_player_model.spending_model_.getlnYusing(CUNYAIModule::friendly_player_model.spending_model_.alpha_army, CUNYAIModule::friendly_player_model.spending_model_.alpha_tech), CUNYAIModule::friendly_player_model.spending_model_.getlnY());  //
-    Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_army_);  //
-    Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_tech_);  //
-    Broodwar->drawTextScreen(375, 100, "Unseen Flyer: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_flyers_);  //
-    Broodwar->drawTextScreen(375, 110, "Unseen Ground: %4.2f", CUNYAIModule::enemy_player_model.estimated_unseen_ground_);  //
+    Broodwar->drawTextScreen(375, 80, "Unseen Army: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenArmy());  //
+    Broodwar->drawTextScreen(375, 90, "Unseen Tech/Up: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenTech());  //
+    Broodwar->drawTextScreen(375, 100, "Unseen Flyer: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers());  //
+    Broodwar->drawTextScreen(375, 110, "Unseen Ground: %4.2f", CUNYAIModule::enemy_player_model.getEstimatedUnseenGround());  //
 
     ////Broodwar->drawTextScreen( 500, 130, "Supply Heuristic: %4.2f", inventory.getLn_Supply_Ratio() );  //
     ////Broodwar->drawTextScreen( 500, 140, "Vision Tile Count: %d",  inventory.vision_tile_count_ );  //

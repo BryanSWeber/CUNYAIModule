@@ -39,13 +39,13 @@ std::map<UnitType, int> AssemblyManager::assembly_cycle_ = PlayerModel::getComba
 //Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it builds the building and announces this to the building gene manager. It may now allow morphing, eg, lair, hive and lurkers, but this has not yet been tested.  It now has an extensive creep colony script that prefers centralized locations. Now updates the unit within the UnitInventory directly.
 bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, const bool &extra_critera, const TilePosition &tp)
 {
-    if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
-        return false;
-
     Position unit_pos = unit->getPosition();
     bool unit_can_morph_intended_target = unit->canMorph(building);
-
+    map<int, TilePosition> viable_placements = {};
     TilePosition tileOfClosestBase = tp;
+
+    if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
+        return false;
 
     if (tileOfClosestBase == TilePositions::Origin) {
         if (unit->getType().isWorker() && CUNYAIModule::basemanager.getClosestBaseGround(unit->getPosition()).unit_) {
@@ -56,13 +56,12 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         }
     }
 
-    map<int, TilePosition> viable_placements = {};
-
-
     //morphing hatcheries into lairs & hives, spires into greater spires, creep colonies into sunkens or spores
     if (unit->getType().isBuilding() && CUNYAIModule::checkWillingAndAble(unit, building, extra_critera) && unit->morph(building)) {
-        CUNYAIModule::buildorder.announceBuildingAttempt(building); // Takes no time, no need for the reserve system.
-        return CUNYAIModule::updateUnitPhase(unit, StoredUnit::Phase::Building);
+        if (CUNYAIModule::my_reservation.addReserveSystem(unit->getTilePosition(), building)) {  // does not require an isplacable check because it won't pass such a check. It's on top of another object... itself.
+            CUNYAIModule::buildorder.announceBuildingAttempt(building);
+            return CUNYAIModule::updateUnitBuildIntent(unit, building, unit->getTilePosition());
+        }
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Creep_Colony) { // creep colony loop specifically.
 
@@ -407,6 +406,8 @@ void AssemblyManager::clearBuildingObstuctions(const UnitType &ut, const TilePos
 
 bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &location)
 {
+    //Need to consider placement of Geysers.
+
     // Modifies BWEB's isPlaceable()
     if (isOccupiedBuildLocation(type, location))
         return false;
@@ -437,7 +438,7 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
 
     if (type.isResourceDepot() && !Broodwar->canBuildHere(location, type))
         return false;
-
+    
     for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
         for (auto y = location.y; y < location.y + type.tileHeight(); y++) {
             const TilePosition tile(x, y);
@@ -1317,10 +1318,10 @@ int AssemblyManager::getMaxGas()
 {
     int max_gas_ = 0;
     for (auto u : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
-        if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
+        if (canMakeCUNY(u.first) && u.first) max_gas_ = max(max_gas_, u.first.gasPrice());
     }
     for (auto u : CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
-        if (canMakeCUNY(u.first)) max_gas_ = max(max_gas_, u.first.gasPrice());
+        if (canMakeCUNY(u.first) && u.first) max_gas_ = max(max_gas_, u.first.gasPrice());
     }
     return max_gas_;
 }
@@ -1385,7 +1386,9 @@ bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, 
 }
 
 bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) {
-    return AssemblyManager::canMakeCUNY(ut, false) && checkOpenToBuild(ut, extra_criteria);
+     bool value = AssemblyManager::canMakeCUNY(ut, false) && checkOpenToBuild(ut, extra_criteria);
+     if (!value) Broodwar->getLastError();
+     return value;
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut) {
@@ -1398,14 +1401,6 @@ bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType 
 
 bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
     return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
-}
-
-void BuildingGene::updateRemainingBuildOrder(const Unit &u) {
-    if (!building_gene_.empty()) {
-        if (building_gene_.front().getUnit() == u->getType()) {
-            building_gene_.erase(building_gene_.begin());
-        }
-    }
 }
 
 void BuildingGene::updateRemainingBuildOrder(const UnitType &ut) {

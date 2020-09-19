@@ -247,17 +247,17 @@ void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string labe
             output << " Tech Types " << smashed_upgrade_types << endl;
             output << " Inferred Buildings " << smashed_inferred_building_types << endl;
 
-            if (player.getPlayer()) {
-                output << " Unit Score " << player.getPlayer()->getUnitScore() << endl;
-                output << " Kill Score " << player.getPlayer()->getKillScore() << endl;
-                output << " Building Score " << player.getPlayer()->getBuildingScore() << endl;
-            }
+            //if (player.getPlayer()) {
+            //    output << " Unit Score " << player.getPlayer()->getUnitScore() << endl;
+            //    output << " Kill Score " << player.getPlayer()->getKillScore() << endl;
+            //    output << " Building Score " << player.getPlayer()->getBuildingScore() << endl;
+            //}
 
             output << " Labor " << player.spending_model_.worker_stock <<  " alpha_L " << player.spending_model_.alpha_econ  << " gradient " << player.spending_model_.econ_derivative << endl;
             output << " (K)Capital " << player.spending_model_.army_stock << " alpha_K " << player.spending_model_.alpha_army << " gradient " << player.spending_model_.army_derivative << endl;
             output << " Technology " << player.spending_model_.tech_stock << " alpha_T " << player.spending_model_.alpha_tech << " gradient " << player.spending_model_.tech_derivative << endl;
             output << " ln(Y), ln(Utility) " << player.spending_model_.getlnY() << endl;
-            output << " Testing Net Worth Function " << player.estimated_net_worth_ << endl;
+            //output << " Testing Net Worth Function " << player.getNetWorth() << endl;
 
             
             output.close();

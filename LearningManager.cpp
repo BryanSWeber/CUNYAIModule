@@ -452,8 +452,7 @@ void LearningManager::initializeTestStart(){
     a_tech_t0 = 0.52895;
     r_out_t0 = 0.5097605;
 
-    build_order_t0 = "drone drone drone drone drone overlord drone drone drone pool extract drone hatch drone drone ling ling lair drone drone drone speed hydra_den ling ling lurker_tech overlord hydra hydra hydra hydra extract lurker lurker lurker lurker"; // 2h lurker; //Standard Opener
-
+    build_order_t0 = "12pool extract drone hatch drone drone ling ling lair drone drone drone speed hydra_den ling ling lurker_tech overlord hydra hydra hydra hydra extract lurker lurker lurker lurker"; // 2h lurker https://liquipedia.net/starcraft/2_Hatch_Lurker_(vs._Terran); // 2h lurker; //Standard Opener
 }
 
 //Otherwise, use random build order and values from above
@@ -531,13 +530,13 @@ void LearningManager::initializeGAUnitWeighting()
     getline(input, line); //skip the first line of the document.
     csv_length--; // that means the remaining csv is shorter by 1 line.
     vector<vector<double>> matrix_of_unit_weights;
-    vector<double> entire_vector(BWAPI::UnitTypes::allUnitTypes().size()+1);
+    vector<double> all_units(BWAPI::UnitTypes::allUnitTypes().size()+1);
 
     //Get benchmarks for inclusion as "good scores"
     int game_score = 0;
     int game_count = 0;
     for (int j = 0; j < csv_length; ++j) {
-        vector<double> local_copy = entire_vector;
+        vector<double> local_copy = all_units;
         for (auto &i : local_copy) {
             getline(input, val, ',');
             i = stod(val);
@@ -550,7 +549,7 @@ void LearningManager::initializeGAUnitWeighting()
 
     //Include all "good scores" appropriately.
     for (int j = 0; j < csv_length; ++j) {
-        vector<double> local_copy = entire_vector;
+        vector<double> local_copy = all_units;
         for (auto &i:local_copy) {
              getline(input, val, ',');
              i = stod(val);

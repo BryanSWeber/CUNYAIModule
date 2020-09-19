@@ -187,6 +187,11 @@ void Reservation::confirmOngoingReservations() {
         gas_reserve_ += res_it->second.gasPrice();
     }
 
+    for (auto res_it = reserved_upgrades_.begin(); res_it != reserved_upgrades_.end() && !reserved_upgrades_.empty(); res_it++) {
+        min_reserve_ += res_it->mineralPrice();
+        gas_reserve_ += res_it->gasPrice();
+    }
+
     if (!reservation_map_.empty() && last_builder_sent_ < Broodwar->getFrameCount() - 30 * 24) {
         Diagnostics::DiagnosticText("...We're stuck, aren't we? Have a friendly nudge.", "");
         reservation_map_.clear();

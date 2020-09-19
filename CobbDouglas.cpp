@@ -204,7 +204,7 @@ bool CobbDouglas::evalEconPossible()
 {
     bool enough_mines_exist = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= static_cast<int>(Broodwar->getMinerals().size() * 2 + Broodwar->getGeysers().size() * 3 + 1);
     bool not_enough_miners_for_mines = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) <= CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3);
-    bool not_excessive_workers = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.estimated_workers_ + 12);
+    bool not_excessive_workers = CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < (CUNYAIModule::enemy_player_model.getEstimatedWorkers() + 12);
     return enough_mines_exist && not_excessive_workers && Broodwar->self()->supplyUsed() < 399 && CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < 85; // econ is only a possible problem if undersaturated or less than 62 patches, and worker count less than 90.
                                                                   //bool vision_possible = true; // no vision cutoff ATM.
 }

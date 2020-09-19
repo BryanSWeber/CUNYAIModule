@@ -708,6 +708,11 @@ double PlayerModel::getCumTech()
     return average_tech_;
 }
 
+double PlayerModel::getNetWorth()
+{
+    return estimated_net_worth_;
+}
+
 void PlayerModel::decrementUnseenWorkers()
 {
     estimated_unseen_workers_--;
@@ -768,30 +773,35 @@ bool PlayerModel::dropUnitType(UnitType u)
 
 double PlayerModel::getEstimatedUnseenArmy()
 {
-    return estimated_unseen_army_;
+    return this->estimated_unseen_army_;
 }
 
 double PlayerModel::getEstimatedUnseenFliers()
 {
-    return estimated_unseen_flyers_;
+    return this->estimated_unseen_flyers_;
 }
 
 double PlayerModel::getEstimatedUnseenGround()
 {
-    return estimated_unseen_ground_;
+    return this->estimated_unseen_ground_;
 }
 
 double PlayerModel::getEstimatedUnseenTech()
 {
-    return estimated_unseen_tech_;
+    return this->estimated_unseen_tech_;
 }
 
 double PlayerModel::getEstimatedUnseenWorkers()
 {
-    return estimated_unseen_workers_;
+    return this->estimated_unseen_workers_;
+}
+
+double PlayerModel::getEstimatedWorkers()
+{
+    return this->estimated_workers_;
 }
 
 Player PlayerModel::getPlayer()
 {
-    return bwapi_player_;
+    return this->bwapi_player_;
 }

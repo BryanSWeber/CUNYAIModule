@@ -23,18 +23,18 @@ private:
     double average_econ_; // Cumulative.
     double average_tech_; // Cumulative.
 
-    inline static Player bwapi_player_ = Player();
-    inline static double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
-    inline static double estimated_cumulative_worth_ = 0; // prototyping.
-    inline static double estimated_net_worth_ = 0; // prototyping.
-    inline static double estimated_resources_per_frame_ = 0; // prot0typing.
-    inline static double estimated_unseen_tech_per_frame_ = 0; // prot0typing.
-    inline static double estimated_unseen_army_per_frame_ = 0; // prot0typing.
-    inline static double estimated_unseen_army_ = 0; // how big is their army we have not seen, approximately?
-    inline static double estimated_unseen_flyers_ = 0; // a subset of estimated army. Should sum with ground to be the total unseen army.
-    inline static double estimated_unseen_ground_ = 0; // a subset of estimated army. Should sum with fliers to be the total unseen army.
-    inline static double estimated_unseen_tech_ = 0; // Expenditures on research, upgrades, and buildings that allow better combat units.
-    inline static double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
+    Player bwapi_player_ = Player();
+    double estimated_workers_ = 0; // an active count of workers, both seen and unseen.
+    double estimated_cumulative_worth_ = 0; // prototyping.
+    double estimated_net_worth_ = 0; // prototyping.
+    double estimated_resources_per_frame_ = 0; // prot0typing.
+    double estimated_unseen_tech_per_frame_ = 0; // prot0typing.
+    double estimated_unseen_army_per_frame_ = 0; // prot0typing.
+    double estimated_unseen_army_ = 0; // how big is their army we have not seen, approximately?
+    double estimated_unseen_flyers_ = 0; // a subset of estimated army. Should sum with ground to be the total unseen army.
+    double estimated_unseen_ground_ = 0; // a subset of estimated army. Should sum with fliers to be the total unseen army.
+    double estimated_unseen_tech_ = 0; // Expenditures on research, upgrades, and buildings that allow better combat units.
+    double estimated_unseen_workers_ = 0; // an active count of unseen workers, since they are important among unseen units.
 
     void Print_Average_CD(const int &screen_x, const int &screen_y); // Onscreen Diagnostic.
 
@@ -50,14 +50,15 @@ public:
     static bool dropUnitType(UnitType u); //drops a combat unit as if we cannot produce it at all.
 
     //Command that summarize the status of a player.
-    static double getEstimatedUnseenArmy(); //Returns a one number-summary of unseen army size.
-    static double getEstimatedUnseenFliers(); //Returns a one number-summary of unseen flier army size.
-    static double getEstimatedUnseenGround(); // Returns a one number-summary of unseen ground army size.
-    static double getEstimatedUnseenTech(); // Returns a one number-summary of unseen tech upgrades, researches etc.
-    static double getEstimatedUnseenWorkers(); //Returns a one number-summary of the number of unseen workers the player has.
+    double getEstimatedUnseenArmy(); //Returns a one number-summary of unseen army size.
+    double getEstimatedUnseenFliers(); //Returns a one number-summary of unseen flier army size.
+    double getEstimatedUnseenGround(); // Returns a one number-summary of unseen ground army size.
+    double getEstimatedUnseenTech(); // Returns a one number-summary of unseen tech upgrades, researches etc.
+    double getEstimatedUnseenWorkers(); //Returns a one number-summary of the number of unseen workers the player has.
+    double getEstimatedWorkers(); // Returns a one-number summary of the number of workers a player has. Not an estimate if I use this on myself.
 
     //In case we need access to BWAPI functions.
-    static Player getPlayer(); //Returns the BWAPI player
+    Player getPlayer(); //Returns the BWAPI player
 
     //Classes borrowed from other sources
     UnitInventory units_;
@@ -115,6 +116,7 @@ public:
     double getCumArmy(); // getters for the private average alpha army stat.
     double getCumEco(); // getters for the private average alpha eco stat.
     double getCumTech(); // getters for the private average alpha tech stat.
+    double getNetWorth(); // getter for the private net worth stat.
 
     void decrementUnseenWorkers(); //Reduce the number of unseen workers by 1.
 };
