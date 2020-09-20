@@ -1457,9 +1457,17 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         return false; //unit is not ready to move.
     }
 
-    UnitCommandType u_command = unit->getLastCommand().getType();
+    ready_to_move = unitSpamCheckDuration(unit) == 0;
 
-    if ( u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move ) {
+    return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
+
+}
+
+int CUNYAIModule::unitSpamCheckDuration(const Unit &unit) {
+    int cd_frames = 0;
+
+    UnitCommandType u_command = unit->getLastCommand().getType();
+    if (u_command == UnitCommandTypes::Attack_Unit || u_command == UnitCommandTypes::Attack_Move) {
         UnitType u_type = unit->getType();
         //cd_frames = Broodwar->getLatencyFrames();
         if (u_type == UnitTypes::Zerg_Drone) {
@@ -1501,6 +1509,9 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
         cd_frames = 9;
     }
 
+    if (u_command == UnitCommandTypes::Gather) {
+        cd_frames = 24;
+    }
     //if (u_command == UnitCommandTypes::Hold_Position) {
     //    cd_frames = 5;
     //}
@@ -1518,10 +1529,11 @@ bool CUNYAIModule::spamGuard(const Unit &unit, int cd_frames_chosen) {
     //if (cd_frames < Broodwar->getLatencyFrames() ) {
     //    cd_frames = Broodwar->getLatencyFrames();
     //}
+    int duration_since_last_command = Broodwar->getFrameCount() - unit->getLastCommandFrame();
+    int required_wait_time = cd_frames + Broodwar->getLatencyFrames();
 
-    ready_to_move = Broodwar->getFrameCount() - unit->getLastCommandFrame() > cd_frames + Broodwar->getLatencyFrames();
-    return ready_to_move; // we must wait at least 5 frames before issuing them a new command regardless.
 
+    return max(required_wait_time - duration_since_last_command, 0);
 }
 
 //checks if there is a smooth path to target. in minitiles

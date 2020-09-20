@@ -413,7 +413,6 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (CUNYAIModule::spamGuard(u, 14) && u->isIdle()) {
             if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_) && (AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_) || miner.intended_build_type_.isRefinery()) ) {
                 Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
-
                 if(!u->build(miner.intended_build_type_, miner.intended_build_tile_))
                     Diagnostics::DiagnosticText("Can't seem to build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
               
@@ -427,7 +426,7 @@ bool WorkerManager::workerWork(const Unit &u) {
     case StoredUnit::Attacking:
     case StoredUnit::Retreating:
         CUNYAIModule::my_reservation.removeReserveSystem(miner.intended_build_tile_, miner.intended_build_type_, true); // workers ought to be free of obligations
-        if (CUNYAIModule::spamGuard(u) && u->isIdle()) {
+        if (CUNYAIModule::spamGuard(u) /*&& u->isIdle()*/) { //If you don't stop them from fighting, you will easily over-pull workers, this is a disaster. So you must stop them, even if they are not-idle.
             auto enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
             enemy_loc.updateUnitInventorySummary();
             if (!CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {

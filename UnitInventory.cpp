@@ -1311,7 +1311,6 @@ bool StoredUnit::unitDeadInFuture(const StoredUnit &unit, const int &number_of_f
     return unit.count_of_consecutive_predicted_deaths_ >= number_of_frames_voted_death;
 }
 
-
 void UnitInventory::addToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));

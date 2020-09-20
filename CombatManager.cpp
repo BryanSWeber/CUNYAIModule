@@ -34,11 +34,11 @@ bool CombatManager::grandStrategyScript(const Unit & u) {
     if (CUNYAIModule::spamGuard(u)) {
         if (!task_assigned && u->getType().canMove() && (u->isUnderStorm() || u->isIrradiated() || u->isUnderDisruptionWeb()) && Mobility(u).Scatter_Logic())
             task_assigned = true;
-        if (!task_assigned && u->getType().canMove() && (u->getType() == UnitTypes::Zerg_Overlord) && !u->isBlind() && scoutScript(u))
+        if (!task_assigned && u->getType().canMove() && u->getType() == UnitTypes::Zerg_Overlord && !u->isBlind() && scoutScript(u))
             task_assigned = true;
         if (!task_assigned && (u->canAttack() || u->getType() == UnitTypes::Zerg_Lurker) && combatScript(u))
             task_assigned = true;
-        if (!task_assigned && !u->getType().isWorker() && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && u->getType() != UnitTypes::Zerg_Overlord && pathingScript(u))
+        if (!task_assigned && !u->getType().isWorker() && u->getType() != UnitTypes::Zerg_Overlord && (u->canMove() || (u->getType() == UnitTypes::Zerg_Lurker && u->isBurrowed())) && pathingScript(u))
             task_assigned = true;
         if (!task_assigned && u->getType() == UnitTypes::Zerg_Overlord && (found_and_doing_nothing || found_and_morphing || found_and_going_home) && liabilitiesScript(u))
             task_assigned = true;
@@ -80,7 +80,7 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc.updateUnitInventorySummary();
             UnitInventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200) );
             trigger_loc.updateUnitInventorySummary();
-            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200));
+            Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 256));
             //resource_loc.updateResourceInventory();
 
             StoredUnit* e_closest_ground = CUNYAIModule::getClosestGroundStored(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
@@ -111,12 +111,12 @@ bool CombatManager::combatScript(const Unit & u)
                 case UnitTypes::Protoss_Probe:
                 case UnitTypes::Terran_SCV:
                 case UnitTypes::Zerg_Drone: // Workers are very unique.
-                    if (checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) && !resource_loc.resource_inventory_.empty()) {
-                        if (my_unit->future_fap_value_ > 0) { // Do you need to join in?
-                            return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
-                        }
-                        else if (CUNYAIModule::basemanager.getBaseCount() > 1 && my_unit->future_fap_value_ == 0)
+                    if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.resource_inventory_.empty()) {
+                        bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
+                        if (CUNYAIModule::basemanager.getBaseCount() > 1 && !unit_dead_next_check)
                             break; // exit this section and retreat if there is somewhere to go and you are about to die.
+                        else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
+                            return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                         else
                             return false; // if there's no where to go and you are about to die.... keep mining.
                     }
