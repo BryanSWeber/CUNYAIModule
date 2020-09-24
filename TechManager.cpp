@@ -155,11 +155,15 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
     // Researchs, not upgrades per se:
     if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, (upgrade_bool || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0) && (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0));
 
-    //if (building->getType() == UnitTypes::Zerg_Hydralisk_Den) Diagnostics::DiagnosticText("Let's look at a Hydra Den!");
-
     //first let's do reserved upgrades:
     for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {
-        busy = Check_N_Upgrade(up, building, true);
+        if (up == UpgradeTypes::Pneumatized_Carapace) { // Pnumatized_Carapace is not a good idea if they don't have flyers.
+            if (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)
+                busy = Check_N_Upgrade(up, building, true);
+        }
+        else {
+            busy = Check_N_Upgrade(up, building, true);
+        }
         if (busy) break;
     }
 
@@ -169,13 +173,13 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
 
     //should auto upgrade if there is a build order requirement for any of these three types.
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Lair, building, upgrade_bool &&
-        (CUNYAIModule::basemanager.getBaseCount() >= 1) && // This is often too early - we either have 2bases (or the hydra den so that we can do lurkers, see steamhammer), or we have seveeral sunkens and are being forced to one-base.
+        (CUNYAIModule::basemanager.getBaseCount() > 1) && // This is often too early - we either have 2bases (or the hydra den so that we can do lurkers, see steamhammer), or we have seveeral sunkens and are being forced to one-base.
         CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Lair) == 0 && //don't need lair if we have a lair
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0 && //don't need lair if we have a hive.
         building->getType() == UnitTypes::Zerg_Hatchery);
 
     if (!busy) busy = CUNYAIModule::assemblymanager.Check_N_Build(UnitTypes::Zerg_Hive, building, upgrade_bool &&
-        CUNYAIModule::basemanager.getBaseCount() >= 3 &&
+        CUNYAIModule::basemanager.getBaseCount() > 2 &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Queens_Nest) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Queens_Nest) > 0 &&
         building->getType() == UnitTypes::Zerg_Lair &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) + Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Hive) == 0); //If you're tech-starved at this point, don't make random hives.
@@ -202,7 +206,7 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
 //Checks if an upgrade can be built, and passes additional boolean criteria.  If all critera are passed, then it performs the upgrade. Requires extra critera. Updates CUNYAIModule::friendly_player_model.units_.
 bool TechManager::Check_N_Upgrade(const UpgradeType &ups, const Unit &unit, const bool &extra_critera)
 {
-    if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.isInReserveSystem(ups) && isInUpgradeCartridge(ups) && (CUNYAIModule::buildorder.checkUpgrade_Desired(ups) || (extra_critera && CUNYAIModule::buildorder.isEmptyBuildOrder()))) {
+    if (unit->canUpgrade(ups) && CUNYAIModule::my_reservation.isInReserveSystem(ups) && isInUpgradeCartridge(ups)) {
         if (unit->upgrade(ups)) {
             CUNYAIModule::buildorder.updateRemainingBuildOrder(ups);
             StoredUnit& morphing_unit = CUNYAIModule::friendly_player_model.units_.unit_map_.find(unit)->second;

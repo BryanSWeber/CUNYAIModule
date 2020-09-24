@@ -392,7 +392,7 @@ void Diagnostics::Print_Build_Order_Remaining(const int &screen_x, const int &sc
 }
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-void Diagnostics::Print_Upgrade_Inventory(const int &screen_x, const int &screen_y) {
+void Diagnostics::printUpgrade_Inventory(const int &screen_x, const int &screen_y) {
     int another_sort_of_upgrade = 0;
     for (int i = 0; i != 62; i++)
     { // iterating through all upgrades.
@@ -426,6 +426,13 @@ void Diagnostics::Print_Reservations(const int &screen_x, const int &screen_y, c
         Broodwar->drawTextScreen(screen_x, screen_y + 30 + another_row_of_printing * 10, "%s: %d", CUNYAIModule::noRaceName(r.c_str()), 1);  //
         another_row_of_printing++;
     }
+}
+
+void Diagnostics::writePlayerModel(PlayerModel &pmodel)
+{
+    DiagnosticWrite("Player's Cum. Army is:  %4.2f", pmodel.getCumArmy());
+    DiagnosticWrite("Player's Cum. Eco is:  %4.2f", pmodel.getCumEco());
+    DiagnosticWrite("Player's Cum. Tech is:  %4.2f", pmodel.getCumTech());
 }
 
 void Diagnostics::onFrame()
@@ -610,8 +617,10 @@ void Diagnostics::onFrame()
     //Diagnostic_Tiles(current_MapInventory.screen_position_, Colors::White);
     drawDestination(CUNYAIModule::friendly_player_model.units_, CUNYAIModule::currentMapInventory.screen_position_, Colors::Grey);
     //Diagnostic_Watch_Expos();
-
-
+    if (Broodwar->getFrameCount() % 60 == 0) {
+        DiagnosticWrite("Game Frame is: %d", Broodwar->getFrameCount());
+        writePlayerModel(CUNYAIModule::enemy_player_model);
+    }
 }
 
 void Diagnostics::drawAllVelocities(const UnitInventory ui)

@@ -113,10 +113,10 @@ public:
 
     void setLockedOpeningValues(const double alpha_army, const double alpha_econ, const double alpha_tech, const double gas_proportion, const double supply_ratio, const string build_order); //if we want locked values this is how we set them.
 
-    double getCumArmy(); // getters for the private average alpha army stat.
-    double getCumEco(); // getters for the private average alpha eco stat.
-    double getCumTech(); // getters for the private average alpha tech stat.
-    double getNetWorth(); // getter for the private net worth stat.
+    const double getCumArmy(); // getters for the private average alpha army stat.
+    const double getCumEco(); // getters for the private average alpha eco stat.
+    const double getCumTech(); // getters for the private average alpha tech stat.
+    const double getNetWorth(); // getter for the private net worth stat.
 
     void decrementUnseenWorkers(); //Reduce the number of unseen workers by 1.
 };

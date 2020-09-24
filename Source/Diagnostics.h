@@ -36,7 +36,7 @@ struct Diagnostics {
     static void DiagnosticTrack(const Position & p);
 
     // Announces to player the name and type of all of their upgrades. Bland but practical. Counts those in progress.
-    static void Print_Upgrade_Inventory(const int &screen_x, const int &screen_y);
+    static void printUpgrade_Inventory(const int &screen_x, const int &screen_y);
     // Announces to player the name and type of all known units in set.
     static void Print_UnitInventory(const int &screen_x, const int &screen_y, const UnitInventory &ui);
     static void Print_Test_Case(const int & screen_x, const int & screen_y);
@@ -46,7 +46,10 @@ struct Diagnostics {
     static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const BuildingGene & bo);
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.
     static void Print_Reservations(const int &screen_x, const int &screen_y, const Reservation &res);
-    
+
+    // Dumps most information about a player model to the debug file.
+    static void writePlayerModel(PlayerModel &pmodel);
+
 
     //Sends a diagnostic text message, accepts another argument..
     template<typename ...Ts>
@@ -61,5 +64,16 @@ struct Diagnostics {
             output.close();
         }
     }
-    // Defunct: Outlines the case where you cannot attack their type (air/ground/cloaked), while they can attack you.
+
+    template<typename ...Ts>
+    static void DiagnosticWrite(char const *fmt, Ts && ... vals) {
+        if constexpr (DIAGNOSTIC_MODE) {
+            ofstream output; // Prints to brood war file while in the WRITE file.
+            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            output << fmt;
+            ((output << ',' << std::forward<Ts>(vals)), ...);
+            output << endl;
+            output.close();
+        }
+    }
 };

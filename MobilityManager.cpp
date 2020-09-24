@@ -244,13 +244,13 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
     //    if (unit_->unburrow()) return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Attacking);
     //}
 
-
-    Diagnostics::DiagnosticText("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
-    Diagnostics::DiagnosticText("This is the passed unit map");
-    for (auto u : ei.unit_map_) {
-        Diagnostics::DiagnosticText("%s", u.second.type_.c_str());
+    if (CUNYAIModule::countUnits(UnitTypes::Zerg_Larva, ei) + CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, ei) < ei.unit_map_.size()) {
+        Diagnostics::DiagnosticText("An enemy %s vs. friendly %s began this tactical logic.", e_unit.type_.c_str(), u_type_.c_str());
+        Diagnostics::DiagnosticText("This is the passed unit map");
+        for (auto u : ei.unit_map_) {
+            Diagnostics::DiagnosticText("%s", u.second.type_.c_str());
+        }
     }
-
     return false; // no target, we got a falsehood.
 }
 

@@ -452,7 +452,7 @@ void LearningManager::initializeTestStart(){
     a_tech_t0 = 0.52895;
     r_out_t0 = 0.5097605;
 
-    build_order_t0 = "12pool extract drone hatch drone drone ling ling lair drone drone drone speed hydra_den ling ling lurker_tech overlord hydra hydra hydra hydra extract lurker lurker lurker lurker"; // 2h lurker https://liquipedia.net/starcraft/2_Hatch_Lurker_(vs._Terran); // 2h lurker; //Standard Opener
+    build_order_t0 = "12hatch pool drone extract drone drone drone drone drone drone hydra_den drone overlord drone drone drone grooved_spines hydra hydra hydra hydra hydra hydra hydra overlord hydra hydra hydra hydra hydra hatch extract"; 
 }
 
 //Otherwise, use random build order and values from above

@@ -30,8 +30,7 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
 
     evaluateCurrentWorth(); // How much do they appear to have?
     estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;     // Combine unseen and seen workers for a total worker count.
-
-
+    
 
     int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
     int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
@@ -693,22 +692,22 @@ void PlayerModel::setLockedOpeningValues(const double alpha_army, const double a
     CUNYAIModule::buildorder = BuildingGene(build_order.c_str());
 }
 
-double PlayerModel::getCumArmy()
+const double PlayerModel::getCumArmy()
 {
     return average_army_;
 }
 
-double PlayerModel::getCumEco()
+const double PlayerModel::getCumEco()
 {
     return average_econ_;
 }
 
-double PlayerModel::getCumTech()
+const double PlayerModel::getCumTech()
 {
     return average_tech_;
 }
 
-double PlayerModel::getNetWorth()
+const double PlayerModel::getNetWorth()
 {
     return estimated_net_worth_;
 }
