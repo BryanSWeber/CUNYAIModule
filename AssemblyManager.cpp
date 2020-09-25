@@ -239,14 +239,6 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     UnitInventory e_loc;
     UnitInventory u_loc;
 
-    //if (nearby_enemy) {
-    /*e_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, drone->getPosition());
-    u_loc = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::friendly_player_model.units_, drone->getPosition());
-    e_loc.updateUnitInventorySummary();
-    u_loc.updateUnitInventorySummary();
-    drone_death = u_loc.unit_map_.find(drone) != u_loc.unit_map_.end() && StoredUnit::unitDeadInFuture(u_loc.unit_map_.at(drone), 1);*/
-    //}
-
     // Trust the build order. If there is a build order and it wants a building, build it!
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder()) {
         UnitType next_in_build_order = CUNYAIModule::buildorder.building_gene_.front().getUnit();
@@ -492,7 +484,7 @@ bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || CUNYAIModule::army_starved || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoal_army_ || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva)) {
         is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 

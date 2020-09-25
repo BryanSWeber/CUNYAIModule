@@ -15,6 +15,9 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
 {
     // Store Player
     bwapi_player_ = other_player;
+    player_race_ = bwapi_player_->getRace();
+    if (player_race_ == Races::Random || player_race_ == Races::Unknown || player_race_ == Races::None )
+        player_race_ = Races::Terran; // if random, assume terran for starters. (There are race conditions on zerg.
 
     // Update Enemy Units
     units_.updateUnitsControlledBy(other_player);
@@ -25,34 +28,36 @@ void PlayerModel::updateOtherOnFrame(const Player & other_player)
     // Update Researches
     researches_.updateResearch(other_player);
 
-    evaluatePotentialUnitExpenditures(); // How much is being bought?
-    evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
+    if (other_player->isEnemy(Broodwar->self())) {
+        evaluatePotentialUnitExpenditures(); // How much is being bought?
+        evaluatePotentialTechExpenditures(); // How much is being upgraded/researched?
 
-    evaluateCurrentWorth(); // How much do they appear to have?
-    estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;     // Combine unseen and seen workers for a total worker count.
-    
+        evaluateCurrentWorth(); // How much do they appear to have?
+        estimated_workers_ = units_.worker_count_ + estimated_unseen_workers_;     // Combine unseen and seen workers for a total worker count.
 
-    int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
-    int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
 
-    spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
-        researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
-        estimated_worker_stock_);
+        int worker_value = StoredUnit(player_race_.getWorker()).stock_value_;
+        int estimated_worker_stock_ = static_cast<int>(estimated_workers_ * worker_value);
 
-    spending_model_.storeStocks(units_.stock_fighting_total_,
-        researches_.research_stock_,
-        units_.worker_count_* worker_value);
+        spending_model_.estimateUnknownCD(units_.stock_fighting_total_ + static_cast<int>(estimated_unseen_army_),
+            researches_.research_stock_ + static_cast<int>(estimated_unseen_tech_),
+            estimated_worker_stock_);
 
-    updatePlayerAverageCD(); // For saving/printing on game end, what is this guy's style like?
+        spending_model_.storeStocks(units_.stock_fighting_total_,
+            researches_.research_stock_,
+            units_.worker_count_* worker_value);
+
+        updatePlayerAverageCD(); // For saving/printing on game end, what is this guy's style like?
+    }
 };
 
 void PlayerModel::updateSelfOnFrame()
 {
     bwapi_player_ = Broodwar->self();
-
+    player_race_ = Broodwar->self()->getRace();
 
     //Bans units you don't want for a particular matchup.
-    if (CUNYAIModule::enemy_player_model.bwapi_player_->getRace() == Races::Zerg) {
+    if (CUNYAIModule::enemy_player_model.player_race_ == Races::Zerg) {
         dropBuildingType(UnitTypes::Zerg_Hydralisk_Den);
         dropUnitType(UnitTypes::Zerg_Hydralisk);
         dropUnitType(UnitTypes::Zerg_Lurker);
@@ -71,7 +76,7 @@ void PlayerModel::updateSelfOnFrame()
     //Update Researches
     researches_.updateResearch(Broodwar->self());
 
-    int worker_value = StoredUnit(bwapi_player_->getRace().getWorker()).stock_value_;
+    int worker_value = StoredUnit(player_race_.getWorker()).stock_value_;
     spending_model_.evaluateCD(units_.stock_fighting_total_, researches_.research_stock_, units_.worker_count_ * worker_value);
 
     if constexpr (TIT_FOR_TAT_ENGAGED) {
@@ -233,14 +238,16 @@ void PlayerModel::evaluatePotentialUnitExpenditures() {
 
     if (Broodwar->getFrameCount() == 0) {
         for(int i = 0; i < 4; i++)
-            incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // at game start there are 4 workers.
-        incrementUnseenUnits(bwapi_player_->getRace().getResourceDepot()); // there is also one base.
+            incrementUnseenUnits(player_race_.getWorker()); // at game start there are 4 workers.
+        incrementUnseenUnits(player_race_.getResourceDepot()); // there is also one base.
     }
 
-    if (countUnseenUnits(bwapi_player_->getRace().getResourceDepot()) <= 0) 
-        incrementUnseenUnits(bwapi_player_->getRace().getResourceDepot()); // there is always one base.
-    if (countUnseenUnits(bwapi_player_->getRace().getWorker()) <= 0)
-        incrementUnseenUnits(bwapi_player_->getRace().getWorker()); // there is always one worker.
+    if (countUnseenUnits(player_race_.getResourceDepot()) <= 0) 
+        incrementUnseenUnits(player_race_.getResourceDepot()); // there is always one base.
+    if (countUnseenUnits(player_race_.getResourceDepot()) < ceil( countUnseenUnits(player_race_.getWorker()) / (16.0 + player_race_.getResourceDepot().buildTime() / player_race_.getWorker().buildTime()) ) )
+        incrementUnseenUnits(player_race_.getResourceDepot()); // For every 16 workers, there is another base.
+    if (countUnseenUnits(player_race_.getWorker()) <= 0)
+        incrementUnseenUnits(player_race_.getWorker()); // there is always one worker.
 
     //Add logically necessary units to the unit inventory.
     for (auto u : units_.unit_map_) {
@@ -282,12 +289,13 @@ void PlayerModel::evaluatePotentialUnitExpenditures() {
         }
     }
 
-    double remaining_supply_capacity = (400 - units_.total_supply_);
+    units_.updateUnitInventorySummary();
+    double remaining_supply_capacity = (400.0 - units_.total_supply_);
     double average_army_per_supply = temp_estimated_unseen_army_ / temp_estimated_army_supply;
     double average_worker_per_supply = temp_estimated_worker_value / temp_estimated_worker_supply;
     double army_proportion = temp_estimated_army_supply / temp_estimated_unseen_supply_;
     double worker_proportion = temp_estimated_worker_supply / temp_estimated_unseen_supply_;
-    double supply_cost_per_worker = Broodwar->enemy()->getRace().getWorker().supplyRequired();
+    double supply_cost_per_worker = player_race_.getWorker().supplyRequired();
 
     if (remaining_supply_capacity < temp_estimated_unseen_supply_) {
         estimated_unseen_army_ = max(remaining_supply_capacity * average_army_per_supply * army_proportion, 0.0); //Their unseen army can't be bigger than their leftovers, or less than 0.
@@ -305,8 +313,9 @@ void PlayerModel::evaluatePotentialUnitExpenditures() {
 
 
     if (Broodwar->getFrameCount() % (60 * 24) == 0) {
+        Diagnostics::DiagnosticText("Total Supply Observed: %d", units_.total_supply_);
         Diagnostics::DiagnosticText("What do we think is happening behind the scenes?");
-        Diagnostics::DiagnosticText("This is the unseen units of an %s:", this->bwapi_player_->isEnemy(Broodwar->self()) ? "ENEMY" : "NOT ENEMY");
+        Diagnostics::DiagnosticText("This is the unseen units of an %s:", this->bwapi_player_->isEnemy(Broodwar->self()) ? "ENEMY" : (this->bwapi_player_->isAlly(Broodwar->self()) ? "FRIEND" : "NEUTRAL") );
         for (auto ut : unseen_units_)
             Diagnostics::DiagnosticText("They have %4.2f of %s", ut.second, ut.first.c_str());
         Diagnostics::DiagnosticText("I count an unused supply of %4.2f and imagine units taking %4.2f supply", remaining_supply_capacity, temp_estimated_unseen_supply_);
