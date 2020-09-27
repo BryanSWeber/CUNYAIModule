@@ -349,7 +349,8 @@ void CUNYAIModule::onFrame()
 
     buildorder.getCumulativeResources();
     //Knee-jerk states: gas, supply.
-    gas_starved = (workermanager.checkGasOutlet() && (currentMapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
+    gas_starved = (workermanager.checkGasOutlet() && workermanager.getMinWorkers() > workermanager.getGasWorkers() //You must have more mineral gatherers than gas miners, otherwise you are simply eco starved.
+        && (currentMapInventory.getGasRatio() < gas_proportion || Broodwar->self()->gas() < max({ CUNYAIModule::assemblymanager.getMaxGas(), CUNYAIModule::techmanager.getMaxGas()}))) || // you cannot buy something because of gas.
         (!buildorder.building_gene_.empty() && (my_reservation.getExcessGas() <= 0 || buildorder.cumulative_gas_ >= Broodwar->self()->gas()));// you need gas for a required build order item.
 
     supply_starved = (currentMapInventory.getLn_Supply_Ratio() < supply_ratio  &&   //If your supply is disproportionately low, then you are supply starved, unless
@@ -440,7 +441,7 @@ void CUNYAIModule::onFrame()
     }
 
     techmanager.updateOptimalTech();
-    if(army_starved || assemblymanager.checkSufficientSlack()) 
+    if(army_starved || assemblymanager.checkSufficientSlack(UnitTypes::Zerg_Zergling)) 
         assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
 

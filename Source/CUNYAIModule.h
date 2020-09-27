@@ -22,8 +22,8 @@
 #define LARVA_BUILD_TIME 342
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
-constexpr bool ANALYSIS_MODE = true; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
+constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -133,6 +133,7 @@ public:
     static bool checkInCartridge(const UpgradeType & ut);
     static bool checkInCartridge(const TechType & ut);
     static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
+    static bool checkOpenToUpgrade(const UpgradeType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
     static bool checkWillingAndAble(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0); // checks if UT is willing and able to be built next by unit. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
     static bool checkWillingAndAble(const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);  // checks if UT is willing and able to be built in general by player. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
     static bool checkWillingAndAble(const UpgradeType & ut, const bool & extra_criteria);  // checks if UT is willing and able to be built. Used in many assembly functions.  Requires it's part of BO or extra critera is met.

@@ -442,7 +442,6 @@ bool AssemblyManager::isPlaceableCUNY(const UnitType &type, const TilePosition &
         }
     }
     return true;
-    return true;
 }
 
 bool AssemblyManager::isOccupiedBuildLocation(const UnitType &type, const TilePosition &location) {
@@ -1360,6 +1359,10 @@ bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criter
     return checkInCartridge(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
+bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {
+    return checkInCartridge(ut) && (buildorder.checkUpgradeNextInBo(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+}
+
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
      return AssemblyManager::canMakeCUNY(ut, !ut.isBuilding(), unit) && my_reservation.checkAffordablePurchase(ut, travel_distance) && checkOpenToBuild(ut, extra_criteria);
 }
@@ -1369,11 +1372,11 @@ bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_cri
 }
 
 bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
-    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgrade_Desired(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBo(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
-    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgrade_Desired(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgradeNextInBo(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
     return false;
 }
 
@@ -1388,11 +1391,11 @@ bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
-    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
+    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBo(up);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
-    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgrade_Desired(up);
+    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBo(up);
 }
 
 void BuildingGene::updateRemainingBuildOrder(const UnitType &ut) {
@@ -1431,7 +1434,7 @@ bool BuildingGene::checkBuildingNextInBO(UnitType ut) {
     return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
 }
 
-bool BuildingGene::checkUpgrade_Desired(UpgradeType upgrade) {
+bool BuildingGene::checkUpgradeNextInBo(UpgradeType upgrade) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
 }

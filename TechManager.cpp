@@ -103,13 +103,36 @@ bool TechManager::chooseTech() {
     UpgradeType up_type = UpgradeTypes::None;
     std::map<UpgradeType, int> local_upgrade_cycle(upgrade_cycle_);
     int best_sim_score = local_upgrade_cycle[up_type];// Baseline, an upgrade must be BETTER than null upgrade. But this requirement causes freezing. So until further notice, do the "best" upgrade.
+    bool bad_element_found;
 
     //Only consider upgrades we can do.
-    for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) {
-        if (!canUpgradeCUNY(potential_up->first, false)) {
-            local_upgrade_cycle.erase(potential_up++);
+    do {
+        bad_element_found = false;
+        for (auto potential_up = local_upgrade_cycle.begin(); potential_up != local_upgrade_cycle.end(); potential_up++) { // we want to RESTART this loop from the start if any element is deleted.
+            if (!canUpgradeCUNY(potential_up->first, false)) {
+                local_upgrade_cycle.erase(potential_up++); // erase element then iterate out of it, since it is no longer available.
+                bad_element_found = true;
+                break;
+            }
+            if (!CUNYAIModule::checkOpenToUpgrade(potential_up->first, true)) {
+                local_upgrade_cycle.erase(potential_up++); // If there is a build order and this is NOT on it, we should skip it.
+                bad_element_found = true;
+                break;
+            }
+            if (potential_up->first == UpgradeTypes::Pneumatized_Carapace && !(CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)) {
+                local_upgrade_cycle.erase(potential_up++); //Don't reserve carapace if they don't have flyers yet.  Idea from steamhammer.
+                bad_element_found = true;
+                break;
+            }
+            for (auto i : CUNYAIModule::my_reservation.getReservedUpgrades()) {
+                if (i.whatUpgrades() == potential_up->first.whatUpgrades()) {
+                    bad_element_found = true;
+                    local_upgrade_cycle.erase(potential_up++); // Don't reserve a second upgrade for the same building type.
+                    break;
+                }
+            }
         }
-    }
+    } while (bad_element_found);
 
     //Identify the best upgrade. Requirements override this, reserve them first.
     for (auto potential_up : local_upgrade_cycle) {
@@ -123,14 +146,14 @@ bool TechManager::chooseTech() {
         }
     }
 
-    //Check to make sure there are not 2 upgrades for a single building type. 
-    UpgradeType matching_upgrade = UpgradeTypes::None;
-    for (auto match_check : CUNYAIModule::my_reservation.getReservedUpgrades()){
-        if (up_type.whatUpgrades() == match_check.whatUpgrades()) {
-            matching_upgrade = match_check;
-        }
-    }
-    CUNYAIModule::my_reservation.removeReserveSystem(matching_upgrade, false);
+    ////Check to make sure there are not 2 upgrades for a single building type. 
+    //UpgradeType matching_upgrade = UpgradeTypes::None;
+    //for (auto match_check : CUNYAIModule::my_reservation.getReservedUpgrades()){
+    //    if (up_type.whatUpgrades() == match_check.whatUpgrades()) {
+    //        matching_upgrade = match_check;
+    //    }
+    //}
+    //CUNYAIModule::my_reservation.removeReserveSystem(matching_upgrade, false);
 
     //If we have not reserved because it is unaffordable now, let us reserve it now.
     if (canUpgradeCUNY(up_type, false) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
@@ -157,13 +180,7 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
 
     //first let's do reserved upgrades:
     for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {
-        if (up == UpgradeTypes::Pneumatized_Carapace) { // Pnumatized_Carapace is not a good idea if they don't have flyers.
-            if (CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)
-                busy = Check_N_Upgrade(up, building, true);
-        }
-        else {
-            busy = Check_N_Upgrade(up, building, true);
-        }
+        busy = Check_N_Upgrade(up, building, true);
         if (busy) break;
     }
 

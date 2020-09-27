@@ -114,9 +114,12 @@ bool Reservation::checkExcessIsGreaterThan(const TechType &type) const {
 }
 
 bool Reservation::checkAffordablePurchase(const UnitType type, const int distance) {
-    int bonus_frames = 48; //we need extra frames to make SURE we arrive early. 3 seconds?
-    bool min_affordable = (Broodwar->self()->minerals() + 0.046 * CUNYAIModule::workermanager.getMinWorkers() * (static_cast<double>(distance) / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) + bonus_frames) - min_reserve_ >= type.mineralPrice()) || type.mineralPrice() == 0;
-    bool gas_affordable = (Broodwar->self()->gas() + 0.069 * CUNYAIModule::workermanager.getGasWorkers() * (static_cast<double>(distance) / CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) + bonus_frames) - gas_reserve_ >= type.gasPrice()) || type.gasPrice() == 0;
+    double bonus_frames = 48.0; //we need extra frames to make SURE we arrive early. 3 seconds?
+    double extra_min = 0.046 * static_cast<double>(CUNYAIModule::workermanager.getMinWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames);
+    double extra_gas = 0.069 * static_cast<double>(CUNYAIModule::workermanager.getGasWorkers()) * (static_cast<double>(distance) / (CUNYAIModule::getProperSpeed(UnitTypes::Zerg_Drone) * 0.5) + bonus_frames); // top speed overestimates drone movement heavily.
+
+    bool min_affordable = ( static_cast<double>(Broodwar->self()->minerals()) + extra_min - static_cast<double>(min_reserve_) >= type.mineralPrice() ) || type.mineralPrice() == 0;
+    bool gas_affordable = ( static_cast<double>(Broodwar->self()->gas()) + extra_gas - static_cast<double>(gas_reserve_) >= type.gasPrice() ) || type.gasPrice() == 0;
     
     bool already_making_one = false;
     for (auto it = reservation_map_.begin(); it != reservation_map_.end(); it++) {
