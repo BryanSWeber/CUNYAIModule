@@ -414,8 +414,8 @@ bool WorkerManager::workerWork(const Unit &u) {
             if (AssemblyManager::isFullyVisibleBuildLocation(miner.intended_build_type_, miner.intended_build_tile_)) {
                 if ((AssemblyManager::isPlaceableCUNY(miner.intended_build_type_, miner.intended_build_tile_) || miner.intended_build_type_.isRefinery())) {
                     Diagnostics::DiagnosticText("Continuing to Build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
-                    //if (!u->build(miner.intended_build_type_, miner.intended_build_tile_))
-                    //    Diagnostics::DiagnosticText("Can't seem to build at ( %d , %d ).", miner.intended_build_tile_.x, miner.intended_build_tile_.y);
+                    u->build(miner.intended_build_type_, miner.intended_build_tile_);
+                    Diagnostics::DiagnosticText("Trying to build the %s", miner.intended_build_type_.c_str());
                     return CUNYAIModule::updateUnitPhase(u, StoredUnit::Building);
                 }
                 else {
@@ -539,7 +539,7 @@ void WorkerManager::updateWorkersOverstacked()
 void WorkerManager::updateExcessCapacity()
 {
     //excess_gas_capacity_ = CUNYAIModule::land_inventory.local_gas_collectors_ <= CUNYAIModule::land_inventory.local_refineries_ * 2 && CUNYAIModule::land_inventory.local_refineries_ > 0 && CUNYAIModule::gas_starved;
-    excess_gas_capacity_ = (gas_workers_ <= CUNYAIModule::land_inventory.getLocalRefineries() * 2) && CUNYAIModule::land_inventory.getLocalRefineries() > 0;
+    excess_gas_capacity_ = (gas_workers_ <= CUNYAIModule::land_inventory.countLocalRefineries() * 2) && CUNYAIModule::land_inventory.countLocalRefineries() > 0;
 
 }
 
