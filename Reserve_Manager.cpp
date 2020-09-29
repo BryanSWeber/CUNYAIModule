@@ -76,6 +76,14 @@ bool Reservation::isInReserveSystem(const UpgradeType & up) {
     return find(reserved_upgrades_.begin(), reserved_upgrades_.end(), up) != reserved_upgrades_.end();
 };
 
+int Reservation::countInReserveSystem(const UnitType & type) {
+    int count = 0;
+    for (auto reservation : reservation_map_) {
+        if (reservation.second == type) count++;
+    }
+    return count;
+};
+
 void Reservation::decrementReserveTimer() {
     if (Broodwar->getFrameCount() == 0) {
         building_timer_ = 0;

@@ -562,16 +562,16 @@ int CUNYAIModule::Stock_Units( const UnitType &unit_type, const UnitInventory &u
 }
 
 // evaluates the value of a stock of combat units, for all unit types in a unit inventory. Does not count eggs.
-int CUNYAIModule::Stock_Combat_Units( const UnitInventory &ui ) {
-    int total_stock = 0;
-    for ( int i = 0; i != 173; i++ )
-    { // iterating through all enemy units we have available and CUNYAI "knows" about. 
-        if ( ((UnitType)i).airWeapon() != WeaponTypes::None || ((UnitType)i).groundWeapon() != WeaponTypes::None || ((UnitType)i).maxEnergy() > 0 ) {
-            total_stock += Stock_Units( ((UnitType)i), ui );
-        }
-    }
-    return total_stock;
-}
+//int CUNYAIModule::Stock_Combat_Units( const UnitInventory &ui ) {
+//    int total_stock = 0;
+//    for ( int i = 0; i != 173; i++ )
+//    { // iterating through all enemy units we have available and CUNYAI "knows" about. 
+//        if ( ((UnitType)i).airWeapon() != WeaponTypes::None || ((UnitType)i).groundWeapon() != WeaponTypes::None || ((UnitType)i).maxEnergy() > 0 ) {
+//            total_stock += Stock_Units( ((UnitType)i), ui );
+//        }
+//    }
+//    return total_stock;
+//}
 
 // Overload. evaluates the value of a stock of units, for all unit types in a unit inventory
 int CUNYAIModule::Stock_Units_ShootUp( const UnitInventory &ui ) {
@@ -1267,6 +1267,7 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInRadius(const Resource_Inv
 			ri_out.addStored_Resource(e->second); // if we take any distance and they are in inventory.
 		}
 	}
+    ri_out.updateMines();
 	return ri_out;
 }
 
@@ -1282,7 +1283,25 @@ Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inven
 			}
 		}
 	}
+    ri_out.updateMines();
 	return ri_out;
+}
+
+//Searches a research inventory for those resources that are both <350 away from a presumed base location and in the same area.
+Resource_Inventory CUNYAIModule::getResourceInventoryAtBase(const Resource_Inventory &ri, const Position &origin) {
+    Resource_Inventory ri_area = getResourceInventoryInArea(ri, origin);
+    Resource_Inventory ri_250 = getResourceInventoryInRadius(ri, origin, 350);
+    Resource_Inventory ri_out;
+
+    for (auto r_outer : ri_area.resource_inventory_) {
+        for (auto r_inner : ri_250.resource_inventory_) {
+            if (r_outer.second.pos_ == r_inner.second.pos_) {
+                ri_out.addStored_Resource(r_outer.second);
+            }
+        }
+    }
+    ri_out.updateMines();
+    return ri_out;
 }
 
 //Searches an enemy inventory for units within a range. Returns units that are not in weapon range but are in inventory. Can return nullptr.
@@ -2074,7 +2093,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        have_to_save = CUNYAIModule::land_inventory.getLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::currentMapInventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::land_inventory.countLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::currentMapInventory.hatches_ == 1;
     }
 
 
@@ -2084,7 +2103,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
 
 bool CUNYAIModule::checkSafeMineLoc(const Position pos, const UnitInventory &ui, const MapInventory &inv) {
 
-    bool desperate_for_minerals = CUNYAIModule::land_inventory.getLocalMinPatches() < 6;
+    bool desperate_for_minerals = CUNYAIModule::land_inventory.countLocalMinPatches() < 6;
     bool safe_mine = checkOccupiedArea(ui, pos);
     return  safe_mine || desperate_for_minerals;
 }

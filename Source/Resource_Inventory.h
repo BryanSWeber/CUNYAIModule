@@ -39,6 +39,7 @@ private:
     // For only occupied patches.
     int local_mineral_patches_ = 0;
     int local_refineries_ = 0;
+    int local_geysers_ = 0;
 
     //Note: Now depreciated in favor of WorkerManager's tallies. Only use for LOCAL values.
     int local_miners_ = 0;
@@ -66,10 +67,11 @@ public:
     friend Resource_Inventory operator - (const Resource_Inventory & lhs, const Resource_Inventory & rhs);
 
     // This command sometimes is inaccurate depending on the latancy. 
-    int getLocalMiners();
+    int countLocalMiners();
     // This command sometimes is inaccurate depending on the latancy. 
-    int getLocalGasCollectors();
-    int getLocalMinPatches();
-    int getLocalRefineries();
+    int countLocalGasCollectors();
+    int countLocalMinPatches();
+    int countLocalGeysers();
+    int countLocalRefineries();
 
 };

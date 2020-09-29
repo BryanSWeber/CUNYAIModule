@@ -178,12 +178,17 @@ bool AssemblyManager::Expo(const Unit &unit, const bool &extra_critera, MapInven
                 safe_path_available_or_needed = drone_pathing_options.checkSafeEscapePath(Position(p)) || CUNYAIModule::basemanager.getBaseCount() < 2;
                 newPath.createUnitPath(unit->getPosition(), Position(p));
 
-                score_temp = inv.getRadialDistanceOutFromEnemy(Position(p)) - inv.getRadialDistanceOutFromHome(Position(p)); // closer is better, further from enemy is better.
-                min_plength = min(static_cast<int>(newPath.getDistance()), 500);
+                score_temp = inv.getRadialDistanceOutFromEnemy(Position(p)) - inv.getRadialDistanceOutFromHome(Position(p)); // closer is better, further from enemy is better.  The first base (the natural, sometimes the 3rd) simply must be the closest, distance is irrelivant.
+                min_plength = min(static_cast<int>(newPath.getDistance()), 500 * CUNYAIModule::basemanager.getBaseCount());
 
-                can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, UnitTypes::Zerg_Hatchery, extra_critera, min_plength); // cap travel distance for expo reservation funds.
+                can_afford_with_travel = CUNYAIModule::checkWillingAndAble(unit, Broodwar->self()->getRace().getResourceDepot(), extra_critera, min_plength); // cap travel distance for expo reservation funds.
 
-                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel) {
+                bool want_more_gas = CUNYAIModule::buildorder.countTimesInBO(Broodwar->self()->getRace().getRefinery()) > CUNYAIModule::basemanager.getBaseGeyserCount(); // if you need/have 2 extractors, your first expansion must have gas.
+                bool base_has_gas = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, Position(p)).countLocalGeysers() > 0;
+
+                bool meets_gas_requirements = (base_has_gas && want_more_gas) || !want_more_gas;
+
+                if (isPlaceableCUNY(Broodwar->self()->getRace().getResourceDepot(), p) && score_temp > expo_score && newPath.isReachable() && safe_path_available_or_needed && can_afford_with_travel && meets_gas_requirements) {
                     expo_score = score_temp;
                     base_expo = p;
                 }
@@ -493,9 +498,20 @@ bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
 
 bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate, const bool & force_spore = false, const bool & force_sunken = false) {
 
-    if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony) || force_spore) return morph_canidate->morph(UnitTypes::Zerg_Spore_Colony);
-    else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony) || force_sunken) return morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony);
-
+    if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Spore_Colony) || force_spore) {
+        if (morph_canidate->morph(UnitTypes::Zerg_Spore_Colony)) {
+            CUNYAIModule::buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Spore_Colony);
+            return true;
+        }
+        return false;
+    }
+    else if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, UnitTypes::Zerg_Sunken_Colony) || force_sunken) {
+        if (morph_canidate->morph(UnitTypes::Zerg_Sunken_Colony)) {
+            CUNYAIModule::buildorder.updateRemainingBuildOrder(UnitTypes::Zerg_Sunken_Colony);
+                return true;
+        }
+        return false;
+    }
     return false;
 }
 
@@ -1041,9 +1057,9 @@ bool AssemblyManager::assignUnitAssembly()
             bool minerals_on_left = false;
 
             if (larva.first->getHatchery()) {
-                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 2 && CUNYAIModule::land_inventory.getLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
+                wasting_larva_soon = larva.first->getHatchery()->getRemainingTrainTime() < 5 + Broodwar->getLatencyFrames() && larva.first->getHatchery()->getLarva().size() == 2 && CUNYAIModule::land_inventory.countLocalMinPatches() > 8; // no longer will spam units when I need a hatchery.
                 Base b = CUNYAIModule::basemanager.getBase(larva.first->getHatchery()->getPosition());
-                hatch_wants_drones = 2 * b.mineral_patches_ + 3 * b.gas_geysers_ > b.mineral_gatherers_ + b.gas_gatherers_;
+                hatch_wants_drones = 2 * b.mineral_patches_ + 3 * b.gas_refinery_ > b.mineral_gatherers_ + b.gas_gatherers_;
                 prep_for_transfer = CUNYAIModule::countUnitsInProgress(Broodwar->self()->getRace().getResourceDepot()) > 0;
 
                 Position hatch_spot = larva.first->getHatchery()->getPosition();
@@ -1052,7 +1068,7 @@ bool AssemblyManager::assignUnitAssembly()
                 minerals_on_left = checkSameDirection(centroid - hatch_spot, left_of_base - hatch_spot);
             }
 
-            bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.getLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
+            bool enough_drones_globally = (CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) > CUNYAIModule::land_inventory.countLocalMinPatches() * 2 + CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) * 3 + 1) || CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) >= 85;
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
@@ -1360,7 +1376,7 @@ bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criter
 }
 
 bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && (buildorder.checkUpgradeNextInBo(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UnitType &ut, const bool &extra_criteria, const int &travel_distance) {
@@ -1372,11 +1388,11 @@ bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_cri
 }
 
 bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
-    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBo(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
-    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgradeNextInBo(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgradeNextInBO(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
     return false;
 }
 
@@ -1391,11 +1407,11 @@ bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UnitType &ut
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const Unit &unit, const UpgradeType &up) {
-    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBo(up);
+    return Broodwar->canUpgrade(up, unit) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBO(up);
 }
 
 bool CUNYAIModule::checkFeasibleRequirement(const UpgradeType &up) {
-    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBo(up);
+    return Broodwar->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && buildorder.checkUpgradeNextInBO(up);
 }
 
 void BuildingGene::updateRemainingBuildOrder(const UnitType &ut) {
@@ -1434,7 +1450,16 @@ bool BuildingGene::checkBuildingNextInBO(UnitType ut) {
     return !building_gene_.empty() && building_gene_.front().getUnit() == ut;
 }
 
-bool BuildingGene::checkUpgradeNextInBo(UpgradeType upgrade) {
+int BuildingGene::countTimesInBO(UnitType ut) {
+    int count = 0;
+    for (auto g : building_gene_) {
+        if (g.getUnit() == ut) count++;
+    }
+    return count;
+}
+
+
+bool BuildingGene::checkUpgradeNextInBO(UpgradeType upgrade) {
     // A building is not wanted at that moment if we have active builders or the timer is nonzero.
     return !building_gene_.empty() && building_gene_.front().getUpgrade() == upgrade;
 }

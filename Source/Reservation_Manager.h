@@ -29,6 +29,8 @@ public:
     bool isInReserveSystem(const UnitType & type);  // Checks if an item of type is in reserve system.
     bool isInReserveSystem(const UpgradeType & up); // Checks if an item of type is in reserve system.
 
+    int countInReserveSystem(const UnitType & type); // Counts the number of units of this type in the reserve system.
+
 
     void Reservation::decrementReserveTimer(); // Decrements the clock.
 

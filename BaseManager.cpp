@@ -19,6 +19,7 @@ Base::Base() {
     emergency_spore_ = false;
     emergency_sunken_ = false;
     mineral_patches_ = 0;
+    gas_refinery_ = 0;
     gas_geysers_ = 0;
 };
 
@@ -38,6 +39,7 @@ Base::Base(const Unit & u)
     emergency_spore_ = false;
     emergency_sunken_ = false;
     mineral_patches_ = 0;
+    gas_refinery_ = 0;
     gas_geysers_ = 0;
     unit_ = u;
 };
@@ -62,7 +64,7 @@ int BaseManager::getInactiveBaseCount(const int minimum_workers)
     // if it has less than Y patches or less than X gatherers, it's inactive.
     if (!baseMap_.empty()) {
         for (auto base : baseMap_) {
-            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ * 2 > minimum_workers)
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ < minimum_workers && base.second.gas_refinery_ * 3 + base.second.mineral_patches_ * 2 > minimum_workers)
                 inactive_bases++;
         }
     }
@@ -85,12 +87,54 @@ int BaseManager::getLoadedBaseCount(const int maximum_workers)
     // if it has less than Y patches or less than X gatherers, it's inactive.
     if (!baseMap_.empty()) {
         for (auto base : baseMap_) {
-            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ > maximum_workers && base.second.gas_geysers_ * 3 + base.second.mineral_patches_ * 2 > maximum_workers)
+            if (base.second.mineral_gatherers_ + base.second.gas_gatherers_ + base.second.returners_ > maximum_workers && base.second.gas_refinery_ * 3 + base.second.mineral_patches_ * 2 > maximum_workers)
                 loaded_bases++;
         }
     }
 
     return loaded_bases;
+}
+
+int BaseManager::getBaseMineralCount()
+{
+    int resource = 0;
+
+    // if it has less than Y patches or less than X gatherers, it's inactive.
+    if (!baseMap_.empty()) {
+        for (auto base : baseMap_) {
+            resource += base.second.mineral_patches_;
+        }
+    }
+
+    return resource;
+}
+
+int BaseManager::getBaseGeyserCount()
+{
+    int resource = 0;
+
+    // if it has less than Y patches or less than X gatherers, it's inactive.
+    if (!baseMap_.empty()) {
+        for (auto base : baseMap_) {
+            resource += base.second.gas_geysers_;
+        }
+    }
+
+    return resource;
+}
+
+int BaseManager::getBaseRefineryCount()
+{
+    int resource = 0;
+
+    // if it has less than Y patches or less than X gatherers, it's inactive.
+    if (!baseMap_.empty()) {
+        for (auto base : baseMap_) {
+            resource += base.second.gas_refinery_;
+        }
+    }
+
+    return resource;
 }
 
 void BaseManager::updateBases()
@@ -99,13 +143,14 @@ void BaseManager::updateBases()
 
     baseMap_.clear();
     for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
-        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery))
+        if (u.second.bwapi_unit_ && u.second.type_.isSuccessorOf(UnitTypes::Zerg_Hatchery)) {
             if (!(u.second.bwapi_unit_->getBuildType() == UnitTypes::Zerg_Hatchery && u.second.bwapi_unit_->isMorphing())) { // if the unit is morphing into a hatchery for the first time, don't count it as a base.
                 for (auto expo : CUNYAIModule::currentMapInventory.getExpoTilePositions()) {
                     if (u.second.bwapi_unit_->getTilePosition() == expo)
                         baseMap_.insert({ u.second.pos_, Base(u.first) });
                 }
             }
+        }
     }
 
     if (baseMap_.empty()) {
@@ -131,7 +176,7 @@ void BaseManager::updateBases()
     for (auto & b : baseMap_) {
         b.second.e_loc_ = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
         b.second.u_loc_ = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, b.first);
-        b.second.r_loc_ = CUNYAIModule::getResourceInventoryInArea(CUNYAIModule::land_inventory, b.first);
+        b.second.r_loc_ = CUNYAIModule::getResourceInventoryAtBase(CUNYAIModule::land_inventory, b.first);
 
         b.second.r_loc_.updateMines();
         b.second.e_loc_.updateUnitInventorySummary();
@@ -174,8 +219,9 @@ void BaseManager::updateBases()
         b.second.mineral_gatherers_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::MiningMin);
         b.second.gas_gatherers_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::MiningGas);
         b.second.returners_ = b.second.u_loc_.count_of_each_phase_.at(StoredUnit::Phase::Returning);
-        b.second.mineral_patches_ = b.second.r_loc_.getLocalMinPatches();
-        b.second.gas_geysers_ = b.second.r_loc_.getLocalRefineries();
+        b.second.mineral_patches_ = b.second.r_loc_.countLocalMinPatches();
+        b.second.gas_refinery_ = b.second.r_loc_.countLocalRefineries();
+        b.second.gas_geysers_ = b.second.r_loc_.countLocalGeysers();
 
         bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
         bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
@@ -214,10 +260,10 @@ void BaseManager::displayBaseData()
 {
     if (DIAGNOSTIC_MODE) {
         for (auto b : baseMap_) {
-            Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d / %d", b.second.gas_gatherers_, b.second.gas_geysers_ * 3);
+            Broodwar->drawTextMap(b.first + Position(5, -40), "Gasers: %d / %d", b.second.gas_gatherers_, b.second.gas_refinery_ * 3);
             Broodwar->drawTextMap(b.first + Position(5, -30), "Miners: %d / %d", b.second.mineral_gatherers_, b.second.mineral_patches_ * 2);
-            Broodwar->drawTextMap(b.first + Position(5, -20), "Returners: %d", b.second.returners_);
-            Broodwar->drawTextMap(b.first + Position(5, -10), "Sunkens: %d", b.second.sunken_count_);
+            Broodwar->drawTextMap(b.first + Position(5, -20), "Geysers: %d", b.second.gas_geysers_);
+            Broodwar->drawTextMap(b.first + Position(5, -10), "Refinery: %d", b.second.gas_refinery_);
             Broodwar->drawTextMap(b.first + Position(5, -0), "Spores: %d", b.second.spore_count_);
             Broodwar->drawTextMap(b.first + Position(5, 10), "Creeps: %d", b.second.creep_count_);
             Broodwar->drawTextMap(b.first + Position(5, 20), "Overlords: %d", b.second.overlords_);

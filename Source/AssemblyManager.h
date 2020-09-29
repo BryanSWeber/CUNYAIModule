@@ -144,7 +144,8 @@ struct BuildingGene {
     void updateRemainingBuildOrder(const UnitType &ut); // drops item from list as complete.
     void announceBuildingAttempt(UnitType ut);  // do we have a guy going to build it?
     bool checkBuildingNextInBO(UnitType ut);
-    bool checkUpgradeNextInBo(UpgradeType upgrade);
+    int  countTimesInBO(UnitType ut);
+    bool checkUpgradeNextInBO(UpgradeType upgrade);
     bool checkResearch_Desired(TechType upgrade);
     bool isEmptyBuildOrder();
 

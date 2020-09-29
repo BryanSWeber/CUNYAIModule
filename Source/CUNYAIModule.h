@@ -248,6 +248,7 @@ public:
     static UnitInventory getUnitInventoryInArea(const UnitInventory & ui, const UnitType ut, const Position & origin);
 
     static Resource_Inventory CUNYAIModule::getResourceInventoryInArea(const Resource_Inventory &ri, const Position &origin);
+    static Resource_Inventory getResourceInventoryAtBase(const Resource_Inventory & ri, const Position & origin);
     //Overload. Searches for units of a specific type.
     static UnitInventory getUnitInventoryInRadius(const UnitInventory &ui, const UnitType u_type, const Position &origin, const int &dist);
     static Resource_Inventory getResourceInventoryInRadius(const Resource_Inventory & ri, const Position & origin, const int & dist);

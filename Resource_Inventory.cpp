@@ -135,8 +135,6 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
         TilePosition resource_pos = TilePosition(r->second.pos_);
         bool erasure_sentinel = false;
 
-
-
         if (Broodwar->isVisible(resource_pos)) {
             if (r->second.bwapi_unit_ && r->second.bwapi_unit_->exists()) {
                 r->second.current_stock_value_ = r->second.bwapi_unit_->getResources();
@@ -174,7 +172,7 @@ void Resource_Inventory::updateResourceInventory(UnitInventory &ui, UnitInventor
 void Resource_Inventory::updateMines() {
     local_mineral_patches_ = 0;
     local_refineries_ = 0;
-
+    local_geysers_ = 0;
     local_miners_ = 0;
     local_gas_collectors_ = 0;
     for (auto& r = resource_inventory_.begin(); r != resource_inventory_.end() && !resource_inventory_.empty(); r++) {
@@ -185,7 +183,9 @@ void Resource_Inventory::updateMines() {
         if (r->second.type_.isRefinery() && r->second.bwapi_unit_ && r->second.occupied_resource_ && IsOwned(r->second.bwapi_unit_) && r->second.bwapi_unit_->isCompleted()) {
             local_refineries_++;
             local_gas_collectors_ += r->second.number_of_miners_;
-
+        }
+        if (r->second.type_ == UnitTypes::Resource_Vespene_Geyser) {
+            local_geysers_++;
         }
     } // find drone minima.
 }
@@ -213,22 +213,27 @@ void Resource_Inventory::drawUnreachablePatch(const MapInventory & inv) const
     }
 }
 
-int Resource_Inventory::getLocalMiners()
+int Resource_Inventory::countLocalMiners()
 {
     return local_miners_;
 }
 
-int Resource_Inventory::getLocalGasCollectors()
+int Resource_Inventory::countLocalGasCollectors()
 {
     return local_gas_collectors_;
 }
 
-int Resource_Inventory::getLocalMinPatches()
+int Resource_Inventory::countLocalMinPatches()
 {
     return local_mineral_patches_;
 }
 
-int Resource_Inventory::getLocalRefineries()
+int Resource_Inventory::countLocalGeysers()
+{
+    return local_geysers_;
+}
+
+int Resource_Inventory::countLocalRefineries()
 {
     return local_refineries_;
 }

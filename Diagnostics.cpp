@@ -454,10 +454,10 @@ void Diagnostics::onFrame()
         Print_Build_Order_Remaining(500, 170, CUNYAIModule::buildorder);
     }
 
-    Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::land_inventory.getLocalMinPatches());
+    Broodwar->drawTextScreen(0, 0, "Reached Min Fields: %d", CUNYAIModule::land_inventory.countLocalMinPatches());
     Broodwar->drawTextScreen(0, 20, "Workers (alt): (m%d, g%d)", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::workermanager.getGasWorkers());  //
-    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::land_inventory.getLocalMiners()); // This a misuse of local miners.
-    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workermanager.getGasWorkers(), CUNYAIModule::land_inventory.getLocalGasCollectors()); // this is a misuse of local gas.
+    Broodwar->drawTextScreen(0, 30, "Miners: %d vs %d", CUNYAIModule::workermanager.getMinWorkers(), CUNYAIModule::land_inventory.countLocalMiners()); // This a misuse of local miners.
+    Broodwar->drawTextScreen(0, 40, "Gas-ers: %d vs %d", CUNYAIModule::workermanager.getGasWorkers(), CUNYAIModule::land_inventory.countLocalGasCollectors()); // this is a misuse of local gas.
 
     Broodwar->drawTextScreen(125, 0, "Econ Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.econ_starved() ? "TRUE" : "FALSE");  //
     Broodwar->drawTextScreen(125, 10, "Army Starved: %s", CUNYAIModule::friendly_player_model.spending_model_.army_starved() ? "TRUE" : "FALSE");  //
@@ -621,6 +621,10 @@ void Diagnostics::onFrame()
         DiagnosticWrite("Game Frame is: %d", Broodwar->getFrameCount());
         writePlayerModel(CUNYAIModule::enemy_player_model);
     }
+
+    drawTiles(CUNYAIModule::currentMapInventory.screen_position_);
+    //for (auto e : CUNYAIModule::currentMapInventory.getExpoTilePositions())
+    //    drawCircle(Position(e), CUNYAIModule::currentMapInventory.screen_position_, 250);
 }
 
 void Diagnostics::drawAllVelocities(const UnitInventory ui)

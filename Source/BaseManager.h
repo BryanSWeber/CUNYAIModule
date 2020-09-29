@@ -21,6 +21,7 @@ public:
     int distance_to_ground_; // Very good pixel ground distance approximation to nearest ground unit.
     int distance_to_air_; // Pixel distance to nearest air unit, as the crow flies.
     int mineral_patches_;
+    int gas_refinery_;
     int gas_geysers_;
     Resource_Inventory r_loc_;
     UnitInventory u_loc_;
@@ -40,6 +41,9 @@ public:
     int getBaseCount(); // Gets base count, must be nonnegative.
     int getInactiveBaseCount(const int minimum_workers); // Counts bases that have less than (minimum workers) mining/returning something.
     int getLoadedBaseCount(const int maximum_workers); // Counts bases that have more than (maximum workers) mining / returning something.
+    int getBaseMineralCount();
+    int getBaseGeyserCount();
+    int getBaseRefineryCount();
     void updateBases(); // Run on frame.
     void displayBaseData(); //vital for testing.
     Base getClosestBaseGround(const Position &pos); // Gets the closest base by ground from position. will return something but could return a mock "Null base"
