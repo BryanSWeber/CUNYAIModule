@@ -118,7 +118,7 @@ void LearningManager::initializeGeneticLearning() {
     int population_size = e_race == CUNYAIModule::safeString(BWAPI::Races::Zerg.c_str()) ? 3 : build_order_list.size(); // default size of "breeding population". Typically, larger sizes are better to ensure a maximum but smaller sizes converge faster. ZvZ has fewer viable openings.
 
     double gas_proportion_out = dis(gen);
-    double supply_ratio_out = dis(gen) * 0.3 + 0.3; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
+    double supply_ratio_out = dis(gen) * 0.4 + 0.5; // Artifically chosen upper and lower bounds. But outside of this, they often get truely silly.
 
     // the values below will be normalized to 1.
     double a_army_out = dis(gen);
@@ -351,7 +351,7 @@ void LearningManager::initializeGeneticLearning() {
         double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
         gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
-        supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0.3, 0.6) : supply_ratio_out;
+        supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0.5, 0.9) : supply_ratio_out;
         a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
         a_tech_t0 = mutation_0 == 4 ? CUNYAIModule::bindBetween(a_tech_out + mutation, 0., 3.) : a_tech_out;
@@ -446,13 +446,13 @@ void LearningManager::initializeRFLearning()
 void LearningManager::initializeTestStart(){
     // Values altered
     gas_proportion_t0 = 0.3021355;
-    supply_ratio_t0 = 0.35;
+    supply_ratio_t0 = 0.75;
     a_army_t0 = 0.511545;
     a_econ_t0 = 0.488455;
     a_tech_t0 = 0.52895;
     r_out_t0 = 0.5097605;
 
-    build_order_t0 = "12hatch pool extract drone drone drone ling drone drone lair overlord drone drone speed drone drone drone drone drone drone drone drone spire drone extract drone creep drone creep drone sunken sunken overlord overlord overlord muta muta muta muta muta muta muta muta muta muta muta muta";
+    build_order_t0 = "12hatch drone drone drone hatch drone drone drone hatch drone drone drone overlord pool";
 }
 
 //Otherwise, use random build order and values from above
