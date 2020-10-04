@@ -29,8 +29,7 @@ int AssemblyManager::last_frame_of_larva_morph_command = 0;
 int AssemblyManager::last_frame_of_hydra_morph_command = 0;
 int AssemblyManager::last_frame_of_muta_morph_command = 0;
 int AssemblyManager::last_frame_of_creep_command = 0;
-bool AssemblyManager::have_idle_evos_ = false;
-bool AssemblyManager::have_idle_spires_ = false;
+
 bool AssemblyManager::subgoal_econ_ = false;
 bool AssemblyManager::subgoal_army_ = false;
 
@@ -328,7 +327,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!have_idle_evos_ || CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) == 0) &&
+        (!CUNYAIModule::countUnitsAvailable(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
         (upgrade_worth_melee || upgrade_worth_ranged) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings &&
         count_tech_buildings >= 1 &&
@@ -611,6 +610,56 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     return false;
 }
 
+void AssemblyManager::weightUnitSim(const bool & condition, const UnitType & unit, const double & weight)
+{
+    if (condition)
+        if (assembly_cycle_.find(unit) != assembly_cycle_.end())
+            assembly_cycle_[unit] += weight * static_cast<double>(StoredUnit(unit).stock_value_ * (CUNYAIModule::countUnits(unit) + unit.isTwoUnitsInOneEgg() + 1));
+}
+
+void AssemblyManager::evaluateWeightsFor(const UnitType & unit)
+{
+    switch (unit) {
+    case UnitTypes::Zerg_Zergling:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 3, unit, -0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 6, unit, -0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, -0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) > 1, unit, -0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.25);
+        break;
+    case UnitTypes::Zerg_Hydralisk:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 2, unit, 0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, unit, 0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) + 
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 4, unit, 0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Dragoon, CUNYAIModule::enemy_player_model.units_) > 4, unit, 0.25);
+        break;
+    case UnitTypes::Zerg_Lurker:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Marine, CUNYAIModule::enemy_player_model.units_) +
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Medic, CUNYAIModule::enemy_player_model.units_) * 4 +
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) * 2 > 5, unit, 0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) >= 4, unit, 0.50);
+        break;
+    case UnitTypes::Zerg_Mutalisk:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) +
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Shuttle, CUNYAIModule::enemy_player_model.units_) +
+                      CUNYAIModule::countUnits(UnitTypes::Protoss_Reaver, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
+        break;
+    case UnitTypes::Zerg_Devourer:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.75);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 6, unit, 0.75);
+        break;
+    case UnitTypes::Zerg_Guardian:
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 6, unit, 0.75);
+        break;
+    }
+    //Consider all units you have legal ability to build, but weight them as such):
+}
+
 map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building, const TilePosition &tp)
 {
     map<int, TilePosition> viable_placements = {};
@@ -779,7 +828,7 @@ int AssemblyManager::returnUnitRank(const UnitType &ut) {
     return postion_in_line;
 }
 
-//Updates the assembly cycle to consider the value of each unit.
+//Updates the assembly cycle to consider the value of each unit. Discards units one might not want to build on a heuristic basis.
 void AssemblyManager::updateOptimalCombatUnit() {
     bool building_optimal_unit = false;
     Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
@@ -788,33 +837,30 @@ void AssemblyManager::updateOptimalCombatUnit() {
     CUNYAIModule::friendly_player_model.units_.addToBuildFAP(buildFAP, true, CUNYAIModule::friendly_player_model.researches_);
     CUNYAIModule::enemy_player_model.units_.addToBuildFAP(buildFAP, false, CUNYAIModule::enemy_player_model.researches_);
 
-    for (auto potential_type = assembly_cycle_.begin(); potential_type != assembly_cycle_.end();) {
-            potential_type++;
-    }
 
     //add friendly units under consideration to FAP in loop, resetting each time.
     for (auto &potential_type : assembly_cycle_) {
         StoredUnit su = StoredUnit(potential_type.first);
         UnitInventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
+
         for (int i = 0; i <= getWaveSize(potential_type.first); i++) {
             friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
         }
         friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
-        int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false);
+        
+        int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
+
+        //Apply holistic weights.
+
+        evaluateWeightsFor(potential_type.first);
+
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
     }
 
-    have_idle_evos_ = false;
-    have_idle_spires_ = false;
-    for (auto upgrader : CUNYAIModule::friendly_player_model.units_.unit_map_) { // should only run this 1x per frame.
-        if (upgrader.second.type_ == UnitTypes::Zerg_Evolution_Chamber /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_evos_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_spires_ = true;
-        if (upgrader.second.type_ == UnitTypes::Zerg_Greater_Spire /*&& upgrader.second.build_type_*/ && upgrader.second.phase_ == StoredUnit::None) have_idle_spires_ = true;
-    }
 }
 
 
@@ -1072,6 +1118,7 @@ bool AssemblyManager::assignUnitAssembly()
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
+            bool extra_ovis_needed = (wasting_larva_soon || checkSlackLarvae() || checkSlackMinerals()) && CUNYAIModule::enemy_player_model.units_.cloaker_count_ + CUNYAIModule::CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0;
             bool found_noncombat_use = false;
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
@@ -1087,7 +1134,7 @@ bool AssemblyManager::assignUnitAssembly()
                 transfer_drone_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
-            if (CUNYAIModule::supply_starved || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
+            if (CUNYAIModule::supply_starved || extra_ovis_needed || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
                 overlord_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
@@ -1162,7 +1209,7 @@ void AssemblyManager::clearSimulationHistory()
     assembly_cycle_.insert({ UnitTypes::None, 0 });
 }
 
-void AssemblyManager::getDefensiveWalls()
+void AssemblyManager::planDefensiveWalls()
 {
     //vector<UnitType> buildings = { UnitTypes::Zerg_Hatchery, UnitTypes::Zerg_Evolution_Chamber, UnitTypes::Zerg_Evolution_Chamber };
     //vector<UnitType> defenses(6, UnitTypes::Zerg_Sunken_Colony);

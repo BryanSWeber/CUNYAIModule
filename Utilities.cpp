@@ -506,16 +506,24 @@ int CUNYAIModule::countUnitsInProgress(const UnitType &type, const UnitInventory
 
 int CUNYAIModule::countUnitsAvailableToPerform(const UpgradeType &upType) {
     int count = 0;
-    for (auto u : Broodwar->self()->getUnits()) {
-        if (u->getType() == upType.whatUpgrades() && !u->isMorphing() && u->isCompleted()) count++;
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (u.second.type_ == upType.whatUpgrades() && u.second.phase_ == StoredUnit::Phase::None) count++;
     }
     return count;
 }
 
 int CUNYAIModule::countUnitsAvailableToPerform(const TechType &techType) {
     int count = 0;
-    for (auto u : Broodwar->self()->getUnits()) {
-        if (u->getType() == techType.whatResearches() && !u->isMorphing() && u->isCompleted()) count++;
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (u.second.type_ == techType.whatResearches() && u.second.phase_ == StoredUnit::Phase::None) count++;
+    }
+    return count;
+}
+
+int CUNYAIModule::countUnitsAvailable(const UnitType &uType) {
+    int count = 0;
+    for (auto u : CUNYAIModule::friendly_player_model.units_.unit_map_) {
+        if (u.second.type_ == uType && u.second.phase_ == StoredUnit::Phase::None) count++;
     }
     return count;
 }

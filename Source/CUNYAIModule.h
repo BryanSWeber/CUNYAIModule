@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -277,10 +277,12 @@ public:
     static int countUnitsDoing(const UnitType & type, const UnitCommandType & u_command_type, const UnitInventory & ui);
     static int countUnitsInProgress(const UnitType & type, const UnitInventory & ui);
     static int countUnitsInProgress(const UnitType & type);
-    // Counts units that can perform a given upgrade, uses BWAPI's unit sets so it is somewhat slow but requires details I don't otherwise store.
+    // Counts units that can perform a given upgrade (stored phase == none).
     static int countUnitsAvailableToPerform(const UpgradeType & upType);
-    // Counts units that can perform a given research (tech), uses BWAPI's unit sets so it is somewhat slow but requires details I don't otherwise store.
+    // Counts units that can perform a given research (tech) (stored phase == none).
     static int countUnitsAvailableToPerform(const TechType & techType);
+    // Counts units that are available of a particular type (stored phase == none).
+    static int countUnitsAvailable(const UnitType & uType);
     // Evaluates the total stock of a type of unit in the inventory.
     static int Stock_Units(const UnitType & unit_type, const UnitInventory & ui);
     // evaluates the value of a stock of combat units, for all unit types in a unit inventory.

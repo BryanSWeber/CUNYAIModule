@@ -441,12 +441,12 @@ void Diagnostics::onFrame()
     BWEB::Map::draw();
     Print_UnitInventory(0, 50, CUNYAIModule::friendly_player_model.units_);
     //Print_Cached_Inventory(0, 50);
-    //assemblymanager.Print_Assembly_FAP_Cycle(0, 50);
     //Print_Test_Case(0, 50);
     Print_Reservations(250, 190, CUNYAIModule::my_reservation);
     //enemy_player_model.Print_Average_CD(500, 170);
     if (CUNYAIModule::buildorder.isEmptyBuildOrder()) {
-        CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
+        CUNYAIModule::assemblymanager.Print_Assembly_FAP_Cycle(500, 170);
+        //CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //Print_UnitInventory(500, 170, enemy_player_model.units_); // actual units on ground.
         //Print_Research_Inventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
     }
@@ -622,7 +622,7 @@ void Diagnostics::onFrame()
         writePlayerModel(CUNYAIModule::enemy_player_model);
     }
 
-    drawTiles(CUNYAIModule::currentMapInventory.screen_position_);
+    //drawTiles(CUNYAIModule::currentMapInventory.screen_position_);
     //for (auto e : CUNYAIModule::currentMapInventory.getExpoTilePositions())
     //    drawCircle(Position(e), CUNYAIModule::currentMapInventory.screen_position_, 250);
 }

@@ -68,8 +68,8 @@ struct Diagnostics {
     template<typename ...Ts>
     static void DiagnosticWrite(char const *fmt, Ts && ... vals) {
         if constexpr (DIAGNOSTIC_MODE) {
-            ofstream output; // Prints to brood war file while in the WRITE file.
-            output.open(CUNYAIModule::learned_plan.writeDirectory + "Debug.txt", ios_base::app);
+            ofstream output; // prints to brood war file while in the write file.
+            output.open(CUNYAIModule::learned_plan.writeDirectory + "debug.txt", ios_base::app);
             output << fmt;
             ((output << ',' << std::forward<Ts>(vals)), ...);
             output << endl;

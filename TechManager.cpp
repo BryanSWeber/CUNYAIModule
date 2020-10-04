@@ -35,13 +35,17 @@ bool TechManager::checkUpgradeUseable(const UpgradeType up) {
 
 // updates the upgrade cycle.
 void TechManager::updateOptimalTech() {
+
     for (auto & potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
-        if (!checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first) || potential_up.first == UpgradeTypes::None) {
+        if (!checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first) && CUNYAIModule::countUnitsAvailableToPerform(potential_up.first) > 0 || potential_up.first == UpgradeTypes::None) {
             bool isOneTimeUpgrade = potential_up.first.maxRepeats() == 1 && potential_up.first != UpgradeTypes::None; //Speed, range, adrenal glands, etc. are regularly undervalued. This is an ad-hoc adjustment.
-            FAP::FastAPproximation<StoredUnit*> upgradeFAP; // attempting to integrate FAP into building decisions.
+            
+            // Add units into relevant simulation.
+            FAP::FastAPproximation<StoredUnit*> upgradeFAP; 
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
+
             upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot always be ran... medics & firebats vs air causes a lockup.
             int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true))/4 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
@@ -116,6 +120,11 @@ bool TechManager::chooseTech() {
             }
             if (!CUNYAIModule::checkOpenToUpgrade(potential_up->first, true)) {
                 local_upgrade_cycle.erase(potential_up++); // If there is a build order and this is NOT on it, we should skip it.
+                bad_element_found = true;
+                break;
+            }
+            if (CUNYAIModule::countUnitsAvailableToPerform(potential_up->first) == 0) {
+                local_upgrade_cycle.erase(potential_up++); // If nothing can make it, skip it.
                 bad_element_found = true;
                 break;
             }

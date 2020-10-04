@@ -27,8 +27,6 @@ private:
     static UnitInventory builder_bank_; // collection of drones that could build.
     static UnitInventory creep_colony_bank_; // collection of creep colonies that could morph into sunkens/spores.
     static UnitInventory production_facility_bank_; // Set of hatchery decendants that could be used to create units.
-    static bool have_idle_evos_;
-    static bool have_idle_spires_;
 
     static bool subgoal_econ_; // If econ is preferred to army. Useful for slackness conditions.
     static bool subgoal_army_; // If army is preferred to econ. Useful for slackness conditions.
@@ -52,6 +50,8 @@ public:
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken); // take a creep colony and morph it into another type of static defence. 
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
+    static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit by weight% (w can be negative to penalize), when conditions are met.
+    static void evaluateWeightsFor(const UnitType &unit); //Checks all weightUnitSims
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
@@ -68,7 +68,7 @@ public:
     static void updatePotentialBuilders(); // Updates all units that might build something at this time.
     static bool creepColonyInArea(const Position & pos); // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
     static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
-    static void getDefensiveWalls(); // Creates a Z-sim city at the natural.
+    static void planDefensiveWalls(); // Creates a Z-sim city at the natural.
     static bool canMakeCUNY(const UnitType &ut, const bool can_afford = false, const Unit &builder = nullptr); // a modification of the BWAPI canMake. Has an option to -exclude- cost, allowing for preperatory movement and positioning of builders. Affordability is min, gas, and supply.
     static bool checkSlackLarvae(); // Checks if there is slack larva (eg 2 floating).
     static bool checkSlackMinerals(); // Checks if there is slack minerals.
