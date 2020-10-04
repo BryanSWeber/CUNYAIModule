@@ -80,8 +80,10 @@ bool CombatManager::combatScript(const Unit & u)
             friend_loc.updateUnitInventorySummary();
             UnitInventory trigger_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 200) );
             trigger_loc.updateUnitInventorySummary();
+            UnitInventory casualties_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.casualties_, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 256));
+            casualties_loc.updateUnitInventorySummary();
             Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 256));
-            //resource_loc.updateResourceInventory();
+            //resource_loc.updateResourceInventory();                                                   
 
             StoredUnit* e_closest_ground = CUNYAIModule::getClosestGroundStored(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
             distance_to_threat = static_cast<int>(e_closest_threat->pos_.getDistance(u->getPosition()));
@@ -177,7 +179,7 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc) || u->getType().isWorker()) {
                 return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {

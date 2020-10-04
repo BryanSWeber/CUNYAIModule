@@ -1118,7 +1118,7 @@ bool AssemblyManager::assignUnitAssembly()
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool extra_ovis_needed = (wasting_larva_soon || checkSlackLarvae() || checkSlackMinerals()) && CUNYAIModule::enemy_player_model.units_.cloaker_count_ + CUNYAIModule::CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0;
+            bool create_supply_buffer = (wasting_larva_soon && checkSlackLarvae() && checkSlackMinerals());
             bool found_noncombat_use = false;
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
@@ -1134,7 +1134,7 @@ bool AssemblyManager::assignUnitAssembly()
                 transfer_drone_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }
-            if (CUNYAIModule::supply_starved || extra_ovis_needed || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
+            if (CUNYAIModule::supply_starved || create_supply_buffer || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
                 overlord_larva.addStoredUnit(larva.second);
                 found_noncombat_use = true;
             }

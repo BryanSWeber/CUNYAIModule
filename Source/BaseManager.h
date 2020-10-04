@@ -30,6 +30,9 @@ public:
     bool emergency_sunken_; // Do we want an emerency sunken?
     Unit unit_; // Directly to the base hatchery itself.
     bool checkHasGroundBuffer(const Position& threat_pos); // checks if there is another base on the ground path between the enemy and this base.
+
+    bool isSunkenNeeded();
+    bool isSporeNeeded();
 };
 
 class BaseManager {

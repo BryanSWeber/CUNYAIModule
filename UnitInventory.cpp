@@ -528,8 +528,18 @@ UnitInventory operator-(const UnitInventory& lhs, const UnitInventory& rhs)
     return total;
 }
 
+int UnitInventory::countRecentAdditions(int frames) {
+    int count = 0;
+    for (auto const & u_iter : unit_map_) { // should only search through unit types not per unit.
+        if (Broodwar->getFrameCount() - u_iter.second.time_first_observed_ > frames)
+            count++;
+    }
+    return count;
+}
+
+
+//Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
 void UnitInventory::updateUnitInventorySummary() {
-    //Tally up crucial details about enemy. Should be doing this onclass. Perhaps make an enemy summary class?
     //Set default values to 0;
 
     stock_fliers_ = 0;

@@ -53,7 +53,7 @@ struct StoredUnit {
     UnitCommand command_;
     int time_since_last_command_ = 0; // note command != orders.
     int time_of_last_purge_ = 0; //Mostly for workers
-    int time_since_last_seen_ = 0; //Enemy produciton estimates depend on this.
+    int time_since_last_seen_ = 0; //Enemy production estimates depend on this.
     int time_first_observed_ = Broodwar->getFrameCount();
 
     //Unit Movement Information;
@@ -218,6 +218,7 @@ struct UnitInventory {
     void removeStoredUnit(Unit unit);
 
     //Updates summary of inventory, stored here.
+    int countRecentAdditions(int frames);
     void updateUnitInventorySummary();
     void updateUnitInventory(const Unitset &unit_set);
     void updateUnitsControlledBy(const Player & Player);

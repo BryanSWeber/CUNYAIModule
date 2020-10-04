@@ -157,21 +157,9 @@ void BaseManager::updateBases()
         return;
     }
 
-    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
     UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
-
-    alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    set<int> distance_to_alarming_ground;
-    set<int> distance_to_alarming_air;
-
-    for (auto & b : baseMap_) {
-        b.second.distance_to_ground_ = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(b.first);
-        distance_to_alarming_ground.insert(b.second.distance_to_ground_);
-        b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::currentMapInventory.enemy_base_air_));
-        distance_to_alarming_air.insert(b.second.distance_to_air_);
-    }
 
     for (auto & b : baseMap_) {
         b.second.e_loc_ = CUNYAIModule::getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, b.first);
@@ -184,32 +172,17 @@ void BaseManager::updateBases()
 
         enemy_unit_count_ += b.second.e_loc_.ground_count_;
 
+        for (auto & b : baseMap_) {
+            b.second.distance_to_ground_ = CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(b.first);
+            b.second.distance_to_air_ = static_cast<int>(b.first.getDistance(CUNYAIModule::currentMapInventory.enemy_base_air_));
+        }
+
         if (enemy_unit_count_ >= 2 && !CUNYAIModule::buildorder.ever_clear_) {
             CUNYAIModule::buildorder.clearRemainingBuildOrder(false);
             Diagnostics::DiagnosticText("Clearing Build order since there are %d baddies nearby.", enemy_unit_count_);
         }
 
-
         Mobility base_mobility = Mobility(b.second.unit_);
-        bool they_are_moving_out_ground = false;
-        bool they_are_moving_out_air = false;
-
-        if (CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first))
-            they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, b.first)->pos_.getApproxDistance(b.first) < 500;
-        if(CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first))
-            they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, b.first)->pos_.getApproxDistance(b.first) < 500;
-
-        bool too_close_by_ground = false;
-        if (distance_to_alarming_ground.size() >= 2 || b.second.distance_to_ground_ < 640 ) {
-            std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
-            too_close_by_ground = b.second.distance_to_ground_ <= *std::next(ground_iter) && !b.second.checkHasGroundBuffer(CUNYAIModule::currentMapInventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
-        }
-
-        bool too_close_by_air = false;
-        if (distance_to_alarming_air.size() >= 2) {
-            std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
-            too_close_by_air = b.second.distance_to_air_ <= *std::next(air_iter);
-        }
 
         b.second.sunken_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Sunken_Colony, b.second.u_loc_);
         b.second.spore_count_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Spore_Colony, b.second.u_loc_);
@@ -223,15 +196,10 @@ void BaseManager::updateBases()
         b.second.gas_refinery_ = b.second.r_loc_.countLocalRefineries();
         b.second.gas_geysers_ = b.second.r_loc_.countLocalGeysers();
 
-        bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
-        bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
-        bool can_upgrade_colonies = can_upgrade_spore || can_upgrade_sunken;
-        bool getting_hit_ground = (b.second.e_loc_.worker_count_ > 1 || b.second.e_loc_.building_count_ > 0 || b.second.e_loc_.stock_ground_units_ > 0);
-        bool getting_hit_air = (b.second.e_loc_.stock_fliers_ > 0);
         bool on_one_base = baseMap_.size() - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hatchery) <= 1;
-        b.second.emergency_sunken_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (b.second.sunken_count_ <= max(alarming_enemy_ground.ground_count_/2,2));
-        b.second.emergency_spore_ = CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && (b.second.spore_count_ <= max(alarming_enemy_air.flyer_count_,2));
-        
+        b.second.emergency_sunken_ = b.second.isSunkenNeeded();
+        b.second.emergency_spore_ = b.second.isSporeNeeded();
+
         if (b.second.emergency_sunken_ && Broodwar->getFrameCount() % 24 == 0) {
             StoredUnit * drone = CUNYAIModule::getClosestStoredAvailable(b.second.u_loc_, Broodwar->self()->getRace().getWorker(), b.first, 999999);
             if (drone && drone->bwapi_unit_ && CUNYAIModule::spamGuard(drone->bwapi_unit_)) {
@@ -320,6 +288,58 @@ Base BaseManager::getBase(const Position & pos)
         return nullBase;
     else
         return base_it->second;
+}
+
+bool Base::isSunkenNeeded()
+{
+    set<int> distance_to_alarming_ground;
+    bool they_are_moving_out_ground = false;
+
+    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    alarming_enemy_ground.updateUnitInventorySummary();
+
+    for (auto & b : CUNYAIModule::basemanager.getBases()) {
+        distance_to_alarming_ground.insert(b.second.distance_to_ground_);
+    }
+
+    bool too_close_by_ground = false;
+    if (distance_to_alarming_ground.size() >= 2 || this->distance_to_ground_ < 640) { // if we have two+ bases, defend 2 of them.
+        std::set<int>::reverse_iterator ground_iter = distance_to_alarming_ground.rbegin();
+        too_close_by_ground = this->distance_to_ground_ <= *std::next(ground_iter) && !this->checkHasGroundBuffer(CUNYAIModule::currentMapInventory.enemy_base_ground_); // if it is exposed and does not have a ground buffer, build sunkens for it.
+    }
+
+    if (CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, this->unit_->getPosition()))
+        they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, this->unit_->getPosition())->pos_.getApproxDistance(this->unit_->getPosition()) < 500;
+
+    bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
+    bool getting_hit_ground = (this->e_loc_.worker_count_ > 1 || this->e_loc_.building_count_ > 0 || this->e_loc_.stock_ground_units_ > 0);
+    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (this->sunken_count_ <= max(alarming_enemy_ground.ground_count_ / 2, 2));
+}
+
+bool Base::isSporeNeeded()
+{
+    set<int> distance_to_alarming_air;
+
+    bool they_are_moving_out_air = false;
+    for (auto & b : CUNYAIModule::basemanager.getBases()) {
+        distance_to_alarming_air.insert(b.second.distance_to_air_);
+    }
+
+    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
+    alarming_enemy_air.updateUnitInventorySummary();
+
+    bool too_close_by_air = false;
+    if (distance_to_alarming_air.size() >= 2) { // if we have two+ bases, defend 2 of them.
+        std::set<int>::reverse_iterator air_iter = distance_to_alarming_air.rbegin();
+        too_close_by_air = this->distance_to_air_ <= *std::next(air_iter);
+    }
+
+    if (CUNYAIModule::getClosestAirStored(alarming_enemy_air, this->unit_->getPosition()))
+        they_are_moving_out_air = alarming_enemy_air.building_count_ == 0 || CUNYAIModule::getClosestAirStored(alarming_enemy_air, this->unit_->getPosition())->pos_.getApproxDistance(this->unit_->getPosition()) < 500;
+
+    bool can_upgrade_spore = CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Evolution_Chamber) > 0; // There is a building complete that will allow either creep colony upgrade.
+    bool getting_hit_air = (this->e_loc_.stock_fliers_ > 0);
+    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_air && (getting_hit_air || they_are_moving_out_air)) && can_upgrade_spore && (this->spore_count_ <= max(alarming_enemy_air.flyer_count_, 2));
 }
 
 bool Base::checkHasGroundBuffer(const Position& threat_pos)
