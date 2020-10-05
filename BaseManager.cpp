@@ -311,9 +311,12 @@ bool Base::isSunkenNeeded()
     if (CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, this->unit_->getPosition()))
         they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0 || CUNYAIModule::getClosestGroundStored(alarming_enemy_ground, this->unit_->getPosition())->pos_.getApproxDistance(this->unit_->getPosition()) < 500;
 
+    UnitInventory worker_check = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, this->unit_->getPosition());
+    worker_check.updateUnitInventorySummary();
+
     bool can_upgrade_sunken = (CUNYAIModule::countUnits(UnitTypes::Zerg_Spawning_Pool) - Broodwar->self()->incompleteUnitCount(UnitTypes::Zerg_Spawning_Pool) > 0);
     bool getting_hit_ground = (this->e_loc_.worker_count_ > 1 || this->e_loc_.building_count_ > 0 || this->e_loc_.stock_ground_units_ > 0);
-    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && (too_close_by_ground && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (this->sunken_count_ <= max(alarming_enemy_ground.ground_count_ / 2, 2));
+    return CUNYAIModule::assemblymanager.canMakeCUNY(UnitTypes::Zerg_Creep_Colony, false) && ((too_close_by_ground || worker_check.worker_count_ >= 2) && (getting_hit_ground || they_are_moving_out_ground)) && can_upgrade_sunken && (this->sunken_count_ <= max(alarming_enemy_ground.ground_count_ / 2, 2));
 }
 
 bool Base::isSporeNeeded()
