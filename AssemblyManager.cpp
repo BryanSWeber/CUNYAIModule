@@ -1066,8 +1066,8 @@ bool AssemblyManager::assignUnitAssembly()
     UnitInventory transfer_drone_larva;
     UnitInventory combat_creators;
 
-    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_ground_);
-    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.enemy_base_air_);
+    UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseGround());
+    UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseAir());
 
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
@@ -1082,7 +1082,7 @@ bool AssemblyManager::assignUnitAssembly()
 
     for (auto hatch : production_facility_bank_.unit_map_) {
         distance_to_alarming_ground = min(CUNYAIModule::currentMapInventory.getRadialDistanceOutFromEnemy(hatch.second.pos_), distance_to_alarming_ground);
-        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::currentMapInventory.enemy_base_air_)), distance_to_alarming_air);
+        distance_to_alarming_air = min(static_cast<int>(hatch.second.pos_.getDistance(CUNYAIModule::currentMapInventory.getEnemyBaseAir())), distance_to_alarming_air);
     }
 
     // Creep colony logic is very similar to each hatch's decision to build a creep colony. If a creep colony would be built, we are probably also morphing existing creep colonies...  May want make a base manager. There is a logic error in here, since the creep colony may have been built because of a threat at a nearby base B, but the closest viable building location to B was actually closer to A than B.

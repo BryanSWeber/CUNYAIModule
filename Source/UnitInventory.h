@@ -13,7 +13,7 @@ using namespace std;
 using namespace BWAPI;
 
 // Two dependent structures for this inventory manager, a container of enemy_units and enemy units itself. Intend to add more funtionality to Enemy_Inventory, such as upgrades, etc.  May revisit when I learn about parentage, but ought to function for now.
-struct MapInventory;
+class MapInventory;
 class Reservation;
 
 struct StoredUnit {

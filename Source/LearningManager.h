@@ -17,10 +17,10 @@ struct LearningManager {
 
     bool confirmLearningFilesPresent(); //Copy all important files to the write folder so they are present for access and modification during the game. 
     void initializeGeneticLearning(); //Use a handcrafted GA in order to determine the best opening. 
-    void initializeRFLearning(); // Use random forest (and python) to filter out unwanted opening parameters.
+    //void initializeRFLearning(); // Use random forest (and python) to filter out unwanted opening parameters.
     void initializeTestStart(); // Use a specific opening (hardcoded) so there is no variation in bot behavior.
     void initializeRandomStart(); // Use a random opening to get a broad idea of the action space of the bot over several hundred games.
-    void initializeCMAESUnitWeighting(); // In development. Use python's CMAES algorithim to choose unit weights.
+    //void initializeCMAESUnitWeighting(); // In development. Use python's CMAES algorithim to choose unit weights.
     void initializeGAUnitWeighting(); // In development. Use a simple c++ genetic algorithm to choose the unit weights.
 
     vector<string> build_order_list = {

@@ -20,7 +20,6 @@ MapInventory::MapInventory() {};
 MapInventory::MapInventory(const UnitInventory &ui, const Resource_Inventory &ri) {
 
     updateVision_Count();
-    updateHatcheries();
 
     //Fields:
     vector< vector<int> > pf_threat_;
@@ -136,14 +135,6 @@ void MapInventory::updateScreen_Position()
 {
     screen_position_ = Broodwar->getScreenPosition();
 }
-
-// Updates the number of hatcheries (and decendent buildings).
-void MapInventory::updateHatcheries() {
-    hatches_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Hatchery) +
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) +
-        CUNYAIModule::countUnits(UnitTypes::Zerg_Hive);
-}
-
 
 //In Tiles?
 void MapInventory::updateBuildablePos()
@@ -1009,8 +1000,16 @@ void MapInventory::mainCurrentMap() {
     if (unit_calculation_frame) return;
 
     StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
-    discovered_enemy_this_frame = (enemy_found == false && currently_visible_enemy);
-    enemy_found = enemy_found || currently_visible_enemy;
+    discovered_enemy_this_frame_ = (enemy_found_ == false && currently_visible_enemy);
+    enemy_found_ = enemy_found_ || currently_visible_enemy;
+
+    for (auto b : CUNYAIModule::enemy_player_model.units_.getBuildingInventory().unit_map_) {
+        if (b.second.type_.isResourceDepot()) {
+            for (auto s : Broodwar->getStartLocations()) {
+                enemy_start_location_found_ = enemy_start_location_found_ || b.second.pos_.getDistance(Position(s)) < 96; // they have a building within 96 tiles 
+            }
+        }
+    }
 
     assignArmyDestinations();
     assignAirDestinations();
@@ -1396,7 +1395,7 @@ Position MapInventory::getDistanceWeightedPosition(const Position & target_pos) 
 void MapInventory::assignArmyDestinations() {
     StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
-    if (enemy_found) {
+    if (enemy_found_) {
         if (currently_visible_enemy) {
             assignLateArmyMovement(currently_visible_enemy->pos_);
         }
@@ -1414,7 +1413,7 @@ void MapInventory::assignArmyDestinations() {
 void MapInventory::assignScoutDestinations() {
     StoredUnit* currently_visible_enemy = CUNYAIModule::getClosestIndicatorOfArmy(CUNYAIModule::enemy_player_model.units_, front_line_base_); // Get the closest ground unit with priority.
 
-    if (enemy_found) {
+    if (enemy_start_location_found_) {
         if (currently_visible_enemy) {
             assignLateScoutMovement(currently_visible_enemy->pos_);
         }
@@ -1442,7 +1441,7 @@ void MapInventory::assignScoutDestinations() {
 void MapInventory::assignAirDestinations() {
     StoredUnit* currently_visible_air = CUNYAIModule::getClosestAirStoredWithPriority(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::friendly_player_model.units_.getMeanBuildingLocation()); // Get the flyer closest to our base.
 
-    if (enemy_found) {
+    if (enemy_found_) {
         if (currently_visible_air) {
             assignLateAirMovement(currently_visible_air->pos_);
         }
@@ -1525,7 +1524,7 @@ void MapInventory::assignLateAirMovement(const Position closest_enemy) {
 void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
     if (closest_enemy != Positions::Origin && closest_enemy.isValid()) { // let's go to hunt near the closest enemy if we've seen 'em!
         for (auto& p : scouting_bases_) {
-            if (Broodwar->isVisible(TilePosition(p)) || discovered_enemy_this_frame)
+            if (Broodwar->isVisible(TilePosition(p)) || discovered_enemy_this_frame_)
                 p = getDistanceWeightedPosition(closest_enemy);
         }
     }
@@ -1550,4 +1549,29 @@ bool MapInventory::isTileAirThreatened(const Position & p)
 bool MapInventory::isTileGroundThreatened(const Position & p)
 {
     return CUNYAIModule::currentMapInventory.pf_ground_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+}
+
+Position MapInventory::getSafeBase()
+{
+    return safe_base_;
+}
+
+Position MapInventory::getEnemyBaseGround()
+{
+    return enemy_base_ground_;
+}
+
+Position MapInventory::getEnemyBaseAir()
+{
+    return enemy_base_air_;
+}
+
+Position MapInventory::getFrontLineBase()
+{
+    return front_line_base_;
+}
+
+vector<Position> MapInventory::getScoutingBases()
+{
+    return scouting_bases_;
 }

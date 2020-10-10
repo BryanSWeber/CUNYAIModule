@@ -2077,7 +2077,7 @@ Position CUNYAIModule::getUnit_Center(Unit unit){
 // checks if a location is safe and doesn't block minerals.
 bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
     auto area = BWEM::Map::Instance().GetArea(TilePosition(pos));
-    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::currentMapInventory.front_line_base_));
+    auto area_home = BWEM::Map::Instance().GetArea(TilePosition(CUNYAIModule::currentMapInventory.getFrontLineBase()));
     bool it_is_home_ = false;
     UnitInventory e_neighborhood = getUnitInventoryInNeighborhood(CUNYAIModule::enemy_player_model.units_, pos);
     UnitInventory friend_loc = getUnitInventoryInArea(CUNYAIModule::friendly_player_model.units_, pos);
@@ -2100,7 +2100,7 @@ bool CUNYAIModule::checkSafeBuildLoc(const Position pos) {
         if (area && area_home) {
             it_is_home_ = (area == area_home);
         }
-        have_to_save = CUNYAIModule::land_inventory.countLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::currentMapInventory.hatches_ == 1;
+        have_to_save = CUNYAIModule::land_inventory.countLocalMinPatches() <= 12 || radial_distance_to_build_position < 500 || CUNYAIModule::basemanager.getBaseCount() == 1;
     }
 
 

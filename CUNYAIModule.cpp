@@ -268,7 +268,7 @@ void CUNYAIModule::onEnd(bool isWinner)
         print_value += buildorder.building_gene_.front().getUpgrade().c_str();
 
         output << "Couldn't build: " << print_value << endl;
-        output << "Hatches Left?:" << currentMapInventory.hatches_ << endl;
+        output << "Hatches Left?:" << CUNYAIModule::basemanager.getBaseCount() << endl;
         output << "Win:" << isWinner << endl;
         output.close();
     }; // testing build order stuff intensively.
@@ -359,8 +359,6 @@ void CUNYAIModule::onFrame()
 
     bool massive_army = friendly_player_model.spending_model_.army_derivative == 0 || (friendly_player_model.units_.stock_fighting_total_ - Stock_Units(UnitTypes::Zerg_Sunken_Colony, friendly_player_model.units_) - Stock_Units(UnitTypes::Zerg_Spore_Colony, friendly_player_model.units_) >= enemy_player_model.units_.stock_fighting_total_ * 3);
 
-
-    currentMapInventory.est_enemy_stock_ = enemy_player_model.units_.stock_fighting_total_; // just a raw count of their stuff.
     combat_manager.updateReadiness();
 
     auto end_playermodel = std::chrono::high_resolution_clock::now();
@@ -383,7 +381,6 @@ void CUNYAIModule::onFrame()
     workermanager.updateWorkersOverstacked();
     workermanager.updateExcessCapacity();
 
-    currentMapInventory.updateHatcheries();  // macro variables, not every unit I have.
     currentMapInventory.my_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(Broodwar->getStartLocations().size()) );
     currentMapInventory.expo_portion_of_the_map_ = CUNYAIModule::convertTileDistanceToPixelDistance( sqrt(pow(Broodwar->mapHeight(), 2) + pow(Broodwar->mapWidth(), 2)) / static_cast<double>(currentMapInventory.getExpoTilePositions().size()) );
     currentMapInventory.updateScreen_Position();
@@ -445,11 +442,6 @@ void CUNYAIModule::onFrame()
     if(army_starved || assemblymanager.checkSufficientSlack(UnitTypes::Zerg_Zergling)) 
         assemblymanager.updateOptimalCombatUnit();
     assemblymanager.updatePotentialBuilders();
-
-    if (t_game % FAP_SIM_DURATION == 0) {
-        techmanager.clearSimulationHistory();
-        assemblymanager.clearSimulationHistory();
-    }// every X seconds reset the simulations.
 
     larva_starved = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva) <= CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, friendly_player_model.units_); //If you have 1 larva or less at each hatchery, you could use more. 
     larva_flooded = 5 * CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery, friendly_player_model.units_) >=  CUNYAIModule::countUnits(UnitTypes::Zerg_Drone); //You are flooded with larva and cannot possibly use them all if you have more than 1 hatch per 5 workers (that's the rate that keeps ling spending constant).
@@ -799,6 +791,9 @@ void CUNYAIModule::onUnitHide(BWAPI::Unit unit)
 
 void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
 {
+    techmanager.clearSimulationHistory();
+    assemblymanager.clearSimulationHistory();
+
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
@@ -823,6 +818,9 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
 
 void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf inside here!
 {
+    techmanager.clearSimulationHistory();
+    assemblymanager.clearSimulationHistory();
+
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }
@@ -929,6 +927,9 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
 void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
 {
+    techmanager.clearSimulationHistory();
+    assemblymanager.clearSimulationHistory();
+
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
     }

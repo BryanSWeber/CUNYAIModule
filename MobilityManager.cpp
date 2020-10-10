@@ -54,32 +54,32 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
             //}
             //else {
             int scouts = CUNYAIModule::combat_manager.scoutPosition(unit_);
-            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.scouting_bases_.at(scouts), StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::currentMapInventory.scouting_bases_.at(scouts);
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts), StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.getScoutingBases().at(scouts);
             //}
         }
         else if (u_type_.airWeapon() == WeaponTypes::None && u_type_.groundWeapon() != WeaponTypes::None) { // if you can't help air go ground.
-            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::currentMapInventory.enemy_base_ground_;
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.getEnemyBaseGround();
         }
         else if (u_type_.airWeapon() != WeaponTypes::None && u_type_.groundWeapon() == WeaponTypes::None) { // if you can't help ground go air.
-            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
-            target_pos = CUNYAIModule::currentMapInventory.enemy_base_air_;
+            it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut);
+            target_pos = CUNYAIModule::currentMapInventory.getEnemyBaseAir();
         }
         else if (u_type_.groundWeapon() != WeaponTypes::None && u_type_.airWeapon() != WeaponTypes::None) { // otherwise go to whicheve type has an active problem..
             if (CUNYAIModule::friendly_player_model.u_have_active_air_problem_) {
-                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_air_, StoredUnit::Phase::PathingOut);
-                target_pos = CUNYAIModule::currentMapInventory.enemy_base_air_;
+                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseAir(), StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::currentMapInventory.getEnemyBaseAir();
             }
             else {
-                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.enemy_base_ground_, StoredUnit::Phase::PathingOut);
-                target_pos = CUNYAIModule::currentMapInventory.enemy_base_ground_;
+                it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getEnemyBaseGround(), StoredUnit::Phase::PathingOut);
+                target_pos = CUNYAIModule::currentMapInventory.getEnemyBaseGround();
             }
         }
     }
     else { // Otherwise, return to home.
-        it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.front_line_base_, StoredUnit::Phase::PathingHome);
-        target_pos = CUNYAIModule::currentMapInventory.front_line_base_;
+        it_worked = moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::PathingHome);
+        target_pos = CUNYAIModule::currentMapInventory.getFrontLineBase();
     }
 
     if (target_pos != Positions::Origin && stored_unit_->type_ == UnitTypes::Zerg_Lurker) it_worked = prepareLurkerToAttack(target_pos) || it_worked;
@@ -267,22 +267,22 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
 
-    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.safe_base_);
+    Position next_waypoint = getNextWaypoint(pos_, CUNYAIModule::currentMapInventory.getSafeBase());
 
     if ( (!unit_->isFlying() && checkSameDirection(next_waypoint-pos_,e.pos_-pos_)) || (stored_unit_ && stored_unit_->phase_ == StoredUnit::Phase::Surrounding)) {
         approach(e.pos_ + Position(e.velocity_x_, e.velocity_y_) );
         moveTo(pos_, pos_ - attract_vector_, StoredUnit::Phase::Retreating);
     }
     else if (stored_unit_->shoots_down_ || stored_unit_->shoots_up_) {
-        moveTo(pos_, CUNYAIModule::currentMapInventory.front_line_base_, StoredUnit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::currentMapInventory.getFrontLineBase(), StoredUnit::Phase::Retreating);
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
-        approach(CUNYAIModule::currentMapInventory.safe_base_);
+        approach(CUNYAIModule::currentMapInventory.getSafeBase());
         //encircle(threat->pos_);
         moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, StoredUnit::Phase::Retreating);
     }
     else {
-        moveTo(pos_, CUNYAIModule::currentMapInventory.safe_base_, StoredUnit::Phase::Retreating);
+        moveTo(pos_, CUNYAIModule::currentMapInventory.getSafeBase(), StoredUnit::Phase::Retreating);
     }
     return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
 }

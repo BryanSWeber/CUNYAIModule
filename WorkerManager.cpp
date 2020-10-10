@@ -258,7 +258,7 @@ bool WorkerManager::assignClear(const Unit & unit)
     miner.stopMine();
 
     for (auto& r = CUNYAIModule::land_inventory.resource_inventory_.begin(); r != CUNYAIModule::land_inventory.resource_inventory_.end() && !CUNYAIModule::land_inventory.resource_inventory_.empty(); r++) {
-        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::currentMapInventory.front_line_base_.getDistance(r->second.pos_) < CUNYAIModule::currentMapInventory.my_portion_of_the_map_) {
+        if (r->second.blocking_mineral_ && r->second.number_of_miners_ < 1 && r->second.pos_.isValid() && r->second.type_.isMineralField() && CUNYAIModule::currentMapInventory.checkViableGroundPath(r->second.pos_, miner.pos_) && CUNYAIModule::currentMapInventory.getFrontLineBase().getDistance(r->second.pos_) < CUNYAIModule::currentMapInventory.my_portion_of_the_map_) {
             available_fields.addStored_Resource(r->second);
         }
     } //find closest mine meeting this criteria.

@@ -20,27 +20,8 @@ using namespace BWAPI;
 // map_veins_, depends on unwalkable barriers WITH buildings.
 // Map veins in and out from enemy - depends on Unwalkable barriers. Does not depend on buildings.
 
-struct MapInventory {
-    MapInventory();
-    MapInventory(const UnitInventory &ui, const Resource_Inventory &ri);
-
-    int nScouts = 2; // How many scouts will we have? Set by fiat.
-    Position screen_position_;
-    bool discovered_enemy_this_frame = false;
-    bool enemy_found = false;
-
-    int hatches_;
-    int last_gas_check_;
-    int my_portion_of_the_map_;
-    int expo_portion_of_the_map_;
-    int estimated_enemy_workers_;
-    int map_x; //Map width in tiles.
-    int map_y; //Map height in tiles.
-
-    //Marks Data for each area if it is "ground safe"
-    void updateGroundDangerousAreas();
-    vector<TilePosition> MapInventory::getExpoTilePositions(); //returns all possible expos and starting bases, found with BWEM.
-
+class MapInventory {
+private:
     Position enemy_base_ground_;
     Position enemy_base_air_;
     Position front_line_base_;
@@ -48,6 +29,26 @@ struct MapInventory {
     vector<Position> scouting_bases_;
     vector<Position> air_scouting_bases_;
 
+    bool discovered_enemy_this_frame_ = false;
+    bool enemy_found_ = false;
+    bool enemy_start_location_found_ = false;
+
+    int map_x; //Map width in tiles.
+    int map_y; //Map height in tiles.
+
+public:
+    MapInventory();
+    MapInventory(const UnitInventory &ui, const Resource_Inventory &ri);
+
+    int nScouts = 2; // How many scouts will we have? Set by fiat.
+    Position screen_position_;
+
+    int my_portion_of_the_map_;
+    int expo_portion_of_the_map_;
+
+    //Marks Data for each area if it is "ground safe"
+    void updateGroundDangerousAreas();
+    vector<TilePosition> MapInventory::getExpoTilePositions(); //returns all possible expos and starting bases, found with BWEM.
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.
@@ -57,7 +58,6 @@ struct MapInventory {
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
 
     int vision_tile_count_;
-    int est_enemy_stock_;
 
     //Fields:
     vector< vector<int> > pf_air_threat_; // which air areas are under threat?
@@ -73,9 +73,6 @@ struct MapInventory {
     // Updates the (safe) log of our supply total. Returns very high int instead of infinity.
     double getLn_Supply_Ratio();
 
-    // Updates the number of hatcheries (and decendents).
-    void MapInventory::updateHatcheries();
-
     // Updates the static locations of buildability on the map. Should only be called on game start. MiniTiles!
     void MapInventory::updateBuildablePos();
     // Updates the unwalkable portions of the map.
@@ -88,13 +85,12 @@ struct MapInventory {
     // Marks the distance from each obstacle. Requires updateunwalkablewithbuildings. //[Old usage:]Marks the main arteries of the map. 
     void MapInventory::updateMapVeins();
 
-    // simply gets the map value at a particular position.
+    // simply gets the value in FIELD at a particular POS.
     static int getFieldValue(const Position & pos, const vector<vector<int>>& field);
 
     // Simply gets the distance between two points using cpp, will not fail if a spot is inside a building.
     int getDistanceBetween(const Position A, const Position B) const;
 
-    // Gets distance using
     int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const; //Distance from enemy base in pixels, called a lot.
     int MapInventory::getRadialDistanceOutFromHome(const Position A) const; //Distance from home in pixels, called a lot.
     bool MapInventory::checkViableGroundPath(const Position A, const Position B) const; // Is there a viable ground path? CPP, will not fail if thrown at a building.
@@ -149,4 +145,10 @@ struct MapInventory {
     static bool isTileDetected(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
     static bool isTileAirThreatened(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
     static bool isTileGroundThreatened(const Position &p);//Checks if a tile is detected by an enemy. Inaccurate.
+
+    Position getSafeBase();
+    Position getEnemyBaseGround();
+    Position getEnemyBaseAir();
+    Position getFrontLineBase();
+    vector<Position> getScoutingBases();
 };
