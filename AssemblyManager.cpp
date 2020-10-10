@@ -475,7 +475,7 @@ bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
     bool is_muta = u_type == UnitTypes::Zerg_Mutalisk;
     bool is_building = false;
 
-    if (CUNYAIModule::buildorder.checkBuildingNextInBO(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) == 0) {
+    if (CUNYAIModule::buildorder.checkBuildingNextInBO(UnitTypes::Zerg_Lurker) && CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hydralisk) == 0) {
         CUNYAIModule::buildorder.retryBuildOrderElement(UnitTypes::Zerg_Hydralisk); // force in an hydra if
         Diagnostics::DiagnosticText("Reactionary Hydralisk. Must have lost one.");
         return true;
@@ -521,7 +521,7 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
         bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWillingAndAble(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
-        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && (pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer)));
+        bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer));
 
 
         if (can_make_or_already_is || (is_larva && can_morph_into_prerequisite_hydra) || (is_larva && can_morph_into_prerequisite_muta)) {
