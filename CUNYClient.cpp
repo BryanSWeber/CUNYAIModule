@@ -29,7 +29,7 @@ int main(int argc, const char* argv[])
                  BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
-                //std::cout << "Reconnecting..." << std::endl;;
+                std::cout << "Reconnecting..." << std::endl;;
                 reconnect();
             }
         }
@@ -64,6 +64,7 @@ int main(int argc, const char* argv[])
                 case EventType::MatchEnd:
                     myBot->onEnd(e.isWinner());
                     ///exit; // prevents auto-restart issues.
+                    myBot.release();
                     break;
                 case EventType::SendText:
                     myBot->onSendText(e.getText());
@@ -117,13 +118,13 @@ int main(int argc, const char* argv[])
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected())
             {
-                //std::cout << "Reconnecting..." << std::endl;
+                std::cout << "Reconnecting..." << std::endl;
                 reconnect();
             }
         }
-        //std::cout << "Game ended" << std::endl;
+        std::cout << "Game ended" << std::endl;
     }
-    //std::cout << "Press ENTER to continue..." << std::endl;
+    std::cout << "Press ENTER to continue..." << std::endl;
     std::cin.ignore();
     return 0;
 }

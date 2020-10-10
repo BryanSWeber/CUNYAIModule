@@ -23,7 +23,7 @@ bool TechManager::checkBuildingReady(const TechType tech) {
 }
 
 bool TechManager::checkUpgradeFull(const UpgradeType up) {
-    return CUNYAIModule::friendly_player_model.researches_.upgrades_[up] >= up.maxRepeats();
+    return CUNYAIModule::friendly_player_model.researches_.getUpLevel(up) >= up.maxRepeats();
 }
 
 bool TechManager::checkUpgradeUseable(const UpgradeType up) {
@@ -39,16 +39,15 @@ void TechManager::updateOptimalTech() {
     for (auto & potential_up : upgrade_cycle_) {
         // should only upgrade if units for that upgrade exist on the field for me. Or reset every time a new upgrade is found. Need a baseline null upgrade- Otherwise we'll upgrade things like range damage with only lings, when we should be saving for carapace.
         if (!checkUpgradeFull(potential_up.first) && canUpgradeCUNY(potential_up.first) && CUNYAIModule::countUnitsAvailableToPerform(potential_up.first) > 0 || potential_up.first == UpgradeTypes::None) {
-            bool isOneTimeUpgrade = potential_up.first.maxRepeats() == 1 && potential_up.first != UpgradeTypes::None; //Speed, range, adrenal glands, etc. are regularly undervalued. This is an ad-hoc adjustment.
-            
             // Add units into relevant simulation.
             FAP::FastAPproximation<StoredUnit*> upgradeFAP; 
             CUNYAIModule::friendly_player_model.units_.addToBuildFAP(upgradeFAP, true, CUNYAIModule::friendly_player_model.researches_, potential_up.first);
             CUNYAIModule::enemy_player_model.units_.addToBuildFAP(upgradeFAP, false, CUNYAIModule::enemy_player_model.researches_);
 
             upgradeFAP.simulate(FAP_SIM_DURATION); // a complete simulation cannot always be ran... medics & firebats vs air causes a lockup.
-            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) + abs(CUNYAIModule::getFAPScore(upgradeFAP, true))/4 * isOneTimeUpgrade - CUNYAIModule::getFAPScore(upgradeFAP, false);
+            int score = CUNYAIModule::getFAPScore(upgradeFAP, true) - CUNYAIModule::getFAPScore(upgradeFAP, false);
             upgradeFAP.clear();
+            evaluateWeightsFor(potential_up.first);
             potential_up.second = static_cast<int>( ((24.0 * 20.0 - 1) * upgrade_cycle_[potential_up.first] + score) / (24.0 * 20.0) ); //moving average over 24*20 * 1 simulations. Long because the asymtotics really do not take hold easily.
         }
         else {
@@ -57,6 +56,40 @@ void TechManager::updateOptimalTech() {
     }
 
     chooseTech();
+}
+
+void TechManager::weightOptimalTech(const bool & condition, const UpgradeType & up, const double & weight)
+{
+    if (condition)
+        if (upgrade_cycle_.find(up) != upgrade_cycle_.end())
+            upgrade_cycle_[up] += weight;
+}
+
+void TechManager::evaluateWeightsFor(const UpgradeType & up)
+{
+    switch (up) {
+    case UpgradeTypes::Metabolic_Boost:
+        weightOptimalTech(true, up, 1000); //You just really want this upgrade.
+        break;
+    case UpgradeTypes::Muscular_Augments:
+        weightOptimalTech(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, up, 300);
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, up, 300);
+        break;
+    case UpgradeTypes::Grooved_Spines:
+        weightOptimalTech(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, up, 300);
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, up, 500);
+        break;
+    case UpgradeTypes::Zerg_Carapace:
+        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Protoss_Ground_Weapons) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
+        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Terran_Infantry_Armor) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
+        break;
+    case UpgradeTypes::Zerg_Missile_Attacks:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnits(UnitTypes::Zerg_Egg) > 4, up, 300);
+        break;
+    case UpgradeTypes::Adrenal_Glands:
+        weightOptimalTech(true, up, 1000); //You just really want this upgrade.
+        break;
+    }
 }
 
 bool TechManager::checkTechAvail()
@@ -86,7 +119,7 @@ bool TechManager::updateCanMakeTechExpenditures() {
     for (auto building : CUNYAIModule::CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
         if ((building.first == UnitTypes::Zerg_Lair || building.first == UnitTypes::Zerg_Hydralisk_Den) && CUNYAIModule::countUnits(UnitTypes::Zerg_Drone) < 12) // lair & den are only worth considering if we have 12 or more workers.
             continue;
-        if (building.first == UnitTypes::Zerg_Evolution_Chamber && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) == 0) // Evo is not worth considering unless lair is done.
+        if (building.first == UnitTypes::Zerg_Evolution_Chamber && CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair) >= 0) // Evo is not worth considering unless lair is done.
             continue;
         if (building.first != UnitTypes::Zerg_Evolution_Chamber && building.first.gasPrice() == 0)
             continue;
@@ -185,7 +218,9 @@ bool TechManager::tryToTech(Unit building, UnitInventory &ui, const MapInventory
     bool maxed_armor = BWAPI::Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) == 3;
 
     // Researchs, not upgrades per se:
-    if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, (upgrade_bool || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0) && (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0));
+    bool reasons_to_get_lurkers = (upgrade_bool || CUNYAIModule::enemy_player_model.units_.detector_count_ + CUNYAIModule::enemy_player_model.casualties_.detector_count_ == 0 || CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Lurker) > CUNYAIModule::assemblymanager.returnUnitRank(UnitTypes::Zerg_Hydralisk)) &&
+                                  (CUNYAIModule::countUnits(UnitTypes::Zerg_Lair) > 0 || CUNYAIModule::countUnits(UnitTypes::Zerg_Hive) > 0);
+    if (!busy) busy = Check_N_Research(TechTypes::Lurker_Aspect, building, reasons_to_get_lurkers);
 
     //first let's do reserved upgrades:
     for (auto up : CUNYAIModule::my_reservation.getReservedUpgrades()) {

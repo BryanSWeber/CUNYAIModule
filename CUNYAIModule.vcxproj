@@ -83,7 +83,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;$(BWEM_DIR)\include;"C:\Users\Bryan\CUNYBot\pybind11\include";"C:\Users\Bryan\AppData\Local\Programs\Python\Python36-32\include";$(BWEM_LIB)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;$(BWEM_DIR)\include;$(BWEM_LIB)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -102,9 +102,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\Bryan\AppData\Local\Programs\Python\Python36-32\libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -135,6 +134,7 @@
     <ClCompile Include="Source\Dll.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="StrategySelector.h" />
     <ClInclude Include="Source\AssemblyManager.h" />
     <ClInclude Include="Source\BaseManager.h" />
@@ -169,10 +169,6 @@
     <ProjectReference Include="..\BWEM-community\BWEM\BWEM.vcxproj">
       <Project>{ee73b286-b35d-4387-9eea-5b8c5192d068}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Source\evo_test.py" />
-    <None Include="Source\kiwook.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

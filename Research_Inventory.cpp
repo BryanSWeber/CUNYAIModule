@@ -153,6 +153,37 @@ bool Research_Inventory::isTechBuilding(const UnitType &u) {
     return (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u.buildsWhat().empty() && !u.isResourceDepot();
 }
 
+map<UpgradeType, int> Research_Inventory::getUpgrades() const
+{
+    return upgrades_;
+}
+
+map<TechType, bool> Research_Inventory::getTech() const
+{
+    return tech_;
+}
+
+map<UnitType, int> Research_Inventory::getTechBuildings() const
+{
+    return tech_buildings_;
+}
+
+int Research_Inventory::getUpLevel(const UpgradeType & up) const
+{
+    if (upgrades_.find(up) != upgrades_.end())
+        return upgrades_.at(up);
+    else 
+        return 0;
+}
+
+bool Research_Inventory::hasTech(const TechType & tech)
+{
+    if (tech_.find(tech) != tech_.end())
+        return tech_[tech];
+    else
+        return false;
+}
+
 std::set<UnitType> inferUnits(const std::set<UnitType>& unitsIn){
     std::set<UnitType> temp_unit_types;
     std::set<UnitType> unitsOut;

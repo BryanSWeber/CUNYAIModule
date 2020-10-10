@@ -31,13 +31,13 @@ private:
     static bool subgoal_econ_; // If econ is preferred to army. Useful for slackness conditions.
     static bool subgoal_army_; // If army is preferred to econ. Useful for slackness conditions.
 
-    static int last_frame_of_larva_morph_command;
-    static int last_frame_of_hydra_morph_command;
-    static int last_frame_of_muta_morph_command;
-    static int last_frame_of_creep_command;
+    int last_frame_of_larva_morph_command = 0;
+    int last_frame_of_hydra_morph_command = 0;
+    int last_frame_of_muta_morph_command = 0;
+    int last_frame_of_creep_command = 0;
 
 public:
-    static bool assignUnitAssembly(); // Assigns units to appropriate bank and builds them when needed.
+    bool assignUnitAssembly(); // Assigns units to appropriate bank and builds them when needed.
     static bool buildBuilding(const Unit & drone);     // Builds the next building you can afford. Area of constant improvement.
 
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
@@ -46,12 +46,13 @@ public:
     static bool testActiveAirProblem(const Research_Inventory & ri, const bool & test_for_self_weakness);  // returns spore colony if weak against air. Tests explosive damage.
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
-    static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim.
+    static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim. Higher rank = better!
+    bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken); // take a creep colony and morph it into another type of static defence. 
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
     static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit by weight% (w can be negative to penalize), when conditions are met.
-    static void evaluateWeightsFor(const UnitType &unit); //Checks all weightUnitSims
+    static void evaluateWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.

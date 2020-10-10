@@ -253,11 +253,11 @@ void PlayerModel::evaluatePotentialUnitExpenditures() {
     for (auto u : units_.unit_map_) {
         unitTypeExist.insert(u.second.type_);
     }
-    for (auto i : researches_.upgrades_) {
+    for (auto i : researches_.getUpgrades()) {
         if (i.second && i.first.whatsRequired(i.second) != UnitTypes::None)
             unitTypeExist.insert(i.first.whatsRequired(i.second));
     }
-    for (auto i : researches_.tech_) {
+    for (auto i : researches_.getTech()) {
         if (i.second && i.first.whatResearches() != UnitTypes::None)
             unitTypeExist.insert(i.first.whatResearches());
     }
@@ -331,7 +331,7 @@ void PlayerModel::evaluatePotentialTechExpenditures() {
     double value_possible_per_unit_ = 0;
 
     //Estimate the tech benifit from research buildings.
-    for (auto i : researches_.tech_buildings_) {// includes imputed buildings.
+    for (auto i : researches_.getTechBuildings()) {// includes imputed buildings.
 
         double value_holder_up_ = 0;
         int time_since_last_benificiary_seen_up_ = INT_MAX;
@@ -356,7 +356,8 @@ void PlayerModel::evaluatePotentialTechExpenditures() {
                         time_since_last_benificiary_seen_up_ = min(time_since_last_benificiary_seen_up_, j.second.time_since_last_seen_);
 
                         int level = 0;
-                        if (CUNYAIModule::enemy_player_model.researches_.upgrades_.find(p) != CUNYAIModule::enemy_player_model.researches_.upgrades_.end()) level = CUNYAIModule::enemy_player_model.researches_.upgrades_[p];
+                        if (CUNYAIModule::enemy_player_model.researches_.getUpgrades().find(p) != CUNYAIModule::enemy_player_model.researches_.getUpgrades().end()) 
+                            level = CUNYAIModule::enemy_player_model.researches_.getUpLevel(p);
                         value_holder_up_ = max(value_holder_up_, p.mineralPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor())) + 1.25 * (p.gasPrice() / static_cast<double>(p.upgradeTime() + level * p.upgradeTimeFactor()));
                         oldest_up_class = min(max(oldest_up_class, time_since_last_benificiary_seen_up_ * benificiary_exists_up_), p.upgradeTime() + level * p.upgradeTimeFactor()); // we want the youngest benificiary from the oldest class of units, and they couldn't be working on the upgrade longer than it takes to complete.
                     };
@@ -389,7 +390,7 @@ void PlayerModel::evaluatePotentialTechExpenditures() {
                     break;
                 }
             }
-            if (opponentHasRequirements(p) && !CUNYAIModule::isFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.tech_buildings_[p]) {
+            if (opponentHasRequirements(p) && !CUNYAIModule::isFightingUnit(p) && (p.isBuilding() || p.isAddon()) && (!p.upgradesWhat().empty() || !p.researchesWhat().empty() || permits_new_unit) && p != UnitTypes::Zerg_Hatchery && !researches_.countResearchBuildings(p)) {
                 value_holder_building_ = max(value_holder_building_, StoredUnit(p).stock_value_ / static_cast<double>(p.buildTime())); // assume the largest of these. (worst for me, risk averse).
                 slowest_building_class_ = max(p.buildTime(), slowest_building_class_); // is the priciest unit a flier?
             }
@@ -432,17 +433,16 @@ void PlayerModel::evaluateCurrentWorth()
             supply_expenditures_ += i.second.modified_supply_;
         }
 
-        for (auto i : researches_.upgrades_) {
+        for (auto i : researches_.getUpgrades()) {
             int number_of_times_factor_triggers = max((i.second * (i.second + 1)) / 2 - 1, 0);
             min_expenditures_ += i.first.mineralPrice() * i.second + i.first.mineralPriceFactor() * number_of_times_factor_triggers;
             gas_expenditures_ += (i.first.gasPrice() * i.second + i.first.gasPriceFactor() * number_of_times_factor_triggers);
         }
 
-        for (auto i : researches_.tech_) {
+        for (auto i : researches_.getTech()) {
             min_expenditures_ += i.first.mineralPrice() * i.second;
             gas_expenditures_ += i.first.gasPrice() * i.second;
         }
-
 
         for (auto i : casualties_.unit_map_) {
             min_losses_ += i.second.modified_min_cost_;
@@ -622,7 +622,7 @@ vector<UnitType> PlayerModel::findAlternativeProducts(const UnitType & ut)
 bool PlayerModel::opponentHasRequirements(const UnitType &ut)
 {
     // only tech-requiring unit is the lurker. If they don't have lurker aspect they can't get it.
-    if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.tech_.at(TechTypes::Lurker_Aspect)) return false;
+    if (ut.requiredTech() == TechTypes::Lurker_Aspect && !researches_.getTech().at(TechTypes::Lurker_Aspect)) return false;
     
     for (auto u : ut.requiredUnits()) {
         bool unit_present_but_unseen = CUNYAIModule::enemy_player_model.countUnseenUnits(u.first) + CUNYAIModule::enemy_player_model.researches_.countResearchBuildings(u.first) >= u.second;
@@ -649,7 +649,7 @@ bool PlayerModel::opponentHasRequirements(const UpgradeType &up)
 bool PlayerModel::opponentCouldBeUpgrading(const UpgradeType &up)
 {
     // If they don't have it or it could be further created...
-    if (!CUNYAIModule::enemy_player_model.researches_.upgrades_[up] || CUNYAIModule::enemy_player_model.researches_.upgrades_[up] < up.maxRepeats()) {
+    if (!CUNYAIModule::enemy_player_model.researches_.getUpLevel(up) || CUNYAIModule::enemy_player_model.researches_.getUpLevel(up) < up.maxRepeats()) {
         return true;
     }
     return false;
@@ -658,7 +658,7 @@ bool PlayerModel::opponentCouldBeUpgrading(const UpgradeType &up)
 bool PlayerModel::opponentCouldBeTeching(const TechType &tech)
 {
     // If they have it, they're not building it...
-    if (CUNYAIModule::enemy_player_model.researches_.tech_[tech]) {
+    if (CUNYAIModule::enemy_player_model.researches_.hasTech(tech)) {
         return false;
     }
     return true;

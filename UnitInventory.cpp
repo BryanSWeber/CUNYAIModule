@@ -298,24 +298,23 @@ void StoredUnit::updateStoredUnit(const Unit &unit) {
         type_ = unit->getType();
         StoredUnit shell = StoredUnit(type_);
         if (unit->getPlayer()->isEnemy(Broodwar->self())) {
-            StoredUnit shell = StoredUnit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+            StoredUnit shell = StoredUnit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Reaver_Capacity));
         }
         stock_value_ = shell.stock_value_; // longer but prevents retyping.
         circumference_ = shell.circumference_;
         circumference_remaining_ = shell.circumference_;
         future_fap_value_ = shell.stock_value_; //Updated in updateFAPvalue(), this is simply a natural placeholder.
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         count_of_consecutive_predicted_deaths_ = 0;
     }
     else {
         bool unit_escaped = (burrowed_ || cloaked_) && (!detected_ || !CUNYAIModule::currentMapInventory.isTileDetected(pos_)); // can't still be getting shot if we're setting its assesment to 0.
         circumference_remaining_ = circumference_;
-        current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
         if (future_fap_value_ > 0 || unit_escaped) count_of_consecutive_predicted_deaths_ = 0;
         else count_of_consecutive_predicted_deaths_++;
-
-
     }
+
+    current_stock_value_ = static_cast<int>(stock_value_ * current_hp_ / static_cast<double>(type_.maxHitPoints() + type_.maxShields()));
+
     if ((phase_ == StoredUnit::Upgrading || phase_ == StoredUnit::Researching || (phase_ == StoredUnit::Building && unit->isCompleted() && type_.isBuilding())) && unit->isIdle()) phase_ = StoredUnit::None; // adjust units that are no longer upgrading.
 
 }
@@ -872,7 +871,7 @@ StoredUnit::StoredUnit(const Unit &unit) {
     //Get unit's status. Precalculated, precached.
     StoredUnit shell = StoredUnit(type_);
     if (unit->getPlayer()->isEnemy(Broodwar->self())) {
-        StoredUnit shell = StoredUnit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.upgrades_.at(UpgradeTypes::Reaver_Capacity));
+        StoredUnit shell = StoredUnit(type_, (bool)CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Carrier_Capacity), (bool)CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Reaver_Capacity));
     }
     modified_min_cost_ = shell.modified_min_cost_;
     modified_gas_cost_ = shell.modified_gas_cost_;
@@ -1018,32 +1017,32 @@ bool StoredUnit::isLongRangeLock() {
 }
 
 auto StoredUnit::convertToFAP(const Research_Inventory &ri) {
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+    int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.getUpLevel(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.getUpLevel(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.getUpLevel(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.getUpLevel(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.getUpLevel(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.getUpLevel(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.getUpLevel(UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.getUpLevel(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.getUpLevel(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.getUpLevel(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.getUpLevel(UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
 
     return FAP::makeUnit<StoredUnit*>()
         .setData(this)
@@ -1067,35 +1066,35 @@ auto StoredUnit::convertToFAP(const Research_Inventory &ri) {
 
 auto StoredUnit::convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade, const TechType &tech) {
 
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
-        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating)) +
+    int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating)) +
         (type_.armorUpgrade() == upgrade);
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.upgrades_.at(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade);
+    int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()) + type_.groundWeapon().upgradeType() == upgrade, ri.getUpLevel(type_.airWeapon().upgradeType()) + type_.airWeapon().upgradeType() == upgrade);
 
-    int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
+    int shield_upgrades = static_cast<int>(shields_ > 0) * (ri.getUpLevel(UpgradeTypes::Protoss_Plasma_Shields) + UpgradeTypes::Protoss_Plasma_Shields == upgrade); // No tests here.
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Metabolic_Boost) || upgrade == UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && (ri.upgrades_.at(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && (ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && (ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && (ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && (ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && (ri.upgrades_.at(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && (ri.upgrades_.at(UpgradeTypes::Ion_Thrusters) || upgrade == UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && (ri.getUpLevel(UpgradeTypes::Metabolic_Boost) || upgrade == UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && (ri.getUpLevel(UpgradeTypes::Muscular_Augments) || upgrade == UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && (ri.getUpLevel(UpgradeTypes::Pneumatized_Carapace) || upgrade == UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && (ri.getUpLevel(UpgradeTypes::Anabolic_Synthesis) || upgrade == UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && (ri.getUpLevel(UpgradeTypes::Gravitic_Thrusters) || upgrade == UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && (ri.getUpLevel(UpgradeTypes::Gravitic_Boosters) || upgrade == UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && (ri.getUpLevel(UpgradeTypes::Leg_Enhancements) || upgrade == UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && (ri.getUpLevel(UpgradeTypes::Ion_Thrusters) || upgrade == UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && (ri.upgrades_.at(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && (ri.upgrades_.at(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && (ri.upgrades_.at(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && (ri.upgrades_.at(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && (ri.getUpLevel(UpgradeTypes::Grooved_Spines) || upgrade == UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && (ri.getUpLevel(UpgradeTypes::Singularity_Charge) || upgrade == UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && (ri.getUpLevel(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && (ri.getUpLevel(UpgradeTypes::Charon_Boosters) || upgrade == UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && (ri.getUpLevel(UpgradeTypes::U_238_Shells) || upgrade == UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && (ri.upgrades_.at(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && (ri.getUpLevel(UpgradeTypes::Adrenal_Glands) || upgrade == UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present. // Needs to extend for every race. Needs to include an indicator for self.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present. // Needs to extend for every race. Needs to include an indicator for self.
 
     return FAP::makeUnit<StoredUnit*>()
         .setData(this)
@@ -1119,33 +1118,33 @@ auto StoredUnit::convertToFAPPosition(const Position &chosen_pos, const Research
 
 auto StoredUnit::convertToFAPDisabled(const Position &chosen_pos, const Research_Inventory &ri) {
 
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
-        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+    int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.getUpLevel(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.getUpLevel(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.getUpLevel(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.getUpLevel(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.getUpLevel(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.getUpLevel(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.getUpLevel(UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.getUpLevel(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.getUpLevel(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.getUpLevel(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.getUpLevel(UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
 
     return FAP::makeUnit<StoredUnit*>()
         .setData(this)
@@ -1188,33 +1187,33 @@ auto StoredUnit::convertToFAPDisabled(const Position &chosen_pos, const Research
 // Unit now can attack up and only attacks up. For the anti-air anti-ground test to have absolute equality.
 auto StoredUnit::convertToFAPAnitAir(const Position &chosen_pos, const Research_Inventory &ri) {
 
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) +
-        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+    int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
+        2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.getUpLevel(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.getUpLevel(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.getUpLevel(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.getUpLevel(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.getUpLevel(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.getUpLevel(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.getUpLevel(UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.getUpLevel(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.getUpLevel(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.getUpLevel(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.getUpLevel(UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
 
     return FAP::makeUnit<StoredUnit*>()
         .setData(this)
@@ -1255,32 +1254,32 @@ auto StoredUnit::convertToFAPAnitAir(const Position &chosen_pos, const Research_
 }
 
 auto StoredUnit::convertToFAPflying(const Position & chosen_pos, const Research_Inventory &ri) {
-    int armor_upgrades = ri.upgrades_.at(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.upgrades_.at(UpgradeTypes::Chitinous_Plating));
+    int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
-    int gun_upgrades = max(ri.upgrades_.at(type_.groundWeapon().upgradeType()), ri.upgrades_.at(type_.airWeapon().upgradeType()));
-    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.upgrades_.at(UpgradeTypes::Protoss_Plasma_Shields);
+    int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
+    int shield_upgrades = static_cast<int>(shields_ > 0) * ri.getUpLevel(UpgradeTypes::Protoss_Plasma_Shields);
 
     bool speed_tech = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Metabolic_Boost)) ||
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Muscular_Augments)) ||
-        (type_ == UnitTypes::Zerg_Overlord && ri.upgrades_.at(UpgradeTypes::Pneumatized_Carapace)) ||
-        (type_ == UnitTypes::Zerg_Ultralisk && ri.upgrades_.at(UpgradeTypes::Anabolic_Synthesis)) ||
-        (type_ == UnitTypes::Protoss_Scout && ri.upgrades_.at(UpgradeTypes::Gravitic_Thrusters)) ||
-        (type_ == UnitTypes::Protoss_Observer && ri.upgrades_.at(UpgradeTypes::Gravitic_Boosters)) ||
-        (type_ == UnitTypes::Protoss_Zealot && ri.upgrades_.at(UpgradeTypes::Leg_Enhancements)) ||
-        (type_ == UnitTypes::Terran_Vulture && ri.upgrades_.at(UpgradeTypes::Ion_Thrusters));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Metabolic_Boost)) ||
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Muscular_Augments)) ||
+        (type_ == UnitTypes::Zerg_Overlord && ri.getUpLevel(UpgradeTypes::Pneumatized_Carapace)) ||
+        (type_ == UnitTypes::Zerg_Ultralisk && ri.getUpLevel(UpgradeTypes::Anabolic_Synthesis)) ||
+        (type_ == UnitTypes::Protoss_Scout && ri.getUpLevel(UpgradeTypes::Gravitic_Thrusters)) ||
+        (type_ == UnitTypes::Protoss_Observer && ri.getUpLevel(UpgradeTypes::Gravitic_Boosters)) ||
+        (type_ == UnitTypes::Protoss_Zealot && ri.getUpLevel(UpgradeTypes::Leg_Enhancements)) ||
+        (type_ == UnitTypes::Terran_Vulture && ri.getUpLevel(UpgradeTypes::Ion_Thrusters));
 
     bool range_upgrade = // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Hydralisk && ri.upgrades_.at(UpgradeTypes::Grooved_Spines)) ||
-        (type_ == UnitTypes::Protoss_Dragoon && ri.upgrades_.at(UpgradeTypes::Singularity_Charge)) ||
-        (type_ == UnitTypes::Terran_Marine && ri.upgrades_.at(UpgradeTypes::U_238_Shells)) ||
-        (type_ == UnitTypes::Terran_Goliath && ri.upgrades_.at(UpgradeTypes::Charon_Boosters)) ||
-        (type_ == UnitTypes::Terran_Barracks && ri.upgrades_.at(UpgradeTypes::U_238_Shells));
+        (type_ == UnitTypes::Zerg_Hydralisk && ri.getUpLevel(UpgradeTypes::Grooved_Spines)) ||
+        (type_ == UnitTypes::Protoss_Dragoon && ri.getUpLevel(UpgradeTypes::Singularity_Charge)) ||
+        (type_ == UnitTypes::Terran_Marine && ri.getUpLevel(UpgradeTypes::U_238_Shells)) ||
+        (type_ == UnitTypes::Terran_Goliath && ri.getUpLevel(UpgradeTypes::Charon_Boosters)) ||
+        (type_ == UnitTypes::Terran_Barracks && ri.getUpLevel(UpgradeTypes::U_238_Shells));
 
     bool attack_speed_upgrade =  // safer to hardcode this.
-        (type_ == UnitTypes::Zerg_Zergling && ri.upgrades_.at(UpgradeTypes::Adrenal_Glands));
+        (type_ == UnitTypes::Zerg_Zergling && ri.getUpLevel(UpgradeTypes::Adrenal_Glands));
 
-    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.upgrades_.at(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
+    int units_inside_object = 2 + (type_ == UnitTypes::Protoss_Carrier) * (2 + 4 * ri.getUpLevel(UpgradeTypes::Carrier_Capacity)); // 2 if bunker, 4 if carrier, 8 if "carrier capacity" is present.
 
     return FAP::makeUnit<StoredUnit*>()
         .setData(this)

@@ -335,7 +335,7 @@ void Diagnostics::Print_Cached_Inventory(const int &screen_x, const int &screen_
 void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
     int another_row_of_printing_ups = 1;
 
-    for (auto r : ri.upgrades_)
+    for (auto r : ri.getUpgrades())
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y, "Upgrades:");  //
@@ -346,7 +346,7 @@ void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &scree
 
     int another_row_of_printing_research = another_row_of_printing_ups + 1;
 
-    for (auto r : ri.tech_)
+    for (auto r : ri.getTech())
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_ups * 10, "Tech:");  //
@@ -357,7 +357,7 @@ void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &scree
 
     int another_row_of_printing_buildings = another_row_of_printing_research + 1;
 
-    for (auto r : ri.tech_buildings_)
+    for (auto r : ri.getTechBuildings())
     { // iterating through all known combat units. See unit type for enumeration, also at end of page.
         if (r.second > 0) {
             Broodwar->drawTextScreen(screen_x, screen_y + another_row_of_printing_research * 10, "R.Buildings:");  //

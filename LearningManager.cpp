@@ -14,18 +14,11 @@
 # include <random> // C++ base random is low quality.
 # include <thread>
 # include <filesystem>
-# include <pybind11/pybind11.h>
-# include <pybind11/embed.h>
-# include <pybind11/eval.h>
-# include <pybind11/stl.h> //Needed for arrays.
-# include <pybind11/stl_bind.h>
-# include "pybind11/numpy.h"
-# include <Python.h>
+
 
 using namespace BWAPI;
 using namespace Filter;
 using namespace std;
-namespace py = pybind11;
 
 bool LearningManager::confirmLearningFilesPresent()
 {
@@ -381,65 +374,65 @@ void LearningManager::initializeGeneticLearning() {
 
 }
 
-void LearningManager::initializeRFLearning()
-{
-    //Python loading of critical libraries.
-    Diagnostics::DiagnosticText("Python Initializing");
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-    Diagnostics::DiagnosticText("Loading Main");
-    py::object scope = py::module::import("__main__").attr("__dict__");
-
-    //Executing script:
-    Diagnostics::DiagnosticText("Loading Dictionary Contents");
-    auto local = py::dict();
-    bool abort_code = false;
-    local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
-    local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
-    local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
-    local["in_file"] = ".\\write\\history.txt"; // Back directory command '..' is not something you can confidently pass to python here so we have to manually rig our path there.
-
-    local["gas_proportion_t0"] = gas_proportion_t0 = 0;
-    local["supply_ratio_t0"] = supply_ratio_t0 = 0;
-    local["a_army_t0"] = a_army_t0 = 0;
-    local["a_econ_t0"] = a_econ_t0 = 0;
-    local["a_tech_t0"] = a_tech_t0 = 0;
-    local["r_out_t0"] = r_out_t0 = 0;
-    local["build_order_t0"] = build_order_t0 = "Undefined Build Order";
-    local["attempt_count"] = 0;
-    local["abort_code_t0"] = abort_code = false;
-    Diagnostics::DiagnosticText("Evaluating Kiwook.py");
-    try {
-        py::eval_file(".\\kiwook.py", scope, local);
-    }
-    catch (py::error_already_set const &pythonErr) { 
-        Diagnostics::DiagnosticText(pythonErr.what()); 
-        local["abort_code_t0"] = true;
-    }
-    Diagnostics::DiagnosticText("Evaluation Complete.");
-
-    //Pull the abort code, should be false if we got through, otherwise if true we aborted.
-    abort_code = py::bool_(local["abort_code_t0"]);
-
-    string result = abort_code ? "YES" : "NO";
-    string print_string = "Did we abort the RF process?: " + result;
-
-    Diagnostics::DiagnosticText(print_string.c_str());
-
-    if (abort_code) {
-        Diagnostics::DiagnosticText("We will then pick a random opening");
-        initializeRandomStart();
-    }
-    else {
-        gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
-        supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
-        a_army_t0 = py::float_(local["a_army_t0"]);
-        a_econ_t0 = py::float_(local["a_econ_t0"]);
-        a_tech_t0 = py::float_(local["a_tech_t0"]);
-        r_out_t0 = py::float_(local["r_out_t0"]);
-        build_order_t0 = py::str(local["build_order_t0"]);
-    }
-    return;
-}
+//void LearningManager::initializeRFLearning()
+//{
+//    //Python loading of critical libraries.
+//    Diagnostics::DiagnosticText("Python Initializing");
+//    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+//    Diagnostics::DiagnosticText("Loading Main");
+//    py::object scope = py::module::import("__main__").attr("__dict__");
+//
+//    //Executing script:
+//    Diagnostics::DiagnosticText("Loading Dictionary Contents");
+//    auto local = py::dict();
+//    bool abort_code = false;
+//    local["e_race"] = CUNYAIModule::safeString(Broodwar->enemy()->getRace().c_str());
+//    local["e_name"] = CUNYAIModule::safeString(Broodwar->enemy()->getName().c_str());
+//    local["e_map"] = CUNYAIModule::safeString(Broodwar->mapFileName().c_str());
+//    local["in_file"] = ".\\write\\history.txt"; // Back directory command '..' is not something you can confidently pass to python here so we have to manually rig our path there.
+//
+//    local["gas_proportion_t0"] = gas_proportion_t0 = 0;
+//    local["supply_ratio_t0"] = supply_ratio_t0 = 0;
+//    local["a_army_t0"] = a_army_t0 = 0;
+//    local["a_econ_t0"] = a_econ_t0 = 0;
+//    local["a_tech_t0"] = a_tech_t0 = 0;
+//    local["r_out_t0"] = r_out_t0 = 0;
+//    local["build_order_t0"] = build_order_t0 = "Undefined Build Order";
+//    local["attempt_count"] = 0;
+//    local["abort_code_t0"] = abort_code = false;
+//    Diagnostics::DiagnosticText("Evaluating Kiwook.py");
+//    try {
+//        py::eval_file(".\\kiwook.py", scope, local);
+//    }
+//    catch (py::error_already_set const &pythonErr) { 
+//        Diagnostics::DiagnosticText(pythonErr.what()); 
+//        local["abort_code_t0"] = true;
+//    }
+//    Diagnostics::DiagnosticText("Evaluation Complete.");
+//
+//    //Pull the abort code, should be false if we got through, otherwise if true we aborted.
+//    abort_code = py::bool_(local["abort_code_t0"]);
+//
+//    string result = abort_code ? "YES" : "NO";
+//    string print_string = "Did we abort the RF process?: " + result;
+//
+//    Diagnostics::DiagnosticText(print_string.c_str());
+//
+//    if (abort_code) {
+//        Diagnostics::DiagnosticText("We will then pick a random opening");
+//        initializeRandomStart();
+//    }
+//    else {
+//        gas_proportion_t0 = py::float_(local["gas_proportion_t0"]);
+//        supply_ratio_t0 = py::float_(local["supply_ratio_t0"]);
+//        a_army_t0 = py::float_(local["a_army_t0"]);
+//        a_econ_t0 = py::float_(local["a_econ_t0"]);
+//        a_tech_t0 = py::float_(local["a_tech_t0"]);
+//        r_out_t0 = py::float_(local["r_out_t0"]);
+//        build_order_t0 = py::str(local["build_order_t0"]);
+//    }
+//    return;
+//}
 
 
 // Overwrite whatever you previously wanted if we're using "test mode".
@@ -473,36 +466,36 @@ void LearningManager::initializeRandomStart(){
     build_order_t0 = build_order_list[build_order_rand];
 }
 
-void LearningManager::initializeCMAESUnitWeighting()
-{
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
-    py::object scope = py::module::import("__main__").attr("__dict__");
-
-    //Executing script:
-    Diagnostics::DiagnosticText("Loading Dictionary Contents");
-    auto local = py::dict();
-    vector<double> passed_unit_weights(BWAPI::UnitTypes::allUnitTypes().size());
-    for (auto x : passed_unit_weights) {
-        passed_unit_weights[x] = 0;
-    }
-
-    local["unit_weights"] = passed_unit_weights; //automatic conversion to type requires stl library. needs to be a vector, can't pass a map.
-    try {
-        py::eval_file(".\\evo_test.py", scope, local);
-    }
-    catch (py::error_already_set const &pythonErr) {
-        Diagnostics::DiagnosticText(pythonErr.what());
-    }
-
-
-    passed_unit_weights = py::cast<std::vector<double>>(local["unit_weights"]);
-
-    int pos = 0;
-    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
-        unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));
-        pos++;
-    }
-}
+//void LearningManager::initializeCMAESUnitWeighting()
+//{
+//    py::scoped_interpreter guard{}; // start the interpreter and keep it alive. Cannot be used more than once in a game.
+//    py::object scope = py::module::import("__main__").attr("__dict__");
+//
+//    //Executing script:
+//    Diagnostics::DiagnosticText("Loading Dictionary Contents");
+//    auto local = py::dict();
+//    vector<double> passed_unit_weights(BWAPI::UnitTypes::allUnitTypes().size());
+//    for (auto x : passed_unit_weights) {
+//        passed_unit_weights[x] = 0;
+//    }
+//
+//    local["unit_weights"] = passed_unit_weights; //automatic conversion to type requires stl library. needs to be a vector, can't pass a map.
+//    try {
+//        py::eval_file(".\\evo_test.py", scope, local);
+//    }
+//    catch (py::error_already_set const &pythonErr) {
+//        Diagnostics::DiagnosticText(pythonErr.what());
+//    }
+//
+//
+//    passed_unit_weights = py::cast<std::vector<double>>(local["unit_weights"]);
+//
+//    int pos = 0;
+//    for (UnitType u : BWAPI::UnitTypes::allUnitTypes()) {
+//        unit_weights.insert_or_assign(u, passed_unit_weights.at(pos));
+//        pos++;
+//    }
+//}
 
 void LearningManager::initializeGAUnitWeighting()
 {

@@ -209,22 +209,21 @@ void CUNYAIModule::writePlayerModel(const PlayerModel &player, const string labe
 
             //science
             //upgrades
-            for (auto u : player.researches_.upgrades_) {
+            for (auto u : player.researches_.getUpgrades()) {
                 up_type = u.first.c_str();
                 if (u.second > 0) {
                     smashed_upgrade_types += up_type + ", ";
                 }
             }
             //tech types
-            for (auto u : player.researches_.tech_) {
-
+            for (auto u : player.researches_.getTech()) {
                 tech_type = u.first.c_str();
                 if (u.second) {
                     smashed_tech_types += tech_type + ", ";
                 }
             }
             // Research-sort Buildings, includes inferred ones.
-            for (auto u : player.researches_.tech_buildings_) {
+            for (auto u : player.researches_.getTechBuildings()) {
                 inferred_building_type = u.first.c_str();
                 if (u.second > 0) {
                     smashed_inferred_building_types += inferred_building_type + ", ";
@@ -2183,7 +2182,7 @@ bool CUNYAIModule::checkSuperiorFAPForecast(const UnitInventory &ui, const UnitI
 
     for (auto u : ui.unit_map_) {
         if (!u.first->isBeingConstructed()) { // don't count constructing units.
-            bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_);
+            bool escaping = (u.second.phase_ == StoredUnit::Phase::Retreating && getProperSpeed(u.second.type_) > ei.max_speed_ && pow(u.second.velocity_x_,2) + pow(u.second.velocity_y_,2) > pow(ei.max_speed_,2) );
             bool may_survive_and_fight = !escaping && u.second.type_ != UnitTypes::Terran_Vulture_Spider_Mine && u.second.type_ != UnitTypes::Zerg_Scourge && u.second.type_ != UnitTypes::Zerg_Infested_Terran; // Retreating units are sunk costs, they cannot inherently be saved.
             total_dying_ui += (u.second.stock_value_ - (u.second.type_ == UnitTypes::Terran_Bunker * 2 * StoredUnit(UnitTypes::Terran_Marine).stock_value_)) * StoredUnit::unitDeadInFuture(u.second, 4) * may_survive_and_fight * CUNYAIModule::canContributeToFight(u.second.type_, ei); // remember, FAP ignores non-fighting units. Bunkers leave about 100 minerals worth of stuff behind them.
             //total_surviving_ui += u.second.stock_value_ * !StoredUnit::unitDeadInFuture(u.second, 4) * fighting_may_save;

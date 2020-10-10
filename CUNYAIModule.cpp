@@ -23,6 +23,7 @@
 #include <stdio.h>  //for removal of files.
 #include <filesystem>
 
+
 // CUNYAI V2.00
 
 using namespace BWAPI;
@@ -129,9 +130,9 @@ void CUNYAIModule::onStart()
     learned_plan = LearningManager();
     learned_plan.confirmLearningFilesPresent();
 
-    if (PY_RF_LEARNING) {
-        learned_plan.initializeRFLearning();
-    }
+    //if (PY_RF_LEARNING) {
+    //    learned_plan.initializeRFLearning();
+    //}
     if (GENETIC_HISTORY) {
         learned_plan.initializeGeneticLearning();
     }
@@ -144,9 +145,9 @@ void CUNYAIModule::onStart()
     if (UNIT_WEIGHTING) {
         learned_plan.initializeGAUnitWeighting(); // in progress.
     }
-    if (PY_UNIT_WEIGHTING) {
-        learned_plan.initializeCMAESUnitWeighting(); // in progress.
-    }
+    //if (PY_UNIT_WEIGHTING) {
+    //    learned_plan.initializeCMAESUnitWeighting(); // in progress.
+    //}
 
     gas_proportion = learned_plan.gas_proportion_t0; //gas starved parameter. Triggers state if: gas/(min + gas) < gas_proportion;  Higher is more gas.
     supply_ratio = learned_plan.supply_ratio_t0; //supply starved parameter. Triggers state if: ln_supply_remain/ln_supply_total < supply_ratio; Current best is 0.70. Some good indicators that this is reasonable: ln(4)/ln(9) is around 0.63, ln(3)/ln(9) is around 0.73, so we will build our first overlord at 7/9 supply. ln(18)/ln(100) is also around 0.63, so we will have a nice buffer for midgame.
@@ -546,7 +547,7 @@ void CUNYAIModule::onFrame()
         if (!supply_starved && u_type != UnitTypes::Zerg_Overlord && checkOccupiedArea(enemy_player_model.units_, u->getPosition())) {
             UnitInventory e_neighbors = getUnitInventoryInRadius(enemy_player_model.units_, u->getPosition(), u_type.sightRange());
             for (auto e = e_neighbors.unit_map_.begin(); e != e_neighbors.unit_map_.end() && !e_neighbors.unit_map_.empty(); e++) {
-                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || ((*e).second.type_.isBurrowable() && CUNYAIModule::enemy_player_model.researches_.tech_[TechTypes::Burrowing])) {
+                if ((*e).second.type_.isCloakable() || (*e).second.type_ == UnitTypes::Zerg_Lurker || (*e).second.type_.hasPermanentCloak() || ((*e).second.type_.isBurrowable() && CUNYAIModule::enemy_player_model.researches_.hasTech(TechTypes::Burrowing))) {
                     c = (*e).second.pos_; // then we may to send in some vision.
                     call_detector = true;
                     break;

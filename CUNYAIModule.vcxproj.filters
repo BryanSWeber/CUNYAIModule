@@ -111,6 +111,7 @@
     <ClInclude Include="Source\MapInventory.h" />
     <ClInclude Include="Source\UnitInventory.h" />
     <ClInclude Include="StrategySelector.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utilities">
@@ -119,13 +120,5 @@
     <Filter Include="BWEB">
       <UniqueIdentifier>{a191b572-c4d5-4666-a7f1-b6fe86a15072}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Source\kiwook.py">
-      <Filter>Utilities</Filter>
-    </None>
-    <None Include="Source\evo_test.py">
-      <Filter>Utilities</Filter>
-    </None>
   </ItemGroup>
 </Project>

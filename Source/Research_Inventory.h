@@ -11,12 +11,14 @@
 using namespace std;
 using namespace BWAPI;
 
-struct Research_Inventory {
-    Research_Inventory() {};//need a constructor method.
-
+class Research_Inventory {
+private:
     map<UpgradeType, int> upgrades_; //{Upgrade type, level (3 usually, 1 sometimes)}
     map<TechType, bool> tech_; // {Tech Type, Complete}
     map<UnitType, int> tech_buildings_; // {Building type, count}
+public:
+    Research_Inventory() {};//need a constructor method.
+
     int tech_stock_ = 0;
     int upgrade_stock_ = 0;
     int research_stock_ = 0;
@@ -30,6 +32,11 @@ struct Research_Inventory {
     void updateResearch(const Player & player); // Updates the entire resource inventory for player. Will get confused if there are multiple enemies.
     int countResearchBuildings(const UnitType &ut); // Returns the count of buildings in the research building map.
     bool isTechBuilding(const UnitType & u); // Returns true if the building is a technical building.
+    int getUpLevel(const UpgradeType &up) const;
+    bool hasTech(const TechType &tech);
+    map<UpgradeType, int> getUpgrades() const;
+    map<TechType, bool> getTech() const;
+    map<UnitType, int> getTechBuildings() const;
 };
 
 std::set<UnitType> inferUnits(const std::set<UnitType>& unitsIn); // returns a set of the units that must exist in order to create the unitsIn set.
