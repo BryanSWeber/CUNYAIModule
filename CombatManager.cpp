@@ -116,7 +116,7 @@ bool CombatManager::combatScript(const Unit & u)
                     if ((checkNeedMoreWorkersToHold(expanded_friend_loc, enemy_loc) || my_unit->phase_ == StoredUnit::Phase::Attacking) && !resource_loc.resource_inventory_.empty()) {
                         bool unit_dead_next_check = StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 14);
                         if (CUNYAIModule::basemanager.getBaseCount() > 1 && CUNYAIModule::friendly_player_model.units_.stock_shoots_down_ > 0 && unit_dead_next_check)
-                            break; // exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
+                            return mobility.Retreat_Logic(*e_closest_threat);// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
                             return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                         else
@@ -179,7 +179,7 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc) || u->getType().isWorker()) {
+            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
                 return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {
