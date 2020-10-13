@@ -322,7 +322,7 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     if (!buildings_started) buildings_started = Check_N_Build(UnitTypes::Zerg_Evolution_Chamber, drone, upgrade_bool &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Evolution_Chamber, true) < number_of_evos_wanted &&
         CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Lair, CUNYAIModule::friendly_player_model.units_) > 0 &&
-        (!CUNYAIModule::countUnitsAvailable(UnitTypes::Zerg_Evolution_Chamber) == 0) &&
+        CUNYAIModule::countUnitsAvailable(UnitTypes::Zerg_Evolution_Chamber) == 0 &&
         (upgrade_worth_melee || upgrade_worth_ranged) &&
         CUNYAIModule::countUnits(UnitTypes::Zerg_Extractor) > count_tech_buildings &&
         count_tech_buildings >= 1 &&
@@ -1125,8 +1125,7 @@ bool AssemblyManager::assignUnitAssembly()
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool create_supply_buffer = (wasting_larva_soon && checkSlackLarvae() && checkSlackMinerals());
-            bool found_noncombat_use = false;
+            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkSlackSupply();
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
                 larva.first->stop(); // this will larva trick them to the left.
@@ -1135,15 +1134,12 @@ bool AssemblyManager::assignUnitAssembly()
 
             if (drones_are_needed_here || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
                 immediate_drone_larva.addStoredUnit(larva.second);
-                found_noncombat_use = true;
             }
             if (drones_are_needed_elsewhere || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Drone)) {
                 transfer_drone_larva.addStoredUnit(larva.second);
-                found_noncombat_use = true;
             }
             if (CUNYAIModule::supply_starved || create_supply_buffer || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
                 overlord_larva.addStoredUnit(larva.second);
-                found_noncombat_use = true;
             }
             combat_creators.addStoredUnit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
         }
@@ -1373,6 +1369,11 @@ bool AssemblyManager::checkSlackGas()
 bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
 {
     return ut.whatBuilds().first == UnitTypes::Zerg_Larva ? checkSlackLarvae() : true && ut.mineralPrice() > 0 ? checkSlackMinerals() : true && ut.gasPrice() > 0 ? checkSlackGas() : true;
+}
+
+bool AssemblyManager::checkSlackSupply()
+{
+    return  Broodwar->self()->supplyTotal() + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Overlord) * UnitTypes::Zerg_Overlord.supplyProvided() - Broodwar->self()->supplyUsed() > CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery) * 4 * 2; // use x2 since max supply is 400 in this metric (ling = 1 supply each).
 }
 
 int AssemblyManager::getMaxGas()

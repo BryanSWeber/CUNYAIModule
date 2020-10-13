@@ -15,6 +15,7 @@ using namespace BWAPI;
 using namespace Filter;
 using namespace std;
 
+//There should only be one assembly manager, so it can be declared static fairly safely.
 class AssemblyManager {
 private:
     static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
@@ -47,7 +48,7 @@ public:
     static bool testPotentialAirVunerability(const Research_Inventory & ri, const bool & test_for_self_weakness); //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
     static UnitType returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory & ri); // returns an optimal unit type from a comparison set.
     static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim. Higher rank = better!
-    bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
+    static bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
     static void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken); // take a creep colony and morph it into another type of static defence. 
     static bool buildOptimalCombatUnit(const Unit & morph_canidate, map<UnitType, int> combat_types); // Take this morph canidate and morph into the best combat unit you can find in the combat types map. We will restrict this map based on a collection of heuristics.
@@ -75,7 +76,7 @@ public:
     static bool checkSlackMinerals(); // Checks if there is slack minerals.
     static bool checkSlackGas(); // Checks if there is slack gas.
     static bool checkSufficientSlack(const UnitType &ut = UnitTypes::Zerg_Zergling); // Checks if there is sufficient slack to build an XYZ. Defaults to zergling, the minimum unit.
-    // Check if resources are slack from an army assembly perspective.
+    static bool checkSlackSupply(); // Checks if there is slack supply. Follows custom heuristic, might not be triggered since GA overrides this to some extent.
     static int getMaxGas(); // Returns the maximum gas cost of all currently builable units.
     static int getWaveSize(const UnitType &ut); //Returns the number of a unit that can be made at this moment.
 };

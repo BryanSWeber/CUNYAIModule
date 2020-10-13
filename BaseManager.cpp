@@ -217,7 +217,7 @@ void BaseManager::updateBases()
 
         UnitInventory creep_colonies = CUNYAIModule::getUnitInventoryInArea(b.second.u_loc_, UnitTypes::Zerg_Creep_Colony, b.first);
         for (auto u : creep_colonies.unit_map_) {
-            if (u.first) AssemblyManager::buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
+            if (u.first) CUNYAIModule::assemblymanager.buildStaticDefence(u.first, b.second.emergency_spore_, b.second.emergency_sunken_);
         }
     }
 
