@@ -80,14 +80,37 @@ void TechManager::evaluateWeightsFor(const UpgradeType & up)
         weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, up, 500);
         break;
     case UpgradeTypes::Zerg_Carapace:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Zergling) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Zergling) > 8, up, 300);
         weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Protoss_Ground_Weapons) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
         weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Terran_Infantry_Armor) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
         break;
     case UpgradeTypes::Zerg_Missile_Attacks:
-        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnits(UnitTypes::Zerg_Egg) > 4, up, 300);
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hydralisk) >= 4, up, 300);
+        break;
+    case UpgradeTypes::Zerg_Melee_Attacks:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Zergling) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Zergling) > 8, up, 300);
         break;
     case UpgradeTypes::Adrenal_Glands:
         weightOptimalTech(true, up, 1000); //You just really want this upgrade.
+        break;
+    case UpgradeTypes::Zerg_Flyer_Attacks:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Mutalisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Mutalisk) >= 6, up, 300);
+        break;
+    case UpgradeTypes::Zerg_Flyer_Carapace:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Protoss_Corsair, CUNYAIModule::enemy_player_model.units_) >= 4, up, 500);
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) > 0, up, 500);
+        break;
+    case UpgradeTypes::Anabolic_Synthesis:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Ultralisk) == 0, up, -300);
+        weightOptimalTech(CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Ultralisk) >= 1, up, 300);
+        break;
+    case UpgradeTypes::Chitinous_Plating:
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Ultralisk) == 0, up, -300);
+        weightOptimalTech(CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Ultralisk) >= 1, up, 300);
+        weightOptimalTech(Broodwar->self()->getUpgradeLevel(UpgradeTypes::Zerg_Carapace) >= 1, up, 300);
+        break;
+    case UpgradeTypes::Pneumatized_Carapace:
+        weightOptimalTech(CUNYAIModule::enemy_player_model.units_.flyer_count_ == 0 && CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() == 0, up, -300);
         break;
     }
 }
@@ -158,11 +181,6 @@ bool TechManager::chooseTech() {
             }
             if (CUNYAIModule::countUnitsAvailableToPerform(potential_up->first) == 0) {
                 local_upgrade_cycle.erase(potential_up++); // If nothing can make it, skip it.
-                bad_element_found = true;
-                break;
-            }
-            if (potential_up->first == UpgradeTypes::Pneumatized_Carapace && !(CUNYAIModule::enemy_player_model.units_.flyer_count_ > 0 || CUNYAIModule::enemy_player_model.getEstimatedUnseenFliers() > 0)) {
-                local_upgrade_cycle.erase(potential_up++); //Don't reserve carapace if they don't have flyers yet.  Idea from steamhammer.
                 bad_element_found = true;
                 break;
             }
