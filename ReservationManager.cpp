@@ -5,7 +5,7 @@
 #include "Source\MapInventory.h"
 #include "Source\UnitInventory.h"
 #include "Source\Resource_Inventory.h"
-#include "Source\Reservation_Manager.h"
+#include "Source\ReservationManager.h"
 #include "Source/Diagnostics.h"
 #include <algorithm>
 
@@ -209,4 +209,33 @@ void Reservation::confirmOngoingReservations() {
         min_reserve_ = 0;
         gas_reserve_ = 0;
     }
+}
+
+RemainderTracker::RemainderTracker()
+{
+}
+
+int RemainderTracker::getWaveSize(UnitType ut)
+{
+    if (!AssemblyManager::canMakeCUNY(ut, true))
+        return 0;
+    else {
+        int nUnits = 0;
+        while (gasRemaining_ > 0 && minRemaining_ > 0 && supplyRemaining_ > 0 && larvaeRemaining_ > 0) {
+            gasRemaining_ -= ut.gasPrice();
+            minRemaining_ -= ut.mineralPrice();
+            supplyRemaining_--;
+            supplyRemaining_ -= ut.supplyRequired();
+            nUnits++;
+        }
+        return nUnits++;
+    }
+}
+
+void RemainderTracker::getReservationCapacity()
+{
+    int gasRemaining_ = CUNYAIModule::my_reservation.getExcessGas();
+    int minRemaining_ = CUNYAIModule::my_reservation.getExcessMineral();
+    int supplyRemaining_ = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
+    int larvaeRemaining_ = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva);
 }

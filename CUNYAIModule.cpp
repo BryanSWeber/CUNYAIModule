@@ -5,7 +5,7 @@
 #include "Source\MapInventory.h"
 #include "Source\UnitInventory.h"
 #include "Source\Resource_Inventory.h"
-#include "Source\Research_Inventory.h"
+#include "Source\ResearchInventory.h"
 #include "Source\LearningManager.h"
 #include "Source\AssemblyManager.h"
 #include "Source\CombatManager.h"
@@ -518,7 +518,7 @@ void CUNYAIModule::onFrame()
 
     // Assemble units when needed.
     auto start_unit_morphs = std::chrono::high_resolution_clock::now();
-    assemblymanager.assignUnitAssembly();
+    assemblymanager.assignAssemblyRole();
     auto end_unit_morphs = std::chrono::high_resolution_clock::now();
     larva_time = end_unit_morphs - start_unit_morphs;
 

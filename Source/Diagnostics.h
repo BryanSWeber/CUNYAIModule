@@ -41,7 +41,7 @@ struct Diagnostics {
     static void Print_UnitInventory(const int &screen_x, const int &screen_y, const UnitInventory &ui);
     static void Print_Test_Case(const int & screen_x, const int & screen_y);
     static void Print_Cached_Inventory(const int & screen_x, const int & screen_y);
-    static void Print_Research_Inventory(const int & screen_x, const int & screen_y, const Research_Inventory & ri);
+    static void Print_ResearchInventory(const int & screen_x, const int & screen_y, const ResearchInventory & ri);
     // Announces to player the name and type of all units remaining in the Buildorder. Bland but practical.
     static void Print_Build_Order_Remaining(const int & screen_x, const int & screen_y, const BuildingGene & bo);
     // Announces to player the name and type of all units remaining in the reservation system. Bland but practical.

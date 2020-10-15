@@ -4,8 +4,8 @@
 #include "CUNYAIModule.h"
 #include "Resource_Inventory.h"
 #include "MapInventory.h"
-#include "Reservation_Manager.h"
-#include "Research_Inventory.h"
+#include "ReservationManager.h"
+#include "ResearchInventory.h"
 #include "FAP\FAP\include\FAP.hpp"
 #include <random> // C++ base random is low quality.
 
@@ -27,11 +27,11 @@ struct StoredUnit {
     // Creates an enemy unit object, an abbreviated version of the original.
     StoredUnit(const Unit &unit);
     StoredUnit();
-    auto convertToFAP(const Research_Inventory &ri); // puts stored unit into the fap type.
-    auto convertToFAPPosition(const Position & chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
-    auto convertToFAPDisabled(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an immobile unit.
-    auto convertToFAPAnitAir(const Position & chosen_pos, const Research_Inventory & ri); // puts the unit in as an anti-air only tool.
-    auto convertToFAPflying(const Position & chosen_pos, const Research_Inventory & ri);
+    auto convertToFAP(const ResearchInventory &ri); // puts stored unit into the fap type.
+    auto convertToFAPPosition(const Position & chosen_pos, const ResearchInventory &ri, const UpgradeType &upgrade = UpgradeTypes::None, const TechType &tech = TechTypes::None); // puts the stored unit into the fap type... at a specific position
+    auto convertToFAPDisabled(const Position & chosen_pos, const ResearchInventory & ri); // puts the unit in as an immobile unit.
+    auto convertToFAPAnitAir(const Position & chosen_pos, const ResearchInventory & ri); // puts the unit in as an anti-air only tool.
+    auto convertToFAPflying(const Position & chosen_pos, const ResearchInventory & ri);
 
     static void updateFAPvalue(FAP::FAPUnit<StoredUnit*> &fap_unit); //updates a single unit's fap forecast when given the fap unit.
     void updateFAPvalueDead(); //Updates the unit in the case of it not surviving the FAP simulation.
@@ -238,12 +238,12 @@ struct UnitInventory {
 
 
     // Several ways to add to FAP models. At specific locations, immobilized, at a random position around their original position, to buildFAP's small combat scenario.
-    void addToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory &ri); // adds to buildFAP
-    void addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const Research_Inventory & ri);
-    void addToMCFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const Research_Inventory & ri); // adds to MC fap.
-    void addToBuildFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const Research_Inventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
+    void addToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory &ri); // adds to buildFAP
+    void addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
+    void addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
+    void addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*>& fap_object, const Position pos, const bool friendly, const ResearchInventory & ri);
+    void addToMCFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const ResearchInventory & ri); // adds to MC fap.
+    void addToBuildFAP(FAP::FastAPproximation<StoredUnit*>& fap_object, const bool friendly, const ResearchInventory & ri, const UpgradeType &upgrade = UpgradeTypes::None);// adds to the building combat simulator, friendly side.
 
 
     void pullFromFAP(vector<FAP::FAPUnit<StoredUnit*>> &FAPunits); // updates UI with FAP forecasts. Throws exceptions if something is misaligned.

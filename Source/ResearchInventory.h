@@ -11,13 +11,13 @@
 using namespace std;
 using namespace BWAPI;
 
-class Research_Inventory {
+class ResearchInventory {
 private:
     map<UpgradeType, int> upgrades_; //{Upgrade type, level (3 usually, 1 sometimes)}
     map<TechType, bool> tech_; // {Tech Type, Complete}
     map<UnitType, int> tech_buildings_; // {Building type, count}
 public:
-    Research_Inventory() {};//need a constructor method.
+    ResearchInventory() {};//need a constructor method.
 
     int tech_stock_ = 0;
     int upgrade_stock_ = 0;

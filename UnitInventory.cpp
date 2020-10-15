@@ -4,7 +4,7 @@
 #include "Source\CUNYAIModule.h"
 #include "Source\UnitInventory.h"
 #include "Source\MapInventory.h"
-#include "Source\Reservation_Manager.h"
+#include "Source\ReservationManager.h"
 #include "Source/Diagnostics.h"
 #include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
 #include <random> // C++ base random is low quality.
@@ -1016,7 +1016,7 @@ bool StoredUnit::isLongRangeLock() {
     return bwapi_unit_ && target_mine && target_mine->pos_ && (!Broodwar->isVisible(TilePosition(target_mine->pos_)) /*|| (target_mine->bwapi_unit_ && target_mine->bwapi_unit_->isMorphing())*/);
 }
 
-auto StoredUnit::convertToFAP(const Research_Inventory &ri) {
+auto StoredUnit::convertToFAP(const ResearchInventory &ri) {
     int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
     int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
@@ -1064,7 +1064,7 @@ auto StoredUnit::convertToFAP(const Research_Inventory &ri) {
         ;
 }
 
-auto StoredUnit::convertToFAPPosition(const Position &chosen_pos, const Research_Inventory &ri, const UpgradeType &upgrade, const TechType &tech) {
+auto StoredUnit::convertToFAPPosition(const Position &chosen_pos, const ResearchInventory &ri, const UpgradeType &upgrade, const TechType &tech) {
 
     int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating)) +
@@ -1116,7 +1116,7 @@ auto StoredUnit::convertToFAPPosition(const Position &chosen_pos, const Research
         ;
 }
 
-auto StoredUnit::convertToFAPDisabled(const Position &chosen_pos, const Research_Inventory &ri) {
+auto StoredUnit::convertToFAPDisabled(const Position &chosen_pos, const ResearchInventory &ri) {
 
     int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
@@ -1185,7 +1185,7 @@ auto StoredUnit::convertToFAPDisabled(const Position &chosen_pos, const Research
 }
 
 // Unit now can attack up and only attacks up. For the anti-air anti-ground test to have absolute equality.
-auto StoredUnit::convertToFAPAnitAir(const Position &chosen_pos, const Research_Inventory &ri) {
+auto StoredUnit::convertToFAPAnitAir(const Position &chosen_pos, const ResearchInventory &ri) {
 
     int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) +
         2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
@@ -1253,7 +1253,7 @@ auto StoredUnit::convertToFAPAnitAir(const Position &chosen_pos, const Research_
         ;
 }
 
-auto StoredUnit::convertToFAPflying(const Position & chosen_pos, const Research_Inventory &ri) {
+auto StoredUnit::convertToFAPflying(const Position & chosen_pos, const ResearchInventory &ri) {
     int armor_upgrades = ri.getUpLevel(type_.armorUpgrade()) + 2 * (type_ == UnitTypes::Zerg_Ultralisk * ri.getUpLevel(UpgradeTypes::Chitinous_Plating));
 
     int gun_upgrades = max(ri.getUpLevel(type_.groundWeapon().upgradeType()), ri.getUpLevel(type_.airWeapon().upgradeType()));
@@ -1320,28 +1320,28 @@ bool StoredUnit::unitDeadInFuture(const StoredUnit &unit, const int &number_of_f
     return unit.count_of_consecutive_predicted_deaths_ >= number_of_frames_voted_death;
 }
 
-void UnitInventory::addToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const ResearchInventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPPosition(pos, ri));
     }
 }
 
-void UnitInventory::addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addDisabledToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const ResearchInventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPDisabled(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPDisabled(pos, ri));
     }
 }
 
-void UnitInventory::addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addAntiAirToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const ResearchInventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPAnitAir(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPAnitAir(pos, ri));
     }
 }
 
-void UnitInventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap_object, const Position pos, const bool friendly, const ResearchInventory &ri) {
     for (auto &u : unit_map_) {
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPflying(pos, ri));
         else fap_object.addIfCombatUnitPlayer2(u.second.convertToFAPflying(pos, ri));
@@ -1349,7 +1349,7 @@ void UnitInventory::addFlyingToFAPatPos(FAP::FastAPproximation<StoredUnit*> &fap
 }
 
 //adds all nonretreating units to the sim. Retreating units are not simmed, eg, they are assumed dead.
-void UnitInventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri) {
+void UnitInventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const ResearchInventory &ri) {
     for (auto &u : unit_map_) {
         Position pos = positionMCFAP(u.second);
         if (friendly) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri));
@@ -1358,7 +1358,7 @@ void UnitInventory::addToMCFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, 
 }
 
 // we no longer build sim against their buildings.
-void UnitInventory::addToBuildFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const Research_Inventory &ri, const UpgradeType &upgrade) {
+void UnitInventory::addToBuildFAP(FAP::FastAPproximation<StoredUnit*> &fap_object, const bool friendly, const ResearchInventory &ri, const UpgradeType &upgrade) {
     for (auto &u : unit_map_) {
         Position pos = positionBuildFap(friendly);
         if (friendly && !u.second.type_.isBuilding()) fap_object.addIfCombatUnitPlayer1(u.second.convertToFAPPosition(pos, ri, upgrade));

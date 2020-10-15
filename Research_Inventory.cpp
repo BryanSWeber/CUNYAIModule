@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
-#include "Source\Research_Inventory.h"
+#include "Source\ResearchInventory.h"
 #include "Source\PlayerModelManager.h"
 #include "Source\UnitInventory.h"
 #include <set>
@@ -10,7 +10,7 @@
 using namespace std;
 using namespace BWAPI;
 
-void Research_Inventory::updateUpgradeTypes(const Player &player) {
+void ResearchInventory::updateUpgradeTypes(const Player &player) {
     for (int i = 0; i < 63; i++)//Max number of possible upgrade types
     {
         int observed_level = player->getUpgradeLevel((UpgradeType)i);
@@ -19,7 +19,7 @@ void Research_Inventory::updateUpgradeTypes(const Player &player) {
     }
 }
 
-void Research_Inventory::updateTechTypes(const Player &player) {
+void ResearchInventory::updateTechTypes(const Player &player) {
     //Revised list. Certain techs are completed at game start. (Ex, infestation, nuclear launch.) 
     //They are generally characterizable as abilities/spells that units have upon construction. This list excludes those researches.  
     //Including them causes the bot to believe it has upgrades finished at the start of the game, which can be misleading.
@@ -32,7 +32,7 @@ void Research_Inventory::updateTechTypes(const Player &player) {
     }
 }
 
-void Research_Inventory::updateResearchBuildings(const Player & player) {
+void ResearchInventory::updateResearchBuildings(const Player & player) {
 
     std::set<UnitType> unit_types;
     std::set<UnitType> temp_unit_types;
@@ -77,7 +77,7 @@ void Research_Inventory::updateResearchBuildings(const Player & player) {
 
 }
 
-void Research_Inventory::updateUpgradeStock() {
+void ResearchInventory::updateUpgradeStock() {
     int temp_upgrade_stock = 0;
     for (auto i : upgrades_)//Max number of possible upgrade types
     {
@@ -88,7 +88,7 @@ void Research_Inventory::updateUpgradeStock() {
     upgrade_stock_ = temp_upgrade_stock;
 }
 
-void Research_Inventory::updateTechStock() {
+void ResearchInventory::updateTechStock() {
     int temp_tech_stock = 0;
     for (auto i : tech_)//Max number of possible upgrade types
     {
@@ -98,7 +98,7 @@ void Research_Inventory::updateTechStock() {
     tech_stock_ = temp_tech_stock;
 }
 
-void Research_Inventory::updateBuildingStock(const Player & player) {
+void ResearchInventory::updateBuildingStock(const Player & player) {
     PlayerModel player_model_to_compare;
     if (player == Broodwar->self())
         player_model_to_compare = CUNYAIModule::friendly_player_model;
@@ -122,7 +122,7 @@ void Research_Inventory::updateBuildingStock(const Player & player) {
 }
 
 
-void Research_Inventory::updateResearch(const Player & player)
+void ResearchInventory::updateResearch(const Player & player)
 {
     updateUpgradeTypes(player);
     updateTechTypes(player);
@@ -141,7 +141,7 @@ void Research_Inventory::updateResearch(const Player & player)
     }
 }
 
-int Research_Inventory::countResearchBuildings(const UnitType & ut)
+int ResearchInventory::countResearchBuildings(const UnitType & ut)
 {
     auto matching_unseen_units = tech_buildings_.find(ut);
     if (matching_unseen_units != tech_buildings_.end())
@@ -149,26 +149,26 @@ int Research_Inventory::countResearchBuildings(const UnitType & ut)
     return 0;
 }
 
-bool Research_Inventory::isTechBuilding(const UnitType &u) {
+bool ResearchInventory::isTechBuilding(const UnitType &u) {
     return (u.isBuilding() || u.isAddon()) && (!u.upgradesWhat().empty() || !u.researchesWhat().empty()) && u.buildsWhat().empty() && !u.isResourceDepot();
 }
 
-map<UpgradeType, int> Research_Inventory::getUpgrades() const
+map<UpgradeType, int> ResearchInventory::getUpgrades() const
 {
     return upgrades_;
 }
 
-map<TechType, bool> Research_Inventory::getTech() const
+map<TechType, bool> ResearchInventory::getTech() const
 {
     return tech_;
 }
 
-map<UnitType, int> Research_Inventory::getTechBuildings() const
+map<UnitType, int> ResearchInventory::getTechBuildings() const
 {
     return tech_buildings_;
 }
 
-int Research_Inventory::getUpLevel(const UpgradeType & up) const
+int ResearchInventory::getUpLevel(const UpgradeType & up) const
 {
     if (upgrades_.find(up) != upgrades_.end())
         return upgrades_.at(up);
@@ -176,7 +176,7 @@ int Research_Inventory::getUpLevel(const UpgradeType & up) const
         return 0;
 }
 
-bool Research_Inventory::hasTech(const TechType & tech)
+bool ResearchInventory::hasTech(const TechType & tech)
 {
     if (tech_.find(tech) != tech_.end())
         return tech_[tech];

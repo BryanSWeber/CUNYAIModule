@@ -332,7 +332,7 @@ void Diagnostics::Print_Cached_Inventory(const int &screen_x, const int &screen_
 }
 
     // Announces to player the name and count of all units in the research inventory. Bland but practical.
-void Diagnostics::Print_Research_Inventory(const int &screen_x, const int &screen_y, const Research_Inventory &ri) {
+void Diagnostics::Print_ResearchInventory(const int &screen_x, const int &screen_y, const ResearchInventory &ri) {
     int another_row_of_printing_ups = 1;
 
     for (auto r : ri.getUpgrades())
@@ -448,7 +448,7 @@ void Diagnostics::onFrame()
         CUNYAIModule::assemblymanager.Print_Assembly_FAP_Cycle(500, 170);
         //CUNYAIModule::techmanager.Print_Upgrade_FAP_Cycle(500, 170);
         //Print_UnitInventory(500, 170, enemy_player_model.units_); // actual units on ground.
-        //Print_Research_Inventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
+        //Print_ResearchInventory(500, 170, CUNYAIModule::enemy_player_model.researches_); // tech stuff
     }
     else {
         Print_Build_Order_Remaining(500, 170, CUNYAIModule::buildorder);

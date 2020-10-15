@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "Source\CUNYAIModule.h"
-#include "Source\Research_Inventory.h"
+#include "Source\ResearchInventory.h"
 #include "Source\UnitInventory.h"
 #include "Source\CobbDouglas.h"
 #include "Source\Diagnostics.h"

@@ -53,3 +53,15 @@ public:
     void Reservation::confirmOngoingReservations(); //Makes sure there are no idle workers trying to build in impossible situations or reservations without workers.
 
 };
+
+class RemainderTracker {
+private:
+    int supplyRemaining_ = 0;
+    int gasRemaining_ = 0;
+    int minRemaining_ = 0;
+    int larvaeRemaining_ = 0;
+public:
+    RemainderTracker();
+    int getWaveSize(UnitType u);
+    void getReservationCapacity();
+};

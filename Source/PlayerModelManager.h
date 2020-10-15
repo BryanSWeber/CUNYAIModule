@@ -1,7 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include "CUNYAIModule.h"
-#include "Research_Inventory.h"
+#include "ResearchInventory.h"
 #include "UnitInventory.h"
 #include "CobbDouglas.h"
 
@@ -66,7 +66,7 @@ public:
     UnitInventory units_;
     UnitInventory casualties_;
     map< UnitType, double> unseen_units_ = {}; //These units may never have been built, but they COULD have been built and the opposing player would not know. This is a unique map and might be seperated at a later time.
-    Research_Inventory researches_;
+    ResearchInventory researches_;
     CobbDouglas spending_model_;
 
     // Inferred player states - eg, what needs to be done?

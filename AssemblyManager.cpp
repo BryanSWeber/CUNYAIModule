@@ -348,29 +348,6 @@ bool AssemblyManager::buildBuilding(const Unit &drone) {
     morphing_unit.updateStoredUnit(drone); // don't give him a phase.
 
 
-    //std::map<UnitType, int> local_map;
-    //int sustainable_tech = min( CUNYAIModule::current_MapInventory.hatches_ , CUNYAIModule::Count_Units(UnitTypes::Zerg_Extractor) );
-
-    //switch (sustainable_tech) {
-    //case 0:
-    //    local_map = { { UnitTypes::Zerg_Hatchery, 2 },{ UnitTypes::Zerg_Extractor, 1 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-    //case 1:
-    //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 1 }, { UnitTypes::Zerg_Extractor, 2 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-    //case 2:
-    //    local_map = { { UnitTypes::Zerg_Lair, 1 }, { UnitTypes::Zerg_Hatchery, 4 }, { UnitTypes::Zerg_Extractor, 3 }, { UnitTypes::Zerg_Spawning_Pool, 1 } };
-    //case 3:
-    //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 6 }, { UnitTypes::Zerg_Extractor, 4 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
-    //default:
-    //    local_map = { { UnitTypes::Zerg_Hive, 1 }, { UnitTypes::Zerg_Hatchery, 8 }, { UnitTypes::Zerg_Extractor, 6 }, { UnitTypes::Zerg_Spawning_Pool, 1 }, { UnitTypes::Zerg_Queens_Nest, 1 } };
-    //}
-    //local_map.merge(core_buildings_);
-    //local_map.swap(core_buildings_); // should put all elements into intended buildings with overwrite.
-
-    //switch (returnOptimalUnit(CUNYAIModule::friendly_player_model.combat_unit_cartridge_, CUNYAIModule::friendly_player_model.researches_)) {
-    //
-    //
-    //}
-
     if (buildings_started) {
         Diagnostics::DiagnosticText("Looks like we wanted to build something. Here's the general inputs I was thinking about:");
         Diagnostics::DiagnosticText("Distance Mining: %s", distance_mining ? "TRUE" : "FALSE");
@@ -466,7 +443,7 @@ bool AssemblyManager::isFullyVisibleBuildLocation(const UnitType &type, const Ti
 }
 
 
-bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
+bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
 
     //Am I sending this command to a larva or a hydra?
     UnitType u_type = morph_canidate->getType();
@@ -483,7 +460,7 @@ bool AssemblyManager::buildBestCombatUnit(const Unit &morph_canidate) {
 
     //Let us utilize the combat sim
     if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoal_army_ || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva)) {
-        is_building = AssemblyManager::buildOptimalCombatUnit(morph_canidate, assembly_cycle_);
+        is_building = AssemblyManager::morphOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 
     return is_building;
@@ -510,7 +487,7 @@ bool AssemblyManager::buildStaticDefence(const Unit &morph_canidate, const bool 
 }
 
 //contains a filter to discard unbuildable sorts of units, then finds the best unit via a series of BuildFAP sim, then builds it. Passes by copy so I can mutilate the values.
-bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
+bool AssemblyManager::morphOptimalCombatUnit(const Unit &morph_canidate, map<UnitType, int> combat_types) {
     bool building_optimal_unit = false;
     int best_sim_score = INT_MIN;
     UnitType build_type = UnitTypes::None;
@@ -532,7 +509,6 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
             combat_types.erase(pt_type++);
         }
     }
-
 
     //Heuristic classes for building. They are pretty simple combat results from a simulation.
     bool it_needs_to_shoot_up = false;
@@ -574,16 +550,16 @@ bool AssemblyManager::buildOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     while (potential_type2 != combat_types.end()) {
         if (CUNYAIModule::checkFeasibleRequirement(morph_canidate, potential_type2->first)) potential_type2++; // if you need it.
         else if (potential_type2->first == UnitTypes::Zerg_Scourge && too_many_scourge)  combat_types.erase(potential_type2++);
-        else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
-        else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
-        else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
+        //else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
+        //else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
+        //else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
         else if (checkSufficientSlack(potential_type2->first) && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
         else potential_type2++;
     }
 
     if (combat_types.empty()) return false;
     //else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
-    else build_type = returnOptimalUnit(combat_types, CUNYAIModule::friendly_player_model.researches_);
+    else build_type = refineOptimalUnit(combat_types, CUNYAIModule::friendly_player_model.researches_);
 
 
     //A catch for prerequisite build units.
@@ -779,7 +755,7 @@ bool AssemblyManager::buildAtNearestPlacement(const UnitType &building, map<int,
 }
 
 //Simply returns the unittype that is the "best" of a BuildFAP sim.
-UnitType AssemblyManager::returnOptimalUnit(const map<UnitType, int> combat_types, const Research_Inventory &ri) {
+UnitType AssemblyManager::refineOptimalUnit(const map<UnitType, int> combat_types, const ResearchInventory &ri) {
     int best_sim_score = INT_MIN; // Optimal unit must be better than the others.  Using UnitTypes::None leads to intermittent freezes when the options are collectively bad.
     UnitType build_type = UnitTypes::None;
 
@@ -851,18 +827,27 @@ void AssemblyManager::updateOptimalCombatUnit() {
         UnitInventory friendly_units_under_consideration; // new every time.
         auto buildFAP_copy = buildFAP;
 
-        for (int i = 0; i <= getWaveSize(potential_type.first); i++) {
+        remainder_.getReservationCapacity(); //First, let us consider building our units.
+        for (int i = 0; i <= remainder_.getWaveSize(potential_type.first); i++) {
             friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
             if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
         }
+        // Imagine any leftover will be spent on "other units" that we can afford. How do we determine them? Try each and every one in my list.
+        for (auto ut : assembly_cycle_) {
+            for (int i = 0; i <= remainder_.getWaveSize(potential_type.first); i++) {
+                friendly_units_under_consideration.addStoredUnit(su); //add unit we are interested in to the inventory:
+                if (potential_type.first.isTwoUnitsInOneEgg()) friendly_units_under_consideration.addStoredUnit(su); // do it twice if you're making 2.
+            }
+        }
+
         friendly_units_under_consideration.addToFAPatPos(buildFAP_copy, comparision_spot, true, CUNYAIModule::friendly_player_model.researches_);
         buildFAP_copy.simulate(FAP_SIM_DURATION); // a complete simulation cannot be ran... medics & firebats vs air causes a lockup.
         
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
 
         //Apply holistic weights.
-
-        evaluateWeightsFor(potential_type.first);
+        //int score = StoredUnit::getTraditionalWeight(potential_type.first) * (1 + potential_type.first.isTwoUnitsInOneEgg());
+        //evaluateWeightsFor(potential_type.first);
 
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
@@ -872,7 +857,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
 
 
 //Returns true if (players) units would do more damage if they only shot up. Player is self (if true) or to the enemy (if false). 
-bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const bool &test_for_self_weakness) {
+bool AssemblyManager::testActiveAirProblem(const ResearchInventory &ri, const bool &test_for_self_weakness) {
 
     int benifit_of_shooting_air_targets = 0;
     int benifit_of_shooting_ground_targets = 0;
@@ -884,9 +869,9 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
     FAP::FastAPproximation<StoredUnit*> buildFAP; // attempting to integrate FAP into building decisions.
 
     UnitInventory potentially_weak_team;
-    Research_Inventory potentially_weak_team_researches;
+    ResearchInventory potentially_weak_team_researches;
     UnitInventory team_creating_problems;
-    Research_Inventory team_creating_problems_researches;
+    ResearchInventory team_creating_problems_researches;
 
     if (test_for_self_weakness) {
         potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
@@ -944,7 +929,7 @@ bool AssemblyManager::testActiveAirProblem(const Research_Inventory &ri, const b
 }
 
 //Returns true if (players) units would do more damage if they flew. Player is self (if true) or to the enemy (if false). 
-bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri, const bool &test_for_self_weakness) {
+bool AssemblyManager::testPotentialAirVunerability(const ResearchInventory &ri, const bool &test_for_self_weakness) {
     Position comparision_spot = UnitInventory::positionBuildFap(true);// all compared units should begin in the exact same position.
                                                                        //add friendly units under consideration to FAP in loop, resetting each time.
 
@@ -952,9 +937,9 @@ bool AssemblyManager::testPotentialAirVunerability(const Research_Inventory &ri,
     int value_of_flyers = 0;
     int value_of_ground = 0;
     UnitInventory potentially_weak_team;
-    Research_Inventory potentially_weak_team_researches;
+    ResearchInventory potentially_weak_team_researches;
     UnitInventory team_creating_problems;
-    Research_Inventory team_creating_problems_researches;
+    ResearchInventory team_creating_problems_researches;
 
     if (test_for_self_weakness) {
         potentially_weak_team = CUNYAIModule::friendly_player_model.units_;
@@ -1059,7 +1044,7 @@ bool AssemblyManager::creepColonyInArea(const Position & pos) {
 }
 
 
-bool AssemblyManager::assignUnitAssembly()
+bool AssemblyManager::assignAssemblyRole()
 {
     UnitInventory overlord_larva;
     UnitInventory immediate_drone_larva;
@@ -1125,7 +1110,7 @@ bool AssemblyManager::assignUnitAssembly()
 
             bool drones_are_needed_here = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && hatch_wants_drones;
             bool drones_are_needed_elsewhere = (CUNYAIModule::econ_starved || wasting_larva_soon || ((checkSlackLarvae() || checkSlackMinerals()) && subgoal_econ_)) && !enough_drones_globally && !hatch_wants_drones && prep_for_transfer;
-            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkSlackSupply();
+            bool create_supply_buffer = (wasting_larva_soon || checkSlackLarvae()) && checkSlackMinerals() && !checkExcessSupply();
 
             if (minerals_on_left && Broodwar->getFrameCount() % 96 == 0) {
                 larva.first->stop(); // this will larva trick them to the left.
@@ -1149,7 +1134,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             bool bad_phase = (potential_lurker.second.phase_ == StoredUnit::Attacking || potential_lurker.second.phase_ == StoredUnit::Retreating || potential_lurker.second.phase_ == StoredUnit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
-            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
+            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) /*|| bad_phase*/) continue;
             if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStoredUnit(potential_lurker.second);
         }
     }
@@ -1158,7 +1143,7 @@ bool AssemblyManager::assignUnitAssembly()
         bool endgame_fliers_permissable = CUNYAIModule::countUnits(UnitTypes::Zerg_Greater_Spire) - CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Greater_Spire) > 0;
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
             bool bad_phase = (potential_endgame_flier.second.phase_ == StoredUnit::Attacking || potential_endgame_flier.second.phase_ == StoredUnit::Retreating || potential_endgame_flier.second.phase_ == StoredUnit::Surrounding) /*&& potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields())*/;
-            if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) || bad_phase) continue;
+            if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) /*|| bad_phase*/) continue;
             if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStoredUnit(potential_endgame_flier.second);
         }
     }
@@ -1192,7 +1177,7 @@ bool AssemblyManager::assignUnitAssembly()
 
     //We will fall through to this case if resources are slack and a drone is not created.
     for (auto c : combat_creators.unit_map_) {
-        if (buildBestCombatUnit(c.first)) {
+        if (buildCombatUnit(c.first)) {
             if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
@@ -1368,45 +1353,43 @@ bool AssemblyManager::checkSlackGas()
 
 bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
 {
-    return ut.whatBuilds().first == UnitTypes::Zerg_Larva ? checkSlackLarvae() : true && ut.mineralPrice() > 0 ? checkSlackMinerals() : true && ut.gasPrice() > 0 ? checkSlackGas() : true;
+    bool test_value;
+    if (ut.whatBuilds().first == UnitTypes::Zerg_Larva && !checkSlackLarvae())
+        return false;
+    if(ut.mineralPrice() > 0 && !checkSlackMinerals())
+        return false;
+    if(ut.gasPrice() > 0 && !checkSlackGas())
+        return false;
+    return true;
 }
 
-bool AssemblyManager::checkSlackSupply()
+bool AssemblyManager::checkExcessSupply()
 {
-    return  Broodwar->self()->supplyTotal() + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Overlord) * UnitTypes::Zerg_Overlord.supplyProvided() - Broodwar->self()->supplyUsed() > CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery) * 4 * 2; // use x2 since max supply is 400 in this metric (ling = 1 supply each).
+    return  Broodwar->self()->supplyTotal() + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Overlord) * UnitTypes::Zerg_Overlord.supplyProvided() - Broodwar->self()->supplyUsed() > CUNYAIModule::countSuccessorUnits(UnitTypes::Zerg_Hatchery) * getMaxSupply(); // Note max supply is 400 in this metric (ling = 1 supply each).
 }
 
 int AssemblyManager::getMaxGas()
 {
-    int max_gas_ = 0;
+    int max_gas = 0;
     for (auto u : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
-        if (canMakeCUNY(u.first) && u.first) max_gas_ = max(max_gas_, u.first.gasPrice());
+        if (canMakeCUNY(u.first) && u.first) max_gas = max(max_gas, u.first.gasPrice());
     }
     for (auto u : CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
-        if (canMakeCUNY(u.first) && u.first) max_gas_ = max(max_gas_, u.first.gasPrice());
+        if (canMakeCUNY(u.first) && u.first) max_gas = max(max_gas, u.first.gasPrice());
     }
-    return max_gas_;
+    return max_gas;
 }
 
-int AssemblyManager::getWaveSize(const UnitType & ut)
+int AssemblyManager::getMaxSupply()
 {
-    if(!canMakeCUNY(ut, true))
-        return 0;
-    else {
-        int gas = CUNYAIModule::my_reservation.getExcessGas();
-        int min = CUNYAIModule::my_reservation.getExcessMineral();
-        int supply = Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed();
-        int larva = CUNYAIModule::countUnits(UnitTypes::Zerg_Larva);
-        int nUnits = 0;
-        while (gas > 0 && min > 0  && larva > 0 && supply > 0) {
-            gas -= ut.gasPrice();
-            min -= ut.mineralPrice();
-            larva--;
-            supply -= ut.supplyRequired();
-            nUnits++;
-        }
-        return nUnits++;
+    int max_supply = 0;
+    for (auto u : CUNYAIModule::friendly_player_model.getCombatUnitCartridge()) {
+        if (canMakeCUNY(u.first) && u.first) max_supply = max(max_supply, u.first.supplyRequired());
     }
+    for (auto u : CUNYAIModule::friendly_player_model.getBuildingCartridge()) {
+        if (canMakeCUNY(u.first) && u.first) max_supply = max(max_supply, u.first.supplyRequired());
+    }
+    return max_supply;
 }
 
 bool CUNYAIModule::checkInCartridge(const UnitType &ut) {
@@ -1762,3 +1745,4 @@ BuildingGene::BuildingGene(string s) { // unspecified items are unrestricted.
     getInitialBuildOrder(s);
 
 }
+

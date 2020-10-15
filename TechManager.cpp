@@ -6,7 +6,7 @@
 # include "Source\Diagnostics.h"
 # include "Source\PlayerModelManager.h" // needed for cartidges.
 # include "Source\FAP\FAP\include\FAP.hpp" // could add to include path but this is more explicit.
-# include "Source/Reservation_Manager.h"
+# include "Source/ReservationManager.h"
 
 using namespace BWAPI;
 

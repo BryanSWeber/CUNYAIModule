@@ -119,11 +119,12 @@ bool CombatManager::combatScript(const Unit & u)
                             return mobility.Retreat_Logic(*e_closest_threat);// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                         else if (!unit_dead_next_check) // Do you need to join in? Don't join in if you will be dead the next time we check.
                             return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
-                        else
-                            return false; // if there's no where to go and you are about to die.... keep mining.
                     }
+                    // Too many workers are fighting, or you are not suitable for fighting, so continue your task. Otherwise, run.
+                    if (my_unit->phase_ != StoredUnit::Phase::Attacking && my_unit->phase_ != StoredUnit::Phase::Retreating)
+                        return false; 
                     else {
-                        return false; // Too many workers are fighting, so let us have you continue your task.
+                        return mobility.Retreat_Logic(*e_closest_threat);// exit this section and retreat if there is somewhere to go, someone will fight for you, and you are about to die.
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
