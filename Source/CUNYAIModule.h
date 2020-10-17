@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -259,7 +259,8 @@ public:
     //Searches if a particular unit is within a range of the position. Returns TRUE if the area is occupied. Checks retangles for performance reasons rather than radius.
     static bool checkUnitOccupiesArea(const Unit &unit, const Position &origin, const int & dist);
 
-
+    //Returns True if the unit is ranged, false if no ranged attack, (checks if range > 64).
+    static bool isRanged(const UnitType u_type);
     // Utility functions that need to be accessed by any number of classes, ie. static declarations.
         // Counts the tally of a particular int a specific unit set. Includes those in production.
     static int countUnits(const UnitType &type, const Unitset &unit_set);

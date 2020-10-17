@@ -846,8 +846,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
 
         //Apply holistic weights.
-        //int score = StoredUnit::getTraditionalWeight(potential_type.first) * (1 + potential_type.first.isTwoUnitsInOneEgg());
-        //evaluateWeightsFor(potential_type.first);
+        evaluateWeightsFor(potential_type.first);
 
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
@@ -1134,7 +1133,7 @@ bool AssemblyManager::assignAssemblyRole()
         bool lurkers_permissable = Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             bool bad_phase = (potential_lurker.second.phase_ == StoredUnit::Attacking || potential_lurker.second.phase_ == StoredUnit::Retreating || potential_lurker.second.phase_ == StoredUnit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
-            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) /*|| bad_phase*/) continue;
+            if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
             if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStoredUnit(potential_lurker.second);
         }
     }
@@ -1162,29 +1161,29 @@ bool AssemblyManager::assignAssemblyRole()
             }
         }
         for (auto d : immediate_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true ) ) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
         for (auto d : transfer_drone_larva.unit_map_) {
-            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true ) ) {
+            if (Check_N_Grow(UnitTypes::Zerg_Drone, d.first, true)) {
                 last_frame_of_larva_morph_command = Broodwar->getFrameCount();
                 return true;
             }
         }
     }
 
-    //We will fall through to this case if resources are slack and a drone is not created.
+    //We will fall through to this case if resources remain.
     for (auto c : combat_creators.unit_map_) {
         if (buildCombatUnit(c.first)) {
             if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
-            return true;
+            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+                return true;
         }
     }
-
     return false;
 }
 

@@ -70,9 +70,7 @@ bool CombatManager::combatScript(const Unit & u)
 
         if (e_closest_threat) { // if there are bad guys, fight. Builders do not fight.
             //Collect information determinine what kind of fight it is, and if we want to fight.
-            int distance_to_foe = static_cast<int>(e_closest_threat->pos_.getDistance(u->getPosition()));
-            int distance_to_threat = 0;
-            int distance_to_ground = 0;
+            int distance_to_threat = e_closest_threat->pos_.getDistance(u->getPosition());
 
             UnitInventory enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), search_radius);
             enemy_loc.updateUnitInventorySummary();
@@ -84,12 +82,6 @@ bool CombatManager::combatScript(const Unit & u)
             casualties_loc.updateUnitInventorySummary();
             Resource_Inventory resource_loc = CUNYAIModule::getResourceInventoryInRadius(CUNYAIModule::land_inventory, e_closest_threat->pos_, max(enemy_loc.max_range_ground_, 256));
             //resource_loc.updateResourceInventory();                                                   
-
-            StoredUnit* e_closest_ground = CUNYAIModule::getClosestGroundStored(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
-            distance_to_threat = static_cast<int>(e_closest_threat->pos_.getDistance(u->getPosition()));
-
-            if (e_closest_ground)
-                distance_to_ground = static_cast<int>(e_closest_ground->pos_.getDistance(u->getPosition()));
 
             //bool unit_death_in_moments = StoredUnit::unitDeadInFuture(CUNYAIModule::friendly_player_model.units_.unit_map_.at(u), 6);
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
@@ -159,15 +151,17 @@ bool CombatManager::combatScript(const Unit & u)
                         return mobility.surroundLogic(e_closest_threat->pos_);
                     }
                     else if (standard_fight_reasons) {
-                        bool is_near_choke = false;
-                        if(BWEB::Map::getClosestChokeTile(u->getPosition()).isValid())
-                            is_near_choke = (BWEB::Map::getClosestChokeTile(u->getPosition()) + Position(16,16)).getDistance(u->getPosition()) < 64;
+                        StoredUnit* e_closest_ground = CUNYAIModule::getClosestGroundStored(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
+                        StoredUnit* e_closest_ground_threat = CUNYAIModule::getClosestGroundWithPriority(enemy_loc, u->getPosition()); // maximum sight distance of 352, siege tanks in siege mode are about 382
+                        int distance_to_ground_threat = 0;
+                        if (e_closest_ground_threat) distance_to_ground_threat = e_closest_ground_threat->pos_.getDistance(u->getPosition());
+
                         bool target_is_escaping = (e_closest_ground && mobility.checkGoingDifferentDirections(e_closest_ground->bwapi_unit_) && !mobility.checkEnemyApproachingUs(e_closest_ground->bwapi_unit_) && getEnemySpeed(e_closest_ground->bwapi_unit_) > 0);
-                        bool surround_is_viable = (distance_to_ground > max(mobility.getDistanceMetric(), CUNYAIModule::getFunctionalRange(u)) / 2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker); // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
-                        bool kiting_away = e_closest_threat->bwapi_unit_ && 64 > CUNYAIModule::getExactRange(e_closest_threat->bwapi_unit_) && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat < 64;  // only kite if he's in range,
-                        bool kiting_in = !u->isFlying() && is_near_choke && CUNYAIModule::getExactRange(u) > 64 && distance_to_threat > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
-                        if ((kiting_in || surround_is_viable) && e_closest_ground)
-                            return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground->bwapi_unit_), StoredUnit::Phase::Surrounding);
+                        bool surround_is_viable = (distance_to_ground_threat > max(mobility.getDistanceMetric(), CUNYAIModule::getFunctionalRange(u)) / 2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker); // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
+                        bool kiting_away = e_closest_ground_threat && e_closest_ground_threat->bwapi_unit_ && !e_closest_ground_threat->type_.isBuilding() && !CUNYAIModule::isRanged(e_closest_ground_threat->type_) && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat < 64;  // only kite if he's in range,
+                        bool kiting_in = !u->isFlying() && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat > 98 && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+                        if ((kiting_in || surround_is_viable) && e_closest_ground_threat)
+                            return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground_threat->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground_threat->bwapi_unit_), StoredUnit::Phase::Surrounding);
                         if (kiting_away)
                             break; // if kiting, just exit and we will retreat.
                         else
@@ -196,7 +190,7 @@ bool CombatManager::combatScript(const Unit & u)
             enemy_loc.updateUnitInventorySummary();
             friend_loc.updateUnitInventorySummary();
 
-            bool kiting_in = !u->isFlying() && CUNYAIModule::getExactRange(u) > 64 && static_cast<int>(e_closest_target->pos_.getDistance(u->getPosition())) > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
+            bool kiting_in = !u->isFlying() && CUNYAIModule::isRanged(u->getType()) && static_cast<int>(e_closest_target->pos_.getDistance(u->getPosition())) > UnitTypes::Terran_Siege_Tank_Siege_Mode.groundWeapon().minRange() && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
             if (kiting_in)
                 return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_target->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_target->bwapi_unit_), StoredUnit::Phase::Surrounding);
             else

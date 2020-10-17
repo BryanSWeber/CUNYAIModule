@@ -25,6 +25,7 @@ namespace BWEB::Map
         int overlapGrid[256][256] ={};
         UnitType usedGrid[256][256] ={};
         bool walkGrid[256][256] ={};
+        bool logInfo = true;
 
         void findLines()
         {
@@ -34,13 +35,14 @@ namespace BWEB::Map
                     int minX= INT_MAX, maxX = INT_MIN, minY = INT_MAX, maxY = INT_MIN;
                     double sumX = 0, sumY = 0;
                     double sumXY = 0, sumX2 = 0, sumY2 = 0;
+
                     for (auto &geo : choke->Geometry()) {
                         if (geo.x < minX) minX = geo.x;
                         if (geo.y < minY) minY = geo.y;
                         if (geo.x > maxX) maxX = geo.x;
                         if (geo.y > maxY) maxY = geo.y;
 
-                        BWAPI::Position p = BWAPI::Position(geo) + BWAPI::Position(4, 4);
+                        BWAPI::Position p = BWAPI::Position(geo);
                         sumX += p.x;
                         sumY += p.y;
                         sumXY += p.x * p.y;
@@ -50,18 +52,17 @@ namespace BWEB::Map
                     double xMean = sumX / double(choke->Geometry().size());
                     double yMean = sumY / double(choke->Geometry().size());
                     double denominator, slope, yInt;
-                    if ((maxY - minY) > (maxX - minX))
-                    {
+                    if ((maxY - minY) > (maxX - minX)) {
                         denominator = (sumXY - sumY * xMean);
 
                         // Handle vertical line error
-                        if (std::fabs(denominator) < 1.0) {
+                        if (std::fabs(denominator) < 16000.0) {
                             slope = 0;
-                            yInt = xMean;
+                            yInt = yMean;
                         }
                         else {
                             slope = (sumY2 - sumY * yMean) / denominator;
-                            yInt = yMean - slope * yMean;
+                            yInt = yMean - slope * xMean;
                         }
                     }
                     else {
@@ -70,7 +71,7 @@ namespace BWEB::Map
                         // Handle vertical line error
                         if (std::fabs(denominator) < 1.0) {
                             slope = DBL_MAX;
-                            yInt = 0;
+                            yInt = yMean;
                         }
                         else {
                             slope = (sumXY - sumX * yMean) / denominator;
@@ -78,13 +79,12 @@ namespace BWEB::Map
                         }
                     }
 
-
                     int x1 = Position(choke->Pos(choke->end1)).x;
-                    int y1 = int(ceil(x1 * slope)) + int(yInt);
+                    int y1 = int(round(double(x1) * slope)) + int(round(yInt));
                     p1 = Position(x1, y1);
 
                     int x2 = Position(choke->Pos(choke->end2)).x;
-                    int y2 = int(ceil(x2 * slope)) + int(yInt);
+                    int y2 = int(round(double(x2) * slope)) + int(round(yInt));
                     p2 = Position(x2, y2);
 
                     // In case we failed
@@ -117,14 +117,12 @@ namespace BWEB::Map
                         || base.Minerals().size() < 5)
                         continue;
 
-                    Position center = base.Center();
-
-                    const auto dist = getGroundDistance(center, mainPosition);
+                    const auto dist = getGroundDistance(base.Center(), mainPosition);
                     if (dist < distBest) {
                         distBest = dist;
                         naturalArea = base.GetArea();
                         naturalTile = base.Location();
-                        naturalPosition = static_cast<Position>(naturalTile) + Position(64, 48);
+                        naturalPosition = Position(naturalTile) + Position(64, 48);
                     }
                 }
             }
@@ -264,6 +262,15 @@ namespace BWEB::Map
         }
     }
 
+    void easyWrite(string stuff)
+    {
+        if (logInfo) {
+            ofstream writeFile;
+            writeFile.open("bwapi-data/write/BWEB_Log.txt", std::ios::app);
+            writeFile << stuff << endl;
+        }
+    }
+
     void draw()
     {
         WalkPosition mouse(Broodwar->getMousePosition() + Broodwar->getScreenPosition());
@@ -281,9 +288,10 @@ namespace BWEB::Map
         lastKeyState[BWAPI::Key::K_1] = k1;
         lastKeyState[BWAPI::Key::K_2] = k2;
         lastKeyState[BWAPI::Key::K_3] = k3;
+        lastKeyState[BWAPI::Key::K_4] = k4;
 
         // Detect a keypress for drawing information
-        if (drawReserveOverlap || drawUsed || drawWalk) {
+        if (drawReserveOverlap || drawUsed || drawWalk || drawArea) {
 
             for (auto x = 0; x < Broodwar->mapWidth(); x++) {
                 for (auto y = 0; y < Broodwar->mapHeight(); y++) {
@@ -292,14 +300,14 @@ namespace BWEB::Map
                     // Draw boxes around TilePositions that are reserved or overlapping important map features
                     if (drawReserveOverlap) {
                         if (overlapGrid[x][y] >= 1)
-                            Broodwar->drawBoxMap(Position(t), Position(t) + Position(33, 33), Colors::Grey, false);
+                            Broodwar->drawBoxMap(Position(t) + Position(4, 4), Position(t) + Position(29, 29), Colors::Grey, false);
                     }
 
                     // Draw boxes around TilePositions that are used
                     if (drawUsed) {
                         const auto type = usedGrid[x][y];
                         if (type != UnitTypes::None)
-                            Broodwar->drawBoxMap(Position(t) + Position(4, 4), Position(t) + Position(29, 29), Colors::Grey, true);
+                            Broodwar->drawBoxMap(Position(t) + Position(8, 8), Position(t) + Position(25, 25), Colors::Black, true);
                     }
 
                     // Draw boxes around fully walkable TilePositions
@@ -339,7 +347,7 @@ namespace BWEB::Map
                     }
                 }
 
-                if (cnt >= 16)
+                if (cnt >= 14)
                     walkGrid[x][y] = true;
             }
         }
@@ -456,13 +464,6 @@ namespace BWEB::Map
 
     void addUsed(const TilePosition t, UnitType type)
     {
-        int larvaOffset = (type == UnitTypes::Zerg_Hatchery);
-        if (larvaOffset) {
-            for (auto x = t.x; x < t.x + type.tileWidth(); x++)
-                if (TilePosition(x, t.y + 3).isValid())
-                    usedGrid[x][t.y+3] = UnitTypes::Zerg_Larva;
-        }
-
         for (auto x = t.x; x < t.x + type.tileWidth(); x++) {
             for (auto y = t.y; y < t.y + type.tileHeight(); y++)
                 if (TilePosition(x, y).isValid())
@@ -500,9 +501,7 @@ namespace BWEB::Map
 
     bool isPlaceable(UnitType type, const TilePosition location)
     {
-        const auto creepCheck = type.requiresCreep() ? true : false;
-
-        if (creepCheck) {
+        if (type.requiresCreep()) {
             for (auto x = location.x; x < location.x + type.tileWidth(); x++) {
                 const TilePosition creepTile(x, location.y + type.tileHeight());
                 if (!Broodwar->isBuildable(creepTile))
@@ -646,22 +645,6 @@ namespace BWEB::Map
         return {};
     }
 
-    BWAPI::Position getClosestChokeTile(const BWAPI::Position p)
-    {
-        double distance = INT_MAX;
-        BWAPI::Position closest_pos = BWAPI::Positions::Invalid;
-        auto area = BWEM::Map::Instance().GetArea(TilePosition(p));
-        if(area)
-            for (auto &choke : area->ChokePoints()) {
-                auto test_pos = getClosestChokeTile(choke, p) + BWAPI::Position(16,16);
-                if (p.getDistance(test_pos) < distance) {
-                    distance = p.getDistance(test_pos);
-                    closest_pos = test_pos;
-                }
-            }
-        return closest_pos;
-    }
-
     pair<Position, Position> lineOfBestFit(const BWEM::ChokePoint * choke)
     {
         if (choke)
@@ -716,7 +699,7 @@ namespace BWEB::Map
         auto tileBest = TilePositions::Invalid;
 
         // Search through each wall to find the closest valid TilePosition
-        for (auto &wall : Walls::getWalls()) {
+        for (auto &[_,wall] : Walls::getWalls()) {
             for (auto &tile : wall.getDefenses()) {
                 const auto dist = tile.getDistance(searchCenter);
                 if (dist < distBest && isPlaceable(type, tile)) {

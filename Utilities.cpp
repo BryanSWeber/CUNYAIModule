@@ -1931,6 +1931,10 @@ int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
     return base_range;
 }
 
+bool CUNYAIModule::isRanged(const UnitType u_type) {
+    return CUNYAIModule::getExactRange(u_type) > 64;
+}
+
 int CUNYAIModule::getFunctionalRange(const UnitType u_type, const Player owner) {
     return max(getExactRange(u_type, owner), convertTileDistanceToPixelDistance(1) );
 }
