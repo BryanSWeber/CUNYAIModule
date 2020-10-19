@@ -26,7 +26,7 @@ private:
                                                         { UnitTypes::Zerg_Mutalisk, 75 },
                                                         { UnitTypes::Zerg_Scourge, 12 },
                                                         { UnitTypes::Zerg_Hydralisk, 36 },
-                                                        { UnitTypes::Zerg_Zergling , 48 },
+                                                        { UnitTypes::Zerg_Zergling , 36 },
                                                         { UnitTypes::Zerg_Lurker, 12 } ,
                                                         { UnitTypes::Zerg_Guardian, 12 } ,
                                                         { UnitTypes::Zerg_Devourer, 12 },
