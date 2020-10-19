@@ -132,7 +132,7 @@ public:
     static bool checkInCartridge(const UnitType & ut);
     static bool checkInCartridge(const UpgradeType & ut);
     static bool checkInCartridge(const TechType & ut);
-    static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
+    static bool checkOpenToBuild(const UnitType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.  Checks if new unit exceeds my listed maximums.
     static bool checkOpenToUpgrade(const UpgradeType & ut, const bool & extra_criteria); // In Cartridge and either next in BO or BO is clear.
     static bool checkWillingAndAble(const Unit & unit, const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0); // checks if UT is willing and able to be built next by unit. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.
     static bool checkWillingAndAble(const UnitType & ut, const bool & extra_criteria, const int & travel_distance = 0);  // checks if UT is willing and able to be built in general by player. Used in many assembly functions. Checks affordability based on travel distance.  Requires it's part of BO or extra critera is met.

@@ -1113,142 +1113,122 @@ vector<int> MapInventory::getRadialDistances(const UnitInventory & ui, const boo
     else return return_vector = { 0 };
 }
 
-vector< vector<int> > MapInventory::completeField(vector< vector<int> > pf, const int &reduction) {
+void MapInventory::completeField(double pf[256][256], int reduction) {
+    double lateral_tiles = 0.0;
+    double diagonal_tiles = 0.0;
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-    int max_value = 0;
-    vector<TilePosition> needs_filling;
-    vector<int> flattened_potential_fields;
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            flattened_potential_fields.push_back(pf[tile_x][tile_y]);
-            needs_filling.push_back(TilePosition({ tile_x, tile_y }));// if it is walkable, consider it a canidate for a choke.
-            max_value = max(pf[tile_x][tile_y], max_value);
+    while (reduction >= 0) {
+        for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
+            for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
+                lateral_tiles = std::max({
+                    pf[tile_x + 1][tile_y],
+                    pf[tile_x - 1][tile_y],
+                    pf[tile_x][tile_y + 1],
+                    pf[tile_x][tile_y - 1]
+                    });
+                diagonal_tiles = std::max({
+                    pf[tile_x + 1][tile_y + 1],
+                    pf[tile_x + 1][tile_y - 1],
+                    pf[tile_x - 1][tile_y + 1],
+                    pf[tile_x - 1][tile_y - 1]
+                    });
+                pf[tile_x][tile_y] = max({ lateral_tiles - 0.9999, diagonal_tiles - sqrt(2.0), pf[tile_x][tile_y], 0.0 }); //0.999 is because unit vision seems to start a hair beyond its starting tile.  Corrects a vision imbalance on the outermost fvision radius.
+            }
         }
+        reduction--;
     }
-
-    bool changed_a_value_last_cycle = true;
-
-    for (int iter = 0; iter < std::min({ tile_map_x, tile_map_y, max_value / reduction }); iter++) { // Do less iterations if we can get away with it.
-        changed_a_value_last_cycle = false;
-        for (auto position_to_investigate : needs_filling) { // not last element !
-                                                                                                                                              // Psudocode: Mark every point touching value as value-reduction. Then, mark all minitiles touching those points as n+1.
-                                                                                                                                              // Repeat untill finished.
-            int local_grid = 0; // further faster since I no longer care about actually generating the veins.
-            int tile_x = position_to_investigate.x;
-            int tile_y = position_to_investigate.y;
-            int home_value = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-            bool safety_check = tile_x > 0 && tile_y > 0 && tile_x + 1 < tile_map_x && tile_y + 1 < tile_map_x;
-
-            if (safety_check) local_grid = std::max({
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x - 1) * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[tile_x       * tile_map_x + (tile_y + 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y - 1)],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + tile_y],
-                flattened_potential_fields[(tile_x + 1) * tile_map_x + (tile_y + 1)]
-                }) - reduction;
-
-            changed_a_value_last_cycle = local_grid > home_value || changed_a_value_last_cycle;
-            flattened_potential_fields[tile_x * tile_map_x + tile_y] = std::max(home_value, local_grid);  //this leaves only local maximum densest units. It's very discontinuous and not a great approximation of even mildy spread forces.
-
-        }
-
-        if (changed_a_value_last_cycle == false) break; // if we did nothing last cycle, we don't need to punish ourselves.
-    }
-
-    //Unflatten
-    for (int tile_x = 0; tile_x < tile_map_x; ++tile_x) {
-        for (int tile_y = 0; tile_y < tile_map_y; ++tile_y) { // Check all possible walkable locations. Must cross over the WHOLE matrix. No sloppy bits.
-            pf[tile_x][tile_y] = flattened_potential_fields[tile_x * tile_map_x + tile_y];
-        }
-    }
-
-    return pf;
 }
 
 
 // IN PROGRESS  
 void MapInventory::createAirThreatField(PlayerModel &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+    for (auto i = 0; i < 256; i++)
+        std::fill(pf_air_threat_[i], pf_air_threat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
+    int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int air_range_ = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_;
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(air_range_, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
+        int air_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_;
+        pf_air_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = air_range;
+        max_range = max(max_range, air_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    pf_air_threat_ = completeField(pf_clear, 1);
-
+    completeField(pf_air_threat_, max_range);
 }
 
 void MapInventory::createDetectField(PlayerModel &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+    for (auto i = 0; i < 256; i++)
+        std::fill(pf_detect_threat_[i], pf_detect_threat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
-    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
+    int max_range = 0;
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())); // buildings all detect in a radius of 7, all others are sight range.
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
+        pf_detect_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = detection_range;
+        max_range = max(max_range, detection_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    pf_detect_threat_ = completeField(pf_clear, 1);
-
+    completeField(pf_detect_threat_, max_range);
 }
 
 void MapInventory::createGroundThreatField(PlayerModel &enemy_player) {
 
-    int tile_map_x = Broodwar->mapWidth();
-    int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-
-    vector<vector<int>> pf_clear(tile_map_x, std::vector<int>(tile_map_y, 0));
+    for(auto i = 0; i < 256; i++)
+        std::fill(pf_ground_threat_[i], pf_ground_threat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
-    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they detect, not how HARD they detect.
+    int max_range = 0;
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_down_;
-        pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(ground_range, pf_clear[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]);
+        pf_ground_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = ground_range;
+        max_range = max(max_range, ground_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    pf_ground_threat_ = completeField(pf_clear, 1);
-
+    completeField(pf_ground_threat_, max_range);
 }
 
-void MapInventory::DiagnosticField(vector< vector<int> > &pf) {
+void MapInventory::createVisionField(PlayerModel &enemy_player) {
+
+    for (auto i = 0; i < 256; i++)
+        std::fill(pf_visible_[i], pf_visible_[i] + 256, 0);
+
+    //set all the nonzero elements to their relevant values.
+    int max_range = 0;
+    for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
+        int sight_range = CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange());
+        pf_visible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = sight_range;
+        max_range = max(max_range, sight_range);
+    }
+    // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
+    completeField(pf_visible_, max_range);
+}
+
+void MapInventory::DiagnosticField(double pf[256][256]) {
     if (DIAGNOSTIC_MODE) {
-        for (vector<int>::size_type i = 0; i < pf.size(); ++i) {
-            for (vector<int>::size_type j = 0; j < pf[i].size(); ++j) {
-                if (pf[i][j] > 0) {
-                    if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
-                        Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d", pf[i][j]);
+        for (int i = 0; i < 256; ++i) {
+            for (int j = 0; j < 256; ++j) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                    if (pf[i][j] > 0) {
+                        Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%4.2f", pf[i][j]);
                     }
                 }
             }
-        } // Pretty to look at!
+        } 
     }
 }
 
 void MapInventory::DiagnosticTile() {
     if (DIAGNOSTIC_MODE) {
-        int tile_map_x = Broodwar->mapWidth();
-        int tile_map_y = Broodwar->mapHeight(); //tile positions are 32x32, walkable checks 8x8 minitiles.
-        for (auto i = 0; i < tile_map_x; ++i) {
-            for (auto j = 0; j < tile_map_y; ++j) {
+            //tile positions are 32x32, walkable checks 8x8 minitiles.
+        for (auto i = 0; i < Broodwar->mapWidth(); ++i) {
+            for (auto j = 0; j < Broodwar->mapHeight(); ++j) {
                 if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
                     Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "%d, %d", TilePosition{ static_cast<int>(i), static_cast<int>(j) }.x, TilePosition{ static_cast<int>(i), static_cast<int>(j) }.y);
                 }
             }
         }
-        // Pretty to look at!
     }
 }
 

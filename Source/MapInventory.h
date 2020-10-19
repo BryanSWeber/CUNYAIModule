@@ -60,9 +60,10 @@ public:
     int vision_tile_count_;
 
     //Fields:
-    vector< vector<int> > pf_air_threat_; // which air areas are under threat?
-    vector< vector<int> > pf_detect_threat_; // which areas are detected?
-    vector< vector<int> > pf_ground_threat_; // which ground areas are under threat?
+    double pf_air_threat_[256][256] = { 0 }; // which air areas are under threat?
+    double pf_detect_threat_[256][256] = { 0 }; // which areas are detected?
+    double pf_ground_threat_[256][256] = { 0 }; // which ground areas are under threat?
+    double pf_visible_[256][256] = { 0 }; // which ground areas are visible?
 
     // Updates the count of our vision total, in tiles
     void updateVision_Count();
@@ -91,33 +92,43 @@ public:
     // Simply gets the distance between two points using cpp, will not fail if a spot is inside a building.
     int getDistanceBetween(const Position A, const Position B) const;
 
-    int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const; //Distance from enemy base in pixels, called a lot.
-    int MapInventory::getRadialDistanceOutFromHome(const Position A) const; //Distance from home in pixels, called a lot.
-    bool MapInventory::checkViableGroundPath(const Position A, const Position B) const; // Is there a viable ground path? CPP, will not fail if thrown at a building.
-    bool MapInventory::isOnIsland(const Position A) const; //Is this place pathable from home? Will not return error if your base IS the island.
+    //Distance from enemy base in pixels, called a lot.
+    int MapInventory::getRadialDistanceOutFromEnemy(const Position A) const; 
+    //Distance from home in pixels, called a lot.
+    int MapInventory::getRadialDistanceOutFromHome(const Position A) const; 
+    // Is there a viable ground path? CPP, will not fail if thrown at a building.
+    bool MapInventory::checkViableGroundPath(const Position A, const Position B) const;
+    //Is this place pathable from home? Will not return error if your base IS the island.
+    bool MapInventory::isOnIsland(const Position A) const; 
 
-    vector<int> getRadialDistances(const UnitInventory &ui, const bool combat_units);  // gets the radial distance of all units to the enemy base in pixels.
+    // gets the radial distance of all units to the enemy base in pixels.
+    vector<int> getRadialDistances(const UnitInventory &ui, const bool combat_units);  
 
-    Position MapInventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;     // Returns the Position of the base with the most surviving units. Friendly is true (by default) to checking -yourself- for the strongest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
+    // Returns the Position of the base with the most surviving units. Friendly is true (by default) to checking -yourself- for the strongest base. Fodder (T/F) is for the inclusion of fodder in that calculation.
+    Position MapInventory::getBaseWithMostSurvivors(const bool &friendly = true, const bool &fodder = true) const;
+    //Which base position is most nearby this spot?
+    Position getBasePositionNearest(Position &p); 
 
-    Position getBasePositionNearest(Position &p); //Which base position is most nearby this spot?
+    // write one of the map objects have created, centered around the passed position.
+    void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); 
+    // read one of the map objects we have created, centered around the passed position.
+    void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center);
 
-    void MapInventory::writeMap(const vector< vector<int> > &mapin, const WalkPosition &center); // write one of the map objects have created, centered around the passed position.
-    void MapInventory::readMap(vector< vector<int> > &mapin, const WalkPosition &center); // read one of the map objects we have created, centered around the passed position.
-
-    bool checkExploredAllStartPositions(); //returns true if you have explored all start positions, false otherwise.
+    //returns true if you have explored all start positions, false otherwise.
+    bool checkExploredAllStartPositions(); 
 
     // Calls most of the map update functions when needed at a reduced and somewhat reasonable rate.
     void mainCurrentMap();
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
-    vector<vector<int>> completeField(vector<vector<int>> pf, const int & reduction);
+    void completeField(double pf[256][256], int reduction);
     void createAirThreatField(PlayerModel & enemy_player);
     void createDetectField(PlayerModel & enemy_player);
     void createGroundThreatField(PlayerModel & enemy_player);
+    void createVisionField(PlayerModel & enemy_player);
 
 
-    void DiagnosticField(vector<vector<int>>& pf); //Diagnostic to show "potential fields"
+    void DiagnosticField(double pf[256][256]); //Diagnostic to show "potential fields"
     void DiagnosticTile();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.

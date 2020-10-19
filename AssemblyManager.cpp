@@ -459,7 +459,7 @@ bool AssemblyManager::buildCombatUnit(const Unit &morph_canidate) {
     }
 
     //Let us utilize the combat sim
-    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoal_army_ || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva)) {
+    if (!CUNYAIModule::buildorder.isEmptyBuildOrder() || subgoal_army_ || (checkSufficientSlack(UnitTypes::Zerg_Zergling) && is_larva) || (checkSufficientSlack(UnitTypes::Zerg_Lurker) && is_hydra) || (checkSufficientSlack(UnitTypes::Zerg_Guardian) && is_muta)) {
         is_building = AssemblyManager::morphOptimalCombatUnit(morph_canidate, assembly_cycle_);
     }
 
@@ -497,7 +497,7 @@ bool AssemblyManager::morphOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     while (pt_type != combat_types.end()) {
         bool can_make_or_already_is = morph_canidate->getType() == pt_type->first || CUNYAIModule::checkWillingAndAble(morph_canidate, pt_type->first, true);
         bool is_larva = morph_canidate->getType() == UnitTypes::Zerg_Larva;
-        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWillingAndAble(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
+        bool can_morph_into_prerequisite_hydra = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Hydralisk, true) && CUNYAIModule::checkWilling(UnitTypes::Zerg_Lurker, true) && pt_type->first == UnitTypes::Zerg_Lurker;
         bool can_morph_into_prerequisite_muta = CUNYAIModule::checkWillingAndAble(morph_canidate, UnitTypes::Zerg_Mutalisk, true) && ((CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Guardian) || (CUNYAIModule::checkWilling(UnitTypes::Zerg_Guardian, true) && pt_type->first == UnitTypes::Zerg_Devourer));
 
 
@@ -553,9 +553,10 @@ bool AssemblyManager::morphOptimalCombatUnit(const Unit &morph_canidate, map<Uni
         //else if (potential_type2->first.groundWeapon() == WeaponTypes::None && it_needs_to_shoot_down) combat_types.erase(potential_type2++);
         //else if (potential_type2->first.airWeapon() == WeaponTypes::None && it_needs_to_shoot_up) combat_types.erase(potential_type2++);
         //else if (!potential_type2->first.isFlyer() && it_needs_to_fly) combat_types.erase(potential_type2++);
-        else if (checkSufficientSlack(potential_type2->first) && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
+        //else if (checkSufficientSlack(potential_type2->first) && canMakeCUNY(potential_type2->first, true)) potential_type2++; // if you're dumping resources, sure. But don't dump into scourge.
         else potential_type2++;
     }
+
 
     if (combat_types.empty()) return false;
     //else if (combat_types.size() == 1) build_type = combat_types.begin()->first;
@@ -569,8 +570,8 @@ bool AssemblyManager::morphOptimalCombatUnit(const Unit &morph_canidate, map<Uni
     else if (morph_into_prerequisite_muta) building_optimal_unit = Check_N_Grow(UnitTypes::Zerg_Mutalisk, morph_canidate, true);
 
     // Build it.
-    if (!building_optimal_unit && morph_canidate->getType() != build_type) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
-    if (building_optimal_unit || morph_canidate->getType() == build_type) {
+    if (!building_optimal_unit) building_optimal_unit = Check_N_Grow(build_type, morph_canidate, true); // catchall ground units, in case you have a BO that needs to be done.
+    if (building_optimal_unit) {
         Diagnostics::DiagnosticText("We are choosing to build a: %s", build_type.c_str());
         Diagnostics::DiagnosticText("Out of the subset:");
         for (auto s : combat_types) {
@@ -585,48 +586,53 @@ void AssemblyManager::weightUnitSim(const bool & condition, const UnitType & uni
 {
     if (condition)
         if (assembly_cycle_.find(unit) != assembly_cycle_.end())
-            assembly_cycle_[unit] += weight * static_cast<double>(StoredUnit(unit).stock_value_ * (CUNYAIModule::countUnits(unit) + unit.isTwoUnitsInOneEgg() + 1));
+            assembly_cycle_[unit] += weight;
 }
 
-void AssemblyManager::evaluateWeightsFor(const UnitType & unit)
+void AssemblyManager::applyWeightsFor(const UnitType & unit)
 {
     switch (unit) {
     case UnitTypes::Zerg_Zergling:
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 3, unit, -0.50);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 6, unit, -0.50);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, -0.25);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) > 1, unit, -0.50);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 3, unit, -50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Zealot, CUNYAIModule::enemy_player_model.units_) > 6, unit, -50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Vulture, CUNYAIModule::enemy_player_model.units_) > 0, unit, -25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) > 1, unit, -50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -25);
         break;
     case UnitTypes::Zerg_Hydralisk:
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, unit, 0.25);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 4, unit, 25);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) + 
-                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.25);
-        weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 0.50);
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -25);
+        weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 50);
         break;
     case UnitTypes::Zerg_Lurker:
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Marine, CUNYAIModule::enemy_player_model.units_) +
                       CUNYAIModule::countUnits(UnitTypes::Terran_Medic, CUNYAIModule::enemy_player_model.units_) * 4 +
-                      CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) * 2 > 5, unit, 0.75);
-        weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 0.50);
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Firebat, CUNYAIModule::enemy_player_model.units_) * 2 > 5, unit, 75);
+        weightUnitSim(CUNYAIModule::enemy_player_model.getPlayer()->getRace() == Races::Protoss, unit, 50);
         break;
     case UnitTypes::Zerg_Mutalisk:
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) +
-                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -0.50);
+                      CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Tank_Mode, CUNYAIModule::enemy_player_model.units_) > 4, unit, -50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Shuttle, CUNYAIModule::enemy_player_model.units_) +
-                      CUNYAIModule::countUnits(UnitTypes::Protoss_Reaver, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
+                      CUNYAIModule::countUnits(UnitTypes::Protoss_Reaver, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
         break;
     case UnitTypes::Zerg_Devourer:
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.75);
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 5, unit, 0.75);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) > 0, unit, 75);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 5, unit, 75);
         break;
     case UnitTypes::Zerg_Guardian:
-        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
+        weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Siege_Tank_Siege_Mode, CUNYAIModule::enemy_player_model.units_) > 0, unit, 50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Terran_Goliath, CUNYAIModule::enemy_player_model.units_) > 0, unit, 0.50);
         weightUnitSim(CUNYAIModule::countUnits(UnitTypes::Protoss_Photon_Cannon, CUNYAIModule::enemy_player_model.units_) > 5, unit, 0.75);
         break;
     }
     //Consider all units you have legal ability to build, but weight them as such):
+}
+
+bool AssemblyManager::checkNewUnitWithinMaximum(const UnitType &unit)
+{
+    return max_units_.find(unit) != max_units_.end() && max_units_[unit] >= CUNYAIModule::countUnits(unit) + CUNYAIModule::countUnitsInProgress(unit);
 }
 
 map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building, const TilePosition &tp)
@@ -846,7 +852,7 @@ void AssemblyManager::updateOptimalCombatUnit() {
         int score = CUNYAIModule::getFAPScore(buildFAP_copy, true) - CUNYAIModule::getFAPScore(buildFAP_copy, false); //Which shows best gain over opponents?
 
         //Apply holistic weights.
-        evaluateWeightsFor(potential_type.first);
+        applyWeightsFor(potential_type.first);
 
         if (assembly_cycle_.find(potential_type.first) == assembly_cycle_.end()) assembly_cycle_[potential_type.first] = score;
         else assembly_cycle_[potential_type.first] = static_cast<int>((23.0 * assembly_cycle_[potential_type.first] + score) / 24.0); //moving average over 24 simulations, 1 seconds.
@@ -1048,7 +1054,9 @@ bool AssemblyManager::assignAssemblyRole()
     UnitInventory overlord_larva;
     UnitInventory immediate_drone_larva;
     UnitInventory transfer_drone_larva;
-    UnitInventory combat_creators;
+    UnitInventory combat_creators_larva;
+    UnitInventory combat_creators_hydra;
+    UnitInventory combat_creators_muta;
 
     UnitInventory alarming_enemy_ground = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseGround());
     UnitInventory alarming_enemy_air = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, CUNYAIModule::currentMapInventory.getEnemyBaseAir());
@@ -1056,8 +1064,8 @@ bool AssemblyManager::assignAssemblyRole()
     alarming_enemy_ground.updateUnitInventorySummary();
     alarming_enemy_air.updateUnitInventorySummary();
 
-    subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army > CUNYAIModule::friendly_player_model.spending_model_.alpha_econ;
-    subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.alpha_army < CUNYAIModule::friendly_player_model.spending_model_.alpha_econ; // they're complimentrary but I'd like them positively defined, negations can confuse.
+    subgoal_army_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative > CUNYAIModule::friendly_player_model.spending_model_.econ_derivative;
+    subgoal_econ_ = CUNYAIModule::friendly_player_model.spending_model_.army_derivative < CUNYAIModule::friendly_player_model.spending_model_.econ_derivative; // they're complimentrary but I'd like them positively defined, negations can confuse.
 
     bool they_are_moving_out_ground = alarming_enemy_ground.building_count_ == 0;
     bool they_are_moving_out_air = alarming_enemy_air.building_count_ == 0;
@@ -1125,7 +1133,7 @@ bool AssemblyManager::assignAssemblyRole()
             if (CUNYAIModule::supply_starved || create_supply_buffer || CUNYAIModule::checkFeasibleRequirement(larva.first, UnitTypes::Zerg_Overlord)) {
                 overlord_larva.addStoredUnit(larva.second);
             }
-            combat_creators.addStoredUnit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
+            combat_creators_larva.addStoredUnit(larva.second);// needs to be clear so we can consider building combat units whenever they are required.
         }
     }
 
@@ -1134,7 +1142,7 @@ bool AssemblyManager::assignAssemblyRole()
         for (auto potential_lurker : hydra_bank_.unit_map_) {
             bool bad_phase = (potential_lurker.second.phase_ == StoredUnit::Attacking || potential_lurker.second.phase_ == StoredUnit::Retreating || potential_lurker.second.phase_ == StoredUnit::Surrounding) /*&& potential_lurker.second.current_hp_ > 0.5 * (potential_lurker.second.type_.maxHitPoints() + potential_lurker.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_lurker.first) || bad_phase) continue;
-            if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators.addStoredUnit(potential_lurker.second);
+            if (potential_lurker.second.time_since_last_dmg_ > FAP_SIM_DURATION) combat_creators_hydra.addStoredUnit(potential_lurker.second);
         }
     }
 
@@ -1143,7 +1151,7 @@ bool AssemblyManager::assignAssemblyRole()
         for (auto potential_endgame_flier : muta_bank_.unit_map_) {
             bool bad_phase = (potential_endgame_flier.second.phase_ == StoredUnit::Attacking || potential_endgame_flier.second.phase_ == StoredUnit::Retreating || potential_endgame_flier.second.phase_ == StoredUnit::Surrounding) /*&& potential_endgame_flier.second.current_hp_ > 0.5 * (potential_endgame_flier.second.type_.maxHitPoints() + potential_endgame_flier.second.type_.maxShields())*/;
             if (!CUNYAIModule::checkUnitTouchable(potential_endgame_flier.first) /*|| bad_phase*/) continue;
-            if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators.addStoredUnit(potential_endgame_flier.second);
+            if (potential_endgame_flier.second.time_since_last_dmg_ > FAP_SIM_DURATION && endgame_fliers_permissable) combat_creators_muta.addStoredUnit(potential_endgame_flier.second);
         }
     }
 
@@ -1175,15 +1183,32 @@ bool AssemblyManager::assignAssemblyRole()
     }
 
     //We will fall through to this case if resources remain.
-    for (auto c : combat_creators.unit_map_) {
+    for (auto c : combat_creators_muta.unit_map_) {
+        if (buildCombatUnit(c.first)) {
+            if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
+            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+                return true;
+        }
+    }
+
+    //We will fall through to this case if resources remain.
+    for (auto c : combat_creators_hydra.unit_map_) {
         if (buildCombatUnit(c.first)) {
             if (last_frame_of_hydra_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Hydralisk) last_frame_of_hydra_morph_command = Broodwar->getFrameCount();
-            if (last_frame_of_muta_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Mutalisk) last_frame_of_muta_morph_command = Broodwar->getFrameCount();
+            if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
+                return true;
+        }
+    }
+
+    //We will fall through to this case if resources remain.
+    for (auto c : combat_creators_larva.unit_map_) {
+        if (buildCombatUnit(c.first)) {
             if (last_frame_of_larva_morph_command < Broodwar->getFrameCount() - 12 && c.second.type_ == UnitTypes::Zerg_Larva) last_frame_of_larva_morph_command = Broodwar->getFrameCount();
             if (last_frame_of_larva_morph_command == Broodwar->getFrameCount() || last_frame_of_muta_morph_command == Broodwar->getFrameCount() || last_frame_of_hydra_morph_command == Broodwar->getFrameCount())
                 return true;
         }
     }
+
     return false;
 }
 
@@ -1342,12 +1367,12 @@ bool AssemblyManager::checkSlackLarvae()
 
 bool AssemblyManager::checkSlackMinerals()
 {
-    return  CUNYAIModule::my_reservation.getExcessMineral() > 50 && Broodwar->self()->minerals() > 300;
+    return  CUNYAIModule::my_reservation.getExcessMineral() > 50;
 }
 
 bool AssemblyManager::checkSlackGas()
 {
-    return  CUNYAIModule::my_reservation.getExcessGas() > 50 && Broodwar->self()->gas() > 300;
+    return  CUNYAIModule::my_reservation.getExcessGas() > 50;
 }
 
 bool AssemblyManager::checkSufficientSlack(const UnitType & ut)
@@ -1409,7 +1434,7 @@ bool CUNYAIModule::checkInCartridge(const TechType &ut) {
 }
 
 bool CUNYAIModule::checkOpenToBuild(const UnitType &ut, const bool &extra_criteria) {
-    return checkInCartridge(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
+    return checkInCartridge(ut) && AssemblyManager::checkNewUnitWithinMaximum(ut) && (buildorder.checkBuildingNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
 }
 
 bool CUNYAIModule::checkOpenToUpgrade(const UpgradeType &ut, const bool &extra_criteria) {
@@ -1426,11 +1451,6 @@ bool CUNYAIModule::checkWillingAndAble(const UnitType &ut, const bool &extra_cri
 
 bool CUNYAIModule::checkWillingAndAble(const UpgradeType &ut, const bool &extra_criteria) {
     return Broodwar->canUpgrade(ut) && my_reservation.checkAffordablePurchase(ut) && checkInCartridge(ut) && (buildorder.checkUpgradeNextInBO(ut) || (extra_criteria && buildorder.isEmptyBuildOrder()));
-}
-
-bool CUNYAIModule::checkWillingAndAble(const Unit &unit, const UpgradeType &up, const bool &extra_criteria) {
-    if (unit && up && up != UpgradeTypes::None) return unit->canUpgrade(up) && my_reservation.checkAffordablePurchase(up) && checkInCartridge(up) && (buildorder.checkUpgradeNextInBO(up) || (extra_criteria && buildorder.isEmptyBuildOrder()));
-    return false;
 }
 
 bool CUNYAIModule::checkWilling(const UnitType &ut, const bool &extra_criteria) {

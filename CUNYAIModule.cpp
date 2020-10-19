@@ -388,7 +388,8 @@ void CUNYAIModule::onFrame()
     currentMapInventory.createAirThreatField(enemy_player_model);
     currentMapInventory.createGroundThreatField(enemy_player_model);
     currentMapInventory.createDetectField(enemy_player_model);
-    currentMapInventory.DiagnosticField(currentMapInventory.pf_detect_threat_);
+    currentMapInventory.createVisionField(enemy_player_model);
+    currentMapInventory.DiagnosticField(currentMapInventory.pf_ground_threat_);
 
     basemanager.updateBases();
 

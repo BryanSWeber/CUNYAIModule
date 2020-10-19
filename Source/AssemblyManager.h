@@ -22,6 +22,30 @@ class AssemblyManager {
 private:
     static std::map<UnitType, int> assembly_cycle_; // persistent valuation of buildable combat units. Should build most valuable one every opportunity.
     static std::map<UnitType, int> core_buildings_; // persistent set of intended buildings.
+    inline static std::map<UnitType, int> max_units_ = { { UnitTypes::Zerg_Ultralisk, 4 },
+                                                        { UnitTypes::Zerg_Mutalisk, 75 },
+                                                        { UnitTypes::Zerg_Scourge, 12 },
+                                                        { UnitTypes::Zerg_Hydralisk, 36 },
+                                                        { UnitTypes::Zerg_Zergling , 48 },
+                                                        { UnitTypes::Zerg_Lurker, 12 } ,
+                                                        { UnitTypes::Zerg_Guardian, 12 } ,
+                                                        { UnitTypes::Zerg_Devourer, 12 },
+                                                        { UnitTypes::Zerg_Drone , 85 },
+                                                        { UnitTypes::Zerg_Hatchery , 25 },
+                                                        { UnitTypes::Zerg_Overlord , 30 },
+                                                        { UnitTypes::Zerg_Extractor, 15 },
+                                                        { UnitTypes::Zerg_Spawning_Pool, 1 } ,
+                                                        { UnitTypes::Zerg_Evolution_Chamber, 2 },
+                                                        { UnitTypes::Zerg_Hydralisk_Den, 1 },
+                                                        { UnitTypes::Zerg_Spire, 2 },
+                                                        { UnitTypes::Zerg_Queens_Nest , 1 },
+                                                        { UnitTypes::Zerg_Ultralisk_Cavern, 1 },
+                                                        { UnitTypes::Zerg_Greater_Spire, 1 },
+                                                        { UnitTypes::Zerg_Lair, 2 },
+                                                        { UnitTypes::Zerg_Hive, 2 },
+                                                        { UnitTypes::Zerg_Creep_Colony, 30 },
+                                                        { UnitTypes::Zerg_Sunken_Colony, 30 },
+                                                        { UnitTypes::Zerg_Spore_Colony, 30 } }; // persistent hard maximums for all combat units.
 
     static UnitInventory larva_bank_; // collection of larva interested in morphing units.
     static UnitInventory hydra_bank_; // colleciton of hydras that may morph into lurkers.
@@ -43,6 +67,8 @@ private:
 public:
     static bool Check_N_Build(const UnitType & building, const Unit & unit, const bool & extra_critera, const TilePosition &tp = TilePositions::Origin);  // Checks if a building can be built, and passes additional boolean criteria.  If all critera are passed, then it puts the worker into the pre-build phase with intent to build the building. Trys to build near tileposition TP or the unit if blank.
     static bool Check_N_Grow(const UnitType & unittype, const Unit & larva, const bool & extra_critera);  // Check and grow a unit using larva.
+    static bool checkNewUnitWithinMaximum(const UnitType &unit); // Returns TRUE if a new copy of this unit would not exeed our predetermined maximum. Returns FALSE if a new unit would exeed our maximums.
+
 
     //Unit assembly functions.
     bool assignAssemblyRole(); // Assigns units to appropriate bank and builds them when needed.
@@ -52,8 +78,8 @@ public:
     void updateOptimalCombatUnit(); // evaluates the optimal unit types from assembly_cycle_. Should be a LARGE comparison set, run this regularly but no more than once a frame to use moving averages instead of calculating each time a unit is made (high variance).
     static int returnUnitRank(const UnitType &ut);  //Simply returns the rank of a unit type in the buildfap sim. Higher rank = better!
     static bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
-    static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit by weight% (w can be negative to penalize), when conditions are met.
-    static void evaluateWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
+    static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit in the sim by +weight (w can be negative to penalize), when conditions are met.
+    static void applyWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.

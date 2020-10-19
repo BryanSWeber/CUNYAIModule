@@ -160,8 +160,8 @@ bool CombatManager::combatScript(const Unit & u)
                         bool surround_is_viable = (distance_to_ground_threat > max(mobility.getDistanceMetric(), CUNYAIModule::getFunctionalRange(u)) / 2 && target_is_escaping && !u->isFlying() && !u->getType() != UnitTypes::Zerg_Lurker); // if they are far apart, they're moving different directions, and the enemy is actually moving away from us, surround him!
                         bool kiting_away = e_closest_ground_threat && e_closest_ground_threat->bwapi_unit_ && !e_closest_ground_threat->type_.isBuilding() && !CUNYAIModule::isRanged(e_closest_ground_threat->type_) && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat < 64;  // only kite if he's in range,
                         bool kiting_in = !u->isFlying() && CUNYAIModule::isRanged(u->getType()) && distance_to_ground_threat > 98 && my_unit->phase_ == StoredUnit::Phase::Attacking;  // only kite if he's in range, and if you JUST finished an attack.
-                        if ((kiting_in || surround_is_viable) && e_closest_ground_threat)
-                            return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground_threat->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground_threat->bwapi_unit_), StoredUnit::Phase::Surrounding);
+                        //if ((kiting_in || surround_is_viable) && e_closest_ground_threat)
+                        //    return mobility.moveTo(u->getPosition(), u->getPosition() + mobility.getVectorToEnemyDestination(e_closest_ground_threat->bwapi_unit_) + mobility.getVectorToBeyondEnemy(e_closest_ground_threat->bwapi_unit_), StoredUnit::Phase::Surrounding);
                         if (kiting_away)
                             break; // if kiting, just exit and we will retreat.
                         else
