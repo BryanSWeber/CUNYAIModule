@@ -1139,70 +1139,139 @@ void MapInventory::completeField(double pf[256][256], int reduction) {
     }
 }
 
+void MapInventory::overfillField(double pfIn[256][256], double pfOut[256][256], int reduction)
+{
+    double lateral_tiles = 0.0;
+    double diagonal_tiles = 0.0;
+
+    for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
+        for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
+            lateral_tiles = std::max({
+                pfIn[tile_x + 1][tile_y],
+                pfIn[tile_x - 1][tile_y],
+                pfIn[tile_x][tile_y + 1],
+                pfIn[tile_x][tile_y - 1]
+                });
+            diagonal_tiles = std::max({
+                pfIn[tile_x + 1][tile_y + 1],
+                pfIn[tile_x + 1][tile_y - 1],
+                pfIn[tile_x - 1][tile_y + 1],
+                pfIn[tile_x - 1][tile_y - 1]
+                });
+                pfOut[tile_x][tile_y] = pfIn[tile_x][tile_y] == 0 && diagonal_tiles > 0 && lateral_tiles > 0 ? 3 : 0; //shift all the empty fields to 0, nonempty fields to 256.
+        }
+    }
+
+    while (reduction >= 0) {
+        for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
+            for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
+                lateral_tiles = std::max({
+                    pfOut[tile_x + 1][tile_y],
+                    pfOut[tile_x - 1][tile_y],
+                    pfOut[tile_x][tile_y + 1],
+                    pfOut[tile_x][tile_y - 1]
+                    });
+                diagonal_tiles = std::max({
+                    pfOut[tile_x + 1][tile_y + 1],
+                    pfOut[tile_x + 1][tile_y - 1],
+                    pfOut[tile_x - 1][tile_y + 1],
+                    pfOut[tile_x - 1][tile_y - 1]
+                    });
+                if(pfIn[tile_x][tile_y] == 0)
+                    pfOut[tile_x][tile_y] = max({ lateral_tiles - 0.9999, diagonal_tiles - sqrt(2.0), pfOut[tile_x][tile_y], 0.0 }); //0.999 is because unit vision seems to start a hair beyond its starting tile.  Corrects a vision imbalance on the outermost fvision radius.
+            }
+        }
+        reduction--;
+    }
+}
+
 
 // IN PROGRESS  
 void MapInventory::createAirThreatField(PlayerModel &enemy_player) {
 
     for (auto i = 0; i < 256; i++)
-        std::fill(pf_air_threat_[i], pf_air_threat_[i] + 256, 0);
+        std::fill(pfAirThreat_[i], pfAirThreat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int air_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_;
-        pf_air_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = air_range;
+        pfAirThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = air_range;
         max_range = max(max_range, air_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    completeField(pf_air_threat_, max_range);
+    completeField(pfAirThreat_, max_range);
 }
 
 void MapInventory::createDetectField(PlayerModel &enemy_player) {
 
     for (auto i = 0; i < 256; i++)
-        std::fill(pf_detect_threat_[i], pf_detect_threat_[i] + 256, 0);
+        std::fill(pfDetectThreat_[i], pfDetectThreat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())); // buildings all detect in a radius of 7, all others are sight range.
-        pf_detect_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = detection_range;
+        pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = detection_range;
         max_range = max(max_range, detection_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    completeField(pf_detect_threat_, max_range);
+    completeField(pfDetectThreat_, max_range);
 }
 
 void MapInventory::createGroundThreatField(PlayerModel &enemy_player) {
 
     for(auto i = 0; i < 256; i++)
-        std::fill(pf_ground_threat_[i], pf_ground_threat_[i] + 256, 0);
+        std::fill(pfGroundThreat_[i], pfGroundThreat_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_down_;
-        pf_ground_threat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = ground_range;
+        pfGroundThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = ground_range;
         max_range = max(max_range, ground_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    completeField(pf_ground_threat_, max_range);
+    completeField(pfGroundThreat_, max_range);
 }
 
 void MapInventory::createVisionField(PlayerModel &enemy_player) {
 
     for (auto i = 0; i < 256; i++)
-        std::fill(pf_visible_[i], pf_visible_[i] + 256, 0);
+        std::fill(pfVisible_[i], pfVisible_[i] + 256, 0);
 
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
         int sight_range = CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange());
-        pf_visible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = sight_range;
+        pfVisible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = sight_range;
         max_range = max(max_range, sight_range);
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
-    completeField(pf_visible_, max_range);
+    completeField(pfVisible_, max_range);
+}
+
+void MapInventory::createOccupationField(PlayerModel &enemy_player) {
+
+    for (auto i = 0; i < 256; i++)
+        std::fill(pfOccupation_[i], pfOccupation_[i] + 256, 0);
+
+    for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
+        for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
+            if(Broodwar->isVisible(tile_x, tile_y))
+                pfOccupation_[tile_x][tile_y] = Broodwar->getUnitsOnTile(tile_x, tile_y).size() > 0;
+        }
+    }
+
+}
+
+void MapInventory::createBlindField(PlayerModel & enemy_player)
+{
+    for (auto i = 0; i < 256; i++)
+        std::fill(pfBlindness_[i], pfBlindness_[i] + 256, 0);
+
+    overfillField(pfVisible_, pfBlindness_, 3);
+
 }
 
 void MapInventory::DiagnosticField(double pf[256][256]) {
@@ -1219,6 +1288,20 @@ void MapInventory::DiagnosticField(double pf[256][256]) {
     }
 }
 
+void MapInventory::DiagnosticField(bool pf[256][256]) {
+    if (DIAGNOSTIC_MODE) {
+        for (int i = 0; i < 256; ++i) {
+            for (int j = 0; j < 256; ++j) {
+                if (CUNYAIModule::isOnScreen(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), CUNYAIModule::currentMapInventory.screen_position_)) {
+                    if (pf[i][j]) {
+                        Broodwar->drawTextMap(Position(TilePosition{ static_cast<int>(i), static_cast<int>(j) }), "X");
+                    }
+                }
+            }
+        }
+    }
+}
+
 void MapInventory::DiagnosticTile() {
     if (DIAGNOSTIC_MODE) {
             //tile positions are 32x32, walkable checks 8x8 minitiles.
@@ -1230,6 +1313,31 @@ void MapInventory::DiagnosticTile() {
             }
         }
     }
+}
+
+void MapInventory::DiagnosticAirThreats()
+{
+    DiagnosticField(pfAirThreat_);
+}
+
+void MapInventory::DiagnosticGroundThreats()
+{
+    DiagnosticField(pfGroundThreat_);
+}
+
+void MapInventory::DiagnosticVisibleTiles()
+{
+    DiagnosticField(pfVisible_);
+}
+
+void MapInventory::DiagnosticOccupiedTiles()
+{
+    DiagnosticField(pfOccupation_);
+}
+
+void MapInventory::DiagnosticBlindTiles()
+{
+    DiagnosticField(pfBlindness_);
 }
 
 Position MapInventory::getEarlyGameScoutPosition() {
@@ -1518,17 +1626,17 @@ void MapInventory::assignLateScoutMovement(const Position closest_enemy) {
 
 bool MapInventory::isTileDetected(const Position & p)
 {
-    return  CUNYAIModule::currentMapInventory.pf_detect_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+    return  CUNYAIModule::currentMapInventory.pfDetectThreat_[TilePosition(p).x][TilePosition(p).y] > 0;
 }
 
 bool MapInventory::isTileAirThreatened(const Position & p)
 {
-    return CUNYAIModule::currentMapInventory.pf_air_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+    return CUNYAIModule::currentMapInventory.pfAirThreat_[TilePosition(p).x][TilePosition(p).y] > 0;
 }
 
 bool MapInventory::isTileGroundThreatened(const Position & p)
 {
-    return CUNYAIModule::currentMapInventory.pf_ground_threat_[TilePosition(p).x][TilePosition(p).y] > 0;
+    return CUNYAIModule::currentMapInventory.pfGroundThreat_[TilePosition(p).x][TilePosition(p).y] > 0;
 }
 
 Position MapInventory::getSafeBase()

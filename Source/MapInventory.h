@@ -36,6 +36,18 @@ private:
     int map_x; //Map width in tiles.
     int map_y; //Map height in tiles.
 
+    //Fields:
+    double pfAirThreat_[256][256] = { 0 }; // which air areas are under threat?
+    double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
+    double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
+    double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
+    double pfBlindness_[256][256] = { 0 }; // The region about 3 tiles out of sight of the opponent's vision.
+    bool pfOccupation_[256][256] = { 0 }; // which ground areas are occupied? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses BOOL.
+    void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
+    void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
+    void DiagnosticField(double pf[256][256]); //Diagnostic to show "potential fields"
+    void DiagnosticField(bool pf[256][256]); //Diagnostic to show "potential fields"
+
 public:
     MapInventory();
     MapInventory(const UnitInventory &ui, const Resource_Inventory &ri);
@@ -58,12 +70,6 @@ public:
     vector< vector<int> > map_veins_; //updates for building locations 1 if blocked, counts up around blocked squares if otherwise.
 
     int vision_tile_count_;
-
-    //Fields:
-    double pf_air_threat_[256][256] = { 0 }; // which air areas are under threat?
-    double pf_detect_threat_[256][256] = { 0 }; // which areas are detected?
-    double pf_ground_threat_[256][256] = { 0 }; // which ground areas are under threat?
-    double pf_visible_[256][256] = { 0 }; // which ground areas are visible?
 
     // Updates the count of our vision total, in tiles
     void updateVision_Count();
@@ -121,15 +127,19 @@ public:
     void mainCurrentMap();
 
     //Potential field stuff. These potential fields are coomputationally quite lazy and only consider local maximums, they do not sum together properly.
-    void completeField(double pf[256][256], int reduction);
     void createAirThreatField(PlayerModel & enemy_player);
     void createDetectField(PlayerModel & enemy_player);
     void createGroundThreatField(PlayerModel & enemy_player);
     void createVisionField(PlayerModel & enemy_player);
+    void createOccupationField(PlayerModel & enemy_player);
+    void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
 
-
-    void DiagnosticField(double pf[256][256]); //Diagnostic to show "potential fields"
     void DiagnosticTile();
+    void DiagnosticAirThreats();
+    void DiagnosticGroundThreats();
+    void DiagnosticVisibleTiles();
+    void DiagnosticOccupiedTiles();
+    void DiagnosticBlindTiles();
 
     //void updateScoutLocations(const int &nScouts ); //Updates all visible scout locations. Chooses them if they DNE.
     //Position MapInventory::createStartScoutLocation(); //Creates 1 scout position at time 0 for overlords. Selects from start positions only. Returns origin if fails.
