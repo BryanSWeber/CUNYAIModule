@@ -37,8 +37,8 @@ public:
     // Causes a unit to move away from its neighbors.
     bool isolate();
 
-    // causes a unit to move to the left or the right of a position.
-    Position encircle(const Position & p);
+    // causes a unit to move into a sight-obscured location outside of enemy vision.
+    Position encircle();
     // causes a unit to avoid low-altitude areas.
     Position avoid_edges();
     // causes a unit to move towards a position.
@@ -72,8 +72,9 @@ public:
     bool checkEnemyApproachingUs(Unit e);
     bool checkEnemyApproachingUs(StoredUnit & e);
 
+    //Seriously, this is easy to flip around sometimes. 
+    Position getVectorToDestination(Position &p);
     Position getVectorToEnemyDestination(Unit e);
-
     Position getVectorToBeyondEnemy(Unit e);
 
 private:

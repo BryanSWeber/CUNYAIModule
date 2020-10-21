@@ -27,10 +27,9 @@ bool Mobility::local_pathing(const Position &e_pos, const StoredUnit::Phase phas
 
     UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_pos, 64);
     friendly_blocks.updateUnitInventorySummary();
-    bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
-
-    if (has_a_blocking_item && !unit_->isFlying())
-        encircle(e_pos);
+    //bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(e_pos)).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(e_pos)).Doodad() || friendly_blocks.building_count_ > 0);
+    //if (has_a_blocking_item && !unit_->isFlying())
+    //    encircle();
 
     approach(e_pos);
     if (unit_->move(pos_ + attract_vector_ + encircle_vector_)) {
@@ -95,7 +94,7 @@ bool Mobility::BWEM_Movement(const bool &forward_movement) {
 
 bool Mobility::surroundLogic(const Position & pos)
 {
-    encircle(pos);
+    encircle();
     //avoid_edges();//Prototyping
     //isolate();
     //Position get_proper_surround_distance = getVectorTowardsMap(CUNYAIModule::current_MapInventory.map_out_from_enemy_ground_, 250 / 4);
@@ -262,7 +261,7 @@ bool Mobility::Tactical_Logic(const StoredUnit &e_unit, UnitInventory &ei, const
 bool Mobility::Retreat_Logic(const StoredUnit &e) {
 
     // lurkers should move when we need them to scout.
-    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_) ) {
+    if (u_type_ == UnitTypes::Zerg_Lurker && unit_->isBurrowed() && CUNYAIModule::currentMapInventory.isTileDetected(pos_) && CUNYAIModule::currentMapInventory.isTileGroundThreatened(pos_)) {
         unit_->unburrow();
         return CUNYAIModule::updateUnitPhase(unit_, StoredUnit::Phase::Retreating);
     }
@@ -278,7 +277,7 @@ bool Mobility::Retreat_Logic(const StoredUnit &e) {
     }
     else if (CUNYAIModule::combat_manager.isScout(unit_)) {
         approach(CUNYAIModule::currentMapInventory.getSafeBase());
-        //encircle(threat->pos_);
+        //encircle();
         moveTo(pos_, pos_ + attract_vector_ /*+ encircle_vector_*/, StoredUnit::Phase::Retreating);
     }
     else {
@@ -333,16 +332,30 @@ bool Mobility::Scatter_Logic(const Position pos)
         return false;
 }
 
-Position Mobility::encircle(const Position & p) {
-    Position vector_to = p - pos_;
-    double theta = atan2(vector_to.y, vector_to.x);
-    Position encircle_left = Position(static_cast<int>(-sin(theta) * distance_metric_), static_cast<int>(cos(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
-    Position encircle_right = Position(static_cast<int>(sin(theta) * distance_metric_), static_cast<int>(-cos(theta) * distance_metric_)); // either {x,y}->{-y,x} or {x,y}->{y,-x} to rotate
+Position Mobility::encircle() {
     std::random_device rd;  //Will be used to obtain a seed for the random number engine
     std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<double> dis(0, 1);    // default values for output.
 
-    return encircle_vector_ = (dis(gen) > 0.5) ? encircle_left : encircle_right; // only one direction for now.
+    TilePosition target_tile = TilePositions::Origin;
+    bool blind_start = CUNYAIModule::currentMapInventory.getBlindField(unit_->getTilePosition());
+
+    //Don't move if you're in their blind spot and you're the only one on your tile.
+    if (CUNYAIModule::currentMapInventory.getOccupationField(unit_->getTilePosition()) <= 1 && blind_start)
+        return Positions::Origin;
+
+    //otherwise, move to a spot that is blind, or
+    for (auto x = -7; x < 7; x++) {
+        for (auto y = -7; y < 7; y++) {
+            TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
+            if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && dis(gen) > 0.5){ // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
+                CUNYAIModule::currentMapInventory.setSurroundField(target_tile, true);
+                break;
+            }
+        }
+    }
+
+    return encircle_vector_ = target_tile != TilePositions::Origin ? getVectorToDestination(Position(target_tile) + Position(16,16)) : Positions::Origin; // shift to surround, move to the center of the tile and not to the corners or something strange.
 }
 
 Position Mobility::avoid_edges() {
@@ -518,7 +531,7 @@ Position Mobility::getVectorAwayField(const vector<vector<int>> &field) const {
 
                       // we need to spiral out from the center, stopping if we hit an object.
     TilePosition map_dim = TilePosition({ Broodwar->mapWidth(), Broodwar->mapHeight() });
-    for (int i = 0; i <= 64; i++) {
+    for (int i = 0; i <= 9; i++) {
         spiral.goNext();
         int centralize_x = TilePosition(pos_).x + spiral.x;
         int centralize_y = TilePosition(pos_).y + spiral.y;
@@ -659,6 +672,11 @@ Position getEnemyVector(Unit e) {
 
 Position getEnemyUnitaryVector(Unit e) {
 
+}
+
+Position Mobility::getVectorToDestination(Position & p)
+{
+    return p - pos_;
 }
 
 Position Mobility::getVectorToEnemyDestination(Unit e) {

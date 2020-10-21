@@ -94,6 +94,9 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Hatchery) {
 
+        //int base_walk = 0;
+        //auto cpp = BWEM::Map::Instance().GetPath(BWEB::Map::getMainPosition(), BWEB::Map::getNaturalPosition(), &base_walk);
+
         //walls are catagorically better than macro hatches.
         map<int, TilePosition> wall_spots = addClosestWall(building, tileOfClosestBase);
         if (!wall_spots.empty() && CUNYAIModule::basemanager.getBaseCount() >= 2) // don't build at the wall if you have 1 base.

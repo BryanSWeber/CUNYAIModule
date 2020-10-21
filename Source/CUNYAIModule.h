@@ -176,7 +176,8 @@ public:
     static bool Can_Fight(StoredUnit unit, StoredUnit enemy);
     static bool Can_Fight(StoredUnit unit, Unit enemy);
     static bool canContributeToFight(const UnitType & ut, const UnitInventory enemy);
-    static bool isInDanger(const UnitType & ut, const UnitInventory enemy);
+    static bool isInPotentialDanger(const UnitType & ut, const UnitInventory enemy); //
+    static bool isInDanger(const Unit & u);
 
     // Returns top speed of unit with upgrades.
     static double getProperSpeed(const Unit u);

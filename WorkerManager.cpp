@@ -433,7 +433,7 @@ bool WorkerManager::workerWork(const Unit &u) {
         if (CUNYAIModule::spamGuard(u) /*&& u->isIdle()*/) { //If you don't stop them from fighting, you will easily over-pull workers, this is a disaster. So you must stop them, even if they are not-idle.
             auto enemy_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::enemy_player_model.units_, u->getPosition(), 400);
             enemy_loc.updateUnitInventorySummary();
-            if (!CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+            if (!CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc)) {
                 task_guard = workersCollect(u);
             }
         }

@@ -35,17 +35,20 @@ private:
 
     int map_x; //Map width in tiles.
     int map_y; //Map height in tiles.
+    int buffer = 3; // buffer since our vision estimator is imperfect
 
     //Fields:
     double pfAirThreat_[256][256] = { 0 }; // which air areas are under threat?
     double pfDetectThreat_[256][256] = { 0 }; // which areas are detected?
     double pfGroundThreat_[256][256] = { 0 }; // which ground areas are under threat?
     double pfVisible_[256][256] = { 0 }; // which ground areas are visible?
-    double pfBlindness_[256][256] = { 0 }; // The region about 3 tiles out of sight of the opponent's vision.
-    bool pfOccupation_[256][256] = { 0 }; // which ground areas are occupied? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses BOOL.
+    double pfBlindness_[256][256] = { 0 }; // The region about 3 tiles out of sight of the opponent's vision. Counts down from 3 to about 0.
+    int pfOccupation_[256][256] = { 0 }; // How many units are on each tile? This only tracks if a VISIBLE square is occupied. It is distinct from the other fields and only uses INT.
+    bool pfSurroundSquare_[256][256] = { 0 }; //Is the square a viable square to move a unit to and improve the surround?
     void completeField(double pf[256][256], int reduction); //Creates a buffer around a field roughly REDUCTION units wide.
     void overfillField(double pfIn[256][256], double pfOut[256][256], int reduction); //Creates a buffer of an area SURROUNDING a field roughly REDUCTION units wide.
     void DiagnosticField(double pf[256][256]); //Diagnostic to show "potential fields"
+    void DiagnosticField(int pf[256][256]);  //Diagnostic to show "potential fields"
     void DiagnosticField(bool pf[256][256]); //Diagnostic to show "potential fields"
 
 public:
@@ -133,6 +136,15 @@ public:
     void createVisionField(PlayerModel & enemy_player);
     void createOccupationField(PlayerModel & enemy_player);
     void createBlindField(PlayerModel & enemy_player); //Must run after createVisionField
+    void createSurroundField(PlayerModel & enemy_player); //Must run after createBlindField
+
+    const double getAirThreatField(TilePosition &t);
+    const double getGroundThreatField(TilePosition &t);
+    const double getVisionField(TilePosition &t);
+    const int getOccupationField(TilePosition &t);
+    const double getBlindField(TilePosition &t);
+    const bool getSurroundField(TilePosition &t);
+    void setSurroundField(TilePosition &t, bool newVal);
 
     void DiagnosticTile();
     void DiagnosticAirThreats();

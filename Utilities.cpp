@@ -325,12 +325,16 @@ bool CUNYAIModule::canContributeToFight(const UnitType &ut, const UnitInventory 
 }
 
 // Returns True if UnitType UT is in danger from anything in UnitInventory ENEMY. Excludes Psions; 
-bool CUNYAIModule::isInDanger(const UnitType &ut, const UnitInventory enemy) {
+bool CUNYAIModule::isInPotentialDanger(const UnitType &ut, const UnitInventory enemy) {
     bool shooting_up = ut.isFlyer() && enemy.stock_shoots_up_ > 0;
     bool shooting_down = !ut.isFlyer() && enemy.stock_shoots_down_ > 0;
     bool shoots_without_weapons = CUNYAIModule::containsUnit(UnitTypes::Terran_Bunker, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_Carrier, enemy) + CUNYAIModule::containsUnit(UnitTypes::Terran_Science_Vessel, enemy) + CUNYAIModule::containsUnit(UnitTypes::Terran_Medic, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_High_Templar, enemy) + CUNYAIModule::containsUnit(UnitTypes::Protoss_Dark_Archon, enemy) + CUNYAIModule::containsUnit(UnitTypes::Zerg_Defiler, enemy) + CUNYAIModule::containsUnit(UnitTypes::Zerg_Queen, enemy);
 
     return shooting_up || shooting_down || shoots_without_weapons;
+}
+
+bool CUNYAIModule::isInDanger(const Unit &u) {
+    return (u->isFlying() && CUNYAIModule::currentMapInventory.getAirThreatField(u->getTilePosition()) > 0) || (!u->isFlying() && CUNYAIModule::currentMapInventory.getGroundThreatField(u->getTilePosition()) > 0);
 }
 
 // Counts all units of one type in existance and owned by enemies. Counts units under construction.
@@ -1924,7 +1928,7 @@ int CUNYAIModule::getExactRange(const UnitType u_type, const Player owner) {
     else if (u_type == UnitTypes::Terran_Goliath && owner->getUpgradeLevel(UpgradeTypes::Charon_Boosters) > 0) {
         base_range += convertTileDistanceToPixelDistance(3);
     }
-    else if ( u_type == UnitTypes::Terran_Barracks ) {
+    else if ( u_type == UnitTypes::Terran_Bunker ) {
         base_range = UnitTypes::Terran_Marine.groundWeapon().maxRange() + convertTileDistanceToPixelDistance(1) + (owner->getUpgradeLevel(UpgradeTypes::U_238_Shells) > 0) *  convertTileDistanceToPixelDistance(1);
     }
 
@@ -2317,7 +2321,7 @@ bool CUNYAIModule::checkDangerousArea(const UnitType ut, const Position pos) {
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, pos);
     ei_temp.updateUnitInventorySummary();
 
-    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    if (CUNYAIModule::isInPotentialDanger(ut, ei_temp)) return false;
     return true;
 }
 
@@ -2326,7 +2330,7 @@ bool CUNYAIModule::checkDangerousArea(const UnitType ut, const int AreaID) {
     ei_temp = CUNYAIModule::getUnitInventoryInArea(CUNYAIModule::enemy_player_model.units_, AreaID);
     ei_temp.updateUnitInventorySummary();
 
-    if (CUNYAIModule::isInDanger(ut, ei_temp)) return false;
+    if (CUNYAIModule::isInPotentialDanger(ut, ei_temp)) return false;
     return true;
 }
 

@@ -87,9 +87,12 @@ bool CombatManager::combatScript(const Unit & u)
             bool fight_looks_good = CUNYAIModule::checkSuperiorFAPForecast(friend_loc, enemy_loc);
             bool unit_will_survive = !StoredUnit::unitDeadInFuture(*CUNYAIModule::friendly_player_model.units_.getStoredUnit(u), 6); // Worker is expected to live.
             bool worker_time_and_place = false;
-            bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInDanger(u->getType(), enemy_loc);
+            bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
             UnitInventory expanded_friend_loc;
-            bool prepping_attack = (!mobility.isOnDifferentHill(*e_closest_threat) || u->isFlying()) && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::PathingOut) > CUNYAIModule::countUnits(UnitTypes::Zerg_Overlord, friend_loc) && friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0 && distance_to_threat > (enemy_loc.max_range_air_ * u->isFlying() + enemy_loc.max_range_ground_ * !u->isFlying() + 32); // overlords path out and may prevent attacking.
+            bool prepping_attack = !CUNYAIModule::isInDanger(u) && 
+                my_unit->phase_ != StoredUnit::Phase::Retreating &&
+                CUNYAIModule::currentMapInventory.getOccupationField(TilePosition(my_unit->pos_)) > 1 &&
+                friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0; // overlords path out and may prevent attacking.
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
                 expanded_friend_loc.updateUnitInventorySummary();
@@ -120,7 +123,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ((!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking) && prepping_attack && !my_unit->burrowed_) {
+                    if ((!standard_fight_reasons && !enemy_loc.detector_count_ == 0) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack && !my_unit->burrowed_) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surroundLogic(e_closest_threat->pos_);
                         }
@@ -135,7 +138,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                 case UnitTypes::Zerg_Scourge: // Suicide Units
                 case UnitTypes::Zerg_Infested_Terran:
-                    if ((my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding) && overstacked_units) {
+                    if ((my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Surrounding ) && overstacked_units) {
                         return mobility.Scatter_Logic(overstacked_units->pos_);
                     }
                     else if (!standard_fight_reasons && my_unit->phase_ == StoredUnit::Phase::PathingOut && prepping_attack) {
@@ -147,7 +150,7 @@ bool CombatManager::combatScript(const Unit & u)
                     break;
                     // Most simple combat units behave like this:
                 default:
-                    if (!standard_fight_reasons && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking) && prepping_attack) {
+                    if (!standard_fight_reasons && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack) {
                         return mobility.surroundLogic(e_closest_threat->pos_);
                     }
                     else if (standard_fight_reasons) {
@@ -174,7 +177,7 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u->getType(), enemy_loc)) {
+            if (CUNYAIModule::isInDanger(u)) {
                 return mobility.Retreat_Logic(*e_closest_threat);
             }
             else {
