@@ -23,7 +23,7 @@
 
 constexpr bool RESIGN_MODE = false; // must be off for proper game close in SC-docker
 constexpr bool ANALYSIS_MODE = false; // Printing game logs, game status every few frames, etc.
-constexpr bool DIAGNOSTIC_MODE = false; //Visualizations, printing records, etc. Should seperate these.
+constexpr bool DIAGNOSTIC_MODE = true; //Visualizations, printing records, etc. Should seperate these.
 constexpr bool MOVE_OUTPUT_BACK_TO_READ = false; // should be FALSE for sc-docker, TRUE for chaoslauncher at home & Training against base ai.
 constexpr bool TIT_FOR_TAT_ENGAGED = true; // permits in game-tit-for-tat responses.  Consider disabling this for TEST_MODE.
 constexpr int FAP_SIM_DURATION = 24 * 5; // set FAP sim durations.
@@ -381,6 +381,11 @@ public:
     {
         return Position(A.x - B.x, A.y - B.y);
     }
-
+    friend bool operator==(const Position &A, const Position &B) {
+        return A.x == B.x && A.y == B.y;
+    }
+    friend bool operator==(const TilePosition &A, const TilePosition &B) {
+        return A.x == B.x && A.y == B.y;
+    }
 
 };

@@ -37,6 +37,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
     bool unit_can_morph_intended_target = unit->canMorph(building);
     map<int, TilePosition> viable_placements = {};
     TilePosition tileOfClosestBase = tp;
+    vector<TilePosition> bases = CUNYAIModule::currentMapInventory.getExpoTilePositions();
 
     if (!CUNYAIModule::checkWilling(building, extra_critera)) // If you're willing to build it let's begin the calculations for it.
         return false;
@@ -73,13 +74,6 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
             return true;
 
-        ////Otherwise, use blocks.  No longer used after BWEB update, since it takes away precious spots for spire.
-        //map<int, TilePosition> block_spots = addClosestBlock(building, tileOfClosestBase);
-        //if (!block_spots.empty())
-        //    viable_placements.insert(block_spots.begin(), block_spots.end());
-        //if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
-        //    return true;
-
     }
     else if (canMakeCUNY(building, false, unit) && building == UnitTypes::Zerg_Extractor) {
         Stored_Resource* closest_gas = CUNYAIModule::getClosestGroundStored(CUNYAIModule::land_inventory, UnitTypes::Resource_Vespene_Geyser, unit_pos);
@@ -104,7 +98,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 96))
             return true;
 
-        map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
+        map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, tileOfClosestBase);
         if (!block_spots.empty())
             viable_placements.insert(block_spots.begin(), block_spots.end());
         if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera, 96))
@@ -120,7 +114,7 @@ bool AssemblyManager::Check_N_Build(const UnitType &building, const Unit &unit, 
                 return true;
 
             // Then try a block,
-            map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLarger(building, tileOfClosestBase);
+            map<int, TilePosition> block_spots = addClosestBlockWithSizeOrLargerWithinWall(building, tileOfClosestBase);
             if (!block_spots.empty())
                 viable_placements.insert(block_spots.begin(), block_spots.end());
             if (buildAtNearestPlacement(building, viable_placements, unit, extra_critera))
@@ -666,46 +660,50 @@ map<int, TilePosition> AssemblyManager::addClosestWall(const UnitType &building,
     return viable_placements;
 }
 
-map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLarger(const UnitType & building, const TilePosition & tp)
+map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWall(const UnitType & building, const TilePosition & tp)
 {
 
     map<int, TilePosition> viable_placements = {};
+    int plength = 0;
+    auto cpp = BWEM::Map::Instance().GetPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()), &plength);
+    if (cpp.empty() || plength == 0) {
+        Diagnostics::DiagnosticText("I can't figure out how far the main is from the wall.");
+        return viable_placements;
+    }
 
+    set<TilePosition> placements;
+    set<TilePosition> backup_placements;
     // Get each block
     for (auto block : BWEB::Blocks::getBlocks()) {
-
-        set<TilePosition> placements;
-        set<TilePosition> backup_placements;
-
         //For each block get all placements
         if (building.tileSize() == TilePosition{ 2,2 }) {
-            placements = block.getSmallTiles();
-            backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks. Need backup positions if a medium doe snot exist.
+            placements.insert(block.getSmallTiles().begin(), block.getSmallTiles().end());
+            backup_placements.insert(block.getLargeTiles().begin(), block.getLargeTiles().end()); // cannot insert because there is no proper operators, particularly (==) for these blocks. Need backup positions if a medium doe snot exist.
         }
         else if (building.tileSize() == TilePosition{ 3 , 2 }) { // allow to build medium tile at large blocks that are not walls. If you need a building, you *need* it.
-            placements = block.getMediumTiles();
-            backup_placements = block.getLargeTiles(); // cannot insert because there is no proper operators, particularly (==) for these blocks.
+            placements.insert(block.getMediumTiles().begin(), block.getMediumTiles().end());
+            backup_placements.insert(block.getLargeTiles().begin(), block.getLargeTiles().end()); // cannot insert because there is no proper operators, particularly (==) for these blocks.
         }
         else if (building.tileSize() == TilePosition{ 4 , 3 })
-            placements = block.getLargeTiles();
+            placements.insert(block.getLargeTiles().begin(), block.getLargeTiles().end());
+    }
 
-        // If there's a good placement, let's use it.
-        if (!placements.empty()) {
-            for (auto &tile : placements) {
-                BWEB::Path newPath;
-                newPath.createUnitPath(Position(tp), Position(tile));
-                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
-                    viable_placements.insert({ newPath.getDistance(), tile });
-            }
+    // If there's a good placement, let's use it.
+    if (!placements.empty()) {
+        for (auto &tile : placements) {
+            BWEB::Path newPath;
+            newPath.createUnitPath(Position(tp), Position(tile));
+            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && newPath.getDistance() < plength)
+                viable_placements.insert({ newPath.getDistance(), tile });
         }
-        // Otherwise, let's fall back on the backup placements
-        if (!backup_placements.empty()) {
-            for (auto &tile : backup_placements) {
-                BWEB::Path newPath;
-                newPath.createUnitPath(Position(tp), Position(tile));
-                if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0)
-                    viable_placements.insert({ newPath.getDistance(), tile });
-            }
+    }
+    // Otherwise, let's fall back on the backup placements
+    if (!backup_placements.empty()) {
+        for (auto &tile : backup_placements) {
+            BWEB::Path newPath;
+            newPath.createUnitPath(Position(tp), Position(tile));
+            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && newPath.getDistance() < plength)
+                viable_placements.insert({ newPath.getDistance(), tile });
         }
     }
 

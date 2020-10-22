@@ -583,7 +583,6 @@ bool Mobility::moveTo(const Position &start, const Position &finish, const Store
             int plength = 0;
             auto cpp = BWEM::Map::Instance().GetPath(start, finish, &plength);
             if (!cpp.empty() && plength > 0) {
-                // first try traveling with CPP.
                 UnitInventory friendly_blocks = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, Position(cpp.front()->Center()), 64);
                 friendly_blocks.updateUnitInventorySummary();
                 bool has_a_blocking_item = (BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).GetNeutral() || BWEM::Map::Instance().GetTile(TilePosition(cpp.front()->Center())).Doodad() || friendly_blocks.building_count_ > 0);
