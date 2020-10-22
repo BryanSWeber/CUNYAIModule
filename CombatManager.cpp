@@ -91,7 +91,8 @@ bool CombatManager::combatScript(const Unit & u)
             UnitInventory expanded_friend_loc;
             bool prepping_attack = !CUNYAIModule::isInDanger(u) && 
                 my_unit->phase_ != StoredUnit::Phase::Retreating &&
-                CUNYAIModule::currentMapInventory.getOccupationField(TilePosition(my_unit->pos_)) > 1 &&
+                !CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)) && //If there is SOMETHING in range, don't surround.
+                //CUNYAIModule::currentMapInventory.getOccupationField(TilePosition(my_unit->pos_)) > 1 &&
                 friend_loc.count_of_each_phase_.at(StoredUnit::Phase::Attacking) == 0; // overlords path out and may prevent attacking.
             if (e_closest_threat->type_.isWorker()) {
                 expanded_friend_loc = CUNYAIModule::getUnitInventoryInRadius(CUNYAIModule::friendly_player_model.units_, e_closest_threat->pos_, search_radius) + friend_loc; // this is critical for worker only fights, where the number of combatants determines if a new one is needed.
@@ -177,10 +178,13 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u)) {
+            if (CUNYAIModule::isInDanger(u)) { // if you're in danger, run.
                 return mobility.Retreat_Logic(*e_closest_threat);
             }
-            else {
+            else if (CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)) && CUNYAIModule::isRanged(u->getType())) { // If you can take potshots, do so.
+                return mobility.Tactical_Logic(*CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)), enemy_loc, friend_loc, search_radius, Colors::White);
+            }
+            else { // if you're not in danger and cannot take potshots, surround.
                 return mobility.surroundLogic(e_closest_threat->pos_);
             }
         }

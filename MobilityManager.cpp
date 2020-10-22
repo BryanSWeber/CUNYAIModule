@@ -349,7 +349,7 @@ Position Mobility::encircle() {
         for (auto y = -7; y < 7; y++) {
             TilePosition target_tile = TilePosition(unit_->getTilePosition().x + x, unit_->getTilePosition().y + y);
             if(CUNYAIModule::currentMapInventory.getSurroundField(target_tile) && dis(gen) > 0.5){ // only half the time should you filter out. Otherwise BOTH units will filter out. Scheduling is hard.
-                CUNYAIModule::currentMapInventory.setSurroundField(target_tile, true);
+                CUNYAIModule::currentMapInventory.setSurroundField(target_tile, false);
                 break;
             }
         }
