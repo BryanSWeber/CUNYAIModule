@@ -80,11 +80,14 @@ public:
     static bool checkBestUnit(const UnitType & ut); // returns true if preferred unit.
     static void weightUnitSim(const bool & condition, const UnitType &unit, const double &weight); //Increases the weight of the unit in the sim by +weight (w can be negative to penalize), when conditions are met.
     static void applyWeightsFor(const UnitType &unit); //Checks all weightUnitSims relevant for unit.
+    static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
+
 
     static map<int, TilePosition> addClosestWall(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.
     //static map<int, TilePosition> addClosestBlockWithSizeOrLarger(const UnitType &building, const TilePosition &tp); // Return a map containing viable tile positions and their distance to tp.  Will add LARGE tiles as a backup because we have so many under current BWEB and sometimes the medium/small blocks do not appear properly.
     static map<int, TilePosition> addClosestBlockWithSizeOrLargerWithinWall(const UnitType & building, const TilePosition & tp); 
     static map<int, TilePosition> addClosestStation(const UnitType &building, const TilePosition &tp);  // Return a map containing viable tile positions and their distance to tp.
+    static void planDefensiveWalls(); // Creates a Z-sim city at the natural.
 
 
     //Building assembly functions
@@ -97,8 +100,6 @@ public:
     static bool isFullyVisibleBuildLocation(const UnitType & type, const TilePosition & location);     // Checks if I can see every tile in a build location. 
     static void updatePotentialBuilders(); // Updates all units that might build something at this time.
     static bool creepColonyInArea(const Position & pos); // Assigns prestored units to the assembly task. Also builds emergency creep colonies.
-    static void clearSimulationHistory(); // This should be ran when a unit is made/discovered so comparisons are fair!
-    static void planDefensiveWalls(); // Creates a Z-sim city at the natural.
     static bool buildStaticDefence(const Unit & morph_canidate, const bool & force_spore, const bool & force_sunken); // take a creep colony and morph it into another type of static defence. 
 
     //Below are checks to see if an item can be built, if there is sufficent excess resource of a particular time around, and related checks.
