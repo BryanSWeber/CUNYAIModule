@@ -323,7 +323,7 @@ void LearningManager::initializeGeneticLearning() {
 
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
-        gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1. - crossover)), 0., 1.);
+        gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1. - crossover)), 0., 0.75);
         supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1. - crossover)), 0.5, 0.9);
         a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1. - crossover)), 0., 1.);  //geometric crossover, interior of parents.
         a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1. - crossover)), 0., 1.);
@@ -343,7 +343,7 @@ void LearningManager::initializeGeneticLearning() {
         size_t mutation_0 = unif_dist_to_mutate(gen); // rand int between 0-5
         double mutation = normal_mutation_size(gen); // will generate rand double between 0.99 and 1.01.
 
-        gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 1.) : gas_proportion_out;
+        gas_proportion_t0 = mutation_0 == 0 ? CUNYAIModule::bindBetween(gas_proportion_out + mutation, 0., 0.75) : gas_proportion_out;
         supply_ratio_t0 = mutation_0 == 1 ? CUNYAIModule::bindBetween(supply_ratio_out + mutation, 0.5, 0.9) : supply_ratio_out;
         a_army_t0 = mutation_0 == 2 ? CUNYAIModule::bindBetween(a_army_out + mutation, 0., 1.) : a_army_out;
         a_econ_t0 = mutation_0 == 3 ? CUNYAIModule::bindBetween(a_econ_out + mutation, 0., 1.) : a_econ_out;
@@ -457,7 +457,7 @@ void LearningManager::initializeRandomStart(){
     std::uniform_int_distribution<size_t> rand_bo(0, build_order_list.size() - 1);
     size_t build_order_rand = rand_bo(gen);
 
-    gas_proportion_t0 = dis(gen);
+    gas_proportion_t0 = dis(gen) * 0.75;
     supply_ratio_t0 = dis(gen);
     a_army_t0 = dis(gen);
     a_econ_t0 = 1 - a_army_t0;
