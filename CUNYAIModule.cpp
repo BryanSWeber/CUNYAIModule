@@ -794,11 +794,14 @@ void CUNYAIModule::onUnitHide(BWAPI::Unit unit)
 
 void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
 {
-    techmanager.clearSimulationHistory();
-    assemblymanager.clearSimulationHistory();
 
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
+    }
+
+    if (CUNYAIModule::isFightingUnit(unit)) {
+        techmanager.clearSimulationHistory();
+        assemblymanager.clearSimulationHistory();
     }
 
     if (Broodwar->isReplay())
@@ -821,11 +824,14 @@ void CUNYAIModule::onUnitCreate(BWAPI::Unit unit)
 
 void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf inside here!
 {
-    techmanager.clearSimulationHistory();
-    assemblymanager.clearSimulationHistory();
 
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
+    }
+
+    if (CUNYAIModule::isFightingUnit(unit)) {
+        techmanager.clearSimulationHistory();
+        assemblymanager.clearSimulationHistory();
     }
 
     if (unit->getPlayer() == Broodwar->self()) { // safety check for existence doesn't work here, the unit doesn't exist, it's dead.
@@ -930,11 +936,14 @@ void CUNYAIModule::onUnitDestroy(BWAPI::Unit unit) // something mods Unit to 0xf
 
 void CUNYAIModule::onUnitMorph(BWAPI::Unit unit)
 {
-    techmanager.clearSimulationHistory();
-    assemblymanager.clearSimulationHistory();
 
     if (!unit) {
         return; // safety catch for nullptr dead units. Sometimes is passed.
+    }
+
+    if (CUNYAIModule::isFightingUnit(unit)) {
+        techmanager.clearSimulationHistory();
+        assemblymanager.clearSimulationHistory();
     }
 
     BWEB::Map::onUnitMorph(unit);
