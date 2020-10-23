@@ -64,6 +64,7 @@ public:
     //Marks Data for each area if it is "ground safe"
     void updateGroundDangerousAreas();
     vector<TilePosition> MapInventory::getExpoTilePositions(); //returns all possible expos and starting bases, found with BWEM.
+    vector<TilePosition> getInsideWallTilePositions(); //Returns the plausible macro hatch positions only.
 
     // treatment order is as follows unwalkable->smoothed->veins->map veins from/to bases.
     vector< vector<bool> > buildable_positions_; // buildable = 1, otherwise 0.

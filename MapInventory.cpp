@@ -979,6 +979,28 @@ vector<TilePosition> MapInventory::getExpoTilePositions() {
     return expo_positions;
 }
 
+vector<TilePosition> MapInventory::getInsideWallTilePositions() {
+    std::vector<TilePosition> macroPositions;
+    BWEB::Path distanceBetweenWallAndStart;
+    distanceBetweenWallAndStart.createUnitPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()));
+    for (auto block : BWEB::Blocks::getBlocks()) {
+
+        //For each block get all placements
+        std::set<TilePosition> placements = block.getLargeTiles();
+
+        // If there's a good placement, let's use it.
+        if (!placements.empty()) {
+            for (auto &tile : placements) {
+                BWEB::Path pathFromStart;
+                pathFromStart.createUnitPath(Position(Broodwar->self()->getStartLocation()), Position(tile));
+                if (pathFromStart.isReachable() && !pathFromStart.getTiles().empty() && pathFromStart.getDistance() < distanceBetweenWallAndStart.getDistance())
+                    macroPositions.push_back(tile);
+            }
+        }
+
+    }
+    return macroPositions;
+}
 
 bool MapInventory::checkExploredAllStartPositions() {
     for (auto loc : Broodwar->getStartLocations()) {
@@ -1197,9 +1219,11 @@ void MapInventory::createAirThreatField(PlayerModel &enemy_player) {
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int air_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_ + buffer;
-        pfAirThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(air_range, static_cast<int>(pfAirThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
-        max_range = max(max_range, air_range);
+        if (unit.second.valid_pos_) {
+            int air_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_up_ + buffer;
+            pfAirThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(air_range, static_cast<int>(pfAirThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
+            max_range = max(max_range, air_range);
+        }
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
     completeField(pfAirThreat_, max_range);
@@ -1213,9 +1237,11 @@ void MapInventory::createDetectField(PlayerModel &enemy_player) {
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())) + buffer; // buildings all detect in a radius of 7, all others are sight range.
-        pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, static_cast<int>(pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
-        max_range = max(max_range, detection_range);
+        if (unit.second.valid_pos_) {
+            int detection_range = unit.second.type_.isDetector() * (unit.second.type_.isBuilding() ? 7 : CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange())) + buffer; // buildings all detect in a radius of 7, all others are sight range.
+            pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(detection_range, static_cast<int>(pfDetectThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
+            max_range = max(max_range, detection_range);
+        }
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
     completeField(pfDetectThreat_, max_range);
@@ -1229,9 +1255,11 @@ void MapInventory::createGroundThreatField(PlayerModel &enemy_player) {
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_down_ + buffer;
-        pfGroundThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(ground_range, static_cast<int>(pfGroundThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
-        max_range = max(max_range, ground_range);
+        if (unit.second.valid_pos_) {
+            int ground_range = CUNYAIModule::convertPixelDistanceToTileDistance(CUNYAIModule::getExactRange(unit.second.type_, enemy_player.getPlayer())) * unit.second.shoots_down_ + buffer;
+            pfGroundThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(ground_range, static_cast<int>(pfGroundThreat_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
+            max_range = max(max_range, ground_range);
+        }
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
     completeField(pfGroundThreat_, max_range);
@@ -1245,9 +1273,11 @@ void MapInventory::createVisionField(PlayerModel &enemy_player) {
     //set all the nonzero elements to their relevant values.
     int max_range = 0;
     for (auto unit : enemy_player.units_.unit_map_) { //Highest range dominates. We're just checking if they hit, not how HARD they hit.
-        int sight_range = CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange()) + buffer;
-        pfVisible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(sight_range, static_cast<int>(pfVisible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
-        max_range = max(max_range, sight_range);
+        if (unit.second.valid_pos_) {
+            int sight_range = CUNYAIModule::convertPixelDistanceToTileDistance(unit.second.type_.sightRange()) + buffer;
+            pfVisible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y] = max(sight_range, static_cast<int>(pfVisible_[TilePosition(unit.second.pos_).x][TilePosition(unit.second.pos_).y]));
+            max_range = max(max_range, sight_range);
+        }
     }
     // Fill the whole thing so each tile nearby is one less than the previous. All nonzero tiles are under threat.
     completeField(pfVisible_, max_range);

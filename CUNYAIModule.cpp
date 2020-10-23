@@ -391,7 +391,7 @@ void CUNYAIModule::onFrame()
     currentMapInventory.createVisionField(enemy_player_model);
     currentMapInventory.createBlindField(enemy_player_model);
     currentMapInventory.createOccupationField(enemy_player_model);
-    currentMapInventory.DiagnosticGroundThreats();
+    currentMapInventory.DiagnosticBlindTiles();
 
     basemanager.updateBases();
 

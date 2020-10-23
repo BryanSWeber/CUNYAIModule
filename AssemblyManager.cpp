@@ -664,9 +664,11 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
 {
 
     map<int, TilePosition> viable_placements = {};
-    int plength = 0;
-    auto cpp = BWEM::Map::Instance().GetPath(Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid()), Position(Broodwar->self()->getStartLocation()), &plength);
-    if (cpp.empty() || plength == 0) {
+    int baseToWallDist = 0;
+    Position wall_pos = Position(BWEB::Walls::getClosestWall(Broodwar->self()->getStartLocation())->getCentroid());
+    Position start_pos = Position(Broodwar->self()->getStartLocation());
+    auto cpp = BWEM::Map::Instance().GetPath(wall_pos, start_pos, &baseToWallDist);
+    if (baseToWallDist == 0) {
         Diagnostics::DiagnosticText("I can't figure out how far the main is from the wall.");
         return viable_placements;
     }
@@ -693,7 +695,13 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
         for (auto &tile : placements) {
             BWEB::Path newPath;
             newPath.createUnitPath(Position(tp), Position(tile));
-            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && newPath.getDistance() < plength)
+            int plength = 0;
+            auto cpp = BWEM::Map::Instance().GetPath(start_pos, Position(tile), &plength);
+            if (plength == 0) {
+                Diagnostics::DiagnosticText("I can't figure out how far the block is from the start postion.");
+                return viable_placements;
+            }
+            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && plength < baseToWallDist)
                 viable_placements.insert({ newPath.getDistance(), tile });
         }
     }
@@ -702,7 +710,13 @@ map<int, TilePosition> AssemblyManager::addClosestBlockWithSizeOrLargerWithinWal
         for (auto &tile : backup_placements) {
             BWEB::Path newPath;
             newPath.createUnitPath(Position(tp), Position(tile));
-            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && newPath.getDistance() < plength)
+            int plength = 0;
+            auto cpp = BWEM::Map::Instance().GetPath(start_pos, Position(tile), &plength);
+            if (plength == 0) {
+                Diagnostics::DiagnosticText("I can't figure out how far the block is from the start postion.");
+                return viable_placements;
+            }
+            if (newPath.isReachable() && !newPath.getTiles().empty() && newPath.getDistance() > 0 && plength < baseToWallDist)
                 viable_placements.insert({ newPath.getDistance(), tile });
         }
     }
