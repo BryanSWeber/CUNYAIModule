@@ -81,8 +81,8 @@ void TechManager::evaluateWeightsFor(const UpgradeType & up)
         break;
     case UpgradeTypes::Zerg_Carapace:
         weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Zergling) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Zergling) > 8, up, 300);
-        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Protoss_Ground_Weapons) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
-        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Terran_Infantry_Armor) > CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
+        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Protoss_Ground_Weapons) >= CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
+        weightOptimalTech(CUNYAIModule::enemy_player_model.researches_.getUpLevel(UpgradeTypes::Terran_Infantry_Armor) >= CUNYAIModule::friendly_player_model.researches_.getUpLevel(up), up, 300);
         break;
     case UpgradeTypes::Zerg_Missile_Attacks:
         weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Lurker) + CUNYAIModule::countUnits(UnitTypes::Zerg_Hydralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Hydralisk) >= 4, up, 300);
@@ -98,7 +98,7 @@ void TechManager::evaluateWeightsFor(const UpgradeType & up)
         break;
     case UpgradeTypes::Zerg_Flyer_Carapace:
         weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Protoss_Corsair, CUNYAIModule::enemy_player_model.units_) >= 4, up, 500);
-        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) > 0, up, 500);
+        weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Protoss_Carrier, CUNYAIModule::enemy_player_model.units_) >= 1, up, 500);
         break;
     case UpgradeTypes::Anabolic_Synthesis:
         weightOptimalTech(CUNYAIModule::countUnits(UnitTypes::Zerg_Ultralisk) + CUNYAIModule::countUnitsInProgress(UnitTypes::Zerg_Ultralisk) == 0, up, -300);
@@ -205,15 +205,6 @@ bool TechManager::chooseTech() {
             break; // if it's required, we are done. Build it!
         }
     }
-
-    ////Check to make sure there are not 2 upgrades for a single building type. 
-    //UpgradeType matching_upgrade = UpgradeTypes::None;
-    //for (auto match_check : CUNYAIModule::my_reservation.getReservedUpgrades()){
-    //    if (up_type.whatUpgrades() == match_check.whatUpgrades()) {
-    //        matching_upgrade = match_check;
-    //    }
-    //}
-    //CUNYAIModule::my_reservation.removeReserveSystem(matching_upgrade, false);
 
     //If we have not reserved because it is unaffordable now, let us reserve it now.
     if (canUpgradeCUNY(up_type, false) && !CUNYAIModule::my_reservation.isInReserveSystem(up_type)) { //Huh? Why is this not triggering often enough?
