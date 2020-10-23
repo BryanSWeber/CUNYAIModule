@@ -324,7 +324,7 @@ void LearningManager::initializeGeneticLearning() {
         double crossover = dis(gen); //crossover, interior of parents. Big mutation at the end, though.
 
         gas_proportion_out = CUNYAIModule::bindBetween(pow(parent_1.gas_proportion_total_, crossover) * pow(parent_2.gas_proportion_total_, (1. - crossover)), 0., 1.);
-        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1. - crossover)), 0.0, 1.);
+        supply_ratio_out = CUNYAIModule::bindBetween(pow(parent_1.supply_ratio_total_, crossover) * pow(parent_2.supply_ratio_total_, (1. - crossover)), 0.5, 0.9);
         a_army_out = CUNYAIModule::bindBetween(pow(parent_1.a_army_total_, crossover) * pow(parent_2.a_army_total_, (1. - crossover)), 0., 1.);  //geometric crossover, interior of parents.
         a_econ_out = CUNYAIModule::bindBetween(pow(parent_1.a_econ_total_, crossover) * pow(parent_2.a_econ_total_, (1. - crossover)), 0., 1.);
         a_tech_out = CUNYAIModule::bindBetween(pow(parent_1.a_tech_total_, crossover) * pow(parent_2.a_tech_total_, (1. - crossover)), 0., 3.);
