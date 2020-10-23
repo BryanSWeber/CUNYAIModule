@@ -89,7 +89,8 @@ bool CombatManager::combatScript(const Unit & u)
             bool worker_time_and_place = false;
             bool standard_fight_reasons = fight_looks_good || trigger_loc.building_count_ > 0 || !CUNYAIModule::isInPotentialDanger(u->getType(), enemy_loc);
             UnitInventory expanded_friend_loc;
-            bool prepping_attack = !CUNYAIModule::isInDanger(u) &&
+            bool prepping_attack = !CUNYAIModule::isInDanger(u) && 
+                CUNYAIModule::currentMapInventory.isTileBlind(u->getPosition()) &&
                 my_unit->phase_ != StoredUnit::Phase::Retreating &&
                 !CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)) && //If there is SOMETHING in range, don't surround.
                 //CUNYAIModule::currentMapInventory.getOccupationField(TilePosition(my_unit->pos_)) > 1 &&
@@ -124,7 +125,7 @@ bool CombatManager::combatScript(const Unit & u)
                     }
                     break;
                 case UnitTypes::Zerg_Lurker: // Lurkesr are siege units and should be moved sparingly.
-                    if ( !standard_fight_reasons && CUNYAIModule::currentMapInventory.isTileDetected(u->getPosition()) && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack && !my_unit->burrowed_) {
+                    if ( !standard_fight_reasons && !enemy_loc.detector_count_ == 0 && (my_unit->phase_ == StoredUnit::Phase::PathingOut || my_unit->phase_ == StoredUnit::Phase::Attacking || my_unit->phase_ == StoredUnit::Phase::Surrounding) && prepping_attack && !my_unit->burrowed_) {
                         if (overstacked_units) { // we don't want lurkers literally on top of each other.
                             return mobility.surroundLogic(e_closest_threat->pos_);
                         }
@@ -133,7 +134,7 @@ bool CombatManager::combatScript(const Unit & u)
                             return true; // now the lurker should be burrowed.
                         }
                     }
-                    else if (standard_fight_reasons || !CUNYAIModule::currentMapInventory.isTileDetected(u->getPosition())) {
+                    else if (standard_fight_reasons || enemy_loc.detector_count_ == 0) {
                         return mobility.Tactical_Logic(*e_closest_threat, enemy_loc, friend_loc, search_radius, Colors::White);
                     }
                     break;
@@ -178,13 +179,13 @@ bool CombatManager::combatScript(const Unit & u)
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, CUNYAIModule::enemy_player_model.units_.max_range_, Colors::Red);
             Diagnostics::drawCircle(e_closest_threat->pos_, CUNYAIModule::currentMapInventory.screen_position_, search_radius, Colors::Green);
 
-            if (CUNYAIModule::isInDanger(u)) { // if you're in danger, run.
+            if (CUNYAIModule::currentMapInventory.isTileVisible(u->getPosition())) { // if you're visible, run.
                 return mobility.Retreat_Logic(*e_closest_threat);
             }
             else if (CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)) && CUNYAIModule::isRanged(u->getType())) { // If you can take potshots, do so.
                 return mobility.Tactical_Logic(*CUNYAIModule::getClosestAttackableStored(enemy_loc, u, CUNYAIModule::getExactRange(u)), enemy_loc, friend_loc, search_radius, Colors::White);
             }
-            else { // if you're not in danger and cannot take potshots, surround.
+            else { // if you're not visible and cannot take potshots, surround.
                 return mobility.surroundLogic(e_closest_threat->pos_);
             }
         }
