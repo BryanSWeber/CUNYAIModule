@@ -178,7 +178,10 @@ public:
     Position getDistanceWeightedPosition(const Position & target_pos ); //Returns a position that is 1) not visible, 2) not already being scouted 3) randomly chosen based on a weighted distance from target_pos. Uses CPP and will consider walled-off positions. Will return origin if fails.
     static bool isTileDetected(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
     static bool isTileAirThreatened(const Position &p); //Checks if a tile is detected by an enemy. Inaccurate.
-    static bool isTileGroundThreatened(const Position &p);//Checks if a tile is detected by an enemy. Inaccurate.
+    static bool isTileGroundThreatened(const Position &p);
+    static bool isTileVisible(const Position & p); // Checks if a tile is visible. Inaccurate. Prefer Blindness.
+    static bool isTileBlind(const Position & p); // Checks if a tile is blind for an opponent. Inaccurate.
+    //Checks if a tile is detected by an enemy. Inaccurate.
 
     Position getSafeBase();
     Position getEnemyBaseGround();

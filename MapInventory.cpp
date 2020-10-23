@@ -1182,7 +1182,7 @@ void MapInventory::overfillField(double pfIn[256][256], double pfOut[256][256], 
                 pfIn[tile_x - 1][tile_y + 1],
                 pfIn[tile_x - 1][tile_y - 1]
                 });
-                pfOut[tile_x][tile_y] = pfIn[tile_x][tile_y] == 0 && diagonal_tiles > 0 && lateral_tiles > 0 ? reduction : 0; //shift all the empty fields to 0, nonempty fields to 256.
+                pfOut[tile_x][tile_y] = pfIn[tile_x][tile_y] == 0 && (diagonal_tiles + lateral_tiles > 0) ? reduction : 0; //shift all the empty fields to 0, nonempty fields to 256.
         }
     }
 
@@ -1290,7 +1290,7 @@ void MapInventory::createOccupationField(PlayerModel &enemy_player) {
 
     for (int tile_x = 1; tile_x <= Broodwar->mapWidth(); tile_x++) { // there is no tile (0,0)
         for (int tile_y = 1; tile_y <= Broodwar->mapHeight(); tile_y++) {
-            if(Broodwar->isVisible(tile_x, tile_y))
+            if(Broodwar->isVisible(tile_x, tile_y)) //shortcut: only need to get occupation for visible tiles, since any tile I might want to go to will be visible.
                 pfOccupation_[tile_x][tile_y] = Broodwar->getUnitsOnTile(tile_x, tile_y).size();
         }
     }
@@ -1731,6 +1731,17 @@ bool MapInventory::isTileGroundThreatened(const Position & p)
 {
     return CUNYAIModule::currentMapInventory.pfGroundThreat_[TilePosition(p).x][TilePosition(p).y] > 0;
 }
+
+bool MapInventory::isTileBlind(const Position & p)
+{
+    return  CUNYAIModule::currentMapInventory.pfBlindness_[TilePosition(p).x][TilePosition(p).y] > 0;
+}
+
+bool MapInventory::isTileVisible(const Position & p)
+{
+    return CUNYAIModule::currentMapInventory.pfVisible_[TilePosition(p).x][TilePosition(p).y] > 0;
+}
+
 
 Position MapInventory::getSafeBase()
 {
