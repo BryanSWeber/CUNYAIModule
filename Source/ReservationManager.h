@@ -44,7 +44,7 @@ public:
     bool Reservation::checkExcessIsGreaterThan(const TechType & type) const;
 
 
-    bool Reservation::checkAffordablePurchase(const UnitType type, const int X = 3);     //Checks if a purchase is affordable, imagines that we have a constant income stream X seconds in the future.
+    bool Reservation::checkAffordablePurchase(const UnitType type, const int X = 0);     //Checks if a purchase is affordable, imagines that we have a constant income stream X seconds in the future.
     bool Reservation::checkAffordablePurchase(const TechType type);     //Checks if a purchase is affordable.
     bool Reservation::checkAffordablePurchase(const UpgradeType type);   //Checks if a purchase is affordable.
 
